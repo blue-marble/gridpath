@@ -16,9 +16,8 @@
 Constraint total local capacity contribution to be more than or equal to the 
 requirement.
 """
-from __future__ import print_function
 
-from builtins import next
+
 import csv
 import os.path
 

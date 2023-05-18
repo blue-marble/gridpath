@@ -26,10 +26,6 @@ is avoided in the objective function.
 
 """
 
-from __future__ import print_function
-
-from builtins import next
-from builtins import zip
 import csv
 import os.path
 import pandas as pd

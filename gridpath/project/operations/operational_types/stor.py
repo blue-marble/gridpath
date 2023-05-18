@@ -37,7 +37,6 @@ Costs for this operational type include variable O&M costs.
 
 """
 
-from __future__ import division
 
 import csv
 import os.path

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from builtins import next
+
 import csv
 import os.path
 from pyomo.environ import Var, Constraint, NonNegativeReals, Expression, value

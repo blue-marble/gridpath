@@ -19,10 +19,7 @@ capacity-related costs of projects (e.g. investment capital costs and fixed
 O&M costs).
 """
 
-from __future__ import print_function
 
-from builtins import next
-from builtins import str
 import csv
 import os.path
 from pyomo.environ import Set, Expression, value

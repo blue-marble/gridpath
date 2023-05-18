@@ -28,11 +28,6 @@ of years the period represents) for the duration of the project's financial
 lifetime.
 """
 
-from __future__ import print_function
-
-from builtins import next
-from builtins import zip
-
 import csv
 import os.path
 import pandas as pd

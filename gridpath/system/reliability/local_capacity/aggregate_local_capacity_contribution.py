@@ -16,10 +16,8 @@
 Aggregate simple local capacity contribution from the project level to the
 local-capacity-zone level for each period.
 """
-from __future__ import print_function
 
-from builtins import next
-from builtins import str
+
 import csv
 import os.path
 from pyomo.environ import Expression, value

@@ -18,10 +18,8 @@ its installed capacity. Note that projects contributing through the ELCC surface
 also simultaneous contribute a simple fraction of their capacity (the fraction
 defaults to 0 if not specified).
 """
-from __future__ import print_function
 
-from builtins import next
-from builtins import str
+
 import csv
 import os.path
 from pyomo.environ import Param, PercentFraction, Expression, value

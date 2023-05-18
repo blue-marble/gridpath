@@ -22,9 +22,7 @@ This module contains:
 5) the method for loading modules.
 """
 
-from __future__ import print_function
 
-from builtins import str
 from importlib import import_module
 import os.path
 import pandas as pd

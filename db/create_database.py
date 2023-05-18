@@ -26,7 +26,7 @@ The default schema for the GridPath SQLite database is in db_schema.sql.
 
 """
 
-from builtins import str
+
 from argparse import ArgumentParser
 import csv
 import os.path

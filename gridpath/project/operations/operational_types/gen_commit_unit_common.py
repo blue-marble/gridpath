@@ -44,7 +44,6 @@ Morales-Espana et al. (2013).
 
 """
 
-from __future__ import division
 
 import csv
 import os.path

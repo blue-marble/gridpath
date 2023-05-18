@@ -18,11 +18,7 @@ module that adds to the formulation components that describe the amount of
 power that a project is providing in each study timepoint.
 """
 
-from __future__ import division
-from __future__ import print_function
 
-from builtins import next
-from builtins import str
 import csv
 import os.path
 import pandas as pd

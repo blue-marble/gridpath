@@ -22,8 +22,6 @@ The main() function of this script can also be called with the
 """
 
 
-from __future__ import print_function
-
 from argparse import ArgumentParser
 import sys
 

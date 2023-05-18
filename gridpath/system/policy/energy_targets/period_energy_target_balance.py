@@ -16,10 +16,7 @@
 Simplest implementation with a MWh target by period.
 """
 
-from __future__ import division
-from __future__ import print_function
 
-from builtins import next
 import csv
 import os.path
 import pandas as pd
