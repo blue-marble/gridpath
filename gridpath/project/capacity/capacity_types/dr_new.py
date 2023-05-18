@@ -30,10 +30,6 @@ be the new build in MWh divided by N (the MWh capacity can't be discharged
 in less than N hours, as the max power constraint will bind).
 """
 
-from __future__ import division
-
-from builtins import zip
-from builtins import range
 import csv
 import os.path
 import pandas as pd

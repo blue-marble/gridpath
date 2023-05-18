@@ -18,10 +18,7 @@ transmission lines connected to the load zone to create a load-balance
 production component, and adds it to the load-balance constraint.
 """
 
-from __future__ import print_function
 
-from builtins import next
-from builtins import str
 import csv
 import os.path
 from pyomo.environ import Expression, value

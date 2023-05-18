@@ -13,8 +13,6 @@
 # limitations under the License.
 
 
-from __future__ import absolute_import
-
 from .aggregate_reserve_violation_penalties import (
     generic_record_dynamic_components,
     generic_add_model_components,

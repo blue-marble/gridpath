@@ -36,9 +36,7 @@ consumption components respectively, and assigning a per unit cost for each
 load-balance violation type.
 """
 
-from __future__ import print_function
 
-from builtins import next
 import csv
 import os.path
 from pyomo.environ import Var, Constraint, Expression, NonNegativeReals, value

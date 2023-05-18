@@ -16,7 +16,7 @@
 Local capacity projects and the zone they contribute to
 """
 
-from builtins import next
+
 import csv
 import os.path
 from pyomo.environ import Param, Set

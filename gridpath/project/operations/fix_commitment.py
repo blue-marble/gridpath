@@ -18,7 +18,6 @@ stage and imports the commitment variables that were fixed in the previous
 stage.
 """
 
-from builtins import zip
 from csv import writer
 import os.path
 from pandas import read_csv

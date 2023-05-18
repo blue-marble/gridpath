@@ -23,10 +23,6 @@ Like with new-build generation, capacity costs added to the objective
 function include the annualized capital cost and the annual fixed O&M cost.
 """
 
-from __future__ import print_function
-
-from builtins import next
-from builtins import zip
 import csv
 import os.path
 import pandas as pd

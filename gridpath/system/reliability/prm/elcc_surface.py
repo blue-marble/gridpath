@@ -15,10 +15,7 @@
 """
 Total ELCC of projects on ELCC surface
 """
-from __future__ import print_function
 
-from builtins import next
-from builtins import range
 import csv
 import os.path
 from pyomo.environ import (

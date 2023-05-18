@@ -15,10 +15,8 @@
 """
 Constraint total carbon emissions to be less than performance standard
 """
-from __future__ import division
-from __future__ import print_function
 
-from builtins import next
+
 import csv
 import os.path
 
