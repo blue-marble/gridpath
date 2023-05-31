@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,14 +14,11 @@
 
 import csv
 import os.path
-import numpy as np
 import pandas as pd
 import warnings
 
-from db.common_functions import spin_on_database_lock
 from gridpath.project.common_functions import (
     check_if_boundary_type_and_first_timepoint,
-    get_column_row_value,
     check_boundary_type,
 )
 from gridpath.auxiliary.auxiliary import cursor_to_df
@@ -196,123 +193,6 @@ def determine_relevant_timepoints(mod, g, tmp, min_time):
                 relevant_tmp = mod.prev_tmp[relevant_tmp, mod.balancing_type_project[g]]
 
     return relevant_tmps, relevant_linked_tmps
-
-
-def update_dispatch_results_table(
-    db, c, results_directory, scenario_id, subproblem, stage, results_file
-):
-    results = []
-    with open(os.path.join(results_directory, results_file), "r") as dispatch_file:
-        reader = csv.reader(dispatch_file)
-
-        header = next(reader)
-
-        for row in reader:
-            project = row[0]
-            period = row[1]
-            balancing_type = row[2]
-            horizon = row[3]
-            timepoint = row[4]
-            timepoint_weight = row[5]
-            n_hours_in_tmp = row[6]
-            technology = row[7]
-            load_zone = row[8]
-            power = row[9]
-            scheduled_curtailment_mw = get_column_row_value(
-                header, "scheduled_curtailment_mw", row
-            )
-            subhourly_curtailment_mw = get_column_row_value(
-                header, "subhourly_curtailment_mw", row
-            )
-            subhourly_energy_delivered_mw = get_column_row_value(
-                header, "subhourly_energy_delivered_mw", row
-            )
-            total_curtailment_mw = get_column_row_value(
-                header, "total_curtailment_mw", row
-            )
-            committed_mw = get_column_row_value(header, "committed_mw", row)
-            committed_units = get_column_row_value(header, "committed_units", row)
-            started_units = get_column_row_value(header, "started_units", row)
-            stopped_units = get_column_row_value(header, "stopped_units", row)
-            synced_units = get_column_row_value(header, "synced_units", row)
-            auxiliary_consumption = get_column_row_value(
-                header, "auxiliary_consumption_mw", row
-            )
-            gross_power = get_column_row_value(header, "gross_power_mw", row)
-            ramp_up_violation = get_column_row_value(header, "ramp_up_violation", row)
-            ramp_down_violation = get_column_row_value(
-                header, "ramp_down_violation", row
-            )
-            min_up_time_violation = get_column_row_value(
-                header, "min_up_time_violation", row
-            )
-            min_down_time_violation = get_column_row_value(
-                header, "min_down_time_violation", row
-            )
-            hyb_storage_charge = get_column_row_value(
-                header, "hyb_storage_charge_mw", row
-            )
-            hyb_storage_discharge = get_column_row_value(
-                header, "hyb_storage_discharge_mw", row
-            )
-
-            results.append(
-                (
-                    scheduled_curtailment_mw,
-                    subhourly_curtailment_mw,
-                    subhourly_energy_delivered_mw,
-                    total_curtailment_mw,
-                    committed_mw,
-                    committed_units,
-                    started_units,
-                    stopped_units,
-                    synced_units,
-                    auxiliary_consumption,
-                    gross_power,
-                    ramp_up_violation,
-                    ramp_down_violation,
-                    min_up_time_violation,
-                    min_down_time_violation,
-                    hyb_storage_charge,
-                    hyb_storage_discharge,
-                    scenario_id,
-                    project,
-                    period,
-                    subproblem,
-                    stage,
-                    timepoint,
-                )
-            )
-
-    # Update the results table with the module-specific results
-    update_sql = """
-        UPDATE results_project_dispatch
-        SET scheduled_curtailment_mw = ?,
-        subhourly_curtailment_mw = ?,
-        subhourly_energy_delivered_mw = ?,
-        total_curtailment_mw = ?,
-        committed_mw = ?,
-        committed_units = ?,
-        started_units = ?,
-        stopped_units = ?,
-        synced_units = ?,
-        auxiliary_consumption_mw = ?,
-        gross_power_mw = ?,
-        ramp_up_violation = ?,
-        ramp_down_violation = ?,
-        min_up_time_violation = ?,
-        min_down_time_violation = ?,
-        hyb_storage_charge_mw = ?,
-        hyb_storage_discharge_mw = ?
-        WHERE scenario_id = ?
-        AND project = ?
-        AND period = ?
-        AND subproblem_id = ?
-        AND stage_id = ?
-        AND timepoint = ?;
-        """
-
-    spin_on_database_lock(conn=db, cursor=c, sql=update_sql, data=results)
 
 
 def get_optype_inputs_as_df(
@@ -1025,6 +905,7 @@ def get_optype_inputs_from_db(scenario_id, subscenarios, conn, op_type):
         "ramp_down_when_on_rate",
         "min_up_time_hours, min_down_time_hours",
         "allow_startup_shutdown_power",
+        "storage_efficiency",
         "charging_efficiency",
         "discharging_efficiency",
         "charging_capacity_multiplier",

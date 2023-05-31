@@ -13,7 +13,6 @@
 # limitations under the License.
 
 
-from builtins import str
 from collections import OrderedDict
 from importlib import import_module
 import os.path

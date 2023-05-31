@@ -969,6 +969,8 @@ def save_duals(scenario_directory, subproblem, stage, instance, dynamic_componen
         else:
             pass
 
+    # TODO: remove this export once all duals are incorporated in other results
+    #  files
     for c in list(instance.constraint_indices.keys()):
         constraint_object = getattr(instance, c)
         with open(

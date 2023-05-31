@@ -1,4 +1,4 @@
-# Copyright 2016-2021 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -45,8 +45,6 @@ Morales-Espana et al. (2013).
 """
 
 
-from __future__ import division
-
 import csv
 import os.path
 from pyomo.environ import (
@@ -61,6 +59,7 @@ from pyomo.environ import (
     Expression,
     value,
 )
+import warnings
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import subset_init_by_param_value
@@ -3431,154 +3430,93 @@ def load_model_data(
         pass
 
 
-def export_results(
+def add_to_dispatch_results(
     mod,
-    d,
-    scenario_directory,
-    subproblem,
-    stage,
     BIN_OR_LIN,
     Bin_or_Lin,
     bin_or_lin,
-    results_filename,
 ):
-    """
-    :param scenario_directory:
-    :param subproblem:
-    :param stage:
-    :param mod:
-    :param d:
-    :return:
-    """
-    with open(
-        os.path.join(
-            scenario_directory, str(subproblem), str(stage), "results", results_filename
-        ),
-        "w",
-        newline="",
-    ) as f:
-        writer = csv.writer(f)
-        writer.writerow(
-            [
-                "project",
-                "period",
-                "balancing_type_project",
-                "horizon",
-                "timepoint",
-                "timepoint_weight",
-                "number_of_hours_in_timepoint",
-                "technology",
-                "load_zone",
-                "power_mw",
-                "gross_power_mw",
-                "auxiliary_consumption_mw",
-                "net_power_mw",
-                "committed_mw",
-                "committed_units",
-                "started_units",
-                "stopped_units",
-                "synced_units",
-                "active_startup_type",
-                "ramp_up_violation",
-                "ramp_down_violation",
-                "min_up_time_violation",
-                "min_down_time_violation",
-            ]
-        )
+    """ """
 
-        for p, tmp in getattr(mod, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)):
-            writer.writerow(
-                [
-                    p,
-                    mod.period[tmp],
-                    mod.balancing_type_project[p],
-                    mod.horizon[tmp, mod.balancing_type_project[p]],
-                    tmp,
-                    mod.tmp_weight[tmp],
-                    mod.hrs_in_tmp[tmp],
-                    mod.technology[p],
-                    mod.load_zone[p],
-                    value(mod.Power_Provision_MW[p, tmp]),
-                    value(
-                        getattr(mod, "GenCommit{}_Provide_Power_MW".format(Bin_or_Lin))[
-                            p, tmp
-                        ]
-                    ),
-                    value(
-                        getattr(
-                            mod,
-                            "GenCommit{}_Auxiliary_Consumption_MW".format(Bin_or_Lin),
-                        )[p, tmp]
-                    ),
-                    value(
-                        getattr(mod, "GenCommit{}_Provide_Power_MW".format(Bin_or_Lin))[
-                            p, tmp
-                        ]
-                    )
-                    - value(
-                        getattr(
-                            mod,
-                            "GenCommit{}_Auxiliary_Consumption_MW".format(Bin_or_Lin),
-                        )[p, tmp]
-                    ),
-                    value(
-                        getattr(mod, "GenCommit{}_Pmax_MW".format(Bin_or_Lin))[p, tmp]
-                    )
-                    * value(
-                        getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[p, tmp]
-                    ),
-                    value(
-                        getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[p, tmp]
-                    ),
-                    value(
-                        getattr(mod, "GenCommit{}_Startup".format(Bin_or_Lin))[p, tmp]
-                    ),
-                    value(
-                        getattr(mod, "GenCommit{}_Shutdown".format(Bin_or_Lin))[p, tmp]
-                    ),
-                    value(
-                        getattr(mod, "GenCommit{}_Synced".format(Bin_or_Lin))[p, tmp]
-                    ),
-                    value(
-                        getattr(
-                            mod, "GenCommit{}_Active_Startup_Type".format(Bin_or_Lin)
-                        )[p, tmp]
-                    ),
-                    value(
-                        getattr(
-                            mod, "GenCommit{}_Ramp_Up_Violation_MW".format(Bin_or_Lin)
-                        )[p, tmp]
-                    ),
-                    value(
-                        getattr(
-                            mod, "GenCommit{}_Ramp_Down_Violation_MW".format(Bin_or_Lin)
-                        )[p, tmp]
-                    ),
-                    value(
-                        getattr(
-                            mod, "GenCommit{}_Min_Up_Time_Violation".format(Bin_or_Lin)
-                        )[p, tmp]
-                    ),
-                    value(
-                        getattr(
-                            mod,
-                            "GenCommit{}_Min_Down_Time_Violation".format(Bin_or_Lin),
-                        )[p, tmp]
-                    ),
+    results_columns = [
+        "gross_power_mw",
+        "auxiliary_consumption_mw",
+        "net_power_mw",
+        "committed_mw",
+        "committed_units",
+        "started_units",
+        "stopped_units",
+        "synced_units",
+        "active_startup_type",
+        "ramp_up_violation",
+        "ramp_down_violation",
+        "min_up_time_violation",
+        "min_down_time_violation",
+    ]
+
+    data = [
+        [
+            prj,
+            tmp,
+            value(
+                getattr(mod, "GenCommit{}_Provide_Power_MW".format(Bin_or_Lin))[
+                    prj, tmp
+                ]
+            ),
+            value(
+                getattr(
+                    mod,
+                    "GenCommit{}_Auxiliary_Consumption_MW".format(Bin_or_Lin),
+                )[prj, tmp]
+            ),
+            value(
+                getattr(mod, "GenCommit{}_Provide_Power_MW".format(Bin_or_Lin))[
+                    prj, tmp
                 ]
             )
+            - value(
+                getattr(
+                    mod,
+                    "GenCommit{}_Auxiliary_Consumption_MW".format(Bin_or_Lin),
+                )[prj, tmp]
+            ),
+            value(getattr(mod, "GenCommit{}_Pmax_MW".format(Bin_or_Lin))[prj, tmp])
+            * value(getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[prj, tmp]),
+            value(getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[prj, tmp]),
+            value(getattr(mod, "GenCommit{}_Startup".format(Bin_or_Lin))[prj, tmp]),
+            value(getattr(mod, "GenCommit{}_Shutdown".format(Bin_or_Lin))[prj, tmp]),
+            value(getattr(mod, "GenCommit{}_Synced".format(Bin_or_Lin))[prj, tmp]),
+            value(
+                getattr(mod, "GenCommit{}_Active_Startup_Type".format(Bin_or_Lin))[
+                    prj, tmp
+                ]
+            ),
+            value(
+                getattr(mod, "GenCommit{}_Ramp_Up_Violation_MW".format(Bin_or_Lin))[
+                    prj, tmp
+                ]
+            ),
+            value(
+                getattr(mod, "GenCommit{}_Ramp_Down_Violation_MW".format(Bin_or_Lin))[
+                    prj, tmp
+                ]
+            ),
+            value(
+                getattr(mod, "GenCommit{}_Min_Up_Time_Violation".format(Bin_or_Lin))[
+                    prj, tmp
+                ]
+            ),
+            value(
+                getattr(
+                    mod,
+                    "GenCommit{}_Min_Down_Time_Violation".format(Bin_or_Lin),
+                )[prj, tmp]
+            ),
+        ]
+        for (prj, tmp) in getattr(mod, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN))
+    ]
 
-    # Export any results that will be become inputs to a linked subproblem
-    export_linked_subproblem_inputs(
-        mod=mod,
-        d=d,
-        scenario_directory=scenario_directory,
-        subproblem=subproblem,
-        stage=stage,
-        Bin_or_Lin=Bin_or_Lin,
-        BIN_OR_LIN=BIN_OR_LIN,
-        bin_or_lin=bin_or_lin,
-    )
+    return results_columns, data
 
 
 def export_linked_subproblem_inputs(
@@ -3844,63 +3782,33 @@ def save_duals(m, bin_or_lin):
     ]
 
 
-def generic_constraint_column_dict(bin_or_lin):
+def generic_constraint_column_dict(Bin_or_Lin):
     constraint_column_dict = {
-        "GenCommit{}_Ramp_Up_Constraint".format(bin_or_lin): "ramp_up_dual",
-        "GenCommit{}_Ramp_Down_Constraint".format(bin_or_lin): "ramp_down_dual",
-        "GenCommit{}_Min_Up_Time_Constraint".format(bin_or_lin): "min_up_time_dual",
-        "GenCommit{}_Min_Down_Time_Constraint".format(bin_or_lin): "min_down_time_dual",
+        "GenCommit{}_Ramp_Up_Constraint".format(Bin_or_Lin): "ramp_up_dual",
+        "GenCommit{}_Ramp_Down_Constraint".format(Bin_or_Lin): "ramp_down_dual",
+        "GenCommit{}_Min_Up_Time_Constraint".format(Bin_or_Lin): "min_up_time_dual",
+        "GenCommit{}_Min_Down_Time_Constraint".format(Bin_or_Lin): "min_down_time_dual",
     }
 
     return constraint_column_dict
 
 
-def generic_duals_sql(column):
-    duals_sql = """
-        UPDATE results_project_dispatch
-        SET {column} = ?
-        WHERE scenario_id = ?
-        AND subproblem_id = ?
-        AND stage_id = ?
-        AND project = ?
-        AND timepoint = ?
-    """.format(
-        column=column
-    )
+def add_duals_to_dispatch_results(mod, Bin_or_Lin, BIN_OR_LIN):
+    constraint_column_dict = generic_constraint_column_dict(Bin_or_Lin)
+    results_columns = [
+        constraint_column_dict[c] for c in sorted(constraint_column_dict.keys())
+    ]
 
-    return duals_sql
+    data = []
+    for prj, tmp in getattr(mod, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)):
+        duals = []
+        for c in sorted(constraint_column_dict.keys()):
+            constraint_object = getattr(mod, c)
+            if (prj, tmp) in constraint_object:
+                duals.append(mod.dual[constraint_object[prj, tmp]])
+            else:
+                duals.append(None)
 
+        data.append([prj, tmp] + duals)
 
-def generic_load_duals_from_csv(constraint_filepath):
-    # Update duals
-    duals_results = []
-    with open(constraint_filepath, "r") as f:
-        reader = csv.reader(f)
-
-        next(reader)  # skip header
-
-        row_list = [row for row in reader]
-
-    return row_list
-
-
-def generic_update_duals_in_db(
-    conn, results_directory, scenario_id, subproblem, stage, bin_or_lin
-):
-    constraint_column_dict = generic_constraint_column_dict(bin_or_lin=bin_or_lin)
-    for constraint in constraint_column_dict.keys():
-        c = conn.cursor()
-        constraint_path = os.path.join(results_directory, constraint + ".csv")
-        row_list = generic_load_duals_from_csv(constraint_path)
-        duals_results = [
-            (row[2], scenario_id, subproblem, stage, row[0], row[1]) for row in row_list
-        ]
-
-        sql = generic_duals_sql(constraint_column_dict[constraint])
-
-        spin_on_database_lock(
-            conn=conn,
-            cursor=c,
-            sql=sql,
-            data=duals_results,
-        )
+    return results_columns, data

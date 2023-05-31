@@ -17,9 +17,9 @@ and the path to the directory where the CSVs are located using the
 >>> python port_csvs_to_db.py --database PATH/DO/DB --csv_location PATH/TO/CSVS
 
 
-Running the command above will look for the *csv_data_master.csv* file in
+Running the command above will look for the *csv_structure.csv* file in
 the *PATH/TO/CSVS* directory and use the information in this file to
-determine which CSV files to import. The template *csv_data_master.csv* file
+determine which CSV files to import. The template *csv_structure.csv* file
 is located in the *db/cvs_test_examples* directory. This file has the list
 of all the subscenarios and associated tables in the GridPath database. CSV
 data is imported if the user specifies a path in the *path* column of the file.
@@ -34,18 +34,18 @@ The script will look for CSV files in the path specified by the user for each
 subscenario.
 
 If no name has been specified for a subscenario/table in the  *filename* column
-of the *csv_data_master.csv* file, the script is expecting that the CSV
+of the *csv_structure.csv* file, the script is expecting that the CSV
 filename will conform to a certain structure, indicating the ID and name of
 the subscenario the file contains data for, with the ID and name separated
 by an underscore. For example, to load data for different project portfolio
 subscenarios, the user must first specify the path where the project
 portfoio CSVs are located in the *path* column of the
-*project_portfolio_scenario_id* row of the *csv_data_master.csv* file. In
+*project_portfolio_scenario_id* row of the *csv_structure.csv* file. In
 this directory, the user must include a file for each portfolio they want to
 be able to model, e.g. *1_base.csv* for project_portfolio_scenario_id 1 and
 *2_extra_project.csv* for project_portfolio_scenario_id 2. CSVs for
 subscenarios flagged with 1 in the *project_input* column of the
-*csv_data_master.csv* file require that the filename consist of the project
+*csv_structure.csv* file require that the filename consist of the project
 name, subscenario ID, and subscenario name, separated by dashes, e.g. two
 profiles for a project named 'Solar' can be specified in the files named
 *Solar-1-base.csv* and *Solar-2-high.csv* respectively. Note that project
@@ -55,7 +55,7 @@ A few subscenarios consist of multiple tables data for which is located
 inside CSVs in the same directory. For these subscenarios, the directory
 name should begin with the subscenario ID followed by an underscore and then
 the scenario name. The names of the files expected inside the directory are
-specified in the *csv_data_master.csv* file in the *filename* column. For
+specified in the *csv_structure.csv* file in the *filename* column. For
 example, a *temporal_scenario_id* directory must contain files named
 *period_params.csv*, *horizon_params.csv*, *structure.csv*, and
 *horizon_timepoints.csv*.
@@ -115,7 +115,7 @@ def parse_arguments(args):
         help="The subscenario to load. The script will look "
         "for the directory where data for the "
         "subscenario are located based on the "
-        "csv_master file and will load all subscenario "
+        "csv_structure file and will load all subscenario "
         "IDs located there.",
     )
     parser.add_argument(
@@ -125,7 +125,7 @@ def parse_arguments(args):
         "'--subscenario' argument must also be "
         "specified. The script will look for the "
         "directory where data for the subscenario are "
-        "located based on the csv_master file and will "
+        "located based on the csv_structure file and will "
         "load the data for this subscenario ID.",
     )
     parser.add_argument(
@@ -137,7 +137,7 @@ def parse_arguments(args):
         "must be a project-level subscenario. The script "
         "will look for the directory where data for the "
         "subscenario are located based on the "
-        "csv_master file and will load the data for "
+        "csv_structure file and will load the data for "
         "this project and subscenario ID.",
     )
     parser.add_argument(
@@ -158,18 +158,18 @@ def parse_arguments(args):
     return parsed_arguments
 
 
-def load_all_from_master_csv(conn, csv_path, csv_data_master, quiet):
+def load_all_from_csv_structure(conn, csv_path, csv_structure, quiet):
     """
     :param conn: the database connection
     :param csv_path: str, the directory where the CSV files are located
-    :param csv_data_master: Pandas dataframe of the CSV master file
+    :param csv_structure: Pandas dataframe of the CSV structure file
     :param quiet: boolean for whether to print output
     :return:
 
-    Read and load all data specified in the CSV master file.
+    Read and load all data specified in the CSV structure file.
     """
     # LOAD ALL SUBSCENARIOS WITH NON-CUSTOM INPUTS #
-    for index, row in csv_data_master.iterrows():
+    for index, row in csv_structure.iterrows():
         # Load data if a directory is specified for this table
         if isinstance(row["path"], str):
             subscenario = row["subscenario"]
@@ -206,12 +206,12 @@ def load_all_from_master_csv(conn, csv_path, csv_data_master, quiet):
 
 
 def load_all_subscenario_ids_from_directory(
-    conn, csv_path, csv_data_master, subscenario, quiet
+    conn, csv_path, csv_structure, subscenario, quiet
 ):
     """
     :param conn: the database connection
     :param csv_path: str, the directory where the CSV files are located
-    :param csv_data_master: Pandas dataframe of the CSV master file
+    :param csv_structure: Pandas dataframe of the CSV structure file
     :param subscenario: str; the subscenario for which to load data (e.g.
         temporal_scenario_id or project_portfolio_scenario_id)
     :param quiet: boolean for whether to print output
@@ -220,7 +220,7 @@ def load_all_subscenario_ids_from_directory(
     Read and load all data for a particular subscenario (e.g. for the
     subscenario temporal_scenario_id).
     """
-    for index, row in csv_data_master.iterrows():
+    for index, row in csv_structure.iterrows():
         # Load data if a directory is specified for this table
         if isinstance(row["path"], str) and row["subscenario"] == subscenario:
             (
@@ -253,7 +253,7 @@ def load_all_subscenario_ids_from_directory(
 def load_single_subscenario_id_from_directory(
     conn,
     csv_path,
-    csv_data_master,
+    csv_structure,
     subscenario,
     subscenario_id_to_load,
     project,
@@ -263,7 +263,7 @@ def load_single_subscenario_id_from_directory(
     """
     :param conn: the database connection
     :param csv_path: str, the directory where the CSV files are located
-    :param csv_data_master: Pandas dataframe of the CSV master file
+    :param csv_structure: Pandas dataframe of the CSV structure file
     :param subscenario: str; the subscenario for which to load data (e.g.
         temporal_scenario_id or project_portfolio_scenario_id)
     :param subscenario_id_to_load: int; the subscenario ID for which to load
@@ -295,7 +295,7 @@ def load_single_subscenario_id_from_directory(
             base_table,
             base_subscenario,
         ) = determine_tables_to_delete_from(
-            csv_data_master=csv_data_master, subscenario=subscenario
+            csv_structure=csv_structure, subscenario=subscenario
         )
 
         # Verify project-project_flag aligmnet
@@ -336,7 +336,7 @@ def load_single_subscenario_id_from_directory(
         )
 
     # Import the data
-    for index, row in csv_data_master.iterrows():
+    for index, row in csv_structure.iterrows():
         # Load data if a directory is specified for this table
         if isinstance(row["path"], str) and row["subscenario"] == subscenario:
             # Parse the row
@@ -419,8 +419,8 @@ def main(args=None):
             "specify a different csv folder?".format(os.path.abspath(csv_path))
         )
 
-    #### MASTER CSV DATA ####
-    csv_data_master = pd.read_csv(os.path.join(csv_path, "csv_data_master.csv"))
+    #### CSV DATA ####
+    csv_structure = pd.read_csv(os.path.join(csv_path, "csv_structure.csv"))
 
     # Register numpy types with sqlite, so that they are properly inserted
     # from pandas dataframes
@@ -437,23 +437,23 @@ def main(args=None):
         and parsed_args.subscenario_id is None
         and parsed_args.project is None
     ):
-        load_all_from_master_csv(
+        load_all_from_csv_structure(
             conn=conn,
             csv_path=csv_path,
-            csv_data_master=csv_data_master,
+            csv_structure=csv_structure,
             quiet=parsed_args.quiet,
         )
     elif parsed_args.subscenario is not None and parsed_args.subscenario_id is None:
         # Load all IDs for a subscenario-table
         load_all_subscenario_ids_from_directory(
-            conn, csv_path, csv_data_master, parsed_args.subscenario, parsed_args.quiet
+            conn, csv_path, csv_structure, parsed_args.subscenario, parsed_args.quiet
         )
     else:
         # Load single subscenario ID (or project-subscenario ID)
         load_single_subscenario_id_from_directory(
             conn=conn,
             csv_path=csv_path,
-            csv_data_master=csv_data_master,
+            csv_structure=csv_structure,
             subscenario=parsed_args.subscenario,
             subscenario_id_to_load=parsed_args.subscenario_id,
             project=parsed_args.project,
@@ -471,7 +471,7 @@ def parse_row(row, csv_path):
     :param csv_path:
     :return:
 
-    Parse a row of the CSV master file.
+    Parse a row of the CSV structure file.
     """
     table = row["table"]
     inputs_dir = os.path.join(csv_path, row["path"])

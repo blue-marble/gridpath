@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-
+.. note:: THIS MODULE IS DEPRECATED
 This operational type describes a demand response (DR) project that can
 shift load across timepoints, e.g. a building pre-cooling program or an
 electric vehicle smart-charging program. There are two operational variables

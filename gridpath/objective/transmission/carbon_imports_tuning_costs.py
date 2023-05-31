@@ -23,7 +23,7 @@ rate. Adding a tuning cost prevents that behavior as it pushes the emissions
 variable down to be equal.
 """
 
-from builtins import next
+
 import csv
 import os.path
 from pyomo.environ import Param, Expression

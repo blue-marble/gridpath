@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,14 +22,10 @@ If an operational type module method is not specified in an operational type
 module, these defaults are used.
 """
 
-import csv
-import os.path
 from pyomo.environ import Set
 
-from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file
 from gridpath.project.operations.common_functions import load_operational_type_modules
-from gridpath.auxiliary.db_interface import setup_results_import
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -125,7 +121,6 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return:
     Nothing
     """
-
     # Export module-specific results
     # Operational type modules
     required_operational_modules = get_required_subtype_modules_from_projects_file(
@@ -291,120 +286,6 @@ def write_model_inputs(
         if hasattr(imported_operational_modules[op_m], "write_model_inputs"):
             imported_operational_modules[op_m].write_model_inputs(
                 scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
-            )
-        else:
-            pass
-
-
-def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    """
-
-    :param scenario_id:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-    if not quiet:
-        print("project dispatch all")
-    # dispatch_all.csv
-    # Delete prior results and create temporary import table for ordering
-    setup_results_import(
-        conn=db,
-        cursor=c,
-        table="results_project_dispatch",
-        scenario_id=scenario_id,
-        subproblem=subproblem,
-        stage=stage,
-    )
-
-    # Load results into the temporary table
-    results = []
-    with open(
-        os.path.join(results_directory, "dispatch_all.csv"), "r"
-    ) as dispatch_file:
-        reader = csv.reader(dispatch_file)
-
-        next(reader)  # skip header
-        for row in reader:
-            project = row[0]
-            period = row[1]
-            horizon = row[2]
-            timepoint = row[3]
-            operational_type = row[4]
-            balancing_type = row[5]
-            timepoint_weight = row[6]
-            number_of_hours_in_timepoint = row[7]
-            load_zone = row[8]
-            technology = row[9]
-            power_mw = row[10]
-
-            results.append(
-                (
-                    scenario_id,
-                    project,
-                    period,
-                    subproblem,
-                    stage,
-                    timepoint,
-                    operational_type,
-                    balancing_type,
-                    horizon,
-                    timepoint_weight,
-                    number_of_hours_in_timepoint,
-                    load_zone,
-                    technology,
-                    power_mw,
-                )
-            )
-    insert_temp_sql = """
-        INSERT INTO temp_results_project_dispatch{}
-        (scenario_id, project, period, subproblem_id, stage_id, timepoint,
-        operational_type, balancing_type,
-        horizon, timepoint_weight,
-        number_of_hours_in_timepoint,
-        load_zone, technology, power_mw)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-        """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
-
-    # Insert sorted results into permanent results table
-    insert_sql = """
-        INSERT INTO results_project_dispatch
-        (scenario_id, project, period, subproblem_id, stage_id, timepoint,
-        operational_type, balancing_type,
-        horizon, timepoint_weight, number_of_hours_in_timepoint,
-        load_zone, technology, power_mw)
-        SELECT
-        scenario_id, project, period, subproblem_id, stage_id, timepoint,
-        operational_type, balancing_type,
-        horizon, timepoint_weight, number_of_hours_in_timepoint,
-        load_zone, technology, power_mw
-        FROM temp_results_project_dispatch{}
-        ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;
-        """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)
-
-    # Load in the required operational modules
-    required_opchar_modules = get_required_opchar_modules(scenario_id, c)
-    imported_operational_modules = load_operational_type_modules(
-        required_opchar_modules
-    )
-
-    # Import module-specific results
-    for op_m in required_opchar_modules:
-        if hasattr(
-            imported_operational_modules[op_m], "import_model_results_to_database"
-        ):
-            imported_operational_modules[op_m].import_model_results_to_database(
-                scenario_id, subproblem, stage, c, db, results_directory, quiet
             )
         else:
             pass

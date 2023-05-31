@@ -15,10 +15,8 @@
 """
 Add the carbon tax cost components.
 """
-from __future__ import division
-from __future__ import print_function
 
-from builtins import next
+
 import csv
 import os.path
 

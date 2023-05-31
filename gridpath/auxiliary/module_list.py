@@ -22,9 +22,7 @@ This module contains:
 5) the method for loading modules.
 """
 
-from __future__ import print_function
 
-from builtins import str
 from importlib import import_module
 import os.path
 import pandas as pd
@@ -108,6 +106,7 @@ def all_modules_list():
         "project.operations.carbon_cap",
         "project.operations.carbon_tax",
         "project.operations.performance_standard",
+        "project.operations.consolidate_results",
         "project.reliability.prm",
         "project.reliability.prm.prm_types",
         "project.reliability.prm.prm_simple",

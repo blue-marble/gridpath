@@ -19,7 +19,6 @@ case the PRM constraint is non-binding.
 """
 
 
-from builtins import next
 import csv
 import os.path
 from pyomo.environ import Param, Expression

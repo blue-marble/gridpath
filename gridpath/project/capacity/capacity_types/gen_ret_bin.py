@@ -19,10 +19,6 @@ is either fully retired or not retired at all.
 
 """
 
-from __future__ import print_function
-
-from builtins import next
-from builtins import zip
 import csv
 import os.path
 import pandas as pd

@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -49,7 +49,6 @@ from gridpath.project.common_functions import (
     check_boundary_type,
 )
 from gridpath.project.operations.operational_types.common_functions import (
-    update_dispatch_results_table,
     load_optype_model_data,
     load_hydro_opchars,
     get_hydro_inputs_from_database,
@@ -57,6 +56,9 @@ from gridpath.project.operations.operational_types.common_functions import (
     check_for_tmps_to_link,
     validate_opchars,
     validate_hydro_opchars,
+)
+from gridpath.project.operations.common_functions import (
+    create_dispatch_results_optype_df,
 )
 
 
@@ -749,6 +751,30 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         pass
 
 
+def add_to_dispatch_results(mod):
+    results_columns = [
+        "gross_power_mw",
+        "scheduled_curtailment_mw",
+        "auxiliary_consumption_mw",
+    ]
+    data = [
+        [
+            prj,
+            tmp,
+            value(mod.GenHydro_Gross_Power_MW[prj, tmp]),
+            value(mod.GenHydro_Curtail_MW[prj, tmp]),
+            value(mod.GenHydro_Auxiliary_Consumption_MW[prj, tmp]),
+        ]
+        for (prj, tmp) in mod.GEN_HYDRO_OPR_TMPS
+    ]
+
+    optype_dispatch_df = create_dispatch_results_optype_df(
+        results_columns=results_columns, data=data
+    )
+
+    return results_columns, optype_dispatch_df
+
+
 def export_results(mod, d, scenario_directory, subproblem, stage):
     """
 
@@ -759,54 +785,8 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
     :param d:
     :return:
     """
-    with open(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "dispatch_gen_hydro.csv",
-        ),
-        "w",
-        newline="",
-    ) as f:
-        writer = csv.writer(f)
-        writer.writerow(
-            [
-                "project",
-                "period",
-                "balancing_type_project",
-                "horizon",
-                "timepoint",
-                "timepoint_weight",
-                "number_of_hours_in_timepoint",
-                "technology",
-                "load_zone",
-                "power_mw",
-                "gross_power_mw",
-                "scheduled_curtailment_mw",
-                "auxiliary_consumption_mw",
-            ]
-        )
 
-        for p, tmp in mod.GEN_HYDRO_OPR_TMPS:
-            writer.writerow(
-                [
-                    p,
-                    mod.period[tmp],
-                    mod.balancing_type_project[p],
-                    mod.horizon[tmp, mod.balancing_type_project[p]],
-                    tmp,
-                    mod.tmp_weight[tmp],
-                    mod.hrs_in_tmp[tmp],
-                    mod.technology[p],
-                    mod.load_zone[p],
-                    value(mod.Power_Provision_MW[p, tmp]),
-                    value(mod.GenHydro_Gross_Power_MW[p, tmp]),
-                    value(mod.GenHydro_Curtail_MW[p, tmp]),
-                    value(mod.GenHydro_Auxiliary_Consumption_MW[p, tmp]),
-                ]
-            )
+    # Dispatch results added to project_operations.csv via add_to_dispatch_results()
 
     # If there's a linked_subproblems_map CSV file, check which of the
     # current subproblem TMPS we should export results for to link to the
@@ -898,34 +878,6 @@ def write_model_inputs(
     write_tab_file_model_inputs(scenario_directory, subproblem, stage, fname, data)
 
 
-def import_model_results_to_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    """
-
-    :param scenario_id:
-    :param subproblem:
-    :param stage:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-    if not quiet:
-        print("project dispatch hydro curtailable")
-
-    update_dispatch_results_table(
-        db=db,
-        c=c,
-        results_directory=results_directory,
-        scenario_id=scenario_id,
-        subproblem=subproblem,
-        stage=stage,
-        results_file="dispatch_gen_hydro.csv",
-    )
-
-
 def process_model_results(db, c, scenario_id, subscenarios, quiet):
     """
     Aggregate scheduled curtailment.
@@ -962,7 +914,7 @@ def process_model_results(db, c, scenario_id, subscenarios, quiet):
             timepoint, timepoint_weight, number_of_hours_in_timepoint, 
             load_zone, 
             sum(scheduled_curtailment_mw) AS scheduled_curtailment_mw
-            FROM results_project_dispatch
+            FROM results_project_operations
             WHERE operational_type = 'gen_hydro'
             GROUP BY scenario_id, subproblem_id, stage_id, timepoint, load_zone
         ) as agg_curtailment_tbl

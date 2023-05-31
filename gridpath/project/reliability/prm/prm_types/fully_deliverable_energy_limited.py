@@ -16,10 +16,8 @@
 Storage projects with additional constraints on deliverability based on their 
 duration
 """
-from __future__ import division
 
-from builtins import next
-from builtins import str
+
 import csv
 import os.path
 from pyomo.environ import Param, Var, Set, Constraint, PositiveReals, NonNegativeReals

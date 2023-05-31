@@ -16,9 +16,6 @@
 PRM projects and the zone they contribute to
 """
 
-from builtins import next
-from builtins import str
-from builtins import range
 import csv
 import os.path
 from pyomo.environ import Param, Set

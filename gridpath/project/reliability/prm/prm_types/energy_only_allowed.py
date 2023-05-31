@@ -18,10 +18,7 @@ can have no PRM contribution (and therefore potentially incur a smaller cost),
 or partly or fully deliverable
 """
 
-from __future__ import print_function
 
-from builtins import next
-from builtins import str
 import csv
 import os.path
 from pyomo.environ import (

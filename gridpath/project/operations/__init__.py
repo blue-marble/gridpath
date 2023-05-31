@@ -42,6 +42,7 @@ import pandas as pd
 from pyomo.environ import Set, Param, Any, NonNegativeReals, Reals, PositiveReals
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
+from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.auxiliary.dynamic_components import headroom_variables, footroom_variables
 from gridpath.auxiliary.validations import (
     write_validation_to_database,
@@ -743,7 +744,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         min_up_time_hours, min_up_time_violation_penalty,
         min_down_time_hours, min_down_time_violation_penalty,
         allow_startup_shutdown_power,
-        charging_efficiency, discharging_efficiency,
+        storage_efficiency, charging_efficiency, discharging_efficiency,
         charging_capacity_multiplier, discharging_capacity_multiplier,
         minimum_duration_hours, maximum_duration_hours,
         aux_consumption_frac_capacity, aux_consumption_frac_power,
@@ -995,6 +996,7 @@ def write_model_inputs(
         "min_down_time_hours",
         "min_down_time_violation_penalty",
         "allow_startup_shutdown_power",
+        "storage_efficiency",
         "charging_efficiency",
         "discharging_efficiency",
         "charging_capacity_multiplier",
@@ -1070,6 +1072,40 @@ def write_model_inputs(
         opchar_df=sf_df,
         inputs_directory=inputs_directory,
         filename="supplemental_firing.tab",
+    )
+
+
+def import_results_into_database(
+    scenario_id, subproblem, stage, c, db, results_directory, quiet
+):
+    """
+
+    :param scenario_id:
+    :param c:
+    :param db:
+    :param results_directory:
+    :param quiet:
+    :return:
+    """
+    if not quiet:
+        print("project operations")
+    # project_operations.csv
+    # Delete prior results and create temporary import table for ordering
+    setup_results_import(
+        conn=db,
+        cursor=c,
+        table="results_project_operations",
+        scenario_id=scenario_id,
+        subproblem=subproblem,
+        stage=stage,
+    )
+
+    df = pd.read_csv(os.path.join(results_directory, "project_operations.csv"))
+    df["scenario_id"] = scenario_id
+    df["subproblem_id"] = subproblem
+    df["stage_id"] = stage
+    df.to_sql(
+        name="results_project_operations", con=db, if_exists="append", index=False
     )
 
 
@@ -1302,6 +1338,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         "ramp_up_when_on_rate",
         "ramp_down_when_on_rate",
         "min_up_time_hours, min_down_time_hours",
+        "storage_efficiency",
         "charging_efficiency",
         "discharging_efficiency",
         "charging_capacity_multiplier",

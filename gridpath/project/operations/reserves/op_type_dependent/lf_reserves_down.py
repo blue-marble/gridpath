@@ -17,8 +17,7 @@ Add project-level components for downward load-following reserves that also
 depend on operational type
 """
 
-from builtins import next
-from builtins import str
+
 import csv
 import os.path
 

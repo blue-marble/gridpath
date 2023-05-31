@@ -19,8 +19,6 @@ components that are populated by GridPath modules based on the selected
 features and the scenario input data.
 """
 
-from builtins import object
-
 # Create global variables for the dynamic component names, so that we can
 # more easily import the correct names into other modules
 capacity_type_operational_period_sets = "capacity_type_operational_period_sets"

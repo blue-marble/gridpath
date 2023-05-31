@@ -1359,6 +1359,15 @@ class TestExamples(unittest.TestCase):
         self.check_validation("test_period_tx_targets")
         self.run_and_check_objective("test_period_tx_targets", -58248345119704.586)
 
+    def test_example_test_w_flex_load(self):
+        """
+        Check validation and objective function value of "test_w_storage" example
+        :return:
+        """
+
+        self.check_validation("test_w_flex_load")
+        self.run_and_check_objective("test_w_flex_load", -3504306055178.457)
+
     @classmethod
     def tearDownClass(cls):
         os.remove(DB_PATH)

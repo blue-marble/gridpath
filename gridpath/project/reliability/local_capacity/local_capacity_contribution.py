@@ -16,10 +16,8 @@
 Simple local capacity contribution where each local project contributes a 
 fraction of its installed capacity.
 """
-from __future__ import print_function
 
-from builtins import next
-from builtins import str
+
 import csv
 import os.path
 from pyomo.environ import Param, PercentFraction, Expression, value

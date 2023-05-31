@@ -48,7 +48,6 @@ Linear Optimal Power Flow Using Cycle Flows".
 
 """
 
-from __future__ import print_function
 
 import networkx as nx
 import os

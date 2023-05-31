@@ -16,11 +16,8 @@
 Aggregate carbon emissions from the project-timepoint level to
 the carbon cap zone - period level.
 """
-from __future__ import division
-from __future__ import print_function
 
-from builtins import next
-from builtins import str
+
 import csv
 import os.path
 from pyomo.environ import Param, Set, Expression, value
