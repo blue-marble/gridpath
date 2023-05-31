@@ -488,15 +488,15 @@ def energy_tracking_rule(mod, s, tmp):
                 prev_tmp_discharge = mod.stor_linked_discharge[s, 0]
                 prev_tmp_charge = mod.stor_linked_charge[s, 0]
 
-            calculated_starting_energy_in_storage = (
-                prev_tmp_starting_energy_in_storage * mod.stor_storage_efficiency[s]
-                + prev_tmp_charge
-                * prev_tmp_hrs_in_tmp
-                * mod.stor_charging_efficiency[s]
-                - prev_tmp_discharge
-                * prev_tmp_hrs_in_tmp
-                / mod.stor_discharging_efficiency[s]
-            )
+                calculated_starting_energy_in_storage = (
+                    prev_tmp_starting_energy_in_storage * mod.stor_storage_efficiency[s]
+                    + prev_tmp_charge
+                    * prev_tmp_hrs_in_tmp
+                    * mod.stor_charging_efficiency[s]
+                    - prev_tmp_discharge
+                    * prev_tmp_hrs_in_tmp
+                    / mod.stor_discharging_efficiency[s]
+                )
 
                 # Deal with possible precision-related infeasibilities, e.g. if
                 # the calculated energy in storage is just below or just above
