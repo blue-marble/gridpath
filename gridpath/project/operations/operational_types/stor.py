@@ -461,7 +461,6 @@ def energy_tracking_rule(mod, s, tmp):
             tmp=tmp,
             starting_soc=mod.stor_exogenous_starting_state_of_charge[s, tmp],
         )
-        return starting_soc
     else:
         if check_if_first_timepoint(
             mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[s]
@@ -508,7 +507,7 @@ def energy_tracking_rule(mod, s, tmp):
                     tmp=tmp,
                     starting_soc=calculated_starting_energy_in_storage,
                 )
-                return starting_soc
+
             else:
                 prev_tmp_hrs_in_tmp = mod.hrs_in_tmp[
                     mod.prev_tmp[tmp, mod.balancing_type_project[s]]
@@ -525,16 +524,17 @@ def energy_tracking_rule(mod, s, tmp):
                     s, mod.prev_tmp[tmp, mod.balancing_type_project[s]]
                 ]
 
-            return (
-                mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp]
-                == prev_tmp_starting_energy_in_storage * mod.stor_storage_efficiency[s]
-                + prev_tmp_charge
-                * prev_tmp_hrs_in_tmp
-                * mod.stor_charging_efficiency[s]
-                - prev_tmp_discharge
-                * prev_tmp_hrs_in_tmp
-                / mod.stor_discharging_efficiency[s]
-            )
+                starting_soc = (
+                    prev_tmp_starting_energy_in_storage * mod.stor_storage_efficiency[s]
+                    + prev_tmp_charge
+                    * prev_tmp_hrs_in_tmp
+                    * mod.stor_charging_efficiency[s]
+                    - prev_tmp_discharge
+                    * prev_tmp_hrs_in_tmp
+                    / mod.stor_discharging_efficiency[s]
+                )
+
+    return mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp] == starting_soc
 
 
 def max_energy_in_storage_rule(mod, s, tmp):
@@ -933,7 +933,7 @@ def check_for_soc_infeasibilities(mod, s, tmp, starting_soc):
             f"precision of results. If you didn't expect this, check the "
             f"inputs and results."
         )
-        return mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp] == 0
+        return 0
     elif starting_soc > (
         mod.stor_spec_energy_capacity_mwh[s, mod.period[tmp]]
         * mod.avl_exog_cap_derate[s, tmp]
@@ -949,9 +949,8 @@ def check_for_soc_infeasibilities(mod, s, tmp, starting_soc):
             f"this, check the inputs and results."
         )
         return (
-            mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp]
-            == mod.Energy_Capacity_MWh[s, mod.period[tmp]]
+            mod.Energy_Capacity_MWh[s, mod.period[tmp]]
             * mod.Availability_Derate[s, tmp]
         )
     else:
-        return mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp] == starting_soc
+        return starting_soc
