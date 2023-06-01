@@ -17,6 +17,8 @@ import sys
 
 from argparse import ArgumentParser
 
+import pandas as pd
+
 
 def determine_scenario_directory(scenario_location, scenario_name):
     """
@@ -356,3 +358,12 @@ def string_from_time(datetime_string):
     :return: formatted time string
     """
     return datetime_string.strftime("%Y-%m-%d_%H-%M-%S")
+
+
+def create_results_df(index_columns, results_columns, data):
+    df = pd.DataFrame(
+        columns=index_columns + results_columns,
+        data=data,
+    ).set_index(index_columns)
+
+    return df

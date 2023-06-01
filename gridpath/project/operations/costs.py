@@ -28,8 +28,8 @@ from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file
 from gridpath.project.operations.common_functions import (
     load_operational_type_modules,
-    create_dispatch_results_optype_df,
 )
+from gridpath.common_functions import create_results_df
 import gridpath.project.operations.operational_types as op_type_init
 from gridpath.project.operations.consolidate_results import PROJECT_OPERATIONS_DF
 
@@ -563,8 +563,10 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         ]
         for (prj, tmp) in m.PRJ_OPR_TMPS
     ]
-    cost_df = create_dispatch_results_optype_df(
-        results_columns=results_columns, data=data
+    cost_df = create_results_df(
+        index_columns=["project", "timepoint"],
+        results_columns=results_columns,
+        data=data,
     )
 
     for c in results_columns:
