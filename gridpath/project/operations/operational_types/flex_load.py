@@ -41,9 +41,7 @@ from gridpath.project.operations.operational_types.common_functions import (
     validate_opchars,
     write_tab_file_model_inputs,
 )
-from gridpath.project.operations.common_functions import (
-    create_dispatch_results_optype_df,
-)
+from gridpath.common_functions import create_results_df
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -570,8 +568,10 @@ def add_to_dispatch_results(mod):
         for (prj, tmp) in mod.FLEX_LOAD_OPR_TMPS
     ]
 
-    optype_dispatch_df = create_dispatch_results_optype_df(
-        results_columns=results_columns, data=data
+    optype_dispatch_df = create_results_df(
+        index_columns=["project", "timepoint"],
+        results_columns=results_columns,
+        data=data,
     )
 
     return results_columns, optype_dispatch_df
