@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -54,6 +54,7 @@ from gridpath.auxiliary.validations import (
     validate_dtypes,
     validate_idxs,
 )
+from gridpath.common_functions import create_results_df
 from gridpath.project.capacity.capacity_types.common_methods import (
     relevant_periods_by_project_vintage,
     project_relevant_periods,
@@ -475,7 +476,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     )
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def add_to_project_period_results(scenario_directory, subproblem, stage, m, d):
     """
     Export new build generation results.
     :param scenario_directory:
@@ -485,31 +486,18 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "capacity_gen_new_lin.csv",
-        ),
-        "w",
-        newline="",
-    ) as f:
-        writer = csv.writer(f)
-        writer.writerow(
-            ["project", "vintage", "technology", "load_zone", "new_build_mw"]
-        )
-        for prj, p in m.GEN_NEW_LIN_VNTS:
-            writer.writerow(
-                [
-                    prj,
-                    p,
-                    m.technology[prj],
-                    m.load_zone[prj],
-                    value(m.GenNewLin_Build_MW[prj, p]),
-                ]
-            )
+    results_columns = ["new_build_mw"]
+    data = [
+        [prj, prd, value(m.GenNewLin_Build_MW[prj, prd])]
+        for (prj, prd) in m.GEN_NEW_LIN_VNTS
+    ]
+    captype_df = create_results_df(
+        index_columns=["project", "period"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    return results_columns, captype_df
 
 
 def summarize_results(scenario_directory, subproblem, stage, summary_results_file):

@@ -57,6 +57,7 @@ from gridpath.auxiliary.validations import (
     validate_idxs,
     get_projects,
 )
+from gridpath.common_functions import create_results_df
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -402,7 +403,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     )
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def add_to_project_period_results(scenario_directory, subproblem, stage, m, d):
     """
     Export new DR results.
     :param scenario_directory:
@@ -412,39 +413,26 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "capacity_dr_new.csv",
-        ),
-        "w",
-        newline="",
-    ) as f:
-        writer = csv.writer(f)
-        writer.writerow(
-            [
-                "project",
-                "period",
-                "technology",
-                "load_zone",
-                "new_build_mw",
-                "new_build_mwh",
-            ]
-        )
-        for prj, p in m.DR_NEW_OPR_PRDS:
-            writer.writerow(
-                [
-                    prj,
-                    p,
-                    m.technology[prj],
-                    m.load_zone[prj],
-                    value(m.DRNew_Build_MWh[prj, p] / m.dr_new_min_duration[prj]),
-                    value(m.DRNew_Build_MWh[prj, p]),
-                ]
-            )
+    results_columns = [
+        "new_build_mw",
+        "new_build_mwh",
+    ]
+    data = [
+        [
+            prj,
+            prd,
+            value(m.DRNew_Build_MWh[prj, prd] / m.dr_new_min_duration[prj]),
+            value(m.DRNew_Build_MWh[prj, prd]),
+        ]
+        for (prj, prd) in m.DR_NEW_OPR_PRDS
+    ]
+    captype_df = create_results_df(
+        index_columns=["project", "period"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    return results_columns, captype_df
 
 
 def summarize_results(scenario_directory, subproblem, stage, summary_results_file):
