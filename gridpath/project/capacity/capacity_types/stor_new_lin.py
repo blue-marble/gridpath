@@ -70,7 +70,6 @@ from gridpath.project.capacity.capacity_types.common_methods import (
     relevant_periods_by_project_vintage,
     project_relevant_periods,
     project_vintages_relevant_in_period,
-    update_capacity_results_table,
 )
 
 
@@ -740,12 +739,12 @@ def summarize_results(scenario_directory, subproblem, stage, summary_results_fil
             str(subproblem),
             str(stage),
             "results",
-            "capacity_stor_new_lin.csv",
+            "capacity_all.csv",
         )
     )
 
     capacity_results_agg_df = capacity_results_df.groupby(
-        by=["load_zone", "technology", "vintage"], as_index=True
+        by=["load_zone", "technology", "period"], as_index=True
     ).sum(numeric_only=False)
 
     # Get all technologies with new build storage power OR energy capacity
@@ -869,36 +868,6 @@ def write_model_inputs(
 
         for row in new_stor_costs:
             writer.writerow(row)
-
-
-def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    """
-
-    :param scenario_id:
-    :param subproblem:
-    :param stage:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-    # Capacity results
-    if not quiet:
-        print("project new build storage")
-
-    update_capacity_results_table(
-        db=db,
-        c=c,
-        results_directory=results_directory,
-        scenario_id=scenario_id,
-        subproblem=subproblem,
-        stage=stage,
-        results_file="capacity_stor_new_lin.csv",
-    )
-
 
 # Validation
 ###############################################################################

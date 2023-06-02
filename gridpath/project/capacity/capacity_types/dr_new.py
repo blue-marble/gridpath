@@ -452,7 +452,7 @@ def summarize_results(scenario_directory, subproblem, stage, summary_results_fil
             str(subproblem),
             str(stage),
             "results",
-            "capacity_dr_new.csv",
+            "capacity_all.csv",
         )
     )
 
@@ -663,92 +663,8 @@ def write_model_inputs(
                 for row in supply_curve:
                     writer.writerow(row)
 
-
-def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    """
-
-    :param scenario_id:
-    :param subproblem:
-    :param stage:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-    # Capacity
-    if not quiet:
-        print("project new DR")
-    # Delete prior results and create temporary import table for ordering
-    setup_results_import(
-        conn=db,
-        cursor=c,
-        table="results_project_capacity_dr_new",
-        scenario_id=scenario_id,
-        subproblem=subproblem,
-        stage=stage,
-    )
-
-    # Load results into the temporary table
-    results = []
-    with open(
-        os.path.join(results_directory, "capacity_dr_new.csv"), "r"
-    ) as capacity_file:
-        reader = csv.reader(capacity_file)
-
-        next(reader)  # skip header
-        for row in reader:
-            project = row[0]
-            period = row[1]
-            technology = row[2]
-            load_zone = row[3]
-            new_build_mw = row[4]
-            new_build_mwh = row[5]
-
-            results.append(
-                (
-                    scenario_id,
-                    project,
-                    period,
-                    subproblem,
-                    stage,
-                    technology,
-                    load_zone,
-                    new_build_mw,
-                    new_build_mwh,
-                )
-            )
-
-    insert_temp_sql = """
-        INSERT INTO 
-        temp_results_project_capacity_dr_new{}
-        (scenario_id, project, period, subproblem_id, stage_id,
-        technology, load_zone, new_build_mw, new_build_mwh)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);""".format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
-
-    # Insert sorted results into permanent results table
-    insert_sql = """
-        INSERT INTO results_project_capacity_dr_new
-        (scenario_id, project, period, subproblem_id, stage_id, 
-        technology, load_zone, new_build_mw, new_build_mwh)
-        SELECT
-        scenario_id, project, period, subproblem_id, stage_id, 
-        technology, load_zone, new_build_mw, new_build_mwh
-        FROM temp_results_project_capacity_dr_new{}
-        """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)
-
-
 # Validation
 ###############################################################################
-
 
 def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """

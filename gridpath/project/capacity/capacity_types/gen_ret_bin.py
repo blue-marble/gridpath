@@ -40,7 +40,6 @@ from gridpath.project.capacity.capacity_types.common_methods import (
     spec_get_inputs_from_database,
     spec_write_tab_file,
     spec_determine_inputs,
-    update_capacity_results_table,
 )
 
 
@@ -306,7 +305,7 @@ def summarize_results(scenario_directory, subproblem, stage, summary_results_fil
             str(subproblem),
             str(stage),
             "results",
-            "capacity_gen_ret_bin.csv",
+            "capacity_all.csv",
         )
     )
 
@@ -381,36 +380,6 @@ def write_model_inputs(
         stage=stage,
         spec_project_params=spec_project_params,
     )
-
-
-def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    """
-
-    :param scenario_id:
-    :param subproblem:
-    :param stage:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-    # New build capacity results
-    if not quiet:
-        print("project binary economic retirements")
-
-    update_capacity_results_table(
-        db=db,
-        c=c,
-        results_directory=results_directory,
-        scenario_id=scenario_id,
-        subproblem=subproblem,
-        stage=stage,
-        results_file="capacity_gen_ret_bin.csv",
-    )
-
 
 # Validation
 ###############################################################################

@@ -321,7 +321,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             "capacity_mw",
             "hyb_gen_capacity_mw",
             "hyb_stor_capacity_mw",
-            "capacity_mwh",
+            "energy_capacity_mwh",
             "fuel_prod_capacity_fuelunitperhour",
             "fuel_rel_capacity_fuelunitperhour",
             "fuel_stor_capacity_fuelunit",
@@ -368,6 +368,13 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             main_df.update(optype_df)
 
     main_df.sort_index(inplace=True)
+
+    main_df.to_csv(
+        os.path.join(
+            scenario_directory, subproblem, stage, "results", "capacity_all.csv"
+        ),
+        sep=",",
+    )
 
     # Add the dataframe to the dynamic components to pass to costs.py
     # We'll print it after we pass it to other modules
