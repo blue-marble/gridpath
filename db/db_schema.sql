@@ -3540,6 +3540,11 @@ retired_binary INTEGER,
 new_fuel_prod_capacity_fuelunitperhour FLOAT,
 new_fuel_rel_capacity_fuelunitperhour FLOAT,
 new_fuel_stor_capacity_fuelunit FLOAT,
+hours_in_period_timepoints FLOAT,
+hours_in_subproblem_period FLOAT,
+capacity_cost FLOAT,
+capacity_cost_wo_spinup_or_lookahead FLOAT,
+fixed_cost FLOAT,
 PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
 );
 
@@ -3967,26 +3972,6 @@ local_capacity_fraction FLOAT,
 local_capacity_contribution_mw FLOAT,
 PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
 );
-
--- Capacity costs
-DROP TABLE IF EXISTS results_project_costs_capacity;
-CREATE TABLE results_project_costs_capacity (
-scenario_id INTEGER,
-project VARCHAR(64),
-period INTEGER,
-subproblem_id INTEGER,
-stage_id INTEGER,
-hours_in_period_timepoints FLOAT,
-hours_in_subproblem_period FLOAT,
-technology VARCHAR(32),
-load_zone VARCHAR(32),
-energy_target_zone VARCHAR(32),
-carbon_cap_zone VARCHAR(32),
-capacity_cost FLOAT,
-capacity_cost_wo_spinup_or_lookahead FLOAT,
-PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
-);
-
 
 -- Capacity costs - Aggregated
 -- (and broken out by spinup_or_lookahead; fraction sums up to 1 between the

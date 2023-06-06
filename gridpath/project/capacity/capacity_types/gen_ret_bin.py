@@ -305,7 +305,7 @@ def summarize_results(scenario_directory, subproblem, stage, summary_results_fil
             str(subproblem),
             str(stage),
             "results",
-            "capacity_all.csv",
+            "project_capacity.csv",
         )
     )
 

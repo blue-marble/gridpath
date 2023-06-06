@@ -205,7 +205,7 @@ hurdle_cost/1000000 as hurdle_cost_millions,
 capacity_cost/1000000 + fuel_cost/1000000 + variable_om_cost/1000000 + startup_cost/1000000 + shutdown_cost/1000000 + hurdle_cost/1000000 as total_cost_millions
 FROM
 (SELECT scenario_id, period, sum(capacity_cost) AS capacity_cost
-FROM  results_project_costs_capacity
+FROM  results_project_capacity
 GROUP BY scenario_id, period) AS cap_costs
 JOIN
 (SELECT scenario_id, period,

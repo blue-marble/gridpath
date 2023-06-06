@@ -58,7 +58,7 @@ def import_results_into_database(
     )
 
     df = pd.read_csv(
-        os.path.join(results_directory, "capacity_all.csv"))
+        os.path.join(results_directory, "project_capacity.csv"))
     df["scenario_id"] = scenario_id
     df["subproblem_id"] = subproblem
     df["stage_id"] = stage

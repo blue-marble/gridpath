@@ -29,10 +29,10 @@ from gridpath.auxiliary.auxiliary import (
     get_required_subtype_modules_from_projects_file,
     join_sets,
 )
+from gridpath.auxiliary.dynamic_components import capacity_type_operational_period_sets
 from gridpath.project.capacity.common_functions import (
     load_project_capacity_type_modules,
 )
-from gridpath.auxiliary.dynamic_components import capacity_type_operational_period_sets
 from gridpath.project.capacity.consolidate_results import PROJECT_CAPACITY_DF
 import gridpath.project.capacity.capacity_types as cap_type_init
 
@@ -369,13 +369,6 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 
     main_df.sort_index(inplace=True)
 
-    main_df.to_csv(
-        os.path.join(
-            scenario_directory, subproblem, stage, "results", "capacity_all.csv"
-        ),
-        sep=",",
-    )
-
     # Add the dataframe to the dynamic components to pass to costs.py
     # We'll print it after we pass it to other modules
     # This is the first module that adds to the dataframe
@@ -410,7 +403,7 @@ def summarize_results(scenario_directory, subproblem, stage):
             str(subproblem),
             str(stage),
             "results",
-            "capacity_all.csv",
+            "project_capacity.csv",
         )
     )
 

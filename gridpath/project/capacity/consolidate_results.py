@@ -28,6 +28,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     have added to
     """
     prj_cap_df = getattr(d, PROJECT_CAPACITY_DF)
+
+    # TODO: wrap in spin on database lock
     prj_cap_df.to_csv(
         os.path.join(
             scenario_directory,
