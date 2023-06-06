@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -39,6 +39,8 @@ of years the period represents) for the duration of the project's financial life
 
 import csv
 import os.path
+from pathlib import Path
+
 import pandas as pd
 from pyomo.environ import (
     Set,
@@ -65,11 +67,14 @@ from gridpath.auxiliary.validations import (
     validate_row_monotonicity,
     validate_column_monotonicity,
 )
+from gridpath.common_functions import create_results_df
 from gridpath.project.capacity.capacity_types.common_methods import (
     relevant_periods_by_project_vintage,
     project_relevant_periods,
     project_vintages_relevant_in_period,
-    update_capacity_results_table,
+    read_results_file_generic,
+    write_summary_results_generic,
+    get_units,
 )
 
 
@@ -690,7 +695,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     )
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def add_to_project_period_results(scenario_directory, subproblem, stage, m, d):
     """
     Export new build storage results.
     :param scenario_directory:
@@ -700,39 +705,26 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "capacity_stor_new_lin.csv",
-        ),
-        "w",
-        newline="",
-    ) as f:
-        writer = csv.writer(f)
-        writer.writerow(
-            [
-                "project",
-                "vintage",
-                "technology",
-                "load_zone",
-                "new_build_mw",
-                "new_build_mwh",
-            ]
-        )
-        for prj, v in m.STOR_NEW_LIN_VNTS:
-            writer.writerow(
-                [
-                    prj,
-                    v,
-                    m.technology[prj],
-                    m.load_zone[prj],
-                    value(m.StorNewLin_Build_MW[prj, v]),
-                    value(m.StorNewLin_Build_MWh[prj, v]),
-                ]
-            )
+    results_columns = [
+        "new_build_mw",
+        "new_build_mwh",
+    ]
+    data = [
+        [
+            prj,
+            prd,
+            value(m.StorNewLin_Build_MW[prj, prd]),
+            value(m.StorNewLin_Build_MWh[prj, prd]),
+        ]
+        for (prj, prd) in m.STOR_NEW_LIN_VNTS
+    ]
+    captype_df = create_results_df(
+        index_columns=["project", "period"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    return results_columns, captype_df
 
 
 def summarize_results(scenario_directory, subproblem, stage, summary_results_file):
@@ -746,19 +738,12 @@ def summarize_results(scenario_directory, subproblem, stage, summary_results_fil
     """
 
     # Get the results CSV as dataframe
-    capacity_results_df = pd.read_csv(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "capacity_stor_new_lin.csv",
-        )
+    capacity_results_agg_df = read_results_file_generic(
+        scenario_directory=scenario_directory,
+        subproblem=subproblem,
+        stage=stage,
+        capacity_type=Path(__file__).stem,
     )
-
-    capacity_results_agg_df = capacity_results_df.groupby(
-        by=["load_zone", "technology", "vintage"], as_index=True
-    ).sum(numeric_only=False)
 
     # Get all technologies with new build storage power OR energy capacity
     new_build_df = pd.DataFrame(
@@ -768,26 +753,22 @@ def summarize_results(scenario_directory, subproblem, stage, summary_results_fil
         ][["new_build_mw", "new_build_mwh"]]
     )
 
-    # Get the power and energy units from the units.csv file
-    units_df = pd.read_csv(
-        os.path.join(scenario_directory, "units.csv"), index_col="metric"
-    )
-    power_unit = units_df.loc["power", "unit"]
-    energy_unit = units_df.loc["energy", "unit"]
+    # Get the units from the units.csv file
+    power_unit, energy_unit, fuel_unit = get_units(scenario_directory)
 
     # Rename column header
-    new_build_df.columns = [
-        "New Storage Power Capacity ({})".format(power_unit),
-        "New Storage Energy Capacity ({})".format(energy_unit),
+    columns = [
+        "New (Linear) Storage Power Capacity ({})".format(power_unit),
+        "New (Linear) Storage Energy Capacity ({})".format(energy_unit),
     ]
 
-    with open(summary_results_file, "a") as outfile:
-        outfile.write("\n--> New Storage Capacity <--\n")
-        if new_build_df.empty:
-            outfile.write("No new storage was built.\n")
-        else:
-            new_build_df.to_string(outfile, float_format="{:,.2f}".format)
-            outfile.write("\n")
+    write_summary_results_generic(
+        results_df=new_build_df,
+        columns=columns,
+        summary_results_file=summary_results_file,
+        title="New (Linear) Storage Capacity",
+        empty_title="No new stor_new_lin storage was built.",
+    )
 
 
 # Database
@@ -881,35 +862,6 @@ def write_model_inputs(
 
         for row in new_stor_costs:
             writer.writerow(row)
-
-
-def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    """
-
-    :param scenario_id:
-    :param subproblem:
-    :param stage:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-    # Capacity results
-    if not quiet:
-        print("project new build storage")
-
-    update_capacity_results_table(
-        db=db,
-        c=c,
-        results_directory=results_directory,
-        scenario_id=scenario_id,
-        subproblem=subproblem,
-        stage=stage,
-        results_file="capacity_stor_new_lin.csv",
-    )
 
 
 # Validation

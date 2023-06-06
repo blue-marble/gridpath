@@ -276,23 +276,6 @@ def summarize_results(scenario_directory, subproblem, stage):
 ###############################################################################
 
 
-def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    """
-
-    :param scenario_id:
-    :param subproblem:
-    :param stage:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-    pass
-
-
 def process_results(db, c, scenario_id, subscenarios, quiet):
     """
     Aggregate dispatch by technology

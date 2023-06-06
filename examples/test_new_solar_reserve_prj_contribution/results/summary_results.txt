@@ -3,7 +3,7 @@
 ### CAPACITY RESULTS ###
 
 --> New Generation Capacity <--
-No new generation was built.
+No new gen_new_lin generation was built.
 
 ### OPERATIONAL RESULTS ###
 
