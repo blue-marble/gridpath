@@ -21,7 +21,7 @@ infrastructure 'projects' in the optimization problem.
 import os.path
 import pandas as pd
 
-from db.common_functions import spin_on_database_lock
+from db.common_functions import spin_on_database_lock_generic
 from gridpath.auxiliary.db_interface import setup_results_import
 
 
@@ -62,5 +62,8 @@ def import_results_into_database(
     df["subproblem_id"] = subproblem
     df["stage_id"] = stage
 
-    # TODO: wrap this in spin on database lock
-    df.to_sql(name="results_project_capacity", con=db, if_exists="append", index=False)
+    spin_on_database_lock_generic(
+        command=df.to_sql(
+            name="results_project_capacity", con=db, if_exists="append", index=False
+        )
+    )

@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ import os.path
 import pandas as pd
 from pyomo.environ import Set, Param, Any, NonNegativeReals, Reals, PositiveReals
 
+from db.common_functions import spin_on_database_lock_generic
 from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.auxiliary.dynamic_components import headroom_variables, footroom_variables
@@ -1110,8 +1111,10 @@ def import_results_into_database(
     df["scenario_id"] = scenario_id
     df["subproblem_id"] = subproblem
     df["stage_id"] = stage
-    df.to_sql(
-        name="results_project_operations", con=db, if_exists="append", index=False
+    spin_on_database_lock_generic(
+        command=df.to_sql(
+            name="results_project_operations", con=db, if_exists="append", index=False
+        )
     )
 
 
