@@ -29,6 +29,8 @@ lifetime.
 
 import csv
 import os.path
+from pathlib import Path
+
 import pandas as pd
 from pyomo.environ import Set, Param, Var, NonNegativeReals, Binary, Constraint, value
 
@@ -50,6 +52,9 @@ from gridpath.project.capacity.capacity_types.common_methods import (
     relevant_periods_by_project_vintage,
     project_relevant_periods,
     project_vintages_relevant_in_period,
+    read_results_file_generic,
+    write_summary_results_generic,
+    get_units,
 )
 
 
@@ -480,12 +485,17 @@ def add_to_project_period_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    results_columns = [ "new_build_binary",
-                "new_build_mw",]
+    results_columns = [
+        "new_build_binary",
+        "new_build_mw",
+    ]
     data = [
-        [prj, prd, value(m.GenNewBin_Build[prj, prd]),
-                    value(m.GenNewBin_Build[prj, prd] * m.gen_new_bin_build_size_mw[prj]),
-                ]
+        [
+            prj,
+            prd,
+            value(m.GenNewBin_Build[prj, prd]),
+            value(m.GenNewBin_Build[prj, prd] * m.gen_new_bin_build_size_mw[prj]),
+        ]
         for (prj, prd) in m.GEN_NEW_BIN_VNTS
     ]
     captype_df = create_results_df(
@@ -508,19 +518,12 @@ def summarize_results(scenario_directory, subproblem, stage, summary_results_fil
     """
 
     # Get the results CSV as dataframe
-    capacity_results_df = pd.read_csv(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "project_capacity.csv",
-        )
+    capacity_results_agg_df = read_results_file_generic(
+        scenario_directory=scenario_directory,
+        subproblem=subproblem,
+        stage=stage,
+        capacity_type=Path(__file__).stem,
     )
-
-    capacity_results_agg_df = capacity_results_df.groupby(
-        by=["load_zone", "technology", "period"], as_index=True
-    ).sum(numeric_only=False)
 
     # Get all technologies with the new binary build capacity
     new_build_df = pd.DataFrame(
@@ -529,22 +532,19 @@ def summarize_results(scenario_directory, subproblem, stage, summary_results_fil
         ]
     )
 
-    # Get the power units from the units.csv file
-    units_df = pd.read_csv(
-        os.path.join(scenario_directory, "units.csv"), index_col="metric"
-    )
-    power_unit = units_df.loc["power", "unit"]
+    # Get the units from the units.csv file
+    power_unit, energy_unit, fuel_unit = get_units(scenario_directory)
 
     # Rename column header
-    new_build_df.columns = ["New Binary Build Capacity ({})".format(power_unit)]
+    columns = ["New Binary Build Capacity ({})".format(power_unit)]
 
-    with open(summary_results_file, "a") as outfile:
-        outfile.write("\n--> New Binary Build Generation Capacity <--\n")
-        if new_build_df.empty:
-            outfile.write("No new generation was built.\n")
-        else:
-            new_build_df.to_string(outfile, float_format="{:,.2f}".format)
-            outfile.write("\n")
+    write_summary_results_generic(
+        results_df=new_build_df,
+        columns=columns,
+        summary_results_file=summary_results_file,
+        title="New Binary Build Generation Capacity",
+        empty_title="No new gen_new_bin generation was built.",
+    )
 
 
 # Database
@@ -678,6 +678,7 @@ def write_model_inputs(
         for row in new_gen_build_size:
             replace_nulls = ["." if i is None else i for i in row]
             writer.writerow(replace_nulls)
+
 
 # Validation
 ###############################################################################

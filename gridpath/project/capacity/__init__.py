@@ -57,14 +57,10 @@ def import_results_into_database(
         stage=stage,
     )
 
-    df = pd.read_csv(
-        os.path.join(results_directory, "project_capacity.csv"))
+    df = pd.read_csv(os.path.join(results_directory, "project_capacity.csv"))
     df["scenario_id"] = scenario_id
     df["subproblem_id"] = subproblem
     df["stage_id"] = stage
 
     # TODO: wrap this in spin on database lock
-    df.to_sql(
-        name="results_project_capacity", con=db, if_exists="append",
-        index=False
-    )
+    df.to_sql(name="results_project_capacity", con=db, if_exists="append", index=False)

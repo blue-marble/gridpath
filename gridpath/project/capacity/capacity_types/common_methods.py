@@ -401,3 +401,59 @@ def spec_determine_inputs(scenario_directory, subproblem, stage, capacity_type):
     ] = spec_fuel_stor_fixed_cost_dict
 
     return project_period_list, main_dict
+
+
+def read_results_file_generic(scenario_directory, subproblem, stage, capacity_type):
+    """
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :param capacity_type:
+    :return:
+    """
+
+    # Get the results CSV as dataframe
+    df = pd.read_csv(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "results",
+            "project_capacity.csv",
+        )
+    )
+
+    # Filter by capacity type and aggregate by technology
+    capacity_results_agg_df = (
+        df.loc[df["capacity_type"] == capacity_type]
+        .groupby(by=["load_zone", "technology", "period"], as_index=True)
+        .sum(numeric_only=False)
+    )
+
+    return capacity_results_agg_df
+
+
+def write_summary_results_generic(
+    results_df, columns, summary_results_file, title, empty_title
+):
+    # Rename column header
+    results_df.columns = columns
+
+    with open(summary_results_file, "a") as outfile:
+        outfile.write(f"\n--> {title} <--\n")
+        if results_df.empty:
+            outfile.write(f"{empty_title}\n")
+        else:
+            results_df.to_string(outfile, float_format="{:,.2f}".format)
+            outfile.write("\n")
+
+
+def get_units(scenario_directory):
+    units_df = pd.read_csv(
+        os.path.join(scenario_directory, "units.csv"), index_col="metric"
+    )
+    power_unit = units_df.loc["power", "unit"]
+    energy_unit = units_df.loc["energy", "unit"]
+    fuel_unit = units_df.loc["fuel_energy", "unit"]
+
+    return power_unit, energy_unit, fuel_unit

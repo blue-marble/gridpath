@@ -7,6 +7,11 @@
 load_zone technology    period                                                                                                                              
 Zone1     Hydrogen_Prod 2020                                        10,168.00                                   10,168.00                           5,120.00
 
+--> New Fuel Production, Release, and Storage Capacity <--
+                                New Fuel Production Capacity (MMBtu per hour)  New Fuel Release Capacity (MMBtu per hour)  New Fuel Storage Capacity (MMBtu)
+load_zone technology    period                                                                                                                              
+Zone1     Hydrogen_Prod 2020                                        10,168.00                                   10,168.00                           5,120.00
+
 --> New Generation Capacity <--
                              New Capacity (MW)
 load_zone technology period                   

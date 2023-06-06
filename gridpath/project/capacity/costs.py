@@ -162,9 +162,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 
     results_columns = [
         "hours_in_period_timepoints",
-                "hours_in_subproblem_period",
-                "capacity_cost",
-                "fixed_cost",
+        "hours_in_subproblem_period",
+        "capacity_cost",
+        "fixed_cost",
     ]
     data = [
         [
@@ -193,6 +193,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 
 # Database
 ###############################################################################
+
 
 def process_results(db, c, scenario_id, subscenarios, quiet):
     """

@@ -33,6 +33,7 @@ in less than N hours, as the max power constraint will bind).
 import csv
 import os.path
 import pandas as pd
+from pathlib import Path
 from pyomo.environ import (
     Set,
     Param,
@@ -58,6 +59,11 @@ from gridpath.auxiliary.validations import (
     get_projects,
 )
 from gridpath.common_functions import create_results_df
+from gridpath.project.capacity.capacity_types.common_methods import (
+    read_results_file_generic,
+    write_summary_results_generic,
+    get_units,
+)
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -446,19 +452,12 @@ def summarize_results(scenario_directory, subproblem, stage, summary_results_fil
     """
 
     # Get the results CSV as dataframe
-    capacity_results_df = pd.read_csv(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "project_capacity.csv",
-        )
+    capacity_results_agg_df = read_results_file_generic(
+        scenario_directory=scenario_directory,
+        subproblem=subproblem,
+        stage=stage,
+        capacity_type=Path(__file__).stem,
     )
-
-    capacity_results_agg_df = capacity_results_df.groupby(
-        by=["load_zone", "technology", "period"], as_index=True
-    ).sum(numeric_only=False)
 
     # Get all technologies with new build DR power OR energy capacity
     new_build_df = pd.DataFrame(
@@ -469,25 +468,21 @@ def summarize_results(scenario_directory, subproblem, stage, summary_results_fil
     )
 
     # Get the power and energy units from the units.csv file
-    units_df = pd.read_csv(
-        os.path.join(scenario_directory, "units.csv"), index_col="metric"
-    )
-    power_unit = units_df.loc["power", "unit"]
-    energy_unit = units_df.loc["energy", "unit"]
+    power_unit, energy_unit, fuel_unit = get_units(scenario_directory)
 
     # Rename column header
-    new_build_df.columns = [
+    columns = [
         "New DR Power Capacity ({})".format(power_unit),
         "New DR Energy Capacity ({})".format(energy_unit),
     ]
 
-    with open(summary_results_file, "a") as outfile:
-        outfile.write("\n--> New DR Capacity <--\n")
-        if new_build_df.empty:
-            outfile.write("No new DR was built.\n")
-        else:
-            new_build_df.to_string(outfile, float_format="{:,.2f}".format)
-            outfile.write("\n")
+    write_summary_results_generic(
+        results_df=new_build_df,
+        columns=columns,
+        summary_results_file=summary_results_file,
+        title="New DR Capacity",
+        empty_title="No new DR was built.",
+    )
 
 
 # Database
@@ -663,8 +658,10 @@ def write_model_inputs(
                 for row in supply_curve:
                     writer.writerow(row)
 
+
 # Validation
 ###############################################################################
+
 
 def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """

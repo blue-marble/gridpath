@@ -2,11 +2,11 @@
 
 ### CAPACITY RESULTS ###
 
---> New Storage Capacity <--
-                             New Storage Power Capacity (MW)  New Storage Energy Capacity (MWh)
-load_zone technology period                                                                    
-Zone1     Storage    2020                               6.43                               9.64
-                     2030                               6.43                               9.64
+--> New (Linear) Storage Capacity <--
+                             New (Linear) Storage Power Capacity (MW)  New (Linear) Storage Energy Capacity (MWh)
+load_zone technology period                                                                                      
+Zone1     Storage    2020                                        6.43                                        9.64
+                     2030                                        6.43                                        9.64
 
 ### OPERATIONAL RESULTS ###
 

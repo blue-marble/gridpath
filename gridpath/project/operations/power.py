@@ -275,6 +275,7 @@ def summarize_results(scenario_directory, subproblem, stage):
 # Database
 ###############################################################################
 
+
 def process_results(db, c, scenario_id, subscenarios, quiet):
     """
     Aggregate dispatch by technology

@@ -39,6 +39,8 @@ of years the period represents) for the duration of the project's financial life
 
 import csv
 import os.path
+from pathlib import Path
+
 import pandas as pd
 from pyomo.environ import (
     Set,
@@ -70,6 +72,9 @@ from gridpath.project.capacity.capacity_types.common_methods import (
     relevant_periods_by_project_vintage,
     project_relevant_periods,
     project_vintages_relevant_in_period,
+    read_results_file_generic,
+    write_summary_results_generic,
+    get_units,
 )
 
 
@@ -733,19 +738,12 @@ def summarize_results(scenario_directory, subproblem, stage, summary_results_fil
     """
 
     # Get the results CSV as dataframe
-    capacity_results_df = pd.read_csv(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "project_capacity.csv",
-        )
+    capacity_results_agg_df = read_results_file_generic(
+        scenario_directory=scenario_directory,
+        subproblem=subproblem,
+        stage=stage,
+        capacity_type=Path(__file__).stem,
     )
-
-    capacity_results_agg_df = capacity_results_df.groupby(
-        by=["load_zone", "technology", "period"], as_index=True
-    ).sum(numeric_only=False)
 
     # Get all technologies with new build storage power OR energy capacity
     new_build_df = pd.DataFrame(
@@ -755,26 +753,22 @@ def summarize_results(scenario_directory, subproblem, stage, summary_results_fil
         ][["new_build_mw", "new_build_mwh"]]
     )
 
-    # Get the power and energy units from the units.csv file
-    units_df = pd.read_csv(
-        os.path.join(scenario_directory, "units.csv"), index_col="metric"
-    )
-    power_unit = units_df.loc["power", "unit"]
-    energy_unit = units_df.loc["energy", "unit"]
+    # Get the units from the units.csv file
+    power_unit, energy_unit, fuel_unit = get_units(scenario_directory)
 
     # Rename column header
-    new_build_df.columns = [
-        "New Storage Power Capacity ({})".format(power_unit),
-        "New Storage Energy Capacity ({})".format(energy_unit),
+    columns = [
+        "New (Linear) Storage Power Capacity ({})".format(power_unit),
+        "New (Linear) Storage Energy Capacity ({})".format(energy_unit),
     ]
 
-    with open(summary_results_file, "a") as outfile:
-        outfile.write("\n--> New Storage Capacity <--\n")
-        if new_build_df.empty:
-            outfile.write("No new storage was built.\n")
-        else:
-            new_build_df.to_string(outfile, float_format="{:,.2f}".format)
-            outfile.write("\n")
+    write_summary_results_generic(
+        results_df=new_build_df,
+        columns=columns,
+        summary_results_file=summary_results_file,
+        title="New (Linear) Storage Capacity",
+        empty_title="No new stor_new_lin storage was built.",
+    )
 
 
 # Database
@@ -868,6 +862,7 @@ def write_model_inputs(
 
         for row in new_stor_costs:
             writer.writerow(row)
+
 
 # Validation
 ###############################################################################

@@ -25,6 +25,8 @@ function include the annualized capital cost and the annual fixed O&M cost.
 
 import csv
 import os.path
+from pathlib import Path
+
 import pandas as pd
 from pyomo.environ import (
     Set,
@@ -53,6 +55,9 @@ from gridpath.project.capacity.capacity_types.common_methods import (
     relevant_periods_by_project_vintage,
     project_relevant_periods,
     project_vintages_relevant_in_period,
+    read_results_file_generic,
+    write_summary_results_generic,
+    get_units,
 )
 
 
@@ -648,19 +653,12 @@ def summarize_results(scenario_directory, subproblem, stage, summary_results_fil
     """
 
     # Get the results CSV as dataframe
-    capacity_results_df = pd.read_csv(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "project_capacity.csv",
-        )
+    capacity_results_agg_df = read_results_file_generic(
+        scenario_directory=scenario_directory,
+        subproblem=subproblem,
+        stage=stage,
+        capacity_type=Path(__file__).stem,
     )
-
-    capacity_results_agg_df = capacity_results_df.groupby(
-        by=["load_zone", "technology", "period"], as_index=True
-    ).sum(numeric_only=False)
 
     # Get all technologies with new build production OR release OR energy capacity
     new_build_df = pd.DataFrame(
@@ -677,18 +675,23 @@ def summarize_results(scenario_directory, subproblem, stage, summary_results_fil
         ]
     )
 
-    # Get the power and energy units from the units.csv file
-    units_df = pd.read_csv(
-        os.path.join(scenario_directory, "units.csv"), index_col="metric"
-    )
-    fuel_unit = units_df.loc["fuel_energy", "unit"]
+    # Get the units from the units.csv file
+    power_unit, energy_unit, fuel_unit = get_units(scenario_directory)
 
     # Rename column header
-    new_build_df.columns = [
+    columns = [
         "New Fuel Production Capacity ({} per hour)".format(fuel_unit),
         "New Fuel Release Capacity ({} per hour)".format(fuel_unit),
         "New Fuel Storage Capacity ({})".format(fuel_unit),
     ]
+
+    write_summary_results_generic(
+        results_df=new_build_df,
+        columns=columns,
+        summary_results_file=summary_results_file,
+        title="New Fuel Production, Release, and Storage Capacity",
+        empty_title="No new fuel production was built.",
+    )
 
     with open(summary_results_file, "a") as outfile:
         outfile.write("\n--> New Fuel Production, Release, and Storage Capacity <--\n")

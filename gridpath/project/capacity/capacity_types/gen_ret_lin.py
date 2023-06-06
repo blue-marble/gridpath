@@ -28,6 +28,8 @@ is avoided in the objective function.
 
 import csv
 import os.path
+from pathlib import Path
+
 import pandas as pd
 from pyomo.environ import (
     Set,
@@ -59,6 +61,9 @@ from gridpath.project.capacity.capacity_types.common_methods import (
     spec_get_inputs_from_database,
     spec_write_tab_file,
     spec_determine_inputs,
+    read_results_file_generic,
+    write_summary_results_generic,
+    get_units,
 )
 
 
@@ -343,41 +348,31 @@ def summarize_results(scenario_directory, subproblem, stage, summary_results_fil
     """
 
     # Get the results CSV as dataframe
-    capacity_results_df = pd.read_csv(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "project_capacity.csv",
-        )
+    capacity_results_agg_df = read_results_file_generic(
+        scenario_directory=scenario_directory,
+        subproblem=subproblem,
+        stage=stage,
+        capacity_type=Path(__file__).stem,
     )
-
-    capacity_results_agg_df = capacity_results_df.groupby(
-        by=["load_zone", "technology", "period"], as_index=True
-    ).sum(numeric_only=False)
 
     # Get all technologies with the new build capacity
     lin_retirement_df = pd.DataFrame(
         capacity_results_agg_df[capacity_results_agg_df["retired_mw"] > 0]["retired_mw"]
     )
 
-    # Get the power units from the units.csv file
-    units_df = pd.read_csv(
-        os.path.join(scenario_directory, "units.csv"), index_col="metric"
-    )
-    power_unit = units_df.loc["power", "unit"]
+    # Get the units from the units.csv file
+    power_unit, energy_unit, fuel_unit = get_units(scenario_directory)
 
     # Rename column header
-    lin_retirement_df.columns = ["Retired Capacity ({})".format(power_unit)]
+    columns = ["Retired (Linear) Generation Capacity ({})".format(power_unit)]
 
-    with open(summary_results_file, "a") as outfile:
-        outfile.write("\n--> Retired Capacity <--\n")
-        if lin_retirement_df.empty:
-            outfile.write("No retirements.\n")
-        else:
-            lin_retirement_df.to_string(outfile, float_format="{:,.2f}".format)
-            outfile.write("\n")
+    write_summary_results_generic(
+        results_df=lin_retirement_df,
+        columns=columns,
+        summary_results_file=summary_results_file,
+        title="Retired (Linear) Generation Capacity",
+        empty_title="No gen_ret_lin retirements.",
+    )
 
 
 # Database
@@ -424,6 +419,7 @@ def write_model_inputs(
         stage=stage,
         spec_project_params=spec_project_params,
     )
+
 
 # Validation
 ###############################################################################
