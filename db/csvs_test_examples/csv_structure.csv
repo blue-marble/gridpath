@@ -117,7 +117,7 @@ reliability/prm/project_elcc_chars,prm,project_elcc_chars_scenario_id,project_el
 reliability/prm/system_prm_requirement,prm,prm_requirement_scenario_id,system_prm_requirement,simple,,0,0,,,,
 reliability/prm/transfers/capacity_transfer_links,capacity_transfers,prm_capacity_transfer_scenario_id,transmission_prm_capacity_transfers,simple,,0,0,,,,
 reliability/prm/transfers/transmission_prm_zones,capacity_transfers,transmission_prm_zone_scenario_id,transmission_prm_zones,simple,,0,0,,,,
-reliability/prm/transfers/limits,capacity_transfers,prm_capacity_transfer_limits_scenario_id,transmission_prm_capacity_transfer_limits,simple,,0,0,,,,
+reliability/prm/transfers/params,capacity_transfers,prm_capacity_transfer_params_scenario_id,transmission_prm_capacity_transfer_params,simple,,0,0,,,,
 reliability/prm/deliverability/costs,deliverability,prm_deliverability_cost_scenario_id,project_prm_deliverability_costs,simple,,0,0,,,,
 reliability/prm/deliverability/existing,deliverability,prm_deliverability_existing_scenario_id,project_prm_deliverability_existing,simple,,0,0,,,,
 reliability/prm/deliverability/potential,deliverability,prm_deliverability_potential_scenario_id,project_prm_deliverability_potential,simple,,0,0,,,,

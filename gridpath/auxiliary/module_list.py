@@ -200,6 +200,7 @@ def all_modules_list():
         "objective.system.policy.aggregate_performance_standard_violation_penalties",
         "objective.system.policy.aggregate_fuel_burn_limit_violation_penalties",
         "objective.system.policy.aggregate_subsidies",
+        "objective.system.reliability.prm.aggregate_capacity_transfer_costs",
         "objective.system.reliability.prm.dynamic_elcc_tuning_penalties",
         "objective.system.reliability.prm.aggregate_prm_violation_penalties",
         "objective.system.reliability.local_capacity"
@@ -409,6 +410,7 @@ def cross_feature_modules_list():
         ("transmission", "prm", "capacity_transfers"): [
             "transmission.reliability.capacity_transfer_links",
             "system.reliability.prm.capacity_contribution_transfers",
+            "objective.system.reliability.prm" ".aggregate_capacity_transfer_costs",
         ],
         ("prm", "elcc_surface"): [
             "project.reliability.prm.elcc_surface",
