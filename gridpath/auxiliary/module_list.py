@@ -410,7 +410,7 @@ def cross_feature_modules_list():
         ("transmission", "prm", "capacity_transfers"): [
             "transmission.reliability.capacity_transfer_links",
             "system.reliability.prm.capacity_contribution_transfers",
-            "objective.system.reliability.prm" ".aggregate_capacity_transfer_costs",
+            "objective.system.reliability.prm.aggregate_capacity_transfer_costs",
         ],
         ("prm", "elcc_surface"): [
             "project.reliability.prm.elcc_surface",
