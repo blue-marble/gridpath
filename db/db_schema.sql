@@ -1731,25 +1731,26 @@ FOREIGN KEY (prm_capacity_transfer_scenario_id) REFERENCES
 );
 
 -- Param limits
-DROP TABLE IF EXISTS subscenarios_transmission_prm_capacity_transfer_limits;
-CREATE TABLE subscenarios_transmission_prm_capacity_transfer_limits (
-prm_capacity_transfer_limits_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+DROP TABLE IF EXISTS subscenarios_transmission_prm_capacity_transfer_params;
+CREATE TABLE subscenarios_transmission_prm_capacity_transfer_params (
+prm_capacity_transfer_params_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
 name VARCHAR(32),
 description VARCHAR(128)
 );
 
-DROP TABLE IF EXISTS inputs_transmission_prm_capacity_transfer_limits;
-CREATE TABLE inputs_transmission_prm_capacity_transfer_limits (
-prm_capacity_transfer_limits_scenario_id INTEGER,
+DROP TABLE IF EXISTS inputs_transmission_prm_capacity_transfer_params;
+CREATE TABLE inputs_transmission_prm_capacity_transfer_params (
+prm_capacity_transfer_params_scenario_id INTEGER,
 prm_zone VARCHAR(32),  -- "from" zone
 prm_capacity_transfer_zone VARCHAR(32),  -- "to" zone,
 period INTEGER,
 min_transfer_powerunit FLOAT,
 max_transfer_powerunit FLOAT,
-PRIMARY KEY (prm_capacity_transfer_limits_scenario_id, prm_zone,
+capacity_transfer_cost_per_powerunit_yr FLOAT,
+PRIMARY KEY (prm_capacity_transfer_params_scenario_id, prm_zone,
              prm_capacity_transfer_zone, period),
-FOREIGN KEY (prm_capacity_transfer_limits_scenario_id) REFERENCES
-    subscenarios_transmission_prm_capacity_transfer_limits (prm_capacity_transfer_limits_scenario_id)
+FOREIGN KEY (prm_capacity_transfer_params_scenario_id) REFERENCES
+    subscenarios_transmission_prm_capacity_transfer_params (prm_capacity_transfer_params_scenario_id)
 );
 
 -- Transmission line aggregations for limits
@@ -3209,7 +3210,7 @@ project_performance_standard_zone_scenario_id INTEGER,
 project_fuel_burn_limit_ba_scenario_id INTEGER,
 project_prm_zone_scenario_id INTEGER,
 prm_capacity_transfer_scenario_id INTEGER,
-prm_capacity_transfer_limits_scenario_id INTEGER,
+prm_capacity_transfer_params_scenario_id INTEGER,
 transmission_prm_zone_scenario_id INTEGER,
 project_elcc_chars_scenario_id INTEGER,
 prm_deliverability_cost_scenario_id INTEGER,
@@ -3471,9 +3472,9 @@ FOREIGN KEY (prm_requirement_scenario_id) REFERENCES
     subscenarios_system_prm_requirement (prm_requirement_scenario_id),
 FOREIGN KEY (prm_capacity_transfer_scenario_id) REFERENCES
     subscenarios_transmission_prm_capacity_transfers (prm_capacity_transfer_scenario_id),
-FOREIGN KEY (prm_capacity_transfer_limits_scenario_id) REFERENCES
-    subscenarios_transmission_prm_capacity_transfer_limits
-        (prm_capacity_transfer_limits_scenario_id),
+FOREIGN KEY (prm_capacity_transfer_params_scenario_id) REFERENCES
+    subscenarios_transmission_prm_capacity_transfer_params
+        (prm_capacity_transfer_params_scenario_id),
 FOREIGN KEY (elcc_surface_scenario_id) REFERENCES
     subscenarios_system_prm_zone_elcc_surface (elcc_surface_scenario_id),
 FOREIGN KEY (local_capacity_requirement_scenario_id) REFERENCES
@@ -4665,10 +4666,13 @@ PRIMARY KEY (scenario_id, elcc_surface_name, prm_zone, period, subproblem_id, st
 DROP TABLE IF EXISTS results_system_capacity_transfers;
 CREATE TABLE  results_system_capacity_transfers (
 scenario_id INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 prm_zone_from VARCHAR(64),
 prm_zone_to VARCHAR(64),
 period INTEGER,
 capacity_transfer_mw FLOAT,
+capacity_transfer_cost_per_yr_in_period FLOAT,
 PRIMARY KEY (scenario_id, prm_zone_to, prm_zone_from, period)
 );
 
@@ -4735,6 +4739,7 @@ Total_Horizon_Fuel_Burn_Max_Rel_Penalty_Costs FLOAT,
 Total_SOC_Penalty_Cost FLOAT,
 Total_SOC_Penalty_Last_Tmp_Cost FLOAT,
 Total_Subsidies FLOAT,
+Total_Capacity_Transfer_Costs FLOAT,
 PRIMARY KEY (scenario_id, subproblem_id, stage_id)
 );
 

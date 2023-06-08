@@ -136,6 +136,20 @@ class TestCapacityContributionTransfers(unittest.TestCase):
             expected_max_transfer_powerunit, actual_max_transfer_powerunit
         )
 
+        # Param: capacity_transfer_cost_per_powerunit_yr
+        expected_cost = {
+            ("PRM_Zone1", "PRM_Zone2", 2020): 1,
+            ("PRM_Zone1", "PRM_Zone2", 2030): 0,
+        }
+
+        actual_cost = {
+            (z, z_to, p): instance.capacity_transfer_cost_per_powerunit_yr[z, z_to, p]
+            for (z, z_to) in instance.PRM_ZONES_CAPACITY_TRANSFER_ZONES
+            for p in instance.PERIODS
+        }
+
+        self.assertDictEqual(expected_cost, actual_cost)
+
         # Set: PRM_TX_LINES
         expected_prm_tx_lines = sorted(["Tx1", "Tx_New"])
         actual_prm_tx_lines = sorted([tx for tx in instance.PRM_TX_LINES])

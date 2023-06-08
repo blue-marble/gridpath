@@ -1349,6 +1349,24 @@ class TestExamples(unittest.TestCase):
             "2periods_new_build_simple_prm_2loadzones_newtx_w_transfers", objective
         )
 
+    def test_example_2periods_new_build_simple_prm_2loadzones_newtx_w_transfers_w_costs(
+        self,
+    ):
+        """
+        Check validation and objective function value of
+        "2periods_new_build_simple_prm_2loadzones_newtx_w_transfers_w_costs"
+        example
+        :return:
+        """
+        objective = -17323445422.099785
+        self.check_validation(
+            "2periods_new_build_simple_prm_2loadzones_newtx_w_transfers_w_costs"
+        )
+        self.run_and_check_objective(
+            "2periods_new_build_simple_prm_2loadzones_newtx_w_transfers_w_costs",
+            objective,
+        )
+
     def test_example_test_period_tx_targets(self):
         """
         Check validation and objective function value of "test_w_storage_w_soc_penalty"

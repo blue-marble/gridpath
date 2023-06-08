@@ -1,0 +1,2 @@
+prm_zone,prm_capacity_transfer_zone,period,min_transfer_powerunit,max_transfer_powerunit,capacity_transfer_cost_per_powerunit_yr
+PRMZone1,PRMZone2,2020,0,999,
