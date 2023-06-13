@@ -234,7 +234,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
                 mod, prj_for_limit, prd
             )
 
-    m.Max_Relative_New_Capacity_Limit_in_Period_Constraint = Constraint(
+    m.Max_Relative_Total_Capacity_Limit_in_Period_Constraint = Constraint(
         m.RELATIVE_CAPACITY_PROJECT_PAIR_PERIODS, rule=total_capacity_max_rule
     )
 
@@ -253,87 +253,19 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         subproblem,
         stage,
         "inputs",
-        "capacity_group_requirements.tab",
+        "project_relative_capacity_requirements.tab",
     )
     if os.path.exists(req_file):
         data_portal.load(
             filename=req_file,
             index=m.RELATIVE_CAPACITY_PROJECT_PAIR_PERIODS,
             param=(
-                m.capacity_group_new_capacity_min,
-                m.capacity_group_new_capacity_max,
-                m.capacity_group_total_capacity_min,
-                m.capacity_group_total_capacity_max,
+                m.min_relative_capacity_limit_new,
+                m.max_relative_capacity_limit_new,
+                m.min_relative_capacity_limit_total,
+                m.max_relative_capacity_limit_total,
             ),
         )
-    else:
-        pass
-
-    prj_file = os.path.join(
-        scenario_directory, subproblem, stage, "inputs", "capacity_group_projects.tab"
-    )
-    if os.path.exists(prj_file):
-        proj_groups_df = pd.read_csv(prj_file, delimiter="\t")
-        proj_groups_dict = {
-            g: v["project"].tolist()
-            for g, v in proj_groups_df.groupby("capacity_group")
-        }
-        data_portal.data()["PROJECTS_IN_CAPACITY_GROUP"] = proj_groups_dict
-    else:
-        pass
-
-
-def export_results(scenario_directory, subproblem, stage, m, d):
-    """ """
-    req_file = os.path.join(
-        scenario_directory,
-        subproblem,
-        stage,
-        "inputs",
-        "capacity_group_requirements.tab",
-    )
-    prj_file = os.path.join(
-        scenario_directory, subproblem, stage, "inputs", "capacity_group_projects.tab"
-    )
-
-    if os.path.exists(req_file) and os.path.exists(prj_file):
-        with open(
-            os.path.join(
-                scenario_directory,
-                str(subproblem),
-                str(stage),
-                "results",
-                "capacity_groups.csv",
-            ),
-            "w",
-            newline="",
-        ) as f:
-            writer = csv.writer(f)
-            writer.writerow(
-                [
-                    "capacity_group",
-                    "period",
-                    "new_capacity",
-                    "total_capacity",
-                    "capacity_group_new_capacity_min",
-                    "capacity_group_new_capacity_max",
-                    "capacity_group_total_capacity_min",
-                    "capacity_group_total_capacity_max",
-                ]
-            )
-            for grp, prd in m.RELATIVE_CAPACITY_PROJECT_PAIR_PERIODS:
-                writer.writerow(
-                    [
-                        grp,
-                        prd,
-                        value(m.Group_New_Capacity_in_Period[grp, prd]),
-                        value(m.Group_Total_Capacity_in_Period[grp, prd]),
-                        m.capacity_group_new_capacity_min[grp, prd],
-                        m.capacity_group_new_capacity_max[grp, prd],
-                        m.capacity_group_total_capacity_min[grp, prd],
-                        m.capacity_group_total_capacity_max[grp, prd],
-                    ]
-                )
 
 
 # Database
@@ -349,56 +281,38 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     :return:
     """
 
-    c1 = conn.cursor()
-    cap_grp_reqs = c1.execute(
+    c = conn.cursor()
+    rel_cap = c.execute(
+        f"""
+        SELECT project, project_for_limits, period,
+        min_relative_capacity_limit_new, max_relative_capacity_limit_new,
+        min_relative_capacity_limit_total, max_relative_capacity_limit_total
+        FROM inputs_project_relative_capacity_requirements
+        WHERE project_relative_capacity_requirement_scenario_id = 
+        {subscenarios.PROJECT_RELATIVE_CAPACITY_REQUIREMENT_SCENARIO_ID}
         """
-        SELECT capacity_group, period,
-        capacity_group_new_capacity_min, capacity_group_new_capacity_max,
-        capacity_group_total_capacity_min, capacity_group_total_capacity_max
-        FROM inputs_project_capacity_group_requirements
-        WHERE project_capacity_group_requirement_scenario_id = {}
-        """.format(
-            subscenarios.PROJECT_CAPACITY_GROUP_REQUIREMENT_SCENARIO_ID
-        )
     )
 
-    c2 = conn.cursor()
-    cap_grp_prj = c2.execute(
-        """
-        SELECT capacity_group, project
-        FROM inputs_project_capacity_groups
-        WHERE project_capacity_group_scenario_id = {prj_cap_group_sid}
-        AND project in (
-            SELECT DISTINCT project
-            FROM inputs_project_portfolios
-            WHERE project_portfolio_scenario_id = {prj_portfolio_sid}
-            )
-        """.format(
-            prj_cap_group_sid=subscenarios.PROJECT_CAPACITY_GROUP_SCENARIO_ID,
-            prj_portfolio_sid=subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-        )
-    )
-
-    return cap_grp_reqs, cap_grp_prj
+    return rel_cap
 
 
 def write_model_inputs(
     scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """ """
-    cap_grp_reqs, cap_grp_prj = get_inputs_from_database(
+    rel_cap = get_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn
     )
 
     # Write the input files only if a subscenario is specified
-    if subscenarios.PROJECT_CAPACITY_GROUP_REQUIREMENT_SCENARIO_ID != "NULL":
+    if subscenarios.PROJECT_RELATIVE_CAPACITY_REQUIREMENT_SCENARIO_ID != "NULL":
         with open(
             os.path.join(
                 scenario_directory,
                 str(subproblem),
                 str(stage),
                 "inputs",
-                "capacity_group_requirements.tab",
+                "project_relative_capacity_requirements.tab",
             ),
             "w",
             newline="",
@@ -408,131 +322,16 @@ def write_model_inputs(
             # Write header
             writer.writerow(
                 [
-                    "capacity_group",
+                    "project",
+                    "project_for_limits",
                     "period",
-                    "capacity_group_new_capacity_min",
-                    "capacity_group_new_capacity_max",
-                    "capacity_group_total_capacity_min",
-                    "capacity_group_total_capacity_max",
+                    "min_relative_capacity_limit_new",
+                    "max_relative_capacity_limit_new",
+                    "min_relative_capacity_limit_total",
+                    "max_relative_capacity_limit_total",
                 ]
             )
 
-            for row in cap_grp_reqs:
+            for row in rel_cap:
                 replace_nulls = ["." if i is None else i for i in row]
                 writer.writerow(replace_nulls)
-
-    if subscenarios.PROJECT_CAPACITY_GROUP_SCENARIO_ID != "NULL":
-        with open(
-            os.path.join(
-                scenario_directory,
-                str(subproblem),
-                str(stage),
-                "inputs",
-                "capacity_group_projects.tab",
-            ),
-            "w",
-            newline="",
-        ) as prj_file:
-            writer = csv.writer(prj_file, delimiter="\t", lineterminator="\n")
-
-            # Write header
-            writer.writerow(["capacity_group", "project"])
-
-            for row in cap_grp_prj:
-                writer.writerow(row)
-
-
-def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
-    instance.constraint_indices["Max_Group_Build_in_Period_Constraint"] = [
-        "capacity_group",
-        "period",
-        "dual",
-    ]
-
-    instance.constraint_indices["Min_Group_Build_in_Period_Constraint"] = [
-        "capacity_group",
-        "period",
-        "dual",
-    ]
-
-    instance.constraint_indices["Max_Group_Total_Cap_in_Period_Constraint"] = [
-        "capacity_group",
-        "period",
-        "dual",
-    ]
-
-    instance.constraint_indices["Min_Group_Total_Cap_in_Period_Constraint"] = [
-        "capacity_group",
-        "period",
-        "dual",
-    ]
-
-
-def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    # Import only if a results-file was exported
-    results_file = os.path.join(results_directory, "capacity_groups.csv")
-    if os.path.exists(results_file):
-        if not quiet:
-            print("group capacity")
-
-        # Delete prior results and create temporary import table for ordering
-        setup_results_import(
-            conn=db,
-            cursor=c,
-            table="results_project_group_capacity",
-            scenario_id=scenario_id,
-            subproblem=subproblem,
-            stage=stage,
-        )
-
-        # Load results into the temporary table
-        results = []
-        with open(results_file, "r") as f:
-            reader = csv.reader(f)
-
-            next(reader)  # skip header
-            for row in reader:
-                results.append((scenario_id, subproblem, stage) + tuple(row))
-
-        insert_temp_sql = """
-            INSERT INTO temp_results_project_group_capacity{}
-            (scenario_id, subproblem_id, stage_id, 
-            capacity_group, period, 
-            group_new_capacity, group_total_capacity,
-            capacity_group_new_capacity_min, 
-            capacity_group_new_capacity_max, 
-            capacity_group_total_capacity_min, 
-            capacity_group_total_capacity_max)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-            """.format(
-            scenario_id
-        )
-        spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
-
-        # Insert sorted results into permanent results table
-        insert_sql = """
-            INSERT INTO results_project_group_capacity
-            (scenario_id, subproblem_id, stage_id, 
-            capacity_group, period, 
-            group_new_capacity, group_total_capacity,
-            capacity_group_new_capacity_min, 
-            capacity_group_new_capacity_max, 
-            capacity_group_total_capacity_min, 
-            capacity_group_total_capacity_max)
-            SELECT
-            scenario_id, subproblem_id, stage_id, 
-            capacity_group, period, 
-            group_new_capacity, group_total_capacity,
-            capacity_group_new_capacity_min, 
-            capacity_group_new_capacity_max, 
-            capacity_group_total_capacity_min, 
-            capacity_group_total_capacity_max
-            FROM temp_results_project_group_capacity{}
-             ORDER BY scenario_id, subproblem_id, stage_id,
-             capacity_group, period;
-            """.format(
-            scenario_id
-        )
-        spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)
