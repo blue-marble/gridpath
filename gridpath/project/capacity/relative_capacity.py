@@ -1,0 +1,538 @@
+# Copyright 2016-2023 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""
+Relative capacity of project pairs.
+"""
+
+import csv
+import os.path
+import pandas as pd
+from pyomo.environ import Set, Param, Constraint, NonNegativeReals, Expression, value
+
+from db.common_functions import spin_on_database_lock
+from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file
+from gridpath.project.capacity.common_functions import (
+    load_project_capacity_type_modules,
+)
+from gridpath.auxiliary.db_interface import setup_results_import
+import gridpath.project.capacity.capacity_types as cap_type_init
+
+
+def add_model_components(m, d, scenario_directory, subproblem, stage):
+    """
+    The following Pyomo model components are defined in this module:
+
+    +-------------------------------------------------------------------------+
+    | Sets                                                                    |
+    +=========================================================================+
+    | | :code:`RELATIVE_CAPACITY_PROJECT_PAIR_PERIODS`                        |
+    |                                                                         |
+    | A 3-dimensional set of project-project-period combinations for which    |
+    | there may be a relative capacity requirement.                           |
+    +-------------------------------------------------------------------------+
+
+    +-------------------------------------------------------------------------+
+    | Optional Input Params                                                   |
+    +=========================================================================+
+    | | :code:`min_relative_capacity_limit_new`                               |
+    | | *Defined over*: :code:`RELATIVE_CAPACITY_PROJECT_PAIR_PERIODS`        |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | The minimum amount of (new) capacity for project 1 must be >= this      |
+    | parameter times the (new) capacity of project 2 in this period.         |
+    +-------------------------------------------------------------------------+
+    | | :code:`max_relative_capacity_limit_new`                               |
+    | | *Defined over*: :code:`RELATIVE_CAPACITY_PROJECT_PAIR_PERIODS`        |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`inf`                                                |
+    |                                                                         |
+    | The maximum amount of (new) capacity for project 1 must be <= this      |
+    | parameter times the (new) capacity of project 2 in this period.         |
+    +-------------------------------------------------------------------------+
+    | | :code:`min_relative_capacity_limit_total`                             |
+    | | *Defined over*: :code:`RELATIVE_CAPACITY_PROJECT_PAIR_PERIODS`        |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | The minimum amount of (total) capacity for project 1 must be >= this    |
+    | parameter times the (total) capacity of project 2 in this period.       |
+    +-------------------------------------------------------------------------+
+    | | :code:`max_relative_capacity_limit_total`                             |
+    | | *Defined over*: :code:`RELATIVE_CAPACITY_PROJECT_PAIR_PERIODS`        |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`inf`                                                |
+    |                                                                         |
+    | The maximum amount of (total) capacity for project 1 must be <= this    |
+    | parameter times the (total) capacity of project 2 in this period.       |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Constraints                                                             |
+    +=========================================================================+
+    | | :code:`Min_Relative_New_Capacity_Limit_in_Period_Constraint`          |
+    | | *Defined over*: :code:`RELATIVE_CAPACITY_PROJECT_PAIR_PERIODS`        |
+    |                                                                         |
+    | Provides a lower limit on the amount of new capacity for a based on the |
+    | new capacity of another project.                                        |
+    +-------------------------------------------------------------------------+
+    | | :code:`Max_Relative_New_Capacity_Limit_in_Period_Constraint`          |
+    | | *Defined over*: :code:`RELATIVE_CAPACITY_PROJECT_PAIR_PERIODS`        |
+    |                                                                         |
+    | Provides an upper limit on the amount of new capacity for a based on    |
+    | the (new) capacity of another project.                                  |
+    +-------------------------------------------------------------------------+
+    | | :code:`Min_Relative_Total_Capacity_Limit_in_Period_Constraint`        |
+    | | *Defined over*: :code:`RELATIVE_CAPACITY_PROJECT_PAIR_PERIODS`        |
+    |                                                                         |
+    | Provides a lower limit on the amount of total capacity for a based on   |
+    | the total capacity of another project.                                  |
+    +-------------------------------------------------------------------------+
+    | | :code:`Max_Relative_New_Capacity_Limit_in_Period_Constraint`          |
+    | | *Defined over*: :code:`RELATIVE_CAPACITY_PROJECT_PAIR_PERIODS`        |
+    |                                                                         |
+    | Provides a upper limit on the amount of total capacity for a based on   |
+    | the total capacity of another project.                                  |
+    +-------------------------------------------------------------------------+
+    """
+
+    # Sets
+    m.RELATIVE_CAPACITY_PROJECT_PAIR_PERIODS = Set(dimen=3)
+
+    # Params
+    m.min_relative_capacity_limit_new = Param(
+        m.RELATIVE_CAPACITY_PROJECT_PAIR_PERIODS, within=NonNegativeReals, default=0
+    )
+    m.max_relative_capacity_limit_new = Param(
+        m.RELATIVE_CAPACITY_PROJECT_PAIR_PERIODS,
+        within=NonNegativeReals,
+        default=float("inf"),
+    )
+
+    m.min_relative_capacity_limit_total = Param(
+        m.RELATIVE_CAPACITY_PROJECT_PAIR_PERIODS, within=NonNegativeReals, default=0
+    )
+    m.max_relative_capacity_limit_total = Param(
+        m.RELATIVE_CAPACITY_PROJECT_PAIR_PERIODS,
+        within=NonNegativeReals,
+        default=float("inf"),
+    )
+
+    # Import needed capacity type modules
+    required_capacity_modules = get_required_subtype_modules_from_projects_file(
+        scenario_directory=scenario_directory,
+        subproblem=subproblem,
+        stage=stage,
+        which_type="capacity_type",
+    )
+
+    imported_capacity_modules = load_project_capacity_type_modules(
+        required_capacity_modules
+    )
+
+    # Get the new and total capacity in the group for the respective
+    # expressions
+    def project_new_capacity(mod, prj, prd):
+        cap_type = mod.capacity_type[prj]
+        # The capacity type modules check if this period is a "vintage" for
+        # this project and return 0 if not
+        if hasattr(imported_capacity_modules[cap_type], "new_capacity_rule"):
+            return imported_capacity_modules[cap_type].new_capacity_rule(mod, prj, prd)
+        else:
+            return cap_type_init.new_capacity_rule(mod, prj, prd)
+
+    def project_total_capacity(mod, prj, prd):
+        cap_type = mod.capacity_type[prj]
+        # Return the capacity type's capacity rule if the project is
+        # operational in this timepoint; otherwise, return 0
+        if prd not in mod.OPR_PRDS_BY_PRJ[prj]:
+            return 0
+        else:
+            if hasattr(imported_capacity_modules[cap_type], "capacity_rule"):
+                return imported_capacity_modules[cap_type].capacity_rule(mod, prj, prd)
+            else:
+                return cap_type_init.capacity_rule(mod, prj, prd)
+
+    # Constraints
+    # Limit the min and max amount of new and total capacity based on another
+    # project in a given period
+    def new_capacity_min_rule(mod, prj, prj_for_limit, prd):
+        if mod.min_relative_capacity_limit_new[prj, prj_for_limit, prd] == 0:
+            return Constraint.Feasible
+        else:
+            return project_new_capacity(
+                mod, prj, prd
+            ) >= mod.min_relative_capacity_limit_new[
+                prj, prj_for_limit, prd
+            ] * mod.project_new_capacity(
+                mod, prj_for_limit, prd
+            )
+
+    m.Min_Relative_New_Capacity_Limit_in_Period_Constraint = Constraint(
+        m.RELATIVE_CAPACITY_PROJECT_PAIR_PERIODS, rule=new_capacity_min_rule
+    )
+
+    def new_capacity_max_rule(mod, prj, prj_for_limit, prd):
+        if mod.max_relative_capacity_limit_new[prj, prj_for_limit] == float("inf"):
+            return Constraint.Feasible
+        else:
+            return project_new_capacity(
+                mod, prj, prd
+            ) <= mod.max_relative_capacity_limit_new[
+                prj, prj_for_limit, prd
+            ] * mod.project_new_capacity(
+                mod, prj_for_limit, prd
+            )
+
+    m.Max_Relative_New_Capacity_Limit_in_Period_Constraint = Constraint(
+        m.RELATIVE_CAPACITY_PROJECT_PAIR_PERIODS, rule=new_capacity_max_rule
+    )
+
+    # Limit the min and max amount of total capacity in a period based on
+    # another project
+    def total_capacity_min_rule(mod, prj, prj_for_limit, prd):
+        if mod.min_relative_capacity_limit_total[prj, prj_for_limit, prd] == 0:
+            return Constraint.Feasible
+        else:
+            return project_total_capacity(
+                mod, prj, prd
+            ) >= mod.min_relative_capacity_limit_total[
+                prj, prj_for_limit, prd
+            ] * mod.project_total_capacity(
+                mod, prj_for_limit, prd
+            )
+
+    m.Min_Relative_Total_Capacity_Limit_in_Period_Constraint = Constraint(
+        m.RELATIVE_CAPACITY_PROJECT_PAIR_PERIODS, rule=total_capacity_min_rule
+    )
+
+    def total_capacity_max_rule(mod, prj, prj_for_limit, prd):
+        if mod.max_relative_capacity_limit_total[prj, prj_for_limit, prd] == float(
+            "inf"
+        ):
+            return Constraint.Feasible
+        else:
+            return project_total_capacity(
+                mod, prj, prd
+            ) <= mod.max_relative_capacity_limit_total[
+                prj, prj_for_limit, prd
+            ] * mod.project_total_capacity(
+                mod, prj_for_limit, prd
+            )
+
+    m.Max_Relative_New_Capacity_Limit_in_Period_Constraint = Constraint(
+        m.RELATIVE_CAPACITY_PROJECT_PAIR_PERIODS, rule=total_capacity_max_rule
+    )
+
+
+# Input-Output
+###############################################################################
+
+
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+    """ """
+    # Only load data if the input files were written; otehrwise, we won't
+    # initialize the components in this module
+
+    req_file = os.path.join(
+        scenario_directory,
+        subproblem,
+        stage,
+        "inputs",
+        "capacity_group_requirements.tab",
+    )
+    if os.path.exists(req_file):
+        data_portal.load(
+            filename=req_file,
+            index=m.RELATIVE_CAPACITY_PROJECT_PAIR_PERIODS,
+            param=(
+                m.capacity_group_new_capacity_min,
+                m.capacity_group_new_capacity_max,
+                m.capacity_group_total_capacity_min,
+                m.capacity_group_total_capacity_max,
+            ),
+        )
+    else:
+        pass
+
+    prj_file = os.path.join(
+        scenario_directory, subproblem, stage, "inputs", "capacity_group_projects.tab"
+    )
+    if os.path.exists(prj_file):
+        proj_groups_df = pd.read_csv(prj_file, delimiter="\t")
+        proj_groups_dict = {
+            g: v["project"].tolist()
+            for g, v in proj_groups_df.groupby("capacity_group")
+        }
+        data_portal.data()["PROJECTS_IN_CAPACITY_GROUP"] = proj_groups_dict
+    else:
+        pass
+
+
+def export_results(scenario_directory, subproblem, stage, m, d):
+    """ """
+    req_file = os.path.join(
+        scenario_directory,
+        subproblem,
+        stage,
+        "inputs",
+        "capacity_group_requirements.tab",
+    )
+    prj_file = os.path.join(
+        scenario_directory, subproblem, stage, "inputs", "capacity_group_projects.tab"
+    )
+
+    if os.path.exists(req_file) and os.path.exists(prj_file):
+        with open(
+            os.path.join(
+                scenario_directory,
+                str(subproblem),
+                str(stage),
+                "results",
+                "capacity_groups.csv",
+            ),
+            "w",
+            newline="",
+        ) as f:
+            writer = csv.writer(f)
+            writer.writerow(
+                [
+                    "capacity_group",
+                    "period",
+                    "new_capacity",
+                    "total_capacity",
+                    "capacity_group_new_capacity_min",
+                    "capacity_group_new_capacity_max",
+                    "capacity_group_total_capacity_min",
+                    "capacity_group_total_capacity_max",
+                ]
+            )
+            for grp, prd in m.RELATIVE_CAPACITY_PROJECT_PAIR_PERIODS:
+                writer.writerow(
+                    [
+                        grp,
+                        prd,
+                        value(m.Group_New_Capacity_in_Period[grp, prd]),
+                        value(m.Group_Total_Capacity_in_Period[grp, prd]),
+                        m.capacity_group_new_capacity_min[grp, prd],
+                        m.capacity_group_new_capacity_max[grp, prd],
+                        m.capacity_group_total_capacity_min[grp, prd],
+                        m.capacity_group_total_capacity_max[grp, prd],
+                    ]
+                )
+
+
+# Database
+###############################################################################
+
+
+def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+    """
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+
+    c1 = conn.cursor()
+    cap_grp_reqs = c1.execute(
+        """
+        SELECT capacity_group, period,
+        capacity_group_new_capacity_min, capacity_group_new_capacity_max,
+        capacity_group_total_capacity_min, capacity_group_total_capacity_max
+        FROM inputs_project_capacity_group_requirements
+        WHERE project_capacity_group_requirement_scenario_id = {}
+        """.format(
+            subscenarios.PROJECT_CAPACITY_GROUP_REQUIREMENT_SCENARIO_ID
+        )
+    )
+
+    c2 = conn.cursor()
+    cap_grp_prj = c2.execute(
+        """
+        SELECT capacity_group, project
+        FROM inputs_project_capacity_groups
+        WHERE project_capacity_group_scenario_id = {prj_cap_group_sid}
+        AND project in (
+            SELECT DISTINCT project
+            FROM inputs_project_portfolios
+            WHERE project_portfolio_scenario_id = {prj_portfolio_sid}
+            )
+        """.format(
+            prj_cap_group_sid=subscenarios.PROJECT_CAPACITY_GROUP_SCENARIO_ID,
+            prj_portfolio_sid=subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+        )
+    )
+
+    return cap_grp_reqs, cap_grp_prj
+
+
+def write_model_inputs(
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+):
+    """ """
+    cap_grp_reqs, cap_grp_prj = get_inputs_from_database(
+        scenario_id, subscenarios, subproblem, stage, conn
+    )
+
+    # Write the input files only if a subscenario is specified
+    if subscenarios.PROJECT_CAPACITY_GROUP_REQUIREMENT_SCENARIO_ID != "NULL":
+        with open(
+            os.path.join(
+                scenario_directory,
+                str(subproblem),
+                str(stage),
+                "inputs",
+                "capacity_group_requirements.tab",
+            ),
+            "w",
+            newline="",
+        ) as req_file:
+            writer = csv.writer(req_file, delimiter="\t", lineterminator="\n")
+
+            # Write header
+            writer.writerow(
+                [
+                    "capacity_group",
+                    "period",
+                    "capacity_group_new_capacity_min",
+                    "capacity_group_new_capacity_max",
+                    "capacity_group_total_capacity_min",
+                    "capacity_group_total_capacity_max",
+                ]
+            )
+
+            for row in cap_grp_reqs:
+                replace_nulls = ["." if i is None else i for i in row]
+                writer.writerow(replace_nulls)
+
+    if subscenarios.PROJECT_CAPACITY_GROUP_SCENARIO_ID != "NULL":
+        with open(
+            os.path.join(
+                scenario_directory,
+                str(subproblem),
+                str(stage),
+                "inputs",
+                "capacity_group_projects.tab",
+            ),
+            "w",
+            newline="",
+        ) as prj_file:
+            writer = csv.writer(prj_file, delimiter="\t", lineterminator="\n")
+
+            # Write header
+            writer.writerow(["capacity_group", "project"])
+
+            for row in cap_grp_prj:
+                writer.writerow(row)
+
+
+def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
+    instance.constraint_indices["Max_Group_Build_in_Period_Constraint"] = [
+        "capacity_group",
+        "period",
+        "dual",
+    ]
+
+    instance.constraint_indices["Min_Group_Build_in_Period_Constraint"] = [
+        "capacity_group",
+        "period",
+        "dual",
+    ]
+
+    instance.constraint_indices["Max_Group_Total_Cap_in_Period_Constraint"] = [
+        "capacity_group",
+        "period",
+        "dual",
+    ]
+
+    instance.constraint_indices["Min_Group_Total_Cap_in_Period_Constraint"] = [
+        "capacity_group",
+        "period",
+        "dual",
+    ]
+
+
+def import_results_into_database(
+    scenario_id, subproblem, stage, c, db, results_directory, quiet
+):
+    # Import only if a results-file was exported
+    results_file = os.path.join(results_directory, "capacity_groups.csv")
+    if os.path.exists(results_file):
+        if not quiet:
+            print("group capacity")
+
+        # Delete prior results and create temporary import table for ordering
+        setup_results_import(
+            conn=db,
+            cursor=c,
+            table="results_project_group_capacity",
+            scenario_id=scenario_id,
+            subproblem=subproblem,
+            stage=stage,
+        )
+
+        # Load results into the temporary table
+        results = []
+        with open(results_file, "r") as f:
+            reader = csv.reader(f)
+
+            next(reader)  # skip header
+            for row in reader:
+                results.append((scenario_id, subproblem, stage) + tuple(row))
+
+        insert_temp_sql = """
+            INSERT INTO temp_results_project_group_capacity{}
+            (scenario_id, subproblem_id, stage_id, 
+            capacity_group, period, 
+            group_new_capacity, group_total_capacity,
+            capacity_group_new_capacity_min, 
+            capacity_group_new_capacity_max, 
+            capacity_group_total_capacity_min, 
+            capacity_group_total_capacity_max)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+            """.format(
+            scenario_id
+        )
+        spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
+
+        # Insert sorted results into permanent results table
+        insert_sql = """
+            INSERT INTO results_project_group_capacity
+            (scenario_id, subproblem_id, stage_id, 
+            capacity_group, period, 
+            group_new_capacity, group_total_capacity,
+            capacity_group_new_capacity_min, 
+            capacity_group_new_capacity_max, 
+            capacity_group_total_capacity_min, 
+            capacity_group_total_capacity_max)
+            SELECT
+            scenario_id, subproblem_id, stage_id, 
+            capacity_group, period, 
+            group_new_capacity, group_total_capacity,
+            capacity_group_new_capacity_min, 
+            capacity_group_new_capacity_max, 
+            capacity_group_total_capacity_min, 
+            capacity_group_total_capacity_max
+            FROM temp_results_project_group_capacity{}
+             ORDER BY scenario_id, subproblem_id, stage_id,
+             capacity_group, period;
+            """.format(
+            scenario_id
+        )
+        spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)
