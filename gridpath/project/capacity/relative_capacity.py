@@ -178,7 +178,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
                 mod, prj, prd
             ) >= mod.min_relative_capacity_limit_new[
                 prj, prj_for_limit, prd
-            ] * mod.project_new_capacity(
+            ] * project_new_capacity(
                 mod, prj_for_limit, prd
             )
 
@@ -187,14 +187,14 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
     def new_capacity_max_rule(mod, prj, prj_for_limit, prd):
-        if mod.max_relative_capacity_limit_new[prj, prj_for_limit] == float("inf"):
+        if mod.max_relative_capacity_limit_new[prj, prj_for_limit, prd] == float("inf"):
             return Constraint.Feasible
         else:
             return project_new_capacity(
                 mod, prj, prd
             ) <= mod.max_relative_capacity_limit_new[
                 prj, prj_for_limit, prd
-            ] * mod.project_new_capacity(
+            ] * project_new_capacity(
                 mod, prj_for_limit, prd
             )
 
@@ -212,7 +212,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
                 mod, prj, prd
             ) >= mod.min_relative_capacity_limit_total[
                 prj, prj_for_limit, prd
-            ] * mod.project_total_capacity(
+            ] * project_total_capacity(
                 mod, prj_for_limit, prd
             )
 
@@ -230,7 +230,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
                 mod, prj, prd
             ) <= mod.max_relative_capacity_limit_total[
                 prj, prj_for_limit, prd
-            ] * mod.project_total_capacity(
+            ] * project_total_capacity(
                 mod, prj_for_limit, prd
             )
 
