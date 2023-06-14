@@ -22,6 +22,8 @@ from pyomo.environ import (
     value,
     Var,
     NonNegativeReals,
+    Reals,
+    Boolean,
     Constraint,
 )
 
@@ -109,6 +111,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.TRANSMISSION_TARGET_TX_LINES, within=m.TRANSMISSION_TARGET_ZONES
     )
 
+    # Set to 1 if you want this line to contribute net flows
+    m.contributes_net_flow_to_tx_target = Param(
+        m.TRANSMISSION_TARGET_TX_LINES, within=Boolean, default=0
+    )
+
     # Variables
     ###########################################################################
     m.Transmission_Target_Energy_MW_Pos_Dir = Var(
@@ -118,13 +125,20 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.TX_OPR_TMPS, within=NonNegativeReals
     )
 
+    m.Transmission_Target_Net_Energy_MW_Pos_Dir = Var(
+        m.TX_OPR_TMPS, within=Reals
+    )
+    m.Transmission_Target_Net_Energy_MW_Neg_Dir = Var(
+        m.TX_OPR_TMPS, within=Reals
+    )
+
     # Derived Sets (requires input params)
     ###########################################################################
 
     m.TRANSMISSION_TARGET_TX_LINES_BY_TRANSMISSION_TARGET_ZONE = Set(
         m.TRANSMISSION_TARGET_ZONES,
         within=m.TRANSMISSION_TARGET_TX_LINES,
-        initialize=determine_transmission_target_tx_lines_by_transmission_target_zone,
+        initialize=determine_tx_target_tx_lines_by_tx_target_zone,
     )
 
     # Constraints
@@ -132,10 +146,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     def transmit_power_pos_dir_rule(mod, tx, tmp):
         """ """
-        return (
-            mod.Transmission_Target_Energy_MW_Pos_Dir[tx, tmp]
-            <= mod.TxSimpleBinary_Transmit_Power_Positive_Direction_MW[tx, tmp]
-        )
+        if mod.contributes_net_flow_to_tx_target[tx]:
+            return Constraint.Skip
+        else:
+            return (
+                mod.Transmission_Target_Energy_MW_Pos_Dir[tx, tmp]
+                <= mod.TxSimpleBinary_Transmit_Power_Positive_Direction_MW[tx, tmp]
+            )
 
     m.Transmission_Target_Energy_MW_Pos_Dir_Constraint = Constraint(
         m.TRANSMISSION_TARGET_TX_OPR_TMPS, rule=transmit_power_pos_dir_rule
@@ -143,21 +160,55 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     def transmit_power_neg_dir_rule(mod, tx, tmp):
         """ """
-        return (
-            mod.Transmission_Target_Energy_MW_Neg_Dir[tx, tmp]
-            <= mod.TxSimpleBinary_Transmit_Power_Negative_Direction_MW[tx, tmp]
-        )
+        if mod.contributes_net_flow_to_tx_target[tx]:
+            return Constraint.Skip
+        else:
+            return (
+                mod.Transmission_Target_Energy_MW_Neg_Dir[tx, tmp]
+                <= mod.TxSimpleBinary_Transmit_Power_Negative_Direction_MW[tx, tmp]
+            )
 
     m.Transmission_Target_Energy_MW_Neg_Dir_Constraint = Constraint(
         m.TRANSMISSION_TARGET_TX_OPR_TMPS, rule=transmit_power_neg_dir_rule
     )
 
+    def transmit_power_pos_dir_net_rule(mod, tx, tmp):
+        """
+
+        """
+        if not mod.contributes_net_flow_to_tx_target[tx]:
+            return Constraint.Skip
+        else:
+            return (
+                    mod.Transmission_Target_Net_Energy_MW_Pos_Dir[tx, tmp]
+                    <= mod.Transmit_Power_MW[tx, tmp]
+            )
+
+    m.Transmission_Target_Net_Energy_MW_Pos_Dir_Constraint = Constraint(
+        m.TRANSMISSION_TARGET_TX_OPR_TMPS, rule=transmit_power_pos_dir_net_rule
+    )
+
+    def transmit_power_neg_dir_net_rule(mod, tx, tmp):
+        """
+
+        """
+        if not mod.contributes_net_flow_to_tx_target[tx]:
+            return Constraint.Skip
+        else:
+            return (
+                    mod.Transmission_Target_Net_Energy_MW_Neg_Dir[tx, tmp]
+                    <= -mod.Transmit_Power_MW[tx, tmp]
+            )
+
+    m.Transmission_Target_Net_Energy_MW_Neg_Dir_Constraint = Constraint(
+        m.TRANSMISSION_TARGET_TX_OPR_TMPS, rule=transmit_power_neg_dir_net_rule
+    )
 
 # Set Rules
 ###############################################################################
 
 
-def determine_transmission_target_tx_lines_by_transmission_target_zone(
+def determine_tx_target_tx_lines_by_tx_target_zone(
     mod, transmission_target_z
 ):
     return [
