@@ -1386,6 +1386,19 @@ class TestExamples(unittest.TestCase):
         self.check_validation("test_w_flex_load")
         self.run_and_check_objective("test_w_flex_load", -3504306055178.457)
 
+    def test_example_test_new_solar_w_relative_capacity_instead_of_potential(self):
+        """
+        Check validation and objective function value of
+        "test_new_solar" example
+        :return:
+        """
+
+        self.check_validation("test_new_solar_w_relative_capacity_instead_of_potential")
+        self.run_and_check_objective(
+            "test_new_solar_w_relative_capacity_instead_of_potential",
+            -3796301348838.3267,
+        )
+
     @classmethod
     def tearDownClass(cls):
         os.remove(DB_PATH)
