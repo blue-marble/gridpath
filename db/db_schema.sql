@@ -953,6 +953,32 @@ subscenarios_project_capacity_group_requirements
     (project_capacity_group_requirement_scenario_id)
 );
 
+-- Relative capacity requirements
+DROP TABLE IF EXISTS subscenarios_project_relative_capacity_requirements;
+CREATE TABLE subscenarios_project_relative_capacity_requirements (
+project_relative_capacity_requirement_scenario_id INTEGER PRIMARY KEY
+    AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_project_relative_capacity_requirements;
+CREATE TABLE inputs_project_relative_capacity_requirements (
+project_relative_capacity_requirement_scenario_id INTEGER,
+project VARCHAR(64),
+project_for_limits VARCHAR(64),
+period INTEGER,
+min_relative_capacity_limit_new FLOAT,
+max_relative_capacity_limit_new FLOAT,
+min_relative_capacity_limit_total FLOAT,
+max_relative_capacity_limit_total FLOAT,
+PRIMARY KEY (project_relative_capacity_requirement_scenario_id,
+            project, project_for_limits, period),
+FOREIGN KEY (project_relative_capacity_requirement_scenario_id) REFERENCES
+subscenarios_project_relative_capacity_requirements
+    (project_relative_capacity_requirement_scenario_id)
+);
+
 
 -- Group project mapping
 DROP TABLE IF EXISTS subscenarios_project_capacity_groups;
@@ -3228,6 +3254,7 @@ project_new_cost_scenario_id INTEGER,
 project_new_potential_scenario_id INTEGER,
 project_new_binary_build_size_scenario_id INTEGER,
 project_capacity_group_requirement_scenario_id INTEGER,
+project_relative_capacity_requirement_scenario_id INTEGER,
 project_capacity_group_scenario_id INTEGER,
 transmission_portfolio_scenario_id INTEGER,
 transmission_load_zone_scenario_id INTEGER,
@@ -3399,6 +3426,9 @@ FOREIGN KEY (project_capacity_group_scenario_id) REFERENCES
 FOREIGN KEY (project_capacity_group_requirement_scenario_id) REFERENCES
     subscenarios_project_capacity_group_requirements
     (project_capacity_group_requirement_scenario_id),
+FOREIGN KEY (project_relative_capacity_requirement_scenario_id) REFERENCES
+    subscenarios_project_relative_capacity_requirements
+    (project_relative_capacity_requirement_scenario_id),
 FOREIGN KEY (transmission_portfolio_scenario_id) REFERENCES
     subscenarios_transmission_portfolios (transmission_portfolio_scenario_id),
 FOREIGN KEY (transmission_load_zone_scenario_id)
