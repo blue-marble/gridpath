@@ -1597,6 +1597,7 @@ CREATE TABLE inputs_tx_line_transmission_target_zones (
 tx_line_transmission_target_zone_scenario_id INTEGER,
 transmission_line VARCHAR(64),
 transmission_target_zone VARCHAR(32),
+contributes_net_flow_to_tx_target INTEGER,  -- defaults to 0 in model
 PRIMARY KEY (tx_line_transmission_target_zone_scenario_id, transmission_line),
 FOREIGN KEY (tx_line_transmission_target_zone_scenario_id) REFERENCES
  subscenarios_tx_line_transmission_target_zones (tx_line_transmission_target_zone_scenario_id)

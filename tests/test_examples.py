@@ -1369,7 +1369,7 @@ class TestExamples(unittest.TestCase):
 
     def test_example_test_period_tx_targets(self):
         """
-        Check validation and objective function value of "test_w_storage_w_soc_penalty"
+        Check validation and objective function value of "test_example_test_period_tx_targets"
         example
         :return:
         """
