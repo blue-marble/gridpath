@@ -1,4 +1,4 @@
-transmission_line,transmission_target_zone
-Tx1,TxTargetZone1
-Tx2,TxTargetZone2
-Tx3,TxTargetZone2
+transmission_line,transmission_target_zone,contributes_net_flow_to_tx_target
+Tx1,TxTargetZone1,
+Tx2,TxTargetZone2,
+Tx3,TxTargetZone2,
