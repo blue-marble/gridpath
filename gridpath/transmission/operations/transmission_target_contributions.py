@@ -288,8 +288,12 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                     m.period[tmp],
                     m.tmp_weight[tmp],
                     m.hrs_in_tmp[tmp],
-                    value(m.Transmission_Target_Energy_MW_Pos_Dir[tx, tmp]),
-                    value(m.Transmission_Target_Energy_MW_Neg_Dir[tx, tmp]),
+                    value(m.Transmission_Target_Energy_MW_Pos_Dir[tx, tmp])
+                    if float(m.contributes_net_flow_to_tx_target[tx]) == 0
+                    else value(m.Transmission_Target_Net_Energy_MW_Pos_Dir[tx, tmp]),
+                    value(m.Transmission_Target_Energy_MW_Neg_Dir[tx, tmp])
+                    if float(m.contributes_net_flow_to_tx_target[tx]) == 0
+                    else value(m.Transmission_Target_Net_Energy_MW_Neg_Dir[tx, tmp]),
                 ]
             )
 
@@ -387,7 +391,6 @@ def write_model_inputs(
 
         # Append correct values
         for row in reader:
-            print(row)
             # If tx line specified, check if BA specified or not
             if row[0] in list(tx_line_zone_dict.keys()):
                 row.extend(tx_line_zone_dict[row[0]])
@@ -396,7 +399,6 @@ def write_model_inputs(
             else:
                 row.extend([".", "."])
                 new_rows.append(row)
-            print(new_rows)
 
     with open(
         os.path.join(
