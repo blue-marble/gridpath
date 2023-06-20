@@ -37,7 +37,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         :return:
         """
         return sum(
-            mod.Transmission_Target_Energy_MW_Pos_Dir[tx, tmp]
+            (mod.Transmission_Target_Energy_MW_Pos_Dir[tx, tmp]
+             if float(mod.contributes_net_flow_to_tx_target[tx]) == 0
+             else mod.Transmission_Target_Net_Energy_MW_Pos_Dir[tx, tmp])
             * mod.hrs_in_tmp[tmp]
             * mod.tmp_weight[tmp]
             for (tx, tmp) in mod.TRANSMISSION_TARGET_TX_OPR_TMPS
@@ -59,7 +61,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         :return:
         """
         return sum(
-            mod.Transmission_Target_Energy_MW_Neg_Dir[tx, tmp]
+            (mod.Transmission_Target_Energy_MW_Neg_Dir[tx, tmp]
+             if float(mod.contributes_net_flow_to_tx_target[tx]) == 0
+             else mod.Transmission_Target_Net_Energy_MW_Neg_Dir[tx, tmp])
             * mod.hrs_in_tmp[tmp]
             * mod.tmp_weight[tmp]
             for (tx, tmp) in mod.TRANSMISSION_TARGET_TX_OPR_TMPS
