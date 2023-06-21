@@ -32,7 +32,6 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     # Dynamic Inputs
     ###########################################################################
-    # TODO: move this to cap types since it's used by capacity and costs modules
     df = pd.read_csv(
         os.path.join(
             scenario_directory,
