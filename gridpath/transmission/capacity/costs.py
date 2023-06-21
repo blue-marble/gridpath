@@ -281,8 +281,10 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "load_zone_from",
                 "load_zone_to",
                 "capacity_cost",
+                "fixed_cost",
             ]
         )
+
         for l, p in m.TX_FIN_PRDS:
             writer.writerow(
                 [
@@ -295,6 +297,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                     value(m.Tx_Capacity_Cost_in_Period[l, p]),
                 ]
             )
+
+    # TODO: add fixed costs when consolidating line-period results
 
 
 def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
