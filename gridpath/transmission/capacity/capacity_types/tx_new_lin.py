@@ -463,17 +463,18 @@ def capacity_cost_rule(mod, g, p):
         if gen == g
     )
 
+
 def fixed_cost_rule(mod, g, p):
     """
     Fixed cost for new builds in each period (sum over all vintages
     operational in current period).
     """
     return sum(
-        mod.TxNewLin_Build_MW[g, v]
-        * mod.tx_new_lin_fixed_cost_per_mw_yr[g, v]
+        mod.TxNewLin_Build_MW[g, v] * mod.tx_new_lin_fixed_cost_per_mw_yr[g, v]
         for (gen, v) in mod.TX_NEW_LIN_VNTS_OPR_IN_PRD[p]
         if gen == g
     )
+
 
 def new_capacity_rule(mod, g, p):
     """

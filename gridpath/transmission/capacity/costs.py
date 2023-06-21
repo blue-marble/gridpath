@@ -29,9 +29,7 @@ from gridpath.transmission.capacity.common_functions import (
     load_tx_capacity_type_modules,
 )
 from gridpath.auxiliary.db_interface import setup_results_import
-from gridpath.auxiliary.dynamic_components import (
-    tx_capacity_type_financial_period_sets
-)
+from gridpath.auxiliary.dynamic_components import tx_capacity_type_financial_period_sets
 import gridpath.transmission.capacity.capacity_types as tx_cap_type_init
 
 
@@ -101,8 +99,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             "transmission_lines.tab",
         ),
         sep="\t",
-        usecols=["transmission_line", "tx_capacity_type",
-                 "tx_operational_type"],
+        usecols=["transmission_line", "tx_capacity_type", "tx_operational_type"],
     )
 
     # Required capacity modules are the unique set of tx capacity types
@@ -126,25 +123,22 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         ),
     )
 
-
     # Expressions
     ###########################################################################
 
     def tx_capacity_cost_rule(mod, tx, prd):
         cap_type = mod.tx_capacity_type[tx]
-        if hasattr(imported_tx_capacity_modules[cap_type],
-                   "capacity_cost_rule"):
-            fixed_cost = imported_tx_capacity_modules[
-                cap_type].capacity_cost_rule(
+        if hasattr(imported_tx_capacity_modules[cap_type], "capacity_cost_rule"):
+            fixed_cost = imported_tx_capacity_modules[cap_type].capacity_cost_rule(
                 mod, tx, prd
             )
         else:
             fixed_cost = tx_cap_type_init.capacity_cost_rule(mod, tx, prd)
 
         return (
-                fixed_cost
-                * mod.hours_in_subproblem_period[prd]
-                / mod.hours_in_period_timepoints[prd]
+            fixed_cost
+            * mod.hours_in_subproblem_period[prd]
+            / mod.hours_in_period_timepoints[prd]
         )
 
     m.Tx_Capacity_Cost_in_Period = Expression(m.TX_FIN_PRDS, rule=tx_capacity_cost_rule)
@@ -161,10 +155,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         accordingly.
         """
         cap_type = mod.tx_capacity_type[tx]
-        if hasattr(imported_tx_capacity_modules[cap_type],
-                   "fixed_cost_rule"):
-            fixed_cost = imported_tx_capacity_modules[
-                cap_type].fixed_cost_rule(
+        if hasattr(imported_tx_capacity_modules[cap_type], "fixed_cost_rule"):
+            fixed_cost = imported_tx_capacity_modules[cap_type].fixed_cost_rule(
                 mod, tx, prd
             )
         else:
@@ -176,8 +168,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             / mod.hours_in_period_timepoints[prd]
         )
 
-    m.Tx_Fixed_Cost_in_Period = Expression(m.TX_OPR_PRDS,
-                                          rule=tx_fixed_cost_rule)
+    m.Tx_Fixed_Cost_in_Period = Expression(m.TX_OPR_PRDS, rule=tx_fixed_cost_rule)
 
 
 # Input-Output

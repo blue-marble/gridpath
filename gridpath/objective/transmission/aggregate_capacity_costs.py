@@ -68,5 +68,4 @@ def record_dynamic_components(dynamic_components):
     """
 
     getattr(dynamic_components, cost_components).append("Total_Tx_Capacity_Costs")
-    getattr(dynamic_components, cost_components).append(
-        "Total_Tx_Fixed_Costs")
+    getattr(dynamic_components, cost_components).append("Total_Tx_Fixed_Costs")

@@ -152,8 +152,11 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             "fixed_cost_per_mw_yr",
         ),
         index=m.TX_SPEC_OPR_PRDS,
-        param=(m.tx_spec_min_cap_mw, m.tx_spec_max_cap_mw,
-               m.tx_spec_fixed_cost_per_mw_yr,),
+        param=(
+            m.tx_spec_min_cap_mw,
+            m.tx_spec_max_cap_mw,
+            m.tx_spec_fixed_cost_per_mw_yr,
+        ),
     )
 
 

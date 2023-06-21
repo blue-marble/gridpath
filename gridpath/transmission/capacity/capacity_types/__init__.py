@@ -28,9 +28,7 @@ from gridpath.transmission.capacity.common_functions import (
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
-    """
-
-    """
+    """ """
 
     # Dynamic Inputs
     ###########################################################################
@@ -62,6 +60,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         imp_op_m = imported_tx_capacity_modules[op_m]
         if hasattr(imp_op_m, "add_model_components"):
             imp_op_m.add_model_components(m, d, scenario_directory, subproblem, stage)
+
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
@@ -103,6 +102,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             )
         else:
             pass
+
 
 def get_required_capacity_type_modules(scenario_id, subscenarios, conn):
     """
@@ -218,12 +218,10 @@ def new_capacity_rule(mod, prj, prd):
 
 
 def capacity_cost_rule(mod, prj, prd):
-    """
-
-    """
+    """ """
     return 0
-def fixed_cost_rule(mod, prj, prd):
-    """
 
-    """
+
+def fixed_cost_rule(mod, prj, prd):
+    """ """
     return 0
