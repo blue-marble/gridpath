@@ -106,13 +106,6 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | The transmission line's operational lifetime, i.e. how long line        |
     | capacity of a particular vintage remains operational.                   |
     +-------------------------------------------------------------------------+
-    | | :code:`tx_new_lin_fixed_cost_per_mw_yr`                               |
-    | | *Defined over*: :code:`TX_NEW_LIN_VNTS`                               |
-    | | *Within*: :code:`NonNegativeReals`                                    |
-    |                                                                         |
-    | The transmission line's fixed cost to be paid in each operational       |
-    | period in real dollars per unit capacity of that vintage.               |
-    +-------------------------------------------------------------------------+
     | | :code:`tx_new_lin_financial_lifetime_yrs_by_vintage`                  |
     | | *Defined over*: :code:`TX_NEW_LIN_VNTS`                               |
     | | *Within*: :code:`NonNegativeReals`                                    |
@@ -139,6 +132,14 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +-------------------------------------------------------------------------+
     | Optional Input Params                                                   |
     +=========================================================================+
+    | | :code:`tx_new_lin_fixed_cost_per_mw_yr`                               |
+    | | *Defined over*: :code:`TX_NEW_LIN_VNTS`                               |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | The transmission line's fixed cost to be paid in each operational       |
+    | period in real dollars per unit capacity of that vintage.               |
+    +-------------------------------------------------------------------------+
     | | :code:`tx_new_lin_min_cumulative_new_build_mw`                        |
     | | *Defined over*: :code:`TX_NEW_LIN_VNTS`                               |
     | | *Within*: :code:`NonNegativeReals`                                    |

@@ -128,6 +128,20 @@ class TestSpecifiedTransmission(unittest.TestCase):
         )
         self.assertDictEqual(expected_cost, actual_cost)
 
+        # Param: tx_new_lin_fixed_cost_per_mw_yr
+        expected_fcost = OrderedDict(
+            sorted({("Tx_New", 2020): 0, ("Tx_New", 2030): 5}.items())
+        )
+        actual_fcost = OrderedDict(
+            sorted(
+                {
+                    (tx, v): instance.tx_new_lin_fixed_cost_per_mw_yr[tx, v]
+                    for (tx, v) in instance.TX_NEW_LIN_VNTS
+                }.items()
+            )
+        )
+        self.assertDictEqual(expected_fcost, actual_fcost)
+
         # Set: TX_NEW_LIN_VNTS_W_MIN_CONSTRAINT
         expected_tx_vintage_min_set = sorted([("Tx_New", 2020), ("Tx_New", 2030)])
         actual_tx_vintage_min_set = sorted(

@@ -157,6 +157,31 @@ class TestSpecifiedTransmission(unittest.TestCase):
         )
         self.assertDictEqual(expected_max, actual_max)
 
+        # Param: tx_spec_fixed_cost_per_mw_yr
+        expected_fixed_cost = OrderedDict(
+            sorted(
+                {
+                    ("Tx1", 2020): 0,
+                    ("Tx1", 2030): 5,
+                    ("Tx2", 2020): 0,
+                    ("Tx2", 2030): 5,
+                    ("Tx3", 2020): 0,
+                    ("Tx3", 2030): 5,
+                    ("Tx_binary_1", 2020): 0,
+                    ("Tx_binary_1", 2030): 5,
+                }.items()
+            )
+        )
+        actual_fixed_cost = OrderedDict(
+            sorted(
+                {
+                    (tx, p): instance.tx_spec_fixed_cost_per_mw_yr[tx, p]
+                    for (tx, p) in instance.TX_SPEC_OPR_PRDS
+                }.items()
+            )
+        )
+        self.assertDictEqual(expected_fixed_cost, actual_fixed_cost)
+
 
 if __name__ == "__main__":
     unittest.main()
