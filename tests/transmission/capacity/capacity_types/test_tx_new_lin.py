@@ -98,14 +98,16 @@ class TestSpecifiedTransmission(unittest.TestCase):
         actual_tx_vintages = sorted([(tx, v) for (tx, v) in instance.TX_NEW_LIN_VNTS])
         self.assertListEqual(expected_tx_vintages, actual_tx_vintages)
 
-        # Param: tx_new_lin_lifetime_yrs
+        # Param: tx_new_lin_operational_lifetime_yrs_by_vintage
         expected_lifetime = OrderedDict(
             sorted({("Tx_New", 2020): 35, ("Tx_New", 2030): 35}.items())
         )
         actual_lifetime = OrderedDict(
             sorted(
                 {
-                    (tx, v): instance.tx_new_lin_lifetime_yrs[tx, v]
+                    (tx, v): instance.tx_new_lin_operational_lifetime_yrs_by_vintage[
+                        tx, v
+                    ]
                     for (tx, v) in instance.TX_NEW_LIN_VNTS
                 }.items()
             )

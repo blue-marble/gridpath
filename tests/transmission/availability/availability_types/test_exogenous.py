@@ -32,6 +32,7 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.investment.periods",
     "geography.load_zones",
     "transmission",
+    "transmission.capacity.capacity_types",
     "transmission.capacity.capacity",
 ]
 NAME_OF_MODULE_BEING_TESTED = "transmission.availability.availability_types.exogenous"

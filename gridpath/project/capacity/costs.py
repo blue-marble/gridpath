@@ -140,7 +140,6 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             / mod.hours_in_period_timepoints[prd]
         )
 
-    # TODO: make sure this gets added to the objective function downstream
     m.Fixed_Cost_in_Period = Expression(m.PRJ_OPR_PRDS, rule=fixed_cost_rule)
 
 

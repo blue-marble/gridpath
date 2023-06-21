@@ -45,6 +45,7 @@ PREREQUISITE_MODULE_NAMES = [
     "project.operations.carbon_emissions",
     "transmission",
     "transmission.capacity",
+    "transmission.capacity.capacity_types",
     "transmission.capacity.capacity",
     "transmission.availability.availability",
     "transmission.operations.operational_types",

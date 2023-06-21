@@ -107,7 +107,7 @@ class TestSpecifiedTransmission(unittest.TestCase):
         actual_periods = sorted([(tx, p) for (tx, p) in instance.TX_SPEC_OPR_PRDS])
         self.assertListEqual(expected_periods, actual_periods)
 
-        # Param: tx_spec_min_flow_mw
+        # Param: tx_spec_min_cap_mw
         expected_min = OrderedDict(
             sorted(
                 {
@@ -125,7 +125,7 @@ class TestSpecifiedTransmission(unittest.TestCase):
         actual_min = OrderedDict(
             sorted(
                 {
-                    (tx, p): instance.tx_spec_min_flow_mw[tx, p]
+                    (tx, p): instance.tx_spec_min_cap_mw[tx, p]
                     for (tx, p) in instance.TX_SPEC_OPR_PRDS
                 }.items()
             )
@@ -150,7 +150,7 @@ class TestSpecifiedTransmission(unittest.TestCase):
         actual_max = OrderedDict(
             sorted(
                 {
-                    (tx, p): instance.tx_spec_max_flow_mw[tx, p]
+                    (tx, p): instance.tx_spec_max_cap_mw[tx, p]
                     for (tx, p) in instance.TX_SPEC_OPR_PRDS
                 }.items()
             )
