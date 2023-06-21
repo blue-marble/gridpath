@@ -160,33 +160,53 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     """
     prj_cap_df = getattr(d, PROJECT_CAPACITY_DF)
 
-    results_columns = [
+    results_columns1 = [
+        "capacity_cost",
+    ]
+    data1 = [
+        [
+            prj,
+            prd,
+            value(m.Capacity_Cost_in_Period[prj, prd]),
+        ]
+        for (prj, prd) in m.PRJ_FIN_PRDS
+    ]
+
+    cost_df1 = create_results_df(
+        index_columns=["project", "period"],
+        results_columns=results_columns1,
+        data=data1,
+    )
+
+    for c in results_columns1:
+        prj_cap_df[c] = None
+    prj_cap_df.update(cost_df1)
+
+    results_columns2 = [
         "hours_in_period_timepoints",
         "hours_in_subproblem_period",
-        "capacity_cost",
         "fixed_cost",
     ]
-    data = [
+    data2 = [
         [
             prj,
             prd,
             m.hours_in_period_timepoints[prd],
             m.hours_in_subproblem_period[prd],
-            value(m.Capacity_Cost_in_Period[prj, prd]),
             value(m.Fixed_Cost_in_Period[prj, prd]),
         ]
-        for (prj, prd) in m.PRJ_FIN_PRDS
+        for (prj, prd) in m.PRJ_OPR_PRDS
     ]
 
-    cost_df = create_results_df(
+    cost_df2 = create_results_df(
         index_columns=["project", "period"],
-        results_columns=results_columns,
-        data=data,
+        results_columns=results_columns2,
+        data=data2,
     )
 
-    for c in results_columns:
+    for c in results_columns2:
         prj_cap_df[c] = None
-    prj_cap_df.update(cost_df)
+    prj_cap_df.update(cost_df2)
 
     setattr(d, PROJECT_CAPACITY_DF, prj_cap_df)
 
