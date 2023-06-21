@@ -68,7 +68,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +-------------------------------------------------------------------------+
     | Required Input Params                                                   |
     +=========================================================================+
-    | | :code:`tx_spec_min_cap_mw`                                           |
+    | | :code:`tx_spec_min_cap_mw`                                            |
     | | *Defined over*: :code:`TX_SPEC_OPR_PRDS`                              |
     | | *Within*: :code:`Reals`                                               |
     |                                                                         |
@@ -76,13 +76,25 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | each operational period. A negative number designates flow in the       |
     | opposite direction of the defined line flow direction.                  |
     +-------------------------------------------------------------------------+
-    | | :code:`tx_spec_max_cap_mw`                                           |
+    | | :code:`tx_spec_max_cap_mw`                                            |
     | | *Defined over*: :code:`TX_SPEC_OPR_PRDS`                              |
     | | *Within*: :code:`Reals`                                               |
     |                                                                         |
     | The transmission line's specified maximum flow capacity (in MW) in      |
     | each operational period. A negative number designates flow in the       |
     | opposite direction of the defined line flow direction.                  |
+    +-------------------------------------------------------------------------+
+
+    +-------------------------------------------------------------------------+
+    | Optional Input Params                                                   |
+    +=========================================================================+
+    | | :code:`tx_spec_fixed_cost_per_mw_yr`                                  |
+    | | *Defined over*: :code:`TX_SPEC_OPR_PRDS`                              |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | Fixed cost to be incurred in each operational period. Multiplied by the |
+    | average of the absolute values of the min and max line capacity.        |
     +-------------------------------------------------------------------------+
 
     """

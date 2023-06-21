@@ -99,12 +99,26 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +-------------------------------------------------------------------------+
     | Required Input Params                                                   |
     +=========================================================================+
-    | | :code:`tx_new_lin_financial_lifetime_yrs_by_vintage`                                       |
+    | | :code:`tx_new_lin_operational_lifetime_yrs_by_vintage`                |
     | | *Defined over*: :code:`TX_NEW_LIN_VNTS`                               |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
-    | The transmission line's lifetime, i.e. how long line capacity of a      |
-    | particular vintage remains operational.                                 |
+    | The transmission line's operational lifetime, i.e. how long line        |
+    | capacity of a particular vintage remains operational.                   |
+    +-------------------------------------------------------------------------+
+    | | :code:`tx_new_lin_fixed_cost_per_mw_yr`                               |
+    | | *Defined over*: :code:`TX_NEW_LIN_VNTS`                               |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The transmission line's fixed cost to be paid in each operational       |
+    | period in real dollars per unit capacity of that vintage.               |
+    +-------------------------------------------------------------------------+
+    | | :code:`tx_new_lin_financial_lifetime_yrs_by_vintage`                  |
+    | | *Defined over*: :code:`TX_NEW_LIN_VNTS`                               |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The transmission line's financial lifetime, i.e. how long payments are  |
+    | made if new capacity is built.                                          |
     +-------------------------------------------------------------------------+
     | | :code:`tx_new_lin_annualized_real_cost_per_mw_yr`                     |
     | | *Defined over*: :code:`TX_NEW_LIN_VNTS`                               |
@@ -114,10 +128,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | real dollars per MW.                                                    |
     +-------------------------------------------------------------------------+
 
-    .. note:: The cost input to the model is a levelized cost per unit
+    .. note:: The cost input to the model is an annualized cost per unit
         capacity. This annualized cost is incurred in each period of the study
         (and multiplied by the number of years the period represents) for
-        the duration of the project's lifetime. It is up to the user to
+        the duration of the line's lifetime. It is up to the user to
         ensure that the :code:`tx_new_lin_financial_lifetime_yrs_by_vintage` and
         :code:`tx_new_lin_annualized_real_cost_per_mw_yr` parameters are
         consistent.
@@ -150,8 +164,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     |                                                                         |
     | Indexed set that describes the operational periods for each possible    |
     | transmission line-vintage combination, based on the                     |
-    | :code:`tx_new_lin_financial_lifetime_yrs_by_vintage`. For instance, transmission capacity    |
-    | of the 2020 vintage with lifetime of 30 years will be assumed           |
+    | :code:`tx_new_lin_financial_lifetime_yrs_by_vintage`. For instance,     |
+    | capacity of the 2020 vintage with lifetime of 30 years will be assumed  |
     | operational starting Jan 1, 2020 and through Dec 31, 2049, but will     |
     | *not* be operational in 2050.                                           |
     +-------------------------------------------------------------------------+
@@ -168,7 +182,31 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     |                                                                         |
     | Indexed set that describes the transmission line-vintages that could    |
     | be operational in each period based on the                              |
-    | :code:`tx_new_lin_financial_lifetime_yrs_by_vintage`.                                        |
+    | :code:`tx_new_lin_financial_lifetime_yrs_by_vintage`.                   |
+    +-------------------------------------------------------------------------+
+    | | :code:`FIN_PRDS_BY_TX_NEW_LIN_VINTAGE`                                |
+    | | *Defined over*: :code:`TX_NEW_LIN_VNTS`                               |
+    |                                                                         |
+    | Indexed set that describes the financial periods for each possible      |
+    | line-vintage combination, based on the                                  |
+    | :code:`tx_new_lin_financial_lifetime_yrs_by_vintage`. For instance,     |
+    | capacity of  the 2020 vintage with lifetime of 30 years will be assumed |
+    | to incur costs starting Jan 1, 2020 and through Dec 31, 2049, but will  |
+    | *not* be operational in 2050.                                           |
+    +-------------------------------------------------------------------------+
+    | | :code:`TX_NEW_LIN_FIN_PRDS`                                           |
+    |                                                                         |
+    | Two-dimensional set that includes the periods when line capacity of     |
+    | any vintage *could* be incurring costs if built. This set is added to   |
+    | the list of sets to join to get the final :code:`TX_FIN_PRDS` set       |
+    | defined in **gridpath.transmission.capacity.capacity**.                 |
+    +-------------------------------------------------------------------------+
+    | | :code:`TX_NEW_LIN_VNTS_FIN_IN_PERIOD`                                 |
+    | | *Defined over*: :code:`PERIODS`                                       |
+    |                                                                         |
+    | Indexed set that describes the line-vintages that could be incurring    |
+    | costs in each period based on the                                       |
+    | :code:`tx_new_lin_operational_lifetime_yrs_by_vintage`.                 |
     +-------------------------------------------------------------------------+
 
     |

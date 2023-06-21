@@ -96,19 +96,6 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | Depending on the capacity type, this can be a pre-specified amount or   |
     | a decision variable (with an associated cost).                          |
     +-------------------------------------------------------------------------+
-    | | :code:`Tx_Capacity_Cost_in_Period`                                       |
-    | | *Defined over*: :code:`TX_OPR_PRDS`                                   |
-    |                                                                         |
-    | The cost to have the transmission capacity available in the period.     |
-    | Depending on the capacity type, this could be zero.                     |
-    | If the subproblem is less than a full year (e.g. in production-         |
-    | cost mode with 365 daily subproblems), the costs are scaled down        |
-    | proportionally.                                                         |
-    +-------------------------------------------------------------------------+
-    | | :code:`Total_Tx_Capacity_Costs`                                       |
-    |                                                                         |
-    | The total cost of the system's transmission capacity across all periods.|
-    +-------------------------------------------------------------------------+
 
     """
 
