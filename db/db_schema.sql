@@ -2185,6 +2185,8 @@ transmission_line VARCHAR(64),
 period INTEGER,
 min_mw FLOAT,
 max_mw FLOAT,
+fixed_cost_per_mw_yr FLOAT, -- multiplied by the mean of the absolute
+-- values of min and max flow
 PRIMARY KEY (transmission_specified_capacity_scenario_id, transmission_line,
 period),
 FOREIGN KEY (transmission_specified_capacity_scenario_id) REFERENCES
@@ -2205,7 +2207,9 @@ CREATE TABLE inputs_transmission_new_cost (
 transmission_new_cost_scenario_id INTEGER,
 transmission_line VARCHAR(64),
 vintage INTEGER,
-tx_lifetime_yrs FLOAT,
+tx_operational_lifetime_yrs FLOAT,
+tx_fixed_cost_per_mw_yr FLOAT,
+tx_financial_lifetime_yrs FLOAT,
 tx_annualized_real_cost_per_mw_yr FLOAT,
 PRIMARY KEY (transmission_new_cost_scenario_id, transmission_line,
 vintage),
@@ -4736,6 +4740,7 @@ stage_id INTEGER,
 Total_Capacity_Costs Float,
 Total_Fixed_Costs FLOAT,
 Total_Tx_Capacity_Costs Float,
+Total_Tx_Fixed_Costs FLOAT,
 Total_PRM_Deliverability_Group_Costs FLOAT,
 Total_Variable_OM_Cost Float,
 Total_Fuel_Cost Float,
@@ -5077,7 +5082,7 @@ WITH main_data (transmission_line, transmission_new_cost_scenario_id, period,
     highrange)
     AS (
     SELECT transmission_line, transmission_new_cost_scenario_id, vintage AS period,
-    vintage + tx_lifetime_yrs AS highrange
+    vintage + tx_operational_lifetime_yrs AS highrange
     FROM inputs_transmission_new_cost
     UNION ALL
     SELECT transmission_line, transmission_new_cost_scenario_id, period + 1 AS period,

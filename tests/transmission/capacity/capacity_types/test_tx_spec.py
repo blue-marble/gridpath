@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -107,7 +107,7 @@ class TestSpecifiedTransmission(unittest.TestCase):
         actual_periods = sorted([(tx, p) for (tx, p) in instance.TX_SPEC_OPR_PRDS])
         self.assertListEqual(expected_periods, actual_periods)
 
-        # Param: tx_spec_min_flow_mw
+        # Param: tx_spec_min_cap_mw
         expected_min = OrderedDict(
             sorted(
                 {
@@ -125,7 +125,7 @@ class TestSpecifiedTransmission(unittest.TestCase):
         actual_min = OrderedDict(
             sorted(
                 {
-                    (tx, p): instance.tx_spec_min_flow_mw[tx, p]
+                    (tx, p): instance.tx_spec_min_cap_mw[tx, p]
                     for (tx, p) in instance.TX_SPEC_OPR_PRDS
                 }.items()
             )
@@ -150,12 +150,37 @@ class TestSpecifiedTransmission(unittest.TestCase):
         actual_max = OrderedDict(
             sorted(
                 {
-                    (tx, p): instance.tx_spec_max_flow_mw[tx, p]
+                    (tx, p): instance.tx_spec_max_cap_mw[tx, p]
                     for (tx, p) in instance.TX_SPEC_OPR_PRDS
                 }.items()
             )
         )
         self.assertDictEqual(expected_max, actual_max)
+
+        # Param: tx_spec_fixed_cost_per_mw_yr
+        expected_fixed_cost = OrderedDict(
+            sorted(
+                {
+                    ("Tx1", 2020): 0,
+                    ("Tx1", 2030): 5,
+                    ("Tx2", 2020): 0,
+                    ("Tx2", 2030): 5,
+                    ("Tx3", 2020): 0,
+                    ("Tx3", 2030): 5,
+                    ("Tx_binary_1", 2020): 0,
+                    ("Tx_binary_1", 2030): 5,
+                }.items()
+            )
+        )
+        actual_fixed_cost = OrderedDict(
+            sorted(
+                {
+                    (tx, p): instance.tx_spec_fixed_cost_per_mw_yr[tx, p]
+                    for (tx, p) in instance.TX_SPEC_OPR_PRDS
+                }.items()
+            )
+        )
+        self.assertDictEqual(expected_fixed_cost, actual_fixed_cost)
 
 
 if __name__ == "__main__":

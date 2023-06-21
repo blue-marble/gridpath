@@ -39,7 +39,6 @@ from pyomo.environ import (
     Var,
     Expression,
     NonNegativeReals,
-    Constraint,
     value,
 )
 

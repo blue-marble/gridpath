@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.investment.periods",
     "geography.load_zones",
     "transmission",
+    "transmission.capacity.capacity_types",
 ]
 NAME_OF_MODULE_BEING_TESTED = "transmission.capacity.capacity"
 IMPORTED_PREREQ_MODULES = list()

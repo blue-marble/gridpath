@@ -21,9 +21,7 @@ import unittest
 
 from tests.common_functions import create_abstract_model, add_components_and_load_data
 
-TEST_DATA_DIRECTORY = os.path.join(
-    os.path.dirname(__file__), "..", "..", "..", "test_data"
-)
+TEST_DATA_DIRECTORY = os.path.join(os.path.dirname(__file__), "..", "..", "test_data")
 
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
@@ -32,18 +30,10 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.investment.periods",
     "geography.load_zones",
     "transmission",
-    "transmission.capacity",
     "transmission.capacity.capacity_types",
     "transmission.capacity.capacity",
-    "transmission.availability.availability",
-    "transmission.operations.operational_types",
-    "transmission.operations.operations",
-    "geography.transmission_target_zones",
-    "system.policy.transmission_targets.period_transmission_target",
-    "transmission.operations.transmission_target_contributions",
-    "system.policy.transmission_targets",
 ]
-NAME_OF_MODULE_BEING_TESTED = "system.policy.transmission_targets.aggregate_period_transmission_target_contributions"
+NAME_OF_MODULE_BEING_TESTED = "transmission.capacity.costs"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -61,7 +51,7 @@ except ImportError:
     print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED + " to test.")
 
 
-class TestAggregateTxEnergyTargetContributions(unittest.TestCase):
+class TestTxCosts(unittest.TestCase):
     """ """
 
     def test_add_model_components(self):
@@ -90,9 +80,10 @@ class TestAggregateTxEnergyTargetContributions(unittest.TestCase):
             stage="",
         )
 
-    def test_data_loaded_correctly(self):
+    def test_derived_data(self):
         """
-        Test components initialized with data as expected
+        Capacity-type gridpath should have added appropriate data;
+        make sure it is all as expected
         :return:
         """
         m, data = add_components_and_load_data(
@@ -103,6 +94,17 @@ class TestAggregateTxEnergyTargetContributions(unittest.TestCase):
             stage="",
         )
         instance = m.create_instance(data)
+
+        # TX_FIN_PRDS
+        expected_tx_fin_p = sorted(
+            [
+                ("Tx_New", 2020),
+                ("Tx_New", 2030),
+            ]
+        )
+        actual_tx_fin_p = sorted([(tx, p) for (tx, p) in instance.TX_FIN_PRDS])
+
+        self.assertListEqual(expected_tx_fin_p, actual_tx_fin_p)
 
 
 if __name__ == "__main__":

@@ -33,6 +33,7 @@ prm_cost_group_sets = "prm_cost_groups"
 prm_cost_group_prm_type = "prm_cost_group_prm_type"
 
 tx_capacity_type_operational_period_sets = "tx_capacity_type_operational_period_sets"
+tx_capacity_type_financial_period_sets = "tx_capacity_type_financial_period_sets"
 
 load_balance_production_components = "load_balance_production_components"
 load_balance_consumption_components = "load_balance_consumption_components"
@@ -101,6 +102,7 @@ class DynamicComponents(object):
 
         # ### Transmission sets and variables ### #
         setattr(self, tx_capacity_type_operational_period_sets, list())
+        setattr(self, tx_capacity_type_financial_period_sets, list())
 
         # ### Constraint and objective function components ### #
         # Load balance constraint

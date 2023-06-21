@@ -35,6 +35,7 @@ PREREQUISITE_MODULE_NAMES = [
     "system.policy.carbon_cap.carbon_cap",
     "transmission",
     "transmission.capacity",
+    "transmission.capacity.capacity_types",
     "transmission.capacity.capacity",
     "transmission.availability.availability",
     "transmission.operations.operational_types",
