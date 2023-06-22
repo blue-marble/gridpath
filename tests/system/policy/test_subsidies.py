@@ -96,7 +96,7 @@ class TestSubsidies(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: PRJ_VNTS_FIN_IN_PERIOD
+        # Set: PRJ_OR_TX_VNTS_FIN_IN_PERIOD
         expected_prj_v_fin_in_prd = {
             2020: sorted([("Battery", 2020), ("Gas_CCGT_New", 2020)]),
             2030: sorted(
@@ -104,7 +104,7 @@ class TestSubsidies(unittest.TestCase):
             ),
         }
         actual_prj_v_fin_in_prd = {
-            p: sorted(list(instance.PRJ_VNTS_FIN_IN_PERIOD[p].data()))
+            p: sorted(list(instance.PRJ_OR_TX_VNTS_FIN_IN_PERIOD[p].data()))
             for p in instance.PERIODS
         }
         self.assertDictEqual(expected_prj_v_fin_in_prd, actual_prj_v_fin_in_prd)
@@ -137,21 +137,17 @@ class TestSubsidies(unittest.TestCase):
         actual_prg = sorted([prg for prg in instance.PROGRAMS])
         self.assertListEqual(expectd_prg, actual_prg)
 
-        # Set: PROGRAM_PROJECT_VINTAGES
+        # Set: PROGRAM_PROJECT_OR_TX_VINTAGES
         expected_prg_prj_v = sorted([("ITC", "Battery", 2020)])
         actual_prg_prj_v = sorted(
-            [(prg, prj, prd) for (prg, prj, prd) in instance.PROGRAM_PROJECT_VINTAGES]
+            [
+                (prg, prj, prd)
+                for (prg, prj, prd) in instance.PROGRAM_PROJECT_OR_TX_VINTAGES
+            ]
         )
         self.assertListEqual(expected_prg_prj_v, actual_prg_prj_v)
 
-        # Set: PROGRAM_ELIGIBLE_PROJECTS
-        expected_eligible_prj = sorted([("Battery")])
-        actual_eligible_prj = sorted(
-            [prj for prj in instance.PROGRAM_ELIGIBLE_PROJECTS]
-        )
-        self.assertListEqual(expected_eligible_prj, actual_eligible_prj)
-
-        # Set:PROGRAM_VINTAGES_BY_PROJECT
+        # Set:PROGRAM_VINTAGES_BY_PROJECT_OR_TX_LINE
         expected_prg_v_by_prj = OrderedDict(
             sorted(
                 {
@@ -162,13 +158,13 @@ class TestSubsidies(unittest.TestCase):
         # Exclude projects with empty set
         actual_prg_v_by_prj = {}
         for prj in instance.PROJECTS:
-            if instance.PROGRAM_VINTAGES_BY_PROJECT[prj].data() != ():
-                actual_prg_v_by_prj[prj] = instance.PROGRAM_VINTAGES_BY_PROJECT[
+            if instance.PROGRAM_VINTAGES_BY_PROJECT_OR_TX_LINE[prj].data() != ():
+                actual_prg_v_by_prj[
                     prj
-                ].data()[0]
+                ] = instance.PROGRAM_VINTAGES_BY_PROJECT_OR_TX_LINE[prj].data()[0]
         self.assertDictEqual(expected_prg_v_by_prj, actual_prg_v_by_prj)
 
-        # Set:PROJECT_VINTAGES_BY_PROGRAM
+        # Set:PROJECT_OR_TX_VINTAGES_BY_PROGRAM
         expected_prj_v_by_prg = OrderedDict(
             sorted(
                 {
@@ -179,10 +175,28 @@ class TestSubsidies(unittest.TestCase):
         # Exclude projects with empty set
         actual_prj_v_by_prg = {}
         for prg in instance.PROGRAMS:
-            actual_prj_v_by_prg[prg] = instance.PROJECT_VINTAGES_BY_PROGRAM[prg].data()[
-                0
-            ]
+            actual_prj_v_by_prg[prg] = instance.PROJECT_OR_TX_VINTAGES_BY_PROGRAM[
+                prg
+            ].data()[0]
         self.assertDictEqual(expected_prj_v_by_prg, actual_prj_v_by_prg)
+
+        # Param: is_tx
+        is_tx_expected = OrderedDict(
+            sorted(
+                {
+                    ("ITC", "Battery", 2020): 0,
+                }.items()
+            )
+        )
+        is_tx_actual = OrderedDict(
+            sorted(
+                {
+                    (prg, prj, v): instance.is_tx[prg, prj, v]
+                    for (prg, prj, v) in instance.PROGRAM_PROJECT_OR_TX_VINTAGES
+                }.items()
+            )
+        )
+        self.assertDictEqual(is_tx_expected, is_tx_actual)
 
         # Param: annual_payment_subsidy
         expected_subsidy = OrderedDict(
@@ -196,7 +210,7 @@ class TestSubsidies(unittest.TestCase):
             sorted(
                 {
                     (prg, prj, v): instance.annual_payment_subsidy[prg, prj, v]
-                    for (prg, prj, v) in instance.PROGRAM_PROJECT_VINTAGES
+                    for (prg, prj, v) in instance.PROGRAM_PROJECT_OR_TX_VINTAGES
                 }.items()
             )
         )
