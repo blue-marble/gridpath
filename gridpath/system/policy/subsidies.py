@@ -61,7 +61,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             scenario_directory=scenario_directory,
             subproblem=subproblem,
             stage=stage,
-            which_type="capacity_type",
+            which_type="tx_capacity_type",
             prj_or_tx="transmission_line",
         )
         if include_tx_lines
@@ -74,7 +74,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
     imported_tx_capacity_modules = load_project_capacity_type_modules(
-        required_tx_capacity_modules
+        required_tx_capacity_modules, prj_or_tx="transmission"
     )
 
     # TODO: make this work with all new capacity types; will need to standardize set

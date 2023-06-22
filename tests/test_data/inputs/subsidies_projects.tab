@@ -1,2 +1,3 @@
 program	project	period	is_tx	annual_payment_subsidy
 ITC	Battery	2020	0	20
+ITC	Tx_New	2020	1	10

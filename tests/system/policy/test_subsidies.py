@@ -34,6 +34,11 @@ PREREQUISITE_MODULE_NAMES = [
     "project.capacity.capacity_types",
     "project.capacity.capacity",
     "project.capacity.costs",
+    "transmission",
+    "transmission.capacity",
+    "transmission.capacity.capacity_types",
+    "transmission.capacity.capacity",
+    "transmission.capacity.costs",
 ]
 NAME_OF_MODULE_BEING_TESTED = "system.policy.subsidies"
 IMPORTED_PREREQ_MODULES = list()
@@ -138,7 +143,7 @@ class TestSubsidies(unittest.TestCase):
         self.assertListEqual(expectd_prg, actual_prg)
 
         # Set: PROGRAM_PROJECT_OR_TX_VINTAGES
-        expected_prg_prj_v = sorted([("ITC", "Battery", 2020)])
+        expected_prg_prj_v = sorted([("ITC", "Battery", 2020), ("ITC", "Tx_New", 2020)])
         actual_prg_prj_v = sorted(
             [
                 (prg, prj, prd)
@@ -149,35 +154,32 @@ class TestSubsidies(unittest.TestCase):
 
         # Set:PROGRAM_VINTAGES_BY_PROJECT_OR_TX_LINE
         expected_prg_v_by_prj = OrderedDict(
-            sorted(
-                {
-                    "Battery": ("ITC", 2020),
-                }.items()
-            )
+            sorted({"Battery": ("ITC", 2020), "Tx_New": ("ITC", 2020)}.items())
         )
         # Exclude projects with empty set
         actual_prg_v_by_prj = {}
-        for prj in instance.PROJECTS:
+        for prj in instance.PROJECTS_TX_LINES:
             if instance.PROGRAM_VINTAGES_BY_PROJECT_OR_TX_LINE[prj].data() != ():
                 actual_prg_v_by_prj[
                     prj
                 ] = instance.PROGRAM_VINTAGES_BY_PROJECT_OR_TX_LINE[prj].data()[0]
+
         self.assertDictEqual(expected_prg_v_by_prj, actual_prg_v_by_prj)
 
         # Set:PROJECT_OR_TX_VINTAGES_BY_PROGRAM
         expected_prj_v_by_prg = OrderedDict(
-            sorted(
-                {
-                    "ITC": ("Battery", 2020),
-                }.items()
-            )
+            sorted({"ITC": [("Battery", 2020), ("Tx_New", 2020)]}.items())
         )
         # Exclude projects with empty set
         actual_prj_v_by_prg = {}
         for prg in instance.PROGRAMS:
-            actual_prj_v_by_prg[prg] = instance.PROJECT_OR_TX_VINTAGES_BY_PROGRAM[
-                prg
-            ].data()[0]
+            actual_prj_v_by_prg[prg] = sorted(
+                [
+                    (prj, v)
+                    for (prj, v) in instance.PROJECT_OR_TX_VINTAGES_BY_PROGRAM[prg]
+                ]
+            )
+
         self.assertDictEqual(expected_prj_v_by_prg, actual_prj_v_by_prg)
 
         # Param: is_tx
@@ -185,6 +187,7 @@ class TestSubsidies(unittest.TestCase):
             sorted(
                 {
                     ("ITC", "Battery", 2020): 0,
+                    ("ITC", "Tx_New", 2020): 1,
                 }.items()
             )
         )
@@ -203,6 +206,7 @@ class TestSubsidies(unittest.TestCase):
             sorted(
                 {
                     ("ITC", "Battery", 2020): 20,
+                    ("ITC", "Tx_New", 2020): 10,
                 }.items()
             )
         )
