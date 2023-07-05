@@ -29,6 +29,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     Here, we sum up all subsidies, take the negative of that, and add the resulting
     expression to the objective-function dynamic components.
     """
+    include_tx_lines = True if hasattr(m, "TX_LINES") else False
 
     # Add costs to objective function
     def total_subsidy_rule(mod):
@@ -37,6 +38,15 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             * mod.discount_factor[p]
             * mod.number_years_represented[p]
             for (g, p) in mod.PRJ_FIN_PRDS
+        ) + (
+            -sum(
+                mod.Tx_Annual_Payment_Reduction_from_Base[g, p]
+                * mod.discount_factor[p]
+                * mod.number_years_represented[p]
+                for (g, p) in mod.TX_FIN_PRDS
+            )
+            if include_tx_lines
+            else 0
         )
 
     m.Total_Subsidies = Expression(rule=total_subsidy_rule)

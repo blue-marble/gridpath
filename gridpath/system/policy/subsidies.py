@@ -231,6 +231,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.Project_Annual_Payment_Reduction_from_Base = Expression(
         m.PRJ_FIN_PRDS, initialize=total_annual_payment_reduction
     )
+    if include_tx_lines:
+        m.Tx_Annual_Payment_Reduction_from_Base = Expression(
+            m.TX_FIN_PRDS, initialize=total_annual_payment_reduction
+        )
 
     def max_program_budget_rule(mod, prg, prd):
         projects_subsidized_in_period = [
@@ -365,14 +369,16 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         annual_payment_subsidy
         FROM inputs_system_subsidies_projects
         WHERE subsidy_scenario_id = {subscenarios.SUBSIDY_SCENARIO_ID}
-        AND project_or_tx in (
+        AND (
+            project_or_tx in (
             SELECT project FROM inputs_project_portfolios
             WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
-        ) OR 
-        project_or_tx in (
-            SELECT transmission_line FROM inputs_transmission_portfolios
-            WHERE transmission_portfolio_scenario_id = 
-            {subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID}
+            ) OR 
+            project_or_tx in (
+                SELECT transmission_line FROM inputs_transmission_portfolios
+                WHERE transmission_portfolio_scenario_id = 
+                {subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID}
+            )
         )
         AND vintage in (
         SELECT period FROM inputs_temporal_periods
