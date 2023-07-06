@@ -60,6 +60,7 @@ from gridpath.auxiliary.validations import (
     validate_row_monotonicity,
     validate_column_monotonicity,
 )
+from gridpath.common_functions import create_results_df
 from gridpath.project.capacity.capacity_types.common_methods import (
     relevant_periods_by_project_vintage,
     project_relevant_periods,
@@ -638,8 +639,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     data_portal.data()["tx_new_lin_max_cumulative_new_build_mw"] = max_cumulative_mw
 
 
-# TODO: untested
-def export_results(m, d, scenario_directory, subproblem, stage):
+def add_to_tx_period_results(scenario_directory, subproblem, stage, m, d):
     """
 
     :param m:
@@ -650,38 +650,18 @@ def export_results(m, d, scenario_directory, subproblem, stage):
     :return:
     """
 
-    # Export transmission capacity
-    with open(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "transmission_new_capacity.csv",
-        ),
-        "w",
-        newline="",
-    ) as f:
-        writer = csv.writer(f)
-        writer.writerow(
-            [
-                "transmission_line",
-                "period",
-                "load_zone_from",
-                "load_zone_to",
-                "new_build_transmission_capacity_mw",
-            ]
-        )
-        for transmission_line, v in m.TX_NEW_LIN_VNTS:
-            writer.writerow(
-                [
-                    transmission_line,
-                    v,
-                    m.load_zone_from[transmission_line],
-                    m.load_zone_to[transmission_line],
-                    value(m.TxNewLin_Build_MW[transmission_line, v]),
-                ]
-            )
+    results_columns = ["new_build_capacity_mw"]
+    data = [
+        [tx, prd, value(m.TxNewLin_Build_MW[tx, prd])]
+        for (tx, prd) in m.TX_NEW_LIN_VNTS
+    ]
+    captype_df = create_results_df(
+        index_columns=["tx_line", "period"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    return results_columns, captype_df
 
 
 # Database
@@ -815,90 +795,6 @@ def save_duals(scenario_directory, subproblem, stage, instance, dynamic_componen
         "period",
         "dual",
     ]
-
-
-def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    """
-
-    :param scenario_id:
-    :param subproblem:
-    :param stage:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-    # New build capacity results
-    if not quiet:
-        print("transmission new build")
-    # Delete prior results and create temporary import table for ordering
-    setup_results_import(
-        conn=db,
-        cursor=c,
-        table="results_transmission_capacity_new_build",
-        scenario_id=scenario_id,
-        subproblem=subproblem,
-        stage=stage,
-    )
-
-    # Load results into the temporary table
-    results = []
-    with open(
-        os.path.join(results_directory, "transmission_new_capacity.csv"), "r"
-    ) as capacity_file:
-        reader = csv.reader(capacity_file)
-
-        next(reader)  # skip header
-        for row in reader:
-            transmission_line = row[0]
-            period = row[1]
-            load_zone_from = row[2]
-            load_zone_to = row[3]
-            new_build_transmission_capacity_mw = row[4]
-
-            results.append(
-                (
-                    scenario_id,
-                    transmission_line,
-                    period,
-                    subproblem,
-                    stage,
-                    load_zone_from,
-                    load_zone_to,
-                    new_build_transmission_capacity_mw,
-                )
-            )
-
-    insert_temp_sql = """
-        INSERT INTO 
-        temp_results_transmission_capacity_new_build{}
-        (scenario_id, transmission_line, period, subproblem_id, stage_id, 
-        load_zone_from, load_zone_to, 
-        new_build_transmission_capacity_mw)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?);
-        """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
-
-    # Insert sorted results into permanent results table
-    insert_sql = """
-        INSERT INTO results_transmission_capacity_new_build
-        (scenario_id, transmission_line, period, subproblem_id, stage_id,
-        load_zone_from, load_zone_to, new_build_transmission_capacity_mw)
-        SELECT
-        scenario_id, transmission_line, period, subproblem_id, stage_id, 
-        load_zone_from, load_zone_to, new_build_transmission_capacity_mw
-        FROM temp_results_transmission_capacity_new_build{}
-        ORDER BY scenario_id, transmission_line, period, subproblem_id, 
-        stage_id;
-        """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)
 
 
 # Validation

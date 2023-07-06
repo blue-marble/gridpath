@@ -117,9 +117,11 @@ def all_modules_list():
         "project.reliability.local_capacity",
         "project.reliability.local_capacity.local_capacity_contribution",
         "transmission",
+        "transmission.capacity",
         "transmission.capacity.capacity_types",
         "transmission.capacity.capacity",
         "transmission.capacity.costs",
+        "transmission.capacity.consolidate_results",
         "transmission.capacity.capacity_groups",
         "transmission.availability.availability",
         "transmission.operations.operational_types",
@@ -224,9 +226,11 @@ def optional_modules_list():
     optional_modules = {
         "transmission": [
             "transmission",
+            "transmission.capacity",
             "transmission.capacity.capacity_types",
             "transmission.capacity.capacity",
             "transmission.capacity.costs",
+            "transmission.capacity.consolidate_results",
             "transmission.capacity.capacity_groups",
             "transmission.availability.availability",
             "transmission.operations.operational_types",

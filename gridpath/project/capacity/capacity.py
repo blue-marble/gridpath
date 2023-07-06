@@ -26,7 +26,7 @@ import pandas as pd
 from pyomo.environ import Set, Expression, value
 
 from gridpath.auxiliary.auxiliary import (
-    get_required_subtype_modules_from_projects_file,
+    get_required_subtype_modules,
     join_sets,
 )
 from gridpath.auxiliary.dynamic_components import capacity_type_operational_period_sets
@@ -110,7 +110,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Dynamic Inputs
     ###########################################################################
 
-    required_capacity_modules = get_required_subtype_modules_from_projects_file(
+    required_capacity_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
         subproblem=subproblem,
         stage=stage,
@@ -279,7 +279,7 @@ def operational_periods_by_project(prj, project_operational_periods):
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """ """
-    required_capacity_modules = get_required_subtype_modules_from_projects_file(
+    required_capacity_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
         subproblem=subproblem,
         stage=stage,
@@ -310,7 +310,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    # First create the dataframe with main capaicty results
+    # First create the dataframe with main capacity results
     main_df = pd.DataFrame(
         columns=[
             "project",
@@ -346,7 +346,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     ).set_index(["project", "period"])
 
     # Module-specific capacity results
-    required_capacity_modules = get_required_subtype_modules_from_projects_file(
+    required_capacity_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
         subproblem=subproblem,
         stage=stage,
@@ -407,7 +407,7 @@ def summarize_results(scenario_directory, subproblem, stage):
         )
     )
 
-    required_capacity_modules = get_required_subtype_modules_from_projects_file(
+    required_capacity_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
         subproblem=subproblem,
         stage=stage,

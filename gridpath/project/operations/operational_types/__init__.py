@@ -24,7 +24,7 @@ module, these defaults are used.
 
 from pyomo.environ import Set
 
-from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file
+from gridpath.auxiliary.auxiliary import get_required_subtype_modules
 from gridpath.project.operations.common_functions import load_operational_type_modules
 
 
@@ -43,7 +43,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     """
     # Import needed operational modules
-    required_operational_modules = get_required_subtype_modules_from_projects_file(
+    required_operational_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
         subproblem=subproblem,
         stage=stage,
@@ -87,7 +87,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :return:
     """
     # Import needed operational modules
-    required_operational_modules = get_required_subtype_modules_from_projects_file(
+    required_operational_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
         subproblem=subproblem,
         stage=stage,
@@ -123,7 +123,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     """
     # Export module-specific results
     # Operational type modules
-    required_operational_modules = get_required_subtype_modules_from_projects_file(
+    required_operational_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
         subproblem=subproblem,
         stage=stage,
@@ -151,7 +151,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
     # Save module-specific duals
     # Operational type modules
-    required_operational_modules = get_required_subtype_modules_from_projects_file(
+    required_operational_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
         subproblem=subproblem,
         stage=stage,

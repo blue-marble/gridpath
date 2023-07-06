@@ -25,9 +25,11 @@ from pyomo.environ import Set, Expression, value
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import join_sets
+from gridpath.common_functions import create_results_df
 from gridpath.transmission.capacity.common_functions import (
     load_tx_capacity_type_modules,
 )
+from gridpath.transmission.capacity.consolidate_results import TX_CAPACITY_DF
 from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.auxiliary.dynamic_components import tx_capacity_type_financial_period_sets
 import gridpath.transmission.capacity.capacity_types as tx_cap_type_init
@@ -227,78 +229,57 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
+    tx_cap_df = getattr(d, TX_CAPACITY_DF)
 
-    df = pd.read_csv(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "inputs",
-            "transmission_lines.tab",
-        ),
-        sep="\t",
-        usecols=["transmission_line", "tx_capacity_type", "tx_operational_type"],
+    results_columns1 = [
+        "capacity_cost",
+    ]
+    data1 = [
+        [
+            tx,
+            prd,
+            value(m.Tx_Capacity_Cost_in_Period[tx, prd]),
+        ]
+        for (tx, prd) in m.TX_FIN_PRDS
+    ]
+
+    cost_df1 = create_results_df(
+        index_columns=["tx_line", "period"],
+        results_columns=results_columns1,
+        data=data1,
     )
 
-    # Required capacity modules are the unique set of tx capacity types
-    # This list will be used to know which capacity modules to load
-    # Module-specific results
-    required_tx_capacity_modules = df.tx_capacity_type.unique()
+    for c in results_columns1:
+        tx_cap_df[c] = None
+    tx_cap_df.update(cost_df1)
 
-    # Import needed transmission capacity type modules for expression rules
-    imported_tx_capacity_modules = load_tx_capacity_type_modules(
-        required_tx_capacity_modules
+    results_columns2 = [
+        "hours_in_period_timepoints",
+        "hours_in_subproblem_period",
+        "fixed_cost",
+    ]
+    data2 = [
+        [
+            tx,
+            prd,
+            m.hours_in_period_timepoints[prd],
+            m.hours_in_subproblem_period[prd],
+            value(m.Tx_Fixed_Cost_in_Period[tx, prd]),
+        ]
+        for (tx, prd) in m.TX_OPR_PRDS
+    ]
+
+    cost_df2 = create_results_df(
+        index_columns=["tranmission_line", "period"],
+        results_columns=results_columns2,
+        data=data2,
     )
 
-    # Add model components for each of the transmission capacity modules
-    for op_m in required_tx_capacity_modules:
-        if hasattr(imported_tx_capacity_modules[op_m], "export_results"):
-            imported_tx_capacity_modules[op_m].export_results(
-                m, d, scenario_directory, subproblem, stage
-            )
-        else:
-            pass
+    for c in results_columns2:
+        tx_cap_df[c] = None
+    tx_cap_df.update(cost_df2)
 
-    # Export transmission capacity costs
-    with open(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "costs_transmission_capacity.csv",
-        ),
-        "w",
-        newline="",
-    ) as f:
-        writer = csv.writer(f)
-        writer.writerow(
-            [
-                "tx_line",
-                "period",
-                "hours_in_period_timepoints",
-                "hours_in_subproblem_period",
-                "load_zone_from",
-                "load_zone_to",
-                "capacity_cost",
-                "fixed_cost",
-            ]
-        )
-
-        for l, p in m.TX_FIN_PRDS:
-            writer.writerow(
-                [
-                    l,
-                    p,
-                    m.hours_in_period_timepoints[p],
-                    m.hours_in_subproblem_period[p],
-                    m.load_zone_from[l],
-                    m.load_zone_to[l],
-                    value(m.Tx_Capacity_Cost_in_Period[l, p]),
-                ]
-            )
-
-    # TODO: add fixed costs when consolidating line-period results
+    setattr(d, TX_CAPACITY_DF, tx_cap_df)
 
 
 def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
@@ -341,185 +322,6 @@ def save_duals(scenario_directory, subproblem, stage, instance, dynamic_componen
 
 # Database
 ###############################################################################
-
-
-def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    """
-
-    :param scenario_id:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-    # Tx capacity results
-    if not quiet:
-        print("transmission capacity")
-
-    # Delete prior results and create temporary import table for ordering
-    setup_results_import(
-        conn=db,
-        cursor=c,
-        table="results_transmission_capacity",
-        scenario_id=scenario_id,
-        subproblem=subproblem,
-        stage=stage,
-    )
-
-    # Load results into the temporary table
-    results = []
-    with open(
-        os.path.join(results_directory, "transmission_capacity.csv"), "r"
-    ) as capacity_costs_file:
-        reader = csv.reader(capacity_costs_file)
-
-        next(reader)  # skip header
-        for row in reader:
-            tx_line = row[0]
-            period = row[1]
-            load_zone_from = row[2]
-            load_zone_to = row[3]
-            min_mw = row[4]
-            max_mw = row[5]
-
-            results.append(
-                (
-                    scenario_id,
-                    tx_line,
-                    period,
-                    subproblem,
-                    stage,
-                    load_zone_from,
-                    load_zone_to,
-                    min_mw,
-                    max_mw,
-                )
-            )
-
-    insert_temp_sql = """
-        INSERT INTO temp_results_transmission_capacity{}
-            (scenario_id, tx_line, period, subproblem_id, stage_id,
-            load_zone_from, load_zone_to,
-            min_mw, max_mw)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
-            """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
-
-    # Insert sorted results into permanent results table
-    insert_sql = """
-        INSERT INTO results_transmission_capacity
-        (scenario_id, tx_line, period, subproblem_id, stage_id,
-        load_zone_from, load_zone_to, min_mw, max_mw)
-        SELECT
-        scenario_id, tx_line, period, subproblem_id, stage_id,
-        load_zone_from, load_zone_to, min_mw, max_mw
-        FROM temp_results_transmission_capacity{}
-         ORDER BY scenario_id, tx_line, period, subproblem_id, stage_id;
-        """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)
-
-    # Capacity cost results
-    if not quiet:
-        print("transmission capacity costs")
-
-    # Delete prior results and create temporary import table for ordering
-    setup_results_import(
-        conn=db,
-        cursor=c,
-        table="results_transmission_costs_capacity",
-        scenario_id=scenario_id,
-        subproblem=subproblem,
-        stage=stage,
-    )
-
-    # Load results into the temporary table
-    results = []
-    with open(
-        os.path.join(results_directory, "costs_transmission_capacity.csv"), "r"
-    ) as capacity_costs_file:
-        reader = csv.reader(capacity_costs_file)
-
-        next(reader)  # skip header
-        for row in reader:
-            tx_line = row[0]
-            period = row[1]
-            hours_in_period_timepoints = row[2]
-            hours_in_subproblem_period = row[3]
-            load_zone_from = row[4]
-            load_zone_to = row[5]
-            capacity_cost = row[6]
-
-            results.append(
-                (
-                    scenario_id,
-                    tx_line,
-                    period,
-                    subproblem,
-                    stage,
-                    hours_in_period_timepoints,
-                    hours_in_subproblem_period,
-                    load_zone_from,
-                    load_zone_to,
-                    capacity_cost,
-                )
-            )
-
-    insert_temp_sql = """
-        INSERT INTO  temp_results_transmission_costs_capacity{}
-        (scenario_id, tx_line, period, subproblem_id, stage_id,
-        hours_in_period_timepoints, hours_in_subproblem_period,
-        load_zone_from, load_zone_to, capacity_cost)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-        """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
-
-    # Insert sorted results into permanent results table
-    insert_sql = """
-        INSERT INTO results_transmission_costs_capacity
-        (scenario_id, tx_line, period, subproblem_id, stage_id, 
-        hours_in_period_timepoints, hours_in_subproblem_period,
-        load_zone_from, load_zone_to, capacity_cost)
-        SELECT
-        scenario_id, tx_line, period, subproblem_id, stage_id,
-        hours_in_period_timepoints, hours_in_subproblem_period, 
-        load_zone_from, load_zone_to, capacity_cost
-        FROM temp_results_transmission_costs_capacity{}
-         ORDER BY scenario_id, tx_line, period, subproblem_id, stage_id;
-        """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)
-
-    # Update the capacity cost removing the fraction attributable to the
-    # spinup and lookahead hours
-    update_sql = """
-        UPDATE results_transmission_costs_capacity
-        SET capacity_cost_wo_spinup_or_lookahead = capacity_cost * (
-            SELECT fraction_of_hours_in_subproblem
-            FROM spinup_or_lookahead_ratios
-            WHERE spinup_or_lookahead = 0
-            AND results_transmission_costs_capacity.scenario_id = 
-            spinup_or_lookahead_ratios.scenario_id
-            AND results_transmission_costs_capacity.subproblem_id = 
-            spinup_or_lookahead_ratios.subproblem_id
-            AND results_transmission_costs_capacity.stage_id = 
-            spinup_or_lookahead_ratios.stage_id
-            AND results_transmission_costs_capacity.period = 
-            spinup_or_lookahead_ratios.period
-        )
-        ;
-    """
-
-    spin_on_database_lock(conn=db, cursor=c, sql=update_sql, data=(), many=False)
 
 
 def process_results(db, c, scenario_id, subscenarios, quiet):
@@ -573,7 +375,7 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
         (SELECT scenario_id, subproblem_id, stage_id, period, 
         load_zone_to AS load_zone,
         SUM(capacity_cost) AS capacity_cost
-        FROM results_transmission_costs_capacity
+        FROM results_transmission_capacity
         GROUP BY scenario_id, subproblem_id, stage_id, period, load_zone
         ) AS cap_table
         USING (scenario_id, subproblem_id, stage_id, period, load_zone)
@@ -582,3 +384,25 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
     spin_on_database_lock(
         conn=db, cursor=c, sql=agg_sql, data=(scenario_id,), many=False
     )
+
+    # Update the capacity cost removing the fraction attributable to the
+    # spinup and lookahead hours
+    update_sql = """
+        UPDATE results_transmission_capacity
+        SET capacity_cost_wo_spinup_or_lookahead = capacity_cost * (
+            SELECT fraction_of_hours_in_subproblem
+            FROM spinup_or_lookahead_ratios
+            WHERE spinup_or_lookahead = 0
+            AND results_transmission_capacity.scenario_id = 
+            spinup_or_lookahead_ratios.scenario_id
+            AND results_transmission_capacity.subproblem_id = 
+            spinup_or_lookahead_ratios.subproblem_id
+            AND results_transmission_capacity.stage_id = 
+            spinup_or_lookahead_ratios.stage_id
+            AND results_transmission_capacity.period = 
+            spinup_or_lookahead_ratios.period
+        )
+        ;
+    """
+
+    spin_on_database_lock(conn=db, cursor=c, sql=update_sql, data=(), many=False)

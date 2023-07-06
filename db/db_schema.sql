@@ -4150,25 +4150,20 @@ tx_line VARCHAR(64),
 period INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
+tx_capacity_type VARCHAR(16),
 load_zone_from VARCHAR(32),
 load_zone_to VARCHAR(32),
 min_mw FLOAT,
 max_mw FLOAT,
+new_build_capacity_mw FLOAT,
+hours_in_period_timepoints FLOAT,
+hours_in_subproblem_period FLOAT,
+capacity_cost FLOAT,
+fixed_cost FLOAT,
+capacity_cost_wo_spinup_or_lookahead FLOAT,
 PRIMARY KEY (scenario_id, tx_line, period, subproblem_id, stage_id)
 );
 
-DROP TABLE IF EXISTS results_transmission_capacity_new_build;
-CREATE TABLE results_transmission_capacity_new_build (
-scenario_id INTEGER,
-transmission_line VARCHAR(64),
-period INTEGER,
-subproblem_id INTEGER,
-stage_id INTEGER,
-load_zone_from VARCHAR(32),
-load_zone_to VARCHAR(32),
-new_build_transmission_capacity_mw FLOAT,
-PRIMARY KEY (scenario_id, transmission_line, period, subproblem_id, stage_id)
-);
 
 DROP TABLE IF EXISTS results_transmission_group_capacity;
 CREATE TABLE results_transmission_group_capacity (
@@ -4181,23 +4176,6 @@ group_new_capacity FLOAT,
 transmission_capacity_group_new_capacity_min FLOAT,
 transmission_capacity_group_new_capacity_max FLOAT,
 PRIMARY KEY (scenario_id, subproblem_id, stage_id, transmission_capacity_group, period)
-);
-
--- TODO: add table for costs new build?
-DROP TABLE IF EXISTS results_transmission_costs_capacity;
-CREATE TABLE results_transmission_costs_capacity (
-scenario_id INTEGER,
-tx_line VARCHAR(64),
-period INTEGER,
-subproblem_id INTEGER,
-stage_id INTEGER,
-hours_in_period_timepoints FLOAT,
-hours_in_subproblem_period FLOAT,
-load_zone_from VARCHAR(32),
-load_zone_to VARCHAR(32),
-capacity_cost FLOAT,
-capacity_cost_wo_spinup_or_lookahead FLOAT,
-PRIMARY KEY (scenario_id, tx_line, period, subproblem_id, stage_id)
 );
 
 
