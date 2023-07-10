@@ -103,9 +103,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     def get_tx_vintages_fin_in_period(mod, p):
         fin_periods = []
         if hasattr(mod, "TX_NEW_LIN_VNTS_FIN_IN_PRD"):
-            fin_periods += [
-                (prj, v) for (prj, v) in mod.TX_NEW_LIN_VNTS_FIN_IN_PRD[p]
-            ]
+            fin_periods += [(prj, v) for (prj, v) in mod.TX_NEW_LIN_VNTS_FIN_IN_PRD[p]]
 
         return fin_periods
 
