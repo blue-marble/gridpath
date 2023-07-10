@@ -28,7 +28,7 @@ from pyomo.environ import (
     value,
 )
 
-from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file
+from gridpath.auxiliary.auxiliary import get_required_subtype_modules
 from gridpath.project.capacity.common_functions import (
     load_project_capacity_type_modules,
 )
@@ -48,7 +48,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     include_tx_lines = True if hasattr(m, "TX_LINES") else False
 
     # We'll need the project vintages financial in each period
-    required_capacity_modules = get_required_subtype_modules_from_projects_file(
+    required_capacity_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
         subproblem=subproblem,
         stage=stage,

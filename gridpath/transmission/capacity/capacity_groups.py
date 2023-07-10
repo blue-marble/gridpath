@@ -22,7 +22,7 @@ import pandas as pd
 from pyomo.environ import Set, Param, Constraint, NonNegativeReals, Expression, value
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file
+from gridpath.auxiliary.auxiliary import get_required_subtype_modules
 from gridpath.auxiliary.db_interface import setup_results_import
 import gridpath.transmission.capacity.capacity_types as cap_type_init
 from gridpath.transmission.capacity.common_functions import (
@@ -122,7 +122,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
     # Import needed capacity type modules
-    required_tx_capacity_modules = get_required_subtype_modules_from_projects_file(
+    required_tx_capacity_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
         subproblem=subproblem,
         stage=stage,

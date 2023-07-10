@@ -16,7 +16,7 @@ from pyomo.environ import Expression
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import (
-    get_required_subtype_modules_from_projects_file,
+    get_required_subtype_modules,
     load_subtype_modules,
 )
 
@@ -29,7 +29,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     :return:
     """
     # Import needed availability type modules
-    required_availability_modules = get_required_subtype_modules_from_projects_file(
+    required_availability_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
         subproblem=subproblem,
         stage=stage,
@@ -133,7 +133,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :param stage:
     :return:
     """
-    required_availability_modules = get_required_subtype_modules_from_projects_file(
+    required_availability_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
         subproblem=subproblem,
         stage=stage,
@@ -164,7 +164,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     """
 
     # Module-specific capacity results
-    required_availability_modules = get_required_subtype_modules_from_projects_file(
+    required_availability_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
         subproblem=subproblem,
         stage=stage,

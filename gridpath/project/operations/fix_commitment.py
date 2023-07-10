@@ -25,7 +25,7 @@ from pyomo.environ import Set, Param, NonNegativeReals, Expression
 
 
 from gridpath.auxiliary.auxiliary import (
-    get_required_subtype_modules_from_projects_file,
+    get_required_subtype_modules,
     check_for_integer_subdirectories,
 )
 from gridpath.project.operations.common_functions import load_operational_type_modules
@@ -93,7 +93,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     # Dynamic Inputs
 
-    required_operational_modules = get_required_subtype_modules_from_projects_file(
+    required_operational_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
         subproblem=subproblem,
         stage=stage,
@@ -162,7 +162,7 @@ def fix_variables(m, d, scenario_directory, subproblem, stage):
     :return:
     """
 
-    required_operational_modules = get_required_subtype_modules_from_projects_file(
+    required_operational_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
         subproblem=subproblem,
         stage=stage,

@@ -27,7 +27,7 @@ from gridpath.auxiliary.validations import (
     validate_row_monotonicity,
     validate_column_monotonicity,
 )
-from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file
+from gridpath.auxiliary.auxiliary import get_required_subtype_modules
 from gridpath.project.capacity.common_functions import (
     load_project_capacity_type_modules,
 )
@@ -157,7 +157,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     """
     # Import needed capacity type modules
-    required_capacity_modules = get_required_subtype_modules_from_projects_file(
+    required_capacity_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
         subproblem=subproblem,
         stage=stage,

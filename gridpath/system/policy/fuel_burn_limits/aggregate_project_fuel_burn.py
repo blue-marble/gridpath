@@ -166,12 +166,28 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         INNER JOIN (
             SELECT fuel, fuel_burn_limit_ba
                 FROM inputs_geography_fuel_burn_limit_balancing_areas
-                WHERE fuel_burn_limit_ba_scenario_id = {fuel_burn_limit_ba_scenario_id})
+                WHERE fuel_burn_limit_ba_scenario_id = {fuel_burn_limit_ba_scenario_id}
+                AND fuel in (
+                SELECT DISTINCT fuel
+                FROM inputs_project_fuels
+                WHERE (project, project_fuel_scenario_id) in (
+                    SELECT DISTINCT project, project_fuel_scenario_id
+                    FROM inputs_project_operational_chars
+                    WHERE project_operational_chars_scenario_id = {project_operational_chars_scenario_id}
+                    AND project in (
+                    SELECT DISTINCT project
+                    FROM inputs_project_portfolios
+                    WHERE project_portfolio_scenario_id = {project_portfolio_scenario_id}
+                    )
+                )
+                )
+                )
         USING (fuel, fuel_burn_limit_ba);
         """.format(
             project_portfolio_scenario_id=subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
             project_fuel_burn_limit_ba_scenario_id=subscenarios.PROJECT_FUEL_BURN_LIMIT_BA_SCENARIO_ID,
             fuel_burn_limit_ba_scenario_id=subscenarios.FUEL_BURN_LIMIT_BA_SCENARIO_ID,
+            project_operational_chars_scenario_id=subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
         )
     )
 
