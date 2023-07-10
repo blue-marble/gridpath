@@ -103,15 +103,22 @@ class TestSubsidies(unittest.TestCase):
 
         # Set: PRJ_OR_TX_VNTS_FIN_IN_PERIOD
         expected_prj_v_fin_in_prd = {
-            2020: sorted([("Battery", 2020), ("Gas_CCGT_New", 2020)]),
+            2020: sorted([("Battery", 2020), ("Gas_CCGT_New", 2020), ("Tx_New", 2020)]),
             2030: sorted(
-                [("Gas_CCGT_New", 2030), ("Gas_CT_New", 2030), ("Battery", 2020)]
+                [
+                    ("Gas_CCGT_New", 2030),
+                    ("Gas_CT_New", 2030),
+                    ("Battery", 2020),
+                    ("Tx_New", 2020),
+                    ("Tx_New", 2030),
+                ]
             ),
         }
         actual_prj_v_fin_in_prd = {
             p: sorted(list(instance.PRJ_OR_TX_VNTS_FIN_IN_PERIOD[p].data()))
             for p in instance.PERIODS
         }
+
         self.assertDictEqual(expected_prj_v_fin_in_prd, actual_prj_v_fin_in_prd)
 
         # Set: PROGRAM_PERIODS
