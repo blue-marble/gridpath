@@ -202,7 +202,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | the list of sets to join to get the final :code:`TX_FIN_PRDS` set       |
     | defined in **gridpath.transmission.capacity.capacity**.                 |
     +-------------------------------------------------------------------------+
-    | | :code:`TX_NEW_LIN_VNTS_FIN_IN_PERIOD`                                 |
+    | | :code:`TX_NEW_LIN_VNTS_FIN_IN_PRD`                                    |
     | | *Defined over*: :code:`PERIODS`                                       |
     |                                                                         |
     | Indexed set that describes the line-vintages that could be incurring    |
