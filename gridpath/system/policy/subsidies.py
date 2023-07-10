@@ -57,7 +57,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     # Add transmission capacity types if transmission feature is included
     required_tx_capacity_modules = (
-        get_required_subtype_modules_from_projects_file(
+        get_required_subtype_modules(
             scenario_directory=scenario_directory,
             subproblem=subproblem,
             stage=stage,
