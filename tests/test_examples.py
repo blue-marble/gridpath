@@ -1399,6 +1399,23 @@ class TestExamples(unittest.TestCase):
             -3796301348838.3267,
         )
 
+    def test_example_2periods_new_build_simple_prm_2loadzones_newtx_w_transfers_w_subsidies(
+        self,
+    ):
+        """
+        Check validation and objective function value of
+        "test_new_solar" example
+        :return:
+        """
+
+        self.check_validation(
+            "2periods_new_build_simple_prm_2loadzones_newtx_w_transfers_w_subsidies"
+        )
+        self.run_and_check_objective(
+            "2periods_new_build_simple_prm_2loadzones_newtx_w_transfers_w_subsidies",
+            -17323439361.04978,
+        )
+
     @classmethod
     def tearDownClass(cls):
         os.remove(DB_PATH)
