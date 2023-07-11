@@ -742,7 +742,7 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
     :return:
     """
 
-    # Dispatch results added to project_operations.csv via add_to_dispatch_results()
+    # Dispatch results added to project_timepoint.csv via add_to_dispatch_results()
 
     # If there's a linked_subproblems_map CSV file, check which of the
     # current subproblem TMPS we should export results for to link to the

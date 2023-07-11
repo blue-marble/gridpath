@@ -3549,8 +3549,8 @@ FOREIGN KEY (solver_options_id)
 
 -- TODO: project can belong to more than one energy target zone, so this
 --  doesn't make sense this way; need to rethink these columns
-DROP TABLE IF EXISTS results_project_capacity;
-CREATE TABLE results_project_capacity (
+DROP TABLE IF EXISTS results_project_period;
+CREATE TABLE results_project_period (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
@@ -3624,8 +3624,8 @@ availability_derate FLOAT,
 PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
 );
 
-DROP TABLE IF EXISTS results_project_operations;
-CREATE TABLE results_project_operations (
+DROP TABLE IF EXISTS results_project_timepoint;
+CREATE TABLE results_project_timepoint (
 scenario_id INTEGER,
 project VARCHAR(64),
 timepoint INTEGER,
@@ -4040,7 +4040,7 @@ PRIMARY KEY (scenario_id, load_zone, period, subproblem_id, stage_id,
 spinup_or_lookahead));
 
 -- Operational Costs - Aggregated
--- By timepoint costs are in the results_project_operations table
+-- By timepoint costs are in the results_project_timepoint table
 DROP TABLE IF EXISTS results_project_costs_operations_agg;
 CREATE TABLE results_project_costs_operations_agg (
 scenario_id INTEGER,

@@ -33,7 +33,7 @@ from gridpath.auxiliary.dynamic_components import (
     reserve_to_energy_adjustment_params,
 )
 from gridpath.common_functions import create_results_df
-from gridpath.project.operations.consolidate_results import PROJECT_OPERATIONS_DF
+from gridpath.project import PROJECT_TIMEPOINT_DF
 
 
 def generic_record_dynamic_components(
@@ -392,7 +392,7 @@ def generic_export_results(
     :param reserve_ba_param_name:
     :return:
     """
-    prj_opr_df = getattr(d, PROJECT_OPERATIONS_DF)
+    prj_opr_df = getattr(d, PROJECT_TIMEPOINT_DF)
     results_columns = [
         f"{module_name}_ba",
         f"{module_name}_reserve_provision_mw",

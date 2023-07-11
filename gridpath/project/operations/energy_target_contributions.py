@@ -20,7 +20,6 @@ import csv
 import os.path
 from pyomo.environ import Param, Set, Expression, value
 
-from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import (
     get_required_subtype_modules,
     cursor_to_df,
@@ -31,10 +30,9 @@ from gridpath.auxiliary.db_interface import (
 )
 from gridpath.common_functions import create_results_df
 from gridpath.project.operations.common_functions import load_operational_type_modules
-from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.auxiliary.validations import write_validation_to_database, validate_idxs
 import gridpath.project.operations.operational_types as op_type_init
-from gridpath.project.operations.consolidate_results import PROJECT_OPERATIONS_DF
+from gridpath.project import PROJECT_TIMEPOINT_DF
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -276,7 +274,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    prj_opr_df = getattr(d, PROJECT_OPERATIONS_DF)
+    prj_opr_df = getattr(d, PROJECT_TIMEPOINT_DF)
     results_columns = [
         "energy_target_zone",
         "scheduled_energy_target_energy_mw",

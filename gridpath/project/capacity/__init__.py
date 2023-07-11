@@ -51,19 +51,19 @@ def import_results_into_database(
     setup_results_import(
         conn=db,
         cursor=c,
-        table="results_project_capacity",
+        table="results_project_period",
         scenario_id=scenario_id,
         subproblem=subproblem,
         stage=stage,
     )
 
-    df = pd.read_csv(os.path.join(results_directory, "project_capacity.csv"))
+    df = pd.read_csv(os.path.join(results_directory, "project_period.csv"))
     df["scenario_id"] = scenario_id
     df["subproblem_id"] = subproblem
     df["stage_id"] = stage
 
     spin_on_database_lock_generic(
         command=df.to_sql(
-            name="results_project_capacity", con=db, if_exists="append", index=False
+            name="results_project_period", con=db, if_exists="append", index=False
         )
     )

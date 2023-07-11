@@ -19,8 +19,6 @@
 
 import os.path
 
-PROJECT_OPERATIONS_DF = "project_operations_df"
-
 
 def export_results(scenario_directory, subproblem, stage, m, d):
     """
@@ -34,7 +32,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             str(subproblem),
             str(stage),
             "results",
-            "project_operations.csv",
+            "project_timepoint.csv",
         ),
         sep=",",
         index=True,

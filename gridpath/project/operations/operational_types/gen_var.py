@@ -573,7 +573,7 @@ def process_model_results(db, c, scenario_id, subscenarios, quiet):
             timepoint, timepoint_weight, number_of_hours_in_timepoint, 
             load_zone, 
             sum(scheduled_curtailment_mw) AS scheduled_curtailment_mw
-            FROM results_project_operations
+            FROM results_project_timepoint
             WHERE operational_type = 'gen_var'
             GROUP BY scenario_id, subproblem_id, stage_id, timepoint, load_zone
         ) as agg_curtailment_tbl

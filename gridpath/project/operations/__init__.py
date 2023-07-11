@@ -39,7 +39,7 @@ throw a warning (but not an error) at runtime.
 import numpy as np
 import os.path
 import pandas as pd
-from pyomo.environ import Set, Param, Any, NonNegativeReals, Reals, PositiveReals
+from pyomo.environ import Set, Param, NonNegativeReals, Reals, PositiveReals
 
 from db.common_functions import spin_on_database_lock_generic
 from gridpath.auxiliary.auxiliary import cursor_to_df
@@ -54,7 +54,6 @@ from gridpath.auxiliary.validations import (
     validate_startup_shutdown_rate_inputs,
 )
 from gridpath.project.common_functions import append_to_input_file
-from gridpath.project.operations.consolidate_results import PROJECT_OPERATIONS_DF
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -716,60 +715,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         data_portal.data()["fuel_burn_intercept_mmbtu_per_mw_hr"] = intercept_dict
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
-    """
-    Export operations results.
-    :param scenario_directory:
-    :param subproblem:
-    :param stage:
-    :param m:
-    The Pyomo abstract model
-    :param d:
-    Dynamic components
-    :return:
-    Nothing
-    """
-
-    # First create the results dataframe
-    # Other modules will update this dataframe with actual results
-    main_df = pd.DataFrame(
-        columns=[
-            "project",
-            "timepoint",
-            "period",
-            "horizon",
-            "operational_type",
-            "balancing_type",
-            "timepoint_weight",
-            "number_of_hours_in_timepoint",
-            "load_zone",
-            "technology",
-        ],
-        data=[
-            [
-                prj,
-                tmp,
-                m.period[tmp],
-                m.horizon[tmp, m.balancing_type_project[prj]],
-                m.operational_type[prj],
-                m.balancing_type_project[prj],
-                m.tmp_weight[tmp],
-                m.hrs_in_tmp[tmp],
-                m.load_zone[prj],
-                m.technology[prj],
-            ]
-            for (prj, tmp) in m.PRJ_OPR_TMPS
-        ],
-    ).set_index(["project", "timepoint"])
-
-    main_df.sort_index(inplace=True)
-
-    # Add the dataframe to the dynamic components to pass to costs.py
-    # We'll print it after we pass it to costs.py and other modules
-    # This is the first module that adds to the dataframe
-    setattr(d, PROJECT_OPERATIONS_DF, main_df)
-
-
 # Database
 ###############################################################################
 
@@ -1151,24 +1096,24 @@ def import_results_into_database(
     """
     if not quiet:
         print("project operations")
-    # project_operations.csv
+    # project_timepoint.csv
     # Delete prior results and create temporary import table for ordering
     setup_results_import(
         conn=db,
         cursor=c,
-        table="results_project_operations",
+        table="results_project_timepoint",
         scenario_id=scenario_id,
         subproblem=subproblem,
         stage=stage,
     )
 
-    df = pd.read_csv(os.path.join(results_directory, "project_operations.csv"))
+    df = pd.read_csv(os.path.join(results_directory, "project_timepoint.csv"))
     df["scenario_id"] = scenario_id
     df["subproblem_id"] = subproblem
     df["stage_id"] = stage
     spin_on_database_lock_generic(
         command=df.to_sql(
-            name="results_project_operations", con=db, if_exists="append", index=False
+            name="results_project_timepoint", con=db, if_exists="append", index=False
         )
     )
 

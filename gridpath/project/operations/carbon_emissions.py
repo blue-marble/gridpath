@@ -22,9 +22,8 @@ import os.path
 from pyomo.environ import Expression, value
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.common_functions import create_results_df
-from gridpath.project.operations.consolidate_results import PROJECT_OPERATIONS_DF
+from gridpath.project import PROJECT_TIMEPOINT_DF
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -83,7 +82,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    prj_opr_df = getattr(d, PROJECT_OPERATIONS_DF)
+    prj_opr_df = getattr(d, PROJECT_TIMEPOINT_DF)
     results_columns = [
         "carbon_emissions_tons",
     ]
@@ -142,7 +141,7 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
         scenario_id, subproblem_id, stage_id, period, load_zone, technology, 
         spinup_or_lookahead, SUM(carbon_emissions_tons * timepoint_weight
         * number_of_hours_in_timepoint ) AS carbon_emissions_tons 
-        FROM results_project_operations
+        FROM results_project_timepoint
         WHERE scenario_id = ?
         GROUP BY subproblem_id, stage_id, period, load_zone, technology, 
         spinup_or_lookahead

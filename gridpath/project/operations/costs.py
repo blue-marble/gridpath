@@ -31,7 +31,7 @@ from gridpath.project.operations.common_functions import (
 )
 from gridpath.common_functions import create_results_df
 import gridpath.project.operations.operational_types as op_type_init
-from gridpath.project.operations.consolidate_results import PROJECT_OPERATIONS_DF
+from gridpath.project import PROJECT_TIMEPOINT_DF
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -527,7 +527,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return:
     Nothing
     """
-    prj_opr_df = getattr(d, PROJECT_OPERATIONS_DF)
+    prj_opr_df = getattr(d, PROJECT_TIMEPOINT_DF)
     results_columns = [
         "variable_om_cost",
         "fuel_cost",
@@ -616,7 +616,7 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
         AS variable_om_cost,
         SUM(startup_cost * timepoint_weight) AS startup_cost,
         SUM(shutdown_cost * timepoint_weight) AS shutdown_cost
-        FROM results_project_operations
+        FROM results_project_timepoint
         WHERE scenario_id = ?
         GROUP BY subproblem_id, stage_id, period, load_zone, spinup_or_lookahead
         ORDER BY subproblem_id, stage_id, period, load_zone, spinup_or_lookahead

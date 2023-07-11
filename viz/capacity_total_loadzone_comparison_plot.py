@@ -94,7 +94,7 @@ def get_plotting_data(conn, scenario_id, period, subproblem, stage, **kwargs):
     # Total capacity by load_zone and technology
     sql = """SELECT period, load_zone, technology, 
         sum(capacity_mw) AS capacity_mw
-        FROM results_project_capacity
+        FROM results_project_period
         WHERE scenario_id = ?
         AND period = ?
         AND subproblem_id = ?

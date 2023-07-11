@@ -30,7 +30,7 @@ from gridpath.auxiliary.auxiliary import get_required_subtype_modules
 from gridpath.common_functions import create_results_df
 from gridpath.project.operations.common_functions import load_operational_type_modules
 import gridpath.project.operations.operational_types as op_type_init
-from gridpath.project.operations.consolidate_results import PROJECT_OPERATIONS_DF
+from gridpath.project import PROJECT_TIMEPOINT_DF
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -110,8 +110,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     Nothing
     """
 
-    # First create the dataframe with just power provision
-    prj_opr_df = getattr(d, PROJECT_OPERATIONS_DF)
+    prj_opr_df = getattr(d, PROJECT_TIMEPOINT_DF)
     results_columns = [
         "power_mw",
     ]
@@ -161,7 +160,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     # Add the dataframe to the dynamic components to pass to costs.py
     # We'll print it after we pass it to costs.py and other modules
     # This is the first module that adds to the dataframe
-    setattr(d, PROJECT_OPERATIONS_DF, prj_opr_df)
+    setattr(d, PROJECT_TIMEPOINT_DF, prj_opr_df)
 
 
 def summarize_results(scenario_directory, subproblem, stage):
@@ -194,7 +193,7 @@ def summarize_results(scenario_directory, subproblem, stage):
             str(subproblem),
             str(stage),
             "results",
-            "project_operations.csv",
+            "project_timepoint.csv",
         )
     )
 
@@ -297,7 +296,7 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
         scenario_id, subproblem_id, stage_id, period, timepoint, 
         timepoint_weight, number_of_hours_in_timepoint, spinup_or_lookahead,
         load_zone, technology, sum(power_mw) AS power_mw
-        FROM results_project_operations
+        FROM results_project_timepoint
         WHERE scenario_id = ?
         GROUP BY subproblem_id, stage_id, timepoint, 
         load_zone, technology

@@ -324,7 +324,7 @@ def get_all_capacity_data(conn, scenarios):
         SUM(new_build_mw) AS new_build_capacity, 
         SUM(retired_mw) AS retired_capacity, 
         SUM(capacity_mw) AS total_capacity
-        FROM results_project_capacity
+        FROM results_project_period
         GROUP BY scenario_id, subproblem_id, stage_id, period, load_zone, 
         technology) AS agg_tbl
         INNER JOIN 
