@@ -55,6 +55,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         initialize=lambda mod: list(set([s_p for (s_p, p) in mod.SUPERPERIOD_PERIODS])),
     )
 
+
 # Input-Output
 ###############################################################################
 
@@ -62,15 +63,15 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """ """
     input_file = os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs",
-        "superperiods.tab"
-        )
+        scenario_directory, str(subproblem), str(stage), "inputs", "superperiods.tab"
+    )
 
     if os.path.exists(input_file):
         data_portal.load(
             filename=input_file,
             set=m.SUPERPERIOD_PERIODS,
         )
+
 
 # Database
 ###############################################################################
@@ -119,26 +120,29 @@ def write_model_inputs(
 
     superperiod_periods = get_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn
-    )
+    ).fetchall()
 
-    if superperiod_periods.fetchall():
+    if superperiod_periods:
         with open(
             os.path.join(
-                scenario_directory, str(subproblem), str(stage), "inputs",
-                "superperiods.tab"
+                scenario_directory,
+                str(subproblem),
+                str(stage),
+                "inputs",
+                "superperiods.tab",
             ),
             "w",
             newline="",
         ) as periods_tab_file:
             writer = csv.writer(periods_tab_file, delimiter="\t", lineterminator="\n")
 
-        # Write header
-        writer.writerow(
-            [
-                "superperiod",
-                "period",
-            ]
-        )
+            # Write header
+            writer.writerow(
+                [
+                    "superperiod",
+                    "period",
+                ]
+            )
 
-        for row in superperiod_periods:
-            writer.writerow(row)
+            for row in superperiod_periods:
+                writer.writerow(row)

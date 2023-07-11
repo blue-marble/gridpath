@@ -28,6 +28,7 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.operations.timepoints",
     "temporal.operations.horizons",
     "temporal.investment.periods",
+    "temporal.investment.superperiods",
     "geography.load_zones",
     "project",
     "project.capacity",
@@ -109,9 +110,11 @@ class TestSubsidies(unittest.TestCase):
         }
         self.assertDictEqual(expected_prj_v_fin_in_prd, actual_prj_v_fin_in_prd)
 
-        # Set: PROGRAM_PERIODS
+        # Set: PROGRAM_SUPERPERIODS
         expectd_prg_prd = sorted([("ITC", 2020)])
-        actual_prg_prd = sorted([(prg, prd) for (prg, prd) in instance.PROGRAM_PERIODS])
+        actual_prg_prd = sorted(
+            [(prg, prd) for (prg, prd) in instance.PROGRAM_SUPERPERIODS]
+        )
         self.assertListEqual(expectd_prg_prd, actual_prg_prd)
 
         # Param: program_budget
@@ -126,7 +129,7 @@ class TestSubsidies(unittest.TestCase):
             sorted(
                 {
                     (prg, prd): instance.program_budget[prg, prd]
-                    for (prg, prd) in instance.PROGRAM_PERIODS
+                    for (prg, prd) in instance.PROGRAM_SUPERPERIODS
                 }.items()
             )
         )
