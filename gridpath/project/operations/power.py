@@ -27,6 +27,7 @@ import sqlite3
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import get_required_subtype_modules
+from gridpath.common_functions import create_results_df
 from gridpath.project.operations.common_functions import load_operational_type_modules
 import gridpath.project.operations.operational_types as op_type_init
 from gridpath.project.operations.consolidate_results import PROJECT_OPERATIONS_DF
@@ -110,37 +111,27 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     """
 
     # First create the dataframe with just power provision
-    main_df = pd.DataFrame(
-        columns=[
-            "project",
-            "timepoint",
-            "period",
-            "horizon",
-            "operational_type",
-            "balancing_type",
-            "timepoint_weight",
-            "number_of_hours_in_timepoint",
-            "load_zone",
-            "technology",
-            "power_mw",
-        ],
-        data=[
-            [
-                prj,
-                tmp,
-                m.period[tmp],
-                m.horizon[tmp, m.balancing_type_project[prj]],
-                m.operational_type[prj],
-                m.balancing_type_project[prj],
-                m.tmp_weight[tmp],
-                m.hrs_in_tmp[tmp],
-                m.load_zone[prj],
-                m.technology[prj],
-                value(m.Power_Provision_MW[prj, tmp]),
-            ]
-            for (prj, tmp) in m.PRJ_OPR_TMPS
-        ],
-    ).set_index(["project", "timepoint"])
+    prj_opr_df = getattr(d, PROJECT_OPERATIONS_DF)
+    results_columns = [
+        "power_mw",
+    ]
+    data = [
+        [
+            prj,
+            tmp,
+            value(m.Power_Provision_MW[prj, tmp]),
+        ]
+        for (prj, tmp) in m.PRJ_OPR_TMPS
+    ]
+    results_df = create_results_df(
+        index_columns=["project", "timepoint"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    for c in results_columns:
+        prj_opr_df[c] = None
+    prj_opr_df.update(results_df)
 
     required_operational_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
@@ -163,16 +154,14 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 optype_module
             ].add_to_dispatch_results(mod=m)
             for column in results_columns:
-                if column not in main_df:
-                    main_df[column] = None
-            main_df.update(optype_df)
-
-    main_df.sort_index(inplace=True)
+                if column not in prj_opr_df:
+                    prj_opr_df[column] = None
+            prj_opr_df.update(optype_df)
 
     # Add the dataframe to the dynamic components to pass to costs.py
     # We'll print it after we pass it to costs.py and other modules
     # This is the first module that adds to the dataframe
-    setattr(d, PROJECT_OPERATIONS_DF, main_df)
+    setattr(d, PROJECT_OPERATIONS_DF, prj_opr_df)
 
 
 def summarize_results(scenario_directory, subproblem, stage):

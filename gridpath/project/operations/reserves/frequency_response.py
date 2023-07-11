@@ -24,6 +24,8 @@ from pyomo.environ import Set, value
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.auxiliary.dynamic_components import headroom_variables
+from gridpath.common_functions import create_results_df
+from gridpath.project.operations.consolidate_results import PROJECT_OPERATIONS_DF
 from gridpath.project.operations.reserves.reserve_provision import (
     generic_record_dynamic_components,
     generic_add_model_components,
@@ -180,46 +182,34 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         else:
             partial_proj[prj] = 0
 
-    with open(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "reserves_provision_frequency_response.csv",
-        ),
-        "w",
-        newline="",
-    ) as f:
-        writer = csv.writer(f)
-        writer.writerow(
-            [
-                "project",
-                "period",
-                "horizon",
-                "timepoint",
-                "timepoint_weight",
-                "number_of_hours_in_timepoint",
-                "reserve_provision_mw",
-                "partial",
-            ]
-        )
-        for p, tmp in m.FREQUENCY_RESPONSE_PRJ_OPR_TMPS:
-            writer.writerow(
-                [
-                    p,
-                    m.period[tmp],
-                    m.horizon[tmp, m.balancing_type_project[p]],
-                    tmp,
-                    m.tmp_weight[tmp],
-                    m.hrs_in_tmp[tmp],
-                    m.load_zone[p],
-                    m.frequency_response_ba[p],
-                    m.technology[p],
-                    value(m.Provide_Frequency_Response_MW[p, tmp]),
-                    partial_proj[p],
-                ]
-            )
+    prj_opr_df = getattr(d, PROJECT_OPERATIONS_DF)
+    results_columns = [
+        "frequency_response_ba",
+        "frequency_response_reserve_provision_mw",
+        "frequency_response_partial_reserve_provision",
+    ]
+    data = [
+        [
+            prj,
+            tmp,
+            m.frequency_response_ba[prj],
+            value(m.Provide_Frequency_Response_MW[prj, tmp]),
+            partial_proj[prj],
+        ]
+        for (prj, tmp) in m.FREQUENCY_RESPONSE_PRJ_OPR_TMPS
+    ]
+
+    results_df = create_results_df(
+        index_columns=["project", "timepoint"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    for c in results_columns:
+        prj_opr_df[c] = None
+    prj_opr_df.update(results_df)
+
+    setattr(d, "project_operations_df", prj_opr_df)
 
 
 def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):

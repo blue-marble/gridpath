@@ -23,6 +23,8 @@ from pyomo.environ import Expression, value
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.db_interface import setup_results_import
+from gridpath.common_functions import create_results_df
+from gridpath.project.operations.consolidate_results import PROJECT_OPERATIONS_DF
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -81,142 +83,33 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "carbon_emissions_by_project.csv",
-        ),
-        "w",
-        newline="",
-    ) as carbon_emissions_results_file:
-        writer = csv.writer(carbon_emissions_results_file)
-        writer.writerow(
-            [
-                "project",
-                "period",
-                "horizon",
-                "timepoint",
-                "timepoint_weight",
-                "number_of_hours_in_timepoint",
-                "load_zone",
-                "technology",
-                "carbon_emissions_tons",
-            ]
-        )
-        for p, tmp in m.FUEL_PRJ_OPR_TMPS:
-            writer.writerow(
-                [
-                    p,
-                    m.period[tmp],
-                    m.horizon[tmp, m.balancing_type_project[p]],
-                    tmp,
-                    m.tmp_weight[tmp],
-                    m.hrs_in_tmp[tmp],
-                    m.load_zone[p],
-                    m.technology[p],
-                    value(m.Project_Carbon_Emissions[p, tmp]),
-                ]
-            )
+    prj_opr_df = getattr(d, PROJECT_OPERATIONS_DF)
+    results_columns = [
+        "carbon_emissions_tons",
+    ]
+    data = [
+        [
+            prj,
+            tmp,
+            value(m.Project_Carbon_Emissions[prj, tmp]),
+        ]
+        for (prj, tmp) in m.FUEL_PRJ_OPR_TMPS
+    ]
+    emissions_df = create_results_df(
+        index_columns=["project", "timepoint"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    for c in results_columns:
+        prj_opr_df[c] = None
+    prj_opr_df.update(emissions_df)
+
+    setattr(d, "project_operations_df", prj_opr_df)
 
 
 # Database
 ###############################################################################
-
-
-def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    """
-
-    :param scenario_id:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-    # Carbon emission imports by project and timepoint
-    if not quiet:
-        print("project carbon emissions")
-
-    # Delete prior results and create temporary import table for ordering
-    setup_results_import(
-        conn=db,
-        cursor=c,
-        table="results_project_carbon_emissions",
-        scenario_id=scenario_id,
-        subproblem=subproblem,
-        stage=stage,
-    )
-
-    # Load results into the temporary table
-    results = []
-    with open(
-        os.path.join(results_directory, "carbon_emissions_by_project.csv"), "r"
-    ) as emissions_file:
-        reader = csv.reader(emissions_file)
-
-        next(reader)  # skip header
-        for row in reader:
-            project = row[0]
-            period = row[1]
-            horizon = row[2]
-            timepoint = row[3]
-            timepoint_weight = row[4]
-            number_of_hours_in_timepoint = row[5]
-            load_zone = row[6]
-            technology = row[7]
-            carbon_emissions_tons = row[8]
-
-            results.append(
-                (
-                    scenario_id,
-                    project,
-                    period,
-                    subproblem,
-                    stage,
-                    horizon,
-                    timepoint,
-                    timepoint_weight,
-                    number_of_hours_in_timepoint,
-                    load_zone,
-                    technology,
-                    carbon_emissions_tons,
-                )
-            )
-
-    insert_temp_sql = """
-        INSERT INTO 
-        temp_results_project_carbon_emissions{}
-         (scenario_id, project, period, subproblem_id, stage_id,
-         horizon, timepoint, timepoint_weight,
-         number_of_hours_in_timepoint,
-         load_zone, technology, carbon_emission_tons)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-         """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
-
-    # Insert sorted results into permanent results table
-    insert_sql = """
-        INSERT INTO results_project_carbon_emissions
-        (scenario_id, project, period, subproblem_id, stage_id,
-        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
-        load_zone, technology, carbon_emission_tons)
-        SELECT
-        scenario_id, project, period, subproblem_id, stage_id,
-        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
-        load_zone, technology, carbon_emission_tons
-        FROM temp_results_project_carbon_emissions{}
-         ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;
-         """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)
 
 
 def process_results(db, c, scenario_id, subscenarios, quiet):
@@ -244,12 +137,12 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
     agg_sql = """
         INSERT INTO results_project_carbon_emissions_by_technology_period
         (scenario_id, subproblem_id, stage_id, period, load_zone, technology, 
-        spinup_or_lookahead, carbon_emission_tons)
+        spinup_or_lookahead, carbon_emissions_tons)
         SELECT
         scenario_id, subproblem_id, stage_id, period, load_zone, technology, 
-        spinup_or_lookahead, SUM(carbon_emission_tons * timepoint_weight
-        * number_of_hours_in_timepoint ) AS carbon_emission_tons 
-        FROM results_project_carbon_emissions
+        spinup_or_lookahead, SUM(carbon_emissions_tons * timepoint_weight
+        * number_of_hours_in_timepoint ) AS carbon_emissions_tons 
+        FROM results_project_operations
         WHERE scenario_id = ?
         GROUP BY subproblem_id, stage_id, period, load_zone, technology, 
         spinup_or_lookahead
