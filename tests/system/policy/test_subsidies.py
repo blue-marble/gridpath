@@ -111,7 +111,7 @@ class TestSubsidies(unittest.TestCase):
         self.assertDictEqual(expected_prj_v_fin_in_prd, actual_prj_v_fin_in_prd)
 
         # Set: PROGRAM_SUPERPERIODS
-        expectd_prg_prd = sorted([("ITC", 2020)])
+        expectd_prg_prd = sorted([("ITC", 1), ("MultiPeriod", 2)])
         actual_prg_prd = sorted(
             [(prg, prd) for (prg, prd) in instance.PROGRAM_SUPERPERIODS]
         )
@@ -121,7 +121,8 @@ class TestSubsidies(unittest.TestCase):
         expected_budget = OrderedDict(
             sorted(
                 {
-                    ("ITC", 2020): 1000,
+                    ("ITC", 1): 1000,
+                    ("MultiPeriod", 2): 2000,
                 }.items()
             )
         )
@@ -136,7 +137,7 @@ class TestSubsidies(unittest.TestCase):
         self.assertDictEqual(expected_budget, actual_budget)
 
         # Set: PROGRAMS
-        expectd_prg = sorted([("ITC")])
+        expectd_prg = sorted(["ITC", "MultiPeriod"])
         actual_prg = sorted([prg for prg in instance.PROGRAMS])
         self.assertListEqual(expectd_prg, actual_prg)
 
@@ -173,18 +174,12 @@ class TestSubsidies(unittest.TestCase):
 
         # Set:PROJECT_VINTAGES_BY_PROGRAM
         expected_prj_v_by_prg = OrderedDict(
-            sorted(
-                {
-                    "ITC": ("Battery", 2020),
-                }.items()
-            )
+            sorted({"ITC": (("Battery", 2020),), "MultiPeriod": ()}.items())
         )
         # Exclude projects with empty set
         actual_prj_v_by_prg = {}
         for prg in instance.PROGRAMS:
-            actual_prj_v_by_prg[prg] = instance.PROJECT_VINTAGES_BY_PROGRAM[prg].data()[
-                0
-            ]
+            actual_prj_v_by_prg[prg] = instance.PROJECT_VINTAGES_BY_PROGRAM[prg].data()
         self.assertDictEqual(expected_prj_v_by_prg, actual_prj_v_by_prg)
 
         # Param: annual_payment_subsidy

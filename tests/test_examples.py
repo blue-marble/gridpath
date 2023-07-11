@@ -1411,6 +1411,18 @@ class TestExamples(unittest.TestCase):
             "2periods_new_build_2zones_transmission_w_hurdle_rates", objective
         )
 
+    def test_example_test_new_build_storage_itc_single_superperiod(self):
+        """
+        Check validation and objective function value of
+        "test_new_build_storage_itc_single_superperiodself" example
+        :return:
+        """
+
+        self.check_validation("test_new_build_storage_itc_single_superperiod")
+        self.run_and_check_objective(
+            "test_new_build_storage_itc_single_superperiod", -4484589239.2
+        )
+
     @classmethod
     def tearDownClass(cls):
         os.remove(DB_PATH)
