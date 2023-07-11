@@ -234,10 +234,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         "hurdle_cost_negative_direction",
     ]
     data = [
-        [
-            tx,
-            tmp,
-        ]
+        [tx, tmp, m.Hurdle_Cost_Pos_Dir[tx, tmp], m.Hurdle_Cost_Neg_Dir[tx, tmp]]
         for (tx, tmp) in m.TX_OPR_TMPS
     ]
     cost_df = create_results_df(
