@@ -145,21 +145,17 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 
     for optype_module in imported_operational_modules:
         if hasattr(
-            imported_operational_modules[optype_module], "add_to_dispatch_results"
+            imported_operational_modules[optype_module], "add_to_prj_tmp_results"
         ):
-            # TODO: make sure the order of export results is the same between
-            #  this module and the optype modules
             results_columns, optype_df = imported_operational_modules[
                 optype_module
-            ].add_to_dispatch_results(mod=m)
+            ].add_to_prj_tmp_results(mod=m)
             for column in results_columns:
                 if column not in prj_opr_df:
                     prj_opr_df[column] = None
             prj_opr_df.update(optype_df)
 
-    # Add the dataframe to the dynamic components to pass to costs.py
-    # We'll print it after we pass it to costs.py and other modules
-    # This is the first module that adds to the dataframe
+    # Add the updated dataframe to the dynamic components to pass on
     setattr(d, PROJECT_TIMEPOINT_DF, prj_opr_df)
 
 

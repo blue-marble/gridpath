@@ -3430,7 +3430,7 @@ def load_model_data(
         pass
 
 
-def add_to_dispatch_results(
+def add_to_prj_tmp_results(
     mod,
     BIN_OR_LIN,
     Bin_or_Lin,

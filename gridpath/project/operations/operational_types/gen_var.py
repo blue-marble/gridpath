@@ -469,7 +469,7 @@ def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
     )
 
 
-def add_to_dispatch_results(mod):
+def add_to_prj_tmp_results(mod):
     results_columns = [
         "scheduled_curtailment_mw",
         "subhourly_curtailment_mw",

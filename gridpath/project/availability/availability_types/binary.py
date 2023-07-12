@@ -379,7 +379,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     ] = avl_bin_min_avl_hrs_between_events_dict
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def add_to_prj_tmp_results(scenario_directory, subproblem, stage, m, d):
     """
     Export operations results.
     :param scenario_directory:
@@ -411,11 +411,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         data=data,
     )
 
-    for c in results_columns:
-        prj_tmp_df[c] = None
-    prj_tmp_df.update(results_df)
-
-    setattr(d, PROJECT_TIMEPOINT_DF, prj_tmp_df)
+    return results_columns, results_df
 
 
 # Database

@@ -639,7 +639,7 @@ def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
         pass
 
 
-def add_to_dispatch_results(mod):
+def add_to_prj_tmp_results(mod):
     results_columns = [
         "gross_power_mw",
         "auxiliary_consumption_mw",
@@ -673,7 +673,7 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
     :return:
     """
 
-    # Dispatch results added to project_timepoint.csv via add_to_dispatch_results()
+    # Dispatch results added to project_timepoint.csv via add_to_prj_tmp_results()
 
     # If there's a linked_subproblems_map CSV file, check which of the
     # current subproblem TMPS we should export results for to link to the

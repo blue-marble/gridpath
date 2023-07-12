@@ -187,8 +187,6 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         prj_tmp_df[c] = None
     prj_tmp_df.update(results_df)
 
-    setattr(d, PROJECT_TIMEPOINT_DF, prj_tmp_df)
-
     # Module-specific availability results
     required_availability_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
@@ -200,12 +198,17 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         required_availability_modules
     )
     for op_m in required_availability_modules:
-        if hasattr(imported_availability_modules[op_m], "export_results"):
-            imported_availability_modules[op_m].export_results(
+        if hasattr(imported_availability_modules[op_m],
+                   "add_to_prj_tmp_results"):
+            results, results_df = imported_availability_modules[
+                op_m].add_to_prj_tmp_results(
                 scenario_directory, subproblem, stage, m, d
             )
-        else:
-            pass
+            for c in results_columns:
+                prj_tmp_df[c] = None
+            prj_tmp_df.update(results_df)
+
+    setattr(d, PROJECT_TIMEPOINT_DF, prj_tmp_df)
 
 
 def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
