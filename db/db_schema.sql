@@ -3138,10 +3138,11 @@ DROP TABLE IF EXISTS inputs_system_subsidies_projects;
 CREATE TABLE inputs_system_subsidies_projects (
 subsidy_scenario_id INTEGER,
 program VARCHAR(32),
-project VARCHAR(64),
+project_or_tx VARCHAR(64),
 vintage INTEGER,
+is_tx INTEGER,
 annual_payment_subsidy FLOAT,
-PRIMARY KEY (subsidy_scenario_id, program, project, vintage),
+PRIMARY KEY (subsidy_scenario_id, program, project_or_tx, vintage),
 FOREIGN KEY (subsidy_scenario_id) REFERENCES
 subscenarios_system_subsidies (subsidy_scenario_id)
 );

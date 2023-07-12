@@ -1,2 +1,3 @@
 program	project_or_tx	period	is_tx	annual_payment_subsidy
-ITC	Solar	2020	0	20.0
+ITC	Tx_new	2020	1	5.0
+ITC	Tx_new	2030	1	5.0

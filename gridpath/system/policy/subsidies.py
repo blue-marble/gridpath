@@ -24,6 +24,7 @@ from pyomo.environ import (
     Expression,
     Constraint,
     NonNegativeReals,
+    Boolean,
     value,
 )
 
@@ -32,6 +33,7 @@ from gridpath.project.capacity.common_functions import (
     load_project_capacity_type_modules,
 )
 import gridpath.project.capacity.capacity_types as cap_type_init
+import gridpath.transmission.capacity.capacity_types as tx_cap_type_init
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -41,6 +43,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     :param d:
     :return:
     """
+    # First, check if we have transmission lines, so that we know whether to
+    # include them in the sets below
+    include_tx_lines = True if hasattr(m, "TX_LINES") else False
+
     # We'll need the project vintages financial in each period
     required_capacity_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
@@ -49,22 +55,31 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         which_type="capacity_type",
     )
 
+    # Add transmission capacity types if transmission feature is included
+    required_tx_capacity_modules = (
+        get_required_subtype_modules(
+            scenario_directory=scenario_directory,
+            subproblem=subproblem,
+            stage=stage,
+            which_type="tx_capacity_type",
+            prj_or_tx="transmission_line",
+        )
+        if include_tx_lines
+        else []
+    )
+
     # Import needed capacity type modules
     imported_capacity_modules = load_project_capacity_type_modules(
         required_capacity_modules
     )
 
+    imported_tx_capacity_modules = load_project_capacity_type_modules(
+        required_tx_capacity_modules, prj_or_tx="transmission"
+    )
+
     # TODO: make this work with all new capacity types; will need to standardize set
     #  names
     def get_vintages_fin_in_period(mod, p):
-        # # Add any components specific to the capacity type modules
-        # for op_m in required_capacity_modules:
-        #     imp_op_m = imported_capacity_modules[op_m]
-        #     if hasattr(imp_op_m, "vintages_fin_in_period_rule"):
-        #         for p in mod.PERIODS:
-        #             vintages_fin_in_period.update(
-        #                 imp_op_m.vintages_fin_in_period_rule(mod, p)
-        #             )
         fin_periods = []
         if hasattr(mod, "GEN_NEW_LIN_VNTS_FIN_IN_PERIOD"):
             fin_periods += [
@@ -85,6 +100,32 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         initialize=lambda mod, p: get_vintages_fin_in_period(mod, p),
     )
 
+    def get_tx_vintages_fin_in_period(mod, p):
+        fin_periods = []
+        if hasattr(mod, "TX_NEW_LIN_VNTS_FIN_IN_PRD"):
+            fin_periods += [(prj, v) for (prj, v) in mod.TX_NEW_LIN_VNTS_FIN_IN_PRD[p]]
+
+        return fin_periods
+
+    m.TX_VNTS_FIN_IN_PERIOD = Set(
+        m.PERIODS,
+        dimen=2,
+        within=m.TX_LINES * m.PERIODS if include_tx_lines else [],
+        initialize=lambda mod, p: get_tx_vintages_fin_in_period(mod, p),
+    )
+
+    m.PRJ_OR_TX_VNTS_FIN_IN_PERIOD = Set(
+        m.PERIODS,
+        initialize=lambda mod, prd: [prj for prj in mod.PRJ_VNTS_FIN_IN_PERIOD[prd]]
+        + [tx for tx in mod.TX_VNTS_FIN_IN_PERIOD[prd]],
+    )
+
+    # Make a set of all projects and Tx lines
+    m.PROJECTS_TX_LINES = Set(
+        initialize=lambda mod: [prj for prj in mod.PROJECTS]
+        + ([tx for tx in mod.TX_LINES] if hasattr(mod, "TX_LINES") else [])
+    )
+
     # Define programs
     m.PROGRAM_SUPERPERIODS = Set(dimen=2)
     m.program_budget = Param(m.PROGRAM_SUPERPERIODS, within=NonNegativeReals)
@@ -93,56 +134,65 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         initialize=lambda mod: list(set(prg for (prg, prd) in mod.PROGRAM_SUPERPERIODS))
     )
 
-    m.PROGRAM_PROJECT_VINTAGES = Set(
-        dimen=3, within=m.PROGRAMS * m.PROJECTS * m.PERIODS
+    m.PROGRAM_PROJECT_OR_TX_VINTAGES = Set(
+        dimen=3, within=m.PROGRAMS * m.PROJECTS_TX_LINES * m.PERIODS
     )
-    m.PROGRAM_ELIGIBLE_PROJECTS = Set(
-        within=m.PROJECTS,
-        initialize=lambda mod: list(
-            set([prj for (prg, prj, v) in mod.PROGRAM_PROJECT_VINTAGES])
-        ),
-    )
-    m.PROGRAM_VINTAGES_BY_PROJECT = Set(
-        m.PROJECTS,
+
+    m.PROGRAM_VINTAGES_BY_PROJECT_OR_TX_LINE = Set(
+        m.PROJECTS_TX_LINES,
         initialize=lambda mod, project: list(
             set(
                 [
                     (prg, v)
-                    for (prg, prj, v) in mod.PROGRAM_PROJECT_VINTAGES
+                    for (prg, prj, v) in mod.PROGRAM_PROJECT_OR_TX_VINTAGES
                     if prj == project
                 ]
             )
         ),
     )
 
-    m.PROJECT_VINTAGES_BY_PROGRAM = Set(
+    m.PROJECT_OR_TX_VINTAGES_BY_PROGRAM = Set(
         m.PROGRAMS,
         initialize=lambda mod, program: list(
             set(
                 [
                     (prj, v)
-                    for (prg, prj, v) in mod.PROGRAM_PROJECT_VINTAGES
+                    for (prg, prj, v) in mod.PROGRAM_PROJECT_OR_TX_VINTAGES
                     if prg == program
                 ]
             )
         ),
     )
 
+    m.is_tx = Param(m.PROGRAM_PROJECT_OR_TX_VINTAGES, within=Boolean)
     m.annual_payment_subsidy = Param(
-        m.PROGRAM_PROJECT_VINTAGES, within=NonNegativeReals
+        m.PROGRAM_PROJECT_OR_TX_VINTAGES, within=NonNegativeReals
     )
 
-    m.Subsidize_MW = Var(m.PROGRAM_PROJECT_VINTAGES, within=NonNegativeReals)
+    m.Subsidize_MW = Var(m.PROGRAM_PROJECT_OR_TX_VINTAGES, within=NonNegativeReals)
 
     # TODO: this is copied and pasted from potential module, should factor out
-    def new_capacity_rule(mod, prj, prd):
-        cap_type = mod.capacity_type[prj]
-        # The capacity type modules check if this period is a "vintage" for
-        # this project and return 0 if not
-        if hasattr(imported_capacity_modules[cap_type], "new_capacity_rule"):
-            return imported_capacity_modules[cap_type].new_capacity_rule(mod, prj, prd)
+    def new_capacity_rule_project_or_tx(mod, prg, prj_or_tx, prd):
+        if not mod.is_tx[prg, prj_or_tx, prd]:
+            cap_type = mod.capacity_type[prj_or_tx]
+            # The capacity type modules check if this period is a "vintage" for
+            # this project and return 0 if not
+            if hasattr(imported_capacity_modules[cap_type], "new_capacity_rule"):
+                return imported_capacity_modules[cap_type].new_capacity_rule(
+                    mod, prj_or_tx, prd
+                )
+            else:
+                return cap_type_init.new_capacity_rule(mod, prj_or_tx, prd)
         else:
-            return cap_type_init.new_capacity_rule(mod, prj, prd)
+            tx_cap_type = mod.tx_capacity_type[prj_or_tx]
+            # The capacity type modules check if this period is a "vintage" for
+            # this project and return 0 if not
+            if hasattr(imported_tx_capacity_modules[tx_cap_type], "new_capacity_rule"):
+                return imported_tx_capacity_modules[tx_cap_type].new_capacity_rule(
+                    mod, prj_or_tx, prd
+                )
+            else:
+                return tx_cap_type_init.new_capacity_rule(mod, prj_or_tx, prd)
 
     # TODO: add subsidy per MWh
     def new_energy_capacity_rule(mod, prj, prd):
@@ -156,48 +206,59 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         else:
             return cap_type_init.new_energy_capacity_rule(mod, prj, prd)
 
-    def max_subsidized_rule(mod, prg, prj, v):
+    def max_subsidized_rule(mod, prg, prj_or_tx, v):
         """Can't subsidize more capacity than has been built in this period."""
-        return mod.Subsidize_MW[prg, prj, v] <= new_capacity_rule(mod, prj, v)
+        return mod.Subsidize_MW[prg, prj_or_tx, v] <= new_capacity_rule_project_or_tx(
+            mod, prg, prj_or_tx, v
+        )
 
     m.Max_Subsidized_MW = Constraint(
-        m.PROGRAM_PROJECT_VINTAGES, rule=max_subsidized_rule
+        m.PROGRAM_PROJECT_OR_TX_VINTAGES, rule=max_subsidized_rule
     )
 
-    def total_annual_payment_reduction(mod, prj, prd):
+    def total_annual_payment_reduction(mod, prj_or_tx, prd):
         return sum(
-            mod.Subsidize_MW[prg, prj, v] * mod.annual_payment_subsidy[prg, prj, v]
-            for (project, v) in mod.PRJ_VNTS_FIN_IN_PERIOD[prd]
-            for (prg, vintage) in mod.PROGRAM_VINTAGES_BY_PROJECT[prj]
-            if vintage == v and project == prj
+            mod.Subsidize_MW[prg, prj_or_tx, v]
+            * mod.annual_payment_subsidy[prg, prj_or_tx, v]
+            for (project, v) in mod.PRJ_OR_TX_VNTS_FIN_IN_PERIOD[prd]
+            for (prg, vintage) in mod.PROGRAM_VINTAGES_BY_PROJECT_OR_TX_LINE[prj_or_tx]
+            if vintage == v and project == prj_or_tx
         )
 
     m.Project_Annual_Payment_Reduction_from_Base = Expression(
         m.PRJ_FIN_PRDS, initialize=total_annual_payment_reduction
     )
+    if include_tx_lines:
+        m.Tx_Annual_Payment_Reduction_from_Base = Expression(
+            m.TX_FIN_PRDS, initialize=total_annual_payment_reduction
+        )
 
     def max_program_budget_rule(mod, prg, superperiod):
         periods_in_superperiod = [
             prd for (s_prd, prd) in mod.SUPERPERIOD_PERIODS if s_prd == superperiod
         ]
-        # Progjects that can be subusidized in this superperiod
+        # Projects that can be subsidized in this superperiod
         projects_subsidized_in_superperiod = [
             (prj, v)
-            for (prj, v) in mod.PROJECT_VINTAGES_BY_PROGRAM[prg]
+            for (prj, v) in mod.PROJECT_OR_TX_VINTAGES_BY_PROGRAM[prg]
             if v in periods_in_superperiod
         ]
         if projects_subsidized_in_superperiod:
             return (
                 sum(
-                    mod.Subsidize_MW[prg, prj, v]
-                    * mod.annual_payment_subsidy[prg, prj, v]
+                    mod.Subsidize_MW[prg, prj_or_tx_line, v]
+                    * mod.annual_payment_subsidy[prg, prj_or_tx_line, v]
                     * getattr(
                         mod,
                         "{capacity_type}_financial_lifetime_yrs_by_vintage".format(
-                            capacity_type=mod.capacity_type[prj]
+                            capacity_type=mod.capacity_type[prj_or_tx_line]
+                            if not mod.is_tx[prg, prj_or_tx_line, v]
+                            else mod.tx_capacity_type[prj_or_tx_line]
                         ),
-                    )[prj, v]
-                    for (prj, v) in mod.PROJECT_VINTAGES_BY_PROGRAM[prg]
+                    )[prj_or_tx_line, v]
+                    for (prj_or_tx_line, v) in mod.PROJECT_OR_TX_VINTAGES_BY_PROGRAM[
+                        prg
+                    ]
                     if v in periods_in_superperiod
                 )
                 <= mod.program_budget[prg, superperiod]
@@ -234,8 +295,11 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     )
     data_portal.load(
         filename=prj_file,
-        index=m.PROGRAM_PROJECT_VINTAGES,
-        param=m.annual_payment_subsidy,
+        index=m.PROGRAM_PROJECT_OR_TX_VINTAGES,
+        param=(
+            m.is_tx,
+            m.annual_payment_subsidy,
+        ),
     )
 
 
@@ -256,18 +320,20 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         writer.writerow(
             [
                 "program",
-                "project",
+                "project_or_tx",
                 "vintage",
+                "is_tx",
                 "subsidized_mw",
             ]
         )
-        for prg, prj, v in m.PROGRAM_PROJECT_VINTAGES:
+        for prg, prj_or_tx, v in m.PROGRAM_PROJECT_OR_TX_VINTAGES:
             writer.writerow(
                 [
                     prg,
-                    prj,
+                    prj_or_tx,
                     v,
-                    value(m.Subsidize_MW[prg, prj, v]),
+                    m.is_tx[prg, prj_or_tx, v],
+                    value(m.Subsidize_MW[prg, prj_or_tx, v]),
                 ]
             )
 
@@ -299,22 +365,26 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
     c2 = conn.cursor()
     project_subsidies = c2.execute(
-        """
-        SELECT program, project, vintage, annual_payment_subsidy
+        f"""
+        SELECT program, project_or_tx, vintage, is_tx, 
+        annual_payment_subsidy
         FROM inputs_system_subsidies_projects
-        WHERE subsidy_scenario_id = {subsidy_scenario_id}
-        AND project in (
+        WHERE subsidy_scenario_id = {subscenarios.SUBSIDY_SCENARIO_ID}
+        AND (
+            project_or_tx in (
             SELECT project FROM inputs_project_portfolios
-            WHERE project_portfolio_scenario_id = {portfolio_scenario_id}
+            WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
+            ) OR 
+            project_or_tx in (
+                SELECT transmission_line FROM inputs_transmission_portfolios
+                WHERE transmission_portfolio_scenario_id = 
+                {subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID}
+            )
         )
         AND vintage in (
         SELECT period FROM inputs_temporal_periods
-        WHERE temporal_scenario_id = {temporal_scenario_id})
-        """.format(
-            subsidy_scenario_id=subscenarios.SUBSIDY_SCENARIO_ID,
-            portfolio_scenario_id=subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-            temporal_scenario_id=subscenarios.TEMPORAL_SCENARIO_ID,
-        )
+        WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID})
+        """
     )
 
     return program_budgets, project_subsidies
@@ -371,8 +441,9 @@ def write_model_inputs(
         writer.writerow(
             [
                 "program",
-                "project",
+                "project_or_tx",
                 "period",
+                "is_tx",
                 "annual_payment_subsidy",
             ]
         )

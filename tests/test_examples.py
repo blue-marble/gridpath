@@ -1411,6 +1411,23 @@ class TestExamples(unittest.TestCase):
             "2periods_new_build_2zones_transmission_w_hurdle_rates", objective
         )
 
+    def test_example_2periods_new_build_simple_prm_2loadzones_newtx_w_transfers_w_subsidies(
+        self,
+    ):
+        """
+        Check validation and objective function value of
+        "test_new_solar" example
+        :return:
+        """
+
+        self.check_validation(
+            "2periods_new_build_simple_prm_2loadzones_newtx_w_transfers_w_subsidies"
+        )
+        self.run_and_check_objective(
+            "2periods_new_build_simple_prm_2loadzones_newtx_w_transfers_w_subsidies",
+            -17323439361.04978,
+        )
+
     def test_example_test_new_build_storage_itc_single_superperiod(self):
         """
         Check validation and objective function value of
