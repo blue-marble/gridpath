@@ -156,7 +156,6 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    prj_cap_df = getattr(d, PROJECT_PERIOD_DF)
 
     results_columns1 = [
         "capacity_cost",
@@ -177,8 +176,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     )
 
     for c in results_columns1:
-        prj_cap_df[c] = None
-    prj_cap_df.update(cost_df1)
+        getattr(d, PROJECT_PERIOD_DF)[c] = None
+    getattr(d, PROJECT_PERIOD_DF).update(cost_df1)
 
     results_columns2 = [
         "hours_in_period_timepoints",
@@ -203,10 +202,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     )
 
     for c in results_columns2:
-        prj_cap_df[c] = None
-    prj_cap_df.update(cost_df2)
-
-    setattr(d, PROJECT_PERIOD_DF, prj_cap_df)
+        getattr(d, PROJECT_PERIOD_DF)[c] = None
+    getattr(d, PROJECT_PERIOD_DF).update(cost_df2)
 
 
 # Database

@@ -27,10 +27,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     Export all results from the PROJECT_CAPACITY_DF that various modules
     have added to
     """
-    prj_cap_df = getattr(d, PROJECT_PERIOD_DF)
 
     # TODO: wrap in spin on database lock
-    prj_cap_df.to_csv(
+    getattr(d, PROJECT_PERIOD_DF).to_csv(
         os.path.join(
             scenario_directory,
             str(subproblem),

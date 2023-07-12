@@ -312,7 +312,6 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return:
     """
 
-    prj_prd_df = getattr(d, PROJECT_PERIOD_DF)
     results_columns = [
         "capacity_mw",
         "hyb_gen_capacity_mw",
@@ -343,8 +342,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     )
 
     for c in results_columns:
-        prj_prd_df[c] = None
-    prj_prd_df.update(results_df)
+        getattr(d, PROJECT_PERIOD_DF)[c] = None
+    getattr(d, PROJECT_PERIOD_DF).update(results_df)
 
     # Module-specific capacity results
     required_capacity_modules = get_required_subtype_modules(
@@ -364,15 +363,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 op_m
             ].add_to_project_period_results(scenario_directory, subproblem, stage, m, d)
             for column in results_columns:
-                if column not in prj_prd_df:
-                    prj_prd_df[column] = None
-            prj_prd_df.update(optype_df)
-
-    # Add the dataframe to the dynamic components to pass to costs.py
-    # We'll print it after we pass it to other modules
-    # This is the first module that adds to the dataframe
-    setattr(d, PROJECT_PERIOD_DF, prj_prd_df)
-
+                if column not in getattr(d, PROJECT_PERIOD_DF):
+                    getattr(d, PROJECT_PERIOD_DF)[column] = None
+            getattr(d, PROJECT_PERIOD_DF).update(optype_df)
 
 def summarize_results(scenario_directory, subproblem, stage):
     """
