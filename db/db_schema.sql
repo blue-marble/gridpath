@@ -3974,29 +3974,17 @@ PRIMARY KEY (scenario_id, period, subproblem_id, stage_id, load_zone,
 technology, spinup_or_lookahead)
 );
 
-CREATE TABLE results_tx_line_period_transmission_target (
+
+DROP TABLE IF EXISTS results_transmission_period;
+CREATE TABLE results_transmission_period (
 scenario_id INTEGER,
 transmission_line VARCHAR(64),
 period INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
-timepoint INTEGER,
-timepoint_weight FLOAT,
-number_of_hours_in_timepoint FLOAT,
-transmission_target_zone VARCHAR(32),
-transmission_target_energy_positive_direction_mw FLOAT,
-transmission_target_energy_negative_direction_mw FLOAT,
-PRIMARY KEY (scenario_id, transmission_line, subproblem_id, stage_id, timepoint)
-);
-
-DROP TABLE IF EXISTS results_transmission_capacity;
-CREATE TABLE results_transmission_capacity (
-scenario_id INTEGER,
-tx_line VARCHAR(64),
-period INTEGER,
-subproblem_id INTEGER,
-stage_id INTEGER,
 tx_capacity_type VARCHAR(16),
+tx_availability_type VARCHAR(16),
+tx_operational_type VARCHAR(16),
 load_zone_from VARCHAR(32),
 load_zone_to VARCHAR(32),
 min_mw FLOAT,
@@ -4007,7 +3995,7 @@ hours_in_subproblem_period FLOAT,
 capacity_cost FLOAT,
 fixed_cost FLOAT,
 capacity_cost_wo_spinup_or_lookahead FLOAT,
-PRIMARY KEY (scenario_id, tx_line, period, subproblem_id, stage_id)
+PRIMARY KEY (scenario_id, transmission_line, period, subproblem_id, stage_id)
 );
 
 
@@ -4059,17 +4047,19 @@ net_imports_mw FLOAT,
 PRIMARY KEY (scenario_id, load_zone, subproblem_id, stage_id, timepoint)
 );
 
-DROP TABLE IF EXISTS results_transmission_operations;
-CREATE TABLE results_transmission_operations (
+DROP TABLE IF EXISTS results_transmission_timepoint;
+CREATE TABLE results_transmission_timepoint (
 scenario_id INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 transmission_line VARCHAR(64),
 timepoint INTEGER,
 period INTEGER,
-subproblem_id INTEGER,
-stage_id INTEGER,
 timepoint_weight FLOAT,
 number_of_hours_in_timepoint FLOAT,
 spinup_or_lookahead INTEGER,
+tx_capacity_type VARCHAR(16),
+tx_availability_type VARCHAR(16),
 tx_operational_type VARCHAR(16),
 load_zone_from VARCHAR(64),
 load_zone_to VARCHAR(64),
@@ -4078,7 +4068,13 @@ transmission_losses_lz_from FLOAT,
 transmission_losses_lz_to FLOAT,
 hurdle_cost_positive_direction FLOAT,
 hurdle_cost_negative_direction FLOAT,
-PRIMARY KEY (scenario_id, transmission_line, subproblem_id, stage_id, timepoint)
+transmission_target_zone VARCHAR(32),
+transmission_target_energy_positive_direction_mw FLOAT,
+transmission_target_energy_negative_direction_mw FLOAT,
+carbon_emission_imports_tons FLOAT,
+carbon_emission_imports_tons_degen FLOAT,
+PRIMARY KEY (scenario_id, subproblem_id, stage_id, transmission_line,
+             timepoint)
 );
 
 DROP TABLE IF EXISTS results_transmission_imports_exports_agg;
@@ -4109,21 +4105,6 @@ PRIMARY KEY (scenario_id, load_zone, period, subproblem_id, stage_id,
 spinup_or_lookahead)
 );
 
-DROP TABLE IF EXISTS results_transmission_carbon_emissions;
-CREATE TABLE results_transmission_carbon_emissions (
-scenario_id INTEGER,
-tx_line VARCHAR(64),
-period INTEGER,
-subproblem_id INTEGER,
-stage_id INTEGER,
-timepoint INTEGER,
-timepoint_weight FLOAT,
-number_of_hours_in_timepoint FLOAT,
-spinup_or_lookahead INTEGER,
-carbon_emission_imports_tons FLOAT,
-carbon_emission_imports_tons_degen FLOAT,
-PRIMARY KEY (scenario_id, tx_line, subproblem_id, stage_id, timepoint)
-);
 
 -- Simultaneous flows
 DROP TABLE IF EXISTS results_transmission_simultaneous_flows;

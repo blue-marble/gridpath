@@ -29,8 +29,7 @@ from gridpath.common_functions import create_results_df
 from gridpath.transmission.capacity.common_functions import (
     load_tx_capacity_type_modules,
 )
-from gridpath.transmission.capacity.consolidate_results import TX_CAPACITY_DF
-from gridpath.auxiliary.db_interface import setup_results_import
+from gridpath.transmission import TX_PERIOD_DF
 from gridpath.auxiliary.dynamic_components import tx_capacity_type_financial_period_sets
 import gridpath.transmission.capacity.capacity_types as tx_cap_type_init
 
@@ -229,7 +228,6 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    tx_cap_df = getattr(d, TX_CAPACITY_DF)
 
     results_columns1 = [
         "capacity_cost",
@@ -244,14 +242,14 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     ]
 
     cost_df1 = create_results_df(
-        index_columns=["tx_line", "period"],
+        index_columns=["transmission_line", "period"],
         results_columns=results_columns1,
         data=data1,
     )
 
     for c in results_columns1:
-        tx_cap_df[c] = None
-    tx_cap_df.update(cost_df1)
+        getattr(d, TX_PERIOD_DF)[c] = None
+    getattr(d, TX_PERIOD_DF).update(cost_df1)
 
     results_columns2 = [
         "hours_in_period_timepoints",
@@ -270,16 +268,14 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     ]
 
     cost_df2 = create_results_df(
-        index_columns=["tranmission_line", "period"],
+        index_columns=["transmission_line", "period"],
         results_columns=results_columns2,
         data=data2,
     )
 
     for c in results_columns2:
-        tx_cap_df[c] = None
-    tx_cap_df.update(cost_df2)
-
-    setattr(d, TX_CAPACITY_DF, tx_cap_df)
+        getattr(d, TX_PERIOD_DF)[c] = None
+    getattr(d, TX_PERIOD_DF).update(cost_df2)
 
 
 def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
@@ -375,7 +371,7 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
         (SELECT scenario_id, subproblem_id, stage_id, period, 
         load_zone_to AS load_zone,
         SUM(capacity_cost) AS capacity_cost
-        FROM results_transmission_capacity
+        FROM results_transmission_period
         GROUP BY scenario_id, subproblem_id, stage_id, period, load_zone
         ) AS cap_table
         USING (scenario_id, subproblem_id, stage_id, period, load_zone)
@@ -388,18 +384,18 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
     # Update the capacity cost removing the fraction attributable to the
     # spinup and lookahead hours
     update_sql = """
-        UPDATE results_transmission_capacity
+        UPDATE results_transmission_period
         SET capacity_cost_wo_spinup_or_lookahead = capacity_cost * (
             SELECT fraction_of_hours_in_subproblem
             FROM spinup_or_lookahead_ratios
             WHERE spinup_or_lookahead = 0
-            AND results_transmission_capacity.scenario_id = 
+            AND results_transmission_period.scenario_id = 
             spinup_or_lookahead_ratios.scenario_id
-            AND results_transmission_capacity.subproblem_id = 
+            AND results_transmission_period.subproblem_id = 
             spinup_or_lookahead_ratios.subproblem_id
-            AND results_transmission_capacity.stage_id = 
+            AND results_transmission_period.stage_id = 
             spinup_or_lookahead_ratios.stage_id
-            AND results_transmission_capacity.period = 
+            AND results_transmission_period.period = 
             spinup_or_lookahead_ratios.period
         )
         ;

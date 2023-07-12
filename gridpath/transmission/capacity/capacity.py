@@ -22,7 +22,6 @@ reliability constraints, etc. The module also adds transmission costs which
 again depend on the line's *capacity_type*.
 """
 
-import csv
 import os.path
 import pandas as pd
 from pyomo.environ import Set, Expression, value
@@ -32,11 +31,12 @@ from gridpath.auxiliary.auxiliary import (
     get_required_subtype_modules,
     join_sets,
 )
+from gridpath.common_functions import create_results_df
+from gridpath.transmission import TX_PERIOD_DF
 from gridpath.transmission.capacity.common_functions import (
     load_tx_capacity_type_modules,
 )
-from gridpath.transmission.capacity.consolidate_results import TX_CAPACITY_DF
-from gridpath.auxiliary.db_interface import setup_results_import
+
 from gridpath.auxiliary.dynamic_components import (
     tx_capacity_type_operational_period_sets,
 )
@@ -197,29 +197,31 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     """
 
     # First create the dataframe with main capacity results
-    main_df = pd.DataFrame(
-        columns=[
-            "tx_line",
-            "period",
-            "tx_capacity_type",
-            "load_zone_from",
-            "load_zone_to",
-            "min_mw",
-            "max_mw",
-        ],
-        data=[
-            [
-                tx_line,
-                prd,
-                m.tx_capacity_type[tx_line],
-                m.load_zone_from[tx_line],
-                m.load_zone_to[tx_line],
-                value(m.Tx_Min_Capacity_MW[tx_line, prd]),
-                value(m.Tx_Max_Capacity_MW[tx_line, prd]),
-            ]
-            for (tx_line, prd) in m.TX_OPR_PRDS
-        ],
-    ).set_index(["tx_line", "period"])
+
+    results_columns = [
+        "min_mw",
+        "max_mw",
+    ]
+
+    data = [
+        [
+            tx_line,
+            prd,
+            value(m.Tx_Min_Capacity_MW[tx_line, prd]),
+            value(m.Tx_Max_Capacity_MW[tx_line, prd]),
+        ]
+        for (tx_line, prd) in m.TX_OPR_PRDS
+    ]
+
+    results_df = create_results_df(
+        index_columns=["transmission_line", "timepoint"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    for c in results_columns:
+        getattr(d, TX_PERIOD_DF)[c] = None
+    getattr(d, TX_PERIOD_DF).update(results_df)
 
     # Module-specific capacity results
     required_capacity_modules = get_required_subtype_modules(
@@ -239,16 +241,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 op_m
             ].add_to_tx_period_results(scenario_directory, subproblem, stage, m, d)
             for column in results_columns:
-                if column not in main_df:
-                    main_df[column] = None
-            main_df.update(optype_df)
-
-    main_df.sort_index(inplace=True)
-
-    # Add the dataframe to the dynamic components to pass to costs.py
-    # We'll print it after we pass it to other modules
-    # This is the first module that adds to the dataframe
-    setattr(d, TX_CAPACITY_DF, main_df)
+                if column not in getattr(d, TX_PERIOD_DF):
+                    getattr(d, TX_PERIOD_DF)[column] = None
+            getattr(d, TX_PERIOD_DF).update(optype_df)
 
 
 def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
@@ -344,7 +339,7 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
         (SELECT scenario_id, subproblem_id, stage_id, period, 
         load_zone_to AS load_zone,
         SUM(capacity_cost) AS capacity_cost
-        FROM results_transmission_capacity
+        FROM results_transmission_period
         GROUP BY scenario_id, subproblem_id, stage_id, period, load_zone
         ) AS cap_table
         USING (scenario_id, subproblem_id, stage_id, period, load_zone)

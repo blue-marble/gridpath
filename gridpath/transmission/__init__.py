@@ -33,6 +33,9 @@ from gridpath.auxiliary.validations import (
     validate_missing_inputs,
 )
 
+TX_PERIOD_DF = "transmission_period_df"
+TX_TIMEPOINT_DF = "transmission_timepoint_df"
+
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
@@ -140,6 +143,91 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             m.load_zone_to,
         ),
     )
+
+
+def export_results(scenario_directory, subproblem, stage, m, d):
+    """
+    Export operations results.
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :param m:
+    The Pyomo abstract model
+    :param d:
+    Dynamic components
+    :return:
+    Nothing
+    """
+
+    # First create the results dataframes
+    # Other modules will update these dataframe with actual results
+    # The results dataframes are by index
+
+    # Project-period DF
+    tx_period_df = pd.DataFrame(
+        columns=[
+            "transmission_line",
+            "period",
+            "tx_capacity_type",
+            "tx_availability_type",
+            "tx_operational_type",
+            "load_zone_from",
+            "load_zone_to",
+        ],
+        data=[
+            [
+                tx,
+                prd,
+                m.tx_capacity_type[tx],
+                m.tx_availability_type[tx],
+                m.tx_operational_type[tx],
+                m.load_zone_from[tx],
+                m.load_zone_to[tx],
+            ]
+            for (tx, prd) in m.TX_OPR_PRDS
+        ],
+    ).set_index(["transmission_line", "period"])
+
+    tx_period_df.sort_index(inplace=True)
+
+    # Add the dataframe to the dynamic components to pass to other modules
+    setattr(d, TX_PERIOD_DF, tx_period_df)
+
+    # Project-timepoint DF
+    tx_timepoint_df = pd.DataFrame(
+        columns=[
+            "transmission_line",
+            "timepoint",
+            "period",
+            "tx_capacity_type",
+            "tx_availability_type",
+            "tx_operational_type",
+            "timepoint_weight",
+            "number_of_hours_in_timepoint",
+            "load_zone_from",
+            "load_zone_to",
+        ],
+        data=[
+            [
+                tx,
+                tmp,
+                m.period[tmp],
+                m.tx_capacity_type[tx],
+                m.tx_availability_type[tx],
+                m.tx_operational_type[tx],
+                m.tmp_weight[tmp],
+                m.hrs_in_tmp[tmp],
+                m.load_zone_from[tx],
+                m.load_zone_to[tx],
+            ]
+            for (tx, tmp) in m.TX_OPR_TMPS
+        ],
+    ).set_index(["transmission_line", "timepoint"])
+
+    tx_timepoint_df.sort_index(inplace=True)
+
+    # Add the dataframe to the dynamic components to pass to other modules
+    setattr(d, TX_TIMEPOINT_DF, tx_timepoint_df)
 
 
 # Database

@@ -15,11 +15,7 @@
 """
 """
 
-import os.path
-import pandas as pd
-
-from db.common_functions import spin_on_database_lock_generic
-from gridpath.auxiliary.db_interface import setup_results_import
+from gridpath.auxiliary.db_interface import import_csv
 
 
 # Database
@@ -37,33 +33,13 @@ def import_results_into_database(
     :param quiet:
     :return:
     """
-    # First import the capacity_all results; the capacity type modules will
-    # then update the database tables rather than insert (all projects
-    # should have been inserted here)
-    # Delete prior results and create temporary import table for ordering
-    if not quiet:
-        print("transmission capacity")
-
-    # Delete prior results and create temporary import table for ordering
-    setup_results_import(
+    import_csv(
         conn=db,
         cursor=c,
-        table="results_transmission_capacity",
         scenario_id=scenario_id,
         subproblem=subproblem,
         stage=stage,
-    )
-
-    df = pd.read_csv(os.path.join(results_directory, "transmission_capacity.csv"))
-    df["scenario_id"] = scenario_id
-    df["subproblem_id"] = subproblem
-    df["stage_id"] = stage
-
-    spin_on_database_lock_generic(
-        command=df.to_sql(
-            name="results_transmission_capacity",
-            con=db,
-            if_exists="append",
-            index=False,
-        )
+        quiet=quiet,
+        results_directory=results_directory,
+        which_results="transmission_period",
     )

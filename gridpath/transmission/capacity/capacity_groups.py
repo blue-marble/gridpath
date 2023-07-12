@@ -1,4 +1,5 @@
 # Copyright 2022 (c) Crown Copyright, GC.
+# Modifications Copyright 2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,9 +22,8 @@ import os.path
 import pandas as pd
 from pyomo.environ import Set, Param, Constraint, NonNegativeReals, Expression, value
 
-from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import get_required_subtype_modules
-from gridpath.auxiliary.db_interface import setup_results_import
+from gridpath.auxiliary.db_interface import import_csv
 import gridpath.transmission.capacity.capacity_types as cap_type_init
 from gridpath.transmission.capacity.common_functions import (
     load_tx_capacity_type_modules,
@@ -260,7 +260,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 str(subproblem),
                 str(stage),
                 "results",
-                "transmission_capacity_groups.csv",
+                "transmission_group_capacity.csv",
             ),
             "w",
             newline="",
@@ -275,7 +275,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                     "transmission_capacity_group_new_capacity_max",
                 ]
             )
-            for grp, prd in m.TX_CAPACITY_GROUP_PERIODS:
+            for grp, prd in sorted(m.TX_CAPACITY_GROUP_PERIODS):
                 writer.writerow(
                     [
                         grp,
@@ -401,62 +401,24 @@ def save_duals(scenario_directory, subproblem, stage, instance, dynamic_componen
 def import_results_into_database(
     scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
-    # Import only if a results-file was exported
-    results_file = os.path.join(results_directory, "transmission_capacity_groups.csv")
-    if os.path.exists(results_file):
-        if not quiet:
-            print("transmission group capacity")
+    which_results = "transmission_group_capacity"
 
-        # Delete prior results and create temporary import table for ordering
-        setup_results_import(
+    if os.path.exists(
+        os.path.join(
+            results_directory,
+            str(subproblem),
+            str(stage),
+            "results",
+            f"{which_results}.csv",
+        )
+    ):
+        import_csv(
             conn=db,
             cursor=c,
-            table="results_transmission_group_capacity",
             scenario_id=scenario_id,
             subproblem=subproblem,
             stage=stage,
+            quiet=quiet,
+            results_directory=results_directory,
+            which_results=which_results,
         )
-
-        # Load results into the temporary table
-        results = []
-        with open(results_file, "r") as f:
-            reader = csv.reader(f)
-
-            next(reader)  # skip header
-            for row in reader:
-                results.append((scenario_id, subproblem, stage) + tuple(row))
-
-        insert_temp_sql = """
-            INSERT INTO temp_results_transmission_group_capacity{}
-            (scenario_id, subproblem_id, stage_id, 
-            transmission_capacity_group, period, 
-            group_new_capacity,
-            transmission_capacity_group_new_capacity_min, 
-            transmission_capacity_group_new_capacity_max)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?);
-            """.format(
-            scenario_id
-        )
-        spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
-
-        # Insert sorted results into permanent results table
-        insert_sql = """
-            INSERT INTO results_transmission_group_capacity
-            (scenario_id, subproblem_id, stage_id, 
-            transmission_capacity_group, period, 
-            group_new_capacity,
-            transmission_capacity_group_new_capacity_min, 
-            transmission_capacity_group_new_capacity_max)
-            SELECT
-            scenario_id, subproblem_id, stage_id, 
-            transmission_capacity_group, period, 
-            group_new_capacity,
-            transmission_capacity_group_new_capacity_min, 
-            transmission_capacity_group_new_capacity_max
-            FROM temp_results_transmission_group_capacity{}
-             ORDER BY scenario_id, subproblem_id, stage_id,
-             transmission_capacity_group, period;
-            """.format(
-            scenario_id
-        )
-        spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)

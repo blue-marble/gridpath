@@ -37,6 +37,8 @@ from gridpath.auxiliary.db_interface import (
 )
 from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.auxiliary.validations import write_validation_to_database, validate_idxs
+from gridpath.common_functions import create_results_df
+from gridpath.transmission import TX_TIMEPOINT_DF
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -255,47 +257,33 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "transmission_target_by_tx_line.csv",
-        ),
-        "w",
-        newline="",
-    ) as transmission_target_results_file:
-        writer = csv.writer(transmission_target_results_file)
-        writer.writerow(
-            [
-                "transmission_line",
-                "transmission_target_zone",
-                "timepoint",
-                "period",
-                "timepoint_weight",
-                "number_of_hours_in_timepoint",
-                "transmission_target_energy_positive_direction_mw",
-                "transmission_target_energy_negative_direction_mw",
-            ]
-        )
-        for tx, tmp in m.TRANSMISSION_TARGET_TX_OPR_TMPS:
-            writer.writerow(
-                [
-                    tx,
-                    m.transmission_target_zone[tx],
-                    tmp,
-                    m.period[tmp],
-                    m.tmp_weight[tmp],
-                    m.hrs_in_tmp[tmp],
-                    value(m.Transmission_Target_Energy_MW_Pos_Dir[tx, tmp])
-                    if float(m.contributes_net_flow_to_tx_target[tx]) == 0
-                    else value(m.Transmission_Target_Net_Energy_MW_Pos_Dir[tx, tmp]),
-                    value(m.Transmission_Target_Energy_MW_Neg_Dir[tx, tmp])
-                    if float(m.contributes_net_flow_to_tx_target[tx]) == 0
-                    else value(m.Transmission_Target_Net_Energy_MW_Neg_Dir[tx, tmp]),
-                ]
-            )
+
+    results_columns = [
+        "hurdle_cost_positive_direction",
+        "hurdle_cost_negative_direction",
+    ]
+    data = [
+        [
+            tx,
+            tmp,
+            value(m.Transmission_Target_Energy_MW_Pos_Dir[tx, tmp])
+            if float(m.contributes_net_flow_to_tx_target[tx]) == 0
+            else value(m.Transmission_Target_Net_Energy_MW_Pos_Dir[tx, tmp]),
+            value(m.Transmission_Target_Energy_MW_Neg_Dir[tx, tmp])
+            if float(m.contributes_net_flow_to_tx_target[tx]) == 0
+            else value(m.Transmission_Target_Net_Energy_MW_Neg_Dir[tx, tmp]),
+        ]
+        for (tx, tmp) in m.TRANSMISSION_TARGET_TX_OPR_TMPS
+    ]
+    results_df = create_results_df(
+        index_columns=["transmission_line", "timepoint"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    for c in results_columns:
+        getattr(d, TX_TIMEPOINT_DF)[c] = None
+    getattr(d, TX_TIMEPOINT_DF).update(results_df)
 
 
 # Database
@@ -413,101 +401,6 @@ def write_model_inputs(
     ) as tx_lines_file_out:
         writer = csv.writer(tx_lines_file_out, delimiter="\t", lineterminator="\n")
         writer.writerows(new_rows)
-
-
-def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    """
-
-    :param scenario_id:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-    # REC provision by tx_line and timepoint
-    if not quiet:
-        print("transmission recs")
-    # Delete prior results and create temporary import table for ordering
-    setup_results_import(
-        conn=db,
-        cursor=c,
-        table="results_tx_line_period_transmission_target",
-        scenario_id=scenario_id,
-        subproblem=subproblem,
-        stage=stage,
-    )
-
-    # Load results into the temporary table
-    results = []
-    with open(
-        os.path.join(results_directory, "transmission_target_by_tx_line.csv"), "r"
-    ) as transmission_target_file:
-        reader = csv.reader(transmission_target_file)
-
-        next(reader)  # skip header
-        for row in reader:
-            transmission_line = row[0]
-            transmission_target_zone = row[1]
-            timepoint = row[2]
-            period = row[3]
-            timepoint_weight = row[4]
-            hours_in_tmp = row[5]
-            transmission_energy_pos_dir = row[6]
-            transmission_energy_neg_dir = row[7]
-            results.append(
-                (
-                    scenario_id,
-                    transmission_line,
-                    period,
-                    subproblem,
-                    stage,
-                    timepoint,
-                    timepoint_weight,
-                    hours_in_tmp,
-                    transmission_target_zone,
-                    transmission_energy_pos_dir,
-                    transmission_energy_neg_dir,
-                )
-            )
-
-    insert_temp_sql = """
-        INSERT INTO 
-        temp_results_tx_line_period_transmission_target{}
-         (scenario_id, transmission_line, period, subproblem_id, stage_id, 
-         timepoint, timepoint_weight, 
-         number_of_hours_in_timepoint, 
-         transmission_target_zone,  
-         transmission_target_energy_positive_direction_mw,
-         transmission_target_energy_negative_direction_mw)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-         """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
-
-    # Insert sorted results into permanent results table
-    insert_sql = """
-        INSERT INTO results_tx_line_period_transmission_target
-        (scenario_id, transmission_line, period, subproblem_id, stage_id, 
-        timepoint, timepoint_weight, number_of_hours_in_timepoint, 
-        transmission_target_zone,
-        transmission_target_energy_positive_direction_mw,
-        transmission_target_energy_negative_direction_mw)
-        SELECT
-        scenario_id, transmission_line, period, subproblem_id, stage_id,
-        timepoint, timepoint_weight, number_of_hours_in_timepoint, 
-        transmission_target_zone, 
-        transmission_target_energy_positive_direction_mw,
-        transmission_target_energy_negative_direction_mw
-        FROM temp_results_tx_line_period_transmission_target{}
-         ORDER BY scenario_id, transmission_line, subproblem_id, stage_id, timepoint;
-         """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)
 
 
 # Validation

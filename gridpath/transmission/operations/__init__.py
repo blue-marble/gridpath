@@ -12,11 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os.path
-import pandas as pd
-
-from db.common_functions import spin_on_database_lock_generic
-from gridpath.auxiliary.db_interface import setup_results_import
+from gridpath.auxiliary.db_interface import import_csv
 
 
 def import_results_into_database(
@@ -31,28 +27,13 @@ def import_results_into_database(
     :param quiet:
     :return:
     """
-    if not quiet:
-        print("transmission operations")
-    # transmission_operations.csv
-    # Delete prior results and create temporary import table for ordering
-    setup_results_import(
+    import_csv(
         conn=db,
         cursor=c,
-        table="results_transmission_operations",
         scenario_id=scenario_id,
         subproblem=subproblem,
         stage=stage,
-    )
-
-    df = pd.read_csv(os.path.join(results_directory, "transmission_operations.csv"))
-    df["scenario_id"] = scenario_id
-    df["subproblem_id"] = subproblem
-    df["stage_id"] = stage
-    spin_on_database_lock_generic(
-        command=df.to_sql(
-            name="results_transmission_operations",
-            con=db,
-            if_exists="append",
-            index=False,
-        )
+        quiet=quiet,
+        results_directory=results_directory,
+        which_results="transmission_timepoint",
     )
