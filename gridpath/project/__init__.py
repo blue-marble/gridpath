@@ -284,6 +284,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             "number_of_hours_in_timepoint",
             "load_zone",
             "technology",
+            "capacity_mw",
         ],
         data=[
             [
@@ -299,6 +300,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 m.hrs_in_tmp[tmp],
                 m.load_zone[prj],
                 m.technology[prj],
+                m.Capacity_MW[prj, m.period[tmp]],
             ]
             for (prj, tmp) in m.PRJ_OPR_TMPS
         ],

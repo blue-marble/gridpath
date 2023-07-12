@@ -3623,6 +3623,7 @@ spinup_or_lookahead INTEGER,
 load_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 technology VARCHAR(32),
+capacity_mw FLOAT,
 power_mw FLOAT,  -- grid net power in case there's curtailment and/or aux cons
 scheduled_curtailment_mw FLOAT,
 subhourly_curtailment_mw FLOAT,
