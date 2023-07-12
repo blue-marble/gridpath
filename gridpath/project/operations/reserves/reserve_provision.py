@@ -392,7 +392,7 @@ def generic_export_results(
     :param reserve_ba_param_name:
     :return:
     """
-    prj_opr_df = getattr(d, PROJECT_TIMEPOINT_DF)
+
     results_columns = [
         f"{module_name}_ba",
         f"{module_name}_reserve_provision_mw",
@@ -415,10 +415,8 @@ def generic_export_results(
     )
 
     for c in results_columns:
-        prj_opr_df[c] = None
-    prj_opr_df.update(results_df)
-
-    setattr(d, "project_operations_df", prj_opr_df)
+        getattr(d, PROJECT_TIMEPOINT_DF)[c] = None
+    getattr(d, PROJECT_TIMEPOINT_DF).update(results_df)
 
 
 def generic_get_inputs_from_database(

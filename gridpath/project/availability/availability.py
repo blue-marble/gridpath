@@ -165,7 +165,6 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     Export availability results.
     """
 
-    prj_tmp_df = getattr(d, PROJECT_TIMEPOINT_DF)
     results_columns = [
         "availability_derate",
     ]
@@ -184,8 +183,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     )
 
     for c in results_columns:
-        prj_tmp_df[c] = None
-    prj_tmp_df.update(results_df)
+        getattr(d, PROJECT_TIMEPOINT_DF)[c] = None
+    getattr(d, PROJECT_TIMEPOINT_DF).update(results_df)
 
     # Module-specific availability results
     required_availability_modules = get_required_subtype_modules(
@@ -205,10 +204,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 scenario_directory, subproblem, stage, m, d
             )
             for c in results_columns:
-                prj_tmp_df[c] = None
-            prj_tmp_df.update(results_df)
-
-    setattr(d, PROJECT_TIMEPOINT_DF, prj_tmp_df)
+                getattr(d, PROJECT_TIMEPOINT_DF)[c] = None
+            getattr(d, PROJECT_TIMEPOINT_DF).update(results_df)
 
 
 def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):

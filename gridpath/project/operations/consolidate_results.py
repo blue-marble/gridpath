@@ -19,14 +19,16 @@
 
 import os.path
 
+from gridpath.project import PROJECT_TIMEPOINT_DF
+
 
 def export_results(scenario_directory, subproblem, stage, m, d):
     """
     Export all results from the PROJECT_OPERATIONS_DF that various modules
     have added to
     """
-    prj_opr_df = getattr(d, "project_operations_df")
-    prj_opr_df.to_csv(
+
+    getattr(d, PROJECT_TIMEPOINT_DF).to_csv(
         os.path.join(
             scenario_directory,
             str(subproblem),

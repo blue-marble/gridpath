@@ -274,7 +274,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    prj_opr_df = getattr(d, PROJECT_TIMEPOINT_DF)
+
     results_columns = [
         "energy_target_zone",
         "scheduled_energy_target_energy_mw",
@@ -302,10 +302,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     )
 
     for c in results_columns:
-        prj_opr_df[c] = None
-    prj_opr_df.update(results_df)
-
-    setattr(d, "project_operations_df", prj_opr_df)
+        getattr(d, PROJECT_TIMEPOINT_DF)[c] = None
+    getattr(d, PROJECT_TIMEPOINT_DF).update(results_df)
 
 
 # Database

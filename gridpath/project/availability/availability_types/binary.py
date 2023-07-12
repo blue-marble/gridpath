@@ -389,7 +389,7 @@ def add_to_prj_tmp_results(scenario_directory, subproblem, stage, m, d):
     :param d: Dynamic components
     :return: Nothing
     """
-    prj_tmp_df = getattr(d, PROJECT_TIMEPOINT_DF)
+
     results_columns = [
         "unavailability_decision",
         "start_unavailability",

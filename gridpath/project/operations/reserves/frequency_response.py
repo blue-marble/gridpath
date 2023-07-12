@@ -182,7 +182,6 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         else:
             partial_proj[prj] = 0
 
-    prj_opr_df = getattr(d, PROJECT_TIMEPOINT_DF)
     results_columns = [
         "frequency_response_ba",
         "frequency_response_reserve_provision_mw",
@@ -206,10 +205,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     )
 
     for c in results_columns:
-        prj_opr_df[c] = None
-    prj_opr_df.update(results_df)
-
-    setattr(d, "project_operations_df", prj_opr_df)
+        getattr(d, PROJECT_TIMEPOINT_DF)[c] = None
+    getattr(d, PROJECT_TIMEPOINT_DF).update(results_df)
 
 
 def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):

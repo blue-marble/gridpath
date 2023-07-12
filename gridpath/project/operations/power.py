@@ -110,7 +110,6 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     Nothing
     """
 
-    prj_opr_df = getattr(d, PROJECT_TIMEPOINT_DF)
     results_columns = [
         "power_mw",
     ]
@@ -129,8 +128,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     )
 
     for c in results_columns:
-        prj_opr_df[c] = None
-    prj_opr_df.update(results_df)
+        getattr(d, PROJECT_TIMEPOINT_DF)[c] = None
+    getattr(d, PROJECT_TIMEPOINT_DF).update(results_df)
 
     required_operational_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
@@ -151,12 +150,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 optype_module
             ].add_to_prj_tmp_results(mod=m)
             for column in results_columns:
-                if column not in prj_opr_df:
-                    prj_opr_df[column] = None
-            prj_opr_df.update(optype_df)
-
-    # Add the updated dataframe to the dynamic components to pass on
-    setattr(d, PROJECT_TIMEPOINT_DF, prj_opr_df)
+                if column not in getattr(d, PROJECT_TIMEPOINT_DF):
+                    getattr(d, PROJECT_TIMEPOINT_DF)[column] = None
+            getattr(d, PROJECT_TIMEPOINT_DF).update(optype_df)
 
 
 def summarize_results(scenario_directory, subproblem, stage):
