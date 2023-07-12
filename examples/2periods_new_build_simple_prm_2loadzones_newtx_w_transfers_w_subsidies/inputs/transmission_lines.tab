@@ -1,0 +1,2 @@
+transmission_line	tx_capacity_type	tx_availability_type	tx_operational_type	load_zone_from	load_zone_to	tx_simple_loss_factor	reactance_ohms
+Tx_new	tx_new_lin	exogenous	tx_simple	Zone1	Zone2	.	.
