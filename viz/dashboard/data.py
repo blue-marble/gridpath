@@ -464,7 +464,7 @@ def get_all_summary_data(conn, scenarios):
     AS overgeneration,
     SUM(timepoint_weight * number_of_hours_in_timepoint * unserved_energy_mw) 
     AS unserved_energy
-    FROM results_system_load_balance
+    FROM results_system_load_zone_timepoint
     WHERE spinup_or_lookahead = 0
     GROUP BY scenario_id, stage_id, period, load_zone
     ) AS load_table

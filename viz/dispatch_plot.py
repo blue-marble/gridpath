@@ -296,8 +296,8 @@ def get_load(c, scenario_id, load_zone, stage, timepoints):
     :return:
     """
 
-    query = """SELECT load_mw, unserved_energy_mw
-        FROM results_system_load_balance
+    query = """SELECT static_load_mw, unserved_energy_mw
+        FROM results_system_load_zone_timepoint
         WHERE scenario_id = {}
         AND load_zone = '{}'
         AND stage_id = {}

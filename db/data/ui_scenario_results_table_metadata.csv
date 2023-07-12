@@ -15,7 +15,7 @@ results_system_frequency_response_balance,1,System Frequency Response Balance
 results_system_frequency_response_partial_balance,1,System Frequency Response (Partial) Balance
 results_system_lf_reserves_down_balance,1,System Load-Following Reserves Down Balance
 results_system_lf_reserves_up_balance,1,System Load-Following Reserves Up  Balance
-results_system_load_balance,1,System Load Balance
+results_system_load_zone_timepoint,1,System Load Balance
 results_system_local_capacity,1,System Local Capacity Balance
 results_system_prm,1,System PRM Balance
 results_system_regulation_down_balance,1,System Regulation Down Balance

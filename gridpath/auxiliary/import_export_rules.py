@@ -43,7 +43,7 @@ def summarize_results_use(scenario_directory, subproblem, stage, quiet):
             subproblem,
             stage,
             "results",
-            "load_balance.csv",
+            "system_load_zone_timepoint.csv",
         )
     ):
         return True
@@ -54,7 +54,9 @@ def summarize_results_use(scenario_directory, subproblem, stage, quiet):
 
 
 def import_rule_use(results_directory, quiet):
-    if os.path.exists(os.path.join(results_directory, "load_balance.csv")):
+    if os.path.exists(
+        os.path.join(results_directory, "system_load_zone_timepoint.csv")
+    ):
         import_results = True
         if not quiet:
             print("unserved energy found -- importing")

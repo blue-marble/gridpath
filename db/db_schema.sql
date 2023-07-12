@@ -4122,8 +4122,8 @@ CREATE TABLE results_transmission_simultaneous_flows (
                  subproblem_id, stage_id, timepoint)
 );
 
-DROP TABLE IF EXISTS results_system_load_balance;
-CREATE TABLE results_system_load_balance (
+DROP TABLE IF EXISTS results_system_load_zone_timepoint;
+CREATE TABLE results_system_load_zone_timepoint (
 scenario_id INTEGER,
 load_zone VARCHAR(32),
 period INTEGER,
@@ -4135,7 +4135,7 @@ number_years_represented FLOAT,
 timepoint_weight FLOAT,
 number_of_hours_in_timepoint FLOAT,
 spinup_or_lookahead INTEGER,
-load_mw FLOAT,
+static_load_mw FLOAT,
 overgeneration_mw FLOAT,
 unserved_energy_mw FLOAT,
 dual FLOAT,
