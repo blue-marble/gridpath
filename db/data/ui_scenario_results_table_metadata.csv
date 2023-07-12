@@ -8,8 +8,8 @@ results_project_elcc_simple,1,Project Simple ELCC
 results_project_elcc_surface,1,Project ELCC Surface
 results_project_fuel_burn,1,Project Fuel Burn
 results_project_local_capacity,1,Project Local Capacity Contribution
-results_project_prm_deliverability,1,Project PRM Deliverability
-results_project_prm_deliverability_group_capacity_and_costs,1,Project PRM Deliverability Group Capacity and Costs
+results_project_deliverability,1,Project PRM Deliverability
+results_project_deliverability_groups,1,Project PRM Deliverability Group Capacity and Costs
 results_system_carbon_emissions,1,System Carbon Emissions
 results_system_frequency_response_balance,1,System Frequency Response Balance
 results_system_frequency_response_partial_balance,1,System Frequency Response (Partial) Balance

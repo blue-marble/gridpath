@@ -25,6 +25,7 @@ from gridpath.auxiliary.auxiliary import cursor_to_df, subset_init_by_param_valu
 from gridpath.auxiliary.db_interface import (
     update_prj_zone_column,
     determine_table_subset_by_start_and_column,
+    import_csv,
 )
 from gridpath.auxiliary.validations import write_validation_to_database, validate_idxs
 
@@ -515,7 +516,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             str(subproblem),
             str(stage),
             "results",
-            "carbon_tax_allowance_by_project.csv",
+            "project_carbon_tax_allowance.csv",
         ),
         "w",
         newline="",
@@ -525,9 +526,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             [
                 "project",
                 "fuel_group",
+                "timepoint",
                 "period",
                 "horizon",
-                "timepoint",
                 "timepoint_weight",
                 "number_of_hours_in_timepoint",
                 "carbon_tax_zone",
@@ -542,9 +543,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 [
                     p,
                     fg,
+                    tmp,
                     m.period[tmp],
                     m.horizon[tmp, m.balancing_type_project[p]],
-                    tmp,
                     m.tmp_weight[tmp],
                     m.hrs_in_tmp[tmp],
                     m.carbon_tax_zone[p],
@@ -554,6 +555,30 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                     value(m.Project_Carbon_Tax_Allowance[p, fg, tmp]),
                 ]
             )
+
+
+def import_results_into_database(
+    scenario_id, subproblem, stage, c, db, results_directory, quiet
+):
+    """
+    :param scenario_id:
+    :param c:
+    :param db:
+    :param results_directory:
+    :param quiet:
+    :return:
+    """
+
+    import_csv(
+        conn=db,
+        cursor=c,
+        scenario_id=scenario_id,
+        subproblem=subproblem,
+        stage=stage,
+        quiet=quiet,
+        results_directory=results_directory,
+        which_results="project_carbon_tax_allowance",
+    )
 
 
 # Validation

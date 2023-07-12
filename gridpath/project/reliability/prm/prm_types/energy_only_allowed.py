@@ -24,7 +24,6 @@ import os.path
 from pyomo.environ import (
     Var,
     Set,
-    Param,
     Constraint,
     NonNegativeReals,
     Expression,
@@ -32,15 +31,9 @@ from pyomo.environ import (
 )
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.db_interface import setup_results_import
-from gridpath.auxiliary.dynamic_components import (
-    prm_cost_group_sets,
-    prm_cost_group_prm_type,
-)
-
+from gridpath.auxiliary.db_interface import import_csv
 
 # TODO: rename deliverability_group_deliverability_cost_per_mw --> deliverability_group_deliverability_cost_per_mw_yr
-
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
@@ -126,7 +119,7 @@ def export_results(
             subproblem,
             stage,
             "results",
-            "project_prm_energy_only_and_deliverable_capacity.csv",
+            "project_deliverability.csv",
         ),
         "w",
         newline="",
@@ -137,9 +130,9 @@ def export_results(
                 "project",
                 "period",
                 "prm_zone",
-                "total_capacity_mw",
+                "capacity_mw",
                 "deliverable_capacity_mw",
-                "energy_only_capacity",
+                "energy_only_capacity_mw",
             ]
         )
         for prj, p in m.EOA_PRM_PRJ_OPR_PRDS:
@@ -170,80 +163,17 @@ def import_results_into_database(
     :return:
     """
 
-    # Energy-only and deliverable capacity by project
-    if not quiet:
-        print("project energy-only and deliverable capacities")
-    # Delete prior results and create temporary import table for ordering
-    setup_results_import(
+
+    import_csv(
         conn=db,
         cursor=c,
-        table="results_project_prm_deliverability",
         scenario_id=scenario_id,
         subproblem=subproblem,
         stage=stage,
+        quiet=quiet,
+        results_directory=results_directory,
+        which_results="project_deliverability",
     )
-
-    # Load results into the temporary table
-    results = []
-    with open(
-        os.path.join(
-            results_directory, "project_prm_energy_only_and_deliverable_capacity.csv"
-        ),
-        "r",
-    ) as deliv_file:
-        reader = csv.reader(deliv_file)
-
-        next(reader)  # skip header
-        for row in reader:
-            project = row[0]
-            period = row[1]
-            prm_zone = row[2]
-            total_capacity_mw = row[3]
-            deliverable_capacity = row[4]
-            energy_only_capacity = row[5]
-
-            results.append(
-                (
-                    scenario_id,
-                    project,
-                    period,
-                    subproblem,
-                    stage,
-                    prm_zone,
-                    total_capacity_mw,
-                    deliverable_capacity,
-                    energy_only_capacity,
-                )
-            )
-
-    insert_temp_sql = """
-        INSERT INTO 
-        temp_results_project_prm_deliverability{}
-        (scenario_id, project, period, subproblem_id, stage_id,
-        prm_zone, capacity_mw, 
-        deliverable_capacity_mw, energy_only_capacity_mw)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
-        """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
-
-    # Insert sorted results into permanent results table
-    insert_sql = """
-        INSERT INTO results_project_prm_deliverability
-        (scenario_id, project, period, subproblem_id, stage_id,
-        prm_zone, capacity_mw, 
-        deliverable_capacity_mw, energy_only_capacity_mw)
-        SELECT
-        scenario_id, project, period, subproblem_id, stage_id,
-        prm_zone, capacity_mw, 
-        deliverable_capacity_mw, energy_only_capacity_mw
-        FROM temp_results_project_prm_deliverability{}
-         ORDER BY scenario_id, project, period, subproblem_id, stage_id;
-        """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)
 
 
 def process_model_results(db, c, scenario_id, subscenarios, quiet):
@@ -261,7 +191,7 @@ def process_model_results(db, c, scenario_id, subscenarios, quiet):
     # Figure out RPS zone for each project
     project_period_eocap = c.execute(
         """SELECT project, period, energy_only_capacity_mw
-        FROM results_project_prm_deliverability
+        FROM results_project_deliverability
             WHERE scenario_id = {};""".format(
             scenario_id
         )
@@ -290,7 +220,7 @@ def process_model_results(db, c, scenario_id, subscenarios, quiet):
     # Delete old resulst
     del_sql = """
         DELETE FROM 
-        results_project_prm_deliverability_group_capacity_and_costs_agg 
+        results_project_deliverability_groups_agg 
         WHERE scenario_id = ?
         """
     spin_on_database_lock(
@@ -300,7 +230,7 @@ def process_model_results(db, c, scenario_id, subscenarios, quiet):
     # Insert new results
     agg_sql = """
         INSERT INTO 
-        results_project_prm_deliverability_group_capacity_and_costs_agg
+        results_project_deliverability_groups_agg
         (scenario_id, period, subproblem_id, stage_id,
         spinup_or_lookahead, fraction_of_hours_in_subproblem, 
         deliverable_capacity_cost)
@@ -317,7 +247,7 @@ def process_model_results(db, c, scenario_id, subscenarios, quiet):
         INNER JOIN
         (SELECT scenario_id, subproblem_id, stage_id, period, 
         SUM(deliverability_annual_cost_in_period) AS deliverable_capacity_cost
-        FROM results_project_prm_deliverability_group_capacity_and_costs
+        FROM results_project_deliverability_groups
         WHERE scenario_id = ?
         GROUP BY scenario_id, subproblem_id, stage_id, period
         ) AS cap_table

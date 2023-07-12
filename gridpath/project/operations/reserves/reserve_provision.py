@@ -27,7 +27,6 @@ from gridpath.auxiliary.auxiliary import (
     find_list_item_position,
     cursor_to_df,
 )
-from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.auxiliary.dynamic_components import (
     reserve_variable_derate_params,
     reserve_to_energy_adjustment_params,

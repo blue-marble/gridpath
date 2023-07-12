@@ -367,6 +367,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                     getattr(d, PROJECT_PERIOD_DF)[column] = None
             getattr(d, PROJECT_PERIOD_DF).update(optype_df)
 
+
 def summarize_results(scenario_directory, subproblem, stage):
     """
     :param scenario_directory:

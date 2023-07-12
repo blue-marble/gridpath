@@ -3739,6 +3739,27 @@ CREATE TABLE results_project_cap_factor_limits (
                  balancing_type_horizon, horizon)
 );
 
+DROP TABLE IF EXISTS results_project_carbon_tax_allowance;
+CREATE TABLE results_project_carbon_tax_allowance (
+    scenario_id INTEGER,
+    subproblem_id INTEGER,
+    stage_id INTEGER,
+    project VARCHAR(64),
+    fuel_group VARCHAR(64),
+    timepoint INTEGER,
+    period INTEGER,
+    horizon INTEGER,
+    timepoint_weight FLOAT,
+    number_of_hours_in_timepoint FLOAT,
+    carbon_tax_zone VARCHAR(64),
+    carbon_tax_allowance_tco2_per_mwh FLOAT,
+    carbon_tax_allowance_average_heat_rate_mmbtu_per_mwh FLOAT,
+    opr_fuel_burn_by_fuel_group_mmbtu FLOAT,
+    carbon_tax_allowance_tons FLOAT,
+    PRIMARY KEY (scenario_id, subproblem_id, stage_id, project,
+                 fuel_group, timepoint)
+);
+
 DROP TABLE IF EXISTS results_project_dispatch_by_technology;
 CREATE TABLE results_project_dispatch_by_technology (
 scenario_id INTEGER,
@@ -3770,8 +3791,8 @@ PRIMARY KEY (scenario_id, subproblem_id, stage_id, period, load_zone,
 technology, spinup_or_lookahead)
 );
 
-DROP TABLE IF EXISTS results_project_prm_deliverability;
-CREATE TABLE results_project_prm_deliverability (
+DROP TABLE IF EXISTS results_project_deliverability;
+CREATE TABLE results_project_deliverability (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
@@ -3789,15 +3810,15 @@ PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
 );
 
 DROP TABLE IF EXISTS
-results_project_prm_deliverability_group_capacity_and_costs;
-CREATE TABLE results_project_prm_deliverability_group_capacity_and_costs (
+results_project_deliverability_groups;
+CREATE TABLE results_project_deliverability_groups (
 scenario_id INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
 deliverability_group VARCHAR(64),
 period INTEGER,
-deliverability_built_in_period_mw FLOAT,
-cumulative_added_deliverability_in_period_mw FLOAT,
+deliverable_capacity_built_in_period_mw FLOAT,
+cumulative_added_deliverable_capacity_mw FLOAT,
 deliverability_annual_cost_in_period FLOAT,
 PRIMARY KEY (scenario_id, deliverability_group, period, subproblem_id, stage_id)
 );
@@ -3806,8 +3827,8 @@ PRIMARY KEY (scenario_id, deliverability_group, period, subproblem_id, stage_id)
 -- (and broken out by spinup_or_lookahead; fraction sums up to 1 between the
 -- spinup_or_lookahead and the non-spinup_or_lookahead timepoints)
 DROP TABLE IF EXISTS
-results_project_prm_deliverability_group_capacity_and_costs_agg;
-CREATE TABLE results_project_prm_deliverability_group_capacity_and_costs_agg (
+results_project_deliverability_groups_agg;
+CREATE TABLE results_project_deliverability_groups_agg (
 scenario_id INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
@@ -3833,7 +3854,7 @@ carbon_cap_zone VARCHAR(32),
 capacity_mw FLOAT,
 elcc_eligible_capacity_mw FLOAT,
 energy_only_capacity_mw FLOAT,
-elcc_simple_contribution_fraction FLOAT,
+elcc_simple_fraction FLOAT,
 elcc_mw FLOAT,
 PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
 );
@@ -5121,7 +5142,7 @@ FROM results_costs_by_period_load_zone
 GROUP BY scenario_id, subproblem_id, stage_id, period, spinup_or_lookahead) AS a
 
 LEFT JOIN
-results_project_prm_deliverability_group_capacity_and_costs_agg as b
+results_project_deliverability_groups_agg as b
 ON (a.scenario_id = b.scenario_id
     AND a.subproblem_id = b.subproblem_id
     AND a.stage_id = b.stage_id

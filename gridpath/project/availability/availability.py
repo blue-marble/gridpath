@@ -197,12 +197,10 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         required_availability_modules
     )
     for op_m in required_availability_modules:
-        if hasattr(imported_availability_modules[op_m],
-                   "add_to_prj_tmp_results"):
+        if hasattr(imported_availability_modules[op_m], "add_to_prj_tmp_results"):
             results, results_df = imported_availability_modules[
-                op_m].add_to_prj_tmp_results(
-                scenario_directory, subproblem, stage, m, d
-            )
+                op_m
+            ].add_to_prj_tmp_results(scenario_directory, subproblem, stage, m, d)
             for c in results_columns:
                 getattr(d, PROJECT_TIMEPOINT_DF)[c] = None
             getattr(d, PROJECT_TIMEPOINT_DF).update(results_df)

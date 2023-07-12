@@ -27,8 +27,6 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     Export all results from the PROJECT_CAPACITY_DF that various modules
     have added to
     """
-
-    # TODO: wrap in spin on database lock
     getattr(d, PROJECT_PERIOD_DF).to_csv(
         os.path.join(
             scenario_directory,

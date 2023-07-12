@@ -21,8 +21,6 @@ import os.path
 import pandas as pd
 from pyomo.environ import Set, value
 
-from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.auxiliary.dynamic_components import headroom_variables
 from gridpath.common_functions import create_results_df
 from gridpath.project import PROJECT_TIMEPOINT_DF
@@ -364,98 +362,3 @@ def write_model_inputs(
     ) as projects_file_out:
         writer = csv.writer(projects_file_out, delimiter="\t", lineterminator="\n")
         writer.writerows(new_rows)
-
-
-def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    """
-
-    :param scenario_id:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-    # Delete prior results and create temporary import table for ordering
-    setup_results_import(
-        conn=db,
-        cursor=c,
-        table="results_project_frequency_response",
-        scenario_id=scenario_id,
-        subproblem=subproblem,
-        stage=stage,
-    )
-
-    # Load results into the temporary table
-    results = []
-    with open(
-        os.path.join(results_directory, "reserves_provision_frequency_response.csv"),
-        "r",
-    ) as reserve_provision_file:
-        reader = csv.reader(reserve_provision_file)
-
-        next(reader)  # skip header
-        for row in reader:
-            project = row[0]
-            period = row[1]
-            horizon = row[2]
-            timepoint = row[3]
-            timepoint_weight = row[4]
-            number_of_hours_in_timepoint = row[5]
-            ba = row[6]
-            load_zone = row[7]
-            technology = row[8]
-            reserve_provision = row[9]
-            partial = row[10]
-
-            results.append(
-                (
-                    scenario_id,
-                    project,
-                    period,
-                    subproblem,
-                    stage,
-                    horizon,
-                    timepoint,
-                    timepoint_weight,
-                    number_of_hours_in_timepoint,
-                    ba,
-                    load_zone,
-                    technology,
-                    reserve_provision,
-                    partial,
-                )
-            )
-    insert_temp_sql = """
-        INSERT INTO temp_results_project_frequency_response{}
-        (scenario_id, project, period, subproblem_id, stage_id,
-        horizon, timepoint, timepoint_weight, 
-        number_of_hours_in_timepoint, 
-        frequency_response_ba, load_zone, technology,
-        reserve_provision_mw, partial)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 
-        ?, ?, ?, ?, ?);""".format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
-
-    # Insert sorted results into permanent results table
-    insert_sql = """
-        INSERT INTO results_project_frequency_response
-        (scenario_id, project, period, subproblem_id, stage_id, 
-        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint, 
-        frequency_response_ba, load_zone, technology,
-        reserve_provision_mw, partial)
-        SELECT
-        scenario_id, project, period, subproblem_id, stage_id, 
-        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
-        frequency_response_ba, load_zone, technology,
-        reserve_provision_mw, partial
-        FROM temp_results_project_frequency_response{} 
-        ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;
-        """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)
