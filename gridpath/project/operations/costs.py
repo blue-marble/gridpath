@@ -527,7 +527,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return:
     Nothing
     """
-    prj_opr_df = getattr(d, PROJECT_TIMEPOINT_DF)
+    prj_tmp_df = getattr(d, PROJECT_TIMEPOINT_DF)
     results_columns = [
         "variable_om_cost",
         "fuel_cost",
@@ -563,17 +563,17 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         ]
         for (prj, tmp) in m.PRJ_OPR_TMPS
     ]
-    cost_df = create_results_df(
+    results_df = create_results_df(
         index_columns=["project", "timepoint"],
         results_columns=results_columns,
         data=data,
     )
 
     for c in results_columns:
-        prj_opr_df[c] = None
-    prj_opr_df.update(cost_df)
+        prj_tmp_df[c] = None
+    prj_tmp_df.update(results_df)
 
-    setattr(d, "project_operations_df", prj_opr_df)
+    setattr(d, PROJECT_TIMEPOINT_DF, prj_tmp_df)
 
 
 # Database

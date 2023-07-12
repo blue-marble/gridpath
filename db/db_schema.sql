@@ -3558,6 +3558,8 @@ period INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
 capacity_type VARCHAR(64),
+availability_type VARCHAR(64),
+operational_type VARCHAR(64),
 technology VARCHAR(32),
 load_zone VARCHAR(32),
 energy_target_zone VARCHAR(32),
@@ -3602,29 +3604,6 @@ PRIMARY KEY (scenario_id, subproblem_id, stage_id, capacity_group, period)
 );
 
 
-DROP TABLE IF EXISTS results_project_availability_endogenous;
-CREATE TABLE results_project_availability_endogenous (
-scenario_id INTEGER,
-project VARCHAR(64),
-period INTEGER,
-subproblem_id INTEGER,
-stage_id INTEGER,
-availability_type VARCHAR(64),
-timepoint INTEGER,
-timepoint_weight FLOAT,
-number_of_hours_in_timepoint FLOAT,
-spinup_or_lookahead INTEGER,
-load_zone VARCHAR(32),
-energy_target_zone VARCHAR(32),
-carbon_cap_zone VARCHAR(32),
-technology VARCHAR(32),
-unavailability_decision FLOAT,
-start_unavailablity FLOAT,
-stop_unavailability FLOAT,
-availability_derate FLOAT,
-PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
-);
-
 DROP TABLE IF EXISTS results_project_timepoint;
 CREATE TABLE results_project_timepoint (
 scenario_id INTEGER,
@@ -3633,6 +3612,8 @@ timepoint INTEGER,
 period INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
+capacity_type VARCHAR(64),
+availability_type VARCHAR(64),
 operational_type VARCHAR(64),
 balancing_type VARCHAR(64),
 horizon INTEGER,
@@ -3700,6 +3681,10 @@ regulation_up_reserve_provision_mw FLOAT,
 frequency_response_ba VARCHAR(32),
 frequency_response_reserve_provision_mw FLOAT,
 frequency_response_partial_reserve_provision_mw FLOAT,
+availability_derate FLOAT,
+unavailability_decision FLOAT,
+start_unavailability FLOAT,
+stop_unavailability FLOAT,
 PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
 );
 

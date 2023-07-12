@@ -12,13 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pyomo.environ import Expression
+from pyomo.environ import Expression, value
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import (
     get_required_subtype_modules,
     load_subtype_modules,
 )
+from gridpath.common_functions import create_results_df
+from gridpath.project import PROJECT_TIMEPOINT_DF
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -163,7 +165,31 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     Export availability results.
     """
 
-    # Module-specific capacity results
+    prj_tmp_df = getattr(d, PROJECT_TIMEPOINT_DF)
+    results_columns = [
+        "availability_derate",
+    ]
+    data = [
+        [
+            prj,
+            tmp,
+            m.Availability_Derate[prj, tmp],
+        ]
+        for (prj, tmp) in m.PRJ_OPR_TMPS
+    ]
+    results_df = create_results_df(
+        index_columns=["project", "timepoint"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    for c in results_columns:
+        prj_tmp_df[c] = None
+    prj_tmp_df.update(results_df)
+
+    setattr(d, PROJECT_TIMEPOINT_DF, prj_tmp_df)
+
+    # Module-specific availability results
     required_availability_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
         subproblem=subproblem,
@@ -177,54 +203,6 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         if hasattr(imported_availability_modules[op_m], "export_results"):
             imported_availability_modules[op_m].export_results(
                 scenario_directory, subproblem, stage, m, d
-            )
-        else:
-            pass
-
-
-def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    """
-
-    :param scenario_id:
-    :param subproblem:
-    :param stage:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-
-    # Delete prior results for endogenous types
-    del_sql = """
-        DELETE FROM results_project_availability_endogenous 
-        WHERE scenario_id = ?
-        AND subproblem_id = ?
-        AND stage_id = ?;
-        """
-    spin_on_database_lock(
-        conn=db,
-        cursor=c,
-        sql=del_sql,
-        data=(scenario_id, subproblem, stage),
-        many=False,
-    )
-
-    # Load in the required availability type modules
-    required_availability_type_modules = get_required_availability_type_modules(
-        scenario_id, c
-    )
-    imported_availability_modules = load_availability_type_modules(
-        required_availability_type_modules
-    )
-
-    # Import module-specific results
-    for op_m in required_availability_type_modules:
-        if hasattr(imported_availability_modules[op_m], "import_results_into_database"):
-            imported_availability_modules[op_m].import_results_into_database(
-                scenario_id, subproblem, stage, c, db, results_directory, quiet
             )
         else:
             pass
