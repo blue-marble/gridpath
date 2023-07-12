@@ -3687,6 +3687,8 @@ carbon_emissions_tons FLOAT,
 energy_target_zone VARCHAR(32),
 scheduled_energy_target_energy_mw FLOAT,
 subhourly_energy_target_energy_delivered_mw FLOAT,
+spinning_reserves_ba VARCHAR(32),
+spinning_reserves_reserve_provision_mw FLOAT,
 lf_reserves_down_ba VARCHAR(32),
 lf_reserves_down_reserve_provision_mw FLOAT,
 lf_reserves_up_ba VARCHAR(32),
@@ -3699,6 +3701,40 @@ frequency_response_ba VARCHAR(32),
 frequency_response_reserve_provision_mw FLOAT,
 frequency_response_partial_reserve_provision_mw FLOAT,
 PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
+);
+
+DROP TABLE IF EXISTS results_project_curtailment_variable_periodagg;
+CREATE TABLE results_project_curtailment_variable_periodagg (
+scenario_id INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
+period INTEGER,
+timepoint INTEGER,
+timepoint_weight FLOAT,
+number_of_hours_in_timepoint FLOAT,
+spinup_or_lookahead INTEGER,
+month INTEGER,
+hour_of_day FLOAT,
+load_zone VARCHAR(32),
+scheduled_curtailment_mw FLOAT,
+PRIMARY KEY (scenario_id, subproblem_id, stage_id, timepoint, load_zone)
+);
+
+DROP TABLE IF EXISTS results_project_curtailment_hydro_periodagg;
+CREATE TABLE results_project_curtailment_hydro_periodagg (
+scenario_id INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
+period INTEGER,
+timepoint INTEGER,
+timepoint_weight FLOAT,
+number_of_hours_in_timepoint FLOAT,
+spinup_or_lookahead INTEGER,
+month INTEGER,
+hour_of_day FLOAT,
+load_zone VARCHAR(32),
+scheduled_curtailment_mw FLOAT,
+PRIMARY KEY (scenario_id, subproblem_id, stage_id, timepoint, load_zone)
 );
 
 DROP TABLE IF EXISTS results_project_cap_factor_limits;

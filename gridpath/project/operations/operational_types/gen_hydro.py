@@ -892,7 +892,7 @@ def process_model_results(db, c, scenario_id, subscenarios, quiet):
 
     # Delete old aggregated hydro curtailment results
     del_sql = """
-        DELETE FROM results_project_curtailment_hydro 
+        DELETE FROM results_project_curtailment_hydro_periodagg 
         WHERE scenario_id = ?
         """
     spin_on_database_lock(
@@ -901,7 +901,7 @@ def process_model_results(db, c, scenario_id, subscenarios, quiet):
 
     # Aggregate hydro curtailment (just scheduled curtailment)
     agg_sql = """
-        INSERT INTO results_project_curtailment_hydro
+        INSERT INTO results_project_curtailment_hydro_periodagg
         (scenario_id, subproblem_id, stage_id, period, timepoint, 
         timepoint_weight, number_of_hours_in_timepoint, month, hour_of_day,
         load_zone, scheduled_curtailment_mw)

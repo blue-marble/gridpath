@@ -180,7 +180,7 @@ def get_variable_curtailment_results(c, scenario_id, load_zone, stage, timepoint
     :return:
     """
     query = """SELECT scheduled_curtailment_mw
-            FROM results_project_curtailment_variable
+            FROM results_project_curtailment_variable_periodagg
             WHERE scenario_id = {}
             AND load_zone = '{}'
             AND stage_id = {}
@@ -205,7 +205,7 @@ def get_hydro_curtailment_results(c, scenario_id, load_zone, stage, timepoints):
     :return:
     """
     query = """SELECT scheduled_curtailment_mw
-            FROM results_project_curtailment_hydro
+            FROM results_project_curtailment_hydro_periodagg
             WHERE scenario_id = {}
             AND load_zone = '{}'
             AND stage_id = {}
