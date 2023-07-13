@@ -95,33 +95,6 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.LZ_MARKETS, m.TMPS, initialize=final_market_position_init
     )
 
-    # Sum up final positions in all markets for use in the load-balance constraints
-    def total_lz_net_purchased_power_init(mod, z, tmp):
-        if z in mod.MARKET_LZS:
-            return sum(
-                mod.Final_Net_Market_Purchased_Power[z, hub, tmp]
-                for hub in mod.MARKETS_BY_LZ[z]
-            )
-        else:
-            return 0
-
-    m.Total_Final_LZ_Net_Purchased_Power = Expression(
-        m.LOAD_ZONES, m.TMPS, initialize=total_lz_net_purchased_power_init
-    )
-
-    record_dynamic_components(dynamic_components=d)
-
-
-def record_dynamic_components(dynamic_components):
-    """
-    :param dynamic_components:
-    :return:
-
-    """
-    getattr(dynamic_components, load_balance_production_components).append(
-        "Total_Final_LZ_Net_Purchased_Power"
-    )
-
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     data_portal.load(
@@ -294,29 +267,6 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return:
     """
 
-    results_columns = [
-        "net_market_purchases_mw",
-    ]
-    data = [
-        [
-            lz,
-            tmp,
-            value(m.Total_Final_LZ_Net_Purchased_Power[lz, tmp]),
-        ]
-        for lz in getattr(m, "LOAD_ZONES")
-        for tmp in getattr(m, "TMPS")
-    ]
-    results_df = create_results_df(
-        index_columns=["load_zone", "timepoint"],
-        results_columns=results_columns,
-        data=data,
-    )
-
-    for c in results_columns:
-        getattr(d, LOAD_ZONE_TMP_DF)[c] = None
-    getattr(d, LOAD_ZONE_TMP_DF).update(results_df)
-
-    # TODO: need to move by market participation to markets module
     with open(
         os.path.join(
             scenario_directory,

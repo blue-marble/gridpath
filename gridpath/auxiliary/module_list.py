@@ -144,8 +144,9 @@ def all_modules_list():
         "system.load_balance.aggregate_project_power",
         "system.load_balance.aggregate_transmission_power",
         "transmission.operations.export_penalty_costs",
-        "system.load_balance.market_participation",
-        "system.load_balance.fix_market_participation",
+        "system.markets.market_participation",
+        "system.markets.fix_market_participation",
+        "system.load_balance.aggregate_market_participation",
         "system.load_balance.load_balance",
         "system.load_balance.consolidate_results",
         "system.reserves.aggregation.lf_reserves_up",
@@ -160,8 +161,8 @@ def all_modules_list():
         "system.reserves.balance.regulation_down",
         "system.reserves.balance.frequency_response",
         "system.reserves.balance.spinning_reserves",
-        "system.policy.energy_targets" ".aggregate_period_energy_target_contributions",
-        "system.policy.energy_targets" ".aggregate_horizon_energy_target_contributions",
+        "system.policy.energy_targets.aggregate_period_energy_target_contributions",
+        "system.policy.energy_targets.aggregate_horizon_energy_target_contributions",
         "system.policy.energy_targets.period_energy_target_balance",
         "system.policy.energy_targets.horizon_energy_target_balance",
         "system.policy.transmission_targets"
@@ -384,8 +385,9 @@ def optional_modules_list():
         "markets": [
             "geography.markets",
             "system.markets.prices",
-            "system.load_balance.market_participation",
+            "system.markets.market_participation",
             "system.markets.volume",
+            "system.load_balance.aggregate_market_participation",
             "objective.system.aggregate_market_revenue_and_costs",
         ],
         "tuning": [
@@ -445,9 +447,7 @@ def stage_feature_module_list():
     :return: dictionary with a features as keys and a list of modules to be included
     if those features are selected AND there are stages as values
     """
-    stage_feature_modules = {
-        "markets": ["system.load_balance.fix_market_participation"]
-    }
+    stage_feature_modules = {"markets": ["system.markets.fix_market_participation"]}
 
     return stage_feature_modules
 
@@ -518,6 +518,7 @@ def determine_modules(
     we check if all features they depend on are included and, if not, remove
     those modules from the list of modules to use.
     """
+    requested_features = []
     if (scenario_directory is None) and (features is None):
         raise IOError(
             """Need to specify either 'scenario_directory', the
@@ -576,14 +577,12 @@ def determine_modules(
 
     if remove_fix_variable_modules:
         modules_to_use.remove("project.operations.fix_commitment")
-        modules_to_use.remove("system.load_balance.fix_market_participation")
+        modules_to_use.remove("system.markets.fix_market_participation")
 
     # Remove modules associated with features that are not requested
     optional_modules = optional_modules_list()
     for feature in list(optional_modules.keys()):
-        if feature in requested_features:
-            pass
-        else:
+        if feature not in requested_features:
             for m in optional_modules[feature]:
                 modules_to_use.remove(m)
 

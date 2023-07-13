@@ -32,7 +32,7 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.investment.periods",
     "geography.load_zones",
     "geography.markets",
-    "system.load_balance.market_participation",
+    "system.markets.market_participation",
 ]
 NAME_OF_MODULE_BEING_TESTED = "system.markets.volume"
 IMPORTED_PREREQ_MODULES = list()

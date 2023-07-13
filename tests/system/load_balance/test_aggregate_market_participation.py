@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,9 +13,9 @@
 # limitations under the License.
 
 
-from collections import OrderedDict
 from importlib import import_module
 import os.path
+from pyomo.environ import value
 import sys
 import unittest
 
@@ -31,10 +31,8 @@ PREREQUISITE_MODULE_NAMES = [
     "geography.load_zones",
     "geography.markets",
     "system.markets.market_participation",
-    "system.markets.prices",
-    "system.markets.volume",
 ]
-NAME_OF_MODULE_BEING_TESTED = "objective.system.aggregate_market_revenue_and_costs"
+NAME_OF_MODULE_BEING_TESTED = "system.load_balance.aggregate_market_participation"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -52,7 +50,7 @@ except ImportError:
     print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED + " to test.")
 
 
-class TestAggMarkets(unittest.TestCase):
+class TestAggMarketParticipation(unittest.TestCase):
     """ """
 
     def test_add_model_components(self):
@@ -83,7 +81,7 @@ class TestAggMarkets(unittest.TestCase):
 
     def test_data_loaded_correctly(self):
         """
-        Test components initialized with expected data
+        Test components initialized with data as expected
         :return:
         """
         m, data = add_components_and_load_data(

@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,13 +18,8 @@ transmission lines connected to the load zone to create a load-balance
 production component, and adds it to the load-balance constraint.
 """
 
-
-import csv
-import os.path
 from pyomo.environ import Expression, value
 
-from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.auxiliary.dynamic_components import (
     load_balance_production_components,
     load_balance_consumption_components,
