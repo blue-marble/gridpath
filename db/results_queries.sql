@@ -188,7 +188,7 @@ ORDER BY scenario_id, load_zone, period, technology
 -- Net imports by scenario, load_zone, and period
 select scenario_id, load_zone, period,
 sum(timepoint_weight * net_imports_mw) as net imports
-from results_transmission_imports_exports
+from results_system_load_zone_timepoint
 --where load_zone = 'CAISO'
 group by scenario_id, load_zone, period
 ;

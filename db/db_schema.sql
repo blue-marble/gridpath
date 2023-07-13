@@ -4029,24 +4029,6 @@ capacity_cost FLOAT,
 PRIMARY KEY (scenario_id, load_zone, period, subproblem_id, stage_id,
 spinup_or_lookahead));
 
-
-DROP TABLE IF EXISTS results_transmission_imports_exports;
-CREATE TABLE results_transmission_imports_exports (
-scenario_id INTEGER,
-load_zone VARCHAR(64),
-period INTEGER,
-subproblem_id INTEGER,
-stage_id INTEGER,
-timepoint INTEGER,
-timepoint_weight FLOAT,
-number_of_hours_in_timepoint FLOAT,
-spinup_or_lookahead INTEGER,
-imports_mw FLOAT,
-exports_mw FLOAT,
-net_imports_mw FLOAT,
-PRIMARY KEY (scenario_id, load_zone, subproblem_id, stage_id, timepoint)
-);
-
 DROP TABLE IF EXISTS results_transmission_timepoint;
 CREATE TABLE results_transmission_timepoint (
 scenario_id INTEGER,
@@ -4125,22 +4107,25 @@ CREATE TABLE results_transmission_simultaneous_flows (
 DROP TABLE IF EXISTS results_system_load_zone_timepoint;
 CREATE TABLE results_system_load_zone_timepoint (
 scenario_id INTEGER,
-load_zone VARCHAR(32),
-period INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
+load_zone VARCHAR(32),
 timepoint INTEGER,
+period INTEGER,
 discount_factor FLOAT,
 number_years_represented FLOAT,
 timepoint_weight FLOAT,
 number_of_hours_in_timepoint FLOAT,
 spinup_or_lookahead INTEGER,
 static_load_mw FLOAT,
+total_power_mw FLOAT,
+net_imports_mw FLOAT,
+net_market_purchases_mw FLOAT,
 overgeneration_mw FLOAT,
 unserved_energy_mw FLOAT,
 dual FLOAT,
 marginal_price_per_mw FLOAT,
-PRIMARY KEY (scenario_id, load_zone, subproblem_id, stage_id, timepoint)
+PRIMARY KEY (scenario_id, subproblem_id, stage_id, load_zone, timepoint)
 );
 
 DROP TABLE IF EXISTS results_system_market_participation;

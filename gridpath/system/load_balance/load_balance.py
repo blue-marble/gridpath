@@ -181,7 +181,6 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     """
 
     results_columns = [
-        "static_load_mw",
         "overgeneration_mw",
         "unserved_energy_mw",
     ]
@@ -189,7 +188,6 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         [
             lz,
             tmp,
-            m.static_load_mw[lz, tmp],
             value(m.Overgeneration_MW_Expression[lz, tmp]),
             value(m.Unserved_Energy_MW_Expression[lz, tmp]),
         ]

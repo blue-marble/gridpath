@@ -229,7 +229,7 @@ def get_imports_exports_results(c, scenario_id, load_zone, stage, timepoints):
     :return:
     """
     query = """SELECT net_imports_mw
-        FROM results_transmission_imports_exports
+        FROM results_system_load_zone_timepoint
         WHERE scenario_id = {}
         AND load_zone = '{}'
         AND stage_id = {}
@@ -240,8 +240,10 @@ def get_imports_exports_results(c, scenario_id, load_zone, stage, timepoints):
 
     net_imports = c.execute(query, timepoints).fetchall()
 
-    imports = [i[0] if i[0] > 0 else 0 for i in net_imports]
-    exports = [-e[0] if e[0] < 0 else 0 for e in net_imports]
+    # None values should only happen if the transmission feature was not
+    # included
+    imports = [0 if i[0] is None else i[0] if i[0] > 0 else 0 for i in net_imports]
+    exports = [0 if e[0] is None else -e[0] if e[0] < 0 else 0 for e in net_imports]
 
     return imports, exports
 
@@ -256,13 +258,12 @@ def get_market_participation_results(c, scenario_id, load_zone, stage, timepoint
     :param timepoints:
     :return:
     """
-    query = """SELECT sum(final_net_buy_power) as buy_power
-        FROM results_system_market_participation
+    query = """SELECT net_market_purchases_mw
+        FROM results_system_load_zone_timepoint
         WHERE scenario_id = {}
         AND load_zone = '{}'
         AND stage_id = {}
         AND timepoint IN ({})
-        GROUP BY load_zone, stage_id, timepoint
         ;""".format(
         scenario_id, load_zone, stage, ",".join(["?"] * len(timepoints))
     )
@@ -272,15 +273,19 @@ def get_market_participation_results(c, scenario_id, load_zone, stage, timepoint
     sales = []
     purchases = []
     for i in market_participation:
-        if i[0] < 0:
-            sales.append(-i[0])
-            purchases.append(0)
-        elif i[0] > 0:
+        if i[0] is None:  # markets feature not included
             sales.append(0)
-            purchases.append(i[0])
+            purchases.append(0)
         else:
-            sales.append(0)
-            purchases.append(0)
+            if i[0] < 0:
+                sales.append(-i[0])
+                purchases.append(0)
+            elif i[0] > 0:
+                sales.append(0)
+                purchases.append(i[0])
+            else:
+                sales.append(0)
+                purchases.append(0)
 
     return sales, purchases
 

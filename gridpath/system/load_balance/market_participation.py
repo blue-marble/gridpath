@@ -30,6 +30,8 @@ from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import check_for_integer_subdirectories
 from gridpath.auxiliary.dynamic_components import load_balance_production_components
 from gridpath.auxiliary.db_interface import setup_results_import
+from gridpath.common_functions import create_results_df
+from gridpath.system.load_balance import LOAD_ZONE_TMP_DF
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -291,6 +293,30 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
+
+    results_columns = [
+        "net_market_purchases_mw",
+    ]
+    data = [
+        [
+            lz,
+            tmp,
+            value(m.Total_Final_LZ_Net_Purchased_Power[lz, tmp]),
+        ]
+        for lz in getattr(m, "LOAD_ZONES")
+        for tmp in getattr(m, "TMPS")
+    ]
+    results_df = create_results_df(
+        index_columns=["load_zone", "timepoint"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    for c in results_columns:
+        getattr(d, LOAD_ZONE_TMP_DF)[c] = None
+    getattr(d, LOAD_ZONE_TMP_DF).update(results_df)
+
+    # TODO: need to move by market participation to markets module
     with open(
         os.path.join(
             scenario_directory,
