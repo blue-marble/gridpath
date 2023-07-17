@@ -27,6 +27,8 @@ from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.dynamic_components import (
     local_capacity_balance_provision_components,
 )
+from gridpath.common_functions import create_results_df
+from gridpath.system.reliability.local_capacity import LOCAL_CAPACITY_ZONE_PRD_DF
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -89,41 +91,29 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "local_capacity.csv",
-        ),
-        "w",
-        newline="",
-    ) as f:
-        writer = csv.writer(f)
-        writer.writerow(
-            [
-                "local_capacity_zone",
-                "period",
-                "discount_factor",
-                "number_years_represented",
-                "local_capacity_requirement_mw",
-                "local_capacity_provision_mw",
-                "local_capacity_shortage_mw",
-            ]
-        )
-        for z, p in m.LOCAL_CAPACITY_ZONE_PERIODS_WITH_REQUIREMENT:
-            writer.writerow(
-                [
-                    z,
-                    p,
-                    m.discount_factor[p],
-                    m.number_years_represented[p],
-                    float(m.local_capacity_requirement_mw[z, p]),
-                    value(m.Total_Local_Capacity_from_All_Sources_Expression_MW[z, p]),
-                    value(m.Local_Capacity_Shortage_MW_Expression[z, p]),
-                ]
-            )
+
+    results_columns = [
+        "local_capacity_provision_mw",
+        "local_capacity_shortage_mw",
+    ]
+    data = [
+        [
+            z,
+            p,
+            value(m.Total_Local_Capacity_from_All_Sources_Expression_MW[z, p]),
+            value(m.Local_Capacity_Shortage_MW_Expression[z, p]),
+        ]
+        for (z, p) in m.LOCAL_CAPACITY_ZONE_PERIODS_WITH_REQUIREMENT
+    ]
+    results_df = create_results_df(
+        index_columns=["local_capacity_zone", "period"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    for c in results_columns:
+        getattr(d, LOCAL_CAPACITY_ZONE_PRD_DF)[c] = None
+    getattr(d, LOCAL_CAPACITY_ZONE_PRD_DF).update(results_df)
 
 
 def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
@@ -146,70 +136,6 @@ def import_results_into_database(
     :param quiet:
     :return:
     """
-    if not quiet:
-        print("system local_capacity total")
-
-    # Local capacity contribution
-    nullify_sql = """
-        UPDATE results_system_local_capacity
-        SET local_capacity_requirement_mw = NULL,
-        local_capacity_provision_mw = NULL,
-        local_capacity_shortage_mw = NULL
-        WHERE scenario_id = ?
-        AND subproblem_id = ?
-        AND stage_id = ?;
-        """.format(
-        scenario_id, subproblem, stage
-    )
-    spin_on_database_lock(
-        conn=db,
-        cursor=c,
-        sql=nullify_sql,
-        data=(scenario_id, subproblem, stage),
-        many=False,
-    )
-
-    results = []
-    with open(
-        os.path.join(results_directory, "local_capacity.csv"), "r"
-    ) as surface_file:
-        reader = csv.reader(surface_file)
-
-        next(reader)  # skip header
-        for row in reader:
-            local_capacity_zone = row[0]
-            period = row[1]
-            discount_factor = row[2]
-            number_years = row[3]
-            local_capacity_req_mw = row[4]
-            local_capacity_prov_mw = row[5]
-            shortage_mw = row[6]
-
-            results.append(
-                (
-                    local_capacity_req_mw,
-                    local_capacity_prov_mw,
-                    shortage_mw,
-                    discount_factor,
-                    number_years,
-                    scenario_id,
-                    local_capacity_zone,
-                    period,
-                )
-            )
-
-    update_sql = """
-        UPDATE results_system_local_capacity
-        SET local_capacity_requirement_mw = ?,
-        local_capacity_provision_mw = ?,
-        local_capacity_shortage_mw = ?,
-        discount_factor = ?,
-        number_years_represented = ?
-        WHERE scenario_id = ?
-        AND local_capacity_zone = ?
-        AND period = ?"""
-    spin_on_database_lock(conn=db, cursor=c, sql=update_sql, data=results)
-
     # Update duals
     duals_results = []
     with open(

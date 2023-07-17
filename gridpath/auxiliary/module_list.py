@@ -71,6 +71,7 @@ def all_modules_list():
         "system.policy.fuel_burn_limits.fuel_burn_limits",
         "system.reliability.prm",
         "system.reliability.prm.prm_requirement",
+        "system.reliability.local_capacity",
         "system.reliability.local_capacity.local_capacity_requirement",
         "system.markets.prices",
         "project",
@@ -188,6 +189,7 @@ def all_modules_list():
         "system.reliability.prm.consolidate_results",
         "system.reliability.local_capacity.aggregate_local_capacity_contribution",
         "system.reliability.local_capacity.local_capacity_balance",
+        "system.reliability.local_capacity.consolidate_results",
         "system.markets.volume",
         "objective.project.aggregate_capacity_costs",
         "objective.project.aggregate_prm_group_costs",
@@ -381,12 +383,14 @@ def optional_modules_list():
         ],
         "local_capacity": [
             "geography.local_capacity_zones",
+            "system.reliability.local_capacity",
             "system.reliability.local_capacity.local_capacity_requirement",
             "project.reliability.local_capacity",
             "project.reliability.local_capacity.local_capacity_contribution",
             "system.reliability.local_capacity"
             ".aggregate_local_capacity_contribution",
             "system.reliability.local_capacity.local_capacity_balance",
+            "system.reliability.local_capacity.consolidate_results",
             "objective.system.reliability.local_capacity"
             ".aggregate_local_capacity_violation_penalties",
         ],
