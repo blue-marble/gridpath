@@ -24,6 +24,8 @@ from pyomo.environ import Var, Constraint, Expression, NonNegativeReals, value
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.dynamic_components import carbon_cap_balance_emission_components
+from gridpath.common_functions import create_results_df
+from gridpath.system.policy.carbon_cap import CARBON_CAP_ZONE_PRD_DF
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -82,37 +84,27 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(
-        os.path.join(
-            scenario_directory, str(subproblem), str(stage), "results", "carbon_cap.csv"
-        ),
-        "w",
-        newline="",
-    ) as carbon_cap_results_file:
-        writer = csv.writer(carbon_cap_results_file)
-        writer.writerow(
-            [
-                "carbon_cap_zone",
-                "period",
-                "discount_factor",
-                "number_years_represented",
-                "carbon_cap_target",
-                "carbon_emissions",
-                "carbon_cap_overage",
-            ]
-        )
-        for z, p in m.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP:
-            writer.writerow(
-                [
-                    z,
-                    p,
-                    m.discount_factor[p],
-                    m.number_years_represented[p],
-                    float(m.carbon_cap_target[z, p]),
-                    value(m.Total_Carbon_Emissions_from_All_Sources_Expression[z, p]),
-                    value(m.Carbon_Cap_Overage_Expression[z, p]),
-                ]
-            )
+
+    results_columns = [
+        "total_emissions",
+    ]
+    data = [
+        [
+            z,
+            p,
+            value(m.Total_Carbon_Emissions_from_All_Sources_Expression[z, p]),
+        ]
+        for (z, p) in m.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP
+    ]
+    results_df = create_results_df(
+        index_columns=["carbon_cap_zone", "period"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    for c in results_columns:
+        getattr(d, CARBON_CAP_ZONE_PRD_DF)[c] = None
+    getattr(d, CARBON_CAP_ZONE_PRD_DF).update(results_df)
 
 
 def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
@@ -135,70 +127,6 @@ def import_results_into_database(
     :param quiet:
     :return:
     """
-    if not quiet:
-        print("system carbon emissions (total)")
-    # Carbon emissions from imports
-    # Prior results should have already been cleared by
-    # system.policy.carbon_cap.aggregate_project_carbon_emissions,
-    # then project total emissions imported
-    # Update results_system_carbon_emissions with NULL just in case (instead of
-    # clearing prior results)
-    nullify_sql = """
-        UPDATE results_system_carbon_emissions
-        SET total_emissions = NULL,
-        carbon_cap_overage = NULL
-        WHERE scenario_id = ?
-        AND subproblem_id = ?
-        AND stage_id = ?;
-        """
-    spin_on_database_lock(
-        conn=db,
-        cursor=c,
-        sql=nullify_sql,
-        data=(scenario_id, subproblem, stage),
-        many=False,
-    )
-
-    results = []
-    with open(os.path.join(results_directory, "carbon_cap.csv"), "r") as emissions_file:
-        reader = csv.reader(emissions_file)
-
-        next(reader)  # skip header
-        for row in reader:
-            carbon_cap_zone = row[0]
-            period = row[1]
-            discount_factor = row[2]
-            number_years = row[3]
-            total_emissions = row[5]
-            overage = row[6]
-
-            results.append(
-                (
-                    total_emissions,
-                    overage,
-                    discount_factor,
-                    number_years,
-                    scenario_id,
-                    carbon_cap_zone,
-                    period,
-                    subproblem,
-                    stage,
-                )
-            )
-
-    total_sql = """
-        UPDATE results_system_carbon_emissions
-        SET total_emissions = ?,
-        carbon_cap_overage = ?,
-        discount_factor = ?,
-        number_years_represented = ?
-        WHERE scenario_id = ?
-        AND carbon_cap_zone = ?
-        AND period = ?
-        AND subproblem_id = ?
-        AND stage_id = ?;"""
-
-    spin_on_database_lock(conn=db, cursor=c, sql=total_sql, data=results)
 
     # Update duals
     duals_results = []
@@ -214,7 +142,7 @@ def import_results_into_database(
                 (row[2], row[0], row[1], scenario_id, subproblem, stage)
             )
     duals_sql = """ 
-        UPDATE results_system_carbon_emissions
+        UPDATE results_system_carbon_cap
         SET dual = ?
         WHERE carbon_cap_zone = ?
         AND period = ?
@@ -225,7 +153,7 @@ def import_results_into_database(
 
     # Calculate marginal carbon cost per emission
     mc_sql = """
-        UPDATE results_system_carbon_emissions
+        UPDATE results_system_carbon_cap
         SET carbon_cap_marginal_cost_per_emission = 
         dual / (discount_factor * number_years_represented)
         WHERE scenario_id = ?

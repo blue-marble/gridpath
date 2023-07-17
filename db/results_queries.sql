@@ -232,7 +232,7 @@ USING (scenario_id)
 select scenario_id, scenario_name, carbon_cap_zone, period, carbon_cap,
 in_zone_project_emissions, import_emissions, total_emissions,
 carbon_cap_marginal_cost_per_emission
-from results_system_carbon_emissions
+from results_system_carbon_cap
 join scenarios
 using (scenario_id)
 ;

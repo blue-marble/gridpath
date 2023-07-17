@@ -4131,10 +4131,10 @@ PRIMARY KEY (scenario_id, subproblem_id, stage_id, load_zone, timepoint)
 DROP TABLE IF EXISTS results_system_market_participation;
 CREATE TABLE results_system_market_participation (
 scenario_id INTEGER,
-load_zone VARCHAR(32),
-market VARCHAR(32),
 subproblem_id INTEGER,
 stage_id INTEGER,
+load_zone VARCHAR(32),
+market VARCHAR(32),
 timepoint INTEGER,
 period INTEGER,
 discount_factor FLOAT,
@@ -4287,8 +4287,8 @@ PRIMARY KEY (scenario_id, spinning_reserves_ba, subproblem_id, stage_id, timepoi
 );
 
 -- Carbon emissions
-DROP TABLE IF EXISTS results_system_carbon_emissions;
-CREATE TABLE results_system_carbon_emissions (
+DROP TABLE IF EXISTS results_system_carbon_cap;
+CREATE TABLE results_system_carbon_cap (
 scenario_id INTEGER,
 carbon_cap_zone VARCHAR(64),
 period INTEGER,
@@ -4296,8 +4296,8 @@ subproblem_id INTEGER,
 stage_id INTEGER,
 discount_factor FLOAT,
 number_years_represented FLOAT,
-carbon_cap FLOAT,
-in_zone_project_emissions FLOAT,
+carbon_cap_target FLOAT,
+project_emissions FLOAT,
 import_emissions FLOAT,
 total_emissions FLOAT,
 carbon_cap_overage FLOAT,

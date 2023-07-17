@@ -29,7 +29,7 @@ from pyomo.environ import (
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import check_for_integer_subdirectories
 from gridpath.auxiliary.dynamic_components import load_balance_production_components
-from gridpath.auxiliary.db_interface import setup_results_import
+from gridpath.auxiliary.db_interface import setup_results_import, import_csv
 from gridpath.common_functions import create_results_df
 from gridpath.system.load_balance import LOAD_ZONE_TMP_DF
 
@@ -273,7 +273,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             str(subproblem),
             str(stage),
             "results",
-            "market_participation.csv",
+            "system_market_participation.csv",
         ),
         "w",
         newline="",
@@ -291,14 +291,14 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "number_of_hours_in_timepoint",
                 "sell_power",
                 "buy_power",
-                "net_purchased_power",
-                "final_sell_power_position",
-                "final_buy_power_position",
-                "final_net_buy_power_position",
+                "net_buy_power",
+                "final_sell_power",
+                "final_buy_power",
+                "final_net_buy_power",
             ]
         )
-        for z, mrkt in getattr(m, "LZ_MARKETS"):
-            for tmp in getattr(m, "TMPS"):
+        for z, mrkt in sorted(getattr(m, "LZ_MARKETS")):
+            for tmp in sorted(getattr(m, "TMPS")):
                 writer.writerow(
                     [
                         z,
@@ -339,96 +339,13 @@ def import_results_into_database(
     :param quiet:
     :return:
     """
-    if not quiet:
-        print("market participation")
-
-    # Delete prior results and create temporary import table for ordering
-    setup_results_import(
+    import_csv(
         conn=db,
         cursor=c,
-        table="results_system_market_participation",
         scenario_id=scenario_id,
         subproblem=subproblem,
         stage=stage,
+        quiet=quiet,
+        results_directory=results_directory,
+        which_results="system_market_participation",
     )
-
-    # Load results into the temporary table
-    results = []
-    with open(
-        os.path.join(results_directory, "market_participation.csv"), "r"
-    ) as results_file:
-        reader = csv.reader(results_file)
-
-        next(reader)  # skip header
-        for row in reader:
-            lz = row[0]
-            market = row[1]
-            timepoint = row[2]
-            period = row[3]
-            discount_factor = row[4]
-            number_years = row[5]
-            timepoint_weight = row[6]
-            number_of_hours_in_timepoint = row[7]
-            sell_power = row[8]
-            buy_power = row[9]
-            net_buy_power = row[10]
-            final_sell_power = row[11]
-            final_buy_power = row[12]
-            final_net_buy_power = row[13]
-
-            results.append(
-                (
-                    scenario_id,
-                    lz,
-                    market,
-                    subproblem,
-                    stage,
-                    timepoint,
-                    period,
-                    discount_factor,
-                    number_years,
-                    timepoint_weight,
-                    number_of_hours_in_timepoint,
-                    sell_power,
-                    buy_power,
-                    net_buy_power,
-                    final_sell_power,
-                    final_buy_power,
-                    final_net_buy_power,
-                )
-            )
-    insert_temp_sql = """
-        INSERT INTO 
-        temp_results_system_market_participation{}
-        (scenario_id, load_zone, market, subproblem_id, stage_id,
-        timepoint, period, discount_factor, number_years_represented,
-        timepoint_weight, number_of_hours_in_timepoint,
-        sell_power, buy_power, net_buy_power, final_sell_power, final_buy_power, 
-        final_net_buy_power)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-        """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
-
-    # Insert sorted results into permanent results table
-    insert_sql = """
-        INSERT INTO results_system_market_participation
-        (scenario_id, load_zone, market, subproblem_id, stage_id,
-        timepoint, period, discount_factor, number_years_represented,
-        timepoint_weight, number_of_hours_in_timepoint,
-        sell_power, buy_power, net_buy_power, final_sell_power, final_buy_power, 
-        final_net_buy_power)
-        SELECT
-        scenario_id, load_zone, market, subproblem_id, stage_id,
-        timepoint, period, discount_factor, number_years_represented,
-        timepoint_weight, number_of_hours_in_timepoint,
-        sell_power, buy_power, net_buy_power, final_sell_power, final_buy_power, 
-        final_net_buy_power
-        FROM temp_results_system_market_participation{}
-        ORDER BY scenario_id, load_zone, market, subproblem_id, stage_id, 
-        timepoint;
-        """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)
