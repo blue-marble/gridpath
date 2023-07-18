@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,13 +17,8 @@ Aggregate carbon emissions from the project-timepoint level to
 the carbon cap zone - period level.
 """
 
+from pyomo.environ import Expression, value
 
-import csv
-import os.path
-from pyomo.environ import Param, Set, Expression, value
-
-from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.auxiliary.dynamic_components import carbon_cap_balance_emission_components
 from gridpath.common_functions import create_results_df
 from gridpath.system.policy.carbon_cap import CARBON_CAP_ZONE_PRD_DF

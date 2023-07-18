@@ -15,22 +15,22 @@
 
 import os.path
 
-from gridpath.system.policy.carbon_cap import CARBON_CAP_ZONE_PRD_DF
+from gridpath.system.policy.carbon_tax import CARBON_TAX_ZONE_PRD_DF
 
 
 def export_results(scenario_directory, subproblem, stage, m, d):
     """
-    Export all results from the CARBON_CAP_ZONE_PRD_DF that various modules
+    Export all results from the CARBON_TAX_ZONE_PRD_DF that various modules
     have added to
     """
 
-    getattr(d, CARBON_CAP_ZONE_PRD_DF).to_csv(
+    getattr(d, CARBON_TAX_ZONE_PRD_DF).to_csv(
         os.path.join(
             scenario_directory,
             str(subproblem),
             str(stage),
             "results",
-            "system_carbon_cap.csv",
+            "system_carbon_tax.csv",
         ),
         sep=",",
         index=True,

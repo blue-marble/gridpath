@@ -4309,8 +4309,8 @@ PRIMARY KEY (scenario_id, carbon_cap_zone, subproblem_id, stage_id, period)
 );
 
 -- Carbon tax emissions
-DROP TABLE IF EXISTS results_system_carbon_tax_emissions;
-CREATE TABLE results_system_carbon_tax_emissions (
+DROP TABLE IF EXISTS results_system_carbon_tax;
+CREATE TABLE results_system_carbon_tax (
 scenario_id INTEGER,
 carbon_tax_zone VARCHAR(64),
 period INTEGER,
@@ -4318,10 +4318,11 @@ subproblem_id INTEGER,
 stage_id INTEGER,
 discount_factor FLOAT,
 number_years_represented FLOAT,
-carbon_tax FLOAT,
-total_emissions FLOAT,
-total_allowance FLOAT,
-carbon_tax_cost FLOAT,
+project_emissions FLOAT,
+carbon_tax_per_ton FLOAT,
+total_carbon_emissions_tons FLOAT,
+total_carbon_tax_allowance_tons FLOAT,
+total_carbon_tax_cost FLOAT,
 dual FLOAT,
 PRIMARY KEY (scenario_id, carbon_tax_zone, subproblem_id, stage_id, period)
 );

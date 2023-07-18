@@ -66,6 +66,7 @@ def all_modules_list():
         "system.policy.transmission_targets.period_transmission_target",
         "system.policy.carbon_cap",
         "system.policy.carbon_cap.carbon_cap",
+        "system.policy.carbon_tax",
         "system.policy.carbon_tax.carbon_tax",
         "system.policy.performance_standard.performance_standard",
         "system.policy.fuel_burn_limits.fuel_burn_limits",
@@ -177,6 +178,7 @@ def all_modules_list():
         "system.policy.carbon_cap.consolidate_results",
         "system.policy.carbon_tax.aggregate_project_carbon_emissions",
         "system.policy.carbon_tax.carbon_tax_costs",
+        "system.policy.carbon_tax.consolidate_results",
         "system.policy.subsidies",
         "system.policy.performance_standard.aggregate_project_performance_standard",
         "system.policy.performance_standard.performance_standard_balance",
@@ -344,10 +346,12 @@ def optional_modules_list():
         ],
         "carbon_tax": [
             "geography.carbon_tax_zones",
+            "system.policy.carbon_tax",
             "system.policy.carbon_tax.carbon_tax",
             "project.operations.carbon_tax",
             "system.policy.carbon_tax.aggregate_project_carbon_emissions",
             "system.policy.carbon_tax.carbon_tax_costs",
+            "system.policy.carbon_tax.consolidate_results",
             "objective.system.policy.aggregate_carbon_tax_costs",
         ],
         "performance_standard": [

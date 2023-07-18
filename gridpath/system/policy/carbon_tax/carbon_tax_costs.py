@@ -23,6 +23,8 @@ import os.path
 from pyomo.environ import Expression, value, NonNegativeReals, Var, Constraint
 
 from db.common_functions import spin_on_database_lock
+from gridpath.common_functions import create_results_df
+from gridpath.system.policy.carbon_tax import CARBON_TAX_ZONE_PRD_DF
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -67,110 +69,29 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(
-        os.path.join(
-            scenario_directory, str(subproblem), str(stage), "results", "carbon_tax.csv"
-        ),
-        "w",
-        newline="",
-    ) as carbon_tax_results_file:
-        writer = csv.writer(carbon_tax_results_file)
-        writer.writerow(
-            [
-                "carbon_tax_zone",
-                "period",
-                "discount_factor",
-                "number_years_represented",
-                "carbon_tax_per_ton",
-                "total_carbon_emissions_tons",
-                "total_carbon_tax_allowance_tons",
-                "total_carbon_tax_cost",
-            ]
-        )
-        for z, p in sorted(m.CARBON_TAX_ZONE_PERIODS_WITH_CARBON_TAX):
-            writer.writerow(
-                [
-                    z,
-                    p,
-                    m.discount_factor[p],
-                    m.number_years_represented[p],
-                    float(m.carbon_tax[z, p]),
-                    value(m.Total_Carbon_Tax_Project_Emissions[z, p]),
-                    value(m.Total_Carbon_Tax_Project_Allowance[z, p]),
-                    value(m.Carbon_Tax_Cost[z, p]),
-                ]
-            )
-
-
-def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    """
-
-    :param scenario_id:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-    if not quiet:
-        print("system carbon tax emissions (total)")
-    # Carbon emissions from imports
-    # Prior results should have already been cleared by
-    # system.policy.carbon_tax.aggregate_project_carbon_emissions,
-    # then project total emissions imported
-    # Update results_system_carbon_tax_emissions with NULL just in case (instead of
-    # clearing prior results)
-    nullify_sql = """
-        UPDATE results_system_carbon_tax_emissions
-        SET carbon_tax_cost = NULL
-        WHERE scenario_id = ?
-        AND subproblem_id = ?
-        AND stage_id = ?;
-        """
-    spin_on_database_lock(
-        conn=db,
-        cursor=c,
-        sql=nullify_sql,
-        data=(scenario_id, subproblem, stage),
-        many=False,
+    results_columns = [
+        "carbon_tax_per_ton",
+        "total_carbon_emissions_tons",
+        "total_carbon_tax_allowance_tons",
+        "total_carbon_tax_cost",
+    ]
+    data = [
+        [
+            z,
+            p,
+            float(m.carbon_tax[z, p]),
+            value(m.Total_Carbon_Tax_Project_Emissions[z, p]),
+            value(m.Total_Carbon_Tax_Project_Allowance[z, p]),
+            value(m.Carbon_Tax_Cost[z, p]),
+        ]
+        for (z, p) in m.CARBON_TAX_ZONE_PERIODS_WITH_CARBON_TAX
+    ]
+    results_df = create_results_df(
+        index_columns=["carbon_tax_zone", "period"],
+        results_columns=results_columns,
+        data=data,
     )
 
-    results = []
-    with open(os.path.join(results_directory, "carbon_tax.csv"), "r") as emissions_file:
-        reader = csv.reader(emissions_file)
-
-        next(reader)  # skip header
-        for row in reader:
-            carbon_tax_zone = row[0]
-            period = row[1]
-            discount_factor = row[2]
-            number_years = row[3]
-            costs = row[7]
-
-            results.append(
-                (
-                    costs,
-                    discount_factor,
-                    number_years,
-                    scenario_id,
-                    carbon_tax_zone,
-                    period,
-                    subproblem,
-                    stage,
-                )
-            )
-
-    total_sql = """
-        UPDATE results_system_carbon_tax_emissions
-        SET carbon_tax_cost = ?,
-        discount_factor = ?,
-        number_years_represented = ?
-        WHERE scenario_id = ?
-        AND carbon_tax_zone = ?
-        AND period = ?
-        AND subproblem_id = ?
-        AND stage_id = ?;"""
-
-    spin_on_database_lock(conn=db, cursor=c, sql=total_sql, data=results)
+    for c in results_columns:
+        getattr(d, CARBON_TAX_ZONE_PRD_DF)[c] = None
+    getattr(d, CARBON_TAX_ZONE_PRD_DF).update(results_df)
