@@ -30,6 +30,7 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.operations.timepoints",
     "temporal.operations.horizons",
     "temporal.investment.periods",
+    "temporal.investment.superperiods",
     "geography.load_zones",
     "project",
     "project.capacity",

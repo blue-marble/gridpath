@@ -127,12 +127,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
     # Define programs
-    # TODO: currently requires budget to be specified for every period, I think
-    m.PROGRAM_PERIODS = Set(dimen=2)
-    m.program_budget = Param(m.PROGRAM_PERIODS, within=NonNegativeReals)
+    m.PROGRAM_SUPERPERIODS = Set(dimen=2)
+    m.program_budget = Param(m.PROGRAM_SUPERPERIODS, within=NonNegativeReals)
 
     m.PROGRAMS = Set(
-        initialize=lambda mod: list(set(prg for (prg, prd) in mod.PROGRAM_PERIODS))
+        initialize=lambda mod: list(set(prg for (prg, prd) in mod.PROGRAM_SUPERPERIODS))
     )
 
     m.PROGRAM_PROJECT_OR_TX_VINTAGES = Set(
@@ -234,13 +233,17 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             m.TX_FIN_PRDS, initialize=total_annual_payment_reduction
         )
 
-    def max_program_budget_rule(mod, prg, prd):
-        projects_subsidized_in_period = [
+    def max_program_budget_rule(mod, prg, superperiod):
+        periods_in_superperiod = [
+            prd for (s_prd, prd) in mod.SUPERPERIOD_PERIODS if s_prd == superperiod
+        ]
+        # Projects that can be subsidized in this superperiod
+        projects_subsidized_in_superperiod = [
             (prj, v)
             for (prj, v) in mod.PROJECT_OR_TX_VINTAGES_BY_PROGRAM[prg]
-            if v == prd
+            if v in periods_in_superperiod
         ]
-        if projects_subsidized_in_period:  # projects to subsidize in period
+        if projects_subsidized_in_superperiod:
             return (
                 sum(
                     mod.Subsidize_MW[prg, prj_or_tx_line, v]
@@ -256,15 +259,15 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
                     for (prj_or_tx_line, v) in mod.PROJECT_OR_TX_VINTAGES_BY_PROGRAM[
                         prg
                     ]
-                    if v == prd
+                    if v in periods_in_superperiod
                 )
-                <= mod.program_budget[prg, prd]
+                <= mod.program_budget[prg, superperiod]
             )
         else:
             return Constraint.Feasible
 
     m.Max_Program_Budget_in_Period_Constraint = Constraint(
-        m.PROGRAM_PERIODS, rule=max_program_budget_rule
+        m.PROGRAM_SUPERPERIODS, rule=max_program_budget_rule
     )
 
 
@@ -283,7 +286,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     )
     data_portal.load(
         filename=budgets_file,
-        index=m.PROGRAM_PERIODS,
+        index=m.PROGRAM_SUPERPERIODS,
         param=m.program_budget,
     )
 
@@ -348,11 +351,11 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     c1 = conn.cursor()
     program_budgets = c1.execute(
         """
-        SELECT program, period, program_budget
+        SELECT program, superperiod, program_budget
         FROM inputs_system_subsidies
         WHERE subsidy_scenario_id = {subsidy_scenario_id}
-        AND period in (
-        SELECT period FROM inputs_temporal_periods
+        AND superperiod in (
+        SELECT superperiod FROM inputs_temporal_superperiods
         WHERE temporal_scenario_id = {temporal_scenario_id})
         """.format(
             subsidy_scenario_id=subscenarios.SUBSIDY_SCENARIO_ID,
@@ -412,7 +415,7 @@ def write_model_inputs(
         writer.writerow(
             [
                 "program",
-                "period",
+                "superperiod",
                 "program_budget",
             ]
         )

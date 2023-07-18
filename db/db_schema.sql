@@ -249,6 +249,17 @@ FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
 (temporal_scenario_id)
 );
 
+-- Superperiods (combinations of periods)
+DROP TABLE IF EXISTS inputs_temporal_superperiods;
+CREATE TABLE inputs_temporal_superperiods (
+temporal_scenario_id INTEGER,
+superperiod INTEGER,
+period INTEGER,
+PRIMARY KEY (temporal_scenario_id, superperiod, period),
+FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
+(temporal_scenario_id)
+);
+
 -- Timepoints
 -- Note on linked timepoints: the user can designate timepoints from the last
 -- horizon of the subproblem to be linked to the first horizon of the next
@@ -3116,9 +3127,9 @@ DROP TABLE IF EXISTS inputs_system_system_subsides;
 CREATE TABLE inputs_system_subsidies (
 subsidy_scenario_id INTEGER,
 program VARCHAR(32),
-period INTEGER,
+superperiod INTEGER,
 program_budget FLOAT,
-PRIMARY KEY (subsidy_scenario_id, program, period),
+PRIMARY KEY (subsidy_scenario_id, program, superperiod),
 FOREIGN KEY (subsidy_scenario_id) REFERENCES
 subscenarios_system_subsidies (subsidy_scenario_id)
 );
