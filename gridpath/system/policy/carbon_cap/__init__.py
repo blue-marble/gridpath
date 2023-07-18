@@ -16,7 +16,7 @@ import pandas as pd
 
 from gridpath.auxiliary.db_interface import import_csv
 
-CARBON_CAP_ZONE_PRD_DF = "carbon_cap_zone_period_timepoint_df"
+CARBON_CAP_ZONE_PRD_DF = "carbon_cap_zone_period_df"
 
 
 def export_results(scenario_directory, subproblem, stage, m, d):
@@ -25,8 +25,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     # Other modules will update these dataframe with actual results
     # The results dataframes are by index
 
-    # Project-period DF
-    cc_z_prd_df = pd.DataFrame(
+    # Zone-period DF
+    z_prd_df = pd.DataFrame(
         columns=[
             "carbon_cap_zone",
             "period",
@@ -44,10 +44,10 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         ],
     ).set_index(["carbon_cap_zone", "period"])
 
-    cc_z_prd_df.sort_index(inplace=True)
+    z_prd_df.sort_index(inplace=True)
 
     # Add the dataframe to the dynamic components to pass to other modules
-    setattr(d, CARBON_CAP_ZONE_PRD_DF, cc_z_prd_df)
+    setattr(d, CARBON_CAP_ZONE_PRD_DF, z_prd_df)
 
 
 def import_results_into_database(

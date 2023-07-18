@@ -62,6 +62,7 @@ def all_modules_list():
         "geography.markets",
         "system.load_balance",
         "system.load_balance.static_load_requirement",
+        "system.policy.energy_targets",
         "system.policy.energy_targets.period_energy_target",
         "system.policy.energy_targets.horizon_energy_target",
         "system.policy.transmission_targets.period_transmission_target",
@@ -170,6 +171,7 @@ def all_modules_list():
         "system.policy.energy_targets.aggregate_horizon_energy_target_contributions",
         "system.policy.energy_targets.period_energy_target_balance",
         "system.policy.energy_targets.horizon_energy_target_balance",
+        "system.policy.energy_targets.consolidate_results",
         "system.policy.transmission_targets"
         ".aggregate_period_transmission_target_contributions",
         "system.policy.transmission_targets.period_transmission_target_balance",
@@ -479,6 +481,8 @@ def feature_shared_modules_list():
         ("period_energy_target", "horizon_energy_target"): [
             "geography.energy_target_zones",
             "project.operations.energy_target_contributions",
+            "system.policy.energy_targets",
+            "system.policy.energy_targets.consolidate_results",
         ],
         ("period_transmission_target", "horizon_transmission_target"): [
             "geography.transmission_target_zones",

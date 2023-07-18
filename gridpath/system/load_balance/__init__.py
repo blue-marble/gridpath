@@ -25,7 +25,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     # Other modules will update these dataframe with actual results
     # The results dataframes are by index
 
-    # Project-period DF
+    # Zone-period DF
     lz_tmp_df = pd.DataFrame(
         columns=[
             "load_zone",

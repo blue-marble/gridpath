@@ -25,6 +25,8 @@ from pyomo.environ import Var, Constraint, NonNegativeReals, Expression, value
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.db_interface import setup_results_import
+from gridpath.common_functions import create_results_df
+from gridpath.system.policy.energy_targets import ENERGY_TARGET_ZONE_PRD_DF
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -78,63 +80,49 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "period_energy_target.csv",
-        ),
-        "w",
-        newline="",
-    ) as energy_target_results_file:
-        writer = csv.writer(energy_target_results_file)
-        writer.writerow(
-            [
-                "energy_target_zone",
-                "period",
-                "discount_factor",
-                "number_years_represented",
-                "energy_target_mwh",
-                "delivered_energy_target_energy_mwh",
-                "curtailed_energy_target_energy_mwh",
-                "total_energy_target_energy_mwh",
-                "fraction_of_energy_target_met",
-                "fraction_of_energy_target_energy_curtailed",
-                "energy_target_shortage_mwh",
-            ]
-        )
-        for z, p in m.ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET:
-            writer.writerow(
-                [
-                    z,
-                    p,
-                    m.discount_factor[p],
-                    m.number_years_represented[p],
-                    value(m.Period_Energy_Target[z, p]),
-                    value(m.Total_Delivered_Period_Energy_Target_Energy_MWh[z, p]),
-                    value(m.Total_Curtailed_Period_Energy_Target_Energy_MWh[z, p]),
-                    value(m.Total_Delivered_Period_Energy_Target_Energy_MWh[z, p])
-                    + value(m.Total_Curtailed_Period_Energy_Target_Energy_MWh[z, p]),
-                    1
-                    if float(m.period_energy_target_mwh[z, p]) == 0
-                    else value(m.Total_Delivered_Period_Energy_Target_Energy_MWh[z, p])
-                    / float(m.period_energy_target_mwh[z, p]),
-                    0
-                    if (
-                        value(m.Total_Delivered_Period_Energy_Target_Energy_MWh[z, p])
-                        + value(m.Total_Curtailed_Period_Energy_Target_Energy_MWh[z, p])
-                    )
-                    == 0
-                    else value(m.Total_Curtailed_Period_Energy_Target_Energy_MWh[z, p])
-                    / (
-                        value(m.Total_Delivered_Period_Energy_Target_Energy_MWh[z, p])
-                        + value(m.Total_Curtailed_Period_Energy_Target_Energy_MWh[z, p])
-                    ),
-                    value(m.Period_Energy_Target_Shortage_MWh_Expression[z, p]),
-                ]
+
+    results_columns = [
+        "energy_target_mwh",
+        "total_energy_target_energy_mwh",
+        "fraction_of_energy_target_met",
+        "fraction_of_energy_target_energy_curtailed",
+        "energy_target_shortage_mwh",
+    ]
+    data = [
+        [
+            z,
+            p,
+            value(m.Period_Energy_Target[z, p]),
+            value(m.Total_Delivered_Period_Energy_Target_Energy_MWh[z, p])
+            + value(m.Total_Curtailed_Period_Energy_Target_Energy_MWh[z, p]),
+            1
+            if float(m.period_energy_target_mwh[z, p]) == 0
+            else value(m.Total_Delivered_Period_Energy_Target_Energy_MWh[z, p])
+            / float(m.period_energy_target_mwh[z, p]),
+            0
+            if (
+                value(m.Total_Delivered_Period_Energy_Target_Energy_MWh[z, p])
+                + value(m.Total_Curtailed_Period_Energy_Target_Energy_MWh[z, p])
             )
+            == 0
+            else value(m.Total_Curtailed_Period_Energy_Target_Energy_MWh[z, p])
+            / (
+                value(m.Total_Delivered_Period_Energy_Target_Energy_MWh[z, p])
+                + value(m.Total_Curtailed_Period_Energy_Target_Energy_MWh[z, p])
+            ),
+            value(m.Period_Energy_Target_Shortage_MWh_Expression[z, p]),
+        ]
+        for (z, p) in m.ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET
+    ]
+    results_df = create_results_df(
+        index_columns=["energy_target_zone", "period"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    for c in results_columns:
+        getattr(d, ENERGY_TARGET_ZONE_PRD_DF)[c] = None
+    getattr(d, ENERGY_TARGET_ZONE_PRD_DF).update(results_df)
 
 
 def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
@@ -173,7 +161,7 @@ def summarize_results(scenario_directory, subproblem, stage):
             str(subproblem),
             str(stage),
             "results",
-            "period_energy_target.csv",
+            "system_period_energy_target.csv",
         )
     )
 
@@ -256,140 +244,3 @@ def summarize_results(scenario_directory, subproblem, stage):
     with open(summary_results_file, "a") as outfile:
         results_df.to_string(outfile, float_format="{:,.2f}".format)
         outfile.write("\n")
-
-
-def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    """
-
-    :param scenario_id:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-    # Delete prior results and create temporary import table for ordering
-    setup_results_import(
-        conn=db,
-        cursor=c,
-        table="results_system_period_energy_target",
-        scenario_id=scenario_id,
-        subproblem=subproblem,
-        stage=stage,
-    )
-
-    # Load results into the temporary table
-    results = []
-    with open(
-        os.path.join(results_directory, "period_energy_target.csv"), "r"
-    ) as energy_target_file:
-        reader = csv.reader(energy_target_file)
-
-        next(reader)  # skip header
-        for row in reader:
-            energy_target_zone = row[0]
-            period = row[1]
-            discount_factor = row[2]
-            number_years = row[3]
-            energy_target = row[4]
-            energy_target_provision = row[5]
-            curtailment = row[6]
-            total = row[7]
-            fraction_met = row[8]
-            fraction_curtailed = row[9]
-            shortage = row[10]
-
-            results.append(
-                (
-                    scenario_id,
-                    energy_target_zone,
-                    period,
-                    subproblem,
-                    stage,
-                    discount_factor,
-                    number_years,
-                    energy_target,
-                    energy_target_provision,
-                    curtailment,
-                    total,
-                    fraction_met,
-                    fraction_curtailed,
-                    shortage,
-                )
-            )
-
-    insert_temp_sql = """
-        INSERT INTO temp_results_system_period_energy_target{}
-         (scenario_id, energy_target_zone, period, subproblem_id, stage_id,
-         discount_factor, number_years_represented, energy_target_mwh, 
-         delivered_energy_target_energy_mwh, curtailed_energy_target_energy_mwh,
-         total_energy_target_energy_mwh,
-         fraction_of_energy_target_met, fraction_of_energy_target_energy_curtailed,
-         energy_target_shortage_mwh)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-         """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
-
-    # Insert sorted results into permanent results table
-    insert_sql = """
-        INSERT INTO results_system_period_energy_target
-        (scenario_id, energy_target_zone, period, subproblem_id, stage_id,
-        discount_factor, number_years_represented, energy_target_mwh, 
-        delivered_energy_target_energy_mwh, curtailed_energy_target_energy_mwh,
-        total_energy_target_energy_mwh,
-        fraction_of_energy_target_met, fraction_of_energy_target_energy_curtailed, 
-        energy_target_shortage_mwh)
-        SELECT scenario_id, energy_target_zone, period, subproblem_id, stage_id,
-        discount_factor, number_years_represented, energy_target_mwh, 
-        delivered_energy_target_energy_mwh, curtailed_energy_target_energy_mwh,
-        total_energy_target_energy_mwh,
-        fraction_of_energy_target_met, fraction_of_energy_target_energy_curtailed,
-        energy_target_shortage_mwh
-        FROM temp_results_system_period_energy_target{}
-        ORDER BY scenario_id, energy_target_zone, period, subproblem_id, stage_id;
-        """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)
-
-    # Update duals
-    duals_results = []
-    with open(
-        os.path.join(results_directory, "Period_Energy_Target_Constraint.csv"), "r"
-    ) as energy_target_duals_file:
-        reader = csv.reader(energy_target_duals_file)
-
-        next(reader)  # skip header
-
-        for row in reader:
-            duals_results.append(
-                (row[2], row[0], row[1], scenario_id, subproblem, stage)
-            )
-
-    duals_sql = """
-        UPDATE results_system_period_energy_target
-        SET dual = ?
-        WHERE energy_target_zone = ?
-        AND period = ?
-        AND scenario_id = ?
-        AND subproblem_id = ?
-        AND stage_id = ?;
-        """
-    spin_on_database_lock(conn=db, cursor=c, sql=duals_sql, data=duals_results)
-
-    # Calculate marginal energy-target cost per MWh
-    mc_sql = """
-        UPDATE results_system_period_energy_target
-        SET energy_target_marginal_cost_per_mwh = 
-        dual / (discount_factor * number_years_represented)
-        WHERE scenario_id = ?
-        AND subproblem_id = ?
-        and stage_id = ?;
-        """
-    spin_on_database_lock(
-        conn=db, cursor=c, sql=mc_sql, data=(scenario_id, subproblem, stage), many=False
-    )
