@@ -1,4 +1,4 @@
-# Copyright 2016-2022 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -71,6 +71,7 @@ def all_modules_list():
         "system.policy.carbon_tax",
         "system.policy.carbon_tax.carbon_tax",
         "system.policy.performance_standard.performance_standard",
+        "system.policy.fuel_burn_limits",
         "system.policy.fuel_burn_limits.fuel_burn_limits",
         "system.reliability.prm",
         "system.reliability.prm.prm_requirement",
@@ -187,6 +188,7 @@ def all_modules_list():
         "system.policy.performance_standard.performance_standard_balance",
         "system.policy.fuel_burn_limits.aggregate_project_fuel_burn",
         "system.policy.fuel_burn_limits.fuel_burn_limit_balance",
+        "system.policy.fuel_burn_limits.consolidate_results",
         "system.reliability.prm.aggregate_project_simple_prm_contribution",
         "system.reliability.prm.capacity_contribution_transfers",
         "system.reliability.prm.elcc_surface",
@@ -367,9 +369,11 @@ def optional_modules_list():
         ],
         "fuel_burn_limit": [
             "geography.fuel_burn_limit_balancing_areas",
+            "system.policy.fuel_burn_limits",
             "system.policy.fuel_burn_limits.fuel_burn_limits",
             "system.policy.fuel_burn_limits.aggregate_project_fuel_burn",
             "system.policy.fuel_burn_limits.fuel_burn_limit_balance",
+            "system.policy.fuel_burn_limits.consolidate_results",
             "objective.system.policy.aggregate_fuel_burn_limit_violation_penalties",
         ],
         "subsidies": [

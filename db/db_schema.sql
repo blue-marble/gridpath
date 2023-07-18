@@ -4425,7 +4425,7 @@ CREATE TABLE  results_system_fuel_burn_limits (
 scenario_id INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
-balancing_type_horizon VARCHAR(64),
+balancing_type VARCHAR(64),
 horizon INTEGER,
 number_years_represented FLOAT,  -- based on period of last horizon timepoint
 discount_factor FLOAT, -- based on period of last horizon timepoint
@@ -4446,7 +4446,7 @@ abs_max_fuel_burn_limit_marginal_cost_per_unit FLOAT,
 fuel_burn_max_rel_overage_unit FLOAT,
 rel_dual FLOAT,
 rel_fuel_burn_limit_marginal_cost_per_unit FLOAT,
-PRIMARY KEY (scenario_id, subproblem_id, stage_id, balancing_type_horizon, horizon,
+PRIMARY KEY (scenario_id, subproblem_id, stage_id, balancing_type, horizon,
             fuel, fuel_burn_limit_ba)
 );
 
