@@ -214,8 +214,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             imported_tx_capacity_modules[op_m].load_model_data(
                 m, d, data_portal, scenario_directory, subproblem, stage
             )
-        else:
-            pass
 
 
 def export_results(scenario_directory, subproblem, stage, m, d):
@@ -312,8 +310,6 @@ def save_duals(scenario_directory, subproblem, stage, instance, dynamic_componen
                 instance,
                 dynamic_components,
             )
-        else:
-            pass
 
 
 # Database

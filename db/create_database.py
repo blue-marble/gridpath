@@ -135,9 +135,6 @@ def load_data(conn, omit_data, custom_units):
         # Data for plotting
         load_viz_technologies(conn=conn)
 
-    else:
-        pass
-
 
 def load_mod_months(conn):
     sql = """

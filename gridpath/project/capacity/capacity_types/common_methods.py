@@ -73,8 +73,6 @@ def relevant_periods_by_project_vintage(
                 and last_lifetime_year >= period_end_year[p]
             ):
                 relevant_periods.append(p)
-            else:
-                pass
 
     return relevant_periods
 
@@ -120,8 +118,7 @@ def project_vintages_relevant_in_period(
     for prj, v in project_vintage_set:
         if period in relevant_periods_by_project_vintage_set[prj, v]:
             project_vintages.append((prj, v))
-        else:
-            pass
+
     return project_vintages
 
 
@@ -299,8 +296,6 @@ def spec_determine_inputs(scenario_directory, subproblem, stage, capacity_type):
     for row in zip(df["project"], df["capacity_type"]):
         if row[1] == capacity_type:
             project_list.append(row[0])
-        else:
-            pass
 
     # Determine the operational periods & params for each project/period
     project_period_list = list()
@@ -364,8 +359,6 @@ def spec_determine_inputs(scenario_directory, subproblem, stage, capacity_type):
             spec_fuel_prod_fixed_cost_dict[(row[0], row[1])] = float(row[13])
             spec_fuel_rel_fixed_cost_dict[(row[0], row[1])] = float(row[14])
             spec_fuel_stor_fixed_cost_dict[(row[0], row[1])] = float(row[15])
-        else:
-            pass
 
     # Quick check that all relevant projects from projects.tab have capacity
     # params specified

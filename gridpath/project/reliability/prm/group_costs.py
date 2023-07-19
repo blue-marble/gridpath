@@ -731,8 +731,6 @@ def write_model_inputs(
             # Input data
             for row in existing:
                 writer.writerow(row)
-    else:
-        pass
 
     group_potential = group_potential.fetchall()
     if group_potential:
@@ -761,8 +759,6 @@ def write_model_inputs(
             # Input data
             for row in group_potential:
                 writer.writerow(row)
-    else:
-        pass
 
     with open(
         os.path.join(

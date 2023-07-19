@@ -3397,8 +3397,6 @@ def load_model_data(
                 ),
             ),
         )
-    else:
-        pass
 
     # Linked timepoint params (by startup type)
     linked_startup_inputs_filename = os.path.join(
@@ -3426,8 +3424,6 @@ def load_model_data(
                 ),
             ),
         )
-    else:
-        pass
 
 
 def add_to_prj_tmp_results(
@@ -3750,10 +3746,6 @@ def export_linked_subproblem_inputs(
                                     ),
                                 ]
                             )
-            else:
-                pass
-    else:
-        pass
 
 
 def save_duals(m, bin_or_lin):

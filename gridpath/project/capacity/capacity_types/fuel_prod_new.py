@@ -579,8 +579,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     ):
         if r[1] == "fuel_prod_new":
             fuel_prod_new_projects.append(r[0])
-        else:
-            pass
 
     data_portal.data()["FUEL_PROD_NEW"] = {None: fuel_prod_new_projects}
 

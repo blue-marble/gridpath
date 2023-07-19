@@ -125,9 +125,7 @@ def get_subscenario_data(csv_file, cols_to_exclude_str, **kwargs):
     csv_columns = df.columns.tolist()
 
     # Exclude some columns if directed to do so
-    if cols_to_exclude_str == "nan":
-        pass
-    else:
+    if cols_to_exclude_str != "nan":
         cols_to_exclude = [i for i in csv_columns if i.startswith(cols_to_exclude_str)]
         for c in cols_to_exclude:
             csv_columns.remove(c)
@@ -1098,8 +1096,6 @@ def load_all_subscenario_ids_from_dir_to_subscenario_table(
             cols_to_exclude_str=cols_to_exclude_str,
             custom_method=custom_method,
         )
-    else:
-        pass
 
 
 def load_single_subscenario_id_from_dir_to_subscenario_table(
@@ -1218,8 +1214,6 @@ def load_single_subscenario_id_from_dir_to_subscenario_table(
             cols_to_exclude_str=cols_to_exclude_str,
             custom_method=custom_method,
         )
-    else:
-        pass
 
 
 def determine_whether_to_skip_subscenario_info_and_or_data(subscenario_type):

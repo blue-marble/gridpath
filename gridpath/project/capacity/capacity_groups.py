@@ -299,8 +299,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                 m.capacity_group_total_capacity_max,
             ),
         )
-    else:
-        pass
 
     prj_file = os.path.join(
         scenario_directory, subproblem, stage, "inputs", "capacity_group_projects.tab"
@@ -312,8 +310,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             for g, v in proj_groups_df.groupby("capacity_group")
         }
         data_portal.data()["PROJECTS_IN_CAPACITY_GROUP"] = proj_groups_dict
-    else:
-        pass
 
 
 def export_results(scenario_directory, subproblem, stage, m, d):

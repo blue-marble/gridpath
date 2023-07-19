@@ -215,8 +215,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                 m.tx_capacity_group_new_capacity_max,
             ),
         )
-    else:
-        pass
 
     tx_file = os.path.join(
         scenario_directory,
@@ -232,8 +230,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             for g, v in tx_groups_df.groupby("transmission_capacity_group")
         }
         data_portal.data()["TX_IN_TX_CAPACITY_GROUP"] = tx_groups_dict
-    else:
-        pass
 
 
 def export_results(scenario_directory, subproblem, stage, m, d):

@@ -161,8 +161,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             filename=availability_file,
             param=(m.avl_exog_cap_derate, m.avl_exog_hyb_stor_cap_derate),
         )
-    else:
-        pass
 
 
 # Database

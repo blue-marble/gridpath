@@ -651,8 +651,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                 stor_new_lin_projects.append(r[0])
                 stor_min_duration[r[0]] = float(r[2])
                 stor_max_duration[r[0]] = float(r[3])
-            else:
-                pass
 
         return stor_new_lin_projects, stor_min_duration, stor_max_duration
 

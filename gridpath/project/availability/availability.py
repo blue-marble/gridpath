@@ -120,8 +120,6 @@ def write_model_inputs(
             imported_availability_type_modules[op_m].write_model_inputs(
                 scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
             )
-        else:
-            pass
 
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
@@ -149,8 +147,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             imported_availability_modules[op_m].load_model_data(
                 m, d, data_portal, scenario_directory, subproblem, stage
             )
-        else:
-            pass
 
 
 def export_results(scenario_directory, subproblem, stage, m, d):
@@ -230,8 +226,6 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
             imported_operational_modules[op_m].validate_inputs(
                 scenario_id, subscenarios, subproblem, stage, conn
             )
-        else:
-            pass
 
 
 # TODO: this seems like a better place for this function than

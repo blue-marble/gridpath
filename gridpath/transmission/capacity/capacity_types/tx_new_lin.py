@@ -600,10 +600,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             if row[2] != ".":
                 transmission_vintages_with_min.append((row[0], row[1]))
                 min_cumulative_mw[(row[0], row[1])] = float(row[2])
-            else:
-                pass
-    else:
-        pass
 
     # max_cumulative_new_build_mw is optional,
     # so TX_NEW_LIN_VNTS_W_MAX_CONSTRAINT
@@ -616,10 +612,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             if row[2] != ".":
                 transmission_vintages_with_max.append((row[0], row[1]))
                 max_cumulative_mw[(row[0], row[1])] = float(row[2])
-            else:
-                pass
-    else:
-        pass
 
     # Load min and max cumulative capacity data
     if not transmission_vintages_with_min:

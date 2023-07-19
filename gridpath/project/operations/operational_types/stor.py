@@ -759,8 +759,6 @@ def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
                 mod.stor_linked_charge,
             ),
         )
-    else:
-        pass
 
 
 def add_to_prj_tmp_results(mod):

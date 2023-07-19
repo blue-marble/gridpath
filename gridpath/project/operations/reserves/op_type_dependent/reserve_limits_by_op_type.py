@@ -149,8 +149,6 @@ def generic_load_model_data(
     if ramp_rate_limit_column_name in projects_file_header:
         columns_to_import += (ramp_rate_limit_column_name,)
         params_to_import += (getattr(m, reserve_provision_ramp_rate_limit_param),)
-    else:
-        pass
 
     # Load the needed data
     data_portal.load(

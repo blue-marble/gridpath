@@ -703,8 +703,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                 m.gen_hydro_must_take_linked_downwards_reserves,
             ),
         )
-    else:
-        pass
 
 
 def add_to_prj_tmp_results(mod):

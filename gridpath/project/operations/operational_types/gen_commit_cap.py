@@ -1427,8 +1427,6 @@ def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
                 mod.gen_commit_cap_linked_shutdown,
             ),
         )
-    else:
-        pass
 
 
 def add_to_prj_tmp_results(mod):

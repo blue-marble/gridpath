@@ -111,9 +111,7 @@ def create_scenario_new_api(c, ui_table_name_in_db):
 
         settings = []
         for setting in setting_options_query:
-            if not setting_options_query:
-                pass
-            else:
+            if setting_options_query:
                 settings.append({"id": setting[0], "name": setting[1]})
 
         settings_table_api["settingRows"].append(

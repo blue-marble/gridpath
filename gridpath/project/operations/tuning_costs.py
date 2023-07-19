@@ -226,8 +226,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             select=("ramp_tuning_cost_per_mw",),
             param=m.ramp_tuning_cost_per_mw,
         )
-    else:
-        pass
 
 
 # Database

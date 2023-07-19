@@ -238,8 +238,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                 pass
             elif s == stage or stages.index(s) < stages.index(stage):
                 fnl_commit_prjs.append(prj)
-            else:
-                pass
+
         return fnl_commit_prjs
 
     data_portal.data()["FNL_COMMIT_PRJS"] = {None: get_fnl_commit_prjs()}
@@ -267,8 +266,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         data_portal.data()["FXD_COMMIT_PRJS"] = {None: fxd_commit_prjs}
         data_portal.data()["FXD_COMMIT_PRJ_OPR_TMPS"] = {None: projects_timepoints}
         data_portal.data()["fixed_commitment"] = fixed_commitment_dict
-    else:
-        pass
 
 
 def export_pass_through_inputs(scenario_directory, subproblem, stage, m):

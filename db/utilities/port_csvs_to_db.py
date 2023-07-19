@@ -201,8 +201,6 @@ def load_all_from_csv_structure(conn, csv_path, csv_structure, quiet):
                 filename,
                 quiet,
             )
-        else:
-            pass
 
 
 def load_all_subscenario_ids_from_directory(
@@ -246,8 +244,6 @@ def load_all_subscenario_ids_from_directory(
                 filename=filename,
                 quiet=quiet,
             )
-        else:
-            pass
 
 
 def load_single_subscenario_id_from_directory(
@@ -372,8 +368,6 @@ def load_single_subscenario_id_from_directory(
                 subscenario_id_to_load=subscenario_id_to_load,
                 project=project,
             )
-        else:
-            pass
 
     # If data were deleted, repopulate the affected scenarios with the data
     # we NULLified above

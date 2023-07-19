@@ -154,8 +154,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     ):
         if row[1] != "." and int(float(row[2])) == 1:
             project_fr_partial_list.append(row[0])
-        else:
-            pass
 
     data_portal.data()["FREQUENCY_RESPONSE_PARTIAL_PROJECTS"] = {
         None: project_fr_partial_list
