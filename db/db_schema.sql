@@ -4399,8 +4399,8 @@ PRIMARY KEY (scenario_id, energy_target_zone, subproblem_id, stage_id,
 );
 
 -- Transmission target balance
-DROP TABLE IF EXISTS results_system_period_transmission_target;
-CREATE TABLE  results_system_period_transmission_target (
+DROP TABLE IF EXISTS results_system_transmission_targets;
+CREATE TABLE  results_system_transmission_targets (
 scenario_id INTEGER,
 transmission_target_zone VARCHAR(64),
 subproblem_id INTEGER,
@@ -4408,11 +4408,11 @@ stage_id INTEGER,
 period INTEGER,
 discount_factor FLOAT,
 number_years_represented FLOAT,
-transmission_target_positive_direction_mwh FLOAT,
+period_transmission_target_pos_dir_mwh FLOAT,
 total_transmission_target_energy_positive_direction_mwh FLOAT,
 fraction_of_transmission_target_positive_direction_met FLOAT,
 transmission_target_shortage_positive_direction_mwh FLOAT,
-transmission_target_negative_direction_mwh FLOAT,
+period_transmission_target_neg_dir_mwh FLOAT,
 total_transmission_target_energy_negative_direction_mwh FLOAT,
 fraction_of_transmission_target_negative_direction_met FLOAT,
 transmission_target_shortage_negative_direction_mwh FLOAT,
