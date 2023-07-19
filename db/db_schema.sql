@@ -4349,9 +4349,9 @@ stage_id INTEGER,
 discount_factor FLOAT,
 number_years_represented FLOAT,
 performance_standard_tco2_per_mwh FLOAT,
-project_performance_standard_total_carbon_emissions_tco2 FLOAT,
-project_performance_standard_total_energy_mwh FLOAT,
-performance_standard_overage FLOAT,
+performance_standard_project_emissions_tco2 FLOAT,
+performance_standard_project_energy_mwh FLOAT,
+performance_standard_overage_tco2 FLOAT,
 PRIMARY KEY (scenario_id, performance_standard_zone, subproblem_id, stage_id, period)
 );
 

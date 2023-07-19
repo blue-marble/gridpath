@@ -70,6 +70,7 @@ def all_modules_list():
         "system.policy.carbon_cap.carbon_cap",
         "system.policy.carbon_tax",
         "system.policy.carbon_tax.carbon_tax",
+        "system.policy.performance_standard",
         "system.policy.performance_standard.performance_standard",
         "system.policy.fuel_burn_limits",
         "system.policy.fuel_burn_limits.fuel_burn_limits",
@@ -186,6 +187,7 @@ def all_modules_list():
         "system.policy.subsidies",
         "system.policy.performance_standard.aggregate_project_performance_standard",
         "system.policy.performance_standard.performance_standard_balance",
+        "system.policy.performance_standard.consolidate_results",
         "system.policy.fuel_burn_limits.aggregate_project_fuel_burn",
         "system.policy.fuel_burn_limits.fuel_burn_limit_balance",
         "system.policy.fuel_burn_limits.consolidate_results",
@@ -361,10 +363,12 @@ def optional_modules_list():
         ],
         "performance_standard": [
             "geography.performance_standard_zones",
+            "system.policy.performance_standard",
             "system.policy.performance_standard.performance_standard",
             "project.operations.performance_standard",
             "system.policy.performance_standard.aggregate_project_performance_standard",
             "system.policy.performance_standard.performance_standard_balance",
+            "system.policy.performance_standard.consolidate_results",
             "objective.system.policy.aggregate_performance_standard_violation_penalties",
         ],
         "fuel_burn_limit": [
