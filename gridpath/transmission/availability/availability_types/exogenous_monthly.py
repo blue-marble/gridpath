@@ -132,8 +132,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 
     if os.path.exists(availability_file):
         data_portal.load(filename=availability_file, param=m.tx_avl_exog_mnth_derate)
-    else:
-        pass
 
 
 # Database

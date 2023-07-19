@@ -239,8 +239,6 @@ def remove_from_queue_if_in_queue(db_path, scenario, queue_order_id):
         spin_on_database_lock(
             conn=conn, cursor=c, sql=sql, data=(scenario,), many=False
         )
-    else:
-        pass
 
     conn.close()
 

@@ -29,8 +29,6 @@ def fix_variables(m, d, scenario_directory, subproblem, stage):
             if m.no_market_participation_in_stage[z, hub]:
                 m.Net_Market_Purchased_Power[z, hub, tmp] = 0
                 m.Net_Market_Purchased_Power[z, hub, tmp].fixed = True
-            else:
-                pass
 
 
 def write_pass_through_file_headers(pass_through_directory):

@@ -93,8 +93,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             imported_prm_modules[prm_m].load_model_data(
                 m, d, data_portal, scenario_directory, subproblem, stage
             )
-        else:
-            pass
 
 
 def export_results(scenario_directory, subproblem, stage, m, d):
@@ -135,8 +133,6 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 subproblem,
                 stage,
             )
-        else:
-            pass
 
 
 def get_required_prm_type_modules(
@@ -211,8 +207,6 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
             imported_prm_modules[prm_m].validate_inputs(
                 scenario_id, subscenarios, subproblem, stage, conn
             )
-        else:
-            pass
 
 
 def write_model_inputs(
@@ -243,8 +237,6 @@ def write_model_inputs(
             imported_prm_modules[prm_m].write_model_inputs(
                 scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
             )
-        else:
-            pass
 
 
 def import_results_into_database(
@@ -294,8 +286,6 @@ def import_results_into_database(
             imported_prm_modules[prm_m].import_results_into_database(
                 scenario_id, subproblem, stage, c, db, results_directory, quiet
             )
-        else:
-            pass
 
 
 def process_results(db, c, scenario_id, subscenarios, quiet):
@@ -330,5 +320,3 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
                 subscenarios=subscenarios,
                 quiet=quiet,
             )
-        else:
-            pass

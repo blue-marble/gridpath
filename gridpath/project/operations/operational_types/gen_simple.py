@@ -508,8 +508,6 @@ def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
                 mod.gen_simple_linked_downwards_reserves,
             ),
         )
-    else:
-        pass
 
 
 def export_results(mod, d, scenario_directory, subproblem, stage):

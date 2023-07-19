@@ -231,8 +231,6 @@ def import_subproblem_stage_results_into_database(
                     results_directory=results_directory,
                     quiet=quiet,
                 )
-            else:
-                pass
     else:
         if not quiet:
             print("Results-import skipped based on import rule.")

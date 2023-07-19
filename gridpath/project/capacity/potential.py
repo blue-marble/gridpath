@@ -474,9 +474,7 @@ def write_model_inputs(
         ).fetchall()
     ]
 
-    if not potentials:
-        pass
-    else:
+    if potentials:
         with open(
             os.path.join(
                 scenario_directory,

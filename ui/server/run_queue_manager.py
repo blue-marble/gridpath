@@ -110,8 +110,6 @@ def manage_queue(db_path):
                             "skipWarnings": False,
                         },
                     )
-                else:
-                    pass
             # If there are no scenarios in the queue, tell the server to
             # reset the queue manager PID and exit the loop
             # TODO: is keeping track of the queue manager PID still needed

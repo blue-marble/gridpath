@@ -220,8 +220,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                     min_flow_mw[(row[0], row[1])] = float(row[2])
                 else:
                     pass
-        else:
-            pass
 
         # Load min flow data
         if not transmission_tmps_with_min:
@@ -264,8 +262,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                     max_flow_mw[(row[0], row[1])] = float(row[2])
                 else:
                     pass
-        else:
-            pass
 
         # Load max flow data
         if not transmission_tmps_with_max:
@@ -357,5 +353,3 @@ def write_model_inputs(
             for row in tx_flow:
                 replace_nulls = ["." if i is None else i for i in row]
                 writer.writerow(replace_nulls)
-    else:
-        pass

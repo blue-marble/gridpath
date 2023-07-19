@@ -296,8 +296,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             imported_capacity_modules[op_m].load_model_data(
                 m, d, data_portal, scenario_directory, subproblem, stage
             )
-        else:
-            pass
 
 
 # TODO: move this to gridpath.project.capacity.__init__?
@@ -416,5 +414,3 @@ def summarize_results(scenario_directory, subproblem, stage):
             imported_capacity_modules[op_m].summarize_results(
                 scenario_directory, subproblem, stage, summary_results_file
             )
-        else:
-            pass

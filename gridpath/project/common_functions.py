@@ -53,8 +53,6 @@ def determine_project_subset(
     for row in zip(dynamic_components[prj_or_tx], dynamic_components[column]):
         if row[1] == type:
             project_subset.append(row[0])
-        else:
-            pass
 
     return project_subset
 

@@ -50,8 +50,6 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
             imported_capacity_type_modules[op_m].validate_inputs(
                 scenario_id, subscenarios, subproblem, stage, conn
             )
-        else:
-            pass
 
 
 def write_model_inputs(
@@ -82,8 +80,6 @@ def write_model_inputs(
             imported_capacity_type_modules[op_m].write_model_inputs(
                 scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
             )
-        else:
-            pass
 
 
 # Capacity Type Module Method Defaults

@@ -98,8 +98,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             imported_tx_capacity_modules[op_m].load_model_data(
                 m, d, data_portal, scenario_directory, subproblem, stage
             )
-        else:
-            pass
 
 
 def get_required_capacity_type_modules(scenario_id, subscenarios, conn):
@@ -172,8 +170,6 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
             imported_capacity_type_modules[op_m].validate_inputs(
                 scenario_id, subscenarios, subproblem, stage, conn
             )
-        else:
-            pass
 
 
 def write_model_inputs(
@@ -202,8 +198,6 @@ def write_model_inputs(
             imported_capacity_type_modules[op_m].write_model_inputs(
                 scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
             )
-        else:
-            pass
 
 
 # Capacity Type Module Method Defaults

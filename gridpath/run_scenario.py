@@ -428,8 +428,6 @@ def run_scenario(
                 "scenario. No parallelization possible."
             )
         n_parallel_subproblems = 1
-    else:
-        pass
 
     # If parallelization is not requested, solve sequentially
     if n_parallel_subproblems == 1:
@@ -614,8 +612,6 @@ def save_results(
                     "Subproblem {}, stage {} was infeasible. "
                     "Exiting linked subproblem run.".format(subproblem, stage)
                 )
-            else:
-                pass
 
 
 def create_abstract_model(
@@ -672,8 +668,6 @@ def load_scenario_data(
                 subproblem,
                 stage,
             )
-        else:
-            pass
     return data_portal
 
 
@@ -713,8 +707,6 @@ def fix_variables(
             m.fix_variables(
                 instance, dynamic_components, scenario_directory, subproblem, stage
             )
-        else:
-            pass
 
     return instance
 
@@ -766,9 +758,7 @@ def solve(instance, parsed_arguments):
         # Check the the solver name specified is the same as that given from the
         # command line (if any)
         if parsed_arguments.solver is not None:
-            if parsed_arguments.solver == solver_options["solver_name"]:
-                pass
-            else:
+            if not parsed_arguments.solver == solver_options["solver_name"]:
                 raise UserWarning(
                     "ERROR! Solver specified on command line ({}) and solver name "
                     "in solver_options.csv ({}) do not match.".format(
@@ -820,9 +810,7 @@ def solve(instance, parsed_arguments):
                 "$onecho > {solver}.opt".format(solver=solver_options["solver"]),
             ]
             for opt in solver_options.keys():
-                if opt == "solver":
-                    pass
-                else:
+                if not opt == "solver":
                     opt_string = "{option} {value}".format(
                         option=opt, value=solver_options[opt]
                     )
@@ -886,8 +874,6 @@ def export_results(
                 m.export_results(
                     scenario_directory, subproblem, stage, instance, dynamic_components
                 )
-        else:
-            pass
 
 
 def export_pass_through_inputs(scenario_directory, subproblem, stage, instance):
@@ -912,8 +898,6 @@ def export_pass_through_inputs(scenario_directory, subproblem, stage, instance):
             m.export_pass_through_inputs(
                 scenario_directory, subproblem, stage, instance
             )
-    else:
-        pass
 
 
 def save_objective_function_value(scenario_directory, subproblem, stage, instance):
@@ -966,8 +950,6 @@ def save_duals(scenario_directory, subproblem, stage, instance, dynamic_componen
             m.save_duals(
                 scenario_directory, subproblem, stage, instance, dynamic_components
             )
-        else:
-            pass
 
     # TODO: remove this export once all duals are incorporated in other results
     #  files
@@ -998,7 +980,6 @@ def save_duals(scenario_directory, subproblem, stage, instance, dynamic_componen
                     not otherwise.
                     """
                     )
-                    pass
 
 
 def summarize_results(scenario_directory, subproblem, stage, parsed_arguments):
@@ -1067,10 +1048,6 @@ def summarize_results(scenario_directory, subproblem, stage, parsed_arguments):
             for m in loaded_modules:
                 if hasattr(m, "summarize_results"):
                     m.summarize_results(scenario_directory, subproblem, stage)
-            else:
-                pass
-        else:
-            pass
 
 
 def set_up_gridpath_modules(scenario_directory, subproblem, stage):
@@ -1255,9 +1232,7 @@ def load_cplex_xml_solution(
             type_tag.get("index"),
             type_tag.get("value"),
         )
-        if var_id == "ONE_VAR_CONSTANT":
-            pass
-        else:
+        if not var_id == "ONE_VAR_CONSTANT":
             symbol_map.bySymbol[var_id]().value = float(value)
 
     # Constraints
@@ -1267,9 +1242,7 @@ def load_cplex_xml_solution(
             type_tag.get("index"),
             type_tag.get("dual"),
         )
-        if constraint_id_w_extra_symbols == "c_e_ONE_VAR_CONSTANT":
-            pass
-        else:
+        if not constraint_id_w_extra_symbols == "c_e_ONE_VAR_CONSTANT":
             constraint_id = constraint_id_w_extra_symbols[4:-1]
             instance.dual[symbol_map.bySymbol[constraint_id]()] = float(dual)
 
@@ -1314,17 +1287,13 @@ def load_gurobi_json_solution(
     # Variables
     for v in solution["Vars"]:
         var_id, value = v["VTag"][0], v["X"]
-        if var_id == "ONE_VAR_CONSTANT":
-            pass
-        else:
+        if not var_id == "ONE_VAR_CONSTANT":
             symbol_map.bySymbol[var_id]().value = float(value)
 
     # Constraints
     for c in solution["Constrs"]:
         constraint_id, dual = c["CTag"][0][4:], c["Pi"]
-        if constraint_id == "ONE_VAR_CONSTAN":
-            pass
-        else:
+        if not constraint_id == "ONE_VAR_CONSTAN":
             instance.dual[symbol_map.bySymbol[constraint_id]()] = float(dual)
 
     # Solver status

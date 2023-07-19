@@ -291,22 +291,21 @@ def validate_dtypes(df, expected_dtypes):
     result = []
     columns = []
     for column in df.columns:
-        if pd.isna(df[column]).all():
-            pass
-        elif expected_dtypes[column] == "numeric" and not pd.api.types.is_numeric_dtype(
-            df[column]
-        ):
-            result.append(
-                "Invalid data type for column '{}'; expected numeric".format(column)
-            )
-            columns.append(column)
-        elif expected_dtypes[column] == "string" and not pd.api.types.is_string_dtype(
-            df[column]
-        ):
-            result.append(
-                "Invalid data type for column '{}'; expected string".format(column)
-            )
-            columns.append(column)
+        if not pd.isna(df[column]).all():
+            if expected_dtypes[
+                column
+            ] == "numeric" and not pd.api.types.is_numeric_dtype(df[column]):
+                result.append(
+                    "Invalid data type for column '{}'; expected numeric".format(column)
+                )
+                columns.append(column)
+            if expected_dtypes[column] == "string" and not pd.api.types.is_string_dtype(
+                df[column]
+            ):
+                result.append(
+                    "Invalid data type for column '{}'; expected string".format(column)
+                )
+                columns.append(column)
 
     # Alternative that avoids pd.api.types:
     # numeric_columns = [k for k, v in expected_dtypes.items() if v == "numeric"]

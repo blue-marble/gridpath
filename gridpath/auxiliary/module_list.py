@@ -605,8 +605,6 @@ def determine_modules(
     # remove the "fix variables" modules based on the value specified
     elif multi_stage is False:
         remove_fix_variable_modules = True
-    else:
-        pass
 
     if remove_fix_variable_modules:
         modules_to_use.remove("project.operations.fix_commitment")
@@ -623,9 +621,7 @@ def determine_modules(
     # requested
     shared_modules = feature_shared_modules_list()
     for feature_group in shared_modules.keys():
-        if any(feature in requested_features for feature in feature_group):
-            pass
-        else:
+        if not any(feature in requested_features for feature in feature_group):
             for m in shared_modules[feature_group]:
                 modules_to_use.remove(m)
 
@@ -634,9 +630,7 @@ def determine_modules(
     # specified before removing it
     cross_feature_modules = cross_feature_modules_list()
     for feature_group in list(cross_feature_modules.keys()):
-        if all(feature in requested_features for feature in feature_group):
-            pass
-        else:
+        if not all(feature in requested_features for feature in feature_group):
             for m in cross_feature_modules[feature_group]:
                 modules_to_use.remove(m)
 

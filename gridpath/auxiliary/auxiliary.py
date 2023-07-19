@@ -65,9 +65,7 @@ def load_subtype_modules(required_subtype_modules, package, required_attributes)
             imp_m = import_module("." + m, package=package)
             imported_subtype_modules[m] = imp_m
             for a in required_attributes:
-                if hasattr(imp_m, a):
-                    pass
-                else:
+                if not hasattr(imp_m, a):
                     raise Exception(
                         "ERROR! No "
                         + str(a)
@@ -120,8 +118,6 @@ def subset_init_by_param_value(mod, set_name, param_name, param_value):
 def check_list_has_single_item(l, error_msg):
     if len(l) > 1:
         raise ValueError(error_msg)
-    else:
-        pass
 
 
 def find_list_item_position(l, item):

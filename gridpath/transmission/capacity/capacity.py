@@ -280,8 +280,6 @@ def save_duals(scenario_directory, subproblem, stage, instance, dynamic_componen
                 instance,
                 dynamic_components,
             )
-        else:
-            pass
 
 
 # Database

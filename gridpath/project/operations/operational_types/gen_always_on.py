@@ -635,8 +635,6 @@ def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
                 mod.gen_always_on_linked_downwards_reserves,
             ),
         )
-    else:
-        pass
 
 
 def add_to_prj_tmp_results(mod):

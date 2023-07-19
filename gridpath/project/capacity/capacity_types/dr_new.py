@@ -371,8 +371,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             if r[1] == "dr_new":
                 projects.append(r[0])
                 max_fraction[r[0]] = float(r[2])
-            else:
-                pass
 
         return projects, max_fraction
 

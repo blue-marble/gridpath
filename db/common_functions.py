@@ -77,10 +77,7 @@ def spin_on_database_lock(
         print(sql)
 
     for i in range(0, max_attempts):
-        if i == 0:
-            # print("initial attempt")
-            pass
-        else:
+        if i > 0:
             print("...retrying (attempt {} of {})...".format(i, max_attempts))
         try:
             if many:
@@ -136,10 +133,7 @@ def spin_on_database_lock_generic(
         COMMIT;
     """
     for i in range(0, max_attempts):
-        if i == 0:
-            # print("initial attempt")
-            pass
-        else:
+        if i > 0:
             print("...retrying (attempt {} of {})...".format(i, max_attempts))
         try:
             command

@@ -454,12 +454,11 @@ def create_stacked_bar_plot(
             ("%s" % x_label, "@{%s}" % x_col),
             ("%s" % category_label, category),
         ]
-        if y_label is None:
-            pass
-        elif "$" in y_label or "USD" in y_label:
-            tooltips.append(("%s" % y_label, "@%s{$0,0}" % category))
-        else:
-            tooltips.append(("%s" % y_label, "@%s{0,0}" % category))
+        if y_label is not None:
+            if "$" in y_label or "USD" in y_label:
+                tooltips.append(("%s" % y_label, "@%s{$0,0}" % category))
+            else:
+                tooltips.append(("%s" % y_label, "@%s{0,0}" % category))
         hover = HoverTool(tooltips=tooltips, renderers=[r], toggleable=False)
         plot.add_tools(hover)
 

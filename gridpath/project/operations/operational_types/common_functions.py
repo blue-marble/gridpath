@@ -258,8 +258,6 @@ def get_param_dict(df, column_name, cast_as_type):
         # error if no default value)
         if param_val != ".":
             param_dict[prj] = cast_as_type(row[1])
-        else:
-            pass
 
     return param_dict
 
@@ -643,8 +641,6 @@ def load_hydro_opchars(
             avg[(row[0], row[1])] = float(row[2])
             min[(row[0], row[1])] = float(row[3])
             max[(row[0], row[1])] = float(row[4])
-        else:
-            pass
 
     # Load data
     data_portal.data()["{}_OPR_HRZS".format(op_type.upper())] = {None: project_horizons}

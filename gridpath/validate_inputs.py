@@ -76,8 +76,6 @@ def validate_inputs(subproblems, loaded_modules, scenario_id, subscenarios, conn
                         stage=stage,
                         conn=conn,
                     )
-                else:
-                    pass
 
             # 2. input validation across modules
             #    make sure geography and projects are in line
