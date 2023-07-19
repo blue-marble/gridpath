@@ -24,6 +24,8 @@ from pyomo.environ import Var, Constraint, Expression, NonNegativeReals, value
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.dynamic_components import prm_balance_provision_components
+from gridpath.common_functions import create_results_df
+from gridpath.system.reliability.prm import PRM_ZONE_PRD_DF
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -82,37 +84,29 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(
-        os.path.join(
-            scenario_directory, str(subproblem), str(stage), "results", "prm.csv"
-        ),
-        "w",
-        newline="",
-    ) as f:
-        writer = csv.writer(f)
-        writer.writerow(
-            [
-                "prm_zone",
-                "period",
-                "discount_factor",
-                "number_years_represented",
-                "prm_requirement_mw",
-                "prm_provision_mw",
-                "prm_shortage_mw",
-            ]
-        )
-        for z, p in m.PRM_ZONE_PERIODS_WITH_REQUIREMENT:
-            writer.writerow(
-                [
-                    z,
-                    p,
-                    m.discount_factor[p],
-                    m.number_years_represented[p],
-                    float(m.prm_requirement_mw[z, p]),
-                    value(m.Total_PRM_from_All_Sources_Expression[z, p]),
-                    value(m.PRM_Shortage_MW_Expression[z, p]),
-                ]
-            )
+
+    results_columns = [
+        "elcc_total_mw",
+        "prm_shortage_mw",
+    ]
+    data = [
+        [
+            z,
+            p,
+            value(m.Total_PRM_from_All_Sources_Expression[z, p]),
+            value(m.PRM_Shortage_MW_Expression[z, p]),
+        ]
+        for (z, p) in m.PRM_ZONE_PERIODS_WITH_REQUIREMENT
+    ]
+    results_df = create_results_df(
+        index_columns=["prm_zone", "period"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    for c in results_columns:
+        getattr(d, PRM_ZONE_PRD_DF)[c] = None
+    getattr(d, PRM_ZONE_PRD_DF).update(results_df)
 
 
 def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
@@ -131,75 +125,6 @@ def import_results_into_database(
     :param quiet:
     :return:
     """
-    if not quiet:
-        print("system prm total")
-
-    # PRM contribution from the ELCC surface
-    # Prior results should have already been cleared by
-    # system.prm.aggregate_project_simple_prm_contribution,
-    # then elcc_simple_mw imported
-    # Update results_system_prm with NULL for requirement and total just in
-    # case (instead of clearing prior results)
-    nullify_sql = """
-        UPDATE results_system_prm
-        SET prm_requirement_mw = NULL,
-        elcc_total_mw = NULL,
-        prm_shortage_mw = NULL
-        WHERE scenario_id = ?
-        AND subproblem_id = ?
-        AND stage_id = ?;
-        """
-    spin_on_database_lock(
-        conn=db,
-        cursor=c,
-        sql=nullify_sql,
-        data=(scenario_id, subproblem, stage),
-        many=False,
-    )
-
-    results = []
-    with open(os.path.join(results_directory, "prm.csv"), "r") as surface_file:
-        reader = csv.reader(surface_file)
-
-        next(reader)  # skip header
-        for row in reader:
-            prm_zone = row[0]
-            period = row[1]
-            discount_factor = row[2]
-            number_years = row[3]
-            prm_req_mw = row[4]
-            prm_prov_mw = row[5]
-            shortage_mw = row[6]
-
-            results.append(
-                (
-                    prm_req_mw,
-                    prm_prov_mw,
-                    shortage_mw,
-                    discount_factor,
-                    number_years,
-                    scenario_id,
-                    prm_zone,
-                    period,
-                    subproblem,
-                    stage,
-                )
-            )
-
-    update_sql = """
-        UPDATE results_system_prm
-        SET prm_requirement_mw = ?,
-        elcc_total_mw = ?,
-        prm_shortage_mw = ?,
-        discount_factor = ?,
-        number_years_represented = ?
-        WHERE scenario_id = ?
-        AND prm_zone = ?
-        AND period = ?
-        AND subproblem_id = ?
-        AND stage_id = ?"""
-    spin_on_database_lock(conn=db, cursor=c, sql=update_sql, data=results)
-
     # Update duals
     duals_results = []
     with open(

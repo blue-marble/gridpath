@@ -18,15 +18,9 @@ Contributions to ELCC surface
 
 import csv
 import os.path
-import pandas as pd
 from pyomo.environ import Param, Set, NonNegativeReals, Binary, Expression, value, Any
 
-from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import subset_init_by_param_value
-from gridpath.auxiliary.db_interface import setup_results_import
-from gridpath.project.operations.operational_types.common_functions import (
-    get_param_dict,
-)
+from gridpath.auxiliary.db_interface import import_csv
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -189,7 +183,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             str(subproblem),
             str(stage),
             "results",
-            "prm_project_elcc_surface_contribution.csv",
+            "project_elcc_surface.csv",
         ),
         "w",
         newline="",
@@ -477,87 +471,13 @@ def import_results_into_database(
     :param quiet:
     :return:
     """
-    if not quiet:
-        print("project elcc surface")
-
-    # Delete prior results and create temporary import table for ordering
-    setup_results_import(
+    import_csv(
         conn=db,
         cursor=c,
-        table="results_project_elcc_surface",
         scenario_id=scenario_id,
         subproblem=subproblem,
         stage=stage,
+        quiet=quiet,
+        results_directory=results_directory,
+        which_results="project_elcc_surface",
     )
-
-    # Load results into the temporary table
-    results = []
-    with open(
-        os.path.join(results_directory, "prm_project_elcc_surface_contribution.csv"),
-        "r",
-    ) as elcc_file:
-        reader = csv.reader(elcc_file)
-
-        next(reader)  # skip header
-        for row in reader:
-            elcc_surface_name = row[0]
-            project = row[1]
-            period = row[2]
-            prm_zone = row[3]
-            facet = row[4]
-            load_zone = row[5]
-            technology = row[6]
-            capacity = row[7]
-            elcc_eligible_capacity = row[8]
-            coefficient = row[9]
-            elcc = row[10]
-
-            results.append(
-                (
-                    scenario_id,
-                    elcc_surface_name,
-                    project,
-                    period,
-                    subproblem,
-                    stage,
-                    prm_zone,
-                    facet,
-                    technology,
-                    load_zone,
-                    capacity,
-                    elcc_eligible_capacity,
-                    coefficient,
-                    elcc,
-                )
-            )
-
-    insert_temp_sql = """
-        INSERT INTO temp_results_project_elcc_surface{}
-        (scenario_id, elcc_surface_name, project, period, subproblem_id, stage_id, 
-        prm_zone, facet, technology, load_zone,
-        capacity_mw, elcc_eligible_capacity_mw,
-        elcc_surface_coefficient, elcc_mw)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-        """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
-
-    # Insert sorted results into permanent results table
-    insert_sql = """
-        INSERT INTO results_project_elcc_surface
-        (scenario_id, elcc_surface_name, project, period, subproblem_id, stage_id,
-        prm_zone, facet, technology, load_zone, 
-        capacity_mw, elcc_eligible_capacity_mw, 
-        elcc_surface_coefficient, elcc_mw)
-        SELECT
-        scenario_id, elcc_surface_name, project, period, subproblem_id, stage_id,
-        prm_zone, facet, technology, load_zone, 
-        capacity_mw, elcc_eligible_capacity_mw,
-        elcc_surface_coefficient, elcc_mw
-        FROM temp_results_project_elcc_surface{}
-        ORDER BY scenario_id, project, period, subproblem_id, stage_id;
-        """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)

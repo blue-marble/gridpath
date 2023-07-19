@@ -33,8 +33,7 @@ from gridpath.auxiliary.auxiliary import (
 from gridpath.project.capacity.common_functions import (
     load_project_capacity_type_modules,
 )
-from gridpath.project.capacity.consolidate_results import PROJECT_CAPACITY_DF
-from gridpath.auxiliary.db_interface import setup_results_import
+from gridpath.project import PROJECT_PERIOD_DF
 from gridpath.auxiliary.dynamic_components import capacity_type_financial_period_sets
 import gridpath.project.capacity.capacity_types as cap_type_init
 
@@ -157,7 +156,6 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    prj_cap_df = getattr(d, PROJECT_CAPACITY_DF)
 
     results_columns1 = [
         "capacity_cost",
@@ -178,8 +176,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     )
 
     for c in results_columns1:
-        prj_cap_df[c] = None
-    prj_cap_df.update(cost_df1)
+        getattr(d, PROJECT_PERIOD_DF)[c] = None
+    getattr(d, PROJECT_PERIOD_DF).update(cost_df1)
 
     results_columns2 = [
         "hours_in_period_timepoints",
@@ -204,10 +202,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     )
 
     for c in results_columns2:
-        prj_cap_df[c] = None
-    prj_cap_df.update(cost_df2)
-
-    setattr(d, PROJECT_CAPACITY_DF, prj_cap_df)
+        getattr(d, PROJECT_PERIOD_DF)[c] = None
+    getattr(d, PROJECT_PERIOD_DF).update(cost_df2)
 
 
 # Database
@@ -264,7 +260,7 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
         INNER JOIN
         (SELECT scenario_id, subproblem_id, stage_id, period, load_zone,
         SUM(capacity_cost) AS capacity_cost
-        FROM results_project_capacity
+        FROM results_project_period
         GROUP BY scenario_id, subproblem_id, stage_id, period, load_zone
         ) AS cap_table
         USING (scenario_id, subproblem_id, stage_id, period, load_zone)

@@ -211,8 +211,8 @@ def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
     )
 
 
-def add_to_dispatch_results(mod):
-    results_columns, data = gen_commit_unit_common.add_to_dispatch_results(
+def add_to_prj_tmp_results(mod):
+    results_columns, data = gen_commit_unit_common.add_to_prj_tmp_results(
         mod=mod,
         BIN_OR_LIN="LIN",
         Bin_or_Lin="Lin",

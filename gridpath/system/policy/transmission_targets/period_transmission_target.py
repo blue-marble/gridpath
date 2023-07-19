@@ -18,7 +18,17 @@ Simplest implementation with a MWh target
 
 import csv
 import os.path
-from pyomo.environ import Set, Param, NonNegativeReals, PercentFraction, Expression
+from pyomo.environ import (
+    Set,
+    Param,
+    NonNegativeReals,
+    PercentFraction,
+    Expression,
+    value,
+)
+
+from gridpath.common_functions import create_results_df
+from gridpath.system.policy.transmission_targets import TX_TARGETS_DF
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -47,30 +57,6 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.TRANSMISSION_TARGET_ZONE_PERIODS_WITH_TRANSMISSION_TARGET,
         within=NonNegativeReals,
         default=0,
-    )
-
-    def transmission_target_pos_dir_rule(mod, transmission_target_zone, period):
-        """ """
-
-        return mod.period_transmission_target_pos_dir_mwh[
-            transmission_target_zone, period
-        ]
-
-    m.Period_Transmission_Target_Pos_Dir = Expression(
-        m.TRANSMISSION_TARGET_ZONE_PERIODS_WITH_TRANSMISSION_TARGET,
-        rule=transmission_target_pos_dir_rule,
-    )
-
-    def transmission_target_neg_dir_rule(mod, transmission_target_zone, period):
-        """ """
-
-        return mod.period_transmission_target_neg_dir_mwh[
-            transmission_target_zone, period
-        ]
-
-    m.Period_Transmission_Target_Neg_Dir = Expression(
-        m.TRANSMISSION_TARGET_ZONE_PERIODS_WITH_TRANSMISSION_TARGET,
-        rule=transmission_target_neg_dir_rule,
     )
 
 
@@ -203,3 +189,37 @@ def write_model_inputs(
             # It's OK if targets are not specified; they default to 0
             replace_nulls = ["." if i is None else i for i in row]
             writer.writerow(replace_nulls)
+
+
+def export_results(scenario_directory, subproblem, stage, m, d):
+    """
+
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :param m:
+    :param d:
+    :return:
+    """
+    results_columns = [
+        "period_transmission_target_pos_dir_mwh",
+        "period_transmission_target_neg_dir_mwh",
+    ]
+    data = [
+        [
+            z,
+            p,
+            m.period_transmission_target_pos_dir_mwh[z, p],
+            m.period_transmission_target_neg_dir_mwh[z, p],
+        ]
+        for (z, p) in m.TRANSMISSION_TARGET_ZONE_PERIODS_WITH_TRANSMISSION_TARGET
+    ]
+    results_df = create_results_df(
+        index_columns=["transmission_target_zone", "period"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    for c in results_columns:
+        getattr(d, TX_TARGETS_DF)[c] = None
+    getattr(d, TX_TARGETS_DF).update(results_df)

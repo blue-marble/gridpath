@@ -19,7 +19,7 @@
 
 import os.path
 
-PROJECT_CAPACITY_DF = "project_capacity_df"
+from gridpath.project import PROJECT_PERIOD_DF
 
 
 def export_results(scenario_directory, subproblem, stage, m, d):
@@ -27,16 +27,13 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     Export all results from the PROJECT_CAPACITY_DF that various modules
     have added to
     """
-    prj_cap_df = getattr(d, PROJECT_CAPACITY_DF)
-
-    # TODO: wrap in spin on database lock
-    prj_cap_df.to_csv(
+    getattr(d, PROJECT_PERIOD_DF).to_csv(
         os.path.join(
             scenario_directory,
             str(subproblem),
             str(stage),
             "results",
-            "project_capacity.csv",
+            "project_period.csv",
         ),
         sep=",",
         index=True,

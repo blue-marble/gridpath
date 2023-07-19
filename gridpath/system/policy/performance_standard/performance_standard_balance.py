@@ -1,4 +1,5 @@
 # Copyright 2022 (c) Crown Copyright, GC.
+# Modifications Copyright 2016-2023 Blue Marble Analytics.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,6 +25,8 @@ from pyomo.environ import Var, Constraint, Expression, NonNegativeReals, value
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.dynamic_components import carbon_cap_balance_emission_components
+from gridpath.common_functions import create_results_df
+from gridpath.system.policy.performance_standard import PERFORMANCE_STANDARD_Z_PRD_DF
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -81,43 +84,26 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "performance_standard.csv",
-        ),
-        "w",
-        newline="",
-    ) as performance_standard_results_file:
-        writer = csv.writer(performance_standard_results_file)
-        writer.writerow(
-            [
-                "performance_standard_zone",
-                "period",
-                "discount_factor",
-                "number_years_represented",
-                "performance_standard_tco2_per_mwh",
-                "performance_standard_carbon_emissions_tco2",
-                "performance_standard_total_energy_mwh",
-                "performance_standard_overage",
-            ]
-        )
-        for z, p in m.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD:
-            writer.writerow(
-                [
-                    z,
-                    p,
-                    m.discount_factor[p],
-                    m.number_years_represented[p],
-                    float(m.performance_standard[z, p]),
-                    value(m.Total_Performance_Standard_Project_Emissions[z, p]),
-                    value(m.Total_Performance_Standard_Project_Energy[z, p]),
-                    value(m.Performance_Standard_Overage_Expression[z, p]),
-                ]
-            )
+    results_columns = [
+        "performance_standard_overage_tco2",
+    ]
+    data = [
+        [
+            z,
+            p,
+            value(m.Performance_Standard_Overage_Expression[z, p]),
+        ]
+        for (z, p) in m.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD
+    ]
+    results_df = create_results_df(
+        index_columns=["performance_standard_zone", "period"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    for c in results_columns:
+        getattr(d, PERFORMANCE_STANDARD_Z_PRD_DF)[c] = None
+    getattr(d, PERFORMANCE_STANDARD_Z_PRD_DF).update(results_df)
 
 
 def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
@@ -126,73 +112,3 @@ def save_duals(scenario_directory, subproblem, stage, instance, dynamic_componen
         "period",
         "dual",
     ]
-
-
-def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    """
-
-    :param scenario_id:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-    if not quiet:
-        print("system performance standard")
-    nullify_sql = """
-        UPDATE results_system_performance_standard
-        SET performance_standard_overage = NULL
-        WHERE scenario_id = ?
-        AND subproblem_id = ?
-        AND stage_id = ?;
-        """
-    spin_on_database_lock(
-        conn=db,
-        cursor=c,
-        sql=nullify_sql,
-        data=(scenario_id, subproblem, stage),
-        many=False,
-    )
-
-    results = []
-    with open(
-        os.path.join(results_directory, "performance_standard.csv"), "r"
-    ) as performance_standard_file:
-        reader = csv.reader(performance_standard_file)
-
-        next(reader)  # skip header
-        for row in reader:
-            performance_standard_zone = row[0]
-            period = row[1]
-            discount_factor = row[2]
-            number_years = row[3]
-            overage = row[5]
-
-            results.append(
-                (
-                    overage,
-                    discount_factor,
-                    number_years,
-                    scenario_id,
-                    performance_standard_zone,
-                    period,
-                    subproblem,
-                    stage,
-                )
-            )
-
-    total_sql = """
-        UPDATE results_system_performance_standard
-        SET performance_standard_overage = ?,
-        discount_factor = ?,
-        number_years_represented = ?
-        WHERE scenario_id = ?
-        AND performance_standard_zone = ?
-        AND period = ?
-        AND subproblem_id = ?
-        AND stage_id = ?;"""
-
-    spin_on_database_lock(conn=db, cursor=c, sql=total_sql, data=results)

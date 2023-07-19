@@ -27,11 +27,12 @@ from gridpath.auxiliary.auxiliary import (
     find_list_item_position,
     cursor_to_df,
 )
-from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.auxiliary.dynamic_components import (
     reserve_variable_derate_params,
     reserve_to_energy_adjustment_params,
 )
+from gridpath.common_functions import create_results_df
+from gridpath.project import PROJECT_TIMEPOINT_DF
 
 
 def generic_record_dynamic_components(
@@ -390,47 +391,31 @@ def generic_export_results(
     :param reserve_ba_param_name:
     :return:
     """
-    with open(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "reserves_provision_" + module_name + ".csv",
-        ),
-        "w",
-        newline="",
-    ) as f:
-        writer = csv.writer(f)
-        writer.writerow(
-            [
-                "project",
-                "period",
-                "horizon",
-                "timepoint",
-                "timepoint_weight",
-                "number_of_hours_in_timepoint",
-                "balancing_area",
-                "load_zone",
-                "technology",
-                "reserve_provision_mw",
-            ]
-        )
-        for p, tmp in getattr(m, reserve_project_operational_timepoints_set):
-            writer.writerow(
-                [
-                    p,
-                    m.period[tmp],
-                    m.horizon[tmp, m.balancing_type_project[p]],
-                    tmp,
-                    m.tmp_weight[tmp],
-                    m.hrs_in_tmp[tmp],
-                    getattr(m, reserve_ba_param_name)[p],
-                    m.load_zone[p],
-                    m.technology[p],
-                    value(getattr(m, reserve_provision_variable_name)[p, tmp]),
-                ]
-            )
+
+    results_columns = [
+        f"{module_name}_ba",
+        f"{module_name}_reserve_provision_mw",
+    ]
+
+    data = [
+        [
+            prj,
+            tmp,
+            getattr(m, reserve_ba_param_name)[prj],
+            value(getattr(m, reserve_provision_variable_name)[prj, tmp]),
+        ]
+        for (prj, tmp) in getattr(m, reserve_project_operational_timepoints_set)
+    ]
+
+    results_df = create_results_df(
+        index_columns=["project", "timepoint"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    for c in results_columns:
+        getattr(d, PROJECT_TIMEPOINT_DF)[c] = None
+    getattr(d, PROJECT_TIMEPOINT_DF).update(results_df)
 
 
 def generic_get_inputs_from_database(
@@ -614,97 +599,3 @@ def generic_validate_project_bas(
             msg=msg,
         ),
     )
-
-
-def generic_import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, reserve_type
-):
-    """
-
-    :param scenario_id:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param reserve_type:
-    :return:
-    """
-
-    # Delete prior results and create temporary import table for ordering
-    setup_results_import(
-        conn=db,
-        cursor=c,
-        table="results_project_{}" "".format(reserve_type),
-        scenario_id=scenario_id,
-        subproblem=subproblem,
-        stage=stage,
-    )
-
-    # Load results into the temporary table
-    results = []
-    with open(
-        os.path.join(results_directory, "reserves_provision_" + reserve_type + ".csv"),
-        "r",
-    ) as reserve_provision_file:
-        reader = csv.reader(reserve_provision_file)
-
-        next(reader)  # skip header
-        for row in reader:
-            project = row[0]
-            period = row[1]
-            horizon = row[2]
-            timepoint = row[3]
-            timepoint_weight = row[4]
-            number_of_hours_in_timepoint = row[5]
-            ba = row[6]
-            load_zone = row[7]
-            technology = row[8]
-            reserve_provision = row[9]
-
-            results.append(
-                (
-                    scenario_id,
-                    project,
-                    period,
-                    subproblem,
-                    stage,
-                    horizon,
-                    timepoint,
-                    timepoint_weight,
-                    number_of_hours_in_timepoint,
-                    ba,
-                    load_zone,
-                    technology,
-                    reserve_provision,
-                )
-            )
-
-    insert_temp_sql = """
-        INSERT INTO temp_results_project_{}{}
-        (scenario_id, project, period, subproblem_id, stage_id,
-        horizon, timepoint, timepoint_weight,
-        number_of_hours_in_timepoint,
-        load_zone, {}_ba, technology, 
-        reserve_provision_mw)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-        """.format(
-        reserve_type, scenario_id, reserve_type
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
-
-    # Insert sorted results into permanent results table
-    insert_sql = """
-        INSERT INTO results_project_{}
-        (scenario_id, project, period, subproblem_id, stage_id,
-        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint, 
-        {}_ba, load_zone, technology, reserve_provision_mw)
-        SELECT
-        scenario_id, project, period, subproblem_id, stage_id, 
-        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint, 
-        {}_ba, load_zone, technology, reserve_provision_mw
-        FROM temp_results_project_{}{}
-        ORDER BY scenario_id, project, subproblem_id, stage_id, 
-        timepoint;""".format(
-        reserve_type, reserve_type, reserve_type, reserve_type, scenario_id
-    )
-
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)

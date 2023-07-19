@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ PREREQUISITE_MODULE_NAMES = [
     "geography.load_zones",
     "geography.markets",
 ]
-NAME_OF_MODULE_BEING_TESTED = "system.load_balance.market_participation"
+NAME_OF_MODULE_BEING_TESTED = "system.markets.market_participation"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:

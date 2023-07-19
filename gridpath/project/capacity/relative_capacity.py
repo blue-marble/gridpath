@@ -21,12 +21,10 @@ import os.path
 import pandas as pd
 from pyomo.environ import Set, Param, Constraint, NonNegativeReals, Expression, value
 
-from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import get_required_subtype_modules
 from gridpath.project.capacity.common_functions import (
     load_project_capacity_type_modules,
 )
-from gridpath.auxiliary.db_interface import setup_results_import
 import gridpath.project.capacity.capacity_types as cap_type_init
 
 

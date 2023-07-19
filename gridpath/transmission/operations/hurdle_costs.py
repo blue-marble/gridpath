@@ -35,7 +35,7 @@ from gridpath.auxiliary.validations import (
     validate_missing_inputs,
 )
 from gridpath.common_functions import create_results_df
-from gridpath.transmission.operations.consolidate_results import TX_OPERATIONS_DF
+from gridpath.transmission import TX_TIMEPOINT_DF
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -228,7 +228,6 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return: Nothing
     """
 
-    tx_opr_df = getattr(d, TX_OPERATIONS_DF)
     results_columns = [
         "hurdle_cost_positive_direction",
         "hurdle_cost_negative_direction",
@@ -244,10 +243,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     )
 
     for c in results_columns:
-        tx_opr_df[c] = None
-    tx_opr_df.update(cost_df)
-
-    setattr(d, TX_OPERATIONS_DF, tx_opr_df)
+        getattr(d, TX_TIMEPOINT_DF)[c] = None
+    getattr(d, TX_TIMEPOINT_DF).update(cost_df)
 
 
 # Database
@@ -377,7 +374,7 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
         load_zone_to AS load_zone, spinup_or_lookahead,
         SUM(hurdle_cost_positive_direction * timepoint_weight * 
         number_of_hours_in_timepoint) AS pos_dir_hurdle_cost
-        FROM results_transmission_operations
+        FROM results_transmission_timepoint
         WHERE scenario_id = ?
         GROUP BY subproblem_id, stage_id, period, load_zone, spinup_or_lookahead
         ORDER BY subproblem_id, stage_id, period, load_zone, spinup_or_lookahead
@@ -389,7 +386,7 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
         load_zone_from AS load_zone, spinup_or_lookahead,
         SUM(hurdle_cost_negative_direction * timepoint_weight * 
         number_of_hours_in_timepoint) AS neg_dir_hurdle_cost
-        FROM results_transmission_operations
+        FROM results_transmission_timepoint
         WHERE scenario_id = ?
         GROUP BY subproblem_id, stage_id, period, load_zone, spinup_or_lookahead
         ORDER BY subproblem_id, stage_id, period, load_zone, spinup_or_lookahead

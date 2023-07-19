@@ -205,7 +205,7 @@ def get_capacity_data(
     :param conn:
     :param subproblem:
     :param stage:
-    :param capacity_col: str, capacity column in results_project_capacity
+    :param capacity_col: str, capacity column in results_project_period
     :param scenario_id: int or list of int, optional (default: return all
         scenarios)
     :param load_zone: str or list of str, optional (default: aggregate across
@@ -217,7 +217,7 @@ def get_capacity_data(
     params = [subproblem, stage]
     sql = """SELECT scenario_name AS scenario, period, technology, 
         sum({}) AS capacity_mw
-        FROM results_project_capacity
+        FROM results_project_period
         INNER JOIN 
         (SELECT scenario_name, scenario_id FROM scenarios) as scen_table
         USING (scenario_id)

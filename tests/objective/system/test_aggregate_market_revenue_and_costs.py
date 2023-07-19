@@ -30,7 +30,7 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.investment.periods",
     "geography.load_zones",
     "geography.markets",
-    "system.load_balance.market_participation",
+    "system.markets.market_participation",
     "system.markets.prices",
     "system.markets.volume",
 ]

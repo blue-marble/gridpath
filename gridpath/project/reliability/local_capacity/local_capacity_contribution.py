@@ -22,8 +22,7 @@ import csv
 import os.path
 from pyomo.environ import Param, PercentFraction, Expression, value
 
-from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.db_interface import setup_results_import
+from gridpath.auxiliary.db_interface import import_csv
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -85,7 +84,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             str(subproblem),
             str(stage),
             "results",
-            "project_local_capacity_contribution.csv",
+            "project_local_capacity.csv",
         ),
         "w",
         newline="",
@@ -103,7 +102,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "local_capacity_contribution_mw",
             ]
         )
-        for prj, period in m.LOCAL_CAPACITY_PRJ_OPR_PRDS:
+        for prj, period in sorted(m.LOCAL_CAPACITY_PRJ_OPR_PRDS):
             writer.writerow(
                 [
                     prj,
@@ -232,78 +231,13 @@ def import_results_into_database(
     :param quiet:
     :return:
     """
-    if not quiet:
-        print("project local capacity contributions")
-
-    # Delete prior results and create temporary import table for ordering
-    setup_results_import(
+    import_csv(
         conn=db,
         cursor=c,
-        table="results_project_local_capacity",
         scenario_id=scenario_id,
         subproblem=subproblem,
         stage=stage,
+        quiet=quiet,
+        results_directory=results_directory,
+        which_results="project_local_capacity",
     )
-
-    # Load results into the temporary table
-    results = []
-    with open(
-        os.path.join(results_directory, "project_local_capacity_contribution.csv"), "r"
-    ) as local_capacity_results_file:
-        reader = csv.reader(local_capacity_results_file)
-
-        next(reader)  # skip header
-        for row in reader:
-            project = row[0]
-            period = row[1]
-            local_capacity_zone = row[2]
-            technology = row[3]
-            load_zone = row[4]
-            capacity = row[5]
-            local_capacity_fraction = row[6]
-            contribution_mw = row[7]
-
-            results.append(
-                (
-                    scenario_id,
-                    project,
-                    period,
-                    subproblem,
-                    stage,
-                    local_capacity_zone,
-                    technology,
-                    load_zone,
-                    capacity,
-                    local_capacity_fraction,
-                    contribution_mw,
-                )
-            )
-
-    insert_temp_sql = """
-        INSERT INTO temp_results_project_local_capacity{}
-        (scenario_id, project, period, subproblem_id, stage_id,
-        local_capacity_zone, technology, load_zone, 
-        capacity_mw, local_capacity_fraction,
-        local_capacity_contribution_mw)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-        """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
-
-    # Insert sorted results into permanent results table
-    insert_sql = """
-        INSERT INTO results_project_local_capacity
-        (scenario_id, project, period, subproblem_id, stage_id,
-        local_capacity_zone, technology, load_zone, 
-        capacity_mw, local_capacity_fraction, local_capacity_contribution_mw)
-        SELECT
-        scenario_id, project, period, subproblem_id, stage_id,
-        local_capacity_zone, technology, load_zone,
-        capacity_mw, local_capacity_fraction, local_capacity_contribution_mw
-        FROM temp_results_project_local_capacity{}
-        ORDER BY scenario_id, project, subproblem_id, stage_id, period;
-        """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)

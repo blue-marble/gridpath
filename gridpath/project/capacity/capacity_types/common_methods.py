@@ -419,7 +419,7 @@ def read_results_file_generic(scenario_directory, subproblem, stage, capacity_ty
             str(subproblem),
             str(stage),
             "results",
-            "project_capacity.csv",
+            "project_period.csv",
         )
     )
 

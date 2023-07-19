@@ -22,6 +22,9 @@ import pandas as pd
 
 from pyomo.environ import Set, Param, NonNegativeReals, value
 
+from gridpath.common_functions import create_results_df
+from gridpath.system.policy.carbon_cap import CARBON_CAP_ZONE_PRD_DF
+
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
@@ -146,3 +149,36 @@ def write_model_inputs(
 
         for row in carbon_cap_targets:
             writer.writerow(row)
+
+
+def export_results(scenario_directory, subproblem, stage, m, d):
+    """
+
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :param m:
+    :param d:
+    :return:
+    """
+
+    results_columns = [
+        "carbon_cap_target",
+    ]
+    data = [
+        [
+            z,
+            p,
+            m.carbon_cap_target[z, p],
+        ]
+        for (z, p) in m.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP
+    ]
+    results_df = create_results_df(
+        index_columns=["carbon_cap_zone", "period"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    for c in results_columns:
+        getattr(d, CARBON_CAP_ZONE_PRD_DF)[c] = None
+    getattr(d, CARBON_CAP_ZONE_PRD_DF).update(results_df)

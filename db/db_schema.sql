@@ -3561,14 +3561,16 @@ FOREIGN KEY (solver_options_id)
 
 -- TODO: project can belong to more than one energy target zone, so this
 --  doesn't make sense this way; need to rethink these columns
-DROP TABLE IF EXISTS results_project_capacity;
-CREATE TABLE results_project_capacity (
+DROP TABLE IF EXISTS results_project_period;
+CREATE TABLE results_project_period (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
 capacity_type VARCHAR(64),
+availability_type VARCHAR(64),
+operational_type VARCHAR(64),
 technology VARCHAR(32),
 load_zone VARCHAR(32),
 energy_target_zone VARCHAR(32),
@@ -3613,37 +3615,16 @@ PRIMARY KEY (scenario_id, subproblem_id, stage_id, capacity_group, period)
 );
 
 
-DROP TABLE IF EXISTS results_project_availability_endogenous;
-CREATE TABLE results_project_availability_endogenous (
+DROP TABLE IF EXISTS results_project_timepoint;
+CREATE TABLE results_project_timepoint (
 scenario_id INTEGER,
 project VARCHAR(64),
+timepoint INTEGER,
 period INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
+capacity_type VARCHAR(64),
 availability_type VARCHAR(64),
-timepoint INTEGER,
-timepoint_weight FLOAT,
-number_of_hours_in_timepoint FLOAT,
-spinup_or_lookahead INTEGER,
-load_zone VARCHAR(32),
-energy_target_zone VARCHAR(32),
-carbon_cap_zone VARCHAR(32),
-technology VARCHAR(32),
-unavailability_decision FLOAT,
-start_unavailablity FLOAT,
-stop_unavailability FLOAT,
-availability_derate FLOAT,
-PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
-);
-
-DROP TABLE IF EXISTS results_project_operations;
-CREATE TABLE results_project_operations (
-scenario_id INTEGER,
-project VARCHAR(64),
-timepoint INTEGER,
-period INTEGER,
-subproblem_id INTEGER,
-stage_id INTEGER,
 operational_type VARCHAR(64),
 balancing_type VARCHAR(64),
 horizon INTEGER,
@@ -3651,9 +3632,9 @@ timepoint_weight FLOAT,
 number_of_hours_in_timepoint FLOAT,
 spinup_or_lookahead INTEGER,
 load_zone VARCHAR(32),
-energy_target_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 technology VARCHAR(32),
+capacity_mw FLOAT,
 power_mw FLOAT,  -- grid net power in case there's curtailment and/or aux cons
 scheduled_curtailment_mw FLOAT,
 subhourly_curtailment_mw FLOAT,
@@ -3695,11 +3676,32 @@ operational_violation_cost FLOAT,
 curtailment_cost FLOAT,
 soc_penalty_cost FLOAT,
 soc_last_tmp_penalty_cost FLOAT,
+carbon_emissions_tons FLOAT,
+energy_target_zone VARCHAR(32),
+scheduled_energy_target_energy_mw FLOAT,
+subhourly_energy_target_energy_delivered_mw FLOAT,
+spinning_reserves_ba VARCHAR(32),
+spinning_reserves_reserve_provision_mw FLOAT,
+lf_reserves_down_ba VARCHAR(32),
+lf_reserves_down_reserve_provision_mw FLOAT,
+lf_reserves_up_ba VARCHAR(32),
+lf_reserves_up_reserve_provision_mw FLOAT,
+regulation_down_ba VARCHAR(32),
+regulation_down_reserve_provision_mw FLOAT,
+regulation_up_ba VARCHAR(32),
+regulation_up_reserve_provision_mw FLOAT,
+frequency_response_ba VARCHAR(32),
+frequency_response_reserve_provision_mw FLOAT,
+frequency_response_partial_reserve_provision_mw FLOAT,
+availability_derate FLOAT,
+unavailability_decision FLOAT,
+start_unavailability FLOAT,
+stop_unavailability FLOAT,
 PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
 );
 
-DROP TABLE IF EXISTS results_project_curtailment_variable;
-CREATE TABLE results_project_curtailment_variable (
+DROP TABLE IF EXISTS results_project_curtailment_variable_periodagg;
+CREATE TABLE results_project_curtailment_variable_periodagg (
 scenario_id INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
@@ -3715,8 +3717,8 @@ scheduled_curtailment_mw FLOAT,
 PRIMARY KEY (scenario_id, subproblem_id, stage_id, timepoint, load_zone)
 );
 
-DROP TABLE IF EXISTS results_project_curtailment_hydro;
-CREATE TABLE results_project_curtailment_hydro (
+DROP TABLE IF EXISTS results_project_curtailment_hydro_periodagg;
+CREATE TABLE results_project_curtailment_hydro_periodagg (
 scenario_id INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
@@ -3746,6 +3748,27 @@ CREATE TABLE results_project_cap_factor_limits (
     possible_power_provision_mwh,
     PRIMARY KEY (scenario_id, subproblem_id, stage_id, project,
                  balancing_type_horizon, horizon)
+);
+
+DROP TABLE IF EXISTS results_project_carbon_tax_allowance;
+CREATE TABLE results_project_carbon_tax_allowance (
+    scenario_id INTEGER,
+    subproblem_id INTEGER,
+    stage_id INTEGER,
+    project VARCHAR(64),
+    fuel_group VARCHAR(64),
+    timepoint INTEGER,
+    period INTEGER,
+    horizon INTEGER,
+    timepoint_weight FLOAT,
+    number_of_hours_in_timepoint FLOAT,
+    carbon_tax_zone VARCHAR(64),
+    carbon_tax_allowance_tco2_per_mwh FLOAT,
+    carbon_tax_allowance_average_heat_rate_mmbtu_per_mwh FLOAT,
+    opr_fuel_burn_by_fuel_group_mmbtu FLOAT,
+    carbon_tax_allowance_tons FLOAT,
+    PRIMARY KEY (scenario_id, subproblem_id, stage_id, project,
+                 fuel_group, timepoint)
 );
 
 DROP TABLE IF EXISTS results_project_dispatch_by_technology;
@@ -3779,141 +3802,8 @@ PRIMARY KEY (scenario_id, subproblem_id, stage_id, period, load_zone,
 technology, spinup_or_lookahead)
 );
 
-DROP TABLE IF EXISTS results_project_lf_reserves_up;
-CREATE TABLE results_project_lf_reserves_up (
-scenario_id INTEGER,
-project VARCHAR(64),
-period INTEGER,
-subproblem_id INTEGER,
-stage_id INTEGER,
-balancing_type_project VARCHAR(64),
-horizon INTEGER,
-timepoint INTEGER,
-timepoint_weight FLOAT,
-number_of_hours_in_timepoint FLOAT,
-spinup_or_lookahead INTEGER,
-load_zone VARCHAR(32),
-lf_reserves_up_ba VARCHAR(32),
-energy_target_zone VARCHAR(32),
-carbon_cap_zone VARCHAR(32),
-technology VARCHAR(32),
-reserve_provision_mw FLOAT,
-PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
-);
-
-DROP TABLE IF EXISTS results_project_lf_reserves_down;
-CREATE TABLE results_project_lf_reserves_down (
-scenario_id INTEGER,
-project VARCHAR(64),
-period INTEGER,
-subproblem_id INTEGER,
-stage_id INTEGER,
-balancing_type_project VARCHAR(64),
-horizon INTEGER,
-timepoint INTEGER,
-timepoint_weight FLOAT,
-number_of_hours_in_timepoint FLOAT,
-spinup_or_lookahead INTEGER,
-load_zone VARCHAR(32),
-lf_reserves_down_ba VARCHAR(32),
-energy_target_zone VARCHAR(32),
-carbon_cap_zone VARCHAR(32),
-technology VARCHAR(32),
-reserve_provision_mw FLOAT,
-PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
-);
-
-DROP TABLE IF EXISTS results_project_regulation_up;
-CREATE TABLE results_project_regulation_up (
-scenario_id INTEGER,
-project VARCHAR(64),
-period INTEGER,
-subproblem_id INTEGER,
-stage_id INTEGER,
-balancing_type_project VARCHAR(64),
-horizon INTEGER,
-timepoint INTEGER,
-timepoint_weight FLOAT,
-number_of_hours_in_timepoint FLOAT,
-spinup_or_lookahead INTEGER,
-load_zone VARCHAR(32),
-regulation_up_ba VARCHAR(32),
-energy_target_zone VARCHAR(32),
-carbon_cap_zone VARCHAR(32),
-technology VARCHAR(32),
-reserve_provision_mw FLOAT,
-PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
-);
-
-DROP TABLE IF EXISTS results_project_regulation_down;
-CREATE TABLE results_project_regulation_down (
-scenario_id INTEGER,
-project VARCHAR(64),
-period INTEGER,
-balancing_type_project VARCHAR(64),
-horizon INTEGER,
-subproblem_id INTEGER,
-stage_id INTEGER,
-timepoint INTEGER,
-timepoint_weight FLOAT,
-number_of_hours_in_timepoint FLOAT,
-spinup_or_lookahead INTEGER,
-load_zone VARCHAR(32),
-regulation_down_ba VARCHAR(32),
-energy_target_zone VARCHAR(32),
-carbon_cap_zone VARCHAR(32),
-technology VARCHAR(32),
-reserve_provision_mw FLOAT,
-PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
-);
-
-DROP TABLE IF EXISTS results_project_frequency_response;
-CREATE TABLE results_project_frequency_response (
-scenario_id INTEGER,
-project VARCHAR(64),
-period INTEGER,
-subproblem_id INTEGER,
-stage_id INTEGER,
-balancing_type_project VARCHAR(64),
-horizon INTEGER,
-timepoint INTEGER,
-timepoint_weight FLOAT,
-number_of_hours_in_timepoint FLOAT,
-spinup_or_lookahead INTEGER,
-load_zone VARCHAR(32),
-frequency_response_ba VARCHAR(32),
-energy_target_zone VARCHAR(32),
-carbon_cap_zone VARCHAR(32),
-technology VARCHAR(32),
-reserve_provision_mw FLOAT,
-partial INTEGER,
-PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
-);
-
-DROP TABLE IF EXISTS results_project_spinning_reserves;
-CREATE TABLE results_project_spinning_reserves (
-scenario_id INTEGER,
-project VARCHAR(64),
-period INTEGER,
-subproblem_id INTEGER,
-stage_id INTEGER,
-balancing_type_project VARCHAR(64),
-horizon INTEGER,
-timepoint INTEGER,
-timepoint_weight FLOAT,
-number_of_hours_in_timepoint FLOAT,
-spinup_or_lookahead INTEGER,
-load_zone VARCHAR(32),
-spinning_reserves_ba VARCHAR(32),
-energy_target_zone VARCHAR(32),
-carbon_cap_zone VARCHAR(32),
-technology VARCHAR(32),
-reserve_provision_mw FLOAT,
-PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
-);
-
-DROP TABLE IF EXISTS results_project_prm_deliverability;
-CREATE TABLE results_project_prm_deliverability (
+DROP TABLE IF EXISTS results_project_deliverability;
+CREATE TABLE results_project_deliverability (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
@@ -3931,15 +3821,15 @@ PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
 );
 
 DROP TABLE IF EXISTS
-results_project_prm_deliverability_group_capacity_and_costs;
-CREATE TABLE results_project_prm_deliverability_group_capacity_and_costs (
+results_project_deliverability_groups;
+CREATE TABLE results_project_deliverability_groups (
 scenario_id INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
 deliverability_group VARCHAR(64),
 period INTEGER,
-deliverability_built_in_period_mw FLOAT,
-cumulative_added_deliverability_in_period_mw FLOAT,
+deliverable_capacity_built_in_period_mw FLOAT,
+cumulative_added_deliverable_capacity_mw FLOAT,
 deliverability_annual_cost_in_period FLOAT,
 PRIMARY KEY (scenario_id, deliverability_group, period, subproblem_id, stage_id)
 );
@@ -3948,8 +3838,8 @@ PRIMARY KEY (scenario_id, deliverability_group, period, subproblem_id, stage_id)
 -- (and broken out by spinup_or_lookahead; fraction sums up to 1 between the
 -- spinup_or_lookahead and the non-spinup_or_lookahead timepoints)
 DROP TABLE IF EXISTS
-results_project_prm_deliverability_group_capacity_and_costs_agg;
-CREATE TABLE results_project_prm_deliverability_group_capacity_and_costs_agg (
+results_project_deliverability_groups_agg;
+CREATE TABLE results_project_deliverability_groups_agg (
 scenario_id INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
@@ -3975,7 +3865,7 @@ carbon_cap_zone VARCHAR(32),
 capacity_mw FLOAT,
 elcc_eligible_capacity_mw FLOAT,
 energy_only_capacity_mw FLOAT,
-elcc_simple_contribution_fraction FLOAT,
+elcc_simple_fraction FLOAT,
 elcc_mw FLOAT,
 PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
 );
@@ -4038,7 +3928,7 @@ PRIMARY KEY (scenario_id, load_zone, period, subproblem_id, stage_id,
 spinup_or_lookahead));
 
 -- Operational Costs - Aggregated
--- By timepoint costs are in the results_project_operations table
+-- By timepoint costs are in the results_project_timepoint table
 DROP TABLE IF EXISTS results_project_costs_operations_agg;
 CREATE TABLE results_project_costs_operations_agg (
 scenario_id INTEGER,
@@ -4081,27 +3971,6 @@ net_fuel_burn_fuelunit FLOAT,
 PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint, fuel)
 );
 
-DROP TABLE IF EXISTS results_project_carbon_emissions;
-CREATE TABLE results_project_carbon_emissions (
-scenario_id INTEGER,
-project VARCHAR(64),
-period INTEGER,
-subproblem_id INTEGER,
-stage_id INTEGER,
-balancing_type_project VARCHAR(64),
-horizon INTEGER,
-timepoint INTEGER,
-timepoint_weight FLOAT,
-number_of_hours_in_timepoint FLOAT,
-spinup_or_lookahead INTEGER,
-load_zone VARCHAR(32),
-energy_target_zone VARCHAR(32),
-carbon_cap_zone VARCHAR(32),
-technology VARCHAR(32),
-carbon_emission_tons FLOAT,
-PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
-);
-
 DROP TABLE IF EXISTS results_project_carbon_emissions_by_technology_period;
 CREATE TABLE results_project_carbon_emissions_by_technology_period (
 scenario_id INTEGER,
@@ -4111,58 +3980,22 @@ stage_id INTEGER,
 load_zone VARCHAR(32),
 technology VARCHAR(32),
 spinup_or_lookahead INTEGER,
-carbon_emission_tons FLOAT,
+carbon_emissions_tons FLOAT,
 PRIMARY KEY (scenario_id, period, subproblem_id, stage_id, load_zone,
 technology, spinup_or_lookahead)
 );
 
-DROP TABLE IF EXISTS results_project_period_energy_target;
-CREATE TABLE results_project_period_energy_target (
-scenario_id INTEGER,
-project VARCHAR(64),
-period INTEGER,
-subproblem_id INTEGER,
-stage_id INTEGER,
-balancing_type_project VARCHAR(64),
-horizon INTEGER,
-timepoint INTEGER,
-timepoint_weight FLOAT,
-number_of_hours_in_timepoint FLOAT,
-spinup_or_lookahead INTEGER,
-load_zone VARCHAR(32),
-energy_target_zone VARCHAR(32),
-carbon_cap_zone VARCHAR(32),
-technology VARCHAR(32),
-scheduled_energy_target_energy_mw FLOAT,
-scheduled_curtailment_mw FLOAT,
-subhourly_energy_target_energy_delivered_mw FLOAT,
-subhourly_curtailment_mw FLOAT,
-PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
-);
 
-CREATE TABLE results_tx_line_period_transmission_target (
+DROP TABLE IF EXISTS results_transmission_period;
+CREATE TABLE results_transmission_period (
 scenario_id INTEGER,
 transmission_line VARCHAR(64),
 period INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
-timepoint INTEGER,
-timepoint_weight FLOAT,
-number_of_hours_in_timepoint FLOAT,
-transmission_target_zone VARCHAR(32),
-transmission_target_energy_positive_direction_mw FLOAT,
-transmission_target_energy_negative_direction_mw FLOAT,
-PRIMARY KEY (scenario_id, transmission_line, subproblem_id, stage_id, timepoint)
-);
-
-DROP TABLE IF EXISTS results_transmission_capacity;
-CREATE TABLE results_transmission_capacity (
-scenario_id INTEGER,
-tx_line VARCHAR(64),
-period INTEGER,
-subproblem_id INTEGER,
-stage_id INTEGER,
 tx_capacity_type VARCHAR(16),
+tx_availability_type VARCHAR(16),
+tx_operational_type VARCHAR(16),
 load_zone_from VARCHAR(32),
 load_zone_to VARCHAR(32),
 min_mw FLOAT,
@@ -4173,7 +4006,7 @@ hours_in_subproblem_period FLOAT,
 capacity_cost FLOAT,
 fixed_cost FLOAT,
 capacity_cost_wo_spinup_or_lookahead FLOAT,
-PRIMARY KEY (scenario_id, tx_line, period, subproblem_id, stage_id)
+PRIMARY KEY (scenario_id, transmission_line, period, subproblem_id, stage_id)
 );
 
 
@@ -4207,35 +4040,19 @@ capacity_cost FLOAT,
 PRIMARY KEY (scenario_id, load_zone, period, subproblem_id, stage_id,
 spinup_or_lookahead));
 
-
-DROP TABLE IF EXISTS results_transmission_imports_exports;
-CREATE TABLE results_transmission_imports_exports (
+DROP TABLE IF EXISTS results_transmission_timepoint;
+CREATE TABLE results_transmission_timepoint (
 scenario_id INTEGER,
-load_zone VARCHAR(64),
-period INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
-timepoint INTEGER,
-timepoint_weight FLOAT,
-number_of_hours_in_timepoint FLOAT,
-spinup_or_lookahead INTEGER,
-imports_mw FLOAT,
-exports_mw FLOAT,
-net_imports_mw FLOAT,
-PRIMARY KEY (scenario_id, load_zone, subproblem_id, stage_id, timepoint)
-);
-
-DROP TABLE IF EXISTS results_transmission_operations;
-CREATE TABLE results_transmission_operations (
-scenario_id INTEGER,
 transmission_line VARCHAR(64),
 timepoint INTEGER,
 period INTEGER,
-subproblem_id INTEGER,
-stage_id INTEGER,
 timepoint_weight FLOAT,
 number_of_hours_in_timepoint FLOAT,
 spinup_or_lookahead INTEGER,
+tx_capacity_type VARCHAR(16),
+tx_availability_type VARCHAR(16),
 tx_operational_type VARCHAR(16),
 load_zone_from VARCHAR(64),
 load_zone_to VARCHAR(64),
@@ -4244,7 +4061,13 @@ transmission_losses_lz_from FLOAT,
 transmission_losses_lz_to FLOAT,
 hurdle_cost_positive_direction FLOAT,
 hurdle_cost_negative_direction FLOAT,
-PRIMARY KEY (scenario_id, transmission_line, subproblem_id, stage_id, timepoint)
+transmission_target_zone VARCHAR(32),
+transmission_target_energy_positive_direction_mw FLOAT,
+transmission_target_energy_negative_direction_mw FLOAT,
+carbon_emission_imports_tons FLOAT,
+carbon_emission_imports_tons_degen FLOAT,
+PRIMARY KEY (scenario_id, subproblem_id, stage_id, transmission_line,
+             timepoint)
 );
 
 DROP TABLE IF EXISTS results_transmission_imports_exports_agg;
@@ -4275,21 +4098,6 @@ PRIMARY KEY (scenario_id, load_zone, period, subproblem_id, stage_id,
 spinup_or_lookahead)
 );
 
-DROP TABLE IF EXISTS results_transmission_carbon_emissions;
-CREATE TABLE results_transmission_carbon_emissions (
-scenario_id INTEGER,
-tx_line VARCHAR(64),
-period INTEGER,
-subproblem_id INTEGER,
-stage_id INTEGER,
-timepoint INTEGER,
-timepoint_weight FLOAT,
-number_of_hours_in_timepoint FLOAT,
-spinup_or_lookahead INTEGER,
-carbon_emission_imports_tons FLOAT,
-carbon_emission_imports_tons_degen FLOAT,
-PRIMARY KEY (scenario_id, tx_line, subproblem_id, stage_id, timepoint)
-);
 
 -- Simultaneous flows
 DROP TABLE IF EXISTS results_transmission_simultaneous_flows;
@@ -4307,34 +4115,37 @@ CREATE TABLE results_transmission_simultaneous_flows (
                  subproblem_id, stage_id, timepoint)
 );
 
-DROP TABLE IF EXISTS results_system_load_balance;
-CREATE TABLE results_system_load_balance (
+DROP TABLE IF EXISTS results_system_load_zone_timepoint;
+CREATE TABLE results_system_load_zone_timepoint (
 scenario_id INTEGER,
-load_zone VARCHAR(32),
-period INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
+load_zone VARCHAR(32),
 timepoint INTEGER,
+period INTEGER,
 discount_factor FLOAT,
 number_years_represented FLOAT,
 timepoint_weight FLOAT,
 number_of_hours_in_timepoint FLOAT,
 spinup_or_lookahead INTEGER,
-load_mw FLOAT,
+static_load_mw FLOAT,
+total_power_mw FLOAT,
+net_imports_mw FLOAT,
+net_market_purchases_mw FLOAT,
 overgeneration_mw FLOAT,
 unserved_energy_mw FLOAT,
 dual FLOAT,
 marginal_price_per_mw FLOAT,
-PRIMARY KEY (scenario_id, load_zone, subproblem_id, stage_id, timepoint)
+PRIMARY KEY (scenario_id, subproblem_id, stage_id, load_zone, timepoint)
 );
 
 DROP TABLE IF EXISTS results_system_market_participation;
 CREATE TABLE results_system_market_participation (
 scenario_id INTEGER,
-load_zone VARCHAR(32),
-market VARCHAR(32),
 subproblem_id INTEGER,
 stage_id INTEGER,
+load_zone VARCHAR(32),
+market VARCHAR(32),
 timepoint INTEGER,
 period INTEGER,
 discount_factor FLOAT,
@@ -4487,8 +4298,8 @@ PRIMARY KEY (scenario_id, spinning_reserves_ba, subproblem_id, stage_id, timepoi
 );
 
 -- Carbon emissions
-DROP TABLE IF EXISTS results_system_carbon_emissions;
-CREATE TABLE results_system_carbon_emissions (
+DROP TABLE IF EXISTS results_system_carbon_cap;
+CREATE TABLE results_system_carbon_cap (
 scenario_id INTEGER,
 carbon_cap_zone VARCHAR(64),
 period INTEGER,
@@ -4496,8 +4307,8 @@ subproblem_id INTEGER,
 stage_id INTEGER,
 discount_factor FLOAT,
 number_years_represented FLOAT,
-carbon_cap FLOAT,
-in_zone_project_emissions FLOAT,
+carbon_cap_target FLOAT,
+project_emissions FLOAT,
 import_emissions FLOAT,
 total_emissions FLOAT,
 carbon_cap_overage FLOAT,
@@ -4509,8 +4320,8 @@ PRIMARY KEY (scenario_id, carbon_cap_zone, subproblem_id, stage_id, period)
 );
 
 -- Carbon tax emissions
-DROP TABLE IF EXISTS results_system_carbon_tax_emissions;
-CREATE TABLE results_system_carbon_tax_emissions (
+DROP TABLE IF EXISTS results_system_carbon_tax;
+CREATE TABLE results_system_carbon_tax (
 scenario_id INTEGER,
 carbon_tax_zone VARCHAR(64),
 period INTEGER,
@@ -4518,10 +4329,11 @@ subproblem_id INTEGER,
 stage_id INTEGER,
 discount_factor FLOAT,
 number_years_represented FLOAT,
-carbon_tax FLOAT,
-total_emissions FLOAT,
-total_allowance FLOAT,
-carbon_tax_cost FLOAT,
+project_emissions FLOAT,
+carbon_tax_per_ton FLOAT,
+total_carbon_emissions_tons FLOAT,
+total_carbon_tax_allowance_tons FLOAT,
+total_carbon_tax_cost FLOAT,
 dual FLOAT,
 PRIMARY KEY (scenario_id, carbon_tax_zone, subproblem_id, stage_id, period)
 );
@@ -4537,9 +4349,9 @@ stage_id INTEGER,
 discount_factor FLOAT,
 number_years_represented FLOAT,
 performance_standard_tco2_per_mwh FLOAT,
-project_performance_standard_total_carbon_emissions_tco2 FLOAT,
-project_performance_standard_total_energy_mwh FLOAT,
-performance_standard_overage FLOAT,
+performance_standard_project_emissions_tco2 FLOAT,
+performance_standard_project_energy_mwh FLOAT,
+performance_standard_overage_tco2 FLOAT,
 PRIMARY KEY (scenario_id, performance_standard_zone, subproblem_id, stage_id, period)
 );
 
@@ -4587,8 +4399,8 @@ PRIMARY KEY (scenario_id, energy_target_zone, subproblem_id, stage_id,
 );
 
 -- Transmission target balance
-DROP TABLE IF EXISTS results_system_period_transmission_target;
-CREATE TABLE  results_system_period_transmission_target (
+DROP TABLE IF EXISTS results_system_transmission_targets;
+CREATE TABLE  results_system_transmission_targets (
 scenario_id INTEGER,
 transmission_target_zone VARCHAR(64),
 subproblem_id INTEGER,
@@ -4596,11 +4408,11 @@ stage_id INTEGER,
 period INTEGER,
 discount_factor FLOAT,
 number_years_represented FLOAT,
-transmission_target_positive_direction_mwh FLOAT,
+period_transmission_target_pos_dir_mwh FLOAT,
 total_transmission_target_energy_positive_direction_mwh FLOAT,
 fraction_of_transmission_target_positive_direction_met FLOAT,
 transmission_target_shortage_positive_direction_mwh FLOAT,
-transmission_target_negative_direction_mwh FLOAT,
+period_transmission_target_neg_dir_mwh FLOAT,
 total_transmission_target_energy_negative_direction_mwh FLOAT,
 fraction_of_transmission_target_negative_direction_met FLOAT,
 transmission_target_shortage_negative_direction_mwh FLOAT,
@@ -4613,7 +4425,7 @@ CREATE TABLE  results_system_fuel_burn_limits (
 scenario_id INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
-balancing_type_horizon VARCHAR(64),
+balancing_type VARCHAR(64),
 horizon INTEGER,
 number_years_represented FLOAT,  -- based on period of last horizon timepoint
 discount_factor FLOAT, -- based on period of last horizon timepoint
@@ -4634,7 +4446,7 @@ abs_max_fuel_burn_limit_marginal_cost_per_unit FLOAT,
 fuel_burn_max_rel_overage_unit FLOAT,
 rel_dual FLOAT,
 rel_fuel_burn_limit_marginal_cost_per_unit FLOAT,
-PRIMARY KEY (scenario_id, subproblem_id, stage_id, balancing_type_horizon, horizon,
+PRIMARY KEY (scenario_id, subproblem_id, stage_id, balancing_type, horizon,
             fuel, fuel_burn_limit_ba)
 );
 
@@ -4697,6 +4509,7 @@ stage_id INTEGER,
 discount_factor FLOAT,
 number_years_represented FLOAT,
 local_capacity_requirement_mw FLOAT,
+project_contribution_mw FLOAT,
 local_capacity_provision_mw FLOAT,
 local_capacity_shortage_mw FLOAT,
 dual FLOAT,
@@ -5308,7 +5121,7 @@ FROM results_costs_by_period_load_zone
 GROUP BY scenario_id, subproblem_id, stage_id, period, spinup_or_lookahead) AS a
 
 LEFT JOIN
-results_project_prm_deliverability_group_capacity_and_costs_agg as b
+results_project_deliverability_groups_agg as b
 ON (a.scenario_id = b.scenario_id
     AND a.subproblem_id = b.subproblem_id
     AND a.stage_id = b.stage_id

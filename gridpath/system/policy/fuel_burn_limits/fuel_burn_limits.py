@@ -237,7 +237,7 @@ def write_model_inputs(
             [
                 "fuel",
                 "fuel_burn_limit_ba",
-                "balancing_type_horizon",
+                "balancing_type",
                 "horizon",
                 "fuel_burn_min_unit",
                 "fuel_burn_max_unit",

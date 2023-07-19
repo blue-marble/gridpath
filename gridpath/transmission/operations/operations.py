@@ -24,12 +24,11 @@ from pyomo.environ import Expression, value
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import get_required_subtype_modules
-from gridpath.auxiliary.db_interface import setup_results_import
-from gridpath.project.operations.common_functions import load_operational_type_modules
+from gridpath.common_functions import create_results_df
 from gridpath.transmission.operations.common_functions import (
     load_tx_operational_type_modules,
 )
-from gridpath.transmission.operations.consolidate_results import TX_OPERATIONS_DF
+from gridpath.transmission import TX_TIMEPOINT_DF
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -129,38 +128,32 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return: Nothing
     """
 
-    # First create the dataframe with just power provision
-    main_df = pd.DataFrame(
-        columns=[
-            "transmission_line",
-            "timepoint",
-            "period",
-            "tx_operational_type",
-            "timepoint_weight",
-            "number_of_hours_in_timepoint",
-            "load_zone_from",
-            "load_zone_to",
-            "transmission_flow_mw",
-            "transmission_losses_lz_from",
-            "transmission_losses_lz_to",
-        ],
-        data=[
-            [
-                tx,
-                tmp,
-                m.period[tmp],
-                m.tx_operational_type[tx],
-                m.tmp_weight[tmp],
-                m.hrs_in_tmp[tmp],
-                m.load_zone_from[tx],
-                m.load_zone_to[tx],
-                value(m.Transmit_Power_MW[tx, tmp]),
-                value(m.Tx_Losses_LZ_From_MW[tx, tmp]),
-                value(m.Tx_Losses_LZ_To_MW[tx, tmp]),
-            ]
-            for (tx, tmp) in m.TX_OPR_TMPS
-        ],
-    ).set_index(["transmission_line", "timepoint"])
+    results_columns = [
+        "transmission_flow_mw",
+        "transmission_losses_lz_from",
+        "transmission_losses_lz_to",
+    ]
+
+    data = [
+        [
+            tx,
+            tmp,
+            value(m.Transmit_Power_MW[tx, tmp]),
+            value(m.Tx_Losses_LZ_From_MW[tx, tmp]),
+            value(m.Tx_Losses_LZ_To_MW[tx, tmp]),
+        ]
+        for (tx, tmp) in m.TX_OPR_TMPS
+    ]
+
+    results_df = create_results_df(
+        index_columns=["transmission_line", "period"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    for c in results_columns:
+        getattr(d, TX_TIMEPOINT_DF)[c] = None
+    getattr(d, TX_TIMEPOINT_DF).update(results_df)
 
     required_operational_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
@@ -184,16 +177,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 optype_module
             ].add_to_operations_results(mod=m)
             for column in results_columns:
-                if column not in main_df:
-                    main_df[column] = None
-            main_df.update(optype_df)
-
-    main_df.sort_index(inplace=True)
-
-    # Add the dataframe to the dynamic components to pass to costs.py
-    # We'll print it after we pass it to costs.py and other modules
-    # This is the first module that adds to the dataframe
-    setattr(d, TX_OPERATIONS_DF, main_df)
+                if column not in getattr(d, TX_TIMEPOINT_DF):
+                    getattr(d, TX_TIMEPOINT_DF)[column] = None
+            getattr(d, TX_TIMEPOINT_DF).update(optype_df)
 
 
 # Database
@@ -247,14 +233,14 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
             FROM (
                 (SELECT DISTINCT scenario_id, subproblem_id, stage_id, period, 
                 load_zone_to AS load_zone, spinup_or_lookahead
-                FROM results_transmission_operations
+                FROM results_transmission_timepoint
                 WHERE scenario_id = ?) AS dummy
                 
                 LEFT JOIN 
                 
                 (SELECT DISTINCT scenario_id, subproblem_id, stage_id, period, 
                 load_zone_from AS load_zone, spinup_or_lookahead
-                FROM results_transmission_operations
+                FROM results_transmission_timepoint
                 WHERE scenario_id = ?) AS dummy2
                 USING (scenario_id, subproblem_id, stage_id, period, load_zone,
                 spinup_or_lookahead)
@@ -267,14 +253,14 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
             FROM (
                 (SELECT DISTINCT scenario_id, subproblem_id, stage_id, period, 
                 load_zone_from AS load_zone, spinup_or_lookahead
-                FROM results_transmission_operations
+                FROM results_transmission_timepoint
                 WHERE scenario_id = ?) AS dummy3
                 
                 LEFT JOIN 
                 
                 (SELECT DISTINCT scenario_id, subproblem_id, stage_id, period, 
                 load_zone_to AS load_zone, spinup_or_lookahead
-                FROM results_transmission_operations
+                FROM results_transmission_timepoint
                 WHERE scenario_id = ?) AS dummy4
                 USING (scenario_id, subproblem_id, stage_id, period, load_zone,
                 spinup_or_lookahead)
@@ -291,7 +277,7 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
         load_zone_to AS load_zone, spinup_or_lookahead,
         SUM(transmission_flow_mw * timepoint_weight * 
         number_of_hours_in_timepoint) AS imports_pos_dir
-        FROM results_transmission_operations
+        FROM results_transmission_timepoint
         WHERE transmission_flow_mw > 0
         AND scenario_id = ?
         GROUP BY scenario_id, subproblem_id, stage_id, period, load_zone, 
@@ -306,7 +292,7 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
         load_zone_from AS load_zone, spinup_or_lookahead,
         SUM(transmission_flow_mw * timepoint_weight * 
         number_of_hours_in_timepoint) AS exports_pos_dir
-        FROM results_transmission_operations
+        FROM results_transmission_timepoint
         WHERE transmission_flow_mw > 0
         AND scenario_id = ?
         GROUP BY scenario_id, subproblem_id, stage_id, period, load_zone, 
@@ -321,7 +307,7 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
         load_zone_from AS load_zone, spinup_or_lookahead,
         -SUM(transmission_flow_mw * timepoint_weight * 
         number_of_hours_in_timepoint) AS imports_neg_dir
-        FROM results_transmission_operations
+        FROM results_transmission_timepoint
         WHERE transmission_flow_mw < 0
         AND scenario_id = ?
         GROUP BY scenario_id, subproblem_id, stage_id, period, load_zone,
@@ -336,7 +322,7 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
         load_zone_to AS load_zone, spinup_or_lookahead,
         -SUM(transmission_flow_mw * timepoint_weight * 
         number_of_hours_in_timepoint) AS exports_neg_dir
-        FROM results_transmission_operations
+        FROM results_transmission_timepoint
         WHERE transmission_flow_mw < 0
         AND scenario_id = ?
         GROUP BY scenario_id, subproblem_id, stage_id, period, load_zone,

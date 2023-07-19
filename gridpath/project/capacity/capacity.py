@@ -30,10 +30,11 @@ from gridpath.auxiliary.auxiliary import (
     join_sets,
 )
 from gridpath.auxiliary.dynamic_components import capacity_type_operational_period_sets
+from gridpath.common_functions import create_results_df
 from gridpath.project.capacity.common_functions import (
     load_project_capacity_type_modules,
 )
-from gridpath.project.capacity.consolidate_results import PROJECT_CAPACITY_DF
+from gridpath.project import PROJECT_PERIOD_DF
 import gridpath.project.capacity.capacity_types as cap_type_init
 
 
@@ -310,40 +311,39 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    # First create the dataframe with main capacity results
-    main_df = pd.DataFrame(
-        columns=[
-            "project",
-            "period",
-            "capacity_type",
-            "technology",
-            "load_zone",
-            "capacity_mw",
-            "hyb_gen_capacity_mw",
-            "hyb_stor_capacity_mw",
-            "energy_capacity_mwh",
-            "fuel_prod_capacity_fuelunitperhour",
-            "fuel_rel_capacity_fuelunitperhour",
-            "fuel_stor_capacity_fuelunit",
-        ],
-        data=[
-            [
-                prj,
-                prd,
-                m.capacity_type[prj],
-                m.technology[prj],
-                m.load_zone[prj],
-                value(m.Capacity_MW[prj, prd]),
-                value(m.Hyb_Gen_Capacity_MW[prj, prd]),
-                value(m.Hyb_Stor_Capacity_MW[prj, prd]),
-                value(m.Energy_Capacity_MWh[prj, prd]),
-                value(m.Fuel_Production_Capacity_FuelUnitPerHour[prj, prd]),
-                value(m.Fuel_Release_Capacity_FuelUnitPerHour[prj, prd]),
-                value(m.Fuel_Storage_Capacity_FuelUnit[prj, prd]),
-            ]
-            for (prj, prd) in m.PRJ_OPR_PRDS
-        ],
-    ).set_index(["project", "period"])
+
+    results_columns = [
+        "capacity_mw",
+        "hyb_gen_capacity_mw",
+        "hyb_stor_capacity_mw",
+        "energy_capacity_mwh",
+        "fuel_prod_capacity_fuelunitperhour",
+        "fuel_rel_capacity_fuelunitperhour",
+        "fuel_stor_capacity_fuelunit",
+    ]
+    data = [
+        [
+            prj,
+            prd,
+            value(m.Capacity_MW[prj, prd]),
+            value(m.Hyb_Gen_Capacity_MW[prj, prd]),
+            value(m.Hyb_Stor_Capacity_MW[prj, prd]),
+            value(m.Energy_Capacity_MWh[prj, prd]),
+            value(m.Fuel_Production_Capacity_FuelUnitPerHour[prj, prd]),
+            value(m.Fuel_Release_Capacity_FuelUnitPerHour[prj, prd]),
+            value(m.Fuel_Storage_Capacity_FuelUnit[prj, prd]),
+        ]
+        for (prj, prd) in m.PRJ_OPR_PRDS
+    ]
+    results_df = create_results_df(
+        index_columns=["project", "timepoint"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    for c in results_columns:
+        getattr(d, PROJECT_PERIOD_DF)[c] = None
+    getattr(d, PROJECT_PERIOD_DF).update(results_df)
 
     # Module-specific capacity results
     required_capacity_modules = get_required_subtype_modules(
@@ -363,16 +363,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 op_m
             ].add_to_project_period_results(scenario_directory, subproblem, stage, m, d)
             for column in results_columns:
-                if column not in main_df:
-                    main_df[column] = None
-            main_df.update(optype_df)
-
-    main_df.sort_index(inplace=True)
-
-    # Add the dataframe to the dynamic components to pass to costs.py
-    # We'll print it after we pass it to other modules
-    # This is the first module that adds to the dataframe
-    setattr(d, PROJECT_CAPACITY_DF, main_df)
+                if column not in getattr(d, PROJECT_PERIOD_DF):
+                    getattr(d, PROJECT_PERIOD_DF)[column] = None
+            getattr(d, PROJECT_PERIOD_DF).update(optype_df)
 
 
 def summarize_results(scenario_directory, subproblem, stage):
@@ -403,7 +396,7 @@ def summarize_results(scenario_directory, subproblem, stage):
             str(subproblem),
             str(stage),
             "results",
-            "project_capacity.csv",
+            "project_period.csv",
         )
     )
 

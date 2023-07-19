@@ -37,6 +37,8 @@ from pyomo.environ import (
 from db.common_functions import spin_on_database_lock, spin_on_database_lock_generic
 from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.auxiliary.dynamic_components import prm_balance_provision_components
+from gridpath.common_functions import create_results_df
+from gridpath.system.reliability.prm import PRM_ZONE_PRD_DF
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -437,36 +439,31 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "capacity_contribution_transfers_by_prm_zone.csv",
-        ),
-        "w",
-        newline="",
-    ) as results_file:
-        writer = csv.writer(results_file)
-        writer.writerow(
-            [
-                "prm_zone",
-                "period",
-                "capacity_contribution_transferred_from_mw",
-                "capacity_contribution_transferred_to_mw",
-            ]
-        )
-        for z, p in m.PRM_ZONE_PERIODS_WITH_REQUIREMENT:
-            writer.writerow(
-                [
-                    z,
-                    p,
-                    value(m.Total_Transfers_from_PRM_Zone[z, p]),
-                    value(m.Total_Transfers_to_PRM_Zone[z, p]),
-                ]
-            )
 
+    results_columns = [
+        "capacity_contribution_transferred_from_mw",
+        "capacity_contribution_transferred_to_mw",
+    ]
+    data = [
+        [
+            z,
+            p,
+            value(m.Total_Transfers_from_PRM_Zone[z, p]),
+            value(m.Total_Transfers_to_PRM_Zone[z, p]),
+        ]
+        for (z, p) in m.PRM_ZONE_PERIODS_WITH_REQUIREMENT
+    ]
+    results_df = create_results_df(
+        index_columns=["prm_zone", "period"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    for c in results_columns:
+        getattr(d, PRM_ZONE_PRD_DF)[c] = None
+    getattr(d, PRM_ZONE_PRD_DF).update(results_df)
+
+    # PRM zone to PRM zone capacity transfers
     with open(
         os.path.join(
             scenario_directory,
@@ -513,71 +510,7 @@ def import_results_into_database(
     :return:
     """
     if not quiet:
-        print("system prm capacity contribution transfers")
-    # PRM contributions transferred from the PRM zone
-    # Prior results should have already been cleared by
-    # system.prm.aggregate_project_simple_prm_contribution,
-    # then elcc_simple_mw imported
-    # Update results_system_prm with NULL for surface contribution just in
-    # case (instead of clearing prior results)
-    nullify_sql = """
-        UPDATE results_system_prm
-        SET capacity_contribution_transferred_from_mw = NULL, 
-        capacity_contribution_transferred_from_mw = NULL
-        WHERE scenario_id = ?
-        AND subproblem_id = ?
-        AND stage_id = ?;
-        """
-    spin_on_database_lock(
-        conn=db,
-        cursor=c,
-        sql=nullify_sql,
-        data=(scenario_id, subproblem, stage),
-        many=False,
-    )
-
-    results = []
-    with open(
-        os.path.join(
-            results_directory, "capacity_contribution_transfers_by_prm_zone.csv"
-        ),
-        "r",
-    ) as surface_file:
-        reader = csv.reader(surface_file)
-
-        next(reader)  # skip header
-        for row in reader:
-            prm_zone = row[0]
-            period = row[1]
-            transfers_from = row[2]
-            transfers_to = row[3]
-
-            results.append(
-                (
-                    transfers_from,
-                    transfers_to,
-                    scenario_id,
-                    prm_zone,
-                    period,
-                    subproblem,
-                    stage,
-                )
-            )
-
-    update_sql = """
-        UPDATE results_system_prm
-        SET capacity_contribution_transferred_from_mw = ?, 
-        capacity_contribution_transferred_to_mw = ?
-        WHERE scenario_id = ?
-        AND prm_zone = ?
-        AND period = ?
-        AND subproblem_id = ?
-        AND stage_id = ?
-        """
-    spin_on_database_lock(conn=db, cursor=c, sql=update_sql, data=results)
-
-    if not quiet:
-        print("results capacity transfers")
+        print("PRM capacity transfers")
     # Delete prior results and create temporary import table for ordering
     setup_results_import(
         conn=db,

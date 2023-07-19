@@ -20,7 +20,6 @@ import csv
 import os.path
 from pyomo.environ import Param, Set, Expression, value
 
-from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import (
     get_required_subtype_modules,
     cursor_to_df,
@@ -29,10 +28,11 @@ from gridpath.auxiliary.db_interface import (
     update_prj_zone_column,
     determine_table_subset_by_start_and_column,
 )
+from gridpath.common_functions import create_results_df
 from gridpath.project.operations.common_functions import load_operational_type_modules
-from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.auxiliary.validations import write_validation_to_database, validate_idxs
 import gridpath.project.operations.operational_types as op_type_init
+from gridpath.project import PROJECT_TIMEPOINT_DF
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -274,54 +274,36 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    # TODO: only export for timepoints in the energy target
-    with open(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "energy_target_by_project.csv",
-        ),
-        "w",
-        newline="",
-    ) as energy_target_results_file:
-        writer = csv.writer(energy_target_results_file)
-        writer.writerow(
-            [
-                "project",
-                "load_zone",
-                "energy_target_zone",
-                "timepoint",
-                "period",
-                "horizon",
-                "timepoint_weight",
-                "number_of_hours_in_timepoint",
-                "technology",
-                "scheduled_energy_target_energy_mw",
-                "scheduled_curtailment_mw",
-                "subhourly_energy_target_energy_delivered_mw",
-                "subhourly_curtailment_mw",
-            ]
-        )
-        for p, tmp in m.ENERGY_TARGET_PRJ_OPR_TMPS:
-            writer.writerow(
-                [
-                    p,
-                    m.load_zone[p],
-                    m.energy_target_zone[p],
-                    tmp,
-                    m.period[tmp],
-                    m.horizon[tmp, m.balancing_type_project[p]],
-                    m.tmp_weight[tmp],
-                    m.hrs_in_tmp[tmp],
-                    m.technology[p],
-                    value(m.Scheduled_Energy_Target_Energy_MW[p, tmp]),
-                    value(m.Scheduled_Curtailment_MW[p, tmp]),
-                    value(m.Subhourly_Energy_Target_Energy_MW[p, tmp]),
-                    value(m.Subhourly_Curtailment_MW[p, tmp]),
-                ]
-            )
+
+    results_columns = [
+        "energy_target_zone",
+        "scheduled_energy_target_energy_mw",
+        "scheduled_curtailment_mw",
+        "subhourly_energy_target_energy_delivered_mw",
+        "subhourly_curtailment_mw",
+    ]
+    data = [
+        [
+            prj,
+            tmp,
+            m.energy_target_zone[prj],
+            value(m.Scheduled_Energy_Target_Energy_MW[prj, tmp]),
+            value(m.Scheduled_Curtailment_MW[prj, tmp]),
+            value(m.Subhourly_Energy_Target_Energy_MW[prj, tmp]),
+            value(m.Subhourly_Curtailment_MW[prj, tmp]),
+        ]
+        for (prj, tmp) in m.ENERGY_TARGET_PRJ_OPR_TMPS
+    ]
+
+    results_df = create_results_df(
+        index_columns=["project", "timepoint"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    for c in results_columns:
+        getattr(d, PROJECT_TIMEPOINT_DF)[c] = None
+    getattr(d, PROJECT_TIMEPOINT_DF).update(results_df)
 
 
 # Database
@@ -431,112 +413,6 @@ def write_model_inputs(
     ) as projects_file_out:
         writer = csv.writer(projects_file_out, delimiter="\t", lineterminator="\n")
         writer.writerows(new_rows)
-
-
-def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    """
-
-    :param scenario_id:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-    # REC provision by project and timepoint
-    if not quiet:
-        print("project recs")
-    # Delete prior results and create temporary import table for ordering
-    setup_results_import(
-        conn=db,
-        cursor=c,
-        table="results_project_period_energy_target",
-        scenario_id=scenario_id,
-        subproblem=subproblem,
-        stage=stage,
-    )
-
-    # Load results into the temporary table
-    results = []
-    with open(
-        os.path.join(results_directory, "energy_target_by_project.csv"), "r"
-    ) as energy_target_file:
-        reader = csv.reader(energy_target_file)
-
-        next(reader)  # skip header
-        for row in reader:
-            project = row[0]
-            load_zone = row[1]
-            energy_target_zone = row[2]
-            timepoint = row[3]
-            period = row[4]
-            horizon = row[5]
-            timepoint_weight = row[6]
-            hours_in_tmp = row[7]
-            technology = row[8]
-            scheduled_energy = row[9]
-            scheduled_curtailment = row[10]
-            subhourly_energy = row[11]
-            subhourly_curtailment = row[12]
-
-            results.append(
-                (
-                    scenario_id,
-                    project,
-                    period,
-                    subproblem,
-                    stage,
-                    horizon,
-                    timepoint,
-                    timepoint_weight,
-                    hours_in_tmp,
-                    load_zone,
-                    energy_target_zone,
-                    technology,
-                    scheduled_energy,
-                    scheduled_curtailment,
-                    subhourly_energy,
-                    subhourly_curtailment,
-                )
-            )
-
-    insert_temp_sql = """
-        INSERT INTO 
-        temp_results_project_period_energy_target{}
-         (scenario_id, project, period, subproblem_id, stage_id, 
-         horizon, timepoint, timepoint_weight, 
-         number_of_hours_in_timepoint, 
-         load_zone, energy_target_zone, technology, 
-         scheduled_energy_target_energy_mw, scheduled_curtailment_mw, 
-         subhourly_energy_target_energy_delivered_mw, subhourly_curtailment_mw)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-         """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
-
-    # Insert sorted results into permanent results table
-    insert_sql = """
-        INSERT INTO results_project_period_energy_target
-        (scenario_id, project, period, subproblem_id, stage_id, 
-        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint, 
-        load_zone, energy_target_zone, technology, 
-        scheduled_energy_target_energy_mw, scheduled_curtailment_mw, 
-        subhourly_energy_target_energy_delivered_mw, subhourly_curtailment_mw)
-        SELECT
-        scenario_id, project, period, subproblem_id, stage_id,
-        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint, 
-        load_zone, energy_target_zone, technology, 
-        scheduled_energy_target_energy_mw, scheduled_curtailment_mw, 
-        subhourly_energy_target_energy_delivered_mw, subhourly_curtailment_mw
-        FROM temp_results_project_period_energy_target{}
-         ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;
-         """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)
 
 
 def process_results(db, c, scenario_id, subscenarios, quiet):

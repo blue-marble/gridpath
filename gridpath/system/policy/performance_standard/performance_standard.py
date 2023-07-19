@@ -22,6 +22,9 @@ import pandas as pd
 
 from pyomo.environ import Set, Param, NonNegativeReals, value
 
+from gridpath.common_functions import create_results_df
+from gridpath.system.policy.performance_standard import PERFORMANCE_STANDARD_Z_PRD_DF
+
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
@@ -160,3 +163,35 @@ def write_model_inputs(
 
         for row in performance_standard:
             writer.writerow(row)
+
+
+def export_results(scenario_directory, subproblem, stage, m, d):
+    """
+
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :param m:
+    :param d:
+    :return:
+    """
+    results_columns = [
+        "performance_standard_tco2_per_mwh",
+    ]
+    data = [
+        [
+            z,
+            p,
+            float(m.performance_standard[z, p]),
+        ]
+        for (z, p) in m.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD
+    ]
+    results_df = create_results_df(
+        index_columns=["performance_standard_zone", "period"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    for c in results_columns:
+        getattr(d, PERFORMANCE_STANDARD_Z_PRD_DF)[c] = None
+    getattr(d, PERFORMANCE_STANDARD_Z_PRD_DF).update(results_df)

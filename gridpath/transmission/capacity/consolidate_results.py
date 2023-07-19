@@ -19,15 +19,15 @@
 
 import os.path
 
-TX_CAPACITY_DF = "transmission_capacity_df"
+from gridpath.transmission import TX_PERIOD_DF
 
 
 def export_results(scenario_directory, subproblem, stage, m, d):
     """
-    Export all results from the PROJECT_CAPACITY_DF that various modules
+    Export all results from the TX_PERIOD_DF that various modules
     have added to
     """
-    tx_cap_df = getattr(d, TX_CAPACITY_DF)
+    tx_cap_df = getattr(d, TX_PERIOD_DF)
 
     tx_cap_df.to_csv(
         os.path.join(
@@ -35,7 +35,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             str(subproblem),
             str(stage),
             "results",
-            "transmission_capacity.csv",
+            "transmission_period.csv",
         ),
         sep=",",
         index=True,

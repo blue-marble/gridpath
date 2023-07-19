@@ -27,9 +27,10 @@ import sqlite3
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import get_required_subtype_modules
+from gridpath.common_functions import create_results_df
 from gridpath.project.operations.common_functions import load_operational_type_modules
 import gridpath.project.operations.operational_types as op_type_init
-from gridpath.project.operations.consolidate_results import PROJECT_OPERATIONS_DF
+from gridpath.project import PROJECT_TIMEPOINT_DF
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -109,38 +110,26 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     Nothing
     """
 
-    # First create the dataframe with just power provision
-    main_df = pd.DataFrame(
-        columns=[
-            "project",
-            "timepoint",
-            "period",
-            "horizon",
-            "operational_type",
-            "balancing_type",
-            "timepoint_weight",
-            "number_of_hours_in_timepoint",
-            "load_zone",
-            "technology",
-            "power_mw",
-        ],
-        data=[
-            [
-                prj,
-                tmp,
-                m.period[tmp],
-                m.horizon[tmp, m.balancing_type_project[prj]],
-                m.operational_type[prj],
-                m.balancing_type_project[prj],
-                m.tmp_weight[tmp],
-                m.hrs_in_tmp[tmp],
-                m.load_zone[prj],
-                m.technology[prj],
-                value(m.Power_Provision_MW[prj, tmp]),
-            ]
-            for (prj, tmp) in m.PRJ_OPR_TMPS
-        ],
-    ).set_index(["project", "timepoint"])
+    results_columns = [
+        "power_mw",
+    ]
+    data = [
+        [
+            prj,
+            tmp,
+            value(m.Power_Provision_MW[prj, tmp]),
+        ]
+        for (prj, tmp) in m.PRJ_OPR_TMPS
+    ]
+    results_df = create_results_df(
+        index_columns=["project", "timepoint"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    for c in results_columns:
+        getattr(d, PROJECT_TIMEPOINT_DF)[c] = None
+    getattr(d, PROJECT_TIMEPOINT_DF).update(results_df)
 
     required_operational_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
@@ -155,24 +144,15 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 
     for optype_module in imported_operational_modules:
         if hasattr(
-            imported_operational_modules[optype_module], "add_to_dispatch_results"
+            imported_operational_modules[optype_module], "add_to_prj_tmp_results"
         ):
-            # TODO: make sure the order of export results is the same between
-            #  this module and the optype modules
             results_columns, optype_df = imported_operational_modules[
                 optype_module
-            ].add_to_dispatch_results(mod=m)
+            ].add_to_prj_tmp_results(mod=m)
             for column in results_columns:
-                if column not in main_df:
-                    main_df[column] = None
-            main_df.update(optype_df)
-
-    main_df.sort_index(inplace=True)
-
-    # Add the dataframe to the dynamic components to pass to costs.py
-    # We'll print it after we pass it to costs.py and other modules
-    # This is the first module that adds to the dataframe
-    setattr(d, PROJECT_OPERATIONS_DF, main_df)
+                if column not in getattr(d, PROJECT_TIMEPOINT_DF):
+                    getattr(d, PROJECT_TIMEPOINT_DF)[column] = None
+            getattr(d, PROJECT_TIMEPOINT_DF).update(optype_df)
 
 
 def summarize_results(scenario_directory, subproblem, stage):
@@ -205,7 +185,7 @@ def summarize_results(scenario_directory, subproblem, stage):
             str(subproblem),
             str(stage),
             "results",
-            "project_operations.csv",
+            "project_timepoint.csv",
         )
     )
 
@@ -308,7 +288,7 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
         scenario_id, subproblem_id, stage_id, period, timepoint, 
         timepoint_weight, number_of_hours_in_timepoint, spinup_or_lookahead,
         load_zone, technology, sum(power_mw) AS power_mw
-        FROM results_project_operations
+        FROM results_project_timepoint
         WHERE scenario_id = ?
         GROUP BY subproblem_id, stage_id, timepoint, 
         load_zone, technology

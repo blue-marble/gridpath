@@ -21,12 +21,11 @@ import os.path
 import pandas as pd
 from pyomo.environ import Set, Param, Constraint, NonNegativeReals, Expression, value
 
-from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import get_required_subtype_modules
 from gridpath.project.capacity.common_functions import (
     load_project_capacity_type_modules,
 )
-from gridpath.auxiliary.db_interface import setup_results_import
+from gridpath.auxiliary.db_interface import import_csv
 import gridpath.project.capacity.capacity_types as cap_type_init
 
 
@@ -337,7 +336,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 str(subproblem),
                 str(stage),
                 "results",
-                "capacity_groups.csv",
+                "project_group_capacity.csv",
             ),
             "w",
             newline="",
@@ -347,15 +346,15 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 [
                     "capacity_group",
                     "period",
-                    "new_capacity",
-                    "total_capacity",
+                    "group_new_capacity",
+                    "group_total_capacity",
                     "capacity_group_new_capacity_min",
                     "capacity_group_new_capacity_max",
                     "capacity_group_total_capacity_min",
                     "capacity_group_total_capacity_max",
                 ]
             )
-            for grp, prd in m.CAPACITY_GROUP_PERIODS:
+            for grp, prd in sorted(m.CAPACITY_GROUP_PERIODS):
                 writer.writerow(
                     [
                         grp,
@@ -505,68 +504,17 @@ def save_duals(scenario_directory, subproblem, stage, instance, dynamic_componen
 def import_results_into_database(
     scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
+    which_results = "project_group_capacity"
     # Import only if a results-file was exported
-    results_file = os.path.join(results_directory, "capacity_groups.csv")
+    results_file = os.path.join(results_directory, f"{which_results}.csv")
     if os.path.exists(results_file):
-        if not quiet:
-            print("group capacity")
-
-        # Delete prior results and create temporary import table for ordering
-        setup_results_import(
+        import_csv(
             conn=db,
             cursor=c,
-            table="results_project_group_capacity",
             scenario_id=scenario_id,
             subproblem=subproblem,
             stage=stage,
+            quiet=quiet,
+            results_directory=results_directory,
+            which_results=which_results,
         )
-
-        # Load results into the temporary table
-        results = []
-        with open(results_file, "r") as f:
-            reader = csv.reader(f)
-
-            next(reader)  # skip header
-            for row in reader:
-                results.append((scenario_id, subproblem, stage) + tuple(row))
-
-        insert_temp_sql = """
-            INSERT INTO temp_results_project_group_capacity{}
-            (scenario_id, subproblem_id, stage_id, 
-            capacity_group, period, 
-            group_new_capacity, group_total_capacity,
-            capacity_group_new_capacity_min, 
-            capacity_group_new_capacity_max, 
-            capacity_group_total_capacity_min, 
-            capacity_group_total_capacity_max)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-            """.format(
-            scenario_id
-        )
-        spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
-
-        # Insert sorted results into permanent results table
-        insert_sql = """
-            INSERT INTO results_project_group_capacity
-            (scenario_id, subproblem_id, stage_id, 
-            capacity_group, period, 
-            group_new_capacity, group_total_capacity,
-            capacity_group_new_capacity_min, 
-            capacity_group_new_capacity_max, 
-            capacity_group_total_capacity_min, 
-            capacity_group_total_capacity_max)
-            SELECT
-            scenario_id, subproblem_id, stage_id, 
-            capacity_group, period, 
-            group_new_capacity, group_total_capacity,
-            capacity_group_new_capacity_min, 
-            capacity_group_new_capacity_max, 
-            capacity_group_total_capacity_min, 
-            capacity_group_total_capacity_max
-            FROM temp_results_project_group_capacity{}
-             ORDER BY scenario_id, subproblem_id, stage_id,
-             capacity_group, period;
-            """.format(
-            scenario_id
-        )
-        spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)
