@@ -952,21 +952,21 @@ def save_duals(scenario_directory, subproblem, stage, instance, dynamic_componen
             )
 
     # for index in constraint_object:
-        # try:
-        #     duals_writer.writerow(
-        #         list(index) + [instance.dual[constraint_object[index]]]
-        #     )
-        # # We get an error when trying to export duals with CPLEX
-        # # when solving MIPs, so catch it here and ignore to avoid
-        # # breaking the script, but throw a warning
-        # except KeyError:
-        #     warnings.warn(
-        #         """
-        #     KeyError caught when saving duals. Duals were not exported.
-        #     This is expected if solving a MIP with CPLEX,
-        #     not otherwise.
-        #     """
-        #     )
+    # try:
+    #     duals_writer.writerow(
+    #         list(index) + [instance.dual[constraint_object[index]]]
+    #     )
+    # # We get an error when trying to export duals with CPLEX
+    # # when solving MIPs, so catch it here and ignore to avoid
+    # # breaking the script, but throw a warning
+    # except KeyError:
+    #     warnings.warn(
+    #         """
+    #     KeyError caught when saving duals. Duals were not exported.
+    #     This is expected if solving a MIP with CPLEX,
+    #     not otherwise.
+    #     """
+    #     )
 
 
 def summarize_results(scenario_directory, subproblem, stage, parsed_arguments):
