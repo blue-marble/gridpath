@@ -120,11 +120,11 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             else None,
             (
                 m.dual[getattr(m, "Horizon_Energy_Target_Constraint")[z, bt, h]]
+                / m.hrz_objective_coefficient[bt, h]
                 if (z, bt, h)
                 in [idx for idx in getattr(m, "Horizon_Energy_Target_Constraint")]
                 else None
-            )
-            / m.hrz_objective_coefficient[bt, h],
+            ),
         ]
         for (z, bt, h) in m.ENERGY_TARGET_ZONE_BLN_TYPE_HRZS_WITH_ENERGY_TARGET
     ]
@@ -181,8 +181,9 @@ def summarize_results(scenario_directory, subproblem, stage):
     )
 
     results_df.set_index(
-        ["energy_target_zone", "balancing_type", "horizon"], inplace=True,
-        verify_integrity=True
+        ["energy_target_zone", "balancing_type", "horizon"],
+        inplace=True,
+        verify_integrity=True,
     )
 
     # Calculate:

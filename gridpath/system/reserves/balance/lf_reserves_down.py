@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -53,15 +53,14 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return:
     """
     generic_export_results(
-        scenario_directory,
-        subproblem,
-        stage,
-        m,
-        d,
-        "lf_reserves_down_violation.csv",
-        "lf_reserves_down_violation_mw",
-        "LF_RESERVES_DOWN_ZONES",
-        "LF_Reserves_Down_Violation_MW_Expression",
+        scenario_directory=scenario_directory,
+        subproblem=subproblem,
+        stage=stage,
+        m=m,
+        d=d,
+        reserve_type="lf_reserves_down",
+        reserve_zone_set="LF_RESERVES_DOWN_ZONES",
+        reserve_violation_expression="LF_Reserves_Down_Violation_MW_Expression",
     )
 
 
@@ -86,9 +85,6 @@ def import_results_into_database(
     :param quiet:
     :return:
     """
-    if not quiet:
-        print("system lf reserves down balance")
-
     generic_import_results_to_database(
         scenario_id=scenario_id,
         subproblem=subproblem,
@@ -97,4 +93,5 @@ def import_results_into_database(
         db=db,
         results_directory=results_directory,
         reserve_type="lf_reserves_down",
+        quiet=quiet,
     )

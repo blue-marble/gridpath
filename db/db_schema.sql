@@ -4179,8 +4179,8 @@ final_net_buy_power FLOAT,
 PRIMARY KEY (scenario_id, load_zone, market, subproblem_id, stage_id, timepoint)
 );
 
-DROP TABLE IF EXISTS results_system_lf_reserves_up_balance;
-CREATE TABLE results_system_lf_reserves_up_balance (
+DROP TABLE IF EXISTS results_system_lf_reserves_up;
+CREATE TABLE results_system_lf_reserves_up (
 scenario_id INTEGER,
 lf_reserves_up_ba VARCHAR(32),
 period INTEGER,
@@ -4198,8 +4198,8 @@ marginal_price_per_mw FLOAT,
 PRIMARY KEY (scenario_id, lf_reserves_up_ba, subproblem_id, stage_id, timepoint)
 );
 
-DROP TABLE IF EXISTS results_system_lf_reserves_down_balance;
-CREATE TABLE results_system_lf_reserves_down_balance (
+DROP TABLE IF EXISTS results_system_lf_reserves_down;
+CREATE TABLE results_system_lf_reserves_down (
 scenario_id INTEGER,
 lf_reserves_down_ba VARCHAR(32),
 period INTEGER,
@@ -4217,8 +4217,8 @@ marginal_price_per_mw FLOAT,
 PRIMARY KEY (scenario_id, lf_reserves_down_ba, subproblem_id, stage_id, timepoint)
 );
 
-DROP TABLE IF EXISTS results_system_regulation_up_balance;
-CREATE TABLE results_system_regulation_up_balance (
+DROP TABLE IF EXISTS results_system_regulation_up;
+CREATE TABLE results_system_regulation_up (
 scenario_id INTEGER,
 regulation_up_ba VARCHAR(32),
 period INTEGER,
@@ -4236,8 +4236,8 @@ marginal_price_per_mw FLOAT,
 PRIMARY KEY (scenario_id, regulation_up_ba, subproblem_id, stage_id, timepoint)
 );
 
-DROP TABLE IF EXISTS results_system_regulation_down_balance;
-CREATE TABLE results_system_regulation_down_balance (
+DROP TABLE IF EXISTS results_system_regulation_down;
+CREATE TABLE results_system_regulation_down (
 scenario_id INTEGER,
 regulation_down_ba VARCHAR(32),
 period INTEGER,
@@ -4255,8 +4255,8 @@ marginal_price_per_mw FLOAT,
 PRIMARY KEY (scenario_id, regulation_down_ba, subproblem_id, stage_id, timepoint)
 );
 
-DROP TABLE IF EXISTS results_system_frequency_response_balance;
-CREATE TABLE results_system_frequency_response_balance (
+DROP TABLE IF EXISTS results_system_frequency_response;
+CREATE TABLE results_system_frequency_response (
 scenario_id INTEGER,
 frequency_response_ba VARCHAR(32),
 period INTEGER,
@@ -4276,8 +4276,8 @@ PRIMARY KEY (scenario_id, frequency_response_ba, subproblem_id, stage_id, timepo
 
 -- TODO: frequency_response_partial_ba is the same as frequency_response_ba
 -- _partial included to simplify results import
-DROP TABLE IF EXISTS results_system_frequency_response_partial_balance;
-CREATE TABLE results_system_frequency_response_partial_balance (
+DROP TABLE IF EXISTS results_system_frequency_response_partial;
+CREATE TABLE results_system_frequency_response_partial (
 scenario_id INTEGER,
 frequency_response_partial_ba VARCHAR(32),
 period INTEGER,
@@ -4295,8 +4295,8 @@ marginal_price_per_mw FLOAT,
 PRIMARY KEY (scenario_id, frequency_response_partial_ba, subproblem_id, stage_id, timepoint)
 );
 
-DROP TABLE IF EXISTS results_system_spinning_reserves_balance;
-CREATE TABLE results_system_spinning_reserves_balance (
+DROP TABLE IF EXISTS results_system_spinning_reserves;
+CREATE TABLE results_system_spinning_reserves (
 scenario_id INTEGER,
 spinning_reserves_ba VARCHAR(32),
 period INTEGER,

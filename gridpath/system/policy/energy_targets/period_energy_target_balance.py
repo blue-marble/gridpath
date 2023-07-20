@@ -116,11 +116,11 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             else None,
             (
                 m.dual[getattr(m, "Period_Energy_Target_Constraint")[z, p]]
+                / m.period_objective_coefficient[p]
                 if (z, p)
                 in [idx for idx in getattr(m, "Period_Energy_Target_Constraint")]
                 else None
-            )
-            / m.period_objective_coefficient[p],
+            ),
         ]
         for (z, p) in m.ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET
     ]
