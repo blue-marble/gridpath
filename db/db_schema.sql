@@ -3595,6 +3595,15 @@ hours_in_subproblem_period FLOAT,
 capacity_cost FLOAT,
 capacity_cost_wo_spinup_or_lookahead FLOAT,
 fixed_cost FLOAT,
+min_build_power_dual FLOAT,
+max_build_power_dual FLOAT,
+min_total_power_dual FLOAT,
+max_total_power_dual FLOAT,
+min_build_energy_dual FLOAT,
+max_build_energy_dual FLOAT,
+min_total_energy_dual FLOAT,
+max_total_energy_dual FLOAT,
+
 PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
 );
 
@@ -3611,6 +3620,14 @@ capacity_group_new_capacity_min FLOAT,
 capacity_group_new_capacity_max FLOAT,
 capacity_group_total_capacity_min FLOAT,
 capacity_group_total_capacity_max FLOAT,
+capacity_group_new_max_dual FLOAT,
+capacity_group_new_min_dual FLOAT,
+capacity_group_total_max_dual FLOAT,
+capacity_group_total_min_dual FLOAT,
+capacity_group_new_max_marginal_cost FLOAT,
+capacity_group_new_min_marginal_cost FLOAT,
+capacity_group_total_max_marginal_cost FLOAT,
+capacity_group_total_min_marginal_cost FLOAT,
 PRIMARY KEY (scenario_id, subproblem_id, stage_id, capacity_group, period)
 );
 
@@ -4134,8 +4151,8 @@ net_imports_mw FLOAT,
 net_market_purchases_mw FLOAT,
 overgeneration_mw FLOAT,
 unserved_energy_mw FLOAT,
-dual FLOAT,
-marginal_price_per_mw FLOAT,
+load_balance_dual FLOAT,
+load_balance_marginal_cost_per_mw FLOAT,
 PRIMARY KEY (scenario_id, subproblem_id, stage_id, load_zone, timepoint)
 );
 
@@ -4162,8 +4179,8 @@ final_net_buy_power FLOAT,
 PRIMARY KEY (scenario_id, load_zone, market, subproblem_id, stage_id, timepoint)
 );
 
-DROP TABLE IF EXISTS results_system_lf_reserves_up_balance;
-CREATE TABLE results_system_lf_reserves_up_balance (
+DROP TABLE IF EXISTS results_system_lf_reserves_up;
+CREATE TABLE results_system_lf_reserves_up (
 scenario_id INTEGER,
 lf_reserves_up_ba VARCHAR(32),
 period INTEGER,
@@ -4181,8 +4198,8 @@ marginal_price_per_mw FLOAT,
 PRIMARY KEY (scenario_id, lf_reserves_up_ba, subproblem_id, stage_id, timepoint)
 );
 
-DROP TABLE IF EXISTS results_system_lf_reserves_down_balance;
-CREATE TABLE results_system_lf_reserves_down_balance (
+DROP TABLE IF EXISTS results_system_lf_reserves_down;
+CREATE TABLE results_system_lf_reserves_down (
 scenario_id INTEGER,
 lf_reserves_down_ba VARCHAR(32),
 period INTEGER,
@@ -4200,8 +4217,8 @@ marginal_price_per_mw FLOAT,
 PRIMARY KEY (scenario_id, lf_reserves_down_ba, subproblem_id, stage_id, timepoint)
 );
 
-DROP TABLE IF EXISTS results_system_regulation_up_balance;
-CREATE TABLE results_system_regulation_up_balance (
+DROP TABLE IF EXISTS results_system_regulation_up;
+CREATE TABLE results_system_regulation_up (
 scenario_id INTEGER,
 regulation_up_ba VARCHAR(32),
 period INTEGER,
@@ -4219,8 +4236,8 @@ marginal_price_per_mw FLOAT,
 PRIMARY KEY (scenario_id, regulation_up_ba, subproblem_id, stage_id, timepoint)
 );
 
-DROP TABLE IF EXISTS results_system_regulation_down_balance;
-CREATE TABLE results_system_regulation_down_balance (
+DROP TABLE IF EXISTS results_system_regulation_down;
+CREATE TABLE results_system_regulation_down (
 scenario_id INTEGER,
 regulation_down_ba VARCHAR(32),
 period INTEGER,
@@ -4238,8 +4255,8 @@ marginal_price_per_mw FLOAT,
 PRIMARY KEY (scenario_id, regulation_down_ba, subproblem_id, stage_id, timepoint)
 );
 
-DROP TABLE IF EXISTS results_system_frequency_response_balance;
-CREATE TABLE results_system_frequency_response_balance (
+DROP TABLE IF EXISTS results_system_frequency_response;
+CREATE TABLE results_system_frequency_response (
 scenario_id INTEGER,
 frequency_response_ba VARCHAR(32),
 period INTEGER,
@@ -4259,8 +4276,8 @@ PRIMARY KEY (scenario_id, frequency_response_ba, subproblem_id, stage_id, timepo
 
 -- TODO: frequency_response_partial_ba is the same as frequency_response_ba
 -- _partial included to simplify results import
-DROP TABLE IF EXISTS results_system_frequency_response_partial_balance;
-CREATE TABLE results_system_frequency_response_partial_balance (
+DROP TABLE IF EXISTS results_system_frequency_response_partial;
+CREATE TABLE results_system_frequency_response_partial (
 scenario_id INTEGER,
 frequency_response_partial_ba VARCHAR(32),
 period INTEGER,
@@ -4278,8 +4295,8 @@ marginal_price_per_mw FLOAT,
 PRIMARY KEY (scenario_id, frequency_response_partial_ba, subproblem_id, stage_id, timepoint)
 );
 
-DROP TABLE IF EXISTS results_system_spinning_reserves_balance;
-CREATE TABLE results_system_spinning_reserves_balance (
+DROP TABLE IF EXISTS results_system_spinning_reserves;
+CREATE TABLE results_system_spinning_reserves (
 scenario_id INTEGER,
 spinning_reserves_ba VARCHAR(32),
 period INTEGER,
@@ -4393,7 +4410,6 @@ fraction_of_energy_target_met FLOAT,
 fraction_of_energy_target_energy_curtailed FLOAT,
 energy_target_shortage_mwh FLOAT,
 dual FLOAT,
-energy_target_marginal_cost_per_mwh FLOAT,
 PRIMARY KEY (scenario_id, energy_target_zone, subproblem_id, stage_id,
              balancing_type_horizon, horizon)
 );

@@ -88,6 +88,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     results_columns = [
         "elcc_total_mw",
         "prm_shortage_mw",
+        "dual",
+        "prm_marginal_cost_per_mw",
     ]
     data = [
         [
@@ -95,6 +97,15 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             p,
             value(m.Total_PRM_from_All_Sources_Expression[z, p]),
             value(m.PRM_Shortage_MW_Expression[z, p]),
+            m.dual[getattr(m, "PRM_Constraint")[z, p]]
+            if (z, p) in [idx for idx in getattr(m, "PRM_Constraint")]
+            else None,
+            (
+                m.dual[getattr(m, "PRM_Constraint")[z, p]]
+                / m.period_objective_coefficient[p]
+                if (z, p) in [idx for idx in getattr(m, "PRM_Constraint")]
+                else None
+            ),
         ]
         for (z, p) in m.PRM_ZONE_PERIODS_WITH_REQUIREMENT
     ]
@@ -111,53 +122,3 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 
 def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
     instance.constraint_indices["PRM_Constraint"] = ["prm_zone", "period", "dual"]
-
-
-def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    """
-
-    :param scenario_id:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-    # Update duals
-    duals_results = []
-    with open(
-        os.path.join(results_directory, "PRM_Constraint.csv"), "r"
-    ) as prm_duals_file:
-        reader = csv.reader(prm_duals_file)
-
-        next(reader)  # skip header
-
-        for row in reader:
-            duals_results.append(
-                (row[2], row[0], row[1], scenario_id, subproblem, stage)
-            )
-    duals_sql = """
-        UPDATE results_system_prm
-        SET dual = ?
-        WHERE prm_zone = ?
-        AND period = ?
-        AND scenario_id = ?
-        AND subproblem_id = ?
-        AND stage_id = ?;
-        """
-    spin_on_database_lock(conn=db, cursor=c, sql=duals_sql, data=duals_results)
-
-    # Calculate marginal carbon cost per MMt
-    mc_sql = """
-        UPDATE results_system_prm
-        SET prm_marginal_cost_per_mw = 
-        dual / (discount_factor * number_years_represented)
-        WHERE scenario_id = ?
-        AND subproblem_id = ?
-        AND stage_id = ?;
-        """
-    spin_on_database_lock(
-        conn=db, cursor=c, sql=mc_sql, data=(scenario_id, subproblem, stage), many=False
-    )

@@ -28,6 +28,8 @@ from gridpath.auxiliary.validations import (
     validate_column_monotonicity,
 )
 from gridpath.auxiliary.auxiliary import get_required_subtype_modules
+from gridpath.common_functions import create_results_df
+from gridpath.project import PROJECT_PERIOD_DF
 from gridpath.project.capacity.common_functions import (
     load_project_capacity_type_modules,
 )
@@ -557,6 +559,69 @@ def save_duals(scenario_directory, subproblem, stage, instance, dynamic_componen
         "period",
         "dual",
     ]
+
+
+def export_results(scenario_directory, subproblem, stage, m, d):
+    """
+    Export capacity results.
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :param m:
+    :param d:
+    :return:
+    """
+
+    results_columns = [
+        "min_build_power_dual",
+        "max_build_power_dual",
+        "min_total_power_dual",
+        "max_total_power_dual",
+        "min_build_energy_dual",
+        "max_build_energy_dual",
+        "min_total_energy_dual",
+        "max_total_energy_dual",
+    ]
+    data = [
+        [
+            prj,
+            prd,
+            m.dual[getattr(m, "Min_Build_Power_Constraint")[prj, prd]]
+            if (prj, prd) in [idx for idx in getattr(m, "Min_Build_Power_Constraint")]
+            else None,
+            m.dual[getattr(m, "Max_Build_Power_Constraint")[prj, prd]]
+            if (prj, prd) in [idx for idx in getattr(m, "Max_Build_Power_Constraint")]
+            else None,
+            m.dual[getattr(m, "Min_Power_Constraint")[prj, prd]]
+            if (prj, prd) in [idx for idx in getattr(m, "Min_Power_Constraint")]
+            else None,
+            m.dual[getattr(m, "Max_Power_Constraint")[prj, prd]]
+            if (prj, prd) in [idx for idx in getattr(m, "Max_Power_Constraint")]
+            else None,
+            m.dual[getattr(m, "Min_Build_Energy_Constraint")[prj, prd]]
+            if (prj, prd) in [idx for idx in getattr(m, "Min_Build_Energy_Constraint")]
+            else None,
+            m.dual[getattr(m, "Max_Build_Energy_Constraint")[prj, prd]]
+            if (prj, prd) in [idx for idx in getattr(m, "Max_Build_Energy_Constraint")]
+            else None,
+            m.dual[getattr(m, "Min_Energy_Constraint")[prj, prd]]
+            if (prj, prd) in [idx for idx in getattr(m, "Min_Energy_Constraint")]
+            else None,
+            m.dual[getattr(m, "Max_Energy_Constraint")[prj, prd]]
+            if (prj, prd) in [idx for idx in getattr(m, "Max_Energy_Constraint")]
+            else None,
+        ]
+        for (prj, prd) in m.PRJ_OPR_PRDS
+    ]
+    results_df = create_results_df(
+        index_columns=["project", "period"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    for c in results_columns:
+        getattr(d, PROJECT_PERIOD_DF)[c] = None
+    getattr(d, PROJECT_PERIOD_DF).update(results_df)
 
 
 # Validation

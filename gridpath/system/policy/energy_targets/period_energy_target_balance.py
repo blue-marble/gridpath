@@ -23,8 +23,6 @@ import pandas as pd
 
 from pyomo.environ import Var, Constraint, NonNegativeReals, Expression, value
 
-from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.common_functions import create_results_df
 from gridpath.system.policy.energy_targets import ENERGY_TARGET_ZONE_PRD_DF
 
@@ -87,6 +85,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         "fraction_of_energy_target_met",
         "fraction_of_energy_target_energy_curtailed",
         "energy_target_shortage_mwh",
+        "dual",
+        "energy_target_marginal_cost_per_mwh",
     ]
     data = [
         [
@@ -111,6 +111,16 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 + value(m.Total_Curtailed_Period_Energy_Target_Energy_MWh[z, p])
             ),
             value(m.Period_Energy_Target_Shortage_MWh_Expression[z, p]),
+            m.dual[getattr(m, "Period_Energy_Target_Constraint")[z, p]]
+            if (z, p) in [idx for idx in getattr(m, "Period_Energy_Target_Constraint")]
+            else None,
+            (
+                m.dual[getattr(m, "Period_Energy_Target_Constraint")[z, p]]
+                / m.period_objective_coefficient[p]
+                if (z, p)
+                in [idx for idx in getattr(m, "Period_Energy_Target_Constraint")]
+                else None
+            ),
         ]
         for (z, p) in m.ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET
     ]
@@ -155,40 +165,13 @@ def summarize_results(scenario_directory, subproblem, stage):
     # All these files are small, so won't be setting indices
 
     # Get the main energy-target results file
-    energy_target_df = pd.read_csv(
+    results_df = pd.read_csv(
         os.path.join(
             scenario_directory,
             str(subproblem),
             str(stage),
             "results",
             "system_period_energy_target.csv",
-        )
-    )
-
-    # Get the energy-target dual results
-    energy_target_duals_df = pd.read_csv(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "Period_Energy_Target_Constraint.csv",
-        )
-    )
-
-    # # Get the input metadata for periods
-    # periods_df = \
-    #     pd.read_csv(os.path.join(scenario_directory, "inputs", "periods.tab"),
-    #                 sep="\t")
-
-    # Join the above
-    results_df = pd.DataFrame(
-        pd.merge(
-            left=energy_target_df,
-            right=energy_target_duals_df,
-            how="left",
-            left_on=["energy_target_zone", "period"],
-            right_on=["energy_target_zone", "period"],
         )
     )
 
@@ -202,9 +185,6 @@ def summarize_results(scenario_directory, subproblem, stage):
     # to convert back to 'real' dollars, we need to divide by the discount
     # factor and the number of years a period represents
     results_df["percent_curtailed"] = pd.Series(index=results_df.index, dtype="float64")
-    results_df["energy_target_marginal_cost_per_mwh"] = pd.Series(
-        index=results_df.index, dtype="float64"
-    )
 
     pd.options.mode.chained_assignment = None  # default='warn'
     for indx, row in results_df.iterrows():
@@ -224,10 +204,6 @@ def summarize_results(scenario_directory, subproblem, stage):
             )
         results_df.percent_curtailed[indx] = pct
 
-        results_df.energy_target_marginal_cost_per_mwh[indx] = results_df.dual[indx] / (
-            results_df.discount_factor[indx] * results_df.number_years_represented[indx]
-        )
-
     # Drop unnecessary columns before exporting
     results_df.drop("discount_factor", axis=1, inplace=True)
     results_df.drop("number_years_represented", axis=1, inplace=True)
@@ -238,7 +214,7 @@ def summarize_results(scenario_directory, subproblem, stage):
 
     # Rearrange the columns
     cols = results_df.columns.tolist()
-    cols = cols[0:3] + [cols[4]] + [cols[3]] + [cols[5]]
+    cols = cols[0:3] + [cols[5]] + [cols[3]] + [cols[4]]
     results_df = results_df[cols]
     results_df.sort_index(inplace=True)
     with open(summary_results_file, "a") as outfile:

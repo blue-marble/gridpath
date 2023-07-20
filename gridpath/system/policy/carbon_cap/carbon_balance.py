@@ -87,12 +87,23 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 
     results_columns = [
         "total_emissions",
+        "dual",
+        "carbon_cap_marginal_cost_per_emission",
     ]
     data = [
         [
             z,
             p,
             value(m.Total_Carbon_Emissions_from_All_Sources_Expression[z, p]),
+            m.dual[getattr(m, "Carbon_Cap_Constraint")[z, p]]
+            if (z, p) in [idx for idx in getattr(m, "Carbon_Cap_Constraint")]
+            else None,
+            (
+                m.dual[getattr(m, "Carbon_Cap_Constraint")[z, p]]
+                / m.period_objective_coefficient[p]
+                if (z, p) in [idx for idx in getattr(m, "Carbon_Cap_Constraint")]
+                else None
+            ),
         ]
         for (z, p) in m.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP
     ]
@@ -113,53 +124,3 @@ def save_duals(scenario_directory, subproblem, stage, instance, dynamic_componen
         "period",
         "dual",
     ]
-
-
-def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    """
-
-    :param scenario_id:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-
-    # Update duals
-    duals_results = []
-    with open(
-        os.path.join(results_directory, "Carbon_Cap_Constraint.csv"), "r"
-    ) as carbon_cap_duals_file:
-        reader = csv.reader(carbon_cap_duals_file)
-
-        next(reader)  # skip header
-
-        for row in reader:
-            duals_results.append(
-                (row[2], row[0], row[1], scenario_id, subproblem, stage)
-            )
-    duals_sql = """ 
-        UPDATE results_system_carbon_cap
-        SET dual = ?
-        WHERE carbon_cap_zone = ?
-        AND period = ?
-        AND scenario_id = ?
-        AND subproblem_id = ?
-        AND stage_id = ?;"""
-    spin_on_database_lock(conn=db, cursor=c, sql=duals_sql, data=duals_results)
-
-    # Calculate marginal carbon cost per emission
-    mc_sql = """
-        UPDATE results_system_carbon_cap
-        SET carbon_cap_marginal_cost_per_emission = 
-        dual / (discount_factor * number_years_represented)
-        WHERE scenario_id = ?
-        AND subproblem_id = ?
-        AND stage_id = ?;
-        """
-    spin_on_database_lock(
-        conn=db, cursor=c, sql=mc_sql, data=(scenario_id, subproblem, stage), many=False
-    )

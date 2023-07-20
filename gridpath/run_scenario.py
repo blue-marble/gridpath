@@ -951,35 +951,22 @@ def save_duals(scenario_directory, subproblem, stage, instance, dynamic_componen
                 scenario_directory, subproblem, stage, instance, dynamic_components
             )
 
-    # TODO: remove this export once all duals are incorporated in other results
-    #  files
-    for c in list(instance.constraint_indices.keys()):
-        constraint_object = getattr(instance, c)
-        with open(
-            os.path.join(
-                scenario_directory, subproblem, stage, "results", str(c) + ".csv"
-            ),
-            "w",
-            newline="",
-        ) as duals_results_file:
-            duals_writer = writer(duals_results_file)
-            duals_writer.writerow(instance.constraint_indices[c])
-            for index in constraint_object:
-                try:
-                    duals_writer.writerow(
-                        list(index) + [instance.dual[constraint_object[index]]]
-                    )
-                # We get an error when trying to export duals with CPLEX
-                # when solving MIPs, so catch it here and ignore to avoid
-                # breaking the script, but throw a warning
-                except KeyError:
-                    warnings.warn(
-                        """
-                    KeyError caught when saving duals. Duals were not exported.
-                    This is expected if solving a MIP with CPLEX, 
-                    not otherwise.
-                    """
-                    )
+    # for index in constraint_object:
+    # try:
+    #     duals_writer.writerow(
+    #         list(index) + [instance.dual[constraint_object[index]]]
+    #     )
+    # # We get an error when trying to export duals with CPLEX
+    # # when solving MIPs, so catch it here and ignore to avoid
+    # # breaking the script, but throw a warning
+    # except KeyError:
+    #     warnings.warn(
+    #         """
+    #     KeyError caught when saving duals. Duals were not exported.
+    #     This is expected if solving a MIP with CPLEX,
+    #     not otherwise.
+    #     """
+    #     )
 
 
 def summarize_results(scenario_directory, subproblem, stage, parsed_arguments):

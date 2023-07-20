@@ -334,7 +334,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         for (prj, prd) in m.PRJ_OPR_PRDS
     ]
     results_df = create_results_df(
-        index_columns=["project", "timepoint"],
+        index_columns=["project", "period"],
         results_columns=results_columns,
         data=data,
     )

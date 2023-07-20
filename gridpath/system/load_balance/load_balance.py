@@ -183,6 +183,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     results_columns = [
         "overgeneration_mw",
         "unserved_energy_mw",
+        "load_balance_dual",
+        "load_balance_marginal_cost_per_mw",
     ]
     data = [
         [
@@ -190,6 +192,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             tmp,
             value(m.Overgeneration_MW_Expression[lz, tmp]),
             value(m.Unserved_Energy_MW_Expression[lz, tmp]),
+            m.dual[getattr(m, "Meet_Load_Constraint")[lz, tmp]],
+            m.dual[getattr(m, "Meet_Load_Constraint")[lz, tmp]]
+            / m.tmp_objective_coefficient[tmp],
         ]
         for lz in getattr(m, "LOAD_ZONES")
         for tmp in getattr(m, "TMPS")
@@ -203,65 +208,3 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     for c in results_columns:
         getattr(d, LOAD_ZONE_TMP_DF)[c] = None
     getattr(d, LOAD_ZONE_TMP_DF).update(results_df)
-
-
-def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
-    instance.constraint_indices["Meet_Load_Constraint"] = ["zone", "timepoint", "dual"]
-
-
-def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    """
-
-    :param scenario_id:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-
-    # TODO: deal with duals
-    # Update the temporary table with the duals
-    # Update duals
-    duals_results = []
-    with open(
-        os.path.join(results_directory, "Meet_Load_Constraint.csv"), "r"
-    ) as load_balance_duals_file:
-        reader = csv.reader(load_balance_duals_file)
-
-        next(reader)  # skip header
-
-        for row in reader:
-            duals_results.append(
-                (row[2], row[0], row[1], scenario_id, subproblem, stage)
-            )
-    duals_sql = """
-        UPDATE results_system_load_zone_timepoint
-        SET dual = ?
-        WHERE load_zone = ?
-        AND timepoint = ?
-        AND scenario_id = ?
-        AND subproblem_id = ?
-        AND stage_id = ?;
-        """.format(
-        scenario_id=scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=duals_sql, data=duals_results)
-
-    # Calculate marginal cost per MW
-    mc_sql = """
-        UPDATE results_system_load_zone_timepoint
-        SET marginal_price_per_mw = 
-        dual / (discount_factor * number_years_represented * timepoint_weight 
-        * number_of_hours_in_timepoint)
-        WHERE scenario_id = ?
-        AND subproblem_id = ?
-        AND stage_id = ?;
-        """.format(
-        scenario_id=scenario_id
-    )
-    spin_on_database_lock(
-        conn=db, cursor=c, sql=mc_sql, data=(scenario_id, subproblem, stage), many=False
-    )

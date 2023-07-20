@@ -196,6 +196,12 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         "fuel_burn_min_abs_shortage_unit",
         "fuel_burn_max_abs_overage_unit",
         "fuel_burn_max_rel_overage_unit",
+        "abs_min_dual",
+        "abs_min_fuel_burn_limit_marginal_cost_per_unit",
+        "abs_max_dual",
+        "abs_max_fuel_burn_limit_marginal_cost_per_unit",
+        "rel_dual",
+        "rel_fuel_burn_limit_marginal_cost_per_unit",
     ]
     data = [
         [
@@ -225,6 +231,39 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             if (f, z, bt, h)
             in m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MAX_REL_LIMIT
             else None,
+            m.dual[getattr(m, "Meet_Fuel_Burn_Min_Abs_Constraint")[f, z, bt, h]]
+            if (f, z, bt, h)
+            in [idx for idx in getattr(m, "Meet_Fuel_Burn_Min_Abs_Constraint")]
+            else None,
+            (
+                m.dual[getattr(m, "Meet_Fuel_Burn_Min_Abs_Constraint")[f, z, bt, h]]
+                / m.hrz_objective_coefficient[bt, h]
+                if (f, z, bt, h)
+                in [idx for idx in getattr(m, "Meet_Fuel_Burn_Min_Abs_Constraint")]
+                else None
+            ),
+            m.dual[getattr(m, "Meet_Fuel_Burn_Max_Abs_Constraint")[f, z, bt, h]]
+            if (f, z, bt, h)
+            in [idx for idx in getattr(m, "Meet_Fuel_Burn_Max_Abs_Constraint")]
+            else None,
+            (
+                m.dual[getattr(m, "Meet_Fuel_Burn_Max_Abs_Constraint")[f, z, bt, h]]
+                / m.hrz_objective_coefficient[bt, h]
+                if (f, z, bt, h)
+                in [idx for idx in getattr(m, "Meet_Fuel_Burn_Max_Abs_Constraint")]
+                else None
+            ),
+            m.dual[getattr(m, "Meet_Fuel_Burn_Max_Rel_Constraint")[f, z, bt, h]]
+            if (f, z, bt, h)
+            in [idx for idx in getattr(m, "Meet_Fuel_Burn_Max_Rel_Constraint")]
+            else None,
+            (
+                m.dual[getattr(m, "Meet_Fuel_Burn_Max_Rel_Constraint")[f, z, bt, h]]
+                / m.hrz_objective_coefficient[bt, h]
+                if (f, z, bt, h)
+                in [idx for idx in getattr(m, "Meet_Fuel_Burn_Max_Rel_Constraint")]
+                else None
+            ),
         ]
         for (f, z, bt, h) in m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT
     ]
@@ -268,168 +307,3 @@ def save_duals(scenario_directory, subproblem, stage, instance, dynamic_componen
         "horizon",
         "dual",
     ]
-
-
-def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    """
-
-    :param scenario_id:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-
-    # Update duals for absolute fuel burn limit constraint
-    # Min
-    duals_results = []
-    with open(
-        os.path.join(results_directory, "Meet_Fuel_Burn_Min_Abs_Constraint.csv"), "r"
-    ) as duals_file:
-        reader = csv.reader(duals_file)
-
-        next(reader)  # skip header
-
-        for row in reader:
-            [fuel, fuel_burn_limit_ba, balancing_type, horizon, dual] = row
-            duals_results.append(
-                (
-                    dual,
-                    scenario_id,
-                    subproblem,
-                    stage,
-                    balancing_type,
-                    horizon,
-                    fuel,
-                    fuel_burn_limit_ba,
-                )
-            )
-
-    duals_sql = """
-        UPDATE results_system_fuel_burn_limits
-        SET abs_min_dual = ?
-        WHERE scenario_id = ?
-        AND subproblem_id = ?
-        AND stage_id = ?
-        AND balancing_type = ?
-        AND horizon = ?
-        AND fuel = ?
-        AND fuel_burn_limit_ba = ?;
-        """
-    spin_on_database_lock(conn=db, cursor=c, sql=duals_sql, data=duals_results)
-
-    # Calculate marginal energy-target cost per MWh
-    mc_sql = """
-        UPDATE results_system_fuel_burn_limits
-        SET abs_min_fuel_burn_limit_marginal_cost_per_unit =
-        abs_min_dual / (discount_factor * number_years_represented)
-        WHERE scenario_id = ?
-        AND subproblem_id = ?
-        and stage_id = ?;
-        """
-    spin_on_database_lock(
-        conn=db, cursor=c, sql=mc_sql, data=(scenario_id, subproblem, stage), many=False
-    )
-
-    # Max
-    duals_results = []
-    with open(
-        os.path.join(results_directory, "Meet_Fuel_Burn_Max_Abs_Constraint.csv"), "r"
-    ) as duals_file:
-        reader = csv.reader(duals_file)
-
-        next(reader)  # skip header
-
-        for row in reader:
-            [fuel, fuel_burn_limit_ba, balancing_type, horizon, dual] = row
-            duals_results.append(
-                (
-                    dual,
-                    scenario_id,
-                    subproblem,
-                    stage,
-                    balancing_type,
-                    horizon,
-                    fuel,
-                    fuel_burn_limit_ba,
-                )
-            )
-
-    duals_sql = """
-        UPDATE results_system_fuel_burn_limits
-        SET abs_max_dual = ?
-        WHERE scenario_id = ?
-        AND subproblem_id = ?
-        AND stage_id = ?
-        AND balancing_type = ?
-        AND horizon = ?
-        AND fuel = ?
-        AND fuel_burn_limit_ba = ?;
-        """
-    spin_on_database_lock(conn=db, cursor=c, sql=duals_sql, data=duals_results)
-
-    # Calculate marginal energy-target cost per MWh
-    mc_sql = """
-        UPDATE results_system_fuel_burn_limits
-        SET abs_max_fuel_burn_limit_marginal_cost_per_unit =
-        abs_max_dual / (discount_factor * number_years_represented)
-        WHERE scenario_id = ?
-        AND subproblem_id = ?
-        and stage_id = ?;
-        """
-    spin_on_database_lock(
-        conn=db, cursor=c, sql=mc_sql, data=(scenario_id, subproblem, stage), many=False
-    )
-
-    # Update duals for relative fuel burn limit constraint
-    duals_results = []
-    with open(
-        os.path.join(results_directory, "Meet_Fuel_Burn_Max_Rel_Constraint.csv"), "r"
-    ) as duals_file:
-        reader = csv.reader(duals_file)
-
-        next(reader)  # skip header
-
-        for row in reader:
-            [fuel, fuel_burn_limit_ba, balancing_type, horizon, dual] = row
-            duals_results.append(
-                (
-                    dual,
-                    scenario_id,
-                    subproblem,
-                    stage,
-                    balancing_type,
-                    horizon,
-                    fuel,
-                    fuel_burn_limit_ba,
-                )
-            )
-
-    duals_sql = """
-        UPDATE results_system_fuel_burn_limits
-        SET rel_dual = ?
-        WHERE scenario_id = ?
-        AND subproblem_id = ?
-        AND stage_id = ?
-        AND balancing_type = ?
-        AND horizon = ?
-        AND fuel = ?
-        AND fuel_burn_limit_ba = ?;
-        """
-    spin_on_database_lock(conn=db, cursor=c, sql=duals_sql, data=duals_results)
-
-    # Calculate marginal energy-target cost per MWh
-    mc_sql = """
-        UPDATE results_system_fuel_burn_limits
-        SET rel_fuel_burn_limit_marginal_cost_per_unit =
-        rel_dual / (discount_factor * number_years_represented)
-        WHERE scenario_id = ?
-        AND subproblem_id = ?
-        and stage_id = ?;
-        """
-    spin_on_database_lock(
-        conn=db, cursor=c, sql=mc_sql, data=(scenario_id, subproblem, stage), many=False
-    )

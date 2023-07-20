@@ -95,6 +95,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     results_columns = [
         "local_capacity_provision_mw",
         "local_capacity_shortage_mw",
+        "dual",
+        "local_capacity_marginal_cost_per_mw",
     ]
     data = [
         [
@@ -102,6 +104,15 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             p,
             value(m.Total_Local_Capacity_from_All_Sources_Expression_MW[z, p]),
             value(m.Local_Capacity_Shortage_MW_Expression[z, p]),
+            m.dual[getattr(m, "Local_Capacity_Constraint")[z, p]]
+            if (z, p) in [idx for idx in getattr(m, "Local_Capacity_Constraint")]
+            else None,
+            (
+                m.dual[getattr(m, "Local_Capacity_Constraint")[z, p]]
+                / m.period_objective_coefficient[p]
+                if (z, p) in [idx for idx in getattr(m, "Local_Capacity_Constraint")]
+                else None
+            ),
         ]
         for (z, p) in m.LOCAL_CAPACITY_ZONE_PERIODS_WITH_REQUIREMENT
     ]
@@ -122,54 +133,3 @@ def save_duals(scenario_directory, subproblem, stage, instance, dynamic_componen
         "period",
         "dual",
     ]
-
-
-def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    """
-
-    :param scenario_id:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-    # Update duals
-    duals_results = []
-    with open(
-        os.path.join(results_directory, "Local_Capacity_Constraint.csv"), "r"
-    ) as local_capacity_duals_file:
-        reader = csv.reader(local_capacity_duals_file)
-
-        next(reader)  # skip header
-
-        for row in reader:
-            duals_results.append(
-                (row[2], row[0], row[1], scenario_id, subproblem, stage)
-            )
-
-    duals_sql = """
-        UPDATE results_system_local_capacity
-        SET dual = ?
-        WHERE local_capacity_zone = ?
-        AND period = ?
-        AND scenario_id = ?
-        AND subproblem_id = ?
-        AND stage_id = ?;"""
-
-    spin_on_database_lock(conn=db, cursor=c, sql=duals_sql, data=duals_results)
-
-    # Calculate marginal carbon cost per MMt
-    mc_sql = """
-        UPDATE results_system_local_capacity
-        SET local_capacity_marginal_cost_per_mw = 
-        dual / (discount_factor * number_years_represented)
-        WHERE scenario_id = ?
-        AND subproblem_id = ?
-        AND stage_id = ?;
-        """
-    spin_on_database_lock(
-        conn=db, cursor=c, sql=mc_sql, data=(scenario_id, subproblem, stage), many=False
-    )
