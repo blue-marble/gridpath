@@ -44,6 +44,7 @@ def all_modules_list():
         "temporal.operations.horizons",
         "temporal.investment.periods",
         "temporal.investment.superperiods",
+        "temporal.finalize",
         "geography.load_zones",
         "geography.load_following_up_balancing_areas",
         "geography.load_following_down_balancing_areas",
