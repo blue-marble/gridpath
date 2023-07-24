@@ -125,7 +125,6 @@ class TestExamples(unittest.TestCase):
                 str(parallel),
                 "--quiet",
                 "--mute_solver_output",
-                "--testing",
             ]
         )
 

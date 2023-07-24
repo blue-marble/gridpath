@@ -195,134 +195,155 @@ def run_optimization_for_subproblem_stage(
         sys.stdout = logger
         sys.stderr = logger
 
-    # If directed, set temporary file directory to be the logs directory
-    # In conjunction with --keepfiles, this will write the solver solution
-    # files into the log directory (rather than a hidden temp folder).
-    # Use the --symbolic argument as well for best debugging results
-    if parsed_arguments.write_solver_files_to_logs_dir:
-        logs_directory = create_logs_directory_if_not_exists(
-            scenario_directory, subproblem_directory, stage_directory
+    # Determine whether to skip this optimization
+    skip_solve = False
+    if parsed_arguments.incomplete_only:
+        termination_condition_file = os.path.join(
+            scenario_directory,
+            subproblem_directory,
+            stage_directory,
+            "results",
+            "termination_condition.txt",
         )
-        TempfileManager.tempdir = logs_directory
+        if os.path.isfile(termination_condition_file):
+            with open(termination_condition_file, "r") as f:
+                termination_condition = f.read()
+            if not parsed_arguments.quiet:
+                print(
+                    f"Subproblem stage {subproblem_directory} "
+                    f"{stage_directory} "
+                    f"previously solved with termination condition "
+                    f"**{termination_condition}**. Skipping solve."
+                )
+                skip_solve = True
 
-    if not parsed_arguments.quiet:
-        print(
-            "\nRunning optimization for scenario {}".format(
-                scenario_directory.split("/")[-1]
+    if not skip_solve:
+        # If directed, set temporary file directory to be the logs directory
+        # In conjunction with --keepfiles, this will write the solver solution
+        # files into the log directory (rather than a hidden temp folder).
+        # Use the --symbolic argument as well for best debugging results
+        if parsed_arguments.write_solver_files_to_logs_dir:
+            logs_directory = create_logs_directory_if_not_exists(
+                scenario_directory, subproblem_directory, stage_directory
             )
-        )
-        if subproblem_directory != "":
-            print("--- subproblem {}".format(subproblem_directory))
-        if stage_directory != "":
-            print("--- stage {}".format(stage_directory))
+            TempfileManager.tempdir = logs_directory
 
-    # We're expecting subproblem and stage to be strings downstream from here
-    subproblem_directory = str(subproblem_directory)
-    stage_directory = str(stage_directory)
-
-    # Used only if we are writing problem files or loading solutions
-    prob_sol_files_directory = os.path.join(
-        scenario_directory, subproblem_directory, stage_directory, "prob_sol_files"
-    )
-
-    # Create problem instance and either save the problem file or solve the instance
-    # TODO: incompatible options
-    # If we are loading a solution, skip the compilation step; we'll use the saved
-    # instance and dynamic components
-    if parsed_arguments.load_cplex_solution:
-        solved_instance, results, dynamic_components = load_cplex_xml_solution(
-            prob_sol_files_directory=prob_sol_files_directory,
-            solution_filename="cplex_solution.sol",
-        )
-    elif parsed_arguments.load_gurobi_solution:
-        solved_instance, results, dynamic_components = load_gurobi_json_solution(
-            prob_sol_files_directory=prob_sol_files_directory,
-            solution_filename="gurobi_solution.json",
-        )
-    else:
-        dynamic_components, instance = create_problem(
-            scenario_directory=scenario_directory,
-            subproblem=subproblem_directory,
-            stage=stage_directory,
-            parsed_arguments=parsed_arguments,
-        )
-
-        if parsed_arguments.create_lp_problem_file_only:
-            prob_sol_files_directory = os.path.join(
-                scenario_directory,
-                subproblem_directory,
-                stage_directory,
-                "prob_sol_files",
+        if not parsed_arguments.quiet:
+            print(
+                "\nRunning optimization for scenario {}".format(
+                    scenario_directory.split("/")[-1]
+                )
             )
-            if not os.path.exists(prob_sol_files_directory):
-                os.makedirs(prob_sol_files_directory)
-            with open(
-                os.path.join(prob_sol_files_directory, "instance.pickle"), "wb"
-            ) as f_out:
-                dill.dump(instance, f_out)
-            with open(
-                os.path.join(prob_sol_files_directory, "dynamic_components.pickle"),
-                "wb",
-            ) as f_out:
-                dill.dump(dynamic_components, f_out)
+            if subproblem_directory != "":
+                print("--- subproblem {}".format(subproblem_directory))
+            if stage_directory != "":
+                print("--- stage {}".format(stage_directory))
 
-            smap_id = write_problem_file(
-                instance=instance, prob_sol_files_directory=prob_sol_files_directory
+        # We're expecting subproblem and stage to be strings downstream from here
+        subproblem_directory = str(subproblem_directory)
+        stage_directory = str(stage_directory)
+
+        # Used only if we are writing problem files or loading solutions
+        prob_sol_files_directory = os.path.join(
+            scenario_directory, subproblem_directory, stage_directory, "prob_sol_files"
+        )
+
+        # Create problem instance and either save the problem file or solve the instance
+        # TODO: incompatible options
+        # If we are loading a solution, skip the compilation step; we'll use the saved
+        # instance and dynamic components
+        if parsed_arguments.load_cplex_solution:
+            solved_instance, results, dynamic_components = load_cplex_xml_solution(
+                prob_sol_files_directory=prob_sol_files_directory,
+                solution_filename="cplex_solution.sol",
             )
-            symbol_map = instance.solutions.symbol_map[smap_id]
-
-            symbol_cuid_pairs = tuple(
-                (symbol, ComponentUID(var_weakref(), cuid_buffer={}))
-                for symbol, var_weakref in symbol_map.bySymbol.items()
+        elif parsed_arguments.load_gurobi_solution:
+            solved_instance, results, dynamic_components = load_gurobi_json_solution(
+                prob_sol_files_directory=prob_sol_files_directory,
+                solution_filename="gurobi_solution.json",
             )
-
-            with open(
-                os.path.join(prob_sol_files_directory, "symbol_map.pickle"), "wb"
-            ) as f_out:
-                dill.dump(symbol_cuid_pairs, f_out)
-
-            print("Problem file written to {}".format(prob_sol_files_directory))
-            sys.exit()
         else:
-            solved_instance, results = solve_problem(
+            dynamic_components, instance = create_problem(
+                scenario_directory=scenario_directory,
+                subproblem=subproblem_directory,
+                stage=stage_directory,
                 parsed_arguments=parsed_arguments,
-                instance=instance,
             )
 
-    # Save the scenario results to disk
-    save_results(
-        scenario_directory,
-        subproblem_directory,
-        stage_directory,
-        solved_instance,
-        results,
-        dynamic_components,
-        parsed_arguments,
-    )
+            if parsed_arguments.create_lp_problem_file_only:
+                prob_sol_files_directory = os.path.join(
+                    scenario_directory,
+                    subproblem_directory,
+                    stage_directory,
+                    "prob_sol_files",
+                )
+                if not os.path.exists(prob_sol_files_directory):
+                    os.makedirs(prob_sol_files_directory)
+                with open(
+                    os.path.join(prob_sol_files_directory, "instance.pickle"), "wb"
+                ) as f_out:
+                    dill.dump(instance, f_out)
+                with open(
+                    os.path.join(prob_sol_files_directory, "dynamic_components.pickle"),
+                    "wb",
+                ) as f_out:
+                    dill.dump(dynamic_components, f_out)
 
-    # Summarize results
-    summarize_results(
-        scenario_directory,
-        subproblem_directory,
-        stage_directory,
-        parsed_arguments,
-    )
+                smap_id = write_problem_file(
+                    instance=instance, prob_sol_files_directory=prob_sol_files_directory
+                )
+                symbol_map = instance.solutions.symbol_map[smap_id]
 
-    # If logging, we need to return sys.stdout to original (i.e. stop writing
-    # to log file)
-    if parsed_arguments.log:
-        sys.stdout = stdout_original
-        sys.stderr = stderr_original
+                symbol_cuid_pairs = tuple(
+                    (symbol, ComponentUID(var_weakref(), cuid_buffer={}))
+                    for symbol, var_weakref in symbol_map.bySymbol.items()
+                )
 
-    # Return the objective function value (in the testing suite, the value
-    # gets checked against the expected value, but this is the only place
-    # this is actually used)
-    # TODO: this will need to have a variable for the name of the objective
-    #  function component once there are multiple possible objective functions
-    if results.solver.termination_condition != "infeasible":
-        return solved_instance.NPV()
-    else:
-        warnings.warn("WARNING: the problem was infeasible!")
+                with open(
+                    os.path.join(prob_sol_files_directory, "symbol_map.pickle"), "wb"
+                ) as f_out:
+                    dill.dump(symbol_cuid_pairs, f_out)
+
+                print("Problem file written to {}".format(prob_sol_files_directory))
+                sys.exit()
+            else:
+                solved_instance, results = solve_problem(
+                    parsed_arguments=parsed_arguments,
+                    instance=instance,
+                )
+
+        # Save the scenario results to disk
+        save_results(
+            scenario_directory,
+            subproblem_directory,
+            stage_directory,
+            solved_instance,
+            results,
+            dynamic_components,
+            parsed_arguments,
+        )
+
+        # Summarize results
+        summarize_results(
+            scenario_directory,
+            subproblem_directory,
+            stage_directory,
+            parsed_arguments,
+        )
+
+        # If logging, we need to return sys.stdout to original (i.e. stop writing
+        # to log file)
+        if parsed_arguments.log:
+            sys.stdout = stdout_original
+            sys.stderr = stderr_original
+
+        # Return the objective function value (in the testing suite, the value
+        # gets checked against the expected value, but this is the only place
+        # this is actually used)
+        if results.solver.termination_condition != "infeasible":
+            return solved_instance.NPV()
+        else:
+            warnings.warn("WARNING: the problem was infeasible!")
 
 
 def run_optimization_for_subproblem(
