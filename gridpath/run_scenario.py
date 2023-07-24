@@ -583,14 +583,12 @@ def save_results(
     if results.solver.status == SolverStatus.ok:
         if not parsed_arguments.quiet:
             print(
-                "Solver termination condition: {}.".format(
+                "...solver termination condition: {}.".format(
                     results.solver.termination_condition
                 )
             )
-            if results.solver.termination_condition == TerminationCondition.optimal:
-                print("Optimal solution found.")
-            else:
-                print("Solution is not optimal.")
+        if results.solver.termination_condition != TerminationCondition.optimal:
+            warnings.warn("   ...solution is not optimal.")
         # Continue with results export
         # Parse arguments to see if we're following a special rule for whether to
         # export results
@@ -600,20 +598,42 @@ def save_results(
             export_rule = import_export_rules[parsed_arguments.results_export_rule][
                 "export"
             ](instance=instance, quiet=parsed_arguments.quiet)
+
+        if not parsed_arguments.quiet:
+            print("...exporting CSV results")
         export_results(
-            scenario_directory,
-            subproblem,
-            stage,
-            instance,
-            dynamic_components,
-            export_rule,
+            scenario_directory=scenario_directory,
+            subproblem=subproblem,
+            stage=stage,
+            instance=instance,
+            dynamic_components=dynamic_components,
+            export_rule=export_rule,
+            verbose=parsed_arguments.verbose,
         )
 
-        export_pass_through_inputs(scenario_directory, subproblem, stage, instance)
+        export_pass_through_inputs(
+            scenario_directory=scenario_directory,
+            subproblem=subproblem,
+            stage=stage,
+            instance=instance,
+            verbose=parsed_arguments.verbose,
+        )
 
-        save_objective_function_value(scenario_directory, subproblem, stage, instance)
+        save_objective_function_value(
+            scenario_directory=scenario_directory,
+            subproblem=subproblem,
+            stage=stage,
+            instance=instance,
+        )
 
-        save_duals(scenario_directory, subproblem, stage, instance, dynamic_components)
+        save_duals(
+            scenario_directory=scenario_directory,
+            subproblem=subproblem,
+            stage=stage,
+            instance=instance,
+            dynamic_components=dynamic_components,
+            verbose=parsed_arguments.verbose,
+        )
     # If solver status is not ok, don't export results and print some
     # messages for the user
     else:
@@ -872,7 +892,13 @@ def solve(instance, parsed_arguments):
 
 
 def export_results(
-    scenario_directory, subproblem, stage, instance, dynamic_components, export_rule
+    scenario_directory,
+    subproblem,
+    stage,
+    instance,
+    dynamic_components,
+    export_rule,
+    verbose,
 ):
     """
     :param scenario_directory:
@@ -880,6 +906,8 @@ def export_results(
     :param stage:
     :param instance:
     :param dynamic_components:
+    :param export_rule:
+    :param verbose:
     :return:
 
     Export results for each loaded module (if applicable)
@@ -890,21 +918,27 @@ def export_results(
             scenario_directory=scenario_directory, subproblem=subproblem, stage=stage
         )
 
+        n = 0
         for m in loaded_modules:
             if hasattr(m, "export_results"):
+                if verbose:
+                    print(f"... {modules_to_use[n]}")
                 m.export_results(
                     scenario_directory, subproblem, stage, instance, dynamic_components
                 )
 
+            n += 1
 
-def export_pass_through_inputs(scenario_directory, subproblem, stage, instance):
+
+def export_pass_through_inputs(
+    scenario_directory, subproblem, stage, instance, verbose
+):
     """
     :param scenario_directory:
     :param subproblem:
     :param stage:
     :param instance:
-    :param dynamic_components:
-    :param loaded_modules:
+    :param verbose:
     :return:
 
     Export pass through inputs for each loaded module (if applicable)
@@ -914,11 +948,15 @@ def export_pass_through_inputs(scenario_directory, subproblem, stage, instance):
         scenario_directory=scenario_directory, subproblem=subproblem, stage=stage
     )
 
+    n = 0
     for m in loaded_modules:
         if hasattr(m, "export_pass_through_inputs"):
+            if verbose:
+                print(f"... {modules_to_use[n]}")
             m.export_pass_through_inputs(
                 scenario_directory, subproblem, stage, instance
             )
+        n += 1
 
 
 def save_objective_function_value(scenario_directory, subproblem, stage, instance):
@@ -950,12 +988,16 @@ def save_objective_function_value(scenario_directory, subproblem, stage, instanc
         objective_file.write(str(objective_function_value))
 
 
-def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
+def save_duals(
+    scenario_directory, subproblem, stage, instance, dynamic_components, verbose
+):
     """
     :param scenario_directory:
     :param subproblem:
     :param stage:
     :param instance:
+    :param dynamic_components:
+    :param verbose:
     :return:
 
     Save the duals of various constraints.
@@ -966,11 +1008,16 @@ def save_duals(scenario_directory, subproblem, stage, instance, dynamic_componen
     )
 
     instance.constraint_indices = {}
+
+    n = 0
     for m in loaded_modules:
+        if verbose:
+            print(f"... {modules_to_use[n]}")
         if hasattr(m, "save_duals"):
             m.save_duals(
                 scenario_directory, subproblem, stage, instance, dynamic_components
             )
+        n += 1
 
     # for index in constraint_object:
     # try:
@@ -1053,9 +1100,13 @@ def summarize_results(scenario_directory, subproblem, stage, parsed_arguments):
                 )
 
             # Go through the modules and get the appropriate results
+            n = 0
             for m in loaded_modules:
                 if hasattr(m, "summarize_results"):
+                    if parsed_arguments.verbose:
+                        print(f"... {modules_to_use[n]}")
                     m.summarize_results(scenario_directory, subproblem, stage)
+                n += 1
 
 
 def set_up_gridpath_modules(scenario_directory, subproblem, stage):

@@ -21,7 +21,7 @@ and demand-side infrastructure 'projects' in the optimization problem.
 import csv
 import os.path
 import pandas as pd
-from pyomo.environ import Set, Param, Any
+from pyomo.environ import Set, Param, Any, value
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.validations import (
@@ -300,7 +300,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 m.hrs_in_tmp[tmp],
                 m.load_zone[prj],
                 m.technology[prj],
-                m.Capacity_MW[prj, m.period[tmp]],
+                value(m.Capacity_MW[prj, m.period[tmp]]),
             ]
             for (prj, tmp) in m.PRJ_OPR_TMPS
         ],

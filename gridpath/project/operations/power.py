@@ -19,11 +19,9 @@ power that a project is providing in each study timepoint.
 """
 
 
-import csv
 import os.path
 import pandas as pd
 from pyomo.environ import Expression, value
-import sqlite3
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import get_required_subtype_modules
@@ -187,7 +185,7 @@ def summarize_results(scenario_directory, subproblem, stage):
             "results",
             "project_timepoint.csv",
         )
-    )
+    )[["project", "period", "load_zone", "technology", "power_mw", "timepoint_weight"]]
 
     operational_results_df["weighted_power_mwh"] = (
         operational_results_df["power_mw"] * operational_results_df["timepoint_weight"]

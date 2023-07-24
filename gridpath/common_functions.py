@@ -78,6 +78,11 @@ def get_required_e2e_arguments_parser():
         "--quiet", default=False, action="store_true", help="Don't print run output."
     )
 
+    parser.add_argument(
+        "--verbose", default=False, action="store_true",
+        help="Print extra output, e.g. current module info."
+    )
+
     return parser
 
 
