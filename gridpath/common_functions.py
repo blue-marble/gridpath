@@ -239,19 +239,22 @@ def get_run_scenario_parser():
         action="store_true",
         help="Use symbolic labels in solver files.",
     )
-    # Flag for test runs (various changes in behavior)
-    parser.add_argument(
-        "--testing",
-        default=False,
-        action="store_true",
-        help="Flag for test suite runs. Results not saved.",
-    )
 
     # Parallel solve
     parser.add_argument(
         "--n_parallel_solve",
         default=1,
         help="Solve n subproblems in parallel.",
+    )
+
+    # Solve only incomplete subproblems
+    parser.add_argument(
+        "--incomplete_only",
+        default=False,
+        action="store_true",
+        help="Solve only incomplete subproblems, i.e. do no re-solve if "
+        "results are found. The subproblem is assumed complete if the"
+        "termination_condition.txt file is found.",
     )
 
     # Results export rule name

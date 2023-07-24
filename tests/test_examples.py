@@ -19,7 +19,7 @@ import platform
 import sqlite3
 import unittest
 
-from gridpath import run_end_to_end, validate_inputs
+from gridpath import run_end_to_end, run_scenario, validate_inputs
 from db import create_database
 from db.common_functions import connect_to_database
 from db.utilities import port_csvs_to_db, scenario
@@ -125,7 +125,6 @@ class TestExamples(unittest.TestCase):
                 str(parallel),
                 "--quiet",
                 "--mute_solver_output",
-                "--testing",
             ]
         )
 
@@ -1438,6 +1437,25 @@ class TestExamples(unittest.TestCase):
         self.check_validation("test_new_build_storage_itc_single_superperiod")
         self.run_and_check_objective(
             "test_new_build_storage_itc_single_superperiod", -4484589239.2
+        )
+
+    def test_incomplete_only(self):
+        """
+        Check that the "incomplete only" functionality works with no errors.
+        :return:
+        """
+
+        self.check_validation("test")
+        actual_objective = run_scenario.main(
+            [
+                "--scenario",
+                "test",
+                "--scenario_location",
+                EXAMPLES_DIRECTORY,
+                "--quiet",
+                "--mute_solver_output",
+                "--incomplete_only",
+            ]
         )
 
     @classmethod
