@@ -78,6 +78,13 @@ def get_required_e2e_arguments_parser():
         "--quiet", default=False, action="store_true", help="Don't print run output."
     )
 
+    parser.add_argument(
+        "--verbose",
+        default=False,
+        action="store_true",
+        help="Print extra output, e.g. current module info.",
+    )
+
     return parser
 
 
@@ -239,6 +246,13 @@ def get_run_scenario_parser():
         action="store_true",
         help="Use symbolic labels in solver files.",
     )
+    # Flag for test runs (various changes in behavior)
+    parser.add_argument(
+        "--testing",
+        default=False,
+        action="store_true",
+        help="Flag for test suite runs.",
+    )
 
     # Parallel solve
     parser.add_argument(
@@ -344,6 +358,20 @@ class Logging(object):
         """
         self.terminal.write(message)
         self.log_file.write(message)
+
+        # Find a print statement
+        # import collections
+        # import inspect
+
+        # if message.strip():
+        #     Record = collections.namedtuple(
+        #         'Record',
+        #         'frame filename line_number function_name lines index')
+        #
+        #     record = Record(*inspect.getouterframes(inspect.currentframe())[1])
+        #     self.terminal.write(
+        #         '{f} {n}: '.format(f=record.filename, n=record.line_number))
+        # self.terminal.write(message)
 
     def flush(self):
         """

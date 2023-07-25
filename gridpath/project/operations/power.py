@@ -19,11 +19,9 @@ power that a project is providing in each study timepoint.
 """
 
 
-import csv
 import os.path
 import pandas as pd
 from pyomo.environ import Expression, value
-import sqlite3
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import get_required_subtype_modules
@@ -187,7 +185,7 @@ def summarize_results(scenario_directory, subproblem, stage):
             "results",
             "project_timepoint.csv",
         )
-    )
+    )[["project", "load_zone", "period", "technology", "power_mw", "timepoint_weight"]]
 
     operational_results_df["weighted_power_mwh"] = (
         operational_results_df["power_mw"] * operational_results_df["timepoint_weight"]
@@ -196,8 +194,9 @@ def summarize_results(scenario_directory, subproblem, stage):
     # Aggregate total power results by load_zone, technology, and period
     operational_results_agg_df = pd.DataFrame(
         operational_results_df.groupby(
-            by=["load_zone", "period", "technology"], as_index=True, group_keys=False
-        ).sum(numeric_only=False)["weighted_power_mwh"]
+            ["load_zone", "period", "technology"],
+            as_index=True,
+        ).sum(numeric_only=True)["weighted_power_mwh"]
     )
 
     operational_results_agg_df.columns = ["weighted_power_mwh"]
@@ -209,8 +208,9 @@ def summarize_results(scenario_directory, subproblem, stage):
         operational_results_df.groupby(
             by=["load_zone", "period"],
             as_index=True,
-            group_keys=False,
-        ).sum(numeric_only=False,)["weighted_power_mwh"]
+        ).sum(
+            numeric_only=True
+        )["weighted_power_mwh"]
     )
 
     # Name the power column

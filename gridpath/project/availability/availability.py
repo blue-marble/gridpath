@@ -168,7 +168,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         [
             prj,
             tmp,
-            m.Availability_Derate[prj, tmp],
+            value(m.Availability_Derate[prj, tmp]),
         ]
         for (prj, tmp) in m.PRJ_OPR_TMPS
     ]
