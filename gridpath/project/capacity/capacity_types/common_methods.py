@@ -420,7 +420,7 @@ def read_results_file_generic(scenario_directory, subproblem, stage, capacity_ty
     capacity_results_agg_df = (
         df.loc[df["capacity_type"] == capacity_type]
         .groupby(by=["load_zone", "technology", "period"], as_index=True)
-        .sum(numeric_only=False)
+        .sum(numeric_only=True)
     )
 
     return capacity_results_agg_df
