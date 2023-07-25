@@ -21,19 +21,20 @@ project capacity can then be used to constrain operations, contribute to
 reliability constraints, etc.
 """
 
-import csv
 import os.path
 import pandas as pd
 from pyomo.environ import Set, Expression, value
 
 from gridpath.auxiliary.auxiliary import (
-    get_required_subtype_modules_from_projects_file,
+    get_required_subtype_modules,
     join_sets,
 )
+from gridpath.auxiliary.dynamic_components import capacity_type_operational_period_sets
+from gridpath.common_functions import create_results_df
 from gridpath.project.capacity.common_functions import (
     load_project_capacity_type_modules,
 )
-from gridpath.auxiliary.dynamic_components import capacity_type_operational_period_sets
+from gridpath.project import PROJECT_PERIOD_DF
 import gridpath.project.capacity.capacity_types as cap_type_init
 
 
@@ -110,7 +111,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Dynamic Inputs
     ###########################################################################
 
-    required_capacity_modules = get_required_subtype_modules_from_projects_file(
+    required_capacity_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
         subproblem=subproblem,
         stage=stage,
@@ -279,7 +280,7 @@ def operational_periods_by_project(prj, project_operational_periods):
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """ """
-    required_capacity_modules = get_required_subtype_modules_from_projects_file(
+    required_capacity_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
         subproblem=subproblem,
         stage=stage,
@@ -295,8 +296,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             imported_capacity_modules[op_m].load_model_data(
                 m, d, data_portal, scenario_directory, subproblem, stage
             )
-        else:
-            pass
 
 
 # TODO: move this to gridpath.project.capacity.__init__?
@@ -311,55 +310,41 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return:
     """
 
-    # Total capacity for all projects
-    with open(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "capacity_all.csv",
-        ),
-        "w",
-        newline="",
-    ) as f:
-        writer = csv.writer(f)
-        writer.writerow(
-            [
-                "project",
-                "period",
-                "capacity_type",
-                "technology",
-                "load_zone",
-                "capacity_mw",
-                "hyb_gen_capacity_mw",
-                "hyb_stor_capacity_mw",
-                "capacity_mwh",
-                "fuel_prod_capacity_fuelunitperhour",
-                "fuel_rel_capacity_fuelunitperhour",
-                "fuel_stor_capacity_fuelunit",
-            ]
-        )
-        for prj, p in m.PRJ_OPR_PRDS:
-            writer.writerow(
-                [
-                    prj,
-                    p,
-                    m.capacity_type[prj],
-                    m.technology[prj],
-                    m.load_zone[prj],
-                    value(m.Capacity_MW[prj, p]),
-                    value(m.Hyb_Gen_Capacity_MW[prj, p]),
-                    value(m.Hyb_Stor_Capacity_MW[prj, p]),
-                    value(m.Energy_Capacity_MWh[prj, p]),
-                    value(m.Fuel_Production_Capacity_FuelUnitPerHour[prj, p]),
-                    value(m.Fuel_Release_Capacity_FuelUnitPerHour[prj, p]),
-                    value(m.Fuel_Storage_Capacity_FuelUnit[prj, p]),
-                ]
-            )
+    results_columns = [
+        "capacity_mw",
+        "hyb_gen_capacity_mw",
+        "hyb_stor_capacity_mw",
+        "energy_capacity_mwh",
+        "fuel_prod_capacity_fuelunitperhour",
+        "fuel_rel_capacity_fuelunitperhour",
+        "fuel_stor_capacity_fuelunit",
+    ]
+    data = [
+        [
+            prj,
+            prd,
+            value(m.Capacity_MW[prj, prd]),
+            value(m.Hyb_Gen_Capacity_MW[prj, prd]),
+            value(m.Hyb_Stor_Capacity_MW[prj, prd]),
+            value(m.Energy_Capacity_MWh[prj, prd]),
+            value(m.Fuel_Production_Capacity_FuelUnitPerHour[prj, prd]),
+            value(m.Fuel_Release_Capacity_FuelUnitPerHour[prj, prd]),
+            value(m.Fuel_Storage_Capacity_FuelUnit[prj, prd]),
+        ]
+        for (prj, prd) in m.PRJ_OPR_PRDS
+    ]
+    results_df = create_results_df(
+        index_columns=["project", "period"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    for c in results_columns:
+        getattr(d, PROJECT_PERIOD_DF)[c] = None
+    getattr(d, PROJECT_PERIOD_DF).update(results_df)
 
     # Module-specific capacity results
-    required_capacity_modules = get_required_subtype_modules_from_projects_file(
+    required_capacity_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
         subproblem=subproblem,
         stage=stage,
@@ -371,12 +356,14 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         required_capacity_modules
     )
     for op_m in required_capacity_modules:
-        if hasattr(imported_capacity_modules[op_m], "export_results"):
-            imported_capacity_modules[op_m].export_results(
-                scenario_directory, subproblem, stage, m, d
-            )
-        else:
-            pass
+        if hasattr(imported_capacity_modules[op_m], "add_to_project_period_results"):
+            results_columns, optype_df = imported_capacity_modules[
+                op_m
+            ].add_to_project_period_results(scenario_directory, subproblem, stage, m, d)
+            for column in results_columns:
+                if column not in getattr(d, PROJECT_PERIOD_DF):
+                    getattr(d, PROJECT_PERIOD_DF)[column] = None
+            getattr(d, PROJECT_PERIOD_DF).update(optype_df)
 
 
 def summarize_results(scenario_directory, subproblem, stage):
@@ -407,11 +394,11 @@ def summarize_results(scenario_directory, subproblem, stage):
             str(subproblem),
             str(stage),
             "results",
-            "capacity_all.csv",
+            "project_period.csv",
         )
     )
 
-    required_capacity_modules = get_required_subtype_modules_from_projects_file(
+    required_capacity_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
         subproblem=subproblem,
         stage=stage,
@@ -427,5 +414,3 @@ def summarize_results(scenario_directory, subproblem, stage):
             imported_capacity_modules[op_m].summarize_results(
                 scenario_directory, subproblem, stage, summary_results_file
             )
-        else:
-            pass

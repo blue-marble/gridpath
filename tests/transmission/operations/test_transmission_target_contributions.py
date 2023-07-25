@@ -31,6 +31,7 @@ PREREQUISITE_MODULE_NAMES = [
     "geography.load_zones",
     "transmission",
     "transmission.capacity",
+    "transmission.capacity.capacity_types",
     "transmission.capacity.capacity",
     "transmission.availability.availability",
     "transmission.operations.operational_types",
@@ -117,6 +118,18 @@ class TestTxTargetContributions(unittest.TestCase):
             )
         )
         self.assertDictEqual(expected_zone, actual_zone)
+
+        # Param: contributes_net_flow_to_tx_target
+        expected_net_flow = OrderedDict(sorted({"Tx_binary_1": 1}.items()))
+        actual_net_flow = OrderedDict(
+            sorted(
+                {
+                    tx: instance.contributes_net_flow_to_tx_target[tx]
+                    for tx in instance.TRANSMISSION_TARGET_TX_LINES
+                }.items()
+            )
+        )
+        self.assertDictEqual(expected_net_flow, actual_net_flow)
 
         # Set: TRANSMISSION_TARGET_TX_OPR_TMPS
         expect_tx_op_tmp = sorted(

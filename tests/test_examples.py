@@ -19,7 +19,7 @@ import platform
 import sqlite3
 import unittest
 
-from gridpath import run_end_to_end, validate_inputs
+from gridpath import run_end_to_end, run_scenario, validate_inputs
 from db import create_database
 from db.common_functions import connect_to_database
 from db.utilities import port_csvs_to_db, scenario
@@ -1349,9 +1349,27 @@ class TestExamples(unittest.TestCase):
             "2periods_new_build_simple_prm_2loadzones_newtx_w_transfers", objective
         )
 
+    def test_example_2periods_new_build_simple_prm_2loadzones_newtx_w_transfers_w_costs(
+        self,
+    ):
+        """
+        Check validation and objective function value of
+        "2periods_new_build_simple_prm_2loadzones_newtx_w_transfers_w_costs"
+        example
+        :return:
+        """
+        objective = -17323445422.099785
+        self.check_validation(
+            "2periods_new_build_simple_prm_2loadzones_newtx_w_transfers_w_costs"
+        )
+        self.run_and_check_objective(
+            "2periods_new_build_simple_prm_2loadzones_newtx_w_transfers_w_costs",
+            objective,
+        )
+
     def test_example_test_period_tx_targets(self):
         """
-        Check validation and objective function value of "test_w_storage_w_soc_penalty"
+        Check validation and objective function value of "test_example_test_period_tx_targets"
         example
         :return:
         """
@@ -1367,6 +1385,79 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("test_w_flex_load")
         self.run_and_check_objective("test_w_flex_load", -3504306055178.457)
+
+    def test_example_test_new_solar_w_relative_capacity_instead_of_potential(self):
+        """
+        Check validation and objective function value of
+        "test_new_solar" example
+        :return:
+        """
+
+        self.check_validation("test_new_solar_w_relative_capacity_instead_of_potential")
+        self.run_and_check_objective(
+            "test_new_solar_w_relative_capacity_instead_of_potential",
+            -3796301348838.3267,
+        )
+
+    def test_example_2periods_new_build_2zones_transmission_w_hurdle_rates(self):
+        """
+        Check validation and objective function value of
+        "2periods_new_build_2zones_transmission_w_hurdle_rates" example
+        :return:
+        """
+        objective = -220771086972316.06
+        self.check_validation("2periods_new_build_2zones_transmission_w_hurdle_rates")
+        self.run_and_check_objective(
+            "2periods_new_build_2zones_transmission_w_hurdle_rates", objective
+        )
+
+    def test_example_2periods_new_build_simple_prm_2loadzones_newtx_w_transfers_w_subsidies(
+        self,
+    ):
+        """
+        Check validation and objective function value of
+        "test_new_solar" example
+        :return:
+        """
+
+        self.check_validation(
+            "2periods_new_build_simple_prm_2loadzones_newtx_w_transfers_w_subsidies"
+        )
+        self.run_and_check_objective(
+            "2periods_new_build_simple_prm_2loadzones_newtx_w_transfers_w_subsidies",
+            -17323439361.04978,
+        )
+
+    def test_example_test_new_build_storage_itc_single_superperiod(self):
+        """
+        Check validation and objective function value of
+        "test_new_build_storage_itc_single_superperiodself" example
+        :return:
+        """
+
+        self.check_validation("test_new_build_storage_itc_single_superperiod")
+        self.run_and_check_objective(
+            "test_new_build_storage_itc_single_superperiod", -4484589239.2
+        )
+
+    def test_incomplete_only(self):
+        """
+        Check that the "incomplete only" functionality works with no errors.
+        :return:
+        """
+
+        self.check_validation("test")
+        actual_objective = run_scenario.main(
+            [
+                "--scenario",
+                "test",
+                "--scenario_location",
+                EXAMPLES_DIRECTORY,
+                "--quiet",
+                "--mute_solver_output",
+                "--incomplete_only",
+            ]
+        )
 
     @classmethod
     def tearDownClass(cls):

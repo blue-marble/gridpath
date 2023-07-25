@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -39,10 +39,10 @@ throw a warning (but not an error) at runtime.
 import numpy as np
 import os.path
 import pandas as pd
-from pyomo.environ import Set, Param, Any, NonNegativeReals, Reals, PositiveReals
+from pyomo.environ import Set, Param, NonNegativeReals, Reals, PositiveReals
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
-from gridpath.auxiliary.db_interface import setup_results_import
+from gridpath.auxiliary.db_interface import import_csv
 from gridpath.auxiliary.dynamic_components import headroom_variables, footroom_variables
 from gridpath.auxiliary.validations import (
     write_validation_to_database,
@@ -908,9 +908,15 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         INNER JOIN
         inputs_project_cap_factor_limits
         USING(project, cap_factor_limits_scenario_id)
+        JOIN
+        (SELECT balancing_type_horizon, horizon
+        FROM inputs_temporal_horizons
+        WHERE temporal_scenario_id = {temporal_scenario_id}) as relevant_horizons
+        USING (balancing_type_horizon, horizon)
         WHERE project_portfolio_scenario_id = {project_portfolio_scenario_id}
         AND cap_factor_limits_scenario_id IS NOT NULL
         """.format(
+            temporal_scenario_id=subscenarios.TEMPORAL_SCENARIO_ID,
             project_opchar_scenario_id=subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
             project_portfolio_scenario_id=subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
         )
@@ -1087,25 +1093,15 @@ def import_results_into_database(
     :param quiet:
     :return:
     """
-    if not quiet:
-        print("project operations")
-    # project_operations.csv
-    # Delete prior results and create temporary import table for ordering
-    setup_results_import(
+    import_csv(
         conn=db,
         cursor=c,
-        table="results_project_operations",
         scenario_id=scenario_id,
         subproblem=subproblem,
         stage=stage,
-    )
-
-    df = pd.read_csv(os.path.join(results_directory, "project_operations.csv"))
-    df["scenario_id"] = scenario_id
-    df["subproblem_id"] = subproblem
-    df["stage_id"] = stage
-    df.to_sql(
-        name="results_project_operations", con=db, if_exists="append", index=False
+        quiet=quiet,
+        results_directory=results_directory,
+        which_results="project_timepoint",
     )
 
 

@@ -42,7 +42,5 @@ def get_endogenous_params(test_data_directory, param, project_subset):
     for prj in all_dict:
         if prj in project_subset:
             subset_dict[prj] = all_dict[prj]
-        else:
-            pass
 
     return subset_dict

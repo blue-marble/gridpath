@@ -21,7 +21,7 @@ and demand-side infrastructure 'projects' in the optimization problem.
 import csv
 import os.path
 import pandas as pd
-from pyomo.environ import Set, Param, Any
+from pyomo.environ import Set, Param, Any, value
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.validations import (
@@ -32,6 +32,9 @@ from gridpath.auxiliary.validations import (
     validate_columns,
     validate_missing_inputs,
 )
+
+PROJECT_PERIOD_DF = "project_period_df"
+PROJECT_TIMEPOINT_DF = "project_timepoint_df"
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -212,6 +215,101 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             select=("project", "technology"),
             param=m.technology,
         )
+
+
+# Input-Output
+###############################################################################
+
+
+def export_results(scenario_directory, subproblem, stage, m, d):
+    """
+    Export operations results.
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :param m:
+    The Pyomo abstract model
+    :param d:
+    Dynamic components
+    :return:
+    Nothing
+    """
+
+    # First create the results dataframes
+    # Other modules will update these dataframe with actual results
+    # The results dataframes are by index
+
+    # Project-period DF
+    project_period_df = pd.DataFrame(
+        columns=[
+            "project",
+            "period",
+            "capacity_type",
+            "availability_type",
+            "operational_type",
+            "technology",
+            "load_zone",
+        ],
+        data=[
+            [
+                prj,
+                prd,
+                m.capacity_type[prj],
+                m.availability_type[prj],
+                m.operational_type[prj],
+                m.technology[prj],
+                m.load_zone[prj],
+            ]
+            for (prj, prd) in m.PRJ_OPR_PRDS
+        ],
+    ).set_index(["project", "period"])
+
+    project_period_df.sort_index(inplace=True)
+
+    # Add the dataframe to the dynamic components to pass to other modules
+    setattr(d, PROJECT_PERIOD_DF, project_period_df)
+
+    # Project-timepoint DF
+    project_timepoint_df = pd.DataFrame(
+        columns=[
+            "project",
+            "timepoint",
+            "period",
+            "horizon",
+            "capacity_type",
+            "availability_type",
+            "operational_type",
+            "balancing_type",
+            "timepoint_weight",
+            "number_of_hours_in_timepoint",
+            "load_zone",
+            "technology",
+            "capacity_mw",
+        ],
+        data=[
+            [
+                prj,
+                tmp,
+                m.period[tmp],
+                m.horizon[tmp, m.balancing_type_project[prj]],
+                m.capacity_type[prj],
+                m.availability_type[prj],
+                m.operational_type[prj],
+                m.balancing_type_project[prj],
+                m.tmp_weight[tmp],
+                m.hrs_in_tmp[tmp],
+                m.load_zone[prj],
+                m.technology[prj],
+                value(m.Capacity_MW[prj, m.period[tmp]]),
+            ]
+            for (prj, tmp) in m.PRJ_OPR_TMPS
+        ],
+    ).set_index(["project", "timepoint"])
+
+    project_timepoint_df.sort_index(inplace=True)
+
+    # Add the dataframe to the dynamic components to pass to other modules
+    setattr(d, PROJECT_TIMEPOINT_DF, project_timepoint_df)
 
 
 # Database

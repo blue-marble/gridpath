@@ -2,11 +2,11 @@
 
 ### CAPACITY RESULTS ###
 
---> Retired Capacity <--
-                             Retired Capacity (MW)
-load_zone technology period                       
-Zone1     Coal       2020                     5.80
-                     2030                     5.80
+--> Retired (Linear) Generation Capacity <--
+                             Retired (Linear) Generation Capacity (MW)
+load_zone technology period                                           
+Zone1     Coal       2020                                         5.80
+                     2030                                         5.80
 
 ### OPERATIONAL RESULTS ###
 

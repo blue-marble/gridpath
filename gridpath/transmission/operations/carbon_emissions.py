@@ -34,6 +34,8 @@ from pyomo.environ import (
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.auxiliary.dynamic_components import carbon_cap_balance_emission_components
+from gridpath.common_functions import create_results_df
+from gridpath.transmission import TX_TIMEPOINT_DF
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -290,41 +292,29 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "carbon_emission_imports_by_tx_line.csv",
-        ),
-        "w",
-        newline="",
-    ) as carbon_emission_imports__results_file:
-        writer = csv.writer(carbon_emission_imports__results_file)
-        writer.writerow(
-            [
-                "tx_line",
-                "period",
-                "timepoint",
-                "timepoint_weight",
-                "number_of_hours_in_timepoint",
-                "carbon_emission_imports_tons",
-                "carbon_emission_imports_tons_degen",
-            ]
-        )
-        for tx, tmp in m.CRB_TX_OPR_TMPS:
-            writer.writerow(
-                [
-                    tx,
-                    m.period[tmp],
-                    tmp,
-                    m.tmp_weight[tmp],
-                    m.hrs_in_tmp[tmp],
-                    value(m.Import_Carbon_Emissions_Tons[tx, tmp]),
-                    calculate_carbon_emissions_imports(m, tx, tmp),
-                ]
-            )
+
+    results_columns = [
+        "carbon_emission_imports_tons",
+        "carbon_emission_imports_tons_degen",
+    ]
+    data = [
+        [
+            tx,
+            tmp,
+            value(m.Import_Carbon_Emissions_Tons[tx, tmp]),
+            calculate_carbon_emissions_imports(m, tx, tmp),
+        ]
+        for (tx, tmp) in m.CRB_TX_OPR_TMPS
+    ]
+    results_df = create_results_df(
+        index_columns=["transmission_line", "timepoint"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    for c in results_columns:
+        getattr(d, TX_TIMEPOINT_DF)[c] = None
+    getattr(d, TX_TIMEPOINT_DF).update(results_df)
 
 
 # Database
@@ -428,98 +418,6 @@ def write_model_inputs(
     ) as tx_file_out:
         writer = csv.writer(tx_file_out, delimiter="\t", lineterminator="\n")
         writer.writerows(new_rows)
-
-
-def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    """
-
-    :param scenario_id:
-    :param subproblem:
-    :param stage:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-    # Carbon emission imports by transmission line and timepoint
-    if not quiet:
-        print("transmission carbon emissions")
-
-    # Delete prior results and create temporary import table for ordering
-    setup_results_import(
-        conn=db,
-        cursor=c,
-        table="results_transmission_carbon_emissions",
-        scenario_id=scenario_id,
-        subproblem=subproblem,
-        stage=stage,
-    )
-
-    # Load results into the temporary table
-    results = []
-    with open(
-        os.path.join(results_directory, "carbon_emission_imports_by_tx_line.csv"), "r"
-    ) as emissions_file:
-        reader = csv.reader(emissions_file)
-
-        next(reader)  # skip header
-        for row in reader:
-            tx_line = row[0]
-            period = row[1]
-            timepoint = row[2]
-            timepoint_weight = row[3]
-            number_of_hours_in_timepoint = row[4]
-            carbon_emission_imports_tons = row[5]
-            carbon_emission_imports_tons_degen = row[6]
-
-            results.append(
-                (
-                    scenario_id,
-                    tx_line,
-                    period,
-                    subproblem,
-                    stage,
-                    timepoint,
-                    timepoint_weight,
-                    number_of_hours_in_timepoint,
-                    carbon_emission_imports_tons,
-                    carbon_emission_imports_tons_degen,
-                )
-            )
-
-    insert_temp_sql = """
-        INSERT INTO 
-        temp_results_transmission_carbon_emissions{}
-         (scenario_id, tx_line, period, subproblem_id, stage_id, 
-         timepoint, timepoint_weight, 
-         number_of_hours_in_timepoint, 
-         carbon_emission_imports_tons, 
-         carbon_emission_imports_tons_degen)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-         """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
-
-    # Insert sorted results into permanent results table
-    insert_sql = """
-        INSERT INTO results_transmission_carbon_emissions
-        (scenario_id, tx_line, period, subproblem_id, stage_id,
-        timepoint, timepoint_weight, number_of_hours_in_timepoint, 
-        carbon_emission_imports_tons, carbon_emission_imports_tons_degen)
-        SELECT
-        scenario_id, tx_line, period, subproblem_id, stage_id,
-        timepoint, timepoint_weight, number_of_hours_in_timepoint, 
-        carbon_emission_imports_tons, carbon_emission_imports_tons_degen
-        FROM temp_results_transmission_carbon_emissions{}
-         ORDER BY scenario_id, tx_line, subproblem_id, stage_id, timepoint;
-        """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)
 
 
 # Validation

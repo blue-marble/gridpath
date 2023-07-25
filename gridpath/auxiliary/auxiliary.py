@@ -22,13 +22,13 @@ import pandas as pd
 import traceback
 
 
-def get_required_subtype_modules_from_projects_file(
+def get_required_subtype_modules(
     scenario_directory, subproblem, stage, which_type, prj_or_tx="project"
 ):
     """
     Get a list of unique types from projects.tab.
     """
-    project_df = pd.read_csv(
+    df = pd.read_csv(
         os.path.join(
             scenario_directory,
             str(subproblem),
@@ -39,7 +39,7 @@ def get_required_subtype_modules_from_projects_file(
         sep="\t",
     )
 
-    required_modules = project_df[which_type].unique()
+    required_modules = df[which_type].unique()
 
     return required_modules
 
@@ -65,9 +65,7 @@ def load_subtype_modules(required_subtype_modules, package, required_attributes)
             imp_m = import_module("." + m, package=package)
             imported_subtype_modules[m] = imp_m
             for a in required_attributes:
-                if hasattr(imp_m, a):
-                    pass
-                else:
+                if not hasattr(imp_m, a):
                     raise Exception(
                         "ERROR! No "
                         + str(a)
@@ -120,8 +118,6 @@ def subset_init_by_param_value(mod, set_name, param_name, param_value):
 def check_list_has_single_item(l, error_msg):
     if len(l) > 1:
         raise ValueError(error_msg)
-    else:
-        pass
 
 
 def find_list_item_position(l, item):

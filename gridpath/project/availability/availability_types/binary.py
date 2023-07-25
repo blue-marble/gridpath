@@ -35,9 +35,8 @@ from gridpath.auxiliary.validations import (
     validate_missing_inputs,
     validate_column_monotonicity,
 )
-from gridpath.project.availability.availability_types.common_functions import (
-    insert_availability_results,
-)
+from gridpath.common_functions import create_results_df
+from gridpath.project import PROJECT_TIMEPOINT_DF
 from gridpath.project.operations.operational_types.common_functions import (
     determine_relevant_timepoints,
 )
@@ -380,7 +379,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     ] = avl_bin_min_avl_hrs_between_events_dict
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def add_to_prj_tmp_results(scenario_directory, subproblem, stage, m, d):
     """
     Export operations results.
     :param scenario_directory:
@@ -391,55 +390,28 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return: Nothing
     """
 
-    with open(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "project_availability_endogenous_binary.csv",
-        ),
-        "w",
-        newline="",
-    ) as f:
-        writer = csv.writer(f)
-        writer.writerow(
-            [
-                "project",
-                "period",
-                "subproblem_id",
-                "stage_id",
-                "availability_type",
-                "timepoint",
-                "timepoint_weight",
-                "number_of_hours_in_timepoint",
-                "load_zone",
-                "technology",
-                "unavailability_decision",
-                "start_unavailability",
-                "stop_unavailability",
-                "availability_derate",
-            ]
-        )
-        for p, tmp in m.AVL_BIN_OPR_TMPS:
-            writer.writerow(
-                [
-                    p,
-                    m.period[tmp],
-                    1 if subproblem == "" else subproblem,
-                    1 if stage == "" else stage,
-                    m.availability_type[p],
-                    tmp,
-                    m.tmp_weight[tmp],
-                    m.hrs_in_tmp[tmp],
-                    m.load_zone[p],
-                    m.technology[p],
-                    value(m.AvlBin_Unavailable[p, tmp]),
-                    value(m.AvlBin_Start_Unavailability[p, tmp]),
-                    value(m.AvlBin_Stop_Unavailability[p, tmp]),
-                    1 - value(m.AvlBin_Unavailable[p, tmp]),
-                ]
-            )
+    results_columns = [
+        "unavailability_decision",
+        "start_unavailability",
+        "stop_unavailability",
+    ]
+    data = [
+        [
+            prj,
+            tmp,
+            value(m.AvlBin_Unavailable[prj, tmp]),
+            value(m.AvlBin_Start_Unavailability[prj, tmp]),
+            value(m.AvlBin_Stop_Unavailability[prj, tmp]),
+        ]
+        for (prj, tmp) in m.AVL_BIN_OPR_TMPS
+    ]
+    results_df = create_results_df(
+        index_columns=["project", "timepoint"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    return results_columns, results_df
 
 
 # Database
@@ -537,32 +509,6 @@ def write_model_inputs(
         for row in endogenous_availability_params:
             replace_nulls = ["." if i is None else i for i in row]
             writer.writerow(replace_nulls)
-
-
-def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    """
-
-    :param scenario_id:
-    :param subproblem:
-    :param stage:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-    if not quiet:
-        print("project availability binary")
-
-    insert_availability_results(
-        db=db,
-        c=c,
-        results_directory=results_directory,
-        scenario_id=scenario_id,
-        results_file="project_availability_endogenous_binary.csv",
-    )
 
 
 # Validation

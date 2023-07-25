@@ -17,7 +17,10 @@ Aggregate delivered transmission-target-eligible transmission flow from the tx_l
 the transmission-target zone - period level.
 """
 
-from pyomo.environ import Expression
+from pyomo.environ import Expression, value
+
+from gridpath.common_functions import create_results_df
+from gridpath.system.policy.transmission_targets import TX_TARGETS_DF
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -37,7 +40,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         :return:
         """
         return sum(
-            mod.Transmission_Target_Energy_MW_Pos_Dir[tx, tmp]
+            (
+                mod.Transmission_Target_Energy_MW_Pos_Dir[tx, tmp]
+                if float(mod.contributes_net_flow_to_tx_target[tx]) == 0
+                else mod.Transmission_Target_Net_Energy_MW_Pos_Dir[tx, tmp]
+            )
             * mod.hrs_in_tmp[tmp]
             * mod.tmp_weight[tmp]
             for (tx, tmp) in mod.TRANSMISSION_TARGET_TX_OPR_TMPS
@@ -59,7 +66,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         :return:
         """
         return sum(
-            mod.Transmission_Target_Energy_MW_Neg_Dir[tx, tmp]
+            (
+                mod.Transmission_Target_Energy_MW_Neg_Dir[tx, tmp]
+                if float(mod.contributes_net_flow_to_tx_target[tx]) == 0
+                else mod.Transmission_Target_Net_Energy_MW_Neg_Dir[tx, tmp]
+            )
             * mod.hrs_in_tmp[tmp]
             * mod.tmp_weight[tmp]
             for (tx, tmp) in mod.TRANSMISSION_TARGET_TX_OPR_TMPS
@@ -71,3 +82,38 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.TRANSMISSION_TARGET_ZONE_PERIODS_WITH_TRANSMISSION_TARGET,
         rule=transmission_target_neg_dir_contribution_rule,
     )
+
+
+def export_results(scenario_directory, subproblem, stage, m, d):
+    """
+
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :param m:
+    :param d:
+    :return:
+    """
+
+    results_columns = [
+        "total_transmission_target_energy_positive_direction_mwh",
+        "total_transmission_target_energy_negative_direction_mwh",
+    ]
+    data = [
+        [
+            z,
+            p,
+            value(m.Total_Period_Transmission_Target_Energy_Pos_Dir_MWh[z, p]),
+            value(m.Total_Period_Transmission_Target_Energy_Neg_Dir_MWh[z, p]),
+        ]
+        for (z, p) in m.TRANSMISSION_TARGET_ZONE_PERIODS_WITH_TRANSMISSION_TARGET
+    ]
+    results_df = create_results_df(
+        index_columns=["transmission_target_zone", "period"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    for c in results_columns:
+        getattr(d, TX_TARGETS_DF)[c] = None
+    getattr(d, TX_TARGETS_DF).update(results_df)

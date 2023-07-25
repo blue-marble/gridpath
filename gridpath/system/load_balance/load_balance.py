@@ -47,6 +47,8 @@ from gridpath.auxiliary.dynamic_components import (
     load_balance_consumption_components,
     load_balance_production_components,
 )
+from gridpath.common_functions import create_results_df
+from gridpath.system.load_balance import LOAD_ZONE_TMP_DF
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -177,187 +179,32 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "load_balance.csv",
-        ),
-        "w",
-        newline="",
-    ) as results_file:
-        writer = csv.writer(results_file)
-        writer.writerow(
-            [
-                "zone",
-                "period",
-                "timepoint",
-                "discount_factor",
-                "number_years_represented",
-                "timepoint_weight",
-                "number_of_hours_in_timepoint",
-                "load_mw",
-                "overgeneration_mw",
-                "unserved_energy_mw",
-            ]
-        )
-        for z in getattr(m, "LOAD_ZONES"):
-            for tmp in getattr(m, "TMPS"):
-                writer.writerow(
-                    [
-                        z,
-                        m.period[tmp],
-                        tmp,
-                        m.discount_factor[m.period[tmp]],
-                        m.number_years_represented[m.period[tmp]],
-                        m.tmp_weight[tmp],
-                        m.hrs_in_tmp[tmp],
-                        m.static_load_mw[z, tmp],
-                        value(m.Overgeneration_MW_Expression[z, tmp]),
-                        value(m.Unserved_Energy_MW_Expression[z, tmp]),
-                    ]
-                )
 
-
-def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
-    instance.constraint_indices["Meet_Load_Constraint"] = ["zone", "timepoint", "dual"]
-
-
-def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    """
-
-    :param scenario_id:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-    if not quiet:
-        print("system load balance")
-
-    # Delete prior results and create temporary import table for ordering
-    setup_results_import(
-        conn=db,
-        cursor=c,
-        table="results_system_load_balance",
-        scenario_id=scenario_id,
-        subproblem=subproblem,
-        stage=stage,
+    results_columns = [
+        "overgeneration_mw",
+        "unserved_energy_mw",
+        "load_balance_dual",
+        "load_balance_marginal_cost_per_mw",
+    ]
+    data = [
+        [
+            lz,
+            tmp,
+            value(m.Overgeneration_MW_Expression[lz, tmp]),
+            value(m.Unserved_Energy_MW_Expression[lz, tmp]),
+            m.dual[getattr(m, "Meet_Load_Constraint")[lz, tmp]],
+            m.dual[getattr(m, "Meet_Load_Constraint")[lz, tmp]]
+            / m.tmp_objective_coefficient[tmp],
+        ]
+        for lz in getattr(m, "LOAD_ZONES")
+        for tmp in getattr(m, "TMPS")
+    ]
+    results_df = create_results_df(
+        index_columns=["load_zone", "timepoint"],
+        results_columns=results_columns,
+        data=data,
     )
 
-    # Load results into the temporary table
-    results = []
-    with open(
-        os.path.join(results_directory, "load_balance.csv"), "r"
-    ) as load_balance_file:
-        reader = csv.reader(load_balance_file)
-
-        next(reader)  # skip header
-        for row in reader:
-            ba = row[0]
-            period = row[1]
-            timepoint = row[2]
-            discount_factor = row[3]
-            number_years = row[4]
-            timepoint_weight = row[5]
-            number_of_hours_in_timepoint = row[6]
-            load = row[7]
-            overgen = row[8]
-            unserved_energy = row[9]
-
-            results.append(
-                (
-                    scenario_id,
-                    ba,
-                    period,
-                    subproblem,
-                    stage,
-                    timepoint,
-                    discount_factor,
-                    number_years,
-                    timepoint_weight,
-                    number_of_hours_in_timepoint,
-                    load,
-                    overgen,
-                    unserved_energy,
-                )
-            )
-    insert_temp_sql = """
-        INSERT INTO 
-        temp_results_system_load_balance{scenario_id}
-        (scenario_id, load_zone, period, subproblem_id, stage_id,
-        timepoint, discount_factor, number_years_represented,
-        timepoint_weight, number_of_hours_in_timepoint,
-        load_mw, overgeneration_mw, unserved_energy_mw)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-        """.format(
-        scenario_id=scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
-
-    # Update the temporary table with the duals
-    # Update duals
-    duals_results = []
-    with open(
-        os.path.join(results_directory, "Meet_Load_Constraint.csv"), "r"
-    ) as load_balance_duals_file:
-        reader = csv.reader(load_balance_duals_file)
-
-        next(reader)  # skip header
-
-        for row in reader:
-            duals_results.append(
-                (row[2], row[0], row[1], scenario_id, subproblem, stage)
-            )
-    duals_sql = """
-        UPDATE temp_results_system_load_balance{scenario_id}
-        SET dual = ?
-        WHERE load_zone = ?
-        AND timepoint = ?
-        AND scenario_id = ?
-        AND subproblem_id = ?
-        AND stage_id = ?;
-        """.format(
-        scenario_id=scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=duals_sql, data=duals_results)
-
-    # Calculate marginal cost per MW
-    mc_sql = """
-        UPDATE temp_results_system_load_balance{scenario_id}
-        SET marginal_price_per_mw = 
-        dual / (discount_factor * number_years_represented * timepoint_weight 
-        * number_of_hours_in_timepoint)
-        WHERE scenario_id = ?
-        AND subproblem_id = ?
-        AND stage_id = ?;
-        """.format(
-        scenario_id=scenario_id
-    )
-    spin_on_database_lock(
-        conn=db, cursor=c, sql=mc_sql, data=(scenario_id, subproblem, stage), many=False
-    )
-
-    # Insert sorted results into permanent results table
-    insert_sql = """
-        INSERT INTO results_system_load_balance
-        (scenario_id, load_zone, period, subproblem_id, stage_id, 
-        timepoint, discount_factor, number_years_represented,
-        timepoint_weight, number_of_hours_in_timepoint,
-        load_mw, overgeneration_mw, unserved_energy_mw, dual, marginal_price_per_mw)
-        SELECT
-        scenario_id, load_zone, period, subproblem_id, stage_id, 
-        timepoint, discount_factor, number_years_represented,
-        timepoint_weight, number_of_hours_in_timepoint,
-        load_mw, overgeneration_mw, unserved_energy_mw, dual, marginal_price_per_mw
-        FROM temp_results_system_load_balance{}
-        ORDER BY scenario_id, load_zone, subproblem_id, stage_id, timepoint;
-        """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)
+    for c in results_columns:
+        getattr(d, LOAD_ZONE_TMP_DF)[c] = None
+    getattr(d, LOAD_ZONE_TMP_DF).update(results_df)

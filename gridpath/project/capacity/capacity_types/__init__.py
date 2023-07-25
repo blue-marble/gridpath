@@ -50,8 +50,6 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
             imported_capacity_type_modules[op_m].validate_inputs(
                 scenario_id, subscenarios, subproblem, stage, conn
             )
-        else:
-            pass
 
 
 def write_model_inputs(
@@ -82,41 +80,6 @@ def write_model_inputs(
             imported_capacity_type_modules[op_m].write_model_inputs(
                 scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
             )
-        else:
-            pass
-
-
-# TODO: move this to gridpath.project.capacity.__init__?
-def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    """
-
-    :param scenario_id:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-    # Load in the required capacity type modules
-    required_capacity_type_modules = get_required_capacity_types_from_database(
-        db, scenario_id
-    )
-    imported_capacity_type_modules = load_project_capacity_type_modules(
-        required_capacity_type_modules
-    )
-
-    # Import module-specific results
-    for op_m in required_capacity_type_modules:
-        if hasattr(
-            imported_capacity_type_modules[op_m], "import_results_into_database"
-        ):
-            imported_capacity_type_modules[op_m].import_results_into_database(
-                scenario_id, subproblem, stage, c, db, results_directory, quiet
-            )
-        else:
-            pass
 
 
 # Capacity Type Module Method Defaults

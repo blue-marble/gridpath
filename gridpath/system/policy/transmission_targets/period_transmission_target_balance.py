@@ -25,6 +25,8 @@ from pyomo.environ import Var, Constraint, NonNegativeReals, Expression, value
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.db_interface import setup_results_import
+from gridpath.common_functions import create_results_df
+from gridpath.system.policy.transmission_targets import TX_TARGETS_DF
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -81,7 +83,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             return (
                 mod.Total_Period_Transmission_Target_Energy_Pos_Dir_MWh[z, p]
                 + mod.Period_Transmission_Target_Shortage_Pos_Dir_MWh_Expression[z, p]
-                >= mod.Period_Transmission_Target_Pos_Dir[z, p]
+                >= mod.period_transmission_target_pos_dir_mwh[z, p]
             )
 
     m.Period_Transmission_Target_Pos_Dir_Constraint = Constraint(
@@ -103,7 +105,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             return (
                 mod.Total_Period_Transmission_Target_Energy_Neg_Dir_MWh[z, p]
                 + mod.Period_Transmission_Target_Shortage_Neg_Dir_MWh_Expression[z, p]
-                >= mod.Period_Transmission_Target_Neg_Dir[z, p]
+                >= mod.period_transmission_target_neg_dir_mwh[z, p]
             )
 
     m.Period_Transmission_Target_Neg_Dir_Constraint = Constraint(
@@ -122,176 +124,36 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "period_transmission_target.csv",
-        ),
-        "w",
-        newline="",
-    ) as transmission_target_results_file:
-        writer = csv.writer(transmission_target_results_file)
-        writer.writerow(
-            [
-                "transmission_target_zone",
-                "period",
-                "discount_factor",
-                "number_years_represented",
-                "transmission_target_positive_direction_mwh",
-                "total_transmission_target_energy_positive_direction_mwh",
-                "fraction_of_transmission_target_positive_direction_met",
-                "transmission_target_shortage_positive_direction_mwh",
-                "transmission_target_negative_direction_mwh",
-                "total_transmission_target_energy_negative_direction_mwh",
-                "fraction_of_transmission_target_negative_direction_met",
-                "transmission_target_shortage_negative_direction_mwh",
-            ]
-        )
-        for z, p in m.TRANSMISSION_TARGET_ZONE_PERIODS_WITH_TRANSMISSION_TARGET:
-            writer.writerow(
-                [
-                    z,
-                    p,
-                    m.discount_factor[p],
-                    m.number_years_represented[p],
-                    value(m.Period_Transmission_Target_Pos_Dir[z, p]),
-                    value(m.Total_Period_Transmission_Target_Energy_Pos_Dir_MWh[z, p]),
-                    1
-                    if float(m.period_transmission_target_pos_dir_mwh[z, p]) == 0
-                    else value(
-                        m.Total_Period_Transmission_Target_Energy_Pos_Dir_MWh[z, p]
-                    )
-                    / float(m.period_transmission_target_pos_dir_mwh[z, p]),
-                    value(
-                        m.Period_Transmission_Target_Shortage_Pos_Dir_MWh_Expression[
-                            z, p
-                        ]
-                    ),
-                    value(m.Period_Transmission_Target_Neg_Dir[z, p]),
-                    value(m.Total_Period_Transmission_Target_Energy_Neg_Dir_MWh[z, p]),
-                    1
-                    if float(m.period_transmission_target_neg_dir_mwh[z, p]) == 0
-                    else value(
-                        m.Total_Period_Transmission_Target_Energy_Neg_Dir_MWh[z, p]
-                    )
-                    / float(m.period_transmission_target_neg_dir_mwh[z, p]),
-                    value(
-                        m.Period_Transmission_Target_Shortage_Neg_Dir_MWh_Expression[
-                            z, p
-                        ]
-                    ),
-                ]
-            )
 
-
-def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    """
-
-    :param scenario_id:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-    # Delete prior results and create temporary import table for ordering
-    setup_results_import(
-        conn=db,
-        cursor=c,
-        table="results_system_period_transmission_target",
-        scenario_id=scenario_id,
-        subproblem=subproblem,
-        stage=stage,
+    results_columns = [
+        "fraction_of_transmission_target_positive_direction_met",
+        "transmission_target_shortage_positive_direction_mwh",
+        "fraction_of_transmission_target_negative_direction_met",
+        "transmission_target_shortage_negative_direction_mwh",
+    ]
+    data = [
+        [
+            z,
+            p,
+            1
+            if float(m.period_transmission_target_pos_dir_mwh[z, p]) == 0
+            else value(m.Total_Period_Transmission_Target_Energy_Pos_Dir_MWh[z, p])
+            / float(m.period_transmission_target_pos_dir_mwh[z, p]),
+            value(m.Period_Transmission_Target_Shortage_Pos_Dir_MWh_Expression[z, p]),
+            1
+            if float(m.period_transmission_target_neg_dir_mwh[z, p]) == 0
+            else value(m.Total_Period_Transmission_Target_Energy_Neg_Dir_MWh[z, p])
+            / float(m.period_transmission_target_neg_dir_mwh[z, p]),
+            value(m.Period_Transmission_Target_Shortage_Neg_Dir_MWh_Expression[z, p]),
+        ]
+        for (z, p) in m.TRANSMISSION_TARGET_ZONE_PERIODS_WITH_TRANSMISSION_TARGET
+    ]
+    results_df = create_results_df(
+        index_columns=["transmission_target_zone", "period"],
+        results_columns=results_columns,
+        data=data,
     )
 
-    # Load results into the temporary table
-    results = []
-    with open(
-        os.path.join(results_directory, "period_transmission_target.csv"), "r"
-    ) as transmission_target_file:
-        reader = csv.reader(transmission_target_file)
-
-        next(reader)  # skip header
-        for row in reader:
-            transmission_target_zone = row[0]
-            period = row[1]
-            discount_factor = row[2]
-            number_years = row[3]
-            transmission_target_pos_dir = row[4]
-            total_transmission_target_provision_pos_dir = row[5]
-            fraction_met_pos_dir = row[6]
-            shortage_pos_dir = row[7]
-            transmission_target_neg_dir = row[8]
-            total_transmission_target_provision_neg_dir = row[9]
-            fraction_met_neg_dir = row[10]
-            shortage_neg_dir = row[11]
-
-            results.append(
-                (
-                    scenario_id,
-                    transmission_target_zone,
-                    period,
-                    subproblem,
-                    stage,
-                    discount_factor,
-                    number_years,
-                    transmission_target_pos_dir,
-                    total_transmission_target_provision_pos_dir,
-                    fraction_met_pos_dir,
-                    shortage_pos_dir,
-                    transmission_target_neg_dir,
-                    total_transmission_target_provision_neg_dir,
-                    fraction_met_neg_dir,
-                    shortage_neg_dir,
-                )
-            )
-
-    insert_temp_sql = """
-        INSERT INTO temp_results_system_period_transmission_target{}
-         (scenario_id, transmission_target_zone, period, subproblem_id, stage_id,
-         discount_factor, number_years_represented, transmission_target_positive_direction_mwh, 
-         total_transmission_target_energy_positive_direction_mwh,
-         fraction_of_transmission_target_positive_direction_met,
-         transmission_target_shortage_positive_direction_mwh,
-         transmission_target_negative_direction_mwh,
-         total_transmission_target_energy_negative_direction_mwh,
-         fraction_of_transmission_target_negative_direction_met,
-         transmission_target_shortage_negative_direction_mwh)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-         """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
-
-    # Insert sorted results into permanent results table
-    insert_sql = """
-        INSERT INTO results_system_period_transmission_target
-        (scenario_id, transmission_target_zone, period, subproblem_id, stage_id,
-        discount_factor, number_years_represented, transmission_target_positive_direction_mwh, 
-        total_transmission_target_energy_positive_direction_mwh,
-        fraction_of_transmission_target_positive_direction_met,
-        transmission_target_shortage_positive_direction_mwh,
-        transmission_target_negative_direction_mwh,
-        total_transmission_target_energy_negative_direction_mwh,
-        fraction_of_transmission_target_negative_direction_met,
-        transmission_target_shortage_negative_direction_mwh)
-        SELECT scenario_id, transmission_target_zone, period, subproblem_id, stage_id,
-        discount_factor, number_years_represented, transmission_target_positive_direction_mwh, 
-        total_transmission_target_energy_positive_direction_mwh,
-        fraction_of_transmission_target_positive_direction_met,
-        transmission_target_shortage_positive_direction_mwh,
-        transmission_target_negative_direction_mwh,
-        total_transmission_target_energy_negative_direction_mwh,
-        fraction_of_transmission_target_negative_direction_met,
-        transmission_target_shortage_negative_direction_mwh
-        FROM temp_results_system_period_transmission_target{}
-        ORDER BY scenario_id, transmission_target_zone, period, subproblem_id, stage_id;
-        """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)
+    for c in results_columns:
+        getattr(d, TX_TARGETS_DF)[c] = None
+    getattr(d, TX_TARGETS_DF).update(results_df)

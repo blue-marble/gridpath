@@ -227,8 +227,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         data_portal.data()["hrs_in_linked_tmp"] = hrs_in_linked_tmp_dict
         if linked_tmps:
             data_portal.data()["furthest_linked_tmp"] = {None: min(linked_tmps)}
-        else:
-            pass
 
     # If the file is not there, there were no linked subproblems and the
     # file was not written, so load in empty components
@@ -366,8 +364,6 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
             spin_on_database_lock(
                 conn=db, cursor=c, sql=sql, data=(scenario_id,), many=False
             )
-    else:
-        pass
 
 
 # Validation

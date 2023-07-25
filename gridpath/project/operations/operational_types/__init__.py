@@ -24,7 +24,7 @@ module, these defaults are used.
 
 from pyomo.environ import Set
 
-from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file
+from gridpath.auxiliary.auxiliary import get_required_subtype_modules
 from gridpath.project.operations.common_functions import load_operational_type_modules
 
 
@@ -43,7 +43,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     """
     # Import needed operational modules
-    required_operational_modules = get_required_subtype_modules_from_projects_file(
+    required_operational_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
         subproblem=subproblem,
         stage=stage,
@@ -87,7 +87,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :return:
     """
     # Import needed operational modules
-    required_operational_modules = get_required_subtype_modules_from_projects_file(
+    required_operational_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
         subproblem=subproblem,
         stage=stage,
@@ -104,8 +104,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             imported_operational_modules[op_m].load_model_data(
                 m, d, data_portal, scenario_directory, subproblem, stage
             )
-        else:
-            pass
 
 
 def export_results(scenario_directory, subproblem, stage, m, d):
@@ -123,7 +121,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     """
     # Export module-specific results
     # Operational type modules
-    required_operational_modules = get_required_subtype_modules_from_projects_file(
+    required_operational_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
         subproblem=subproblem,
         stage=stage,
@@ -144,14 +142,12 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 subproblem,
                 stage,
             )
-        else:
-            pass
 
 
 def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
     # Save module-specific duals
     # Operational type modules
-    required_operational_modules = get_required_subtype_modules_from_projects_file(
+    required_operational_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
         subproblem=subproblem,
         stage=stage,
@@ -172,8 +168,6 @@ def save_duals(scenario_directory, subproblem, stage, instance, dynamic_componen
                 instance,
                 dynamic_components,
             )
-        else:
-            pass
 
 
 # TODO: move this into SubScenarios class?
@@ -256,8 +250,6 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
             imported_operational_modules[op_m].validate_inputs(
                 scenario_id, subscenarios, subproblem, stage, conn
             )
-        else:
-            pass
 
 
 def write_model_inputs(
@@ -287,8 +279,6 @@ def write_model_inputs(
             imported_operational_modules[op_m].write_model_inputs(
                 scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
             )
-        else:
-            pass
 
 
 def process_results(db, c, scenario_id, subscenarios, quiet):
@@ -314,8 +304,6 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
             imported_operational_modules[op_m].process_model_results(
                 db, c, scenario_id, subscenarios, quiet
             )
-        else:
-            pass
 
 
 # Operational Type Module Method Defaults

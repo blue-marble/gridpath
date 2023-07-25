@@ -48,9 +48,7 @@ from gridpath.project.operations.operational_types.common_functions import (
     check_for_tmps_to_link,
     validate_opchars,
 )
-from gridpath.project.operations.common_functions import (
-    create_dispatch_results_optype_df,
-)
+from gridpath.common_functions import create_results_df
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -453,7 +451,7 @@ def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
     #     pass
 
 
-def add_to_dispatch_results(mod):
+def add_to_prj_tmp_results(mod):
     results_columns = [
         "fuel_in_storage_fuelunit",
         "produce_fuel_fuelunitperhour",
@@ -472,8 +470,10 @@ def add_to_dispatch_results(mod):
         for (prj, tmp) in mod.FUEL_PROD_OPR_TMPS
     ]
 
-    optype_dispatch_df = create_dispatch_results_optype_df(
-        results_columns=results_columns, data=data
+    optype_dispatch_df = create_results_df(
+        index_columns=["project", "timepoint"],
+        results_columns=results_columns,
+        data=data,
     )
 
     return results_columns, optype_dispatch_df
@@ -490,7 +490,7 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
     :return:
     """
 
-    # Dispatch results added to project_operations.csv via add_to_dispatch_results()
+    # Dispatch results added to project_timepoint.csv via add_to_prj_tmp_results()
 
     # # If there's a linked_subproblems_map CSV file, check which of the
     # # current subproblem TMPS we should export results for to link to the

@@ -1,32 +1,32 @@
 -- Cumulative generator newly build capacity by scenario, project, an period
 SELECT scenario_id, scenario_name, project, period, technology, load_zone,
 energy_target_zone, carbon_cap_zone, new_build_mw
-FROM results_project_capacity
+FROM results_project_period
 JOIN scenarios USING (scenario_id)
 ;
 
 -- Cumulative storage newly build capacity by scenario, project, and period
 SELECT scenario_id, scenario_name, project, period, technology, load_zone,
 energy_target_zone, carbon_cap_zone, new_build_mw, new_build_mwh
-FROM results_project_capacity
+FROM results_project_period
 JOIN scenarios USING (scenario_id)
 ;
 
 -- Cumulative retirements by scenario, project and period
 select scenario_id, scenario_name, project, period, technology,
 local_capacity_zone,
-results_project_capacity.capacity_mw as remaining_capacity_mw,
+results_project_period.capacity_mw as remaining_capacity_mw,
 retired_mw,
-results_project_capacity.capacity_mw + retired_mw as retirable_mw
-from results_project_capacity
-left join results_project_capacity using (scenario_id, project, period)
+results_project_period.capacity_mw + retired_mw as retirable_mw
+from results_project_period
+left join results_project_period using (scenario_id, project, period)
 left join results_project_local_capacity using (scenario_id, project, period)
 left join scenarios using (scenario_id)
 ;
 
 -- Capacity by scenario, project, and period (new and specified projects)
 SELECT scenario_id, scenario_name, project, technology, period, capacity_mw
-FROM results_project_capacity
+FROM results_project_period
 LEFT JOIN scenarios USING (scenario_id)
 --WHERE load_zone = 'CAISO'
 ;
@@ -34,7 +34,7 @@ LEFT JOIN scenarios USING (scenario_id)
 -- Annual generation by scenario, project, and period
 SELECT scenario_id, scenario_name, project, technology, period,
 sum(power_mw * timepoint_weight * number_of_hours_in_timepoint ) as annual_mwh
-FROM results_project_operations
+FROM results_project_timepoint
 WHERE operational_type = 'gen_commit_cap'
 JOIN scenarios USING (scenario_id)
 --WHERE load_zone = 'CAISO'
@@ -50,7 +50,7 @@ capacity_mw, annual_mwh/(8760*capacity_mw) as cap_factor
 FROM
 (SELECT scenario_id, scenario_name, project, technology, period,
 sum(power_mw * timepoint_weight * number_of_hours_in_timepoint ) as annual_mwh
-FROM results_project_operations
+FROM results_project_timepoint
 JOIN scenarios USING (scenario_id)
 --WHERE load_zone = 'CAISO'
 --AND (technology = 'Peaker' OR technology = 'CCGT' OR technology = 'CHP' OR
@@ -59,7 +59,7 @@ JOIN scenarios USING (scenario_id)
 GROUP BY scenario_id, project, technology, period) as energy_table
 JOIN
 (SELECT scenario_id, scenario_name, project, technology, period, capacity_mw
-FROM results_project_capacity
+FROM results_project_period
 LEFT JOIN scenarios USING (scenario_id)
 --WHERE load_zone = 'CAISO'
 ) as capacity_table
@@ -76,12 +76,12 @@ commitment, power_mw, spin_mw, reg_up_mw, reg_down_mw, lf_up_mw, lf_down_mw,
  frq_resp_mw
 from
 (select scenario_id, project, period, horizon, timepoint, timepoint_weight, project, power_mw
-from results_project_operations
+from results_project_timepoint
 -- where project in ()
 ) as disp_tbl
 left join
 (select scenario_id, project, period, horizon, timepoint, committed_units as commitment
-from results_project_operations
+from results_project_timepoint
 where operational_type = 'gen_commit_cap'
 -- UNION ALL
 -- select scenario_id, project, period, horizon, timepoint, committed_units as commitment
@@ -131,7 +131,7 @@ JOIN scenarios USING (scenario_id)
 GROUP BY scenario_id, project, technology, period) as energy_table
 JOIN
 (SELECT scenario_id, scenario_name, project, technology, period, capacity_mw
-FROM results_project_capacity
+FROM results_project_period
 LEFT JOIN scenarios USING (scenario_id)
 --WHERE load_zone = 'CAISO'
 ) as capacity_table
@@ -156,7 +156,7 @@ daily_startup_cost
 from (
 select scenario_id, project, period, horizon, timepoint_weight, technology,
 sum(startup_cost) as daily_startup_cost
-from results_project_operations
+from results_project_timepoint
 -- where load_zone = 'CAISO'
 group by scenario_id, project, period, horizon
 ) as all_daily_startup_cost_tbl
@@ -170,7 +170,7 @@ where project_operational_chars_scenario_id = 1
 using (project)
 join
 (select scenario_id, project, period, capacity_mw
-from results_project_capacity
+from results_project_period
 ) as capacity_tbl
 using (scenario_id, project, period)
 join scenarios using (scenario_id)
@@ -179,7 +179,7 @@ join scenarios using (scenario_id)
 -- Generation by scenario, load_zone, period, and technology
 SELECT scenario_id, scenario_name, load_zone, period, technology,
 sum(timepoint_weight*power_mw) as mwh
-FROM results_project_operations
+FROM results_project_timepoint
 LEFT JOIN scenarios USING (scenario_id)
 GROUP BY scenario_id, load_zone, period, technology
 ORDER BY scenario_id, load_zone, period, technology
@@ -188,7 +188,7 @@ ORDER BY scenario_id, load_zone, period, technology
 -- Net imports by scenario, load_zone, and period
 select scenario_id, load_zone, period,
 sum(timepoint_weight * net_imports_mw) as net imports
-from results_transmission_imports_exports
+from results_system_load_zone_timepoint
 --where load_zone = 'CAISO'
 group by scenario_id, load_zone, period
 ;
@@ -205,7 +205,7 @@ hurdle_cost/1000000 as hurdle_cost_millions,
 capacity_cost/1000000 + fuel_cost/1000000 + variable_om_cost/1000000 + startup_cost/1000000 + shutdown_cost/1000000 + hurdle_cost/1000000 as total_cost_millions
 FROM
 (SELECT scenario_id, period, sum(capacity_cost) AS capacity_cost
-FROM  results_project_costs_capacity
+FROM  results_project_period
 GROUP BY scenario_id, period) AS cap_costs
 JOIN
 (SELECT scenario_id, period,
@@ -214,7 +214,7 @@ sum(variable_om_cost * timepoint_weight * number_of_hours_in_timepoint) AS
 variable_om_cost,
 sum(startup_cost * timepoint_weight) AS startup_cost,
 sum(shutdown_cost * timepoint_weight) AS shutdown_cost
-FROM results_project_operations
+FROM results_project_timepoint
 GROUP BY scenario_id, period) AS operational_costs
 USING (scenario_id, period)
 JOIN
@@ -232,7 +232,7 @@ USING (scenario_id)
 select scenario_id, scenario_name, carbon_cap_zone, period, carbon_cap,
 in_zone_project_emissions, import_emissions, total_emissions,
 carbon_cap_marginal_cost_per_emission
-from results_system_carbon_emissions
+from results_system_carbon_cap
 join scenarios
 using (scenario_id)
 ;
@@ -241,7 +241,7 @@ using (scenario_id)
 select scenario_id, scenario_name, energy_target_zone, period, energy_target_mwh,
 delivered_energy_target_energy_mwh, curtailed_energy_target_energy_mwh, total_energy_target_energy_mwh,
 fraction_of_energy_target_met, fraction_of_energy_target_energy_curtailed,
-energy_target_marginal_cost_per_mwh
+dual
 from results_system_energy_target
 join scenarios
 using (scenario_id)

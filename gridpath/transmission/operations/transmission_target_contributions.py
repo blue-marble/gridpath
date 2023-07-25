@@ -22,6 +22,8 @@ from pyomo.environ import (
     value,
     Var,
     NonNegativeReals,
+    Reals,
+    Boolean,
     Constraint,
 )
 
@@ -35,6 +37,8 @@ from gridpath.auxiliary.db_interface import (
 )
 from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.auxiliary.validations import write_validation_to_database, validate_idxs
+from gridpath.common_functions import create_results_df
+from gridpath.transmission import TX_TIMEPOINT_DF
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -109,6 +113,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.TRANSMISSION_TARGET_TX_LINES, within=m.TRANSMISSION_TARGET_ZONES
     )
 
+    # Set to 1 if you want this line to contribute net flows
+    m.contributes_net_flow_to_tx_target = Param(
+        m.TRANSMISSION_TARGET_TX_LINES, within=Boolean, default=0
+    )
+
     # Variables
     ###########################################################################
     m.Transmission_Target_Energy_MW_Pos_Dir = Var(
@@ -118,13 +127,16 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.TX_OPR_TMPS, within=NonNegativeReals
     )
 
+    m.Transmission_Target_Net_Energy_MW_Pos_Dir = Var(m.TX_OPR_TMPS, within=Reals)
+    m.Transmission_Target_Net_Energy_MW_Neg_Dir = Var(m.TX_OPR_TMPS, within=Reals)
+
     # Derived Sets (requires input params)
     ###########################################################################
 
     m.TRANSMISSION_TARGET_TX_LINES_BY_TRANSMISSION_TARGET_ZONE = Set(
         m.TRANSMISSION_TARGET_ZONES,
         within=m.TRANSMISSION_TARGET_TX_LINES,
-        initialize=determine_transmission_target_tx_lines_by_transmission_target_zone,
+        initialize=determine_tx_target_tx_lines_by_tx_target_zone,
     )
 
     # Constraints
@@ -132,10 +144,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     def transmit_power_pos_dir_rule(mod, tx, tmp):
         """ """
-        return (
-            mod.Transmission_Target_Energy_MW_Pos_Dir[tx, tmp]
-            <= mod.TxSimpleBinary_Transmit_Power_Positive_Direction_MW[tx, tmp]
-        )
+        if mod.contributes_net_flow_to_tx_target[tx]:
+            return Constraint.Skip
+        else:
+            return (
+                mod.Transmission_Target_Energy_MW_Pos_Dir[tx, tmp]
+                <= mod.TxSimpleBinary_Transmit_Power_Positive_Direction_MW[tx, tmp]
+            )
 
     m.Transmission_Target_Energy_MW_Pos_Dir_Constraint = Constraint(
         m.TRANSMISSION_TARGET_TX_OPR_TMPS, rule=transmit_power_pos_dir_rule
@@ -143,13 +158,44 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     def transmit_power_neg_dir_rule(mod, tx, tmp):
         """ """
-        return (
-            mod.Transmission_Target_Energy_MW_Neg_Dir[tx, tmp]
-            <= mod.TxSimpleBinary_Transmit_Power_Negative_Direction_MW[tx, tmp]
-        )
+        if mod.contributes_net_flow_to_tx_target[tx]:
+            return Constraint.Skip
+        else:
+            return (
+                mod.Transmission_Target_Energy_MW_Neg_Dir[tx, tmp]
+                <= mod.TxSimpleBinary_Transmit_Power_Negative_Direction_MW[tx, tmp]
+            )
 
     m.Transmission_Target_Energy_MW_Neg_Dir_Constraint = Constraint(
         m.TRANSMISSION_TARGET_TX_OPR_TMPS, rule=transmit_power_neg_dir_rule
+    )
+
+    def transmit_power_pos_dir_net_rule(mod, tx, tmp):
+        """ """
+        if not mod.contributes_net_flow_to_tx_target[tx]:
+            return Constraint.Skip
+        else:
+            return (
+                mod.Transmission_Target_Net_Energy_MW_Pos_Dir[tx, tmp]
+                <= mod.Transmit_Power_MW[tx, tmp]
+            )
+
+    m.Transmission_Target_Net_Energy_MW_Pos_Dir_Constraint = Constraint(
+        m.TRANSMISSION_TARGET_TX_OPR_TMPS, rule=transmit_power_pos_dir_net_rule
+    )
+
+    def transmit_power_neg_dir_net_rule(mod, tx, tmp):
+        """ """
+        if not mod.contributes_net_flow_to_tx_target[tx]:
+            return Constraint.Skip
+        else:
+            return (
+                mod.Transmission_Target_Net_Energy_MW_Neg_Dir[tx, tmp]
+                <= -mod.Transmit_Power_MW[tx, tmp]
+            )
+
+    m.Transmission_Target_Net_Energy_MW_Neg_Dir_Constraint = Constraint(
+        m.TRANSMISSION_TARGET_TX_OPR_TMPS, rule=transmit_power_neg_dir_net_rule
     )
 
 
@@ -157,9 +203,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 ###############################################################################
 
 
-def determine_transmission_target_tx_lines_by_transmission_target_zone(
-    mod, transmission_target_z
-):
+def determine_tx_target_tx_lines_by_tx_target_zone(mod, transmission_target_z):
     return [
         p
         for p in mod.TRANSMISSION_TARGET_TX_LINES
@@ -190,8 +234,12 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             "inputs",
             "transmission_lines.tab",
         ),
-        select=("transmission_line", "transmission_target_zone"),
-        param=(m.transmission_target_zone,),
+        select=(
+            "transmission_line",
+            "transmission_target_zone",
+            "contributes_net_flow_to_tx_target",
+        ),
+        param=(m.transmission_target_zone, m.contributes_net_flow_to_tx_target),
     )
 
     data_portal.data()["TRANSMISSION_TARGET_TX_LINES"] = {
@@ -209,43 +257,33 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "transmission_target_by_tx_line.csv",
-        ),
-        "w",
-        newline="",
-    ) as transmission_target_results_file:
-        writer = csv.writer(transmission_target_results_file)
-        writer.writerow(
-            [
-                "transmission_line",
-                "transmission_target_zone",
-                "timepoint",
-                "period",
-                "timepoint_weight",
-                "number_of_hours_in_timepoint",
-                "transmission_target_energy_positive_direction_mw",
-                "transmission_target_energy_negative_direction_mw",
-            ]
-        )
-        for tx, tmp in m.TRANSMISSION_TARGET_TX_OPR_TMPS:
-            writer.writerow(
-                [
-                    tx,
-                    m.transmission_target_zone[tx],
-                    tmp,
-                    m.period[tmp],
-                    m.tmp_weight[tmp],
-                    m.hrs_in_tmp[tmp],
-                    value(m.Transmission_Target_Energy_MW_Pos_Dir[tx, tmp]),
-                    value(m.Transmission_Target_Energy_MW_Neg_Dir[tx, tmp]),
-                ]
-            )
+
+    results_columns = [
+        "hurdle_cost_positive_direction",
+        "hurdle_cost_negative_direction",
+    ]
+    data = [
+        [
+            tx,
+            tmp,
+            value(m.Transmission_Target_Energy_MW_Pos_Dir[tx, tmp])
+            if float(m.contributes_net_flow_to_tx_target[tx]) == 0
+            else value(m.Transmission_Target_Net_Energy_MW_Pos_Dir[tx, tmp]),
+            value(m.Transmission_Target_Energy_MW_Neg_Dir[tx, tmp])
+            if float(m.contributes_net_flow_to_tx_target[tx]) == 0
+            else value(m.Transmission_Target_Net_Energy_MW_Neg_Dir[tx, tmp]),
+        ]
+        for (tx, tmp) in m.TRANSMISSION_TARGET_TX_OPR_TMPS
+    ]
+    results_df = create_results_df(
+        index_columns=["transmission_line", "timepoint"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    for c in results_columns:
+        getattr(d, TX_TIMEPOINT_DF)[c] = None
+    getattr(d, TX_TIMEPOINT_DF).update(results_df)
 
 
 # Database
@@ -267,7 +305,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     # Get the transmission-target zones for transmission lines in our portfolio and with zones in our
     # Transmission target zone
     tx_lines_zones = c.execute(
-        f"""SELECT transmission_line, transmission_target_zone
+        f"""SELECT transmission_line, transmission_target_zone, contributes_net_flow_to_tx_target
         FROM
         -- Get transmission lines from portfolio only
         (SELECT transmission_line
@@ -276,7 +314,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         ) as tx_tbl
         LEFT OUTER JOIN 
         -- Get transmission_target zones for those transmission lines
-        (SELECT transmission_line, transmission_target_zone
+        (SELECT transmission_line, transmission_target_zone, contributes_net_flow_to_tx_target
             FROM inputs_tx_line_transmission_target_zones
             WHERE tx_line_transmission_target_zone_scenario_id = {subscenarios.TX_LINE_TRANSMISSION_TARGET_ZONE_SCENARIO_ID}
         ) as tx_line_transmission_target_zone_tbl
@@ -313,8 +351,12 @@ def write_model_inputs(
 
     # Make a dict for easy access
     tx_line_zone_dict = dict()
-    for tx, zone in tx_lines_zones:
-        tx_line_zone_dict[str(tx)] = "." if zone is None else str(zone)
+    for tx, zone, contr_net_flow in tx_lines_zones:
+        tx_line_zone_dict[str(tx)] = (
+            [".", "."]
+            if zone is None
+            else [str(zone), "." if contr_net_flow is None else contr_net_flow]
+        )
 
     with open(
         os.path.join(
@@ -332,18 +374,18 @@ def write_model_inputs(
 
         # Append column header
         header = next(reader)
-        header.append("transmission_target_zone")
+        header.extend(["transmission_target_zone", "contributes_net_flow_to_tx_target"])
         new_rows.append(header)
 
         # Append correct values
         for row in reader:
             # If tx line specified, check if BA specified or not
             if row[0] in list(tx_line_zone_dict.keys()):
-                row.append(tx_line_zone_dict[row[0]])
+                row.extend(tx_line_zone_dict[row[0]])
                 new_rows.append(row)
-            # If tx line not specified, specify no BA
+            # If tx line not specified, specify null BA and params
             else:
-                row.append(".")
+                row.extend([".", "."])
                 new_rows.append(row)
 
     with open(
@@ -359,101 +401,6 @@ def write_model_inputs(
     ) as tx_lines_file_out:
         writer = csv.writer(tx_lines_file_out, delimiter="\t", lineterminator="\n")
         writer.writerows(new_rows)
-
-
-def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    """
-
-    :param scenario_id:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-    # REC provision by tx_line and timepoint
-    if not quiet:
-        print("transmission recs")
-    # Delete prior results and create temporary import table for ordering
-    setup_results_import(
-        conn=db,
-        cursor=c,
-        table="results_tx_line_period_transmission_target",
-        scenario_id=scenario_id,
-        subproblem=subproblem,
-        stage=stage,
-    )
-
-    # Load results into the temporary table
-    results = []
-    with open(
-        os.path.join(results_directory, "transmission_target_by_tx_line.csv"), "r"
-    ) as transmission_target_file:
-        reader = csv.reader(transmission_target_file)
-
-        next(reader)  # skip header
-        for row in reader:
-            transmission_line = row[0]
-            transmission_target_zone = row[1]
-            timepoint = row[2]
-            period = row[3]
-            timepoint_weight = row[4]
-            hours_in_tmp = row[5]
-            transmission_energy_pos_dir = row[6]
-            transmission_energy_neg_dir = row[7]
-            results.append(
-                (
-                    scenario_id,
-                    transmission_line,
-                    period,
-                    subproblem,
-                    stage,
-                    timepoint,
-                    timepoint_weight,
-                    hours_in_tmp,
-                    transmission_target_zone,
-                    transmission_energy_pos_dir,
-                    transmission_energy_neg_dir,
-                )
-            )
-
-    insert_temp_sql = """
-        INSERT INTO 
-        temp_results_tx_line_period_transmission_target{}
-         (scenario_id, transmission_line, period, subproblem_id, stage_id, 
-         timepoint, timepoint_weight, 
-         number_of_hours_in_timepoint, 
-         transmission_target_zone,  
-         transmission_target_energy_positive_direction_mw,
-         transmission_target_energy_negative_direction_mw)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-         """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
-
-    # Insert sorted results into permanent results table
-    insert_sql = """
-        INSERT INTO results_tx_line_period_transmission_target
-        (scenario_id, transmission_line, period, subproblem_id, stage_id, 
-        timepoint, timepoint_weight, number_of_hours_in_timepoint, 
-        transmission_target_zone,
-        transmission_target_energy_positive_direction_mw,
-        transmission_target_energy_negative_direction_mw)
-        SELECT
-        scenario_id, transmission_line, period, subproblem_id, stage_id,
-        timepoint, timepoint_weight, number_of_hours_in_timepoint, 
-        transmission_target_zone, 
-        transmission_target_energy_positive_direction_mw,
-        transmission_target_energy_negative_direction_mw
-        FROM temp_results_tx_line_period_transmission_target{}
-         ORDER BY scenario_id, transmission_line, subproblem_id, stage_id, timepoint;
-         """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)
 
 
 # Validation

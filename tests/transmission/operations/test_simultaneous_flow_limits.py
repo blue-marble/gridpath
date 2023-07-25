@@ -31,6 +31,7 @@ PREREQUISITE_MODULE_NAMES = [
     "geography.load_zones",
     "transmission",
     "transmission.capacity",
+    "transmission.capacity.capacity_types",
     "transmission.capacity.capacity",
     "transmission.availability.availability",
     "transmission.operations.operational_types",

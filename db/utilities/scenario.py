@@ -431,8 +431,6 @@ def main(args=None):
                     load_scenario_from_df(
                         conn=db_conn, scenarios_df=csv_to_df, scenario_name=scenario
                     )
-                else:
-                    pass
 
 
 if __name__ == "__main__":

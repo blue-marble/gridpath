@@ -28,12 +28,18 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.operations.timepoints",
     "temporal.operations.horizons",
     "temporal.investment.periods",
+    "temporal.investment.superperiods",
     "geography.load_zones",
     "project",
     "project.capacity",
     "project.capacity.capacity_types",
     "project.capacity.capacity",
     "project.capacity.costs",
+    "transmission",
+    "transmission.capacity",
+    "transmission.capacity.capacity_types",
+    "transmission.capacity.capacity",
+    "transmission.capacity.costs",
 ]
 NAME_OF_MODULE_BEING_TESTED = "system.policy.subsidies"
 IMPORTED_PREREQ_MODULES = list()
@@ -96,29 +102,39 @@ class TestSubsidies(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: PRJ_VNTS_FIN_IN_PERIOD
+        # Set: PRJ_OR_TX_VNTS_FIN_IN_PERIOD
         expected_prj_v_fin_in_prd = {
-            2020: sorted([("Battery", 2020), ("Gas_CCGT_New", 2020)]),
+            2020: sorted([("Battery", 2020), ("Gas_CCGT_New", 2020), ("Tx_New", 2020)]),
             2030: sorted(
-                [("Gas_CCGT_New", 2030), ("Gas_CT_New", 2030), ("Battery", 2020)]
+                [
+                    ("Gas_CCGT_New", 2030),
+                    ("Gas_CT_New", 2030),
+                    ("Battery", 2020),
+                    ("Tx_New", 2020),
+                    ("Tx_New", 2030),
+                ]
             ),
         }
         actual_prj_v_fin_in_prd = {
-            p: sorted(list(instance.PRJ_VNTS_FIN_IN_PERIOD[p].data()))
+            p: sorted(list(instance.PRJ_OR_TX_VNTS_FIN_IN_PERIOD[p].data()))
             for p in instance.PERIODS
         }
+
         self.assertDictEqual(expected_prj_v_fin_in_prd, actual_prj_v_fin_in_prd)
 
-        # Set: PROGRAM_PERIODS
-        expectd_prg_prd = sorted([("ITC", 2020)])
-        actual_prg_prd = sorted([(prg, prd) for (prg, prd) in instance.PROGRAM_PERIODS])
+        # Set: PROGRAM_SUPERPERIODS
+        expectd_prg_prd = sorted([("ITC", 1), ("MultiPeriod", 2)])
+        actual_prg_prd = sorted(
+            [(prg, prd) for (prg, prd) in instance.PROGRAM_SUPERPERIODS]
+        )
         self.assertListEqual(expectd_prg_prd, actual_prg_prd)
 
         # Param: program_budget
         expected_budget = OrderedDict(
             sorted(
                 {
-                    ("ITC", 2020): 1000,
+                    ("ITC", 1): 1000,
+                    ("MultiPeriod", 2): 2000,
                 }.items()
             )
         )
@@ -126,69 +142,84 @@ class TestSubsidies(unittest.TestCase):
             sorted(
                 {
                     (prg, prd): instance.program_budget[prg, prd]
-                    for (prg, prd) in instance.PROGRAM_PERIODS
+                    for (prg, prd) in instance.PROGRAM_SUPERPERIODS
                 }.items()
             )
         )
         self.assertDictEqual(expected_budget, actual_budget)
 
         # Set: PROGRAMS
-        expectd_prg = sorted([("ITC")])
+        expectd_prg = sorted(["ITC", "MultiPeriod"])
         actual_prg = sorted([prg for prg in instance.PROGRAMS])
         self.assertListEqual(expectd_prg, actual_prg)
 
-        # Set: PROGRAM_PROJECT_VINTAGES
-        expected_prg_prj_v = sorted([("ITC", "Battery", 2020)])
+        # Set: PROGRAM_PROJECT_OR_TX_VINTAGES
+        expected_prg_prj_v = sorted([("ITC", "Battery", 2020), ("ITC", "Tx_New", 2020)])
         actual_prg_prj_v = sorted(
-            [(prg, prj, prd) for (prg, prj, prd) in instance.PROGRAM_PROJECT_VINTAGES]
+            [
+                (prg, prj, prd)
+                for (prg, prj, prd) in instance.PROGRAM_PROJECT_OR_TX_VINTAGES
+            ]
         )
         self.assertListEqual(expected_prg_prj_v, actual_prg_prj_v)
 
-        # Set: PROGRAM_ELIGIBLE_PROJECTS
-        expected_eligible_prj = sorted([("Battery")])
-        actual_eligible_prj = sorted(
-            [prj for prj in instance.PROGRAM_ELIGIBLE_PROJECTS]
-        )
-        self.assertListEqual(expected_eligible_prj, actual_eligible_prj)
-
-        # Set:PROGRAM_VINTAGES_BY_PROJECT
+        # Set:PROGRAM_VINTAGES_BY_PROJECT_OR_TX_LINE
         expected_prg_v_by_prj = OrderedDict(
-            sorted(
-                {
-                    "Battery": ("ITC", 2020),
-                }.items()
-            )
+            sorted({"Battery": ("ITC", 2020), "Tx_New": ("ITC", 2020)}.items())
         )
         # Exclude projects with empty set
         actual_prg_v_by_prj = {}
-        for prj in instance.PROJECTS:
-            if instance.PROGRAM_VINTAGES_BY_PROJECT[prj].data() != ():
-                actual_prg_v_by_prj[prj] = instance.PROGRAM_VINTAGES_BY_PROJECT[
+        for prj in instance.PROJECTS_TX_LINES:
+            if instance.PROGRAM_VINTAGES_BY_PROJECT_OR_TX_LINE[prj].data() != ():
+                actual_prg_v_by_prj[
                     prj
-                ].data()[0]
+                ] = instance.PROGRAM_VINTAGES_BY_PROJECT_OR_TX_LINE[prj].data()[0]
+
         self.assertDictEqual(expected_prg_v_by_prj, actual_prg_v_by_prj)
 
-        # Set:PROJECT_VINTAGES_BY_PROGRAM
-        expected_prj_v_by_prg = OrderedDict(
-            sorted(
-                {
-                    "ITC": ("Battery", 2020),
-                }.items()
-            )
-        )
+        # Set:PROJECT_OR_TX_VINTAGES_BY_PROGRAM
+        expected_prj_v_by_prg = {
+            "ITC": [("Battery", 2020), ("Tx_New", 2020)],
+            "MultiPeriod": [],
+        }
+
         # Exclude projects with empty set
         actual_prj_v_by_prg = {}
         for prg in instance.PROGRAMS:
-            actual_prj_v_by_prg[prg] = instance.PROJECT_VINTAGES_BY_PROGRAM[prg].data()[
-                0
-            ]
+            actual_prj_v_by_prg[prg] = sorted(
+                [
+                    (prj, v)
+                    for (prj, v) in instance.PROJECT_OR_TX_VINTAGES_BY_PROGRAM[prg]
+                ]
+            )
+
         self.assertDictEqual(expected_prj_v_by_prg, actual_prj_v_by_prg)
+
+        # Param: is_tx
+        is_tx_expected = OrderedDict(
+            sorted(
+                {
+                    ("ITC", "Battery", 2020): 0,
+                    ("ITC", "Tx_New", 2020): 1,
+                }.items()
+            )
+        )
+        is_tx_actual = OrderedDict(
+            sorted(
+                {
+                    (prg, prj, v): instance.is_tx[prg, prj, v]
+                    for (prg, prj, v) in instance.PROGRAM_PROJECT_OR_TX_VINTAGES
+                }.items()
+            )
+        )
+        self.assertDictEqual(is_tx_expected, is_tx_actual)
 
         # Param: annual_payment_subsidy
         expected_subsidy = OrderedDict(
             sorted(
                 {
                     ("ITC", "Battery", 2020): 20,
+                    ("ITC", "Tx_New", 2020): 10,
                 }.items()
             )
         )
@@ -196,7 +227,7 @@ class TestSubsidies(unittest.TestCase):
             sorted(
                 {
                     (prg, prj, v): instance.annual_payment_subsidy[prg, prj, v]
-                    for (prg, prj, v) in instance.PROGRAM_PROJECT_VINTAGES
+                    for (prg, prj, v) in instance.PROGRAM_PROJECT_OR_TX_VINTAGES
                 }.items()
             )
         )

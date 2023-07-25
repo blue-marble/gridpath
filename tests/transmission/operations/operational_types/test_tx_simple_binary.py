@@ -33,6 +33,7 @@ PREREQUISITE_MODULE_NAMES = [
     "geography.load_zones",
     "transmission",
     "transmission.capacity",
+    "transmission.capacity.capacity_types",
     "transmission.capacity.capacity",
     "transmission.availability.availability",
 ]
@@ -57,7 +58,7 @@ except ImportError:
     print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED + " to test.")
 
 
-class TestTxOperations(unittest.TestCase):
+class TestTxSimpleBinary(unittest.TestCase):
     """ """
 
     def test_add_model_components(self):

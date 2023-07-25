@@ -23,6 +23,7 @@ used to limit total transfers on each link.
 
 import csv
 import os.path
+import pandas as pd
 from pyomo.environ import (
     Set,
     Param,
@@ -33,59 +34,69 @@ from pyomo.environ import (
     value,
 )
 
-from db.common_functions import spin_on_database_lock
+from db.common_functions import spin_on_database_lock, spin_on_database_lock_generic
+from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.auxiliary.dynamic_components import prm_balance_provision_components
+from gridpath.common_functions import create_results_df
+from gridpath.system.reliability.prm import PRM_ZONE_PRD_DF
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
-      The following Pyomo model components are defined in this module:
+    The following Pyomo model components are defined in this module:
 
     |
 
-      +-------------------------------------------------------------------------+
-      | Optional Input Params                                                   |
-      +=========================================================================+
-      | | :code:`min_transfer_powerunit`                                       |
-      | | *Defined over*: :code:`PRM_ZONES_CAPACITY_TRANSFER_ZONES, PERIODS`    |
-      | | *Within*: :code:`NonNegativeReals`                                    |
-      | | *Default*: :code:`0`                                                  |
-      |                                                                         |
-      | Minimum capacity transfer between zones in period.                      |
-      +-------------------------------------------------------------------------+
-     | | :code:`max_transfer_powerunit`                                       |
-      | | *Defined over*: :code:`PRM_ZONES_CAPACITY_TRANSFER_ZONES, PERIODS`    |
-      | | *Within*: :code:`NonNegativeReals`                                    |
-      | | *Default*: :code:`infinity`                                                  |
-      |                                                                         |
-      | Maximum capacity transfer between zones in period.                      |
-      +-------------------------------------------------------------------------+
+    +-------------------------------------------------------------------------+
+    | Optional Input Params                                                   |
+    +=========================================================================+
+    | | :code:`min_transfer_powerunit`                                       |
+    | | *Defined over*: :code:`PRM_ZONES_CAPACITY_TRANSFER_ZONES, PERIODS`    |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | Minimum capacity transfer between zones in period.                      |
+    +-------------------------------------------------------------------------+
+    | | :code:`max_transfer_powerunit`                                       |
+    | | *Defined over*: :code:`PRM_ZONES_CAPACITY_TRANSFER_ZONES, PERIODS`    |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`infinity`                                                  |
+    |                                                                         |
+    | Maximum capacity transfer between zones in period.                      |
+    +-------------------------------------------------------------------------+
+    | | :code:`capacity_transfer_cost_per_powerunit_yr`                       |
+    | | *Defined over*: :code:`PRM_ZONES_CAPACITY_TRANSFER_ZONES, PERIODS`    |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | Minimum capacity transfer between zones in period.                      |
+    +-------------------------------------------------------------------------+
 
-      +-------------------------------------------------------------------------+
-      | Sets                                                                    |
-      +=========================================================================+
-      | | :code:`PRM_TX_LINES`                                                  |
-      |                                                                         |
-      | The set of PRM-relevant transmission lines.                             |
-      +-------------------------------------------------------------------------+
+    +-------------------------------------------------------------------------+
+    | Sets                                                                    |
+    +=========================================================================+
+    | | :code:`PRM_TX_LINES`                                                  |
+    |                                                                         |
+    | The set of PRM-relevant transmission lines.                             |
+    +-------------------------------------------------------------------------+
 
-      |
+    |
 
-      +-------------------------------------------------------------------------+
-      | Required Input Params                                                   |
-      +=========================================================================+
-      | | :code:`prm_zone_from`                                                 |
-      | | *Defined over*: :code:`PRM_TX_LINES`                                  |
-      | | *Within*: :code:`PRM_ZONES`                                           |
-      |                                                                         |
-      | The transmission line's starting PRM zone.                              |
-      +-------------------------------------------------------------------------+
-      | | :code:`prm_zone_to`                                                  |
-      | | *Defined over*: :code:`TX_LINES`                                      |
-      | | *Within*: :code:`PRM_ZONES`                                           |
-      |                                                                         |
-      | The transmission line's ending PRM zone.                                |
-      +-------------------------------------------------------------------------+
+    +-------------------------------------------------------------------------+
+    | Required Input Params                                                   |
+    +=========================================================================+
+    | | :code:`prm_zone_from`                                                 |
+    | | *Defined over*: :code:`PRM_TX_LINES`                                  |
+    | | *Within*: :code:`PRM_ZONES`                                           |
+    |                                                                         |
+    | The transmission line's starting PRM zone.                              |
+    +-------------------------------------------------------------------------+
+    | | :code:`prm_zone_to`                                                  |
+    | | *Defined over*: :code:`TX_LINES`                                      |
+    | | *Within*: :code:`PRM_ZONES`                                           |
+    |                                                                         |
+    | The transmission line's ending PRM zone.                                |
+    +-------------------------------------------------------------------------+
     """
     # Exogenous param limits
     m.min_transfer_powerunit = Param(
@@ -99,6 +110,14 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.PERIODS,
         within=NonNegativeReals,
         default=float("inf"),
+    )
+
+    # Costs
+    m.capacity_transfer_cost_per_powerunit_yr = Param(
+        m.PRM_ZONES_CAPACITY_TRANSFER_ZONES,
+        m.PERIODS,
+        within=NonNegativeReals,
+        default=0,
     )
 
     # Endogenous limits based on transmission links
@@ -142,8 +161,6 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
     # Constrain based on the available transmission
-    # TODO: add limits on transfers; will need to move to own module that is only
-    #  included if transmission reliability is included
     def transfer_tx_limits_constraint_rule(mod, prm_z_from, prm_z_to, prd):
         # Sum of max capacity of lines with prm_zone_to == z plus
         # Negative sum of min capacity of lines with prm_zone_from == z
@@ -216,9 +233,23 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.PRM_ZONES, m.PERIODS, initialize=total_transfers_to_init
     )
 
-    # Add to balance constraint
+    # Add to PRM balance constraint
     getattr(d, prm_balance_provision_components).append("Total_Transfers_from_PRM_Zone")
     getattr(d, prm_balance_provision_components).append("Total_Transfers_to_PRM_Zone")
+
+    # Costs incurred to transfer capacity; this is at the link-level; costs
+    # will be aggregated in the objective function module
+    def capacity_transfer_costs_rule(m, prm_z_from, prm_z_to, prd):
+        return (
+            m.Transfer_Capacity_Contribution[prm_z_from, prm_z_to, prd]
+            * m.capacity_transfer_cost_per_powerunit_yr[prm_z_from, prm_z_to, prd]
+        )
+
+    m.Capacity_Transfer_Costs_Per_Yr_in_Period = Expression(
+        m.PRM_ZONES_CAPACITY_TRANSFER_ZONES,
+        m.PERIODS,
+        initialize=capacity_transfer_costs_rule,
+    )
 
 
 # Input-Output
@@ -236,12 +267,14 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :param stage:
     :return:
     """
+    # TODO: select only relevant columns once costs are added to this file
+    #  and rename file
     limits_tab_file = os.path.join(
         scenario_directory,
         str(subproblem),
         str(stage),
         "inputs",
-        "prm_capacity_transfer_limits.tab",
+        "prm_capacity_transfer_params.tab",
     )
     if os.path.exists(limits_tab_file):
         data_portal.load(
@@ -249,6 +282,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             param=(
                 m.min_transfer_powerunit,
                 m.max_transfer_powerunit,
+                m.capacity_transfer_cost_per_powerunit_yr,
             ),
         )
 
@@ -287,10 +321,10 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     limits = c1.execute(
         f"""
         SELECT prm_zone, prm_capacity_transfer_zone, period, 
-        min_transfer_powerunit, max_transfer_powerunit
-        FROM inputs_transmission_prm_capacity_transfer_limits
-        WHERE prm_capacity_transfer_limits_scenario_id = 
-        {subscenarios.PRM_CAPACITY_TRANSFER_LIMITS_SCENARIO_ID}
+        min_transfer_powerunit, max_transfer_powerunit, capacity_transfer_cost_per_powerunit_yr
+        FROM inputs_transmission_prm_capacity_transfer_params
+        WHERE prm_capacity_transfer_params_scenario_id = 
+        {subscenarios.PRM_CAPACITY_TRANSFER_PARAMS_SCENARIO_ID}
         ;
         """
     )
@@ -343,7 +377,7 @@ def write_model_inputs(
                 str(subproblem),
                 str(stage),
                 "inputs",
-                "prm_capacity_transfer_limits.tab",
+                "prm_capacity_transfer_params.tab",
             ),
             "w",
             newline="",
@@ -358,6 +392,7 @@ def write_model_inputs(
                     "period",
                     "min_transfer_powerunit",
                     "max_transfer_powerunit",
+                    "capacity_transfer_cost_per_powerunit_yr",
                 ]
             )
 
@@ -404,36 +439,31 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "capacity_contribution_transfers_by_prm_zone.csv",
-        ),
-        "w",
-        newline="",
-    ) as results_file:
-        writer = csv.writer(results_file)
-        writer.writerow(
-            [
-                "prm_zone",
-                "period",
-                "capacity_contribution_transferred_from_mw",
-                "capacity_contribution_transferred_to_mw",
-            ]
-        )
-        for z, p in m.PRM_ZONE_PERIODS_WITH_REQUIREMENT:
-            writer.writerow(
-                [
-                    z,
-                    p,
-                    value(m.Total_Transfers_from_PRM_Zone[z, p]),
-                    value(m.Total_Transfers_to_PRM_Zone[z, p]),
-                ]
-            )
 
+    results_columns = [
+        "capacity_contribution_transferred_from_mw",
+        "capacity_contribution_transferred_to_mw",
+    ]
+    data = [
+        [
+            z,
+            p,
+            value(m.Total_Transfers_from_PRM_Zone[z, p]),
+            value(m.Total_Transfers_to_PRM_Zone[z, p]),
+        ]
+        for (z, p) in m.PRM_ZONE_PERIODS_WITH_REQUIREMENT
+    ]
+    results_df = create_results_df(
+        index_columns=["prm_zone", "period"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    for c in results_columns:
+        getattr(d, PRM_ZONE_PRD_DF)[c] = None
+    getattr(d, PRM_ZONE_PRD_DF).update(results_df)
+
+    # PRM zone to PRM zone capacity transfers
     with open(
         os.path.join(
             scenario_directory,
@@ -448,10 +478,11 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         writer = csv.writer(results_file)
         writer.writerow(
             [
-                "prm_zone",
-                "prm_capacity_transfer_zone",
+                "prm_zone_from",
+                "prm_zone_to",
                 "period",
-                "capacity_contribution_transferred_mw",
+                "capacity_transfer_mw",
+                "capacity_transfer_cost_per_yr_in_period",
             ]
         )
         for z, t_z, p in m.Transfer_Capacity_Contribution:
@@ -461,6 +492,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                     t_z,
                     p,
                     value(m.Transfer_Capacity_Contribution[z, t_z, p]),
+                    value(m.Capacity_Transfer_Costs_Per_Yr_in_Period[z, t_z, p]),
                 ]
             )
 
@@ -478,65 +510,29 @@ def import_results_into_database(
     :return:
     """
     if not quiet:
-        print("system prm capacity contribution transfers")
-    # PRM contributions transferred from the PRM zone
-    # Prior results should have already been cleared by
-    # system.prm.aggregate_project_simple_prm_contribution,
-    # then elcc_simple_mw imported
-    # Update results_system_prm with NULL for surface contribution just in
-    # case (instead of clearing prior results)
-    nullify_sql = """
-        UPDATE results_system_prm
-        SET capacity_contribution_transferred_from_mw = NULL, 
-        capacity_contribution_transferred_from_mw = NULL
-        WHERE scenario_id = ?
-        AND subproblem_id = ?
-        AND stage_id = ?;
-        """
-    spin_on_database_lock(
+        print("PRM capacity transfers")
+    # Delete prior results and create temporary import table for ordering
+    setup_results_import(
         conn=db,
         cursor=c,
-        sql=nullify_sql,
-        data=(scenario_id, subproblem, stage),
-        many=False,
+        table="results_system_costs",
+        scenario_id=scenario_id,
+        subproblem=subproblem,
+        stage=stage,
     )
 
-    results = []
-    with open(
-        os.path.join(
-            results_directory, "capacity_contribution_transfers_by_prm_zone.csv"
-        ),
-        "r",
-    ) as surface_file:
-        reader = csv.reader(surface_file)
+    df = pd.read_csv(
+        os.path.join(results_directory, "capacity_contribution_transfers.csv")
+    )
+    df["scenario_id"] = scenario_id
+    df["subproblem_id"] = subproblem
+    df["stage_id"] = stage
 
-        next(reader)  # skip header
-        for row in reader:
-            prm_zone = row[0]
-            period = row[1]
-            transfers_from = row[2]
-            transfers_to = row[3]
-
-            results.append(
-                (
-                    transfers_from,
-                    transfers_to,
-                    scenario_id,
-                    prm_zone,
-                    period,
-                    subproblem,
-                    stage,
-                )
-            )
-
-    update_sql = """
-        UPDATE results_system_prm
-        SET capacity_contribution_transferred_from_mw = ?, 
-        capacity_contribution_transferred_to_mw = ?
-        WHERE scenario_id = ?
-        AND prm_zone = ?
-        AND period = ?
-        AND subproblem_id = ?
-        AND stage_id = ?
-        """
-    spin_on_database_lock(conn=db, cursor=c, sql=update_sql, data=results)
+    spin_on_database_lock_generic(
+        command=df.to_sql(
+            name="results_system_capacity_transfers",
+            con=db,
+            if_exists="append",
+            index=False,
+        )
+    )

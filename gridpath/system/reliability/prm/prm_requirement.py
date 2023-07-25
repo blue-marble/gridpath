@@ -21,6 +21,9 @@ import os.path
 
 from pyomo.environ import Set, Param, NonNegativeReals
 
+from gridpath.common_functions import create_results_df
+from gridpath.system.reliability.prm import PRM_ZONE_PRD_DF
+
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
@@ -149,3 +152,36 @@ def write_model_inputs(
 
         for row in prm_requirement:
             writer.writerow(row)
+
+
+def export_results(scenario_directory, subproblem, stage, m, d):
+    """
+
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :param m:
+    :param d:
+    :return:
+    """
+
+    results_columns = [
+        "prm_requirement_mw",
+    ]
+    data = [
+        [
+            z,
+            p,
+            float(m.prm_requirement_mw[z, p]),
+        ]
+        for (z, p) in m.PRM_ZONE_PERIODS_WITH_REQUIREMENT
+    ]
+    results_df = create_results_df(
+        index_columns=["prm_zone", "period"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    for c in results_columns:
+        getattr(d, PRM_ZONE_PRD_DF)[c] = None
+    getattr(d, PRM_ZONE_PRD_DF).update(results_df)

@@ -3,10 +3,10 @@
 ### CAPACITY RESULTS ###
 
 --> New Binary Storage Capacity <--
-                              New Binary Storage Power Capacity (MW)  New Binary Storage Energy Capacity (MWh)
-load_zone technology vintage                                                                                  
-Zone1     Storage    2020                                      10.00                                     40.00
-                     2030                                      10.00                                     40.00
+                             New Binary Storage Power Capacity (MW)  New Binary Storage Energy Capacity (MWh)
+load_zone technology period                                                                                  
+Zone1     Storage    2020                                     10.00                                     40.00
+                     2030                                     10.00                                     40.00
 
 ### OPERATIONAL RESULTS ###
 

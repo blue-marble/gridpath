@@ -25,7 +25,7 @@ from pyomo.environ import Set, Param, NonNegativeReals, Expression
 
 
 from gridpath.auxiliary.auxiliary import (
-    get_required_subtype_modules_from_projects_file,
+    get_required_subtype_modules,
     check_for_integer_subdirectories,
 )
 from gridpath.project.operations.common_functions import load_operational_type_modules
@@ -93,7 +93,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     # Dynamic Inputs
 
-    required_operational_modules = get_required_subtype_modules_from_projects_file(
+    required_operational_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
         subproblem=subproblem,
         stage=stage,
@@ -162,7 +162,7 @@ def fix_variables(m, d, scenario_directory, subproblem, stage):
     :return:
     """
 
-    required_operational_modules = get_required_subtype_modules_from_projects_file(
+    required_operational_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
         subproblem=subproblem,
         stage=stage,
@@ -238,8 +238,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                 pass
             elif s == stage or stages.index(s) < stages.index(stage):
                 fnl_commit_prjs.append(prj)
-            else:
-                pass
+
         return fnl_commit_prjs
 
     data_portal.data()["FNL_COMMIT_PRJS"] = {None: get_fnl_commit_prjs()}
@@ -267,8 +266,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         data_portal.data()["FXD_COMMIT_PRJS"] = {None: fxd_commit_prjs}
         data_portal.data()["FXD_COMMIT_PRJ_OPR_TMPS"] = {None: projects_timepoints}
         data_portal.data()["fixed_commitment"] = fixed_commitment_dict
-    else:
-        pass
 
 
 def export_pass_through_inputs(scenario_directory, subproblem, stage, m):

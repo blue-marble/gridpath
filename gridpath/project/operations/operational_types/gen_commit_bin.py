@@ -47,9 +47,7 @@ Morales-Espana et al. (2013).
 from gridpath.project.operations.operational_types.common_functions import (
     validate_opchars,
 )
-from gridpath.project.operations.common_functions import (
-    create_dispatch_results_optype_df,
-)
+from gridpath.common_functions import create_results_df
 import gridpath.project.operations.operational_types.gen_commit_unit_common as gen_commit_unit_common
 
 
@@ -235,8 +233,8 @@ def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
     )
 
 
-def add_to_dispatch_results(mod):
-    results_columns, data = gen_commit_unit_common.add_to_dispatch_results(
+def add_to_prj_tmp_results(mod):
+    results_columns, data = gen_commit_unit_common.add_to_prj_tmp_results(
         mod=mod,
         BIN_OR_LIN="BIN",
         Bin_or_Lin="Bin",
@@ -253,13 +251,17 @@ def add_to_dispatch_results(mod):
     )
 
     # Create DF
-    optype_dispatch_df = create_dispatch_results_optype_df(
-        results_columns=results_columns, data=data
+    optype_dispatch_df = create_results_df(
+        index_columns=["project", "timepoint"],
+        results_columns=results_columns,
+        data=data,
     )
 
     # Get the duals
-    optype_duals_df = create_dispatch_results_optype_df(
-        results_columns=duals_results_columns, data=duals_data
+    optype_duals_df = create_results_df(
+        index_columns=["project", "timepoint"],
+        results_columns=duals_results_columns,
+        data=duals_data,
     )
 
     # Add duals to dispatch DF

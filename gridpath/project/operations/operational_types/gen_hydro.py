@@ -57,9 +57,7 @@ from gridpath.project.operations.operational_types.common_functions import (
     validate_opchars,
     validate_hydro_opchars,
 )
-from gridpath.project.operations.common_functions import (
-    create_dispatch_results_optype_df,
-)
+from gridpath.common_functions import create_results_df
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -747,11 +745,9 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                 m.gen_hydro_linked_downwards_reserves,
             ),
         )
-    else:
-        pass
 
 
-def add_to_dispatch_results(mod):
+def add_to_prj_tmp_results(mod):
     results_columns = [
         "gross_power_mw",
         "scheduled_curtailment_mw",
@@ -768,8 +764,10 @@ def add_to_dispatch_results(mod):
         for (prj, tmp) in mod.GEN_HYDRO_OPR_TMPS
     ]
 
-    optype_dispatch_df = create_dispatch_results_optype_df(
-        results_columns=results_columns, data=data
+    optype_dispatch_df = create_results_df(
+        index_columns=["project", "timepoint"],
+        results_columns=results_columns,
+        data=data,
     )
 
     return results_columns, optype_dispatch_df
@@ -786,7 +784,7 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
     :return:
     """
 
-    # Dispatch results added to project_operations.csv via add_to_dispatch_results()
+    # Dispatch results added to project_timepoint.csv via add_to_prj_tmp_results()
 
     # If there's a linked_subproblems_map CSV file, check which of the
     # current subproblem TMPS we should export results for to link to the
@@ -892,7 +890,7 @@ def process_model_results(db, c, scenario_id, subscenarios, quiet):
 
     # Delete old aggregated hydro curtailment results
     del_sql = """
-        DELETE FROM results_project_curtailment_hydro 
+        DELETE FROM results_project_curtailment_hydro_periodagg 
         WHERE scenario_id = ?
         """
     spin_on_database_lock(
@@ -901,7 +899,7 @@ def process_model_results(db, c, scenario_id, subscenarios, quiet):
 
     # Aggregate hydro curtailment (just scheduled curtailment)
     agg_sql = """
-        INSERT INTO results_project_curtailment_hydro
+        INSERT INTO results_project_curtailment_hydro_periodagg
         (scenario_id, subproblem_id, stage_id, period, timepoint, 
         timepoint_weight, number_of_hours_in_timepoint, month, hour_of_day,
         load_zone, scheduled_curtailment_mw)
@@ -914,7 +912,7 @@ def process_model_results(db, c, scenario_id, subscenarios, quiet):
             timepoint, timepoint_weight, number_of_hours_in_timepoint, 
             load_zone, 
             sum(scheduled_curtailment_mw) AS scheduled_curtailment_mw
-            FROM results_project_operations
+            FROM results_project_timepoint
             WHERE operational_type = 'gen_hydro'
             GROUP BY scenario_id, subproblem_id, stage_id, timepoint, load_zone
         ) as agg_curtailment_tbl

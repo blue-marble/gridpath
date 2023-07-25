@@ -25,13 +25,13 @@ operational type modules.
 from pyomo.environ import Set, Var, Expression, Constraint, NonNegativeReals, value
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file
+from gridpath.auxiliary.auxiliary import get_required_subtype_modules
 from gridpath.project.operations.common_functions import (
     load_operational_type_modules,
-    create_dispatch_results_optype_df,
 )
+from gridpath.common_functions import create_results_df
 import gridpath.project.operations.operational_types as op_type_init
-from gridpath.project.operations.consolidate_results import PROJECT_OPERATIONS_DF
+from gridpath.project import PROJECT_TIMEPOINT_DF
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -176,7 +176,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Dynamic Inputs
     ###########################################################################
 
-    required_operational_modules = get_required_subtype_modules_from_projects_file(
+    required_operational_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
         subproblem=subproblem,
         stage=stage,
@@ -527,7 +527,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return:
     Nothing
     """
-    prj_opr_df = getattr(d, PROJECT_OPERATIONS_DF)
+
     results_columns = [
         "variable_om_cost",
         "fuel_cost",
@@ -563,15 +563,15 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         ]
         for (prj, tmp) in m.PRJ_OPR_TMPS
     ]
-    cost_df = create_dispatch_results_optype_df(
-        results_columns=results_columns, data=data
+    results_df = create_results_df(
+        index_columns=["project", "timepoint"],
+        results_columns=results_columns,
+        data=data,
     )
 
     for c in results_columns:
-        prj_opr_df[c] = None
-    prj_opr_df.update(cost_df)
-
-    setattr(d, "project_operations_df", prj_opr_df)
+        getattr(d, PROJECT_TIMEPOINT_DF)[c] = None
+    getattr(d, PROJECT_TIMEPOINT_DF).update(results_df)
 
 
 # Database
@@ -614,7 +614,7 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
         AS variable_om_cost,
         SUM(startup_cost * timepoint_weight) AS startup_cost,
         SUM(shutdown_cost * timepoint_weight) AS shutdown_cost
-        FROM results_project_operations
+        FROM results_project_timepoint
         WHERE scenario_id = ?
         GROUP BY subproblem_id, stage_id, period, load_zone, spinup_or_lookahead
         ORDER BY subproblem_id, stage_id, period, load_zone, spinup_or_lookahead

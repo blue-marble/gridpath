@@ -1,4 +1,4 @@
-# Copyright 2021 (c) Crown Copyright, GC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,12 +30,18 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.operations.timepoints",
     "temporal.operations.horizons",
     "temporal.investment.periods",
+    "temporal.investment.superperiods",
     "geography.load_zones",
     "project",
     "project.capacity",
     "project.capacity.capacity_types",
     "project.capacity.capacity",
     "project.capacity.costs",
+    "transmission",
+    "transmission.capacity",
+    "transmission.capacity.capacity_types",
+    "transmission.capacity.capacity",
+    "transmission.capacity.costs",
     "system.policy.subsidies",
 ]
 NAME_OF_MODULE_BEING_TESTED = "objective.system.policy.aggregate_subsidies"

@@ -441,8 +441,6 @@ def generic_write_model_inputs(
 
             for row in ba_lz_map_list:
                 writer.writerow(row)
-    else:
-        pass
 
     # Project contributions to the magnitude requirement
     project_contributions = project_contributions.fetchall()

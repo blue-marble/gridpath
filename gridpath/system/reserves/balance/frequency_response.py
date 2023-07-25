@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -73,27 +73,25 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return:
     """
     generic_export_results(
-        scenario_directory,
-        subproblem,
-        stage,
-        m,
-        d,
-        "frequency_response_violation.csv",
-        "frequency_response_violation_mw",
-        "FREQUENCY_RESPONSE_BAS",
-        "Frequency_Response_Violation_MW_Expression",
+        scenario_directory=scenario_directory,
+        subproblem=subproblem,
+        stage=stage,
+        m=m,
+        d=d,
+        reserve_type="frequency_response",
+        reserve_zone_set="FREQUENCY_RESPONSE_BAS",
+        reserve_violation_expression="Frequency_Response_Violation_MW_Expression",
     )
 
     generic_export_results(
-        scenario_directory,
-        subproblem,
-        stage,
-        m,
-        d,
-        "frequency_response_partial_violation.csv",
-        "frequency_response_partial_violation_mw",
-        "FREQUENCY_RESPONSE_BAS",
-        "Frequency_Response_Partial_Violation_MW",
+        scenario_directory=scenario_directory,
+        subproblem=subproblem,
+        stage=stage,
+        m=m,
+        d=d,
+        reserve_type="frequency_response_partial",
+        reserve_zone_set="FREQUENCY_RESPONSE_BAS",
+        reserve_violation_expression="Frequency_Response_Partial_Violation_MW",
     )
 
 
@@ -119,9 +117,6 @@ def import_results_into_database(
     :param quiet:
     :return:
     """
-    if not quiet:
-        print("system frequency response balance")
-
     generic_import_results_to_database(
         scenario_id=scenario_id,
         subproblem=subproblem,
@@ -130,6 +125,7 @@ def import_results_into_database(
         db=db,
         results_directory=results_directory,
         reserve_type="frequency_response",
+        quiet=quiet,
     )
 
     generic_import_results_to_database(
@@ -140,4 +136,5 @@ def import_results_into_database(
         db=db,
         results_directory=results_directory,
         reserve_type="frequency_response_partial",
+        quiet=quiet,
     )

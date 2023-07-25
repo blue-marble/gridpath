@@ -31,7 +31,9 @@ PREREQUISITE_MODULE_NAMES = [
     "geography.load_zones",
     "transmission",
     "transmission.capacity",
+    "transmission.capacity.capacity_types",
     "transmission.capacity.capacity",
+    "transmission.capacity.costs",
 ]
 NAME_OF_MODULE_BEING_TESTED = "objective.transmission.aggregate_capacity_costs"
 IMPORTED_PREREQ_MODULES = list()

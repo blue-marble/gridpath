@@ -18,9 +18,11 @@ to create a load-balance production component, and adds it to the
 load-balance constraint.
 """
 
-from pyomo.environ import Expression
+from pyomo.environ import Expression, value
 
 from gridpath.auxiliary.dynamic_components import load_balance_production_components
+from gridpath.common_functions import create_results_df
+from gridpath.system.load_balance import LOAD_ZONE_TMP_DF
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -64,3 +66,37 @@ def record_dynamic_components(dynamic_components):
     getattr(dynamic_components, load_balance_production_components).append(
         "Power_Production_in_Zone_MW"
     )
+
+
+def export_results(scenario_directory, subproblem, stage, m, d):
+    """
+
+    :param scenario_directory:
+    :param stage:
+    :param stage:
+    :param m:
+    :param d:
+    :return:
+    """
+
+    results_columns = [
+        "total_power_mw",
+    ]
+    data = [
+        [
+            lz,
+            tmp,
+            value(m.Power_Production_in_Zone_MW[lz, tmp]),
+        ]
+        for lz in getattr(m, "LOAD_ZONES")
+        for tmp in getattr(m, "TMPS")
+    ]
+    results_df = create_results_df(
+        index_columns=["load_zone", "timepoint"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    for c in results_columns:
+        getattr(d, LOAD_ZONE_TMP_DF)[c] = None
+    getattr(d, LOAD_ZONE_TMP_DF).update(results_df)
