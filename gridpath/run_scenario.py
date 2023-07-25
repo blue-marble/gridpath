@@ -178,7 +178,7 @@ def run_optimization_for_subproblem_stage(
             scenario_directory, subproblem_directory, stage_directory
         )
 
-        # Save sys.stdout so we can return to it later
+        # Save sys.stdout, so we can return to it later
         stdout_original = sys.stdout
         stderr_original = sys.stderr
 
@@ -341,7 +341,8 @@ def run_optimization_for_subproblem_stage(
         # gets checked against the expected value, but this is the only place
         # this is actually used)
         if results.solver.termination_condition != "infeasible":
-            return solved_instance.NPV()
+            if parsed_arguments.testing:
+                return solved_instance.NPV()
         else:
             warnings.warn("WARNING: the problem was infeasible!")
 
