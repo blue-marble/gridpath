@@ -5272,32 +5272,30 @@ FROM main_data
 -- capacity periods, as well as the actual modeled periods.
 DROP VIEW IF EXISTS project_operational_periods;
 CREATE VIEW project_operational_periods AS
-SELECT project_specified_capacity_scenario_id,
-       project_new_cost_scenario_id,
-       temporal_scenario_id,
-       project,
-       period
-FROM
-    -- Use left join + union + left join because no outer join in sqlite
-    (SELECT project_specified_capacity_scenario_id,
-            project_new_cost_scenario_id,
-            project,
-            period
-     FROM inputs_project_specified_capacity
-              LEFT JOIN project_new_operational_periods USING (project, period)
-     UNION ALL
-     SELECT project_specified_capacity_scenario_id,
-            project_new_cost_scenario_id,
-            project,
-            period
-     FROM project_new_operational_periods
-              LEFT JOIN inputs_project_specified_capacity
-                        USING (project, period)
-     where project_specified_capacity_scenario_id IS NULL) AS all_operational_project_periods
-        INNER JOIN
-    (SELECT temporal_scenario_id, period
-     FROM inputs_temporal_periods) as relevant_periods_tbl
-    USING (period)
+SELECT DISTINCT project_specified_capacity_scenario_id,
+                project_new_cost_scenario_id,
+                temporal_scenario_id,
+                project,
+                period
+FROM (
+         -- Get operational periods of specified projects
+         SELECT project_specified_capacity_scenario_id,
+                NULL AS project_new_cost_scenario_id,
+                project,
+                period
+         FROM inputs_project_specified_capacity
+              -- Add operational periods of new projects
+         UNION ALL
+         SELECT NULL AS project_specified_capacity_scenario_id,
+                project_new_cost_scenario_id,
+                project,
+                period
+         FROM project_new_operational_periods) AS all_operational_project_periods
+         -- Combine with study periods from each temporal_scenario_id
+         INNER JOIN
+     (SELECT temporal_scenario_id, period
+      FROM inputs_temporal_periods) as relevant_periods_tbl
+     USING (period)
 ;
 
 
@@ -5306,34 +5304,30 @@ FROM
 -- specified capacity periods, as well as the actual modeled periods.
 DROP VIEW IF EXISTS transmission_operational_periods;
 CREATE VIEW transmission_operational_periods AS
-SELECT transmission_specified_capacity_scenario_id,
-       transmission_new_cost_scenario_id,
-       temporal_scenario_id,
-       transmission_line,
-       period
-FROM
-    -- Use left join + union + left join because no outer join in sqlite
-    (SELECT transmission_specified_capacity_scenario_id,
-            transmission_new_cost_scenario_id,
-            transmission_line,
-            period
-     FROM inputs_transmission_specified_capacity
-              LEFT JOIN transmission_new_operational_periods
-                        USING (transmission_line,
-                               period)
-     UNION ALL
-     SELECT transmission_specified_capacity_scenario_id,
-            transmission_new_cost_scenario_id,
-            transmission_line,
-            period
-     FROM transmission_new_operational_periods
-              LEFT JOIN inputs_transmission_specified_capacity
-                        USING (transmission_line, period)
-     where transmission_specified_capacity_scenario_id IS NULL) AS all_operational_transmission_periods
-        INNER JOIN
-    (SELECT temporal_scenario_id, period
-     FROM inputs_temporal_periods) as relevant_periods_tbl
-    USING (period)
+SELECT DISTINCT transmission_specified_capacity_scenario_id,
+                transmission_new_cost_scenario_id,
+                temporal_scenario_id,
+                transmission_line,
+                period
+FROM (
+         -- Get operational periods of specified projects
+         SELECT transmission_specified_capacity_scenario_id,
+                NULL AS transmission_new_cost_scenario_id,
+                transmission_line,
+                period
+         FROM inputs_transmission_specified_capacity
+              -- Add operational periods of new projects
+         UNION ALL
+         SELECT NULL AS transmission_specified_capacity_scenario_id,
+                transmission_new_cost_scenario_id,
+                transmission_line,
+                period
+         FROM transmission_new_operational_periods) AS all_operational_project_periods
+         -- Combine with study periods from each temporal_scenario_id
+         INNER JOIN
+     (SELECT temporal_scenario_id, period
+      FROM inputs_temporal_periods) as relevant_periods_tbl
+     USING (period)
 ;
 
 -- This view shows the periods and the respective horizons within each period
