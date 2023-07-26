@@ -392,18 +392,21 @@ def write_tab_file_model_inputs(
     f_exists = os.path.isfile(out_file)
     append_mode = "a" if f_exists else "w"
 
-    with open(out_file, append_mode, newline="") as f:
-        writer = csv.writer(f, delimiter="\t", lineterminator="\n")
+    # Only write if we have data
+    data_list = [row for row in data.fetchall()]
+    if data_list:
+        with open(out_file, append_mode, newline="") as f:
+            writer = csv.writer(f, delimiter="\t", lineterminator="\n")
 
-        # If file doesn't exist, write header first
-        if not f_exists:
-            cols = [s[0] for s in data.description]
-            writer.writerow(cols)
+            # If file doesn't exist, write header first
+            if not f_exists:
+                cols = [s[0] for s in data.description]
+                writer.writerow(cols)
 
-        for row in data:
-            if replace_nulls:
-                row = ["." if i is None else i for i in row]
-            writer.writerow(row)
+            for row in data_list:
+                if replace_nulls:
+                    row = ["." if i is None else i for i in row]
+                writer.writerow(row)
 
 
 def load_var_profile_inputs(
@@ -476,8 +479,15 @@ def load_var_profile_inputs(
     data_portal.data()["{}_cap_factor".format(op_type)] = cap_factor
 
 
-def get_var_profile_inputs_from_database(
-    scenario_id, subscenarios, subproblem, stage, conn, op_type
+def get_prj_tmp_opr_inputs_from_db(
+    subscenarios,
+    subproblem,
+    stage,
+    conn,
+    op_type,
+    table,
+    subscenario_id_column,
+    data_column,
 ):
     """
     Select only profiles of projects in the portfolio
@@ -499,50 +509,44 @@ def get_var_profile_inputs_from_database(
     stage = 1 if stage == "" else stage
 
     c = conn.cursor()
+
+    # TODO: see note below; can produce this problem by having two scenarios
+    #  one in which the project is spec and one new
     # NOTE: There can be cases where a resource is both in specified capacity
     # table and in new build table, but depending on capacity type you'd only
     # use one of them, so filtering with OR is not 100% correct.
 
-    sql = """
-        SELECT project, timepoint, cap_factor
+    sql = f"""
+        SELECT project, timepoint, {data_column}
         -- Select only projects, periods, horizons from the relevant portfolio, 
         -- relevant opchar scenario id, operational type, 
         -- and temporal scenario id
         FROM 
             (SELECT project, stage_id, timepoint, 
-            variable_generator_profile_scenario_id
+            {subscenario_id_column}
             FROM project_operational_timepoints
-            WHERE project_portfolio_scenario_id = {}
-            AND project_operational_chars_scenario_id = {}
-            AND operational_type = '{}'
-            AND temporal_scenario_id = {}
-            AND (project_specified_capacity_scenario_id = {}
-                 OR project_new_cost_scenario_id = {})
-            AND subproblem_id = {}
-            AND stage_id = {}
+            WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
+            AND project_operational_chars_scenario_id = {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
+            AND operational_type = '{op_type}'
+            AND temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+            AND (project_specified_capacity_scenario_id = {subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID}
+                 OR project_new_cost_scenario_id = {subscenarios.PROJECT_NEW_COST_SCENARIO_ID})
+            AND subproblem_id = {subproblem}
+            AND stage_id = {stage}
+            AND {subscenario_id_column} IS NOT NULL
             ) as projects_periods_timepoints_tbl
         -- Now that we have the relevant projects and timepoints, get the 
-        -- respective cap factors (and no others) from 
-        -- inputs_project_variable_generator_profiles
+        -- respective cap factors (and no others) from the inputs table
         LEFT OUTER JOIN
-            inputs_project_variable_generator_profiles
-        USING (variable_generator_profile_scenario_id, project, 
-        stage_id, timepoint)
+            {table}
+        USING ({subscenario_id_column}, project, stage_id, timepoint)
+        WHERE {data_column} IS NOT NULL
         ;
-        """.format(
-        subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-        subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
-        op_type,
-        subscenarios.TEMPORAL_SCENARIO_ID,
-        subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID,
-        subscenarios.PROJECT_NEW_COST_SCENARIO_ID,
-        subproblem,
-        stage,
-    )
+        """
 
-    variable_profiles = c.execute(sql)
+    prj_tmp_data = c.execute(sql)
 
-    return variable_profiles
+    return prj_tmp_data
 
 
 def validate_var_profiles(scenario_id, subscenarios, subproblem, stage, conn, op_type):
@@ -555,8 +559,15 @@ def validate_var_profiles(scenario_id, subscenarios, subproblem, stage, conn, op
     :param op_type:
     :return:
     """
-    var_profiles = get_var_profile_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn, op_type
+    var_profiles = get_prj_tmp_opr_inputs_from_db(
+        subscenarios=subscenarios,
+        subproblem=subproblem,
+        stage=stage,
+        conn=conn,
+        op_type="gen_var",
+        table="inputs_project_variable_generator_profiles",
+        subscenario_id_column="variable_generator_profile_scenario_id",
+        data_column="cap_factor",
     )
 
     # Convert input data into pandas DataFrame

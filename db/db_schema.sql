@@ -1168,6 +1168,7 @@ CREATE TABLE inputs_project_operational_chars
     powerunithour_per_fuelunit               FLOAT,
     cap_factor_limits_scenario_id            INTEGER,
     partial_availability_threshold           FLOAT,
+    stor_exog_state_of_charge_scenario_id    INTEGER, -- determines storage SOC
     PRIMARY KEY (project_operational_chars_scenario_id, project),
     FOREIGN KEY (project_operational_chars_scenario_id) REFERENCES
         subscenarios_project_operational_chars (project_operational_chars_scenario_id),
@@ -1193,6 +1194,9 @@ CREATE TABLE inputs_project_operational_chars
     FOREIGN KEY (project, variable_generator_profile_scenario_id) REFERENCES
         subscenarios_project_variable_generator_profiles
             (project, variable_generator_profile_scenario_id),
+    FOREIGN KEY (project, stor_exog_state_of_charge_scenario_id) REFERENCES
+        subscenarios_project_stor_exog_state_of_charge
+            (project, stor_exog_state_of_charge_scenario_id),
     FOREIGN KEY (project, hydro_operational_chars_scenario_id) REFERENCES
         subscenarios_project_hydro_operational_chars
             (project, hydro_operational_chars_scenario_id),
@@ -1437,6 +1441,32 @@ CREATE TABLE inputs_project_hydro_operational_chars
     FOREIGN KEY (project, hydro_operational_chars_scenario_id) REFERENCES
         subscenarios_project_hydro_operational_chars
             (project, hydro_operational_chars_scenario_id)
+);
+
+-- Storage exogenously specified state of charge
+DROP TABLE IF EXISTS subscenarios_project_stor_exog_state_of_charge;
+CREATE TABLE subscenarios_project_stor_exog_state_of_charge
+(
+    project                                VARCHAR(64),
+    stor_exog_state_of_charge_scenario_id INTEGER,
+    name                                   VARCHAR(32),
+    description                            VARCHAR(128),
+    PRIMARY KEY (project, stor_exog_state_of_charge_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_stor_exog_state_of_charge;
+CREATE TABLE inputs_project_stor_exog_state_of_charge
+(
+    project                                VARCHAR(64),
+    stor_exog_state_of_charge_scenario_id INTEGER,
+    stage_id                               INTEGER,
+    timepoint                              INTEGER,
+    exog_state_of_charge_mwh               FLOAT,
+    PRIMARY KEY (project, stor_exog_state_of_charge_scenario_id, stage_id,
+                 timepoint),
+    FOREIGN KEY (project, stor_exog_state_of_charge_scenario_id) REFERENCES
+        subscenarios_project_stor_exog_state_of_charge
+            (project, stor_exog_state_of_charge_scenario_id)
 );
 
 -- Cap factor limits
@@ -5398,6 +5428,7 @@ SELECT project_portfolio_scenario_id,
        temporal_scenario_id,
        operational_type,
        variable_generator_profile_scenario_id,
+       stor_exog_state_of_charge_scenario_id,
        flex_load_static_profile_scenario_id,
        subproblem_id,
        stage_id,

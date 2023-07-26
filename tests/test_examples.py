@@ -1459,6 +1459,16 @@ class TestExamples(unittest.TestCase):
             ]
         )
 
+    def test_example_test_w_storage_starting_soc(self):
+        """
+        Check validation and objective function value of
+        "test_w_storage_starting_soc" example
+        :return:
+        """
+
+        self.check_validation("test_w_storage_starting_soc")
+        self.run_and_check_objective("test_w_storage_starting_soc", -247344769.66799998)
+
     @classmethod
     def tearDownClass(cls):
         os.remove(DB_PATH)

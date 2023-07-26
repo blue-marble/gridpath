@@ -143,6 +143,16 @@ class TestStor(unittest.TestCase):
         }
         self.assertDictEqual(expected_storage_efficiency, actual_storage_efficiency)
 
+        # Param: stor_exogenous_starting_state_of_charge
+        expected_exog_soc = {
+            ("Battery", 20300101): 1,
+        }
+        actual_exog_soc = {
+            (prj, tmp): instance.stor_exogenous_starting_state_of_charge[prj, tmp]
+            for (prj, tmp) in instance.STOR_EXOG_SOC_TMPS
+        }
+        self.assertDictEqual(expected_exog_soc, actual_exog_soc)
+
 
 if __name__ == "__main__":
     unittest.main()
