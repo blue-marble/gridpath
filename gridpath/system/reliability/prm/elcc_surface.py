@@ -149,7 +149,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return:
     """
     results_columns = [
-        "total_contribution_from_elcc_surfaces_mw",
+        "elcc_surface_mw",
     ]
     data = [
         [
