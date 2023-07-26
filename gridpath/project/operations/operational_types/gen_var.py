@@ -56,7 +56,7 @@ from gridpath.project.common_functions import (
 )
 from gridpath.project.operations.operational_types.common_functions import (
     load_var_profile_inputs,
-    get_var_profile_inputs_from_database,
+    get_prj_tmp_opr_inputs_from_db,
     write_tab_file_model_inputs,
     validate_opchars,
     validate_var_profiles,
@@ -510,9 +510,18 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
     :return: cursor object with query results
     """
 
-    return get_var_profile_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn, "gen_var"
+    prj_tmp_data = get_prj_tmp_opr_inputs_from_db(
+        subscenarios=subscenarios,
+        subproblem=subproblem,
+        stage=stage,
+        conn=conn,
+        op_type="gen_var",
+        table="inputs_project_variable_generator_profiles" "",
+        subscenario_id_column="variable_generator_profile_scenario_id",
+        data_column="cap_factor",
     )
+
+    return prj_tmp_data
 
 
 def write_model_inputs(

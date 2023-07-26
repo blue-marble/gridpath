@@ -63,6 +63,8 @@ from gridpath.project.operations.operational_types.common_functions import (
     load_optype_model_data,
     check_for_tmps_to_link,
     validate_opchars,
+    write_tab_file_model_inputs,
+    get_prj_tmp_opr_inputs_from_db,
 )
 from gridpath.common_functions import create_results_df
 
@@ -720,6 +722,54 @@ def power_delta_rule(mod, g, tmp):
 ###############################################################################
 
 
+def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+    """
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return: cursor object with query results
+    """
+
+    prj_tmp_data = get_prj_tmp_opr_inputs_from_db(
+        subscenarios=subscenarios,
+        subproblem=subproblem,
+        stage=stage,
+        conn=conn,
+        op_type="stor",
+        table="inputs_project_stor_exog_state_of_charge" "",
+        subscenario_id_column="stor_exog_state_of_charge_scenario_id",
+        data_column="exog_state_of_charge_mwh",
+    )
+
+    return prj_tmp_data
+
+
+def write_model_inputs(
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+):
+    """
+    Get inputs from database and write out the model input
+    variable_generator_profiles.tab file.
+    :param scenario_directory: string, the scenario directory
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+
+    data = get_model_inputs_from_database(
+        scenario_id, subscenarios, subproblem, stage, conn
+    )
+
+    fname = "stor_exogenous_state_of_charge.tab"
+
+    write_tab_file_model_inputs(
+        scenario_directory, subproblem, stage, fname, data, replace_nulls=True
+    )
+
+
 def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
     """
 
@@ -932,7 +982,7 @@ def check_for_soc_infeasibilities(mod, s, tmp, starting_soc):
             f"inputs and results."
         )
         return 0
-    elif starting_soc > (
+    elif mod.capacity_type[s] == "stor_spec" and starting_soc > (
         mod.stor_spec_energy_capacity_mwh[s, mod.period[tmp]]
         * mod.avl_exog_cap_derate[s, tmp]
     ):
@@ -941,13 +991,13 @@ def check_for_soc_infeasibilities(mod, s, tmp, starting_soc):
             f"{starting_soc} for project {s}, "
             f"which would have resulted in infeasibility. "
             f"Changed to "
-            f"mod.Energy_Capacity_MWh[s,mod.period[tmp]] "
+            f"mod.stor_spec_energy_capacity_mwh[s,mod.period[tmp]] "
             f"* mod.Availability_Derate[s, tmp]. This can happen due to "
             f"solver tolerances and precision of results. If you didn't expect "
             f"this, check the inputs and results."
         )
         return (
-            mod.Energy_Capacity_MWh[s, mod.period[tmp]]
+            mod.stor_spec_energy_capacity_mwh[s, mod.period[tmp]]
             * mod.Availability_Derate[s, tmp]
         )
     else:
