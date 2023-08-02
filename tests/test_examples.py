@@ -1469,6 +1469,16 @@ class TestExamples(unittest.TestCase):
         self.check_validation("test_w_storage_starting_soc")
         self.run_and_check_objective("test_w_storage_starting_soc", -247344769.66799998)
 
+    def test_example_test_new_solar_carbon_credits(self):
+        """
+        Check validation and objective function value of
+        "test_new_solar_carbon_credits" example
+        :return:
+        """
+
+        # self.check_validation("test_new_solar_carbon_credits")
+        self.run_and_check_objective("test_new_solar_carbon_credits", -58282515304521.79)
+
     @classmethod
     def tearDownClass(cls):
         os.remove(DB_PATH)

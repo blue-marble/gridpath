@@ -74,7 +74,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         f"""SELECT carbon_credits_zone
         FROM inputs_geography_carbon_credits_zones
         WHERE carbon_credits_zone_scenario_id = 
-        {subscenarios.CARBON_CREDTS_ZONE_SCENARIO_ID};
+        {subscenarios.CARBON_CREDITS_ZONE_SCENARIO_ID};
         """
     )
 

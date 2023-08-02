@@ -1865,6 +1865,28 @@ CREATE TABLE inputs_project_carbon_tax_allowance
         subscenarios_project_carbon_tax_allowance (project_carbon_tax_allowance_scenario_id)
 );
 
+-- Project carbon credits
+DROP TABLE IF EXISTS subscenarios_project_carbon_credits;
+CREATE TABLE subscenarios_project_carbon_credits
+(
+    project_carbon_credits_scenario_id INTEGER PRIMARY KEY,
+    name                               VARCHAR(32),
+    description                        VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_project_carbon_credits;
+CREATE TABLE inputs_project_carbon_credits
+(
+    project_carbon_credits_scenario_id          INTEGER,
+    project                                     VARCHAR(64),
+    period                                      INTEGER,
+    intensity_threshold_emissions_toCO2_per_MWh FLOAT,
+    absolute_threshold_emissions_toCO2          FLOAT,
+    PRIMARY KEY (project_carbon_credits_scenario_id, project, period),
+    FOREIGN KEY (project_carbon_credits_scenario_id) REFERENCES
+        subscenarios_project_carbon_credits (project_carbon_credits_scenario_id)
+);
+
 -- Project performance standard zones
 -- Which projects count toward the performance standard
 -- Depends on performance standard zone geography
@@ -1887,6 +1909,31 @@ CREATE TABLE inputs_project_performance_standard_zones
     PRIMARY KEY (project_performance_standard_zone_scenario_id, project),
     FOREIGN KEY (project_performance_standard_zone_scenario_id) REFERENCES
         subscenarios_project_performance_standard_zones (project_performance_standard_zone_scenario_id)
+);
+
+-- Project carbon credits zones
+-- Which projects can trade in which carbon credits zone
+-- Can only do so in one zone for now
+-- This table can include all project with NULLs for projects not
+-- contributing or just the contributing projects
+DROP TABLE IF EXISTS subscenarios_project_carbon_credits_zones;
+CREATE TABLE subscenarios_project_carbon_credits_zones
+(
+    project_carbon_credits_zone_scenario_id INTEGER PRIMARY KEY,
+    name                                    VARCHAR(32),
+    description                             VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_project_carbon_credits_zones;
+CREATE TABLE inputs_project_carbon_credits_zones
+(
+    project_carbon_credits_zone_scenario_id INTEGER,
+    project                                 VARCHAR(64),
+    carbon_credits_zone                     VARCHAR(32),
+    PRIMARY KEY (project_carbon_credits_zone_scenario_id, project,
+                 carbon_credits_zone),
+    FOREIGN KEY (project_carbon_credits_zone_scenario_id) REFERENCES
+        subscenarios_project_carbon_credits_zones (project_carbon_credits_zone_scenario_id)
 );
 
 -- Project fuel burn limit balancing areas
@@ -3594,6 +3641,8 @@ CREATE TABLE scenarios
     project_carbon_tax_zone_scenario_id                         INTEGER,
     project_carbon_tax_allowance_scenario_id                    INTEGER,
     project_performance_standard_zone_scenario_id               INTEGER,
+    project_carbon_credits_zone_scenario_id                     INTEGER,
+    project_carbon_credits_scenario_id                          INTEGER,
     project_fuel_burn_limit_ba_scenario_id                      INTEGER,
     project_prm_zone_scenario_id                                INTEGER,
     prm_capacity_transfer_scenario_id                           INTEGER,
@@ -3741,6 +3790,12 @@ CREATE TABLE scenarios
     FOREIGN KEY (project_performance_standard_zone_scenario_id) REFERENCES
         subscenarios_project_performance_standard_zones
             (project_performance_standard_zone_scenario_id),
+    FOREIGN KEY (project_carbon_credits_zone_scenario_id) REFERENCES
+        subscenarios_project_carbon_credits_zones
+            (project_carbon_credits_zone_scenario_id),
+    FOREIGN KEY (project_carbon_credits_scenario_id) REFERENCES
+        subscenarios_project_carbon_credits
+            (project_carbon_credits_scenario_id),    
     FOREIGN KEY (project_fuel_burn_limit_ba_scenario_id) REFERENCES
         subscenarios_project_fuel_burn_limit_balancing_areas
             (project_fuel_burn_limit_ba_scenario_id),
