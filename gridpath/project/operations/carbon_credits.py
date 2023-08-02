@@ -18,20 +18,13 @@
 
 import csv
 import os.path
-import pandas as pd
-from pyomo.environ import Param, Set, NonNegativeReals, Expression, value, PositiveReals
+from pyomo.environ import Param, Set, NonNegativeReals, Var, Constraint, value
 
 from gridpath.auxiliary.auxiliary import (
     cursor_to_df,
     subset_init_by_param_value,
     get_required_subtype_modules,
 )
-from gridpath.auxiliary.db_interface import (
-    update_prj_zone_column,
-    determine_table_subset_by_start_and_column,
-    import_csv,
-)
-from gridpath.auxiliary.validations import write_validation_to_database, validate_idxs
 from gridpath.common_functions import create_results_df
 from gridpath.project import PROJECT_PERIOD_DF
 from gridpath.project.operations.common_functions import load_operational_type_modules
@@ -173,8 +166,12 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         ),
     )
 
-    # Expressions
+    # Variables
     ###########################################################################
+
+    m.Project_Carbon_Credits_Generated = Var(
+        m.CARBON_CREDITS_PRJ_OPR_PRDS, within=NonNegativeReals
+    )
 
     def generated_credits_rule(mod, prj, prd):
         """
@@ -196,7 +193,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             for (prj, tmp) in mod.CARBON_CREDITS_PRJ_OPR_TMPS
             if mod.period[tmp] == prd
         )
-        return (
+        return mod.Project_Carbon_Credits_Generated[prj, prd] <= (
             total_power_provision_in_prd
             * mod.intensity_threshold_emissions_toCO2_per_MWh[prj, prd]
             + mod.absolute_threshold_emissions_toCO2[prj, prd]
@@ -209,7 +206,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             )
         )
 
-    m.Project_Carbon_Credits_Generated = Expression(
+    m.Project_Carbon_Credits_Generated_Constraint = Constraint(
         m.CARBON_CREDITS_PRJ_OPR_PRDS, rule=generated_credits_rule
     )
 
@@ -328,34 +325,6 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         """
     )
 
-    print(f"""SELECT project, period,
-        intensity_threshold_emissions_toCO2_per_MWh,
-        absolute_threshold_emissions_toCO2
-        FROM
-        -- Get projects from portfolio only
-        (SELECT project
-            FROM inputs_project_portfolios
-            WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
-        ) as prj_fuels_tbl
-        CROSS JOIN
-            (SELECT period
-            FROM inputs_temporal_periods
-            WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
-            ) as relevant_periods 
-        LEFT OUTER JOIN
-        -- Get carbon credits for those projects
-            (SELECT project, period,
-                intensity_threshold_emissions_toCO2_per_MWh,
-                absolute_threshold_emissions_toCO2
-            FROM inputs_project_carbon_credits
-            WHERE project_carbon_credits_scenario_id = {subscenarios.PROJECT_CARBON_CREDITS_SCENARIO_ID}) as prj_ct_tbl
-        USING (project, period)
-        WHERE project in (
-                SELECT project
-                    FROM inputs_project_carbon_credits_zones
-                    WHERE project_carbon_credits_zone_scenario_id = {subscenarios.PROJECT_CARBON_CREDITS_ZONE_SCENARIO_ID}
-        );""")
-
     return project_zones, project_carbon_credits
 
 
@@ -445,7 +414,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 
     results_columns = [
         "carbon_credits_zone",
-        "capacity_cost",
+        "carbon_credits_generated_tCO2",
     ]
     data = [
         [

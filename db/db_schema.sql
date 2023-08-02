@@ -4005,7 +4005,8 @@ CREATE TABLE results_project_period
     max_build_energy_dual                  FLOAT,
     min_total_energy_dual                  FLOAT,
     max_total_energy_dual                  FLOAT,
-
+    carbon_credits_zone                    VARCHAR(32),
+    carbon_credits_generated_tCO2          FLOAT,
     PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
 );
 

@@ -1476,8 +1476,8 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
-        # self.check_validation("test_new_solar_carbon_credits")
-        self.run_and_check_objective("test_new_solar_carbon_credits", -58282515304521.79)
+        self.check_validation("test_new_solar_carbon_credits")
+        self.run_and_check_objective("test_new_solar_carbon_credits", -56834236931905.95)
 
     @classmethod
     def tearDownClass(cls):
