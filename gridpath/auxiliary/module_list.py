@@ -191,6 +191,7 @@ def all_modules_list():
         "system.policy.carbon_tax.consolidate_results",
         "system.policy.carbon_credits",
         "system.policy.carbon_credits.aggregate_project_carbon_credits",
+        "system.policy.carbon_credits.aggregate_carbon_cap_zone_purchases",
         "system.policy.carbon_credits.carbon_credits_balance",
         "system.policy.subsidies",
         "system.policy.performance_standard.aggregate_project_performance_standard",
@@ -482,6 +483,9 @@ def cross_feature_modules_list():
         ],
         ("prm", "elcc_surface", "tuning"): [
             "objective.system.reliability.prm.dynamic_elcc_tuning_penalties"
+        ],
+        ("carbon_cap", "carbon_credits"): [
+            "system.policy.carbon_credits.aggregate_carbon_cap_zone_purchases",
         ],
     }
     return cross_modules

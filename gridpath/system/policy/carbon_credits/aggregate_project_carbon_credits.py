@@ -18,14 +18,13 @@ Aggregate carbon credits from the project-period level to the carbon credit
 zone - period level.
 """
 
-
-import csv
-import os.path
 from pyomo.environ import Param, Set, Expression, value
 
-from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.common_functions import create_results_df
+from gridpath.auxiliary.dynamic_components import (
+    carbon_credits_balance_generation_components,
+    carbon_credits_balance_purchase_components,
+)
 from gridpath.system.policy.carbon_credits import CARBON_CREDITS_ZONE_PRD_DF
 
 
@@ -53,8 +52,22 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             and prd == period
         )
 
-    m.Total_Carbon_Credits_Generated = Expression(
+    m.Total_Project_Carbon_Credits_Generated = Expression(
         m.CARBON_CREDITS_ZONES, m.PERIODS, rule=total_carbon_credits_rule
+    )
+
+    # Add to the carbon credits tracking balance
+    record_dynamic_components(d)
+
+
+def record_dynamic_components(dynamic_components):
+    """
+    :param dynamic_components:
+
+    This method adds the static load to the load balance dynamic components.
+    """
+    getattr(dynamic_components, carbon_credits_balance_generation_components).append(
+        "Total_Project_Carbon_Credits_Generated"
     )
 
 
@@ -77,7 +90,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             p,
             value(m.Total_Carbon_Credits_Generated[z, p]),
         ]
-        for z in m.CARBON_CREDITS_ZONES for p in m.PERIODS
+        for z in m.CARBON_CREDITS_ZONES
+        for p in m.PERIODS
     ]
     results_df = create_results_df(
         index_columns=["carbon_credits_zone", "period"],

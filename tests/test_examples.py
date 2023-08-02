@@ -1477,7 +1477,9 @@ class TestExamples(unittest.TestCase):
         """
 
         self.check_validation("test_new_solar_carbon_credits")
-        self.run_and_check_objective("test_new_solar_carbon_credits", -56834236931905.95)
+        self.run_and_check_objective(
+            "test_new_solar_carbon_credits", -56834236931905.95
+        )
 
     @classmethod
     def tearDownClass(cls):
