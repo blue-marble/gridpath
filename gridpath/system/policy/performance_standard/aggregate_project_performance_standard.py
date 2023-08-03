@@ -18,12 +18,11 @@ the performance zone - period level.
 """
 
 
-import csv
-import os.path
-from pyomo.environ import Param, Set, Expression, value
+from pyomo.environ import Expression, value
 
-from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.db_interface import setup_results_import
+from gridpath.auxiliary.dynamic_components import (
+    performance_standard_balance_emission_components,
+)
 from gridpath.common_functions import create_results_df
 from gridpath.system.policy.performance_standard import PERFORMANCE_STANDARD_Z_PRD_DF
 
@@ -75,10 +74,26 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             and tmp in mod.TMPS_IN_PRD[p]
         )
 
+    # We'll multiply this by the standard in the balance constraint
+    # Note this is NOT added to the dynamic components
     m.Total_Performance_Standard_Project_Energy = Expression(
         m.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD,
         rule=total_performance_standard_energy_rule,
     )
+
+    record_dynamic_components(dynamic_components=d)
+
+
+def record_dynamic_components(dynamic_components):
+    """
+    :param dynamic_components:
+
+    This method adds project emissions to carbon balance
+    """
+
+    getattr(
+        dynamic_components, performance_standard_balance_emission_components
+    ).append("Total_Performance_Standard_Project_Emissions")
 
 
 def export_results(scenario_directory, subproblem, stage, m, d):

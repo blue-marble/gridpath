@@ -192,9 +192,11 @@ def all_modules_list():
         "system.policy.carbon_credits",
         "system.policy.carbon_credits.aggregate_project_carbon_credits",
         "system.policy.carbon_credits.aggregate_carbon_cap_zone_purchases",
+        "system.policy.carbon_credits" ".aggregate_performance_standard_zone_purchases",
         "system.policy.carbon_credits.carbon_credits_balance",
         "system.policy.subsidies",
         "system.policy.performance_standard.aggregate_project_performance_standard",
+        "system.policy.performance_standard.purchase_credits",
         "system.policy.performance_standard.performance_standard_balance",
         "system.policy.performance_standard.consolidate_results",
         "system.policy.fuel_burn_limits.aggregate_project_fuel_burn",
@@ -385,7 +387,6 @@ def optional_modules_list():
         "carbon_credits": [
             "geography.carbon_credits_zones",
             "project.operations.carbon_credits",
-            "system.policy.carbon_cap.purchase_credits",
             "system.policy.carbon_credits",
             "system.policy.carbon_credits.aggregate_project_carbon_credits",
             "system.policy.carbon_credits.carbon_credits_balance",
@@ -485,7 +486,13 @@ def cross_feature_modules_list():
             "objective.system.reliability.prm.dynamic_elcc_tuning_penalties"
         ],
         ("carbon_cap", "carbon_credits"): [
+            "system.policy.carbon_cap.purchase_credits",
             "system.policy.carbon_credits.aggregate_carbon_cap_zone_purchases",
+        ],
+        ("performance_standard", "carbon_credits"): [
+            "system.policy.performance_standard.purchase_credits",
+            "system.policy.carbon_credits"
+            ".aggregate_performance_standard_zone_purchases",
         ],
     }
     return cross_modules

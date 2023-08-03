@@ -16,26 +16,36 @@
 
 """
 
-from pyomo.environ import Expression
+from pyomo.environ import Set, Var, Expression
 
 from gridpath.auxiliary.dynamic_components import (
-    carbon_credits_balance_purchase_components,
+    performance_standard_balance_credit_components,
 )
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
     """ """
+    m.PERFORMANCE_STANDARD_ZONES_CARBON_CREDITS_ZONES = Set(
+        within=m.PERFORMANCE_STANDARD_ZONES * m.CARBON_CREDITS_ZONES
+    )
+
+    m.Performance_Standard_Purchase_Credits = Var(
+        m.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD
+    )
 
     def aggregate_purchases(mod, z, prd):
         return sum(
-            mod.Carbon_Cap_Purchase_Credits[cap_zone, prd]
-            for (cap_zone, credit_zone) in mod.CARBON_CAP_ZONES_CARBON_CREDITS_ZONES
-            if z == credit_zone
-            and (cap_zone, prd) in mod.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP
+            mod.Performance_Standard_Purchase_Credits[z, prd]
+            for (
+                perf_zone,
+                credit_zone,
+            ) in mod.PERFORMANCE_STANDARD_ZONES_CARBON_CREDITS_ZONES
+            if z == perf_zone
         )
 
-    m.Total_Credit_Purchases_from_Carbon_Cap_Zones = Expression(
-        m.CARBON_CREDITS_ZONES, m.PERIODS, initialize=aggregate_purchases
+    m.Performance_Standard_Total_Credit_Purchases = Expression(
+        m.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD,
+        initialize=aggregate_purchases,
     )
 
     record_dynamic_components(dynamic_components=d)
@@ -48,6 +58,6 @@ def record_dynamic_components(dynamic_components):
     This method adds project emissions to carbon balance
     """
 
-    getattr(dynamic_components, carbon_credits_balance_purchase_components).append(
-        "Total_Credit_Purchases_from_Carbon_Cap_Zones"
+    getattr(dynamic_components, performance_standard_balance_credit_components).append(
+        "Performance_Standard_Total_Credit_Purchases"
     )

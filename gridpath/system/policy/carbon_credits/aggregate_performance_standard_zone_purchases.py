@@ -28,14 +28,19 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     def aggregate_purchases(mod, z, prd):
         return sum(
-            mod.Carbon_Cap_Purchase_Credits[cap_zone, prd]
-            for (cap_zone, credit_zone) in mod.CARBON_CAP_ZONES_CARBON_CREDITS_ZONES
+            mod.Performance_Standard_Purchase_Credits[perf_zone, prd]
+            for (
+                perf_zone,
+                credit_zone,
+            ) in mod.PERFORMANCE_STANDARD_ZONES_CARBON_CREDITS_ZONES
             if z == credit_zone
-            and (cap_zone, prd) in mod.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP
+            and (perf_zone, prd)
+            in mod.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD
         )
 
-    m.Total_Credit_Purchases_from_Carbon_Cap_Zones = Expression(
-        m.CARBON_CREDITS_ZONES, m.PERIODS, initialize=aggregate_purchases
+    m.Total_Credit_Purchases_from_Performance_Standard_Zones = Expression(
+        m.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD,
+        initialize=aggregate_purchases,
     )
 
     record_dynamic_components(dynamic_components=d)
@@ -49,5 +54,5 @@ def record_dynamic_components(dynamic_components):
     """
 
     getattr(dynamic_components, carbon_credits_balance_purchase_components).append(
-        "Total_Credit_Purchases_from_Carbon_Cap_Zones"
+        "Total_Credit_Purchases_from_Performance_Standard_Zones"
     )

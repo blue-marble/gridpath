@@ -41,6 +41,13 @@ load_balance_consumption_components = "load_balance_consumption_components"
 carbon_cap_balance_emission_components = "carbon_cap_balance_emission_components"
 carbon_cap_balance_credit_components = "carbon_cap_balance_credit_components"
 
+performance_standard_balance_emission_components = (
+    "performance_standard_balance_emission_components"
+)
+performance_standard_balance_credit_components = (
+    "performance_standard_balance_credit_components"
+)
+
 carbon_credits_balance_generation_components = (
     "carbon_credits_balance_generation_components"
 )
@@ -122,6 +129,10 @@ class DynamicComponents(object):
         # Modules will add component names to these lists
         setattr(self, carbon_cap_balance_emission_components, list())
         setattr(self, carbon_cap_balance_credit_components, list())
+
+        # Performance standard constraint
+        setattr(self, performance_standard_balance_emission_components, list())
+        setattr(self, performance_standard_balance_credit_components, list())
 
         # Carbon credits tracking
         # Modules will add component names to these lists

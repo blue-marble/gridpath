@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pyomo.environ import Var, NonNegativeReals, Constraint
+from pyomo.environ import Var, NonNegativeReals, Constraint, Expression
 
 from gridpath.auxiliary.dynamic_components import (
     carbon_credits_balance_generation_components,
@@ -32,28 +32,27 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.CARBON_CREDITS_ZONES, m.PERIODS, within=NonNegativeReals, initialize=0
     )
 
-    def total_credits_generated_rule(mod):
+    def total_credits_generated_rule(mod, z, p):
         return sum(
-            getattr(mod, c)
+            getattr(mod, c)[z, p]
             for c in getattr(d, carbon_credits_balance_generation_components)
         )
 
-    m.Total_Carbon_Credits_Generated = m.Expression(
-        initialize=total_credits_generated_rule
+    m.Total_Carbon_Credits_Generated = Expression(
+        m.CARBON_CREDITS_ZONES, m.PERIODS, rule=total_credits_generated_rule
     )
 
     # Aggregate all costs
-    def total_credits_purchased_rule(mod):
+    def total_credits_purchased_rule(mod, z, p):
         return sum(
-            getattr(mod, c)
+            getattr(mod, c)[z, p]
             for c in getattr(d, carbon_credits_balance_purchase_components)
         )
 
-    m.Total_Carbon_Credits_Purchased = m.Expression(
-        initialize=total_credits_purchased_rule
+    m.Total_Carbon_Credits_Purchased = Expression(
+        m.CARBON_CREDITS_ZONES, m.PERIODS, rule=total_credits_purchased_rule
     )
 
-    # TODO: make this a dynamic component with other modules adding to it
     def track_available_credits(mod, z, prd):
         return (
             mod.Available_Carbon_Credits[z, prd]
