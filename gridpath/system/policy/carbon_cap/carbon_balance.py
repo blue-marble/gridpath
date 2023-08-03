@@ -99,6 +99,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 
     results_columns = [
         "total_emissions",
+        "total_credits",
         "dual",
         "carbon_cap_marginal_cost_per_emission",
     ]
@@ -107,6 +108,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             z,
             p,
             value(m.Total_Carbon_Emissions_from_All_Sources_Expression[z, p]),
+            value(m.Total_Carbon_Credits_from_All_Sources_Expression[z, p]),
             m.dual[getattr(m, "Carbon_Cap_Constraint")[z, p]]
             if (z, p) in [idx for idx in getattr(m, "Carbon_Cap_Constraint")]
             else None,

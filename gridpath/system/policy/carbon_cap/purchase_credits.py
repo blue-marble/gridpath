@@ -16,9 +16,13 @@
 
 """
 
-from pyomo.environ import Set, Var, Expression
+import os.path
+from pyomo.environ import Set, Var, NonNegativeReals, Expression, value
 
+from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.dynamic_components import carbon_cap_balance_credit_components
+from gridpath.common_functions import create_results_df
+from gridpath.system.policy.carbon_cap import CARBON_CAP_ZONE_PRD_DF
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -27,7 +31,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         within=m.CARBON_CAP_ZONES * m.CARBON_CREDITS_ZONES
     )
 
-    m.Carbon_Cap_Purchase_Credits = Var(m.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP)
+    m.Carbon_Cap_Purchase_Credits = Var(
+        m.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP, within=NonNegativeReals
+    )
 
     def aggregate_purchases(mod, z, prd):
         return sum(
@@ -53,3 +59,111 @@ def record_dynamic_components(dynamic_components):
     getattr(dynamic_components, carbon_cap_balance_credit_components).append(
         "Carbon_Cap_Total_Credit_Purchases"
     )
+
+
+def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+    """
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+    subproblem = 1 if subproblem == "" else subproblem
+    stage = 1 if stage == "" else stage
+    c = conn.cursor()
+    mapping = c.execute(
+        f"""SELECT carbon_cap_zone, carbon_credits_zone
+        FROM inputs_system_carbon_cap_zones_carbon_credits_zones
+        WHERE carbon_cap_zones_carbon_credits_zones_scenario_id = 
+        {subscenarios.CARBON_CAP_ZONES_CARBON_CREDITS_ZONES_SCENARIO_ID}
+        AND carbon_cap_zone in (
+            SELECT carbon_cap_zone
+            FROM inputs_geography_carbon_cap_zones
+            WHERE carbon_cap_zone_scenario_id = {subscenarios.CARBON_CAP_ZONE_SCENARIO_ID}
+        )
+        AND carbon_credits_zone in (
+            SELECT carbon_credits_zone
+            FROM inputs_geography_carbon_credits_zones
+            WHERE carbon_credits_zone_scenario_id = {subscenarios.CARBON_CAP_ZONE_SCENARIO_ID}
+        )
+        ;
+        """
+    )
+
+    return mapping
+
+
+def write_model_inputs(
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+):
+    query_results = get_inputs_from_database(
+        scenario_id, subscenarios, subproblem, stage, conn
+    )
+    # carbon_cap_zones_carbon_credits_zone_mapping.tab
+    df = cursor_to_df(query_results)
+    df = df.fillna(".")
+    fpath = os.path.join(
+        scenario_directory,
+        str(subproblem),
+        str(stage),
+        "inputs",
+        "carbon_cap_zones_carbon_credits_zone_mapping.tab",
+    )
+    df.to_csv(fpath, index=False, sep="\t")
+
+
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+    """
+
+    :param m:
+    :param d:
+    :param data_portal:
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :return:
+    """
+    data_portal.load(
+        filename=os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "carbon_cap_zones_carbon_credits_zone_mapping.tab",
+        ),
+        set=m.CARBON_CAP_ZONES_CARBON_CREDITS_ZONES,
+    )
+
+
+def export_results(scenario_directory, subproblem, stage, m, d):
+    """
+
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :param m:
+    :param d:
+    :return:
+    """
+
+    results_columns = [
+        "credit_purchases",
+    ]
+    data = [
+        [
+            z,
+            p,
+            value(m.Carbon_Cap_Total_Credit_Purchases[z, p]),
+        ]
+        for (z, p) in m.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP
+    ]
+    results_df = create_results_df(
+        index_columns=["carbon_cap_zone", "period"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    for c in results_columns:
+        getattr(d, CARBON_CAP_ZONE_PRD_DF)[c] = None
+    getattr(d, CARBON_CAP_ZONE_PRD_DF).update(results_df)
