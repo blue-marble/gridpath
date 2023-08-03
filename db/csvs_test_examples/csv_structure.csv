@@ -108,6 +108,7 @@ policy/carbon_tax/project_carbon_tax_allowance,carbon_tax,project_carbon_tax_all
 policy/performance_standard/geography_performance_standard_zones,performance_standard,performance_standard_zone_scenario_id,geography_performance_standard_zones,simple,,0,0,,,,
 policy/performance_standard/project_performance_standard_zones,performance_standard,project_performance_standard_zone_scenario_id,project_performance_standard_zones,simple,,0,0,,,,
 policy/performance_standard/system_performance_standard,performance_standard,performance_standard_scenario_id,system_performance_standard,simple,,0,0,,,,
+policy/performance_standard/carbon_credits,carbon_credits,performance_standard_zones_carbon_credits_zones_scenario_id,system_performance_standard_zones_carbon_credits_zones,simple,,0,0,,,,
 policy/carbon_credits/zones,carbon_credits,carbon_credits_zone_scenario_id,geography_carbon_credits_zones,simple,,0,0,,,,
 policy/carbon_credits/project_zones,carbon_credits,project_carbon_credits_zone_scenario_id,project_carbon_credits_zones,simple,,0,0,,,,
 policy/carbon_credits/project_credits,carbon_credits,project_carbon_credits_scenario_id,project_carbon_credits,simple,,0,0,,,,

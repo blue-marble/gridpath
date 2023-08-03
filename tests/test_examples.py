@@ -1481,6 +1481,17 @@ class TestExamples(unittest.TestCase):
             "test_new_solar_carbon_credits", -5464644311322.297
         )
 
+    def test_performance_standard_carbon_credits(self):
+        """
+        Check validation and objective function value of "test_performance_standard" example
+        :return:
+        """
+
+        self.check_validation("test_performance_standard_carbon_credits")
+        self.run_and_check_objective(
+            "test_performance_standard_carbon_credits", -3592014754469.9077
+        )
+
     @classmethod
     def tearDownClass(cls):
         os.remove(DB_PATH)

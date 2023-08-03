@@ -721,6 +721,28 @@ CREATE TABLE inputs_system_carbon_cap_zones_carbon_credits_zones
             (carbon_cap_zones_carbon_credits_zones_scenario_id)
 );
 
+-- Performance standard zone <--> carbon credit zone mapping
+DROP TABLE IF EXISTS subscenarios_system_performance_standard_zones_carbon_credits_zones;
+CREATE TABLE subscenarios_system_performance_standard_zones_carbon_credits_zones
+(
+    performance_standard_zones_carbon_credits_zones_scenario_id INTEGER PRIMARY KEY
+        AUTOINCREMENT,
+    name                                                        VARCHAR(32),
+    description                                                 VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_system_performance_standard_zones_carbon_credits_zones;
+CREATE TABLE inputs_system_performance_standard_zones_carbon_credits_zones
+(
+    performance_standard_zones_carbon_credits_zones_scenario_id INTEGER,
+    performance_standard_zone                                   VARCHAR(32),
+    carbon_credits_zone                                         VARCHAR(32),
+    PRIMARY KEY (performance_standard_zone, carbon_credits_zone),
+    FOREIGN KEY (performance_standard_zones_carbon_credits_zones_scenario_id) REFERENCES
+        subscenarios_system_performance_standard_zones_carbon_credits_zones
+            (performance_standard_zones_carbon_credits_zones_scenario_id)
+);
+
 -- PRM
 -- This is the unit at which PRM requirements are met in the model; it can be
 -- different from the load zones
@@ -3643,6 +3665,7 @@ CREATE TABLE scenarios
     performance_standard_zone_scenario_id                       INTEGER,
     carbon_credits_zone_scenario_id                             INTEGER,
     carbon_cap_zones_carbon_credits_zones_scenario_id           INTEGER,
+    performance_standard_zones_carbon_credits_zones_scenario_id INTEGER,
     fuel_burn_limit_ba_scenario_id                              INTEGER,
     prm_zone_scenario_id                                        INTEGER,
     local_capacity_zone_scenario_id                             INTEGER,
@@ -3759,6 +3782,9 @@ CREATE TABLE scenarios
     FOREIGN KEY (carbon_cap_zones_carbon_credits_zones_scenario_id) REFERENCES
         subscenarios_system_carbon_cap_zones_carbon_credits_zones
             (carbon_cap_zones_carbon_credits_zones_scenario_id),
+    FOREIGN KEY (performance_standard_zones_carbon_credits_zones_scenario_id) REFERENCES
+        subscenarios_system_performance_standard_zones_carbon_credits_zones
+            (performance_standard_zones_carbon_credits_zones_scenario_id),
     FOREIGN KEY (fuel_burn_limit_ba_scenario_id) REFERENCES
         subscenarios_geography_fuel_burn_limit_balancing_areas
             (fuel_burn_limit_ba_scenario_id),
@@ -4850,6 +4876,7 @@ CREATE TABLE results_system_performance_standard
     performance_standard_tco2_per_mwh           FLOAT,
     performance_standard_project_emissions_tco2 FLOAT,
     performance_standard_project_energy_mwh     FLOAT,
+    credit_purchases                            FLOAT,
     performance_standard_overage_tco2           FLOAT,
     PRIMARY KEY (scenario_id, performance_standard_zone, subproblem_id,
                  stage_id, period)
