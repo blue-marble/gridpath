@@ -16,13 +16,8 @@
 Constraint total carbon emissions to be less than cap
 """
 
-
-import csv
-import os.path
-
 from pyomo.environ import Var, Constraint, Expression, NonNegativeReals, value
 
-from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.dynamic_components import (
     carbon_cap_balance_emission_components,
     carbon_cap_balance_credit_components,

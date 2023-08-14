@@ -187,6 +187,7 @@ def all_modules_list():
         "system.policy.carbon_cap.carbon_balance",
         "system.policy.carbon_cap.consolidate_results",
         "system.policy.carbon_tax.aggregate_project_carbon_emissions",
+        "system.policy.carbon_tax.purchase_credits",
         "system.policy.carbon_tax.carbon_tax_costs",
         "system.policy.carbon_tax.consolidate_results",
         "system.policy.subsidies",
@@ -198,6 +199,7 @@ def all_modules_list():
         "system.policy.carbon_credits.aggregate_project_carbon_credits",
         "system.policy.carbon_credits.aggregate_carbon_cap_zone_purchases",
         "system.policy.carbon_credits.aggregate_performance_standard_zone_purchases",
+        "system.policy.carbon_credits.aggregate_carbon_tax_zone_purchases",
         "system.policy.carbon_credits.carbon_credits_balance",
         "system.policy.fuel_burn_limits.aggregate_project_fuel_burn",
         "system.policy.fuel_burn_limits.fuel_burn_limit_balance",
@@ -493,6 +495,10 @@ def cross_feature_modules_list():
             "system.policy.performance_standard.purchase_credits",
             "system.policy.carbon_credits"
             ".aggregate_performance_standard_zone_purchases",
+        ],
+        ("carbon_tax", "carbon_credits"): [
+            "system.policy.carbon_tax.purchase_credits",
+            "system.policy.carbon_credits.aggregate_carbon_tax_zone_purchases",
         ],
     }
     return cross_modules
