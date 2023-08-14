@@ -765,6 +765,26 @@ CREATE TABLE inputs_system_carbon_tax_zones_carbon_credits_zones
             (carbon_tax_zones_carbon_credits_zones_scenario_id)
 );
 
+-- Carbon credit prices (price at which can sell to other sectors)
+DROP TABLE IF EXISTS subscenarios_system_carbon_credits_prices;
+CREATE TABLE subscenarios_system_carbon_credits_prices
+(
+    carbon_credits_price_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name                            VARCHAR(32),
+    description                     VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_system_carbon_credits_prices;
+CREATE TABLE inputs_system_carbon_credits_prices
+(
+    carbon_credits_price_scenario_id INTEGER,
+    period                           INTEGER,
+    carbon_credit_price              FLOAT,
+    PRIMARY KEY (carbon_credits_price_scenario_id, period),
+    FOREIGN KEY (carbon_credits_price_scenario_id) REFERENCES
+        subscenarios_system_carbon_credits_prices (carbon_credits_price_scenario_id)
+);
+
 -- PRM
 -- This is the unit at which PRM requirements are met in the model; it can be
 -- different from the load zones
@@ -3689,6 +3709,7 @@ CREATE TABLE scenarios
     carbon_cap_zones_carbon_credits_zones_scenario_id           INTEGER,
     performance_standard_zones_carbon_credits_zones_scenario_id INTEGER,
     carbon_tax_zones_carbon_credits_zones_scenario_id           INTEGER,
+    carbon_credits_price_scenario_id                            INTEGER,
     fuel_burn_limit_ba_scenario_id                              INTEGER,
     prm_zone_scenario_id                                        INTEGER,
     local_capacity_zone_scenario_id                             INTEGER,
@@ -3811,6 +3832,9 @@ CREATE TABLE scenarios
     FOREIGN KEY (carbon_tax_zones_carbon_credits_zones_scenario_id) REFERENCES
         subscenarios_system_carbon_tax_zones_carbon_credits_zones
             (carbon_tax_zones_carbon_credits_zones_scenario_id),
+    FOREIGN KEY (carbon_credits_price_scenario_id) REFERENCES
+        subscenarios_system_carbon_credits_prices
+        (carbon_credits_price_scenario_id),
     FOREIGN KEY (fuel_burn_limit_ba_scenario_id) REFERENCES
         subscenarios_geography_fuel_burn_limit_balancing_areas
             (fuel_burn_limit_ba_scenario_id),
@@ -4909,6 +4933,26 @@ CREATE TABLE results_system_performance_standard
                  stage_id, period)
 );
 
+
+DROP TABLE IF EXISTS results_system_carbon_credits;
+CREATE TABLE results_system_carbon_credits
+(
+    scenario_id                           INTEGER,
+    carbon_credits_zone                   VARCHAR(64),
+    period                                INTEGER,
+    subproblem_id                         INTEGER,
+    stage_id                              INTEGER,
+    discount_factor                       FLOAT,
+    number_years_represented              FLOAT,
+    project_generated_credits             FLOAT,
+    carbon_cap_zone_purchases             FLOAT,
+    carbon_tax_zone_purchases             FLOAT,
+    performance_standard_zone_purchases   FLOAT,
+    sell_credits                          FLOAT,
+    available_carbon_credits              FLOAT,
+    PRIMARY KEY (scenario_id, carbon_credits_zone, subproblem_id, stage_id, period)
+);
+
 -- Energy target balance
 DROP TABLE IF EXISTS results_system_period_energy_target;
 CREATE TABLE results_system_period_energy_target
@@ -5130,6 +5174,7 @@ CREATE TABLE results_system_costs
     Total_SOC_Penalty_Last_Tmp_Cost                        FLOAT,
     Total_Subsidies                                        FLOAT,
     Total_Capacity_Transfer_Costs                          FLOAT,
+    Total_Carbon_Credit_Revenue                            FLOAT,
     PRIMARY KEY (scenario_id, subproblem_id, stage_id)
 );
 

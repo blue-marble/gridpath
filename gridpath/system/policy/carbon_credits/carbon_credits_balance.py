@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pyomo.environ import Var, NonNegativeReals, Constraint, Expression
+from pyomo.environ import Var, NonNegativeReals, Constraint, Expression, value
 
 from gridpath.auxiliary.dynamic_components import (
     carbon_credits_balance_generation_components,
     carbon_credits_balance_purchase_components,
 )
+from gridpath.common_functions import create_results_df
+from gridpath.system.policy.carbon_credits import CARBON_CREDITS_ZONE_PRD_DF
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -63,3 +65,36 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.Track_Carbon_Credits_Constraint = Constraint(
         m.CARBON_CREDITS_ZONES, m.PERIODS, rule=track_available_credits
     )
+
+
+def export_results(scenario_directory, subproblem, stage, m, d):
+    """
+
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :param m:
+    :param d:
+    :return:
+    """
+    results_columns = [
+        "available_carbon_credits",
+    ]
+    data = [
+        [
+            z,
+            p,
+            value(m.Available_Carbon_Credits[z, p]),
+        ]
+        for z in m.CARBON_CREDITS_ZONES
+        for p in m.PERIODS
+    ]
+    results_df = create_results_df(
+        index_columns=["carbon_credits_zone", "period"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    for c in results_columns:
+        getattr(d, CARBON_CREDITS_ZONE_PRD_DF)[c] = None
+    getattr(d, CARBON_CREDITS_ZONE_PRD_DF).update(results_df)

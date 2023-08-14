@@ -63,14 +63,13 @@ def import_results_into_database(
     :param quiet:
     :return:
     """
-    # TODO: finish results
-    # import_csv(
-    #     conn=db,
-    #     cursor=c,
-    #     scenario_id=scenario_id,
-    #     subproblem=subproblem,
-    #     stage=stage,
-    #     quiet=quiet,
-    #     results_directory=results_directory,
-    #     which_results="system_carbon_credits",
-    # )
+    import_csv(
+        conn=db,
+        cursor=c,
+        scenario_id=scenario_id,
+        subproblem=subproblem,
+        stage=stage,
+        quiet=quiet,
+        results_directory=results_directory,
+        which_results="system_carbon_credits",
+    )

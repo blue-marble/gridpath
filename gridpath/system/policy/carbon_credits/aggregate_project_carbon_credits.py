@@ -18,12 +18,11 @@ Aggregate carbon credits from the project-period level to the carbon credit
 zone - period level.
 """
 
-from pyomo.environ import Param, Set, Expression, value
+from pyomo.environ import Expression, value
 
 from gridpath.common_functions import create_results_df
 from gridpath.auxiliary.dynamic_components import (
     carbon_credits_balance_generation_components,
-    carbon_credits_balance_purchase_components,
 )
 from gridpath.system.policy.carbon_credits import CARBON_CREDITS_ZONE_PRD_DF
 

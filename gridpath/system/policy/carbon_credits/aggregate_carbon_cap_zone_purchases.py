@@ -16,11 +16,13 @@
 
 """
 
-from pyomo.environ import Expression
+from pyomo.environ import Expression, value
 
 from gridpath.auxiliary.dynamic_components import (
     carbon_credits_balance_purchase_components,
 )
+from gridpath.common_functions import create_results_df
+from gridpath.system.policy.carbon_credits import CARBON_CREDITS_ZONE_PRD_DF
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -51,3 +53,36 @@ def record_dynamic_components(dynamic_components):
     getattr(dynamic_components, carbon_credits_balance_purchase_components).append(
         "Total_Credit_Purchases_from_Carbon_Cap_Zones"
     )
+
+
+def export_results(scenario_directory, subproblem, stage, m, d):
+    """
+
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :param m:
+    :param d:
+    :return:
+    """
+    results_columns = [
+        "carbon_cap_zone_purchases",
+    ]
+    data = [
+        [
+            z,
+            p,
+            value(m.Total_Credit_Purchases_from_Carbon_Cap_Zones[z, p]),
+        ]
+        for z in m.CARBON_CREDITS_ZONES
+        for p in m.PERIODS
+    ]
+    results_df = create_results_df(
+        index_columns=["carbon_credits_zone", "period"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    for c in results_columns:
+        getattr(d, CARBON_CREDITS_ZONE_PRD_DF)[c] = None
+    getattr(d, CARBON_CREDITS_ZONE_PRD_DF).update(results_df)
