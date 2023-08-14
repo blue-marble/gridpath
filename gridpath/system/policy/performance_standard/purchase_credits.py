@@ -30,8 +30,7 @@ from gridpath.system.policy.performance_standard import PERFORMANCE_STANDARD_Z_P
 def add_model_components(m, d, scenario_directory, subproblem, stage):
     """ """
     m.PERFORMANCE_STANDARD_ZONES_CARBON_CREDITS_ZONES = Set(
-        dimen=2,
-        within=m.PERFORMANCE_STANDARD_ZONES * m.CARBON_CREDITS_ZONES
+        dimen=2, within=m.PERFORMANCE_STANDARD_ZONES * m.CARBON_CREDITS_ZONES
     )
 
     m.Performance_Standard_Purchase_Credits = Var(
@@ -50,7 +49,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.Performance_Standard_Total_Credit_Purchases = Expression(
         m.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD,
-        initialize=aggregate_purchases
+        initialize=aggregate_purchases,
     )
 
     record_dynamic_components(dynamic_components=d)

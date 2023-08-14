@@ -39,8 +39,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         )
 
     m.Total_Credit_Purchases_from_Performance_Standard_Zones = Expression(
-        m.CARBON_CREDITS_ZONES, m.PERIODS,
-        initialize=aggregate_purchases
+        m.CARBON_CREDITS_ZONES, m.PERIODS, initialize=aggregate_purchases
     )
 
     record_dynamic_components(dynamic_components=d)

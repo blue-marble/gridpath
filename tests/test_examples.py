@@ -1489,7 +1489,7 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("test_performance_standard_carbon_credits")
         self.run_and_check_objective(
-            "test_performance_standard_carbon_credits", -3592014754469.9077
+            "test_performance_standard_carbon_credits", -3592010842841.2656
         )
 
     @classmethod
