@@ -141,9 +141,6 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.CARBON_CREDITS_PRJ_OPR_PRDS,
         within=NonNegativeReals,
         default=0,
-        validate=lambda mod, value, prj, prd: value == 0
-        if mod.absolute_threshold_emissions_toCO2[prj, prd] > 0
-        else value >= 0,  # pick one of intensity-based and absolute thresholds
     )
 
     m.absolute_threshold_emissions_toCO2 = Param(
