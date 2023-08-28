@@ -759,7 +759,7 @@ CREATE TABLE inputs_system_carbon_tax_zones_carbon_credits_zones
     carbon_tax_zones_carbon_credits_zones_scenario_id INTEGER,
     carbon_tax_zone                                   VARCHAR(32),
     carbon_credits_zone                               VARCHAR(32),
-    PRIMARY KEY (carbon_tax_zone, carbon_credits_zone),
+    PRIMARY KEY (carbon_tax_zone, carbon_tax_zone, carbon_credits_zone),
     FOREIGN KEY (carbon_tax_zones_carbon_credits_zones_scenario_id) REFERENCES
         subscenarios_system_carbon_tax_zones_carbon_credits_zones
             (carbon_tax_zones_carbon_credits_zones_scenario_id)
@@ -778,9 +778,10 @@ DROP TABLE IF EXISTS inputs_system_carbon_credits_prices;
 CREATE TABLE inputs_system_carbon_credits_prices
 (
     carbon_credits_price_scenario_id INTEGER,
+    carbon_credits_zone              VARCHAR(32),
     period                           INTEGER,
     carbon_credit_price              FLOAT,
-    PRIMARY KEY (carbon_credits_price_scenario_id, period),
+    PRIMARY KEY (carbon_credits_price_scenario_id, carbon_credits_zone, period),
     FOREIGN KEY (carbon_credits_price_scenario_id) REFERENCES
         subscenarios_system_carbon_credits_prices (carbon_credits_price_scenario_id)
 );

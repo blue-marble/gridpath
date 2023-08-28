@@ -33,7 +33,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         return sum(
             mod.Sell_Carbon_Credits[z, p]
             * mod.period_objective_coefficient[p]
-            * mod.carbon_credit_price[p]
+            * mod.carbon_credit_price[z, p]
             for z in mod.CARBON_CREDITS_ZONES
             for p in mod.PERIODS
         )

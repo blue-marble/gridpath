@@ -36,7 +36,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     :return:
     """
 
-    m.carbon_credit_price = Param(m.PERIODS, within=NonNegativeReals, default=0)
+    m.carbon_credit_price = Param(
+        m.CARBON_CREDITS_ZONES, m.PERIODS, within=NonNegativeReals, default=0
+    )
 
     m.Sell_Carbon_Credits = Var(
         m.CARBON_CREDITS_ZONES, m.PERIODS, within=NonNegativeReals, initialize=0
@@ -94,7 +96,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     stage = 1 if stage == "" else stage
     c = conn.cursor()
     zones = c.execute(
-        f"""SELECT period, carbon_credit_price
+        f"""SELECT carbon_credits_zone, period, carbon_credit_price
         FROM inputs_system_carbon_credits_prices
         WHERE carbon_credits_price_scenario_id = 
         {subscenarios.CARBON_CREDITS_PRICE_SCENARIO_ID}
