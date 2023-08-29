@@ -759,7 +759,8 @@ CREATE TABLE inputs_system_carbon_tax_zones_carbon_credits_zones
     carbon_tax_zones_carbon_credits_zones_scenario_id INTEGER,
     carbon_tax_zone                                   VARCHAR(32),
     carbon_credits_zone                               VARCHAR(32),
-    PRIMARY KEY (carbon_tax_zone, carbon_tax_zone, carbon_credits_zone),
+    PRIMARY KEY (carbon_tax_zones_carbon_credits_zones_scenario_id,
+                 carbon_tax_zone, carbon_credits_zone),
     FOREIGN KEY (carbon_tax_zones_carbon_credits_zones_scenario_id) REFERENCES
         subscenarios_system_carbon_tax_zones_carbon_credits_zones
             (carbon_tax_zones_carbon_credits_zones_scenario_id)

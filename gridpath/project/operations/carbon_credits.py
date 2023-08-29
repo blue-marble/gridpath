@@ -177,18 +177,16 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         op_type = mod.operational_type[prj]
         total_power_provision_in_prd = sum(
             (
-                imported_operational_modules[op_type].power_provision_rule(
-                    mod, prj, tmp
-                )
+                imported_operational_modules[op_type].power_provision_rule(mod, p, tmp)
                 if hasattr(
                     imported_operational_modules[op_type], "power_provision_rule"
                 )
-                else op_type_init.power_provision_rule(mod, prj, tmp)
+                else op_type_init.power_provision_rule(mod, p, tmp)
             )
             * mod.hrs_in_tmp[tmp]
             * mod.tmp_weight[tmp]
-            for (prj, tmp) in mod.CARBON_CREDITS_PRJ_OPR_TMPS
-            if mod.period[tmp] == prd
+            for (p, tmp) in mod.CARBON_CREDITS_PRJ_OPR_TMPS
+            if mod.period[tmp] == prd and p == prj
         )
         return mod.Project_Carbon_Credits_Generated[prj, prd] <= (
             total_power_provision_in_prd
