@@ -193,11 +193,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             * mod.intensity_threshold_emissions_toCO2_per_MWh[prj, prd]
             + mod.absolute_threshold_emissions_toCO2[prj, prd]
             - sum(
-                mod.Project_Carbon_Emissions[prj, tmp]
+                mod.Project_Carbon_Emissions[p, tmp]
                 * mod.hrs_in_tmp[tmp]
                 * mod.tmp_weight[tmp]
-                for (prj, tmp) in mod.CARBON_CREDITS_PRJ_OPR_TMPS
-                if mod.period[tmp] == prd
+                for (p, tmp) in mod.CARBON_CREDITS_PRJ_OPR_TMPS
+                if mod.period[tmp] == prd and p == prj
             )
         )
 
