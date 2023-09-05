@@ -65,7 +65,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             )
             if prj in mod.FUEL_PRJS
             else 0
-            + sum(
+            + (
                 mod.Power_Provision_MW[prj, tmp]
                 * mod.nonfuel_carbon_emissions_per_mwh[prj]
             )
@@ -100,7 +100,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             tmp,
             value(m.Project_Carbon_Emissions[prj, tmp]),
         ]
-        for (prj, tmp) in m.FUEL_PRJ_OPR_TMPS
+        for (prj, tmp) in m.PRJ_OPR_TMPS
     ]
     emissions_df = create_results_df(
         index_columns=["project", "timepoint"],

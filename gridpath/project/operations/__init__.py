@@ -563,7 +563,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             m.curtailment_cost_per_pwh,
             m.soc_penalty_cost_per_energyunit,
             m.soc_last_tmp_penalty_cost_per_energyunit,
-            m.nonfuel_carbon_emissions_per_mwh
+            m.nonfuel_carbon_emissions_per_mwh,
         ),
     )
 
