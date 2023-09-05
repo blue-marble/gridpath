@@ -54,18 +54,26 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         times their carbon intensity to get total project carbon emissions
         """
 
-        return sum(
-            (
-                mod.Total_Fuel_Burn_by_Fuel_MMBtu[prj, f, tmp]
-                - mod.Project_Fuel_Contribution_by_Fuel[prj, f, tmp]
+        return (
+            sum(
+                (
+                    mod.Total_Fuel_Burn_by_Fuel_MMBtu[prj, f, tmp]
+                    - mod.Project_Fuel_Contribution_by_Fuel[prj, f, tmp]
+                )
+                * mod.co2_intensity_tons_per_mmbtu[f]
+                for f in mod.FUELS_BY_PRJ[prj]
             )
-            * mod.co2_intensity_tons_per_mmbtu[f]
-            for f in mod.FUELS_BY_PRJ[prj]
+            if prj in mod.FUEL_PRJS
+            else 0
+            + (
+                mod.Power_Provision_MW[prj, tmp]
+                * mod.nonfuel_carbon_emissions_per_mwh[prj]
+            )
+            if prj in mod.NONFUEL_CARBON_EMISSIONS_PRJS
+            else 0
         )
 
-    m.Project_Carbon_Emissions = Expression(
-        m.FUEL_PRJ_OPR_TMPS, rule=carbon_emissions_rule
-    )
+    m.Project_Carbon_Emissions = Expression(m.PRJ_OPR_TMPS, rule=carbon_emissions_rule)
 
 
 # Input-Output
@@ -92,7 +100,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             tmp,
             value(m.Project_Carbon_Emissions[prj, tmp]),
         ]
-        for (prj, tmp) in m.FUEL_PRJ_OPR_TMPS
+        for (prj, tmp) in m.PRJ_OPR_TMPS
     ]
     emissions_df = create_results_df(
         index_columns=["project", "timepoint"],

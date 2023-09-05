@@ -514,6 +514,21 @@ class TestOperationsInit(unittest.TestCase):
             actual_soc_last_tmp_penalty_cost_projects,
         )
 
+        # Set: NONFUEL_CARBON_EMISSIONS_PRJS
+        expected_nonfuel_em_projects = sorted(
+            projects_df[projects_df["nonfuel_carbon_emissions_per_mwh"] != "."][
+                "project"
+            ].tolist()
+        )
+
+        actual_nonfuelfuel_em_projects = sorted(
+            [p for p in instance.NONFUEL_CARBON_EMISSIONS_PRJS]
+        )
+
+        self.assertListEqual(
+            expected_nonfuel_em_projects, actual_nonfuelfuel_em_projects
+        )
+
         # Param: variable_om_cost_per_mwh
         var_om_cost_df = projects_df[projects_df["variable_om_cost_per_mwh"] != "."]
         expected_var_om_cost_by_prj = OrderedDict(
@@ -987,6 +1002,32 @@ class TestOperationsInit(unittest.TestCase):
             expected_soc_last_tmp_penalty_cost_by_prj,
             actual_soc_last_tmp_penalty_cost_by_prj,
         )
+
+        # Param: nonfuel_carbon_emissions_per_mwh
+        nonfuel_em_df = projects_df[
+            projects_df["nonfuel_carbon_emissions_per_mwh"] != "."
+        ]
+        expected_nonfuel_em_by_prj = OrderedDict(
+            sorted(
+                dict(
+                    zip(
+                        nonfuel_em_df["project"],
+                        pd.to_numeric(
+                            nonfuel_em_df["nonfuel_carbon_emissions_per_mwh"]
+                        ),
+                    )
+                ).items()
+            )
+        )
+        actual_nonfuel_em_by_prj = OrderedDict(
+            sorted(
+                {
+                    p: instance.nonfuel_carbon_emissions_per_mwh[p]
+                    for p in instance.NONFUEL_CARBON_EMISSIONS_PRJS
+                }.items()
+            )
+        )
+        self.assertDictEqual(expected_nonfuel_em_by_prj, actual_nonfuel_em_by_prj)
 
     def test_get_slopes_intercept_by_project_period_segment(self):
         """
