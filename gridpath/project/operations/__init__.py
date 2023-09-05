@@ -413,6 +413,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.SOC_PENALTY_COST_PRJS = Set(within=m.PROJECTS)
     m.SOC_LAST_TMP_PENALTY_COST_PRJS = Set(within=m.PROJECTS)
 
+    # Projects with non-fuel carbon emissions
+    m.NONFUEL_CARBON_EMISSIONS_PRJS = Set(within=m.PROJECTS)
+
     # Optional Params
     ###########################################################################
     m.variable_om_cost_per_mwh = Param(
@@ -467,6 +470,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.soc_last_tmp_penalty_cost_per_energyunit = Param(
         m.SOC_LAST_TMP_PENALTY_COST_PRJS, within=NonNegativeReals
+    )
+
+    m.nonfuel_carbon_emissions_per_mwh = Param(
+        m.NONFUEL_CARBON_EMISSIONS_PRJS, within=NonNegativeReals
     )
 
     # Start list of headroom and footroom variables by project
@@ -542,6 +549,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             "curtailment_cost_per_pwh",
             "soc_penalty_cost_per_energyunit",
             "soc_last_tmp_penalty_cost_per_energyunit",
+            "nonfuel_carbon_emissions_per_mwh",
         ),
         param=(
             m.variable_om_cost_per_mwh,
@@ -555,6 +563,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             m.curtailment_cost_per_pwh,
             m.soc_penalty_cost_per_energyunit,
             m.soc_last_tmp_penalty_cost_per_energyunit,
+            m.nonfuel_carbon_emissions_per_mwh
         ),
     )
 
@@ -613,6 +622,10 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         None: list(
             data_portal.data()["soc_last_tmp_penalty_cost_per_energyunit"].keys()
         )
+    }
+
+    data_portal.data()["NONFUEL_CARBON_EMISSIONS_PRJS"] = {
+        None: list(data_portal.data()["nonfuel_carbon_emissions_per_mwh"].keys())
     }
 
     # VOM curves
@@ -751,7 +764,8 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         last_commitment_stage, curtailment_cost_per_pwh,
         powerunithour_per_fuelunit, soc_penalty_cost_per_energyunit,
         soc_last_tmp_penalty_cost_per_energyunit,
-        partial_availability_threshold
+        partial_availability_threshold,
+        nonfuel_carbon_emissions_per_mwh
         -- Get only the subset of projects in the portfolio with their 
         -- capacity types based on the project_portfolio_scenario_id 
         FROM
@@ -1017,6 +1031,7 @@ def write_model_inputs(
         "soc_penalty_cost_per_energyunit",
         "soc_last_tmp_penalty_cost_per_energyunit",
         "partial_availability_threshold",
+        "nonfuel_carbon_emissions_per_mwh",
     ]
     append_to_input_file(
         inputs_directory=inputs_directory,
@@ -1344,6 +1359,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         "aux_consumption_frac_capacity",
         "aux_consumption_frac_power",
         "partial_availability_threshold",
+        "nonfuel_carbon_emissions_per_mwh",
     ]
 
     sql = """SELECT {}

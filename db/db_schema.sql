@@ -1169,6 +1169,7 @@ CREATE TABLE inputs_project_operational_chars
     cap_factor_limits_scenario_id            INTEGER,
     partial_availability_threshold           FLOAT,
     stor_exog_state_of_charge_scenario_id    INTEGER, -- determines storage SOC
+    nonfuel_carbon_emissions_per_mwh         FLOAT,
     PRIMARY KEY (project_operational_chars_scenario_id, project),
     FOREIGN KEY (project_operational_chars_scenario_id) REFERENCES
         subscenarios_project_operational_chars (project_operational_chars_scenario_id),
