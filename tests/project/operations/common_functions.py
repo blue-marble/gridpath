@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import pandas as pd
 TEST_DATA_DIRECTORY = os.path.join(os.path.dirname(__file__), "..", "..", "test_data")
 
 
-def get_project_operational_timepoints(project_list):
+def get_project_operational_periods(project_list):
     """
     :return: a list of (prj, operational_timepoint) tuples given a list of
         projects
@@ -84,7 +84,19 @@ def get_project_operational_timepoints(project_list):
 
     expected_proj_period_set = sorted(eg + ng + ngb + ns + nsb + fp_df + dr)
 
-    # Then get the operational periods by project
+    return expected_proj_period_set
+
+
+def get_project_operational_timepoints(project_list):
+    """
+    :return: a list of (prj, operational_timepoint) tuples given a list of
+        projects
+    """
+    expected_proj_period_set = get_project_operational_periods(
+        project_list=project_list
+    )
+
+    # Get the operational periods by project
     op_per_by_proj_dict = dict()
     for proj_per in expected_proj_period_set:
         if proj_per[0] not in op_per_by_proj_dict.keys():

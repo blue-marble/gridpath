@@ -1,4 +1,4 @@
-# Copyright 2016-2022 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,31 +13,31 @@
 # limitations under the License.
 
 
+from collections import OrderedDict
 from importlib import import_module
 import os.path
 import sys
 import unittest
 
 from tests.common_functions import create_abstract_model, add_components_and_load_data
-from tests.project.operations.common_functions import get_project_operational_timepoints
 
-TEST_DATA_DIRECTORY = os.path.join(os.path.dirname(__file__), "..", "..", "test_data")
+TEST_DATA_DIRECTORY = os.path.join(
+    os.path.dirname(__file__), "..", "..", "..", "test_data"
+)
 
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
     "temporal.operations.timepoints",
     "temporal.operations.horizons",
     "temporal.investment.periods",
-    "geography.load_zones",
-    "project",
-    "project.capacity.capacity",
-    "project.availability.availability",
-    "project.fuels",
-    "project.operations",
-    "project.operations.operational_types",
-    "project.operations.power",
+    "geography.carbon_credits_zones",
+    "geography.carbon_cap_zones",
+    "system.policy.carbon_cap.carbon_cap",
+    "system.policy.carbon_cap.purchase_credits",
 ]
-NAME_OF_MODULE_BEING_TESTED = "project.operations.cap_factor_limits"
+NAME_OF_MODULE_BEING_TESTED = (
+    "system.policy.carbon_credits.aggregate_carbon_cap_zone_purchases"
+)
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -55,7 +55,7 @@ except ImportError:
     print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED + " to test.")
 
 
-class TestCapFactorLimits(unittest.TestCase):
+class TestCarbonCap(unittest.TestCase):
     """ """
 
     def test_add_model_components(self):
@@ -85,6 +85,10 @@ class TestCapFactorLimits(unittest.TestCase):
         )
 
     def test_data_loaded_correctly(self):
+        """
+        Test components initialized with data as expected
+        :return:
+        """
         m, data = add_components_and_load_data(
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
@@ -93,34 +97,6 @@ class TestCapFactorLimits(unittest.TestCase):
             stage="",
         )
         instance = m.create_instance(data)
-
-        # Set: CAP_FACTOR_LIMIT_PRJ_BT_HRZ
-        expected_set = sorted(
-            [
-                ("Gas_CT", "day", 202001),
-            ]
-        )
-        actual_set = sorted(
-            [(prj, bt, h) for (prj, bt, h) in instance.CAP_FACTOR_LIMIT_PRJ_BT_HRZ]
-        )
-
-        self.assertListEqual(expected_set, actual_set)
-
-        # Param: min_cap_factor
-        expected_min_cap_factor = {("Gas_CT", "day", 202001): float("-inf")}
-        actual_min_cap_factor = {
-            (prj, bt, h): instance.min_cap_factor[prj, bt, h]
-            for (prj, bt, h) in instance.CAP_FACTOR_LIMIT_PRJ_BT_HRZ
-        }
-        self.assertDictEqual(expected_min_cap_factor, actual_min_cap_factor)
-
-        # Param: max_cap_factor
-        expected_max_cap_factor = {("Gas_CT", "day", 202001): 0.05}
-        actual_max_cap_factor = {
-            (prj, bt, h): instance.max_cap_factor[prj, bt, h]
-            for (prj, bt, h) in instance.CAP_FACTOR_LIMIT_PRJ_BT_HRZ
-        }
-        self.assertDictEqual(expected_max_cap_factor, actual_max_cap_factor)
 
 
 if __name__ == "__main__":
