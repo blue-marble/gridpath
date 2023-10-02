@@ -1478,6 +1478,55 @@ class TestExamples(unittest.TestCase):
         self.check_validation("test_w_nonfuel_emissions")
         self.run_and_check_objective("test_w_nonfuel_emissions", -3796242212598.1226)
 
+    def test_example_test_new_solar_carbon_credits(self):
+        """
+        Check validation and objective function value of
+        "test_new_solar_carbon_credits" example
+        :return:
+        """
+
+        self.check_validation("test_new_solar_carbon_credits")
+        self.run_and_check_objective(
+            "test_new_solar_carbon_credits", -5464644311322.297
+        )
+
+    def test_performance_standard_carbon_credits(self):
+        """
+        Check validation and objective function value of "test_performance_standard" example
+        :return:
+        """
+
+        self.check_validation("test_performance_standard_carbon_credits")
+        self.run_and_check_objective(
+            "test_performance_standard_carbon_credits", -3592010842841.2656
+        )
+
+    def test_example_test_new_solar_carbon_tax_w_carbon_credits(self):
+        """
+        Check validation and objective function value of
+        "test_new_solar_carbon_tax_w_carbon_credits" example
+        :return:
+        """
+
+        self.check_validation("test_new_solar_carbon_tax_w_carbon_credits")
+        self.run_and_check_objective(
+            "test_new_solar_carbon_tax_w_carbon_credits", -3796351965272.2686
+        )
+
+    def test_example_test_new_solar_carbon_credits_w_sell(self):
+        """
+        Check validation and objective function value of
+        "test_new_solar_carbon_credits_w_sell" example
+        The carbon credit price must be set higher than the cost of USE in this
+        example to incentivize the project to not run and generate credits.
+        :return:
+        """
+
+        self.check_validation("test_new_solar_carbon_credits_w_sell")
+        self.run_and_check_objective(
+            "test_new_solar_carbon_credits_w_sell", 141717484695478.22
+        )
+
     @classmethod
     def tearDownClass(cls):
         os.remove(DB_PATH)

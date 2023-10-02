@@ -19,12 +19,9 @@ the carbon tax zone - period level.
 """
 
 
-import csv
-import os.path
-from pyomo.environ import Param, Set, Expression, value
+from pyomo.environ import Expression, value
 
-from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.db_interface import setup_results_import
+from gridpath.auxiliary.dynamic_components import carbon_tax_cost_components
 from gridpath.common_functions import create_results_df
 from gridpath.system.policy.carbon_tax import CARBON_TAX_ZONE_PRD_DF
 
@@ -79,6 +76,30 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.Total_Carbon_Tax_Project_Allowance = Expression(
         m.CARBON_TAX_ZONE_PERIODS_WITH_CARBON_TAX, rule=total_carbon_tax_allowance_rule
+    )
+
+    def total_project_emissions_rule(mod, z, prd):
+        return (
+            mod.Total_Carbon_Tax_Project_Emissions[z, prd]
+            - mod.Total_Carbon_Tax_Project_Allowance[z, prd]
+        ) * mod.carbon_tax[z, prd]
+
+    m.Total_Project_Carbon_Tax_Cost = Expression(
+        m.CARBON_TAX_ZONE_PERIODS_WITH_CARBON_TAX, rule=total_project_emissions_rule
+    )
+
+    record_dynamic_components(dynamic_components=d)
+
+
+def record_dynamic_components(dynamic_components):
+    """
+    :param dynamic_components:
+
+    This method adds project emissions to carbon balance
+    """
+
+    getattr(dynamic_components, carbon_tax_cost_components).append(
+        "Total_Project_Carbon_Tax_Cost"
     )
 
 

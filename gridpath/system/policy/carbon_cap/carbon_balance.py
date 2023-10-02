@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,14 +16,12 @@
 Constraint total carbon emissions to be less than cap
 """
 
-
-import csv
-import os.path
-
 from pyomo.environ import Var, Constraint, Expression, NonNegativeReals, value
 
-from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.dynamic_components import carbon_cap_balance_emission_components
+from gridpath.auxiliary.dynamic_components import (
+    carbon_cap_balance_emission_components,
+    carbon_cap_balance_credit_components,
+)
 from gridpath.common_functions import create_results_df
 from gridpath.system.policy.carbon_cap import CARBON_CAP_ZONE_PRD_DF
 
@@ -55,6 +53,14 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         ),
     )
 
+    m.Total_Carbon_Credits_from_All_Sources_Expression = Expression(
+        m.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP,
+        rule=lambda mod, z, p: sum(
+            getattr(mod, component)[z, p]
+            for component in getattr(d, carbon_cap_balance_credit_components)
+        ),
+    )
+
     def carbon_cap_target_rule(mod, z, p):
         """
         Total carbon emitted must be less than target
@@ -67,6 +73,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             mod.Total_Carbon_Emissions_from_All_Sources_Expression[z, p]
             - mod.Carbon_Cap_Overage_Expression[z, p]
             <= mod.carbon_cap_target[z, p]
+            + mod.Total_Carbon_Credits_from_All_Sources_Expression[z, p]
         )
 
     m.Carbon_Cap_Constraint = Constraint(
@@ -87,6 +94,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 
     results_columns = [
         "total_emissions",
+        "total_credits",
         "dual",
         "carbon_cap_marginal_cost_per_emission",
     ]
@@ -95,6 +103,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             z,
             p,
             value(m.Total_Carbon_Emissions_from_All_Sources_Expression[z, p]),
+            value(m.Total_Carbon_Credits_from_All_Sources_Expression[z, p]),
             m.dual[getattr(m, "Carbon_Cap_Constraint")[z, p]]
             if (z, p) in [idx for idx in getattr(m, "Carbon_Cap_Constraint")]
             else None,

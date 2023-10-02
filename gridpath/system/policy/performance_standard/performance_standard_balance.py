@@ -14,17 +14,15 @@
 # limitations under the License.
 
 """
-Constraint total carbon emissions to be less than performance standard
+Constrain total carbon emissions to be less than performance standard
 """
-
-
-import csv
-import os.path
 
 from pyomo.environ import Var, Constraint, Expression, NonNegativeReals, value
 
-from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.dynamic_components import carbon_cap_balance_emission_components
+from gridpath.auxiliary.dynamic_components import (
+    performance_standard_balance_emission_components,
+    performance_standard_balance_credit_components,
+)
 from gridpath.common_functions import create_results_df
 from gridpath.system.policy.performance_standard import PERFORMANCE_STANDARD_Z_PRD_DF
 
@@ -53,6 +51,24 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         rule=violation_expression_rule,
     )
 
+    m.Total_Performance_Standard_Emissions_from_All_Sources_Expression = Expression(
+        m.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD,
+        rule=lambda mod, z, p: sum(
+            getattr(mod, component)[z, p]
+            for component in getattr(
+                d, performance_standard_balance_emission_components
+            )
+        ),
+    )
+
+    m.Total_Performance_Standard_Credits_from_All_Sources_Expression = Expression(
+        m.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD,
+        rule=lambda mod, z, p: sum(
+            getattr(mod, component)[z, p]
+            for component in getattr(d, performance_standard_balance_credit_components)
+        ),
+    )
+
     def performance_standard_rule(mod, z, p):
         """
         Total carbon emitted must be less than performance standard
@@ -61,11 +77,14 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         :param p:
         :return:
         """
-        return mod.Total_Performance_Standard_Project_Emissions[
-            z, p
-        ] - mod.Performance_Standard_Overage_Expression[z, p] <= (
-            mod.Total_Performance_Standard_Project_Energy[z, p]
-            * mod.performance_standard[z, p]
+        return (
+            mod.Total_Performance_Standard_Emissions_from_All_Sources_Expression[z, p]
+            - mod.Performance_Standard_Overage_Expression[z, p]
+            <= (
+                mod.Total_Performance_Standard_Project_Energy[z, p]
+                * mod.performance_standard[z, p]
+            )
+            + mod.Total_Performance_Standard_Credits_from_All_Sources_Expression[z, p]
         )
 
     m.Performance_Standard_Constraint = Constraint(

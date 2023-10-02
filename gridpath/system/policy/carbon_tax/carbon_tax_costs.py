@@ -17,12 +17,9 @@ Add the carbon tax cost components.
 """
 
 
-import csv
-import os.path
+from pyomo.environ import value, NonNegativeReals, Var, Constraint
 
-from pyomo.environ import Expression, value, NonNegativeReals, Var, Constraint
-
-from db.common_functions import spin_on_database_lock
+from gridpath.auxiliary.dynamic_components import carbon_tax_cost_components
 from gridpath.common_functions import create_results_df
 from gridpath.system.policy.carbon_tax import CARBON_TAX_ZONE_PRD_DF
 
@@ -45,13 +42,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Constraints
     ###########################################################################
     def carbon_tax_cost_constraint_rule(mod, z, p):
-        return (
-            mod.Carbon_Tax_Cost[z, p]
-            >= (
-                mod.Total_Carbon_Tax_Project_Emissions[z, p]
-                - mod.Total_Carbon_Tax_Project_Allowance[z, p]
-            )
-            * mod.carbon_tax[z, p]
+        return mod.Carbon_Tax_Cost[z, p] >= sum(
+            getattr(mod, component)[z, p]
+            for component in getattr(d, carbon_tax_cost_components)
         )
 
     m.Carbon_Tax_Cost_Constraint = Constraint(
