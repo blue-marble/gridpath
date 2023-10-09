@@ -132,12 +132,12 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :return:
     """
     map_file = os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "inputs",
-            "performance_standard_zones_carbon_credits_zone_mapping.tab",
-        )
+        scenario_directory,
+        str(subproblem),
+        str(stage),
+        "inputs",
+        "performance_standard_zones_carbon_credits_zone_mapping.tab",
+    )
     if os.path.exists(map_file):
         data_portal.load(
             filename=map_file,
