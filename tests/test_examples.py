@@ -1,4 +1,4 @@
-# Copyright 2016-2022 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -1525,6 +1525,17 @@ class TestExamples(unittest.TestCase):
         self.check_validation("test_new_solar_carbon_credits_w_sell")
         self.run_and_check_objective(
             "test_new_solar_carbon_credits_w_sell", 141717484695478.22
+        )
+
+    def test_test_performance_standard_carbon_credits_w_cap_no_credits_mapping(self):
+        """
+        Check validation and objective function value of "test_performance_standard" example
+        :return:
+        """
+
+        self.check_validation("test_performance_standard_carbon_credits_w_cap_no_credits_mapping")
+        self.run_and_check_objective(
+            "test_performance_standard_carbon_credits_w_cap_no_credits_mapping", -3592010842841.2656
         )
 
     @classmethod

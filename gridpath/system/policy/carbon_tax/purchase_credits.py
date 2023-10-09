@@ -117,7 +117,8 @@ def write_model_inputs(
         "inputs",
         "carbon_tax_zones_carbon_credits_zone_mapping.tab",
     )
-    df.to_csv(fpath, index=False, sep="\t")
+    if not df.empty:
+        df.to_csv(fpath, index=False, sep="\t")
 
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
@@ -131,16 +132,20 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :param stage:
     :return:
     """
-    data_portal.load(
-        filename=os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "inputs",
-            "carbon_tax_zones_carbon_credits_zone_mapping.tab",
-        ),
-        set=m.CARBON_TAX_ZONES_CARBON_CREDITS_ZONES,
+
+    map_file = os.path.join(
+        scenario_directory,
+        str(subproblem),
+        str(stage),
+        "inputs",
+        "carbon_tax_zones_carbon_credits_zone_mapping.tab",
     )
+
+    if os.path.exists(map_file):
+        data_portal.load(
+            filename=map_file,
+            set=m.CARBON_TAX_ZONES_CARBON_CREDITS_ZONES,
+        )
 
 
 def export_results(scenario_directory, subproblem, stage, m, d):
