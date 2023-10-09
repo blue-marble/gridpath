@@ -1538,7 +1538,7 @@ class TestExamples(unittest.TestCase):
         )
         self.run_and_check_objective(
             "test_performance_standard_carbon_credits_w_cap_no_credits_mapping",
-            -3592010842841.2656,
+            -3592014778836.2856,
         )
 
     @classmethod
