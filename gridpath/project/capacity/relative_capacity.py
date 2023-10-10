@@ -35,17 +35,23 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +-------------------------------------------------------------------------+
     | Sets                                                                    |
     +=========================================================================+
-    | | :code:`RELATIVE_CAPACITY_PROJECT_PAIR_PERIODS`                        |
+    | | :code:`REL_CAP_PRJ_PRD`                                               |
     |                                                                         |
-    | A 3-dimensional set of project-project-period combinations for which    |
-    | there may be a relative capacity requirement.                           |
+    | A 2-dimensional set of project-period combinations for which there      |
+    | may be a relative capacity requirement.                                 |
+    +-------------------------------------------------------------------------+
+    | | :code:`PRJS_FOR_REL_CAP_LIMIT`                                        |
+    | | *Defined over*: :code:`REL_CAP_PRJ_PRD`                               |
+    |                                                                         |
+    | List of projects who capacity counts toward the limit for each project- |
+    | period with a limit.                                                    |
     +-------------------------------------------------------------------------+
 
     +-------------------------------------------------------------------------+
     | Optional Input Params                                                   |
     +=========================================================================+
     | | :code:`min_relative_capacity_limit_new`                               |
-    | | *Defined over*: :code:`RELATIVE_CAPACITY_PROJECT_PAIR_PERIODS`        |
+    | | *Defined over*: :code:`REL_CAP_PRJ_PRD`                               |
     | | *Within*: :code:`NonNegativeReals`                                    |
     | | *Default*: :code:`0`                                                  |
     |                                                                         |
@@ -53,7 +59,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | parameter times the (new) capacity of project 2 in this period.         |
     +-------------------------------------------------------------------------+
     | | :code:`max_relative_capacity_limit_new`                               |
-    | | *Defined over*: :code:`RELATIVE_CAPACITY_PROJECT_PAIR_PERIODS`        |
+    | | *Defined over*: :code:`REL_CAP_PRJ_PRD`                               |
     | | *Within*: :code:`NonNegativeReals`                                    |
     | | *Default*: :code:`inf`                                                |
     |                                                                         |
@@ -61,7 +67,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | parameter times the (new) capacity of project 2 in this period.         |
     +-------------------------------------------------------------------------+
     | | :code:`min_relative_capacity_limit_total`                             |
-    | | *Defined over*: :code:`RELATIVE_CAPACITY_PROJECT_PAIR_PERIODS`        |
+    | | *Defined over*: :code:`REL_CAP_PRJ_PRD`                               |
     | | *Within*: :code:`NonNegativeReals`                                    |
     | | *Default*: :code:`0`                                                  |
     |                                                                         |
@@ -69,7 +75,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | parameter times the (total) capacity of project 2 in this period.       |
     +-------------------------------------------------------------------------+
     | | :code:`max_relative_capacity_limit_total`                             |
-    | | *Defined over*: :code:`RELATIVE_CAPACITY_PROJECT_PAIR_PERIODS`        |
+    | | *Defined over*: :code:`REL_CAP_PRJ_PRD`                               |
     | | *Within*: :code:`NonNegativeReals`                                    |
     | | *Default*: :code:`inf`                                                |
     |                                                                         |
@@ -83,25 +89,25 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | Constraints                                                             |
     +=========================================================================+
     | | :code:`Min_Relative_New_Capacity_Limit_in_Period_Constraint`          |
-    | | *Defined over*: :code:`RELATIVE_CAPACITY_PROJECT_PAIR_PERIODS`        |
+    | | *Defined over*: :code:`REL_CAP_PRJ_PRD`                               |
     |                                                                         |
     | Provides a lower limit on the amount of new capacity for a based on the |
     | new capacity of another project.                                        |
     +-------------------------------------------------------------------------+
     | | :code:`Max_Relative_New_Capacity_Limit_in_Period_Constraint`          |
-    | | *Defined over*: :code:`RELATIVE_CAPACITY_PROJECT_PAIR_PERIODS`        |
+    | | *Defined over*: :code:`REL_CAP_PRJ_PRD`                               |
     |                                                                         |
     | Provides an upper limit on the amount of new capacity for a based on    |
     | the (new) capacity of another project.                                  |
     +-------------------------------------------------------------------------+
     | | :code:`Min_Relative_Total_Capacity_Limit_in_Period_Constraint`        |
-    | | *Defined over*: :code:`RELATIVE_CAPACITY_PROJECT_PAIR_PERIODS`        |
+    | | *Defined over*: :code:`REL_CAP_PRJ_PRD`                               |
     |                                                                         |
     | Provides a lower limit on the amount of total capacity for a based on   |
     | the total capacity of another project.                                  |
     +-------------------------------------------------------------------------+
     | | :code:`Max_Relative_New_Capacity_Limit_in_Period_Constraint`          |
-    | | *Defined over*: :code:`RELATIVE_CAPACITY_PROJECT_PAIR_PERIODS`        |
+    | | *Defined over*: :code:`REL_CAP_PRJ_PRD`                               |
     |                                                                         |
     | Provides a upper limit on the amount of total capacity for a based on   |
     | the total capacity of another project.                                  |
@@ -109,23 +115,25 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
 
     # Sets
-    m.RELATIVE_CAPACITY_PROJECT_PAIR_PERIODS = Set(dimen=3)
+    m.REL_CAP_PRJ_PRD = Set(dimen=2)
+
+    m.PRJS_FOR_REL_CAP_LIMIT = Set(m.REL_CAP_PRJ_PRD, within=m.PROJECTS)
 
     # Params
     m.min_relative_capacity_limit_new = Param(
-        m.RELATIVE_CAPACITY_PROJECT_PAIR_PERIODS, within=NonNegativeReals, default=0
+        m.REL_CAP_PRJ_PRD, within=NonNegativeReals, default=0
     )
     m.max_relative_capacity_limit_new = Param(
-        m.RELATIVE_CAPACITY_PROJECT_PAIR_PERIODS,
+        m.REL_CAP_PRJ_PRD,
         within=NonNegativeReals,
         default=float("inf"),
     )
 
     m.min_relative_capacity_limit_total = Param(
-        m.RELATIVE_CAPACITY_PROJECT_PAIR_PERIODS, within=NonNegativeReals, default=0
+        m.REL_CAP_PRJ_PRD, within=NonNegativeReals, default=0
     )
     m.max_relative_capacity_limit_total = Param(
-        m.RELATIVE_CAPACITY_PROJECT_PAIR_PERIODS,
+        m.REL_CAP_PRJ_PRD,
         within=NonNegativeReals,
         default=float("inf"),
     )
@@ -168,72 +176,66 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Constraints
     # Limit the min and max amount of new and total capacity based on another
     # project in a given period
-    def new_capacity_min_rule(mod, prj, prj_for_limit, prd):
-        if mod.min_relative_capacity_limit_new[prj, prj_for_limit, prd] == 0:
+    def new_capacity_min_rule(mod, prj, prd):
+        if mod.min_relative_capacity_limit_new[prj, prd] == 0:
             return Constraint.Feasible
         else:
             return project_new_capacity(
                 mod, prj, prd
-            ) >= mod.min_relative_capacity_limit_new[
-                prj, prj_for_limit, prd
-            ] * project_new_capacity(
-                mod, prj_for_limit, prd
+            ) >= mod.min_relative_capacity_limit_new[prj, prd] * sum(
+                project_new_capacity(mod, prj_for_limit, prd)
+                for prj_for_limit in mod.PRJS_FOR_REL_CAP_LIMIT[prj, prd]
             )
 
     m.Min_Relative_New_Capacity_Limit_in_Period_Constraint = Constraint(
-        m.RELATIVE_CAPACITY_PROJECT_PAIR_PERIODS, rule=new_capacity_min_rule
+        m.REL_CAP_PRJ_PRD, rule=new_capacity_min_rule
     )
 
-    def new_capacity_max_rule(mod, prj, prj_for_limit, prd):
-        if mod.max_relative_capacity_limit_new[prj, prj_for_limit, prd] == float("inf"):
+    def new_capacity_max_rule(mod, prj, prd):
+        if mod.max_relative_capacity_limit_new[prj, prd] == float("inf"):
             return Constraint.Feasible
         else:
             return project_new_capacity(
                 mod, prj, prd
-            ) <= mod.max_relative_capacity_limit_new[
-                prj, prj_for_limit, prd
-            ] * project_new_capacity(
-                mod, prj_for_limit, prd
+            ) <= mod.max_relative_capacity_limit_new[prj, prd] * sum(
+                project_new_capacity(mod, prj_for_limit, prd)
+                for prj_for_limit in mod.PRJS_FOR_REL_CAP_LIMIT[prj, prd]
             )
 
     m.Max_Relative_New_Capacity_Limit_in_Period_Constraint = Constraint(
-        m.RELATIVE_CAPACITY_PROJECT_PAIR_PERIODS, rule=new_capacity_max_rule
+        m.REL_CAP_PRJ_PRD, rule=new_capacity_max_rule
     )
 
     # Limit the min and max amount of total capacity in a period based on
     # another project
-    def total_capacity_min_rule(mod, prj, prj_for_limit, prd):
-        if mod.min_relative_capacity_limit_total[prj, prj_for_limit, prd] == 0:
+    def total_capacity_min_rule(mod, prj, prd):
+        if mod.min_relative_capacity_limit_total[prj, prd] == 0:
             return Constraint.Feasible
         else:
             return project_total_capacity(
                 mod, prj, prd
-            ) >= mod.min_relative_capacity_limit_total[
-                prj, prj_for_limit, prd
-            ] * project_total_capacity(
-                mod, prj_for_limit, prd
+            ) >= mod.min_relative_capacity_limit_total[prj, prd] * sum(
+                project_total_capacity(mod, prj_for_limit, prd)
+                for prj_for_limit in mod.PRJS_FOR_REL_CAP_LIMIT[prj, prd]
             )
 
     m.Min_Relative_Total_Capacity_Limit_in_Period_Constraint = Constraint(
-        m.RELATIVE_CAPACITY_PROJECT_PAIR_PERIODS, rule=total_capacity_min_rule
+        m.REL_CAP_PRJ_PRD, rule=total_capacity_min_rule
     )
 
-    def total_capacity_max_rule(mod, prj, prj_for_limit, prd):
-        if mod.max_relative_capacity_limit_total[prj, prj_for_limit, prd] == float(
-            "inf"
-        ):
+    def total_capacity_max_rule(mod, prj, prd):
+        if mod.max_relative_capacity_limit_total[prj, prd] == float("inf"):
             return Constraint.Feasible
         else:
             return project_total_capacity(
                 mod, prj, prd
-            ) <= mod.max_relative_capacity_limit_total[
-                prj, prj_for_limit, prd
-            ] * project_total_capacity(
-                mod, prj_for_limit, prd
+            ) <= mod.max_relative_capacity_limit_total[prj, prd] * sum(
+                project_total_capacity(mod, prj_for_limit, prd)
+                for prj_for_limit in mod.PRJS_FOR_REL_CAP_LIMIT[prj, prd]
             )
 
     m.Max_Relative_Total_Capacity_Limit_in_Period_Constraint = Constraint(
-        m.RELATIVE_CAPACITY_PROJECT_PAIR_PERIODS, rule=total_capacity_max_rule
+        m.REL_CAP_PRJ_PRD, rule=total_capacity_max_rule
     )
 
 
@@ -253,10 +255,19 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         "inputs",
         "project_relative_capacity_requirements.tab",
     )
+
+    map_file = os.path.join(
+        scenario_directory,
+        subproblem,
+        stage,
+        "inputs",
+        "project_relative_capacity_requirements_map.tab",
+    )
+
     if os.path.exists(req_file):
         data_portal.load(
             filename=req_file,
-            index=m.RELATIVE_CAPACITY_PROJECT_PAIR_PERIODS,
+            index=m.REL_CAP_PRJ_PRD,
             param=(
                 m.min_relative_capacity_limit_new,
                 m.max_relative_capacity_limit_new,
@@ -264,6 +275,16 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                 m.max_relative_capacity_limit_total,
             ),
         )
+
+    if os.path.exists(map_file):
+        df = pd.read_csv(map_file, delimiter="\t")
+        mapping = (
+            df.set_index(["project", "period"])
+            .groupby(["project", "period"])["project_for_limit"]
+            .apply(list)
+            .to_dict()
+        )
+        data_portal.data()["PRJS_FOR_REL_CAP_LIMIT"] = mapping
 
 
 # Database
@@ -279,10 +300,10 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     :return:
     """
 
-    c = conn.cursor()
-    rel_cap = c.execute(
+    c1 = conn.cursor()
+    rel_cap = c1.execute(
         f"""
-        SELECT project, project_for_limits, period,
+        SELECT project, period,
         min_relative_capacity_limit_new, max_relative_capacity_limit_new,
         min_relative_capacity_limit_total, max_relative_capacity_limit_total
         FROM inputs_project_relative_capacity_requirements
@@ -291,14 +312,26 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         """
     )
 
-    return rel_cap
+    c2 = conn.cursor()
+    map = c2.execute(
+        f"""
+        SELECT project, period, project_for_limits
+        FROM inputs_project_relative_capacity_requirements
+        JOIN inputs_project_relative_capacity_requirements_map
+        USING (project, prj_for_lim_map_id)
+        WHERE project_relative_capacity_requirement_scenario_id = 
+        {subscenarios.PROJECT_RELATIVE_CAPACITY_REQUIREMENT_SCENARIO_ID}
+        """
+    )
+
+    return rel_cap, map
 
 
 def write_model_inputs(
     scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """ """
-    rel_cap = get_inputs_from_database(
+    rel_cap, map = get_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn
     )
 
@@ -321,7 +354,6 @@ def write_model_inputs(
             writer.writerow(
                 [
                     "project",
-                    "project_for_limits",
                     "period",
                     "min_relative_capacity_limit_new",
                     "max_relative_capacity_limit_new",
@@ -331,5 +363,25 @@ def write_model_inputs(
             )
 
             for row in rel_cap:
+                replace_nulls = ["." if i is None else i for i in row]
+                writer.writerow(replace_nulls)
+
+        with open(
+            os.path.join(
+                scenario_directory,
+                str(subproblem),
+                str(stage),
+                "inputs",
+                "project_relative_capacity_requirements_map.tab",
+            ),
+            "w",
+            newline="",
+        ) as map_file:
+            writer = csv.writer(map_file, delimiter="\t", lineterminator="\n")
+
+            # Write header
+            writer.writerow(["project", "period", "project_for_limit"])
+
+            for row in map:
                 replace_nulls = ["." if i is None else i for i in row]
                 writer.writerow(replace_nulls)
