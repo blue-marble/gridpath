@@ -290,38 +290,30 @@ def validate_dtypes(df, expected_dtypes):
     """
     result = []
     columns = []
-
     for column in df.columns:
+        column_df = pd.DataFrame(df[column])
         # Only check if not all values are null
-        if not pd.isna(df[column]).all():
-            if column == "fuel_group":
-                # print(df.loc[:, df.isnull().sum() > 0])
-                # print(df.loc[:, df.isnull().sum() > 0].dtypes)
-                # print(df)
-                # print(df.dtypes)
-                # print(df.loc[:, df.isnull().sum() > 0].dropna().dtypes)
-
-                df = df.loc[:, df.isnull().sum() > 0].dropna()
-                print(df.dtypes)
-            # Assume NULL values are allowed and remove them, to avoid getting the
-            # wrong data types because of the NULLs present
+        # TODO: we need a separate validation for whether NULL values should
+        #  be allowed in a column; maybe shoud be NOT NULL in the database
+        if not pd.isna(column_df[column]).all():
+            # Drop any NaN/NULLs, so that they don't interfere with the data
+            # type of the column
+            if pd.isna(column_df[column]).any():
+                column_df = column_df.loc[:, column_df.isna().sum() > 0].dropna()
             if expected_dtypes[
                 column
-            ] == "numeric" and not pd.api.types.is_numeric_dtype(df[column]):
+            ] == "numeric" and not pd.api.types.is_numeric_dtype(column_df[column]):
                 result.append(
                     "Invalid data type for column '{}'; expected numeric".format(column)
                 )
                 columns.append(column)
             if expected_dtypes[column] == "string" and not pd.api.types.is_string_dtype(
-                df[column]
+                column_df[column]
             ):
                 result.append(
                     "Invalid data type for column '{}'; expected string".format(column)
                 )
                 columns.append(column)
-        else:
-            # print(f"All values were null for {column}")
-            pass
 
     # Alternative that avoids pd.api.types:
     # numeric_columns = [k for k, v in expected_dtypes.items() if v == "numeric"]
