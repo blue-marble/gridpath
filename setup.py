@@ -36,6 +36,8 @@ setup(
     version=version["__version__"],
     description="A versatile simulation and optimization platform for "
     "power-system planning and operations.",
+    long_description=open("README.md").read(),
+    long_description_content_type="text/markdown",
     url="https://www.gridpath.io",
     maintainer="Blue Marble Analytics LLC",
     maintainer_email="info@gridpath.io",
@@ -45,7 +47,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         "Pyomo==6.4.4",  # Optimization modeling language
-        "pandas==1.5.3",  # Data-processing
+        "pandas",  # Data-processing
         "bokeh==2.2.3",  # Visualization library (required - see #779)
         "pscript==0.7.5",  # Python to JavaScript compiler (for viz)
         "networkx==3.0",  # network package for DC OPF

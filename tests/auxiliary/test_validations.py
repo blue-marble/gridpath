@@ -85,7 +85,7 @@ class TestValidations(unittest.TestCase):
                 "expected_dtypes": {"project": "string", "capacity": "numeric"},
                 "result": ([], []),
             },
-            # Test invalid string column
+            # Test invalid string in numeric column
             2: {
                 "df": pd.DataFrame(
                     columns=df_columns, data=[["gas_ct", 10], ["coal_plant", "string"]]
@@ -96,7 +96,7 @@ class TestValidations(unittest.TestCase):
                     ["capacity"],
                 ),
             },
-            # Test invalid numeric column
+            # Test invalid numeric column in string column (all rows)
             3: {
                 "df": pd.DataFrame(columns=df_columns, data=[[1, 10], [1, 20]]),
                 "expected_dtypes": {"project": "string", "capacity": "numeric"},
@@ -105,12 +105,14 @@ class TestValidations(unittest.TestCase):
                     ["project"],
                 ),
             },
-            # If at least one string in the column, pandas will convert
-            # all column data to string so there will be no error
+            # Test invalid numeric column in string column (any row)
             4: {
                 "df": pd.DataFrame(columns=df_columns, data=[["gas_ct", 10], [1, 20]]),
                 "expected_dtypes": {"project": "string", "capacity": "numeric"},
-                "result": ([], []),
+                "result": (
+                    ["Invalid data type for column 'project'; expected string"],
+                    ["project"],
+                ),
             },
             # Columns with all None are ignored
             5: {

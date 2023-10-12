@@ -283,15 +283,28 @@ def validate_dtypes(df, expected_dtypes):
     Helper function for input validation.
     :param df: DataFrame for which to check data types
     :param expected_dtypes: dictionary with expected datatype ("numeric" or
-        "string" for each column.
+        "string" for each column).
     :return: List of error messages for each column with invalid datatypes.
         Error message specifies the column and the expected data type.
         List of columns with erroneous data types.
     """
     result = []
     columns = []
+
     for column in df.columns:
+        # Only check if not all values are null
         if not pd.isna(df[column]).all():
+            if column == "fuel_group":
+                # print(df.loc[:, df.isnull().sum() > 0])
+                # print(df.loc[:, df.isnull().sum() > 0].dtypes)
+                # print(df)
+                # print(df.dtypes)
+                # print(df.loc[:, df.isnull().sum() > 0].dropna().dtypes)
+
+                df = df.loc[:, df.isnull().sum() > 0].dropna()
+                print(df.dtypes)
+            # Assume NULL values are allowed and remove them, to avoid getting the
+            # wrong data types because of the NULLs present
             if expected_dtypes[
                 column
             ] == "numeric" and not pd.api.types.is_numeric_dtype(df[column]):
@@ -306,6 +319,9 @@ def validate_dtypes(df, expected_dtypes):
                     "Invalid data type for column '{}'; expected string".format(column)
                 )
                 columns.append(column)
+        else:
+            # print(f"All values were null for {column}")
+            pass
 
     # Alternative that avoids pd.api.types:
     # numeric_columns = [k for k, v in expected_dtypes.items() if v == "numeric"]
