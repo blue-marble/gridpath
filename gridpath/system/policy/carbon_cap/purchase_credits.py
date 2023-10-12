@@ -85,7 +85,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         AND carbon_credits_zone in (
             SELECT carbon_credits_zone
             FROM inputs_geography_carbon_credits_zones
-            WHERE carbon_credits_zone_scenario_id = {subscenarios.CARBON_CAP_ZONE_SCENARIO_ID}
+            WHERE carbon_credits_zone_scenario_id = {subscenarios.CARBON_CREDITS_ZONE_SCENARIO_ID}
         )
         ;
         """
