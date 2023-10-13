@@ -156,13 +156,13 @@ class TestExamples(unittest.TestCase):
                 # Reset the objective to the new dictionary object
                 actual_objective = actual_objective_copy
 
+        print(test, expected_objective, actual_objective)
         # Multi-subproblem and/or multi-stage scenarios return dict
         if isinstance(expected_objective, dict):
             self.assertDictAlmostEqual(expected_objective, actual_objective, places=1)
         # Otherwise, objective is a single value
         else:
             self.assertAlmostEqual(expected_objective, actual_objective, places=1)
-
         # Uncomment this to save new objective function values
         # with open(TEST_SCENARIOS_CSV, "a") as f:
         #     writer = csv.writer(f, delimiter=",")
