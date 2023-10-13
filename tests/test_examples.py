@@ -156,17 +156,18 @@ class TestExamples(unittest.TestCase):
                 # Reset the objective to the new dictionary object
                 actual_objective = actual_objective_copy
 
-        print(test, expected_objective, actual_objective)
+        # Uncomment this to save new objective function values
+        df = pd.read_csv(TEST_SCENARIOS_CSV, delimiter=",")
+        df.set_index("test_scenario", inplace=True)
+        df.at[test, "actual_objective"] = actual_objective
+        df.to_csv(TEST_SCENARIOS_CSV, index=True)
+
         # Multi-subproblem and/or multi-stage scenarios return dict
         if isinstance(expected_objective, dict):
             self.assertDictAlmostEqual(expected_objective, actual_objective, places=1)
         # Otherwise, objective is a single value
         else:
             self.assertAlmostEqual(expected_objective, actual_objective, places=1)
-        # Uncomment this to save new objective function values
-        # with open(TEST_SCENARIOS_CSV, "a") as f:
-        #     writer = csv.writer(f, delimiter=",")
-        #     writer.writerow([test, expected_objective, actual_objective])
 
     @classmethod
     def setUpClass(cls):
@@ -1254,13 +1255,13 @@ class TestExamples(unittest.TestCase):
         scenario_name = "test_new_solar_carbon_credits_w_sell"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
-    # @classmethod
-    # def tearDownClass(cls):
-    #     os.remove(DB_PATH)
-    #     for temp_file_ext in ["-shm", "-wal"]:
-    #         temp_file = "{}{}".format(DB_PATH, temp_file_ext)
-    #         if os.path.exists(temp_file):
-    #             os.remove(temp_file)
+    @classmethod
+    def tearDownClass(cls):
+        os.remove(DB_PATH)
+        for temp_file_ext in ["-shm", "-wal"]:
+            temp_file = "{}{}".format(DB_PATH, temp_file_ext)
+            if os.path.exists(temp_file):
+                os.remove(temp_file)
 
 
 if __name__ == "__main__":
