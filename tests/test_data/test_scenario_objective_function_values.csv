@@ -1,0 +1,104 @@
+test_scenario,expected_objective, actual_objective
+test_aux_cons,-3664910801437.807
+2horizons,-3796309121478.1226
+2horizons_w_hydro,-219136981.90835398
+2horizons_w_hydro_and_nuclear_binary_availability,-179455911.23328674
+2horizons_w_hydro_w_balancing_types,-214913823.367428
+2periods,-75926182429562.45
+2periods_gen_bin_econ_retirement,-75926182429562.45
+2periods_gen_lin_econ_retirement,-75926125638846.83
+2periods_new_build,-10085845900.191605
+2periods_new_build_2zones,-20171691798.193214
+2periods_new_build_2zones_new_build_transmission,-7028494941419.333
+2periods_new_build_2zones_singleBA,-20171691750.059643
+2periods_new_build_2zones_transmission,-220771078212311.7
+2periods_new_build_2zones_transmission_Tx1halfavail,-308370294932297.06
+2periods_new_build_2zones_transmission_Tx1halfavailmonthly,-308370294932297.06
+2periods_new_build_2zones_transmission_w_hurdle_rates,-220771086972316.06
+2periods_new_build_2zones_transmission_w_losses,-238291078037111.7
+2periods_new_build_2zones_transmission_w_losses_opp_dir,-238291078037111.7
+2periods_new_build_capgroups,-5266183794340.191
+2periods_new_build_cumulative_and_vintage_min_max,-110384972580606.39
+2periods_new_build_cumulative_min_max,-27166044526940.195
+2periods_new_build_fin_lifetime,-10022366566.861605
+2periods_new_build_horizon_energy_target,-26966855745108.062
+2periods_new_build_horizon_energy_target_halfyear,-101086984772721.28
+2periods_new_build_local_capacity,-10087189902.382917
+2periods_new_build_rps,-26966855745108.062
+2periods_new_build_rps_percent_target,-26966855745108.062
+2periods_new_build_rps_variable_reserves,-4980266823.194146
+2periods_new_build_rps_variable_reserves_subhourly_adj,-4980266823.194146
+2periods_new_build_rps_w_rps_eligible_storage,-26966830249904.633
+2periods_new_build_rps_w_rps_ineligible_storage,-16980455713578.633
+2periods_new_build_simple_prm,-10153045900.191605
+2periods_new_build_simple_prm_2loadzones,-613211671721885.6
+2periods_new_build_simple_prm_2loadzones_newtx_w_transfers,-17323444870.099785
+2periods_new_build_simple_prm_2loadzones_newtx_w_transfers_w_costs,-17323445422.099785
+2periods_new_build_simple_prm_2loadzones_newtx_w_transfers_w_subsidies,-17323439361.04978
+2periods_new_build_simple_prm_w_energy_only,-11133045895.810287
+2periods_new_build_simple_prm_w_energy_only_deliv_cap_limit,-11133045900.191603
+multi_stage_prod_cost,"{1: {1: -1265436373826.0408, 2: -1265436373826.0408, 3: -1265436373826.099}, 2: {1: -1265436373826.0408, 2: -1265436373826.0408, 3: -1265436373826.099}, 3: {1: -1265436373826.0408, 2: -1265436373826.0408, 3: -1265436373826.099}}"
+multi_stage_prod_cost_linked_subproblems,"{1: {1: -1265436373826.0408, 2: -1265436373826.0408, 3: -1265436372366.0408}, 2: {1: -1265436373826.0408, 2: -1265436373826.0408, 3: -1265436372366.0408}, 3: {1: -1265436373826.0408, 2: -1265436373826.0408, 3: -1265436372366.0408}}"
+multi_stage_prod_cost_w_hydro,"{1: {1: -1411433910806.1167, 2: -1411433910806.1167, 3: -1411433910806.175}, 2: {1: -1411433910806.1167, 2: -1411433910806.1167, 3: -1411433910806.175}, 3: {1: -1411433910806.1167, 2: -1411433910806.1167, 3: -1411433910806.175}}"
+multi_stage_prod_cost_w_markets,"{1: {1: -1168100020726.1135, 2: -1168100283039.4688, 3: -1168100283039.5056}, 2: {1: -1168100035326.1135, 2: -1168100283039.4688, 3: -1168100283039.5056}, 3: {1: -1168100020726.1135, 2: -1168100283039.4688, 3: -1168100283039.5056}}"
+single_stage_prod_cost,"{1: -1265436373826.0408, 2: -1265436373826.0408, 3: -1265436373826.0408}"
+single_stage_prod_cost_cycle_select,"{1: -7154084662888.654, 2: -7154084662888.654, 3: -7154084662888.654}"
+single_stage_prod_cost_linked_subproblems,"{1: -1265436373826.0408, 2: -1265436373826.0408, 3: -1265436373826.0408}"
+single_stage_prod_cost_linked_subproblems_w_hydro,"{1: -71637941.12254025, 2: -71637941.12254025, 3: -71637941.12254025}"
+test,-3796309121478.12
+test_cap_factor_limits,-5373102109974.298
+test_carbon_tax_allowance,-3796303120157.2686
+test_carbon_tax_allowance_with_different_fuel_groups,-3796325179179.2686
+test_cheap_fuel_blend,-3796255594374.1226
+test_cheap_fuel_blend_w_limit,-3796282357926.1226
+test_markets,-3504300478278.3403
+test_min_max_build_trans,-7028538202574.325
+test_new_binary_build_storage,-4484591878.4800005
+test_new_binary_solar,-3796300848658.342
+test_new_build_gen_var_stor_hyb,-5797066114.34292
+test_new_build_storage,-4484591199.92
+test_new_build_storage_cumulative_min_max,-4561692383.87
+test_new_build_storage_itc,-4484590199.92
+test_new_build_storage_itc_single_superperiod,-4484589239.2
+test_new_solar,-3796301348838.3267
+test_new_solar_carbon_cap,-58282515304521.79
+test_new_solar_carbon_cap_2zones_dont_count_tx,-56530649982951.8
+test_new_solar_carbon_cap_2zones_tx,-58248087935073.625
+test_new_solar_carbon_cap_2zones_tx_low_carbon_fuel_blend,-3504399050661.217
+test_new_solar_carbon_cap_dac,-3504434601570.9893
+test_new_solar_carbon_credits,-5464644311322.297
+test_new_solar_carbon_credits_w_sell,141717484695478.22
+test_new_solar_carbon_tax,-3796369926691.2686
+test_new_solar_carbon_tax_w_carbon_credits,-3796351965272.2686
+test_new_solar_fuel_burn_limit,-58282515304521.79
+test_new_solar_fuel_burn_limit_relative,-58282515304521.79
+test_new_solar_itc,-3796301348804.993
+test_new_solar_reserve_prj_contribution,-3796311064738.0493
+test_new_solar_w_relative_capacity_instead_of_potential,-3796301348838.3267
+test_no_overgen_allowed,-5256303226874.182
+test_no_reserves,-233812049.889
+test_period_tx_targets,-58248345119704.586
+test_ramp_up_and_down_constraints,-4730755816658.181
+test_ramp_up_constraints,-3796309121478.1226
+test_supplemental_firing,-4380327039279.8545
+test_tx_capacity_groups,-12284573611936.518
+test_tx_dcopf,-58248351050674.516
+test_tx_simple,-58248338996673.625
+test_w_flex_load,-3504306055178.457
+test_w_hydro,-214913823.36742803
+test_w_lf_down_percent_req,-6643312468674.122
+test_w_nonfuel_emissions,-3796242212598.1226
+test_w_storage,-237985313.88900003
+test_w_storage_starting_soc,-247344769.66799998
+test_w_storage_w_soc_last_tmp_penalty,-248229549.889146
+test_w_storage_w_soc_penalty,-245736137.55082923
+test_variable_gen_reserves,-1343499590014.7651
+test_no_fuels,-3796000221920.0
+test_performance_standard,-3592014754469.9077
+test_performance_standard_carbon_credits,-3592010842841.2656
+test_new_solar_carbon_cap_2zones_tx_hydrogen_prod,-186977669.6
+test_new_solar_carbon_cap_2zones_tx_hydrogen_prod_new,-186998077.6
+test_w_solver_options,-3796309121478.12
+test_tx_flow,-59124336744013.484
+test_variable_om_curves,-3796309193923.3223
+test_startup_shutdown_rates,-560795927282.98
