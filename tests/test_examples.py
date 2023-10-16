@@ -159,6 +159,9 @@ class TestExamples(unittest.TestCase):
         # Uncomment this to save new objective function values
         df = pd.read_csv(TEST_SCENARIOS_CSV, delimiter=",")
         df.set_index("test_scenario", inplace=True)
+        # Set dtype to 'object' so that we can have floats and dictionaries
+        # in the column
+        df["actual_objective"] = df["actual_objective"].astype("object")
         df.at[test, "actual_objective"] = actual_objective
         df.to_csv(TEST_SCENARIOS_CSV, index=True)
 
