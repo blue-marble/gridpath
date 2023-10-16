@@ -50,7 +50,7 @@ setup(
         "pandas==2.1.1",  # Data-processing
         "bokeh==2.2.3",  # Visualization library (required - see #779)
         "pscript==0.7.5",  # Python to JavaScript compiler (for viz)
-        "networkx==3.0",  # network package for DC OPF
+        "networkx==3.1",  # network package for DC OPF
         "PyUtilib==6.0.0",  # used for solver temp file management
         "Jinja2==3.0.3",  # bokeh dependency; see #904
         "dill==0.3.6",  # pickling
