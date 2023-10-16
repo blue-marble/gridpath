@@ -219,6 +219,7 @@ class TestExamples(unittest.TestCase):
                 self.df.loc[scenario_name]["expected_objective"]
             )
         else:
+            print(self.df.loc[scenario_name]["expected_objective"])
             objective = float(self.df.loc[scenario_name]["expected_objective"])
         self.check_validation(scenario_name)
         self.run_and_check_objective(scenario_name, objective)

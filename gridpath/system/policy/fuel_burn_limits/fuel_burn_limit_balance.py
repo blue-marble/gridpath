@@ -54,10 +54,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
     def violation_expression_min_abs_rule(mod, f, ba, bt, h):
-        return (
-            mod.Fuel_Burn_Min_Shortage_Abs_Unit[f, ba, bt, h]
-            * mod.fuel_burn_min_allow_violation[f, ba]
-        )
+        if mod.fuel_burn_min_allow_violation[f, ba]:
+            return mod.Fuel_Burn_Min_Shortage_Abs_Unit[f, ba, bt, h]
+        else:
+            return 0
 
     m.Fuel_Burn_Min_Shortage_Abs_Unit_Expression = Expression(
         m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MIN_ABS_LIMIT,
@@ -94,10 +94,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
     def violation_expression_max_abs_rule(mod, f, ba, bt, h):
-        return (
-            mod.Fuel_Burn_Max_Overage_Abs_Unit[f, ba, bt, h]
-            * mod.fuel_burn_max_allow_violation[f, ba]
-        )
+        if mod.fuel_burn_max_allow_violation[f, ba]:
+            return mod.Fuel_Burn_Max_Overage_Abs_Unit[f, ba, bt, h]
+        else:
+            return 0
 
     m.Fuel_Burn_Max_Overage_Abs_Unit_Expression = Expression(
         m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MAX_ABS_LIMIT,
@@ -134,10 +134,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
     def violation_expression_rel_rule(mod, f, ba, bt, h):
-        return (
-            mod.Fuel_Burn_Limit_Overage_Rel_Unit[f, ba, bt, h]
-            * mod.fuel_burn_relative_max_allow_violation[f, ba]
-        )
+        if mod.fuel_burn_relative_max_allow_violation[f, ba]:
+            return mod.Fuel_Burn_Limit_Overage_Rel_Unit[f, ba, bt, h]
+        else:
+            return 0
 
     m.Fuel_Burn_Max_Overage_Rel_Unit_Expression = Expression(
         m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MAX_REL_LIMIT,

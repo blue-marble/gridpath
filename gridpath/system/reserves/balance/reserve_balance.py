@@ -60,10 +60,10 @@ def generic_add_model_components(
         :param tmp:
         :return:
         """
-        return (
-            getattr(mod, reserve_violation_allowed_param)[ba]
-            * getattr(mod, reserve_violation_variable)[ba, tmp]
-        )
+        if getattr(mod, reserve_violation_allowed_param)[ba]:
+            return getattr(mod, reserve_violation_variable)[ba, tmp]
+        else:
+            return 0
 
     setattr(
         m,

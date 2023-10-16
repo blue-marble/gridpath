@@ -49,7 +49,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
     def violation_expression_rule(mod, z, p):
-        return mod.PRM_Shortage_MW[z, p] * mod.prm_allow_violation[z]
+        if mod.prm_allow_violation[z]:
+            return mod.PRM_Shortage_MW[z, p]
+        else:
+            return 0
 
     m.PRM_Shortage_MW_Expression = Expression(
         m.PRM_ZONE_PERIODS_WITH_REQUIREMENT, rule=violation_expression_rule
