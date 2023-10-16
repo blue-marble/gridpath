@@ -53,7 +53,7 @@ setup(
         "networkx==3.1",  # network package for DC OPF
         "PyUtilib==6.0.0",  # used for solver temp file management
         "Jinja2==3.0.3",  # bokeh dependency; see #904
-        "dill==0.3.6",  # pickling
+        "dill==0.3.7",  # pickling
     ],
     extras_require={
         "doc": extras_doc,
