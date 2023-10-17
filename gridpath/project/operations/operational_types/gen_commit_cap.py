@@ -71,7 +71,10 @@ from gridpath.project.operations.operational_types.common_functions import (
     validate_opchars,
 )
 from gridpath.common_functions import create_results_df
-from gridpath.project.common_functions import check_if_boundary_type_and_first_timepoint
+from gridpath.project.common_functions import (
+    check_if_boundary_type_and_first_timepoint,
+    get_prj_opr_tmp_subset,
+)
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -412,9 +415,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.GEN_COMMIT_CAP_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: list(
-            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS if g in mod.GEN_COMMIT_CAP)
-        ),
+        initialize=lambda mod: get_prj_opr_tmp_subset(mod, mod.GEN_COMMIT_CAP),
     )
 
     m.GEN_COMMIT_CAP_LINKED_TMPS = Set(dimen=2)

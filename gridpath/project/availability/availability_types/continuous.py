@@ -48,6 +48,7 @@ from gridpath.project.operations.operational_types.common_functions import (
 from gridpath.project.common_functions import (
     determine_project_subset,
     check_if_boundary_type_and_first_timepoint,
+    get_prj_opr_tmp_subset,
 )
 
 
@@ -179,9 +180,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.AVL_CONT_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: list(
-            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS if g in mod.AVL_CONT)
-        ),
+        initialize=lambda mod: get_prj_opr_tmp_subset(mod, mod.AVL_CONT),
     )
 
     # Required Input Params

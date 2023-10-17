@@ -28,6 +28,7 @@ from gridpath.auxiliary.auxiliary import (
     get_required_subtype_modules,
     check_for_integer_subdirectories,
 )
+from gridpath.project.common_functions import get_prj_opr_tmp_subset
 from gridpath.project.operations.common_functions import load_operational_type_modules
 
 
@@ -113,16 +114,12 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.FNL_COMMIT_PRJ_OPR_TMPS = Set(
         dimen=2,
-        initialize=lambda mod: set(
-            (g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS if g in mod.FNL_COMMIT_PRJS
-        ),
+        initialize=lambda mod: get_prj_opr_tmp_subset(mod, mod.FNL_COMMIT_PRJS),
     )
 
     m.FXD_COMMIT_PRJ_OPR_TMPS = Set(
         dimen=2,
-        initialize=lambda mod: set(
-            (g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS if g in mod.FXD_COMMIT_PRJS
-        ),
+        initialize=lambda mod: get_prj_opr_tmp_subset(mod, mod.FXD_COMMIT_PRJS),
     )
 
     # Input Params

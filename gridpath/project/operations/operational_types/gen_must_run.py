@@ -51,6 +51,7 @@ from gridpath.auxiliary.validations import (
     validate_single_input,
 )
 from gridpath.auxiliary.dynamic_components import headroom_variables, footroom_variables
+from gridpath.project.common_functions import get_prj_opr_tmp_subset
 from gridpath.project.operations.operational_types.common_functions import (
     load_optype_model_data,
     validate_opchars,
@@ -121,9 +122,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.GEN_MUST_RUN_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: list(
-            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS if g in mod.GEN_MUST_RUN)
-        ),
+        initialize=lambda mod: get_prj_opr_tmp_subset(mod, mod.GEN_MUST_RUN),
     )
 
     # Optional Params

@@ -34,7 +34,10 @@ from gridpath.auxiliary.validations import (
     validate_values,
     validate_missing_inputs,
 )
-from gridpath.project.common_functions import determine_project_subset
+from gridpath.project.common_functions import (
+    determine_project_subset,
+    get_prj_opr_tmp_subset,
+)
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -81,9 +84,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.AVL_EXOG_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: list(
-            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS if g in mod.AVL_EXOG)
-        ),
+        initialize=lambda mod: get_prj_opr_tmp_subset(mod, mod.AVL_EXOG),
     )
 
     # Required Params

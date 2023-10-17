@@ -29,6 +29,7 @@ from gridpath.auxiliary.db_interface import (
     determine_table_subset_by_start_and_column,
 )
 from gridpath.common_functions import create_results_df
+from gridpath.project.common_functions import get_prj_opr_tmp_subset
 from gridpath.project.operations.common_functions import load_operational_type_modules
 from gridpath.auxiliary.validations import write_validation_to_database, validate_idxs
 import gridpath.project.operations.operational_types as op_type_init
@@ -129,9 +130,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.ENERGY_TARGET_PRJ_OPR_TMPS = Set(
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: [
-            (p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS if p in mod.ENERGY_TARGET_PRJS
-        ],
+        initialize=lambda mod: get_prj_opr_tmp_subset(mod, mod.ENERGY_TARGET_PRJS),
     )
 
     # Input Params

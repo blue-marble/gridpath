@@ -26,6 +26,7 @@ from pyomo.environ import Set, Var, Expression, Constraint, NonNegativeReals, va
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import get_required_subtype_modules
+from gridpath.project.common_functions import get_prj_opr_tmp_subset
 from gridpath.project.operations.common_functions import (
     load_operational_type_modules,
 )
@@ -234,41 +235,31 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.STARTUP_COST_PRJ_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: [
-            (p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS if p in mod.STARTUP_COST_PRJS
-        ],
+        initialize=lambda mod: get_prj_opr_tmp_subset(mod, mod.STARTUP_COST_PRJS),
     )
 
     m.SHUTDOWN_COST_PRJ_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: [
-            (p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS if p in mod.SHUTDOWN_COST_PRJS
-        ],
+        initialize=lambda mod: get_prj_opr_tmp_subset(mod, mod.SHUTDOWN_COST_PRJS),
     )
 
     m.VIOL_ALL_PRJ_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: [
-            (p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS if p in mod.VIOL_ALL_PRJS
-        ],
+        initialize=lambda mod: get_prj_opr_tmp_subset(mod, mod.VIOL_ALL_PRJS),
     )
 
     m.CURTAILMENT_COST_PRJ_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: [
-            (p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS if p in mod.CURTAILMENT_COST_PRJS
-        ],
+        initialize=lambda mod: get_prj_opr_tmp_subset(mod, mod.CURTAILMENT_COST_PRJS),
     )
 
     m.SOC_PENALTY_COST_PRJ_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: [
-            (p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS if p in mod.SOC_PENALTY_COST_PRJS
-        ],
+        initialize=lambda mod: get_prj_opr_tmp_subset(mod, mod.SOC_PENALTY_COST_PRJS),
     )
 
     m.SOC_LAST_TMP_PENALTY_COST_PRJ_OPR_TMPS = Set(

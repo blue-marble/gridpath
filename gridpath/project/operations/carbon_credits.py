@@ -27,6 +27,7 @@ from gridpath.auxiliary.auxiliary import (
 )
 from gridpath.common_functions import create_results_df
 from gridpath.project import PROJECT_PERIOD_DF
+from gridpath.project.common_functions import get_prj_opr_tmp_subset
 from gridpath.project.operations.common_functions import load_operational_type_modules
 import gridpath.project.operations.operational_types as op_type_init
 
@@ -120,9 +121,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.CARBON_CREDITS_PRJ_OPR_TMPS = Set(
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: [
-            (p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS if p in mod.CARBON_CREDITS_PRJS
-        ],
+        initialize=lambda mod: get_prj_opr_tmp_subset(mod, mod.CARBON_CREDITS_PRJS),
     )
 
     m.CARBON_CREDITS_PRJ_OPR_PRDS = Set(
