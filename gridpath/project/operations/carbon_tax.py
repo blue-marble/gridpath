@@ -28,6 +28,7 @@ from gridpath.auxiliary.db_interface import (
     import_csv,
 )
 from gridpath.auxiliary.validations import write_validation_to_database, validate_idxs
+from gridpath.project.common_functions import get_prj_opr_tmp_subset
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -113,9 +114,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.CARBON_TAX_PRJ_OPR_TMPS = Set(
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: [
-            (p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS if p in mod.CARBON_TAX_PRJS
-        ],
+        initialize=lambda mod: get_prj_opr_tmp_subset(mod, mod.CARBON_TAX_PRJS),
     )
 
     m.CARBON_TAX_PRJ_FUEL_GROUP_OPR_TMPS = Set(

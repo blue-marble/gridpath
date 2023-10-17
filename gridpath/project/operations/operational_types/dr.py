@@ -30,6 +30,7 @@ from gridpath.auxiliary.auxiliary import subset_init_by_param_value
 from gridpath.project.common_functions import (
     check_if_first_timepoint,
     check_boundary_type,
+    get_prj_opr_tmp_subset,
 )
 from gridpath.project.operations.operational_types.common_functions import (
     validate_opchars,
@@ -118,9 +119,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.DR_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: list(
-            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS if g in mod.DR)
-        ),
+        initialize=lambda mod: get_prj_opr_tmp_subset(mod, mod.DR),
     )
 
     m.DR_OPR_HRZS = Set(

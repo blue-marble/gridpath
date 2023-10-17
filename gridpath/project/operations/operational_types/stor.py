@@ -58,6 +58,7 @@ from gridpath.project.common_functions import (
     check_if_first_timepoint,
     check_if_last_timepoint,
     check_boundary_type,
+    get_prj_opr_tmp_subset,
 )
 from gridpath.project.operations.operational_types.common_functions import (
     load_optype_model_data,
@@ -283,9 +284,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.STOR_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: list(
-            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS if g in mod.STOR)
-        ),
+        initialize=lambda mod: get_prj_opr_tmp_subset(mod, mod.STOR),
     )
 
     m.STOR_LINKED_TMPS = Set(dimen=2)
