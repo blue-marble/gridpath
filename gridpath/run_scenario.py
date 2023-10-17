@@ -1200,6 +1200,8 @@ def main(args=None):
         parsed_arguments=parsed_args,
     )
 
+    # print(f"Objective: {expected_objective_values}")
+
     # Return the objective function values (used in testing)
     return expected_objective_values
 

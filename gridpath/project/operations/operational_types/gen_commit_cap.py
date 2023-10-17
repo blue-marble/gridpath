@@ -412,9 +412,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.GEN_COMMIT_CAP_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: list(
+        initialize=lambda mod: sorted(list(
             set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS if g in mod.GEN_COMMIT_CAP)
-        ),
+        )),
     )
 
     m.GEN_COMMIT_CAP_LINKED_TMPS = Set(dimen=2)
@@ -513,8 +513,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     # Variables for constraining up and down time
     # Startup and shutdown variables, must be non-negative
-    m.GenCommitCap_Startup_MW = Var(m.GEN_COMMIT_CAP_OPR_TMPS, within=NonNegativeReals)
-    m.GenCommitCap_Shutdown_MW = Var(m.GEN_COMMIT_CAP_OPR_TMPS, within=NonNegativeReals)
+    m.GenCommitCap_Startup_MW = Var(m.GEN_COMMIT_CAP_OPR_TMPS,
+                                    within=NonNegativeReals, initialize=0)
+    m.GenCommitCap_Shutdown_MW = Var(m.GEN_COMMIT_CAP_OPR_TMPS,
+                                     within=NonNegativeReals, initialize=0)
 
     # Expressions
     ###########################################################################
@@ -554,55 +556,55 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.GEN_COMMIT_CAP_OPR_TMPS, rule=min_power_rule
     )
 
-    # Ramping
-    m.Ramp_Up_Off_to_On_Constraint = Constraint(
-        m.GEN_COMMIT_CAP_OPR_TMPS, rule=ramp_up_off_to_on_constraint_rule
-    )
-
-    m.Ramp_Up_When_On_Constraint = Constraint(
-        m.GEN_COMMIT_CAP_OPR_TMPS, rule=ramp_up_on_to_on_constraint_rule
-    )
-
-    m.Ramp_Up_When_On_Headroom_Constraint = Constraint(
-        m.GEN_COMMIT_CAP_OPR_TMPS, rule=ramp_up_on_to_on_headroom_constraint_rule
-    )
-
-    m.GenCommitCap_Ramp_Up_Constraint = Constraint(
-        m.GEN_COMMIT_CAP_OPR_TMPS, rule=ramp_up_constraint_rule
-    )
-
-    m.Ramp_Down_On_to_Off_Constraint = Constraint(
-        m.GEN_COMMIT_CAP_OPR_TMPS, rule=ramp_down_on_to_off_constraint_rule
-    )
-
-    m.Ramp_Down_When_On_Constraint = Constraint(
-        m.GEN_COMMIT_CAP_OPR_TMPS, rule=ramp_down_on_to_on_constraint_rule
-    )
-
-    m.Ramp_Down_When_On_Headroom_Constraint = Constraint(
-        m.GEN_COMMIT_CAP_OPR_TMPS, rule=ramp_down_on_to_on_headroom_constraint_rule
-    )
-
-    m.GenCommitCap_Ramp_Down_Constraint = Constraint(
-        m.GEN_COMMIT_CAP_OPR_TMPS, rule=ramp_down_constraint_rule
-    )
-
-    # Min up and down time
-    m.GenCommitCap_Startup_Constraint = Constraint(
-        m.GEN_COMMIT_CAP_OPR_TMPS, rule=startup_constraint_rule
-    )
-
-    m.GenCommitCap_Shutdown_Constraint = Constraint(
-        m.GEN_COMMIT_CAP_OPR_TMPS, rule=shutdown_constraint_rule
-    )
-
-    m.GenCommitCap_Min_Up_Time_Constraint = Constraint(
-        m.GEN_COMMIT_CAP_OPR_TMPS, rule=min_up_time_constraint_rule
-    )
-
-    m.GenCommitCap_Min_Down_Time_Constraint = Constraint(
-        m.GEN_COMMIT_CAP_OPR_TMPS, rule=min_down_time_constraint_rule
-    )
+    # # Ramping
+    # m.Ramp_Up_Off_to_On_Constraint = Constraint(
+    #     m.GEN_COMMIT_CAP_OPR_TMPS, rule=ramp_up_off_to_on_constraint_rule
+    # )
+    #
+    # m.Ramp_Up_When_On_Constraint = Constraint(
+    #     m.GEN_COMMIT_CAP_OPR_TMPS, rule=ramp_up_on_to_on_constraint_rule
+    # )
+    #
+    # m.Ramp_Up_When_On_Headroom_Constraint = Constraint(
+    #     m.GEN_COMMIT_CAP_OPR_TMPS, rule=ramp_up_on_to_on_headroom_constraint_rule
+    # )
+    #
+    # m.GenCommitCap_Ramp_Up_Constraint = Constraint(
+    #     m.GEN_COMMIT_CAP_OPR_TMPS, rule=ramp_up_constraint_rule
+    # )
+    #
+    # m.Ramp_Down_On_to_Off_Constraint = Constraint(
+    #     m.GEN_COMMIT_CAP_OPR_TMPS, rule=ramp_down_on_to_off_constraint_rule
+    # )
+    #
+    # m.Ramp_Down_When_On_Constraint = Constraint(
+    #     m.GEN_COMMIT_CAP_OPR_TMPS, rule=ramp_down_on_to_on_constraint_rule
+    # )
+    #
+    # m.Ramp_Down_When_On_Headroom_Constraint = Constraint(
+    #     m.GEN_COMMIT_CAP_OPR_TMPS, rule=ramp_down_on_to_on_headroom_constraint_rule
+    # )
+    #
+    # m.GenCommitCap_Ramp_Down_Constraint = Constraint(
+    #     m.GEN_COMMIT_CAP_OPR_TMPS, rule=ramp_down_constraint_rule
+    # )
+    #
+    # # Min up and down time
+    # m.GenCommitCap_Startup_Constraint = Constraint(
+    #     m.GEN_COMMIT_CAP_OPR_TMPS, rule=startup_constraint_rule
+    # )
+    #
+    # m.GenCommitCap_Shutdown_Constraint = Constraint(
+    #     m.GEN_COMMIT_CAP_OPR_TMPS, rule=shutdown_constraint_rule
+    # )
+    #
+    # m.GenCommitCap_Min_Up_Time_Constraint = Constraint(
+    #     m.GEN_COMMIT_CAP_OPR_TMPS, rule=min_up_time_constraint_rule
+    # )
+    #
+    # m.GenCommitCap_Min_Down_Time_Constraint = Constraint(
+    #     m.GEN_COMMIT_CAP_OPR_TMPS, rule=min_down_time_constraint_rule
+    # )
 
 
 # Expression Rules
