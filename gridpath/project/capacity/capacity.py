@@ -259,19 +259,17 @@ def op_gens_by_tmp(mod, tmp):
     """
     Figure out which generators are operational in each timepoins.
     """
-    gens = sorted(list(g for (g, t) in mod.PRJ_OPR_TMPS if t == tmp))
+    gens = list(g for (g, t) in mod.PRJ_OPR_TMPS if t == tmp)
     return gens
 
 
 def operational_periods_by_project(prj, project_operational_periods):
     """ """
-    return sorted(
-        list(
-            set(
-                period
-                for (project, period) in project_operational_periods
-                if project == prj
-            )
+    return list(
+        set(
+            period
+            for (project, period) in project_operational_periods
+            if project == prj
         )
     )
 

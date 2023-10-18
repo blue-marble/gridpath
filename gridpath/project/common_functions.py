@@ -164,7 +164,3 @@ def append_to_input_file(
     with open(os.path.join(inputs_directory, input_file), "w", newline="") as f_out:
         writer = csv.writer(f_out, delimiter="\t", lineterminator="\n")
         writer.writerows(new_rows)
-
-
-def get_prj_opr_tmp_subset(mod, prj_subset):
-    return list(set((prj, tmp) for (prj, tmp) in mod.PRJ_OPR_TMPS if prj in prj_subset))
