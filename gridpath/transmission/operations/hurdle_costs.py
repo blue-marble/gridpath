@@ -113,15 +113,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     ###########################################################################
 
     m.hurdle_rate_pos_dir_per_mwh = Param(
-        m.TX_LINES,
-        m.PERIODS,  # TODO: chanage to TX_OPR_PRDS?
+        m.TX_OPR_PRDS,  # TODO: chanage to TX_OPR_PRDS?
         within=NonNegativeReals,
         default=0,
     )
 
     m.hurdle_rate_neg_dir_per_mwh = Param(
-        m.TX_LINES,
-        m.PERIODS,  # TODO: chanage to TX_OPR_PRDS?
+        m.TX_OPR_PRDS,  # TODO: chanage to TX_OPR_PRDS?
         within=NonNegativeReals,
         default=0,
     )

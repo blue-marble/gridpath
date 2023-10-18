@@ -41,6 +41,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.FUEL_GROUPS = Set()
     m.FUEL_GROUPS_FUELS = Set(within=m.FUEL_GROUPS * m.FUELS)
     # Reverting sorting to check if it matters
+    # It doesn't seem to matter
     m.FUELS_BY_FUEL_GROUP = Set(
         m.FUEL_GROUPS,
         within=m.FUELS,

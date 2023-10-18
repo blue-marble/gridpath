@@ -415,6 +415,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
     # THIS SET WAS SORTED
+    # Sorting insufficient by itself
+    # Leaving unsorted while sorting the costs sets results in no errors
     m.GEN_COMMIT_CAP_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
