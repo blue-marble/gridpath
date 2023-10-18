@@ -40,8 +40,11 @@ from pyomo.environ import (
     value,
 )
 
-from gridpath.auxiliary.auxiliary import subset_init_by_param_value, \
-    cursor_to_df, subset_init_by_set_membership
+from gridpath.auxiliary.auxiliary import (
+    subset_init_by_param_value,
+    cursor_to_df,
+    subset_init_by_set_membership,
+)
 from gridpath.auxiliary.validations import (
     write_validation_to_database,
     validate_single_input,
@@ -188,7 +191,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.GEN_SIMPLE_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: subset_init_by_set_membership(mod, mod.GEN_SIMPLE),
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod, superset="PRJ_OPR_TMPS", index=0, membership_set=mod.GEN_SIMPLE
+        ),
     )
 
     m.GEN_SIMPLE_LINKED_TMPS = Set(dimen=2)

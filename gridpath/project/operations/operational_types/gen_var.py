@@ -40,8 +40,10 @@ from pyomo.environ import (
 import warnings
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import subset_init_by_param_value, \
-    subset_init_by_set_membership
+from gridpath.auxiliary.auxiliary import (
+    subset_init_by_param_value,
+    subset_init_by_set_membership,
+)
 from gridpath.auxiliary.dynamic_components import (
     footroom_variables,
     headroom_variables,
@@ -171,7 +173,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.GEN_VAR_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: subset_init_by_set_membership(mod, mod.GEN_VAR),
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod, superset="PRJ_OPR_TMPS", index=0, membership_set=mod.GEN_VAR
+        ),
     )
 
     # Required Params

@@ -83,7 +83,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.AVL_EXOG_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: subset_init_by_set_membership(mod, mod.AVL_EXOG),
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod, superset="PRJ_OPR_TMPS", index=0, membership_set=mod.AVL_EXOG
+        ),
     )
 
     # Required Params

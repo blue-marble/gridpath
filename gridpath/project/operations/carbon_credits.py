@@ -23,7 +23,8 @@ from pyomo.environ import Param, Set, NonNegativeReals, Var, Constraint, value
 from gridpath.auxiliary.auxiliary import (
     cursor_to_df,
     subset_init_by_param_value,
-    get_required_subtype_modules, subset_init_by_set_membership,
+    get_required_subtype_modules,
+    subset_init_by_set_membership,
 )
 from gridpath.common_functions import create_results_df
 from gridpath.project import PROJECT_PERIOD_DF
@@ -120,7 +121,12 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.CARBON_CREDITS_PRJ_OPR_TMPS = Set(
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: subset_init_by_set_membership(mod, mod.CARBON_CREDITS_PRJS),
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod,
+            superset="PRJ_OPR_TMPS",
+            index=0,
+            membership_set=mod.CARBON_CREDITS_PRJS,
+        ),
     )
 
     m.CARBON_CREDITS_PRJ_OPR_PRDS = Set(

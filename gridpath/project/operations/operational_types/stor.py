@@ -52,8 +52,10 @@ from pyomo.environ import (
 )
 import warnings
 
-from gridpath.auxiliary.auxiliary import subset_init_by_param_value, \
-    subset_init_by_set_membership
+from gridpath.auxiliary.auxiliary import (
+    subset_init_by_param_value,
+    subset_init_by_set_membership,
+)
 from gridpath.auxiliary.dynamic_components import headroom_variables, footroom_variables
 from gridpath.project.common_functions import (
     check_if_first_timepoint,
@@ -284,7 +286,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.STOR_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: subset_init_by_set_membership(mod, mod.STOR),
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod, superset="PRJ_OPR_TMPS", index=0, membership_set=mod.STOR
+        ),
     )
 
     m.STOR_LINKED_TMPS = Set(dimen=2)
