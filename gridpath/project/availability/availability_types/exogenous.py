@@ -78,8 +78,6 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.AVL_EXOG = Set(within=m.PROJECTS)
 
-    # TODO: factor out this lambda rule, as it is used in all operational type
-    #  modules and availability type modules
     m.AVL_EXOG_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
