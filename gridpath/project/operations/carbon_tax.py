@@ -21,7 +21,11 @@ import os.path
 import pandas as pd
 from pyomo.environ import Param, Set, NonNegativeReals, Expression, value, PositiveReals
 
-from gridpath.auxiliary.auxiliary import cursor_to_df, subset_init_by_param_value
+from gridpath.auxiliary.auxiliary import (
+    cursor_to_df,
+    subset_init_by_param_value,
+    subset_init_by_set_membership,
+)
 from gridpath.auxiliary.db_interface import (
     update_prj_zone_column,
     determine_table_subset_by_start_and_column,
@@ -113,9 +117,12 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.CARBON_TAX_PRJ_OPR_TMPS = Set(
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: [
-            (p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS if p in mod.CARBON_TAX_PRJS
-        ],
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod,
+            superset="PRJ_OPR_TMPS",
+            index=0,
+            membership_set=mod.CARBON_TAX_PRJS,
+        ),
     )
 
     m.CARBON_TAX_PRJ_FUEL_GROUP_OPR_TMPS = Set(
@@ -130,9 +137,12 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.CARBON_TAX_PRJ_OPR_PRDS = Set(
         within=m.PRJ_OPR_PRDS,
-        initialize=lambda mod: [
-            (prj, p) for (prj, p) in mod.PRJ_OPR_PRDS if prj in mod.CARBON_TAX_PRJS
-        ],
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod,
+            superset="PRJ_OPR_PRDS",
+            index=0,
+            membership_set=mod.CARBON_TAX_PRJS,
+        ),
     )
 
     m.CARBON_TAX_PRJ_FUEL_GROUP_OPR_PRDS = Set(

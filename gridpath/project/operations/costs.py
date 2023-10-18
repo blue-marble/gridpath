@@ -25,7 +25,10 @@ operational type modules.
 from pyomo.environ import Set, Var, Expression, Constraint, NonNegativeReals, value
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import get_required_subtype_modules
+from gridpath.auxiliary.auxiliary import (
+    get_required_subtype_modules,
+    subset_init_by_set_membership,
+)
 from gridpath.project.operations.common_functions import (
     load_operational_type_modules,
 )
@@ -193,11 +196,12 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.VAR_OM_COST_SIMPLE_PRJ_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: [
-            (p, tmp)
-            for (p, tmp) in mod.PRJ_OPR_TMPS
-            if p in mod.VAR_OM_COST_SIMPLE_PRJS
-        ],
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod,
+            superset="PRJ_OPR_TMPS",
+            index=0,
+            membership_set=mod.VAR_OM_COST_SIMPLE_PRJS,
+        ),
     )
 
     m.VAR_OM_COST_CURVE_PRJS_OPR_TMPS_SGMS = Set(
@@ -234,51 +238,64 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.STARTUP_COST_PRJ_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: [
-            (p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS if p in mod.STARTUP_COST_PRJS
-        ],
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod,
+            superset="PRJ_OPR_TMPS",
+            index=0,
+            membership_set=mod.STARTUP_COST_PRJS,
+        ),
     )
 
     m.SHUTDOWN_COST_PRJ_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: [
-            (p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS if p in mod.SHUTDOWN_COST_PRJS
-        ],
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod,
+            superset="PRJ_OPR_TMPS",
+            index=0,
+            membership_set=mod.SHUTDOWN_COST_PRJS,
+        ),
     )
 
     m.VIOL_ALL_PRJ_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: [
-            (p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS if p in mod.VIOL_ALL_PRJS
-        ],
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod, superset="PRJ_OPR_TMPS", index=0, membership_set=mod.VIOL_ALL_PRJS
+        ),
     )
 
     m.CURTAILMENT_COST_PRJ_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: [
-            (p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS if p in mod.CURTAILMENT_COST_PRJS
-        ],
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod,
+            superset="PRJ_OPR_TMPS",
+            index=0,
+            membership_set=mod.CURTAILMENT_COST_PRJS,
+        ),
     )
 
     m.SOC_PENALTY_COST_PRJ_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: [
-            (p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS if p in mod.SOC_PENALTY_COST_PRJS
-        ],
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod,
+            superset="PRJ_OPR_TMPS",
+            index=0,
+            membership_set=mod.SOC_PENALTY_COST_PRJS,
+        ),
     )
 
     m.SOC_LAST_TMP_PENALTY_COST_PRJ_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: [
-            (p, tmp)
-            for (p, tmp) in mod.PRJ_OPR_TMPS
-            if p in mod.SOC_LAST_TMP_PENALTY_COST_PRJS
-        ],
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod,
+            superset="PRJ_OPR_TMPS",
+            index=0,
+            membership_set=mod.SOC_LAST_TMP_PENALTY_COST_PRJS,
+        ),
     )
 
     # Variables

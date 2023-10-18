@@ -22,7 +22,10 @@ of this operational type cannot provide operational reserves .
 from pyomo.environ import Param, Set, Reals, Constraint
 import warnings
 
-from gridpath.auxiliary.auxiliary import subset_init_by_param_value
+from gridpath.auxiliary.auxiliary import (
+    subset_init_by_param_value,
+    subset_init_by_set_membership,
+)
 from gridpath.auxiliary.validations import (
     write_validation_to_database,
     get_projects_by_reserve,
@@ -105,8 +108,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.GEN_VAR_MUST_TAKE_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: list(
-            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS if g in mod.GEN_VAR_MUST_TAKE)
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod,
+            superset="PRJ_OPR_TMPS",
+            index=0,
+            membership_set=mod.GEN_VAR_MUST_TAKE,
         ),
     )
 

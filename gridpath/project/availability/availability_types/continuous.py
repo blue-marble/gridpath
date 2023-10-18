@@ -32,7 +32,7 @@ from pyomo.environ import (
     NonNegativeReals,
 )
 
-from gridpath.auxiliary.auxiliary import cursor_to_df
+from gridpath.auxiliary.auxiliary import cursor_to_df, subset_init_by_set_membership
 from gridpath.auxiliary.validations import (
     write_validation_to_database,
     get_expected_dtypes,
@@ -169,18 +169,16 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.AVL_CONT_OPR_PRDS = Set(
         dimen=2,
         within=m.PRJ_OPR_PRDS,
-        initialize=lambda mod: list(
-            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_PRDS if g in mod.AVL_CONT)
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod, superset="PRJ_OPR_PRDS", index=0, membership_set=mod.AVL_CONT
         ),
     )
 
-    # TODO: factor out this lambda rule, as it is used in all operational type
-    #  modules and availability type modules
     m.AVL_CONT_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: list(
-            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS if g in mod.AVL_CONT)
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod, superset="PRJ_OPR_TMPS", index=0, membership_set=mod.AVL_CONT
         ),
     )
 

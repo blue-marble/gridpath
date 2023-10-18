@@ -20,7 +20,11 @@ import csv
 import os.path
 from pyomo.environ import Param, Set
 
-from gridpath.auxiliary.auxiliary import cursor_to_df, subset_init_by_param_value
+from gridpath.auxiliary.auxiliary import (
+    cursor_to_df,
+    subset_init_by_param_value,
+    subset_init_by_set_membership,
+)
 from gridpath.auxiliary.db_interface import (
     update_prj_zone_column,
     determine_table_subset_by_start_and_column,
@@ -100,11 +104,12 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.PERFORMANCE_STANDARD_OPR_TMPS = Set(
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: [
-            (p, tmp)
-            for (p, tmp) in mod.PRJ_OPR_TMPS
-            if p in mod.PERFORMANCE_STANDARD_PRJS
-        ],
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod,
+            superset="PRJ_OPR_TMPS",
+            index=0,
+            membership_set=mod.PERFORMANCE_STANDARD_PRJS,
+        ),
     )
 
 
