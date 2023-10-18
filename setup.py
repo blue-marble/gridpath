@@ -7,8 +7,8 @@ with open("./version.py") as fp:
 
 # Set up extras
 extras_doc = [
-    "Sphinx==5.0.1",
-    "sphinx-argparse==0.3.1",
+    "Sphinx==7.2.6",
+    "sphinx-argparse==0.4.0",
 ]
 extras_ui = [
     "eventlet==0.33.1",  # Async mode for SocketIO
@@ -46,14 +46,14 @@ setup(
     keywords=["energy", "electricity", "power", "renewables", "planning", "operations"],
     packages=find_packages(),
     install_requires=[
-        "Pyomo==6.6.2",  # Optimization modeling language
+        "Pyomo==6.5.0",  # Optimization modeling language
         "pandas==2.1.1",  # Data-processing
         "bokeh==2.2.3",  # Visualization library (required - see #779)
         "pscript==0.7.5",  # Python to JavaScript compiler (for viz)
-        "networkx==3.0",  # network package for DC OPF
+        "networkx==3.1",  # network package for DC OPF
         "PyUtilib==6.0.0",  # used for solver temp file management
         "Jinja2==3.0.3",  # bokeh dependency; see #904
-        "dill==0.3.6",  # pickling
+        "dill==0.3.7",  # pickling
     ],
     extras_require={
         "doc": extras_doc,
