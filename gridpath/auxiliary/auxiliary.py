@@ -115,6 +115,16 @@ def subset_init_by_param_value(mod, set_name, param_name, param_value):
     ]
 
 
+def subset_init_by_set_membership(
+    mod, membership_set, superset="PRJ_OPR_TMPS", index=0
+):
+    return list(
+        index_tuple
+        for index_tuple in getattr(mod, superset)
+        if index_tuple[index] in membership_set
+    )
+
+
 def check_list_has_single_item(l, error_msg):
     if len(l) > 1:
         raise ValueError(error_msg)

@@ -21,14 +21,14 @@ import os.path
 import pandas as pd
 from pyomo.environ import Param, Set, NonNegativeReals, Expression, value, PositiveReals
 
-from gridpath.auxiliary.auxiliary import cursor_to_df, subset_init_by_param_value
+from gridpath.auxiliary.auxiliary import cursor_to_df, \
+    subset_init_by_param_value, subset_init_by_set_membership
 from gridpath.auxiliary.db_interface import (
     update_prj_zone_column,
     determine_table_subset_by_start_and_column,
     import_csv,
 )
 from gridpath.auxiliary.validations import write_validation_to_database, validate_idxs
-from gridpath.project.common_functions import get_prj_opr_tmp_subset
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -114,7 +114,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.CARBON_TAX_PRJ_OPR_TMPS = Set(
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: get_prj_opr_tmp_subset(mod, mod.CARBON_TAX_PRJS),
+        initialize=lambda mod: subset_init_by_set_membership(mod, mod.CARBON_TAX_PRJS),
     )
 
     m.CARBON_TAX_PRJ_FUEL_GROUP_OPR_TMPS = Set(

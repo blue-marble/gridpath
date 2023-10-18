@@ -41,13 +41,13 @@ from pyomo.environ import (
 import warnings
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import subset_init_by_param_value
+from gridpath.auxiliary.auxiliary import subset_init_by_param_value, \
+    subset_init_by_set_membership
 from gridpath.auxiliary.dynamic_components import headroom_variables, footroom_variables
 from gridpath.project.common_functions import (
     check_if_boundary_type_and_first_timepoint,
     check_if_first_timepoint,
     check_boundary_type,
-    get_prj_opr_tmp_subset,
 )
 from gridpath.project.operations.operational_types.common_functions import (
     load_optype_model_data,
@@ -282,7 +282,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.GEN_HYDRO_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: get_prj_opr_tmp_subset(mod, mod.GEN_HYDRO),
+        initialize=lambda mod: subset_init_by_set_membership(mod, mod.GEN_HYDRO),
     )
 
     m.GEN_HYDRO_LINKED_TMPS = Set(dimen=2)

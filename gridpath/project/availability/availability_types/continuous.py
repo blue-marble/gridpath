@@ -32,7 +32,7 @@ from pyomo.environ import (
     NonNegativeReals,
 )
 
-from gridpath.auxiliary.auxiliary import cursor_to_df
+from gridpath.auxiliary.auxiliary import cursor_to_df, subset_init_by_set_membership
 from gridpath.auxiliary.validations import (
     write_validation_to_database,
     get_expected_dtypes,
@@ -48,7 +48,6 @@ from gridpath.project.operations.operational_types.common_functions import (
 from gridpath.project.common_functions import (
     determine_project_subset,
     check_if_boundary_type_and_first_timepoint,
-    get_prj_opr_tmp_subset,
 )
 
 
@@ -180,7 +179,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.AVL_CONT_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: get_prj_opr_tmp_subset(mod, mod.AVL_CONT),
+        initialize=lambda mod: subset_init_by_set_membership(mod, mod.AVL_CONT),
     )
 
     # Required Input Params
