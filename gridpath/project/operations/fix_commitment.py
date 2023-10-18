@@ -27,6 +27,7 @@ from pyomo.environ import Set, Param, NonNegativeReals, Expression
 from gridpath.auxiliary.auxiliary import (
     get_required_subtype_modules,
     check_for_integer_subdirectories,
+    subset_init_by_set_membership,
 )
 from gridpath.project.operations.common_functions import load_operational_type_modules
 
@@ -113,15 +114,21 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.FNL_COMMIT_PRJ_OPR_TMPS = Set(
         dimen=2,
-        initialize=lambda mod: set(
-            (g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS if g in mod.FNL_COMMIT_PRJS
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod,
+            superset="PRJ_OPR_TMPS",
+            index=0,
+            membership_set=mod.FNL_COMMIT_PRJS,
         ),
     )
 
     m.FXD_COMMIT_PRJ_OPR_TMPS = Set(
         dimen=2,
-        initialize=lambda mod: set(
-            (g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS if g in mod.FXD_COMMIT_PRJS
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod,
+            superset="PRJ_OPR_TMPS",
+            index=0,
+            membership_set=mod.FXD_COMMIT_PRJS,
         ),
     )
 

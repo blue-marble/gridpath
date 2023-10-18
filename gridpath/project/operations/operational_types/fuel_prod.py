@@ -38,7 +38,10 @@ import csv
 import os.path
 from pyomo.environ import Set, Param, Var, Constraint, NonNegativeReals, value
 
-from gridpath.auxiliary.auxiliary import subset_init_by_param_value
+from gridpath.auxiliary.auxiliary import (
+    subset_init_by_param_value,
+    subset_init_by_set_membership,
+)
 from gridpath.project.common_functions import (
     check_if_first_timepoint,
     check_boundary_type,
@@ -170,8 +173,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.FUEL_PROD_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: list(
-            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS if g in mod.FUEL_PROD)
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod, superset="PRJ_OPR_TMPS", index=0, membership_set=mod.FUEL_PROD
         ),
     )
 

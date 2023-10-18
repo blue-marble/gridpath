@@ -26,7 +26,7 @@ import csv
 import os.path
 from pyomo.environ import Param, Set, NonNegativeReals
 
-from gridpath.auxiliary.auxiliary import cursor_to_df
+from gridpath.auxiliary.auxiliary import cursor_to_df, subset_init_by_set_membership
 from gridpath.auxiliary.validations import (
     write_validation_to_database,
     get_expected_dtypes,
@@ -34,7 +34,9 @@ from gridpath.auxiliary.validations import (
     validate_values,
     validate_missing_inputs,
 )
-from gridpath.project.common_functions import determine_project_subset
+from gridpath.project.common_functions import (
+    determine_project_subset,
+)
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -81,8 +83,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.AVL_EXOG_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: list(
-            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS if g in mod.AVL_EXOG)
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod, superset="PRJ_OPR_TMPS", index=0, membership_set=mod.AVL_EXOG
         ),
     )
 

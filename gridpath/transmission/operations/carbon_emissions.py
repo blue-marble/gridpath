@@ -32,6 +32,7 @@ from pyomo.environ import (
 )
 
 from db.common_functions import spin_on_database_lock
+from gridpath.auxiliary.auxiliary import subset_init_by_set_membership
 from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.auxiliary.dynamic_components import carbon_cap_balance_emission_components
 from gridpath.common_functions import create_results_df
@@ -135,9 +136,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.CRB_TX_OPR_TMPS = Set(
         within=m.TX_OPR_TMPS,
-        initialize=lambda mod: [
-            (tx, tmp) for (tx, tmp) in mod.TX_OPR_TMPS if tx in mod.CRB_TX_LINES
-        ],
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod, superset="TX_OPR_TMPS", index=0, membership_set=mod.CRB_TX_LINES
+        ),
     )
 
     # Required Input Params

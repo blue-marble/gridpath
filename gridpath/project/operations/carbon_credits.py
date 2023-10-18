@@ -24,6 +24,7 @@ from gridpath.auxiliary.auxiliary import (
     cursor_to_df,
     subset_init_by_param_value,
     get_required_subtype_modules,
+    subset_init_by_set_membership,
 )
 from gridpath.common_functions import create_results_df
 from gridpath.project import PROJECT_PERIOD_DF
@@ -120,16 +121,22 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.CARBON_CREDITS_PRJ_OPR_TMPS = Set(
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: [
-            (p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS if p in mod.CARBON_CREDITS_PRJS
-        ],
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod,
+            superset="PRJ_OPR_TMPS",
+            index=0,
+            membership_set=mod.CARBON_CREDITS_PRJS,
+        ),
     )
 
     m.CARBON_CREDITS_PRJ_OPR_PRDS = Set(
         within=m.PRJ_OPR_PRDS,
-        initialize=lambda mod: [
-            (prj, p) for (prj, p) in mod.PRJ_OPR_PRDS if prj in mod.CARBON_CREDITS_PRJS
-        ],
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod,
+            superset="PRJ_OPR_PRDS",
+            index=0,
+            membership_set=mod.CARBON_CREDITS_PRJS,
+        ),
     )
 
     # Input Params
