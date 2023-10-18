@@ -33,6 +33,11 @@ from pyomo.environ import (
     PercentFraction,
 )
 
+from gridpath.auxiliary.auxiliary import (
+    subset_init_by_param_value,
+    subset_init_by_set_membership,
+)
+
 Negative_Infinity = float("-inf")
 Infinity = float("inf")
 
@@ -151,16 +156,19 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.TX_SIMPLE = Set(
         within=m.TX_LINES,
-        initialize=lambda mod: list(
-            set(l for l in mod.TX_LINES if mod.tx_operational_type[l] == "tx_simple")
+        initialize=lambda mod: subset_init_by_param_value(
+            mod=mod,
+            set_name="TX_LINES",
+            param_name="tx_operational_type",
+            param_value="tx_simple",
         ),
     )
 
     m.TX_SIMPLE_OPR_TMPS = Set(
         dimen=2,
         within=m.TX_OPR_TMPS,
-        initialize=lambda mod: list(
-            set((l, tmp) for (l, tmp) in mod.TX_OPR_TMPS if l in mod.TX_SIMPLE)
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod, superset="TX_OPR_TMPS", index=0, membership_set=mod.TX_SIMPLE
         ),
     )
 
