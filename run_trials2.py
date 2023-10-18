@@ -7,11 +7,11 @@ N = 100
 for n in range(1, N + 1):
     print(n)
     call(
-        f"""python ./gridpath/run_scenario.py --scenario {SCENARIO} --scenario_location ./scenarios --quiet --mute_solver_output --testing""",
+        f"""python ./gridpath/run_scenario.py --scenario {SCENARIO} --scenario_location ./debug --quiet --mute_solver_output --testing""",
         shell=True,
     )
 
-    with open(f"./scenarios/{SCENARIO}/results/objective_function_value.txt")\
+    with open(f"./debug/{SCENARIO}/results/objective_function_value.txt")\
             as f:
         current_objective_value = float(f.read())
 

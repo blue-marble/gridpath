@@ -10,7 +10,7 @@ for n in range(1, N + 1):
         "--scenario",
         SCENARIO,
         "--scenario_location",
-        "./scenarios",
+        "./debug",
         "--quiet",
         "--mute_solver_output",
         "--testing",

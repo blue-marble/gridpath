@@ -259,8 +259,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.STARTUP_FUEL_PRJS_FUEL_OPR_TMPS, within=NonNegativeReals
     )
 
-    m.Project_Fuel_Contribution_by_Fuel = Var(
-        m.FUEL_PRJS_FUEL_OPR_TMPS, within=NonNegativeReals
+    m.Project_Fuel_Contribution_by_Fuel = Param(
+        m.FUEL_PRJS_FUEL_OPR_TMPS, within=NonNegativeReals, default=0
     )
 
     # Expressions
@@ -416,9 +416,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             * mod.Operations_Fuel_Burn_MMBtu[prj, tmp]
         )
 
-    m.Min_Fuel_Fraction_of_Blend_Opr_Constraint = Constraint(
-        m.FUEL_PRJS_FUEL_OPR_TMPS, rule=min_fraction_of_fuel_blend_opr_rule
-    )
+    # m.Min_Fuel_Fraction_of_Blend_Opr_Constraint = Constraint(
+    #     m.FUEL_PRJS_FUEL_OPR_TMPS, rule=min_fraction_of_fuel_blend_opr_rule
+    # )
 
     def max_fraction_of_fuel_blend_opr_rule(mod, prj, f, tmp):
         """
@@ -431,9 +431,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             * mod.Operations_Fuel_Burn_MMBtu[prj, tmp]
         )
 
-    m.Max_Fuel_Fraction_of_Blend_Opr_Constraint = Constraint(
-        m.FUEL_PRJS_FUEL_OPR_TMPS, rule=max_fraction_of_fuel_blend_opr_rule
-    )
+    # m.Max_Fuel_Fraction_of_Blend_Opr_Constraint = Constraint(
+    #     m.FUEL_PRJS_FUEL_OPR_TMPS, rule=max_fraction_of_fuel_blend_opr_rule
+    # )
 
     def blend_fuel_startup_rule(mod, prj, tmp):
         """
@@ -448,9 +448,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             == mod.Startup_Fuel_Burn_MMBtu[prj, tmp]
         )
 
-    m.Fuel_Blending_Startup_Fuel_Burn_Constraint = Constraint(
-        m.STARTUP_FUEL_PRJ_OPR_TMPS, rule=blend_fuel_startup_rule
-    )
+    # m.Fuel_Blending_Startup_Fuel_Burn_Constraint = Constraint(
+    #     m.STARTUP_FUEL_PRJ_OPR_TMPS, rule=blend_fuel_startup_rule
+    # )
 
     def min_fraction_of_fuel_blend_startup_rule(mod, prj, f, tmp):
         """
@@ -463,9 +463,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             * mod.Startup_Fuel_Burn_MMBtu[prj, tmp]
         )
 
-    m.Min_Fuel_Fraction_of_Blend_Startup_Constraint = Constraint(
-        m.STARTUP_FUEL_PRJS_FUEL_OPR_TMPS, rule=min_fraction_of_fuel_blend_startup_rule
-    )
+    # m.Min_Fuel_Fraction_of_Blend_Startup_Constraint = Constraint(
+    #     m.STARTUP_FUEL_PRJS_FUEL_OPR_TMPS, rule=min_fraction_of_fuel_blend_startup_rule
+    # )
 
     def max_fraction_of_fuel_blend_startup_rule(mod, prj, f, tmp):
         """
@@ -478,9 +478,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             * mod.Startup_Fuel_Burn_MMBtu[prj, tmp]
         )
 
-    m.Max_Fuel_Fraction_of_Blend_Startup_Constraint = Constraint(
-        m.STARTUP_FUEL_PRJS_FUEL_OPR_TMPS, rule=max_fraction_of_fuel_blend_startup_rule
-    )
+    # m.Max_Fuel_Fraction_of_Blend_Startup_Constraint = Constraint(
+    #     m.STARTUP_FUEL_PRJS_FUEL_OPR_TMPS, rule=max_fraction_of_fuel_blend_startup_rule
+    # )
 
     # Constrain blending for fuel contributions
     def blend_fuel_contributions_rule(mod, prj, tmp):
@@ -496,9 +496,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             == mod.Fuel_Contribution_FuelUnit[prj, tmp]
         )
 
-    m.Fuel_Blending_Opr_Fuel_Contribution_Constraint = Constraint(
-        m.FUEL_PRJ_OPR_TMPS, rule=blend_fuel_contributions_rule
-    )
+    # m.Fuel_Blending_Opr_Fuel_Contribution_Constraint = Constraint(
+    #     m.FUEL_PRJ_OPR_TMPS, rule=blend_fuel_contributions_rule
+    # )
 
     def min_fraction_of_fuel_blend_contribution_rule(mod, prj, f, tmp):
         """
@@ -511,9 +511,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             * mod.Fuel_Contribution_FuelUnit[prj, tmp]
         )
 
-    m.Min_Fuel_Fraction_of_Blend_Contribution_Constraint = Constraint(
-        m.FUEL_PRJS_FUEL_OPR_TMPS, rule=min_fraction_of_fuel_blend_contribution_rule
-    )
+    # m.Min_Fuel_Fraction_of_Blend_Contribution_Constraint = Constraint(
+    #     m.FUEL_PRJS_FUEL_OPR_TMPS, rule=min_fraction_of_fuel_blend_contribution_rule
+    # )
 
     def max_fraction_of_fuel_blend_contribution_rule(mod, prj, f, tmp):
         """
@@ -526,9 +526,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             * mod.Fuel_Contribution_FuelUnit[prj, tmp]
         )
 
-    m.Max_Fuel_Fraction_of_Blend_Contribution_Constraint = Constraint(
-        m.FUEL_PRJS_FUEL_OPR_TMPS, rule=max_fraction_of_fuel_blend_contribution_rule
-    )
+    # m.Max_Fuel_Fraction_of_Blend_Contribution_Constraint = Constraint(
+    #     m.FUEL_PRJS_FUEL_OPR_TMPS, rule=max_fraction_of_fuel_blend_contribution_rule
+    # )
 
 
 # Input-Output
