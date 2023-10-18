@@ -39,7 +39,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
     def violation_expression_rule(mod, z, p):
-        return mod.Carbon_Cap_Overage[z, p] * mod.carbon_cap_allow_violation[z]
+        if mod.carbon_cap_allow_violation[z]:
+            return mod.Carbon_Cap_Overage[z, p]
+        else:
+            return 0
 
     m.Carbon_Cap_Overage_Expression = Expression(
         m.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP, rule=violation_expression_rule

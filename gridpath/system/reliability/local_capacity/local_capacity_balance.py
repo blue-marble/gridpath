@@ -52,9 +52,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
     def violation_expression_rule(mod, z, p):
-        return (
-            mod.Local_Capacity_Shortage_MW[z, p] * mod.local_capacity_allow_violation[z]
-        )
+        if mod.local_capacity_allow_violation[z]:
+            return mod.Local_Capacity_Shortage_MW[z, p]
+        else:
+            return 0
 
     m.Local_Capacity_Shortage_MW_Expression = Expression(
         m.LOCAL_CAPACITY_ZONE_PERIODS_WITH_REQUIREMENT, rule=violation_expression_rule

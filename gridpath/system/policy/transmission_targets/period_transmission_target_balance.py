@@ -48,10 +48,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
     def violation_pos_dir_expression_rule(mod, z, p):
-        return (
-            mod.Period_Transmission_Target_Shortage_Pos_Dir_MWh[z, p]
-            * mod.transmission_target_allow_violation[z]
-        )
+        if mod.transmission_target_allow_violation[z]:
+            return mod.Period_Transmission_Target_Shortage_Pos_Dir_MWh[z, p]
+        else:
+            return 0
 
     m.Period_Transmission_Target_Shortage_Pos_Dir_MWh_Expression = Expression(
         m.TRANSMISSION_TARGET_ZONE_PERIODS_WITH_TRANSMISSION_TARGET,
@@ -59,10 +59,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
     def violation_neg_dir_expression_rule(mod, z, p):
-        return (
-            mod.Period_Transmission_Target_Shortage_Neg_Dir_MWh[z, p]
-            * mod.transmission_target_allow_violation[z]
-        )
+        if mod.transmission_target_allow_violation[z]:
+            return mod.Period_Transmission_Target_Shortage_Neg_Dir_MWh[z, p]
+        else:
+            return 0
 
     m.Period_Transmission_Target_Shortage_Neg_Dir_MWh_Expression = Expression(
         m.TRANSMISSION_TARGET_ZONE_PERIODS_WITH_TRANSMISSION_TARGET,

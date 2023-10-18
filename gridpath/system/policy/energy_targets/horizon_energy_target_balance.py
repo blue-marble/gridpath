@@ -40,10 +40,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
     def violation_expression_rule(mod, z, bt, h):
-        return (
-            mod.Horizon_Energy_Target_Shortage_MWh[z, bt, h]
-            * mod.energy_target_allow_violation[z]
-        )
+        if mod.energy_target_allow_violation[z]:
+            return mod.Horizon_Energy_Target_Shortage_MWh[z, bt, h]
+        else:
+            return 0
 
     m.Horizon_Energy_Target_Shortage_MWh_Expression = Expression(
         m.ENERGY_TARGET_ZONE_BLN_TYPE_HRZS_WITH_ENERGY_TARGET,

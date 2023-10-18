@@ -83,7 +83,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         :param tmp:
         :return:
         """
-        return mod.allow_overgeneration[z] * mod.Overgeneration_MW[z, tmp]
+        if mod.allow_overgeneration[z]:
+            return mod.Overgeneration_MW[z, tmp]
+        else:
+            return 0
 
     m.Overgeneration_MW_Expression = Expression(
         m.LOAD_ZONES, m.TMPS, rule=overgeneration_expression_rule
@@ -97,7 +100,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         :param tmp:
         :return:
         """
-        return mod.allow_unserved_energy[z] * mod.Unserved_Energy_MW[z, tmp]
+        if mod.allow_unserved_energy[z]:
+            return mod.Unserved_Energy_MW[z, tmp]
+        else:
+            return 0
 
     m.Unserved_Energy_MW_Expression = Expression(
         m.LOAD_ZONES, m.TMPS, rule=unserved_energy_expression_rule

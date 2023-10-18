@@ -41,10 +41,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
     def violation_expression_rule(mod, z, p):
-        return (
-            mod.Performance_Standard_Overage[z, p]
-            * mod.performance_standard_allow_violation[z]
-        )
+        if mod.performance_standard_allow_violation[z]:
+            return mod.Performance_Standard_Overage[z, p]
+        else:
+            return 0
 
     m.Performance_Standard_Overage_Expression = Expression(
         m.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD,

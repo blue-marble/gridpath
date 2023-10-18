@@ -156,17 +156,21 @@ class TestExamples(unittest.TestCase):
                 # Reset the objective to the new dictionary object
                 actual_objective = actual_objective_copy
 
+        # Uncomment this to save new objective function values
+        df = pd.read_csv(TEST_SCENARIOS_CSV, delimiter=",")
+        df.set_index("test_scenario", inplace=True)
+        # Set dtype to 'object' so that we can have floats and dictionaries
+        # in the column
+        df["actual_objective"] = df["actual_objective"].astype("object")
+        df.at[test, "actual_objective"] = actual_objective
+        df.to_csv(TEST_SCENARIOS_CSV, index=True)
+
         # Multi-subproblem and/or multi-stage scenarios return dict
         if isinstance(expected_objective, dict):
             self.assertDictAlmostEqual(expected_objective, actual_objective, places=1)
         # Otherwise, objective is a single value
         else:
             self.assertAlmostEqual(expected_objective, actual_objective, places=1)
-
-        # Uncomment this to save new objective function values
-        # with open(TEST_SCENARIOS_CSV, "a") as f:
-        #     writer = csv.writer(f, delimiter=",")
-        #     writer.writerow([test, expected_objective, actual_objective])
 
     @classmethod
     def setUpClass(cls):

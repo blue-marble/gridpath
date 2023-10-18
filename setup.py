@@ -7,8 +7,8 @@ with open("./version.py") as fp:
 
 # Set up extras
 extras_doc = [
-    "Sphinx==5.0.1",
-    "sphinx-argparse==0.3.1",
+    "Sphinx==7.2.6",
+    "sphinx-argparse==0.4.0",
 ]
 extras_ui = [
     "eventlet==0.33.1",  # Async mode for SocketIO
@@ -36,6 +36,8 @@ setup(
     version=version["__version__"],
     description="A versatile simulation and optimization platform for "
     "power-system planning and operations.",
+    long_description=open("README.md").read(),
+    long_description_content_type="text/markdown",
     url="https://www.gridpath.io",
     maintainer="Blue Marble Analytics LLC",
     maintainer_email="info@gridpath.io",
@@ -44,14 +46,14 @@ setup(
     keywords=["energy", "electricity", "power", "renewables", "planning", "operations"],
     packages=find_packages(),
     install_requires=[
-        "Pyomo==6.4.4",  # Optimization modeling language
-        "pandas==1.5.3",  # Data-processing
+        "Pyomo==6.5.0",  # Optimization modeling language
+        "pandas==2.1.1",  # Data-processing
         "bokeh==2.2.3",  # Visualization library (required - see #779)
         "pscript==0.7.5",  # Python to JavaScript compiler (for viz)
-        "networkx==3.0",  # network package for DC OPF
+        "networkx==3.1",  # network package for DC OPF
         "PyUtilib==6.0.0",  # used for solver temp file management
         "Jinja2==3.0.3",  # bokeh dependency; see #904
-        "dill==0.3.6",  # pickling
+        "dill==0.3.7",  # pickling
     ],
     extras_require={
         "doc": extras_doc,
