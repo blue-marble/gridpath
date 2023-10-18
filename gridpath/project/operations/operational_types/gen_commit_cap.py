@@ -62,7 +62,10 @@ from pyomo.environ import (
     Expression,
 )
 
-from gridpath.auxiliary.auxiliary import subset_init_by_param_value
+from gridpath.auxiliary.auxiliary import (
+    subset_init_by_param_value,
+    subset_init_by_set_membership,
+)
 from gridpath.auxiliary.dynamic_components import headroom_variables, footroom_variables
 from gridpath.project.operations.operational_types.common_functions import (
     determine_relevant_timepoints,
@@ -73,7 +76,6 @@ from gridpath.project.operations.operational_types.common_functions import (
 from gridpath.common_functions import create_results_df
 from gridpath.project.common_functions import (
     check_if_boundary_type_and_first_timepoint,
-    get_prj_opr_tmp_subset,
 )
 
 
@@ -415,7 +417,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.GEN_COMMIT_CAP_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: get_prj_opr_tmp_subset(mod, mod.GEN_COMMIT_CAP),
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod, superset="PRJ_OPR_TMPS", index=0, membership_set=mod.GEN_COMMIT_CAP
+        ),
     )
 
     m.GEN_COMMIT_CAP_LINKED_TMPS = Set(dimen=2)

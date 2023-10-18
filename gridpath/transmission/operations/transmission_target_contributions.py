@@ -30,6 +30,7 @@ from pyomo.environ import (
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import (
     cursor_to_df,
+    subset_init_by_set_membership,
 )
 from gridpath.auxiliary.db_interface import (
     update_prj_zone_column,
@@ -99,11 +100,12 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.TRANSMISSION_TARGET_TX_OPR_TMPS = Set(
         within=m.TX_OPR_TMPS,
-        initialize=lambda mod: [
-            (p, tmp)
-            for (p, tmp) in mod.TX_OPR_TMPS
-            if p in mod.TRANSMISSION_TARGET_TX_LINES
-        ],
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod,
+            superset="TX_OPR_TMPS",
+            index=0,
+            membership_set=mod.TRANSMISSION_TARGET_TX_LINES,
+        ),
     )
 
     # Input Params

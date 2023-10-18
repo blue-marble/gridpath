@@ -28,7 +28,11 @@ from pyomo.environ import (
     PercentFraction,
 )
 
-from gridpath.auxiliary.auxiliary import subset_init_by_param_value, cursor_to_df
+from gridpath.auxiliary.auxiliary import (
+    subset_init_by_param_value,
+    cursor_to_df,
+    subset_init_by_set_membership,
+)
 from gridpath.auxiliary.validations import (
     write_validation_to_database,
     validate_single_input,
@@ -36,7 +40,6 @@ from gridpath.auxiliary.validations import (
 from gridpath.project.common_functions import (
     check_if_first_timepoint,
     check_boundary_type,
-    get_prj_opr_tmp_subset,
 )
 from gridpath.project.operations.operational_types.common_functions import (
     load_optype_model_data,
@@ -103,7 +106,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.DAC_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: get_prj_opr_tmp_subset(mod, mod.DAC),
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod, superset="PRJ_OPR_TMPS", index=0, membership_set=mod.DAC
+        ),
     )
 
     # Variables

@@ -110,9 +110,20 @@ def subset_init_by_param_value(mod, set_name, param_name, param_value):
     :param param_value:
     :return:
     """
-    return [
+    return list(
         i for i in getattr(mod, set_name) if getattr(mod, param_name)[i] == param_value
-    ]
+    )
+
+
+def subset_init_by_set_membership(mod, superset, index, membership_set):
+    """
+    Initialize subset based on membership in another set.
+    """
+    return list(
+        index_tuple
+        for index_tuple in getattr(mod, superset)
+        if index_tuple[index] in membership_set
+    )
 
 
 def check_list_has_single_item(l, error_msg):

@@ -23,13 +23,13 @@ from pyomo.environ import Param, Set, Expression, value
 from gridpath.auxiliary.auxiliary import (
     get_required_subtype_modules,
     cursor_to_df,
+    subset_init_by_set_membership,
 )
 from gridpath.auxiliary.db_interface import (
     update_prj_zone_column,
     determine_table_subset_by_start_and_column,
 )
 from gridpath.common_functions import create_results_df
-from gridpath.project.common_functions import get_prj_opr_tmp_subset
 from gridpath.project.operations.common_functions import load_operational_type_modules
 from gridpath.auxiliary.validations import write_validation_to_database, validate_idxs
 import gridpath.project.operations.operational_types as op_type_init
@@ -130,7 +130,12 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.ENERGY_TARGET_PRJ_OPR_TMPS = Set(
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: get_prj_opr_tmp_subset(mod, mod.ENERGY_TARGET_PRJS),
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod,
+            superset="PRJ_OPR_TMPS",
+            index=0,
+            membership_set=mod.ENERGY_TARGET_PRJS,
+        ),
     )
 
     # Input Params

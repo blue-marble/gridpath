@@ -32,8 +32,10 @@ from pyomo.environ import (
 )
 
 from gridpath.auxiliary.db_interface import import_csv
-from gridpath.auxiliary.auxiliary import get_required_subtype_modules
-from gridpath.project.common_functions import get_prj_opr_tmp_subset
+from gridpath.auxiliary.auxiliary import (
+    get_required_subtype_modules,
+    subset_init_by_set_membership,
+)
 from gridpath.project.operations.common_functions import load_operational_type_modules
 import gridpath.project.operations.operational_types as op_type_init
 
@@ -171,7 +173,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.FUEL_PRJ_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: get_prj_opr_tmp_subset(mod, mod.FUEL_PRJS),
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod, superset="PRJ_OPR_TMPS", index=0, membership_set=mod.FUEL_PRJS
+        ),
     )
 
     m.FUEL_PRJS_FUEL_OPR_TMPS = Set(
@@ -215,9 +219,12 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.STARTUP_FUEL_PRJ_OPR_TMPS = Set(
         dimen=2,
         within=m.FUEL_PRJ_OPR_TMPS,
-        initialize=lambda mod: [
-            (p, tmp) for (p, tmp) in mod.FUEL_PRJ_OPR_TMPS if p in mod.STARTUP_FUEL_PRJS
-        ],
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod,
+            superset="FUEL_PRJ_OPR_TMPS",
+            index=0,
+            membership_set=mod.STARTUP_FUEL_PRJS,
+        ),
     )
 
     m.STARTUP_FUEL_PRJS_FUEL_OPR_TMPS = Set(

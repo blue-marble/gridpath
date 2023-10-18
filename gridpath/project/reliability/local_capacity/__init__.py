@@ -21,7 +21,7 @@ import csv
 import os.path
 from pyomo.environ import Param, Set
 
-from gridpath.auxiliary.auxiliary import cursor_to_df
+from gridpath.auxiliary.auxiliary import cursor_to_df, subset_init_by_set_membership
 from gridpath.auxiliary.validations import write_validation_to_database, validate_idxs
 
 
@@ -52,11 +52,12 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Get operational local capacity projects - timepoints combinations
     m.LOCAL_CAPACITY_PRJ_OPR_PRDS = Set(
         within=m.PRJ_OPR_PRDS,
-        initialize=lambda mod: [
-            (prj, p)
-            for (prj, p) in mod.PRJ_OPR_PRDS
-            if prj in mod.LOCAL_CAPACITY_PROJECTS
-        ],
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod,
+            superset="PRJ_OPR_PRDS",
+            index=0,
+            membership_set=mod.LOCAL_CAPACITY_PROJECTS,
+        ),
     )
 
 

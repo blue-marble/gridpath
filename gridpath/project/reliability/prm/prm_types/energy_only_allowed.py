@@ -31,6 +31,10 @@ from pyomo.environ import (
 )
 
 from db.common_functions import spin_on_database_lock
+from gridpath.auxiliary.auxiliary import (
+    subset_init_by_param_value,
+    subset_init_by_set_membership,
+)
 from gridpath.auxiliary.db_interface import import_csv
 
 # TODO: rename deliverability_group_deliverability_cost_per_mw --> deliverability_group_deliverability_cost_per_mw_yr
@@ -46,19 +50,23 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.EOA_PRM_PROJECTS = Set(
         within=m.PRM_PROJECTS,
-        initialize=lambda mod: [
-            p for p in mod.PRM_PROJECTS if mod.prm_type[p] == "energy_only_allowed"
-        ],
+        initialize=lambda mod: subset_init_by_param_value(
+            mod=mod,
+            set_name="PRM_PROJECTS",
+            param_name="prm_type",
+            param_value="energy_only_allowed",
+        ),
     )
 
     m.EOA_PRM_PRJ_OPR_PRDS = Set(
         dimen=2,
         within=m.PRM_PRJ_OPR_PRDS,
-        initialize=lambda mod: [
-            (project, period)
-            for (project, period) in mod.PRM_PRJ_OPR_PRDS
-            if project in mod.EOA_PRM_PROJECTS
-        ],
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod,
+            superset="PRM_PRJ_OPR_PRDS",
+            index=0,
+            membership_set=mod.EOA_PRM_PROJECTS,
+        ),
     )
 
     # We can allow the 'fully-deliverable' capacity to be different from the

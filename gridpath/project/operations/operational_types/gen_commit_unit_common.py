@@ -62,7 +62,10 @@ from pyomo.environ import (
 import warnings
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import subset_init_by_param_value
+from gridpath.auxiliary.auxiliary import (
+    subset_init_by_param_value,
+    subset_init_by_set_membership,
+)
 from gridpath.auxiliary.dynamic_components import headroom_variables, footroom_variables
 from gridpath.project.operations.operational_types.common_functions import (
     determine_relevant_timepoints,
@@ -1001,10 +1004,11 @@ def add_model_components(
         Set(
             dimen=2,
             within=m.PRJ_OPR_TMPS,
-            initialize=lambda mod: set(
-                (g, tmp)
-                for (g, tmp) in mod.PRJ_OPR_TMPS
-                if g in getattr(mod, "GEN_COMMIT_{}".format(BIN_OR_LIN))
+            initialize=lambda mod: subset_init_by_set_membership(
+                mod=mod,
+                superset="PRJ_OPR_TMPS",
+                index=0,
+                membership_set=getattr(mod, "GEN_COMMIT_{}".format(BIN_OR_LIN)),
             ),
         ),
     )
@@ -1014,10 +1018,11 @@ def add_model_components(
         "GEN_COMMIT_{}_STARTUP_BY_ST_PRJS".format(BIN_OR_LIN),
         Set(
             within=getattr(m, "GEN_COMMIT_{}".format(BIN_OR_LIN)),
-            initialize=lambda mod: list(
-                prj
-                for prj in mod.STARTUP_BY_ST_PRJS
-                if mod.operational_type[prj] == bin_or_lin_optype
+            initialize=lambda mod: subset_init_by_param_value(
+                mod=mod,
+                set_name="STARTUP_BY_ST_PRJS",
+                param_name="operational_type",
+                param_value=bin_or_lin_optype,
             ),
         ),
     )

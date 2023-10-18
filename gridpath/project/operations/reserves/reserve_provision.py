@@ -26,6 +26,7 @@ from gridpath.auxiliary.auxiliary import (
     check_list_items_are_unique,
     find_list_item_position,
     cursor_to_df,
+    subset_init_by_set_membership,
 )
 from gridpath.auxiliary.dynamic_components import (
     reserve_variable_derate_params,
@@ -224,10 +225,11 @@ def generic_add_model_components(
         reserve_project_operational_timepoints_set,
         Set(
             dimen=2,
-            initialize=lambda mod: set(
-                (g, tmp)
-                for (g, tmp) in mod.PRJ_OPR_TMPS
-                if g in getattr(mod, reserve_projects_set)
+            initialize=lambda mod: subset_init_by_set_membership(
+                mod=mod,
+                superset="PRJ_OPR_TMPS",
+                index=0,
+                membership_set=getattr(mod, reserve_projects_set),
             ),
         ),
     )

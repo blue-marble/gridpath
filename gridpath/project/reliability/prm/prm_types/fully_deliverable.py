@@ -18,6 +18,8 @@ Fully deliverable projects (no energy-only allowed)
 
 from pyomo.environ import Set
 
+from gridpath.auxiliary.auxiliary import subset_init_by_param_value
+
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
@@ -28,9 +30,12 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     m.FULLY_DELIVERABLE_PRM_PROJECTS = Set(
         within=m.PRM_PROJECTS,
-        initialize=lambda mod: [
-            p for p in mod.PRM_PROJECTS if mod.prm_type[p] == "fully_deliverable"
-        ],
+        initialize=lambda mod: subset_init_by_param_value(
+            mod=mod,
+            set_name="PRM_PROJECTS",
+            param_name="prm_type",
+            param_value="fully_deliverable",
+        ),
     )
 
 
