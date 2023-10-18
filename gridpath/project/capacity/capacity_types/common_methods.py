@@ -74,7 +74,8 @@ def relevant_periods_by_project_vintage(
             ):
                 relevant_periods.append(p)
 
-    return sorted(relevant_periods)
+    # Reverting this to check if it matters
+    return relevant_periods
 
 
 def project_relevant_periods(
