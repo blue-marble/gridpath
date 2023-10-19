@@ -228,8 +228,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # All VOM projects
     # Sorting this set fixes example1
     def var_om_cost_all_prjs_opr_tmps_init(mod):
-        s = set(
-            mod.VAR_OM_COST_SIMPLE_PRJ_OPR_TMPS | mod.VAR_OM_COST_CURVE_PRJS_OPR_TMPS
+        s = sorted(
+            list(
+                set(
+                    mod.VAR_OM_COST_SIMPLE_PRJ_OPR_TMPS
+                    | mod.VAR_OM_COST_CURVE_PRJS_OPR_TMPS
+                )
+            )
         )
 
         return s
