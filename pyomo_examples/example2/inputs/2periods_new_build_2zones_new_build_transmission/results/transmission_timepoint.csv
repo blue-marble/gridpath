@@ -1,0 +1,5 @@
+transmission_line,timepoint,period,tx_capacity_type,tx_availability_type,tx_operational_type,timepoint_weight,number_of_hours_in_timepoint,load_zone_from,load_zone_to,transmission_flow_mw,transmission_losses_lz_from,transmission_losses_lz_to
+Tx_new,20200101,2020,tx_new_lin,exogenous,tx_simple,4380.0,1,Zone1,Zone2,31.533333,0.0,0.0
+Tx_new,20200102,2020,tx_new_lin,exogenous,tx_simple,4380.0,1,Zone1,Zone2,18.2,0.0,0.0
+Tx_new,20300101,2030,tx_new_lin,exogenous,tx_simple,4380.0,1,Zone1,Zone2,27.533333,0.0,0.0
+Tx_new,20300102,2030,tx_new_lin,exogenous,tx_simple,4380.0,1,Zone1,Zone2,28.2,0.0,0.0

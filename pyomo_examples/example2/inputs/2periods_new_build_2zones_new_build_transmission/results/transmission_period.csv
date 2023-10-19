@@ -1,0 +1,3 @@
+transmission_line,period,tx_capacity_type,tx_availability_type,tx_operational_type,load_zone_from,load_zone_to,min_mw,max_mw,new_build_capacity_mw,capacity_cost,hours_in_period_timepoints,hours_in_subproblem_period,fixed_cost
+Tx_new,2020,tx_new_lin,exogenous,tx_simple,Zone1,Zone2,-31.533333,31.533333,31.533333,315.33333,8760.0,8760.0,0.0
+Tx_new,2030,tx_new_lin,exogenous,tx_simple,Zone1,Zone2,-31.533333,31.533333,0.0,315.33333,8760.0,8760.0,0.0
