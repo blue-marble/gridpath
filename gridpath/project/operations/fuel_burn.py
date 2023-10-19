@@ -198,12 +198,17 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         ),
     )
 
+    # Sorting this set fixes example2
     def hr_curve_opr_tmps_sgms_rule(mod):
-        s = set(
-            (g, tmp, s)
-            for (g, tmp) in mod.PRJ_OPR_TMPS
-            for _g, p, s in mod.HR_CURVE_PRJS_PRDS_SGMS
-            if g == _g and mod.period[tmp] == p
+        s = sorted(
+            list(
+                set(
+                    (g, tmp, s)
+                    for (g, tmp) in mod.PRJ_OPR_TMPS
+                    for _g, p, s in mod.HR_CURVE_PRJS_PRDS_SGMS
+                    if g == _g and mod.period[tmp] == p
+                )
+            )
         )
 
         return s
