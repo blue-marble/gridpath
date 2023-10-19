@@ -46,7 +46,7 @@ setup(
     keywords=["energy", "electricity", "power", "renewables", "planning", "operations"],
     packages=find_packages(),
     install_requires=[
-        "Pyomo==6.5.0",  # Optimization modeling language
+        "Pyomo==6.6.2",  # Optimization modeling language
         "pandas==2.1.1",  # Data-processing
         "bokeh==2.2.3",  # Visualization library (required - see #779)
         "pscript==0.7.5",  # Python to JavaScript compiler (for viz)
