@@ -31,18 +31,19 @@ for n in range(1, N + 1):
         shell=True,
     )
 
-    with open(f"./pyomo_examples/{SCENARIO}/results/objective_function_value.txt")\
-            as f:
+    with open(f"./pyomo_examples/{SCENARIO}/results/objective_function_value.txt") as f:
         current_objective_value = float(f.read())
 
     if n == 1:
         previous_objective_value = current_objective_value
     else:
         if current_objective_value != previous_objective_value:
-            print(f"""
+            print(
+                f"""
                 trial: {n}
                 previous objective value: {previous_objective_value}
                 current objective value: {current_objective_value}
-            """)
+            """
+            )
 
         previous_objective_value = current_objective_value

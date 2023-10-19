@@ -198,15 +198,30 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         ),
     )
 
-    m.HR_CURVE_PRJS_OPR_TMPS_SGMS = Set(
-        dimen=3,
-        initialize=lambda mod: set(
+    def hr_curve_opr_tmps_sgms_rule(mod):
+        s = set(
             (g, tmp, s)
             for (g, tmp) in mod.PRJ_OPR_TMPS
             for _g, p, s in mod.HR_CURVE_PRJS_PRDS_SGMS
             if g == _g and mod.period[tmp] == p
-        ),
+        )
+
+        return s
+
+    m.HR_CURVE_PRJS_OPR_TMPS_SGMS = Set(
+        dimen=3,
+        initialize=hr_curve_opr_tmps_sgms_rule,
     )
+
+    # m.HR_CURVE_PRJS_OPR_TMPS_SGMS = Set(
+    #     dimen=3,
+    #     initialize=lambda mod: sorted(list(set(
+    #         (g, tmp, s)
+    #         for (g, tmp) in mod.PRJ_OPR_TMPS
+    #         for _g, p, s in mod.HR_CURVE_PRJS_PRDS_SGMS
+    #         if g == _g and mod.period[tmp] == p
+    #     ))),
+    # )
 
     m.HR_CURVE_PRJS_OPR_TMPS = Set(
         dimen=2,
