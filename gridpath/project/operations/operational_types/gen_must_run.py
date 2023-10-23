@@ -233,9 +233,8 @@ def power_provision_rule(mod, g, tmp):
     timepoints when they are operational minus any auxiliary power consumption.
     """
     return (
-        mod.Capacity_MW[g, mod.period[tmp]]
-        * mod.Availability_Derate[g, tmp]
-        * (1 - mod.gen_must_run_aux_consumption_frac_capacity[g])
+        mod.Capacity_MW[g, mod.period[tmp]] * mod.Availability_Derate[g, tmp]
+        - mod.GenMustRun_Auxiliary_Consumption_MW[g, tmp]
     )
 
 
@@ -243,7 +242,8 @@ def fuel_burn_rule(mod, g, tmp):
     """ """
     return (
         mod.fuel_burn_slope_mmbtu_per_mwh[g, mod.period[tmp], 0]
-        * mod.Power_Provision_MW[g, tmp]
+        * mod.Capacity_MW[g, mod.period[tmp]]
+        * mod.Availability_Derate[g, tmp]
     )
 
 
@@ -288,9 +288,7 @@ def add_to_prj_tmp_results(mod):
             tmp,
             value(mod.Capacity_MW[prj, mod.period[tmp]])
             * value(mod.Availability_Derate[prj, tmp]),
-            value(mod.Capacity_MW[prj, mod.period[tmp]])
-            * value(mod.Availability_Derate[prj, tmp])
-            * mod.gen_must_run_aux_consumption_frac_capacity[prj],
+            value(mod.GenMustRun_Auxiliary_Consumption_MW[prj, tmp]),
         ]
         for (prj, tmp) in mod.GEN_MUST_RUN_OPR_TMPS
     ]
