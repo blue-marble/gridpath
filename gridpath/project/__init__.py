@@ -260,7 +260,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 m.technology[prj],
                 m.load_zone[prj],
             ]
-            for (prj, prd) in m.PRJ_OPR_PRDS
+            for (prj, prd) in set(m.PRJ_OPR_PRDS | m.PRJ_FIN_PRDS)
         ],
     ).set_index(["project", "period"])
 
