@@ -1163,17 +1163,35 @@ CREATE TABLE inputs_project_relative_capacity_requirements
 (
     project_relative_capacity_requirement_scenario_id INTEGER,
     project                                           VARCHAR(64),
-    project_for_limits                                VARCHAR(64),
     period                                            INTEGER,
+    prj_for_lim_map_id                                INTEGER,
     min_relative_capacity_limit_new                   FLOAT,
     max_relative_capacity_limit_new                   FLOAT,
     min_relative_capacity_limit_total                 FLOAT,
     max_relative_capacity_limit_total                 FLOAT,
     PRIMARY KEY (project_relative_capacity_requirement_scenario_id, project,
-                 project_for_limits, period),
+                 period, prj_for_lim_map_id),
     FOREIGN KEY (project_relative_capacity_requirement_scenario_id) REFERENCES
         subscenarios_project_relative_capacity_requirements
             (project_relative_capacity_requirement_scenario_id)
+);
+
+DROP TABLE IF EXISTS subscenarios_project_relative_capacity_requirements_map;
+CREATE TABLE subscenarios_project_relative_capacity_requirements_map
+(
+    project            VARCHAR(64),
+    prj_for_lim_map_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name               VARCHAR(32),
+    description        VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_project_relative_capacity_requirements_map;
+CREATE TABLE inputs_project_relative_capacity_requirements_map
+(
+    project            VARCHAR(64),
+    prj_for_lim_map_id INTEGER,
+    project_for_limits VARCHAR(64),
+    PRIMARY KEY (project, prj_for_lim_map_id, project_for_limits)
 );
 
 

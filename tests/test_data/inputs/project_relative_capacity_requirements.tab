@@ -1,3 +1,3 @@
-project	project_for_limits	period	min_relative_capacity_limit_new	max_relative_capacity_limit_new	min_relative_capacity_limit_total	max_relative_capacity_limit_total
-Battery	Wind	2020	.	2	3	.
-Battery	Wind	2030	1	.	.	4
+project	period	min_relative_capacity_limit_new	max_relative_capacity_limit_new	min_relative_capacity_limit_total	max_relative_capacity_limit_total
+Battery	2020	.	2	3	.
+Battery	2030	1	.	.	4

@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -95,86 +95,85 @@ class TestRelativeCapacity(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: RELATIVE_CAPACITY_PROJECT_PAIR_PERIODS
-        expected_prj_prd = sorted(
-            [("Battery", "Wind", 2020), ("Battery", "Wind", 2030)]
-        )
+        # Set: REL_CAP_PRJ_PRD
+        expected_prj_prd = sorted([("Battery", 2020), ("Battery", 2030)])
         actual_prj_prd = sorted(
             [
-                (prj, prj_l, period)
+                (prj, period)
                 for (
                     prj,
-                    prj_l,
                     period,
-                ) in instance.RELATIVE_CAPACITY_PROJECT_PAIR_PERIODS
+                ) in instance.REL_CAP_PRJ_PRD
             ]
         )
         self.assertListEqual(expected_prj_prd, actual_prj_prd)
 
-        # Params: min_relative_capacity_limit_new
-        expected_new_min = {
-            ("Battery", "Wind", 2020): 0,
-            ("Battery", "Wind", 2030): 1,
+        # Set: PRJS_FOR_REL_CAP_LIMIT
+        expected_prj_prd = {
+            ("Battery", 2020): ["Wind"],
+            ("Battery", 2030): ["Wind", "Battery_Binary"],
         }
-        actual_new_min = {
-            (prj, prj_for_lim, prd): instance.min_relative_capacity_limit_new[
-                prj, prj_for_lim, prd
-            ]
+        actual_prj_prd = {
+            (prj, period): [prj for prj in instance.PRJS_FOR_REL_CAP_LIMIT[prj, period]]
             for (
                 prj,
-                prj_for_lim,
+                period,
+            ) in instance.REL_CAP_PRJ_PRD
+        }
+        self.assertDictEqual(expected_prj_prd, actual_prj_prd)
+
+        # Params: min_relative_capacity_limit_new
+        expected_new_min = {
+            ("Battery", 2020): 0,
+            ("Battery", 2030): 1,
+        }
+        actual_new_min = {
+            (prj, prd): instance.min_relative_capacity_limit_new[prj, prd]
+            for (
+                prj,
                 prd,
-            ) in instance.RELATIVE_CAPACITY_PROJECT_PAIR_PERIODS
+            ) in instance.REL_CAP_PRJ_PRD
         }
         self.assertDictEqual(expected_new_min, actual_new_min)
 
         # # Params: max_relative_capacity_limit_new
         expected_new_max = {
-            ("Battery", "Wind", 2020): 2,
-            ("Battery", "Wind", 2030): float("inf"),
+            ("Battery", 2020): 2,
+            ("Battery", 2030): float("inf"),
         }
         actual_new_max = {
-            (prj, prj_for_lim, prd): instance.max_relative_capacity_limit_new[
-                prj, prj_for_lim, prd
-            ]
+            (prj, prd): instance.max_relative_capacity_limit_new[prj, prd]
             for (
                 prj,
-                prj_for_lim,
                 prd,
-            ) in instance.RELATIVE_CAPACITY_PROJECT_PAIR_PERIODS
+            ) in instance.REL_CAP_PRJ_PRD
         }
         self.assertDictEqual(expected_new_max, actual_new_max)
 
         # Params: min_relative_capacity_limit_total
         expected_total_min = {
-            ("Battery", "Wind", 2020): 3,
-            ("Battery", "Wind", 2030): 0,
+            ("Battery", 2020): 3,
+            ("Battery", 2030): 0,
         }
         actual_total_min = {
-            (prj, prj_for_lim, prd): instance.min_relative_capacity_limit_total[
-                prj, prj_for_lim, prd
-            ]
+            (prj, prd): instance.min_relative_capacity_limit_total[prj, prd]
             for (
                 prj,
-                prj_for_lim,
                 prd,
-            ) in instance.RELATIVE_CAPACITY_PROJECT_PAIR_PERIODS
+            ) in instance.REL_CAP_PRJ_PRD
         }
         self.assertDictEqual(expected_total_min, actual_total_min)
 
         # Params: max_relative_capacity_limit_total
         expected_total_max = {
-            ("Battery", "Wind", 2020): float("inf"),
-            ("Battery", "Wind", 2030): 4,
+            ("Battery", 2020): float("inf"),
+            ("Battery", 2030): 4,
         }
         actual_total_max = {
-            (prj, prj_for_lim, prd): instance.max_relative_capacity_limit_total[
-                prj, prj_for_lim, prd
-            ]
+            (prj, prd): instance.max_relative_capacity_limit_total[prj, prd]
             for (
                 prj,
-                prj_for_lim,
                 prd,
-            ) in instance.RELATIVE_CAPACITY_PROJECT_PAIR_PERIODS
+            ) in instance.REL_CAP_PRJ_PRD
         }
         self.assertDictEqual(expected_total_max, actual_total_max)
