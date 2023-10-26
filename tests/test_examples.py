@@ -1258,6 +1258,20 @@ class TestExamples(unittest.TestCase):
         scenario_name = "test_new_solar_carbon_credits_w_sell"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
+    def test_test_performance_standard_carbon_credits_w_cap_no_credits_mapping(self):
+        """
+        Check validation and objective function value of "test_performance_standard" example
+        :return:
+        """
+
+        self.check_validation(
+            "test_performance_standard_carbon_credits_w_cap_no_credits_mapping"
+        )
+        self.run_and_check_objective(
+            "test_performance_standard_carbon_credits_w_cap_no_credits_mapping",
+            -3592014778836.2856,
+        )
+
     @classmethod
     def tearDownClass(cls):
         os.remove(DB_PATH)
