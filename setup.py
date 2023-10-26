@@ -11,14 +11,14 @@ extras_doc = [
     "sphinx-argparse==0.4.0",
 ]
 extras_ui = [
-    "eventlet==0.33.1",  # Async mode for SocketIO
+    "eventlet==0.33.3",  # Async mode for SocketIO
     "Flask==2.0.1",  # Local API server for UI
     "Flask-RESTful==0.3.9",  # Flask extension for building REST APIs
     "Flask-SocketIO==4.3.2",  # Flask client-server communication; see #772
     "psutil==5.8.0",  # Process management
     "python-socketio[client]<5,>=4.3.0",  # SocketIO Python client; see #772
     "Werkzeug==2.0.2",  # See #903
-    "dnspython==1.16.0",  # Avoids eventlet version mismatch
+    "dnspython==2.4.2",  # Avoids potential eventlet version mismatch
 ]
 extras_black = ["black"]
 
