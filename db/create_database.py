@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,12 +13,12 @@
 # limitations under the License.
 
 """
-This script create an empty GridPath database with the appropriate table structure.
+Create an empty GridPath database with the appropriate table structure.
 
 The user may specify the name and location of the GridPath database path using the
 *--database* flag.
 
->>> python create_database.py --database PATH/DO/DB
+>>> gridpath_create_database --database PATH/DO/DB
 
 The default schema for the GridPath SQLite database is in db_schema.sql.
 

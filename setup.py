@@ -54,10 +54,10 @@ setup(
         "PyUtilib==6.0.0",  # used for solver temp file management
         "Jinja2==3.0.3",  # bokeh dependency; see #904
         "dill==0.3.7",  # pickling
-    ],
+    ]
+    + extras_ui,
     extras_require={
         "doc": extras_doc,
-        "ui": extras_ui,
         "all": extras_all,
         "coverage": extras_coverage,
         "gurobi": extras_gurobi,
@@ -74,6 +74,9 @@ setup(
             "gridpath_validate = gridpath.validate_inputs:main",
             "gridpath_run_server = ui.server.run_server:main",
             "gridpath_run_queue_manager = ui.server.run_queue_manager:main",
+            "gridpath_create_database = db.create_database:main",
+            "gridpath_load_csvs = db.utilities.port_csvs_to_db:main",
+            "gridpath_load_scenarios = db.utilities.scenario:main",
         ]
     },
 )

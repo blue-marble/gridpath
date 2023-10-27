@@ -1,20 +1,20 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2023 Blue Marble Analytics LLC. All rights reserved.
 
 """
-The *port_csvs_to_db.py* script in the db directory ports the input data
-provided through CSV files to the GridPath SQLite database. This script
-assumes that the user has already created the database file and loaded
-the GridPath schema using the *create_database.py* script.
+The *gridpath_load_csvs* command ports the input data provided through CSV
+files to the GridPath SQLite database. It assumes that the user has
+already created the database file and loaded the GridPath schema using the
+*gridpath_create_database* command.
 
-The *port_csvs_to_db.py* script takes several arguments. For usage info, run:
+The gridpath_load_csvs command takes several arguments. For usage info, run:
 
->>> python port_csvs_to_db.py --help
+>>> gridpath_load_csvs --help
 
 The user must specify the GridPath database path using the *--database* flag
 and the path to the directory where the CSVs are located using the
 *--csv_location* flag.
 
->>> python port_csvs_to_db.py --database PATH/DO/DB --csv_location PATH/TO/CSVS
+>>> gridpath_load_csvs --database PATH/DO/DB --csv_location PATH/TO/CSVS
 
 
 Running the command above will look for the *csv_structure.csv* file in
