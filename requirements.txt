@@ -35,7 +35,7 @@ Pillow==10.1.0
 platformdirs==3.11.0
 ply==3.11
 pscript==0.7.5
-psutil==5.8.0
+psutil==5.9.6
 Pygments==2.16.1
 Pyomo==6.5.0
 python-dateutil==2.8.2

@@ -15,7 +15,7 @@ extras_ui = [
     "Flask==2.0.1",  # Local API server for UI
     "Flask-RESTful==0.3.9",  # Flask extension for building REST APIs
     "Flask-SocketIO==4.3.2",  # Flask client-server communication; see #772
-    "psutil==5.8.0",  # Process management
+    "psutil==5.9.6",  # Process management
     "python-socketio[client]<5,>=4.3.0",  # SocketIO Python client; see #772
     "Werkzeug==2.0.2",  # See #903
     "dnspython==2.4.2",  # Avoids potential eventlet version mismatch
