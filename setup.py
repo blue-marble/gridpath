@@ -39,6 +39,12 @@ setup(
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     url="https://www.gridpath.io",
+    project_urls={
+        "Discussions": "https://github.com/blue-marble/gridpath/discussions",
+        "Documentation": "https://gridpath.readthedocs.io/en/latest/",
+        "Issues": "https://github.com/blue-marble/gridpath/issues",
+        "Source Code": "https://github.com/blue-marble/gridpath",
+    },
     maintainer="Blue Marble Analytics LLC",
     maintainer_email="info@gridpath.io",
     license="Apache v2",
