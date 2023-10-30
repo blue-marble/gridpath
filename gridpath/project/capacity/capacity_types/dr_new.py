@@ -30,13 +30,10 @@ be the new build in MWh divided by N (the MWh capacity can't be discharged
 in less than N hours, as the max power constraint will bind).
 """
 
-from __future__ import division
-
-from builtins import zip
-from builtins import range
 import csv
 import os.path
 import pandas as pd
+from pathlib import Path
 from pyomo.environ import (
     Set,
     Param,
@@ -48,9 +45,7 @@ from pyomo.environ import (
     Constraint,
 )
 
-from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import cursor_to_df
-from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.auxiliary.dynamic_components import (
     capacity_type_operational_period_sets,
     capacity_type_financial_period_sets,
@@ -60,6 +55,12 @@ from gridpath.auxiliary.validations import (
     validate_missing_inputs,
     validate_idxs,
     get_projects,
+)
+from gridpath.common_functions import create_results_df
+from gridpath.project.capacity.capacity_types.common_methods import (
+    read_results_file_generic,
+    write_summary_results_generic,
+    get_units,
 )
 
 
@@ -370,8 +371,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             if r[1] == "dr_new":
                 projects.append(r[0])
                 max_fraction[r[0]] = float(r[2])
-            else:
-                pass
 
         return projects, max_fraction
 
@@ -406,7 +405,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     )
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def add_to_project_period_results(scenario_directory, subproblem, stage, m, d):
     """
     Export new DR results.
     :param scenario_directory:
@@ -416,39 +415,26 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "capacity_dr_new.csv",
-        ),
-        "w",
-        newline="",
-    ) as f:
-        writer = csv.writer(f)
-        writer.writerow(
-            [
-                "project",
-                "period",
-                "technology",
-                "load_zone",
-                "new_build_mw",
-                "new_build_mwh",
-            ]
-        )
-        for (prj, p) in m.DR_NEW_OPR_PRDS:
-            writer.writerow(
-                [
-                    prj,
-                    p,
-                    m.technology[prj],
-                    m.load_zone[prj],
-                    value(m.DRNew_Build_MWh[prj, p] / m.dr_new_min_duration[prj]),
-                    value(m.DRNew_Build_MWh[prj, p]),
-                ]
-            )
+    results_columns = [
+        "new_build_mw",
+        "new_build_mwh",
+    ]
+    data = [
+        [
+            prj,
+            prd,
+            value(m.DRNew_Build_MWh[prj, prd] / m.dr_new_min_duration[prj]),
+            value(m.DRNew_Build_MWh[prj, prd]),
+        ]
+        for (prj, prd) in m.DR_NEW_OPR_PRDS
+    ]
+    captype_df = create_results_df(
+        index_columns=["project", "period"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    return results_columns, captype_df
 
 
 def summarize_results(scenario_directory, subproblem, stage, summary_results_file):
@@ -462,19 +448,12 @@ def summarize_results(scenario_directory, subproblem, stage, summary_results_fil
     """
 
     # Get the results CSV as dataframe
-    capacity_results_df = pd.read_csv(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "capacity_dr_new.csv",
-        )
+    capacity_results_agg_df = read_results_file_generic(
+        scenario_directory=scenario_directory,
+        subproblem=subproblem,
+        stage=stage,
+        capacity_type=Path(__file__).stem,
     )
-
-    capacity_results_agg_df = capacity_results_df.groupby(
-        by=["load_zone", "technology", "period"], as_index=True
-    ).sum(numeric_only=False)
 
     # Get all technologies with new build DR power OR energy capacity
     new_build_df = pd.DataFrame(
@@ -485,25 +464,21 @@ def summarize_results(scenario_directory, subproblem, stage, summary_results_fil
     )
 
     # Get the power and energy units from the units.csv file
-    units_df = pd.read_csv(
-        os.path.join(scenario_directory, "units.csv"), index_col="metric"
-    )
-    power_unit = units_df.loc["power", "unit"]
-    energy_unit = units_df.loc["energy", "unit"]
+    power_unit, energy_unit, fuel_unit = get_units(scenario_directory)
 
     # Rename column header
-    new_build_df.columns = [
+    columns = [
         "New DR Power Capacity ({})".format(power_unit),
         "New DR Energy Capacity ({})".format(energy_unit),
     ]
 
-    with open(summary_results_file, "a") as outfile:
-        outfile.write("\n--> New DR Capacity <--\n")
-        if new_build_df.empty:
-            outfile.write("No new DR was built.\n")
-        else:
-            new_build_df.to_string(outfile, float_format="{:,.2f}".format)
-            outfile.write("\n")
+    write_summary_results_generic(
+        results_df=new_build_df,
+        columns=columns,
+        summary_results_file=summary_results_file,
+        title="New DR Capacity",
+        empty_title="No new DR was built.",
+    )
 
 
 # Database
@@ -676,91 +651,8 @@ def write_model_inputs(
                     "type.".format(project)
                 )
             else:
-
                 for row in supply_curve:
                     writer.writerow(row)
-
-
-def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    """
-
-    :param scenario_id:
-    :param subproblem:
-    :param stage:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-    # Capacity
-    if not quiet:
-        print("project new DR")
-    # Delete prior results and create temporary import table for ordering
-    setup_results_import(
-        conn=db,
-        cursor=c,
-        table="results_project_capacity_dr_new",
-        scenario_id=scenario_id,
-        subproblem=subproblem,
-        stage=stage,
-    )
-
-    # Load results into the temporary table
-    results = []
-    with open(
-        os.path.join(results_directory, "capacity_dr_new.csv"), "r"
-    ) as capacity_file:
-        reader = csv.reader(capacity_file)
-
-        next(reader)  # skip header
-        for row in reader:
-            project = row[0]
-            period = row[1]
-            technology = row[2]
-            load_zone = row[3]
-            new_build_mw = row[4]
-            new_build_mwh = row[5]
-
-            results.append(
-                (
-                    scenario_id,
-                    project,
-                    period,
-                    subproblem,
-                    stage,
-                    technology,
-                    load_zone,
-                    new_build_mw,
-                    new_build_mwh,
-                )
-            )
-
-    insert_temp_sql = """
-        INSERT INTO 
-        temp_results_project_capacity_dr_new{}
-        (scenario_id, project, period, subproblem_id, stage_id,
-        technology, load_zone, new_build_mw, new_build_mwh)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);""".format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
-
-    # Insert sorted results into permanent results table
-    insert_sql = """
-        INSERT INTO results_project_capacity_dr_new
-        (scenario_id, project, period, subproblem_id, stage_id, 
-        technology, load_zone, new_build_mw, new_build_mwh)
-        SELECT
-        scenario_id, project, period, subproblem_id, stage_id, 
-        technology, load_zone, new_build_mw, new_build_mwh
-        FROM temp_results_project_capacity_dr_new{}
-        """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)
 
 
 # Validation

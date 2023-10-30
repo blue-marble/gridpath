@@ -15,7 +15,7 @@
 from pyomo.environ import Expression
 
 from gridpath.auxiliary.auxiliary import (
-    get_required_subtype_modules_from_projects_file,
+    get_required_subtype_modules,
     load_subtype_modules,
 )
 
@@ -28,7 +28,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     :return:
     """
     # Import needed availability type modules
-    required_availability_modules = get_required_subtype_modules_from_projects_file(
+    required_availability_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
         subproblem=subproblem,
         stage=stage,
@@ -76,7 +76,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :param stage:
     :return:
     """
-    required_availability_modules = get_required_subtype_modules_from_projects_file(
+    required_availability_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
         subproblem=subproblem,
         stage=stage,
@@ -91,8 +91,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             imported_availability_modules[avl_m].load_model_data(
                 m, d, data_portal, scenario_directory, subproblem, stage
             )
-        else:
-            pass
 
 
 def export_results(scenario_directory, subproblem, stage, m, d):
@@ -108,7 +106,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     """
 
     # Module-specific capacity results
-    required_availability_modules = get_required_subtype_modules_from_projects_file(
+    required_availability_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
         subproblem=subproblem,
         stage=stage,
@@ -123,8 +121,6 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             imported_availability_modules[op_m].export_results(
                 scenario_directory, subproblem, stage, m, d
             )
-        else:
-            pass
 
 
 # Database
@@ -161,8 +157,6 @@ def write_model_inputs(
             imported_availability_type_modules[op_m].write_model_inputs(
                 scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
             )
-        else:
-            pass
 
 
 def import_results_into_database(
@@ -194,8 +188,6 @@ def import_results_into_database(
             imported_availability_modules[op_m].import_results_into_database(
                 scenario_id, subproblem, stage, c, db, results_directory, quiet
             )
-        else:
-            pass
 
 
 # Auxiliary functions

@@ -73,8 +73,6 @@ def relevant_periods_by_project_vintage(
                 and last_lifetime_year >= period_end_year[p]
             ):
                 relevant_periods.append(p)
-            else:
-                pass
 
     return relevant_periods
 
@@ -117,78 +115,11 @@ def project_vintages_relevant_in_period(
     each period.
     """
     project_vintages = list()
-    for (prj, v) in project_vintage_set:
+    for prj, v in project_vintage_set:
         if period in relevant_periods_by_project_vintage_set[prj, v]:
             project_vintages.append((prj, v))
-        else:
-            pass
+
     return project_vintages
-
-
-def update_capacity_results_table(
-    db, c, results_directory, scenario_id, subproblem, stage, results_file
-):
-    results = []
-    with open(os.path.join(results_directory, results_file), "r") as capacity_file:
-        reader = csv.reader(capacity_file)
-
-        header = next(reader)
-
-        for row in reader:
-            project = row[0]
-            period = row[1]
-            new_build_mw = get_column_row_value(header, "new_build_mw", row)
-            new_build_mwh = get_column_row_value(header, "new_build_mwh", row)
-            new_build_binary = get_column_row_value(header, "new_build_binary", row)
-            retired_mw = get_column_row_value(header, "retired_mw", row)
-            retired_binary = get_column_row_value(header, "retired_binary", row)
-            fuel_prod = get_column_row_value(
-                header, "new_fuel_prod_capacity_fuelunitperhour", row
-            )
-            fuel_rel = get_column_row_value(
-                header, "new_fuel_rel_capacity_fuelunitperhour", row
-            )
-            fuel_stor = get_column_row_value(
-                header, "new_fuel_stor_capacity_fuelunitperhour", row
-            )
-
-            results.append(
-                (
-                    new_build_mw,
-                    new_build_mwh,
-                    new_build_binary,
-                    retired_mw,
-                    retired_binary,
-                    fuel_prod,
-                    fuel_rel,
-                    fuel_stor,
-                    scenario_id,
-                    project,
-                    period,
-                    subproblem,
-                    stage,
-                )
-            )
-
-    # Update the results table with the module-specific results
-    update_sql = """
-        UPDATE results_project_capacity
-        SET new_build_mw = ?,
-        new_build_mwh = ?,
-        new_build_binary = ?,
-        retired_mw = ?,
-        retired_binary = ?,
-        new_fuel_prod_capacity_fuelunitperhour = ?,
-        new_fuel_rel_capacity_fuelunitperhour = ?,
-        new_fuel_stor_capacity_fuelunit = ?
-        WHERE scenario_id = ?
-        AND project = ?
-        AND period = ?
-        AND subproblem_id = ?
-        AND stage_id = ?;
-        """
-
-    spin_on_database_lock(conn=db, cursor=c, sql=update_sql, data=results)
 
 
 # Specified projects common functions
@@ -260,7 +191,6 @@ def spec_get_inputs_from_database(conn, subscenarios, capacity_type):
 
 
 def spec_write_tab_file(scenario_directory, subproblem, stage, spec_project_params):
-
     spec_params_filepath = os.path.join(
         scenario_directory,
         str(subproblem),
@@ -352,7 +282,6 @@ def write_from_query(spec_project_params, writer):
 
 
 def spec_determine_inputs(scenario_directory, subproblem, stage, capacity_type):
-
     # Determine the relevant projects
     project_list = list()
 
@@ -367,8 +296,6 @@ def spec_determine_inputs(scenario_directory, subproblem, stage, capacity_type):
     for row in zip(df["project"], df["capacity_type"]):
         if row[1] == capacity_type:
             project_list.append(row[0])
-        else:
-            pass
 
     # Determine the operational periods & params for each project/period
     project_period_list = list()
@@ -432,8 +359,6 @@ def spec_determine_inputs(scenario_directory, subproblem, stage, capacity_type):
             spec_fuel_prod_fixed_cost_dict[(row[0], row[1])] = float(row[13])
             spec_fuel_rel_fixed_cost_dict[(row[0], row[1])] = float(row[14])
             spec_fuel_stor_fixed_cost_dict[(row[0], row[1])] = float(row[15])
-        else:
-            pass
 
     # Quick check that all relevant projects from projects.tab have capacity
     # params specified
@@ -469,3 +394,59 @@ def spec_determine_inputs(scenario_directory, subproblem, stage, capacity_type):
     ] = spec_fuel_stor_fixed_cost_dict
 
     return project_period_list, main_dict
+
+
+def read_results_file_generic(scenario_directory, subproblem, stage, capacity_type):
+    """
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :param capacity_type:
+    :return:
+    """
+
+    # Get the results CSV as dataframe
+    df = pd.read_csv(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "results",
+            "project_period.csv",
+        )
+    )
+
+    # Filter by capacity type and aggregate by technology
+    capacity_results_agg_df = (
+        df.loc[df["capacity_type"] == capacity_type]
+        .groupby(by=["load_zone", "technology", "period"], as_index=True)
+        .sum(numeric_only=True)
+    )
+
+    return capacity_results_agg_df
+
+
+def write_summary_results_generic(
+    results_df, columns, summary_results_file, title, empty_title
+):
+    # Rename column header
+    results_df.columns = columns
+
+    with open(summary_results_file, "a") as outfile:
+        outfile.write(f"\n--> {title} <--\n")
+        if results_df.empty:
+            outfile.write(f"{empty_title}\n")
+        else:
+            results_df.to_string(outfile, float_format="{:,.2f}".format)
+            outfile.write("\n")
+
+
+def get_units(scenario_directory):
+    units_df = pd.read_csv(
+        os.path.join(scenario_directory, "units.csv"), index_col="metric"
+    )
+    power_unit = units_df.loc["power", "unit"]
+    energy_unit = units_df.loc["energy", "unit"]
+    fuel_unit = units_df.loc["fuel_energy", "unit"]
+
+    return power_unit, energy_unit, fuel_unit

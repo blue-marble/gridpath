@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import print_function
 
-from builtins import str
 from collections import OrderedDict
 from importlib import import_module
 import os.path
@@ -32,6 +30,7 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.investment.periods",
     "geography.load_zones",
     "transmission",
+    "transmission.capacity.capacity_types",
 ]
 NAME_OF_MODULE_BEING_TESTED = "transmission.capacity.capacity"
 IMPORTED_PREREQ_MODULES = list()
@@ -106,9 +105,12 @@ class TestTxCapacity(unittest.TestCase):
                 ("Tx2", 2030),
                 ("Tx3", 2020),
                 ("Tx3", 2030),
+                ("Tx_binary_1", 2020),
+                ("Tx_binary_1", 2030),
             ]
         )
         actual_tx_op_p = sorted([(tx, p) for (tx, p) in instance.TX_OPR_PRDS])
+
         self.assertListEqual(expected_tx_op_p, actual_tx_op_p)
 
 

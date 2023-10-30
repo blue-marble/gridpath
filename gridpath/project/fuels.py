@@ -75,10 +75,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         scenario_directory, subproblem, stage, "inputs", "fuels.tab"
     )
     fuels_df = pd.read_csv(fuels_file, delimiter="\t")
-    if fuels_df.empty:
-        pass
-    else:
-
+    if not fuels_df.empty:
         data_portal.load(
             filename=fuels_file,
             index=m.FUELS,
@@ -96,7 +93,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         ).values[0]
 
         if "fuel_group" in header:
-
             data_portal.data()["FUEL_GROUPS"] = fuels_df["fuel_group"].unique()
 
             data_portal.load(
@@ -113,9 +109,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         scenario_directory, subproblem, stage, "inputs", "fuel_prices.tab"
     )
     fuel_prices_df = pd.read_csv(fuels_prices_file)
-    if fuels_df.empty:
-        pass
-    else:
+    if not fuel_prices_df.empty:
         data_portal.load(filename=fuels_prices_file, param=m.fuel_price_per_mmbtu)
 
 

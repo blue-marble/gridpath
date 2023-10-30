@@ -19,10 +19,7 @@ rate costs. Hurdle rate costs are currently applied on power sent across the
 transmission line.
 """
 
-from __future__ import print_function
 
-from builtins import next
-from builtins import str
 import csv
 import os.path
 from pyomo.environ import Param, Var, Constraint, NonNegativeReals, Expression, value
@@ -37,6 +34,8 @@ from gridpath.auxiliary.validations import (
     validate_values,
     validate_missing_inputs,
 )
+from gridpath.common_functions import create_results_df
+from gridpath.transmission import TX_TIMEPOINT_DF
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -228,45 +227,24 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d: Dynamic components
     :return: Nothing
     """
-    with open(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "costs_transmission_hurdle.csv",
-        ),
-        "w",
-        newline="",
-    ) as f:
-        writer = csv.writer(f)
-        writer.writerow(
-            [
-                "tx_line",
-                "period",
-                "timepoint",
-                "timepoint_weight",
-                "number_of_hours_in_timepoint",
-                "load_zone_from",
-                "load_zone_to",
-                "hurdle_cost_positive_direction",
-                "hurdle_cost_negative_direction",
-            ]
-        )
-        for (tx, tmp) in m.TX_OPR_TMPS:
-            writer.writerow(
-                [
-                    tx,
-                    m.period[tmp],
-                    tmp,
-                    m.tmp_weight[tmp],
-                    m.hrs_in_tmp[tmp],
-                    m.load_zone_from[tx],
-                    m.load_zone_to[tx],
-                    value(m.Hurdle_Cost_Pos_Dir[tx, tmp]),
-                    value(m.Hurdle_Cost_Neg_Dir[tx, tmp]),
-                ]
-            )
+
+    results_columns = [
+        "hurdle_cost_positive_direction",
+        "hurdle_cost_negative_direction",
+    ]
+    data = [
+        [tx, tmp, m.Hurdle_Cost_Pos_Dir[tx, tmp], m.Hurdle_Cost_Neg_Dir[tx, tmp]]
+        for (tx, tmp) in m.TX_OPR_TMPS
+    ]
+    cost_df = create_results_df(
+        index_columns=["transmission_line", "timepoint"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    for c in results_columns:
+        getattr(d, TX_TIMEPOINT_DF)[c] = None
+    getattr(d, TX_TIMEPOINT_DF).update(cost_df)
 
 
 # Database
@@ -357,101 +335,6 @@ def write_model_inputs(
             writer.writerow(replace_nulls)
 
 
-def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    """
-
-    :param scenario_id:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-    # Hurdle costs
-    if not quiet:
-        print("transmission hurdle costs")
-
-    # Delete prior results and create temporary import table for ordering
-    setup_results_import(
-        conn=db,
-        cursor=c,
-        table="results_transmission_hurdle_costs",
-        scenario_id=scenario_id,
-        subproblem=subproblem,
-        stage=stage,
-    )
-
-    # Load results into the temporary table
-    results = []
-    with open(
-        os.path.join(results_directory, "costs_transmission_hurdle.csv"), "r"
-    ) as tx_op_file:
-        reader = csv.reader(tx_op_file)
-
-        next(reader)  # skip header
-        for row in reader:
-            tx_line = row[0]
-            period = row[1]
-            timepoint = row[2]
-            timepoint_weight = row[3]
-            number_of_hours_in_timepoint = row[4]
-            lz_from = row[5]
-            lz_to = row[6]
-            hurdle_cost_positve_direction = row[7]
-            hurdle_cost_negative_direction = row[8]
-
-            results.append(
-                (
-                    scenario_id,
-                    tx_line,
-                    period,
-                    subproblem,
-                    stage,
-                    timepoint,
-                    timepoint_weight,
-                    number_of_hours_in_timepoint,
-                    lz_from,
-                    lz_to,
-                    hurdle_cost_positve_direction,
-                    hurdle_cost_negative_direction,
-                )
-            )
-    insert_temp_sql = """
-        INSERT INTO temp_results_transmission_hurdle_costs{}
-        (scenario_id, transmission_line, period, subproblem_id, stage_id,
-        timepoint, timepoint_weight,
-        number_of_hours_in_timepoint,
-        load_zone_from, load_zone_to, 
-        hurdle_cost_positive_direction, hurdle_cost_negative_direction)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-        """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
-
-    # Insert sorted results into permanent results table
-    insert_sql = """
-        INSERT INTO results_transmission_hurdle_costs
-        (scenario_id, transmission_line, period, subproblem_id, stage_id, 
-        timepoint, timepoint_weight, number_of_hours_in_timepoint,
-        load_zone_from, load_zone_to, hurdle_cost_positive_direction,
-        hurdle_cost_negative_direction)
-        SELECT
-        scenario_id, transmission_line, period, subproblem_id, stage_id,
-        timepoint, timepoint_weight, number_of_hours_in_timepoint,
-        load_zone_from, load_zone_to, hurdle_cost_positive_direction,
-        hurdle_cost_negative_direction
-        FROM temp_results_transmission_hurdle_costs{}
-         ORDER BY scenario_id, transmission_line, subproblem_id, stage_id, 
-        timepoint;
-        """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)
-
-
 def process_results(db, c, scenario_id, subscenarios, quiet):
     """
     Aggregate costs by zone and period. Costs are allocated to the destination
@@ -491,7 +374,7 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
         load_zone_to AS load_zone, spinup_or_lookahead,
         SUM(hurdle_cost_positive_direction * timepoint_weight * 
         number_of_hours_in_timepoint) AS pos_dir_hurdle_cost
-        FROM results_transmission_hurdle_costs
+        FROM results_transmission_timepoint
         WHERE scenario_id = ?
         GROUP BY subproblem_id, stage_id, period, load_zone, spinup_or_lookahead
         ORDER BY subproblem_id, stage_id, period, load_zone, spinup_or_lookahead
@@ -503,7 +386,7 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
         load_zone_from AS load_zone, spinup_or_lookahead,
         SUM(hurdle_cost_negative_direction * timepoint_weight * 
         number_of_hours_in_timepoint) AS neg_dir_hurdle_cost
-        FROM results_transmission_hurdle_costs
+        FROM results_transmission_timepoint
         WHERE scenario_id = ?
         GROUP BY subproblem_id, stage_id, period, load_zone, spinup_or_lookahead
         ORDER BY subproblem_id, stage_id, period, load_zone, spinup_or_lookahead

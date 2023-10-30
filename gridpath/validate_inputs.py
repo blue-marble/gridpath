@@ -76,8 +76,6 @@ def validate_inputs(subproblems, loaded_modules, scenario_id, subscenarios, conn
                         stage=stage,
                         conn=conn,
                     )
-                else:
-                    pass
 
             # 2. input validation across modules
             #    make sure geography and projects are in line
@@ -304,6 +302,11 @@ def update_validation_status(conn, scenario_id):
 
     if validations:
         status = 2
+        # Print the errors
+        for e in c.execute(
+            f"""SELECT * FROM status_validation WHERE scenario_id = {scenario_id};"""
+        ).fetchall():
+            print(e)
     else:
         status = 1
 

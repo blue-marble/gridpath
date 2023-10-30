@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import print_function
 
-from builtins import str
 from collections import OrderedDict
 from importlib import import_module
 import os.path
@@ -34,6 +32,7 @@ PREREQUISITE_MODULE_NAMES = [
     "geography.load_zones",
     "transmission",
     "transmission.capacity",
+    "transmission.capacity.capacity_types",
     "transmission.capacity.capacity",
 ]
 NAME_OF_MODULE_BEING_TESTED = "transmission.capacity.capacity_groups"

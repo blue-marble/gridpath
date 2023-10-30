@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import print_function
 
-from builtins import str
 from collections import OrderedDict
 from importlib import import_module
 import os.path
@@ -70,7 +68,6 @@ class TestOperationsInit(unittest.TestCase):
     """ """
 
     def assertDictAlmostEqual(self, d1, d2, msg=None, places=7):
-
         # check if both inputs are dicts
         self.assertIsInstance(d1, dict, "First argument is not a dictionary")
         self.assertIsInstance(d2, dict, "Second argument is not a dictionary")
@@ -285,7 +282,7 @@ class TestOperationsInit(unittest.TestCase):
 
         # Set: FUELS_BY_PRJ
         expected_fuels_by_prj = {}
-        for (p, f) in expected_fuel_project_fuels:
+        for p, f in expected_fuel_project_fuels:
             if p not in expected_fuels_by_prj.keys():
                 expected_fuels_by_prj[p] = [f]
             else:
@@ -484,6 +481,52 @@ class TestOperationsInit(unittest.TestCase):
 
         self.assertListEqual(
             expected_curtailment_cost_projects, actual_curtailment_cost_projects
+        )
+
+        # Set: SOC_PENALTY_COST_PRJS
+        expected_soc_penalty_cost_projects = sorted(
+            projects_df[projects_df["soc_penalty_cost_per_energyunit"] != "."][
+                "project"
+            ].tolist()
+        )
+
+        actual_soc_penalty_cost_projects = sorted(
+            [p for p in instance.SOC_PENALTY_COST_PRJS]
+        )
+
+        self.assertListEqual(
+            expected_soc_penalty_cost_projects, actual_soc_penalty_cost_projects
+        )
+
+        # Set: SOC_LAST_TMP_PENALTY_COST_PRJS
+        expected_soc_last_tmp_penalty_cost_projects = sorted(
+            projects_df[projects_df["soc_last_tmp_penalty_cost_per_energyunit"] != "."][
+                "project"
+            ].tolist()
+        )
+
+        actual_soc_last_tmp_penalty_cost_projects = sorted(
+            [p for p in instance.SOC_LAST_TMP_PENALTY_COST_PRJS]
+        )
+
+        self.assertListEqual(
+            expected_soc_last_tmp_penalty_cost_projects,
+            actual_soc_last_tmp_penalty_cost_projects,
+        )
+
+        # Set: NONFUEL_CARBON_EMISSIONS_PRJS
+        expected_nonfuel_em_projects = sorted(
+            projects_df[projects_df["nonfuel_carbon_emissions_per_mwh"] != "."][
+                "project"
+            ].tolist()
+        )
+
+        actual_nonfuelfuel_em_projects = sorted(
+            [p for p in instance.NONFUEL_CARBON_EMISSIONS_PRJS]
+        )
+
+        self.assertListEqual(
+            expected_nonfuel_em_projects, actual_nonfuelfuel_em_projects
         )
 
         # Param: variable_om_cost_per_mwh
@@ -898,6 +941,93 @@ class TestOperationsInit(unittest.TestCase):
         self.assertDictEqual(
             expected_curtailment_cost_by_prj, actual_curtailment_cost_by_prj
         )
+
+        # Param: soc_penalty_cost_per_energyunit
+        soc_penalty_cost_df = projects_df[
+            projects_df["soc_penalty_cost_per_energyunit"] != "."
+        ]
+        expected_soc_penalty_cost_by_prj = OrderedDict(
+            sorted(
+                dict(
+                    zip(
+                        soc_penalty_cost_df["project"],
+                        pd.to_numeric(
+                            soc_penalty_cost_df["soc_penalty_cost_per_energyunit"]
+                        ),
+                    )
+                ).items()
+            )
+        )
+        actual_soc_penalty_cost_by_prj = OrderedDict(
+            sorted(
+                {
+                    p: instance.soc_penalty_cost_per_energyunit[p]
+                    for p in instance.SOC_PENALTY_COST_PRJS
+                }.items()
+            )
+        )
+
+        self.assertDictEqual(
+            expected_soc_penalty_cost_by_prj, actual_soc_penalty_cost_by_prj
+        )
+
+        # Param: soc_last_tmp_penalty_cost_per_energyunit
+        soc_last_tmp_penalty_cost_df = projects_df[
+            projects_df["soc_last_tmp_penalty_cost_per_energyunit"] != "."
+        ]
+        expected_soc_last_tmp_penalty_cost_by_prj = OrderedDict(
+            sorted(
+                dict(
+                    zip(
+                        soc_last_tmp_penalty_cost_df["project"],
+                        pd.to_numeric(
+                            soc_last_tmp_penalty_cost_df[
+                                "soc_last_tmp_penalty_cost_per_energyunit"
+                            ]
+                        ),
+                    )
+                ).items()
+            )
+        )
+        actual_soc_last_tmp_penalty_cost_by_prj = OrderedDict(
+            sorted(
+                {
+                    p: instance.soc_last_tmp_penalty_cost_per_energyunit[p]
+                    for p in instance.SOC_LAST_TMP_PENALTY_COST_PRJS
+                }.items()
+            )
+        )
+
+        self.assertDictEqual(
+            expected_soc_last_tmp_penalty_cost_by_prj,
+            actual_soc_last_tmp_penalty_cost_by_prj,
+        )
+
+        # Param: nonfuel_carbon_emissions_per_mwh
+        nonfuel_em_df = projects_df[
+            projects_df["nonfuel_carbon_emissions_per_mwh"] != "."
+        ]
+        expected_nonfuel_em_by_prj = OrderedDict(
+            sorted(
+                dict(
+                    zip(
+                        nonfuel_em_df["project"],
+                        pd.to_numeric(
+                            nonfuel_em_df["nonfuel_carbon_emissions_per_mwh"]
+                        ),
+                    )
+                ).items()
+            )
+        )
+        actual_nonfuel_em_by_prj = OrderedDict(
+            sorted(
+                {
+                    p: instance.nonfuel_carbon_emissions_per_mwh[p]
+                    for p in instance.NONFUEL_CARBON_EMISSIONS_PRJS
+                }.items()
+            )
+        )
+        self.assertDictEqual(expected_nonfuel_em_by_prj, actual_nonfuel_em_by_prj)
 
     def test_get_slopes_intercept_by_project_period_segment(self):
         """

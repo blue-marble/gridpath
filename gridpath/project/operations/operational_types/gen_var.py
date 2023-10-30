@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,8 +23,6 @@ downward reserves.
 Costs for this operational type include variable O&M costs.
 
 """
-from __future__ import division
-from __future__ import print_function
 
 
 import csv
@@ -42,7 +40,10 @@ from pyomo.environ import (
 import warnings
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import subset_init_by_param_value
+from gridpath.auxiliary.auxiliary import (
+    subset_init_by_param_value,
+    subset_init_by_set_membership,
+)
 from gridpath.auxiliary.dynamic_components import (
     footroom_variables,
     headroom_variables,
@@ -57,14 +58,14 @@ from gridpath.project.common_functions import (
     check_boundary_type,
 )
 from gridpath.project.operations.operational_types.common_functions import (
-    update_dispatch_results_table,
     load_var_profile_inputs,
-    get_var_profile_inputs_from_database,
+    get_prj_tmp_opr_inputs_from_db,
     write_tab_file_model_inputs,
     validate_opchars,
     validate_var_profiles,
     load_optype_model_data,
 )
+from gridpath.common_functions import create_results_df
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -172,8 +173,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.GEN_VAR_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: list(
-            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS if g in mod.GEN_VAR)
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod, superset="PRJ_OPR_TMPS", index=0, membership_set=mod.GEN_VAR
         ),
     )
 
@@ -471,66 +472,32 @@ def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
     )
 
 
-def export_results(mod, d, scenario_directory, subproblem, stage):
-    """
+def add_to_prj_tmp_results(mod):
+    results_columns = [
+        "scheduled_curtailment_mw",
+        "subhourly_curtailment_mw",
+        "subhourly_energy_delivered_mw",
+        "total_curtailment_mw",
+    ]
+    data = [
+        [
+            prj,
+            tmp,
+            value(mod.GenVar_Scheduled_Curtailment_MW[prj, tmp]),
+            value(mod.GenVar_Subhourly_Curtailment_MW[prj, tmp]),
+            value(mod.GenVar_Subhourly_Energy_Delivered_MW[prj, tmp]),
+            value(mod.GenVar_Total_Curtailment_MW[prj, tmp]),
+        ]
+        for (prj, tmp) in mod.GEN_VAR_OPR_TMPS
+    ]
 
-    :param scenario_directory:
-    :param subproblem:
-    :param stage:
-    :param mod:
-    :param d:
-    :return:
-    """
-    with open(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "dispatch_variable.csv",
-        ),
-        "w",
-        newline="",
-    ) as f:
-        writer = csv.writer(f)
-        writer.writerow(
-            [
-                "project",
-                "period",
-                "balancing_type_project",
-                "horizon",
-                "timepoint",
-                "timepoint_weight",
-                "number_of_hours_in_timepoint",
-                "technology",
-                "load_zone",
-                "power_mw",
-                "scheduled_curtailment_mw",
-                "subhourly_curtailment_mw",
-                "subhourly_energy_delivered_mw",
-                "total_curtailment_mw",
-            ]
-        )
+    optype_dispatch_df = create_results_df(
+        index_columns=["project", "timepoint"],
+        results_columns=results_columns,
+        data=data,
+    )
 
-        for (p, tmp) in mod.GEN_VAR_OPR_TMPS:
-            writer.writerow(
-                [
-                    p,
-                    mod.period[tmp],
-                    mod.balancing_type_project[p],
-                    mod.horizon[tmp, mod.balancing_type_project[p]],
-                    tmp,
-                    mod.tmp_weight[tmp],
-                    mod.hrs_in_tmp[tmp],
-                    mod.technology[p],
-                    mod.load_zone[p],
-                    value(mod.GenVar_Provide_Power_MW[p, tmp]),
-                    value(mod.GenVar_Scheduled_Curtailment_MW[p, tmp]),
-                    value(mod.GenVar_Subhourly_Curtailment_MW[p, tmp]),
-                    value(mod.GenVar_Subhourly_Energy_Delivered_MW[p, tmp]),
-                    value(mod.GenVar_Total_Curtailment_MW[p, tmp]),
-                ]
-            )
+    return results_columns, optype_dispatch_df
 
 
 # Database
@@ -546,9 +513,18 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
     :return: cursor object with query results
     """
 
-    return get_var_profile_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn, "gen_var"
+    prj_tmp_data = get_prj_tmp_opr_inputs_from_db(
+        subscenarios=subscenarios,
+        subproblem=subproblem,
+        stage=stage,
+        conn=conn,
+        op_type="gen_var",
+        table="inputs_project_variable_generator_profiles" "",
+        subscenario_id_column="variable_generator_profile_scenario_id",
+        data_column="cap_factor",
     )
+
+    return prj_tmp_data
 
 
 def write_model_inputs(
@@ -573,34 +549,6 @@ def write_model_inputs(
     write_tab_file_model_inputs(scenario_directory, subproblem, stage, fname, data)
 
 
-def import_model_results_to_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    """
-
-    :param scenario_id:
-    :param subproblem:
-    :param stage:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-    if not quiet:
-        print("project dispatch variable")
-
-    update_dispatch_results_table(
-        db=db,
-        c=c,
-        results_directory=results_directory,
-        scenario_id=scenario_id,
-        subproblem=subproblem,
-        stage=stage,
-        results_file="dispatch_variable.csv",
-    )
-
-
 def process_model_results(db, c, scenario_id, subscenarios, quiet):
     """
     Aggregate scheduled curtailment
@@ -615,7 +563,7 @@ def process_model_results(db, c, scenario_id, subscenarios, quiet):
 
     # Delete old aggregated variable curtailment results
     del_sql = """
-        DELETE FROM results_project_curtailment_variable 
+        DELETE FROM results_project_curtailment_variable_periodagg 
         WHERE scenario_id = ?;
         """
     spin_on_database_lock(
@@ -624,7 +572,7 @@ def process_model_results(db, c, scenario_id, subscenarios, quiet):
 
     # Aggregate variable curtailment (just scheduled curtailment)
     insert_sql = """
-        INSERT INTO results_project_curtailment_variable
+        INSERT INTO results_project_curtailment_variable_periodagg
         (scenario_id, subproblem_id, stage_id, period, timepoint, 
         timepoint_weight, number_of_hours_in_timepoint, month, hour_of_day,
         load_zone, scheduled_curtailment_mw)
@@ -637,7 +585,7 @@ def process_model_results(db, c, scenario_id, subscenarios, quiet):
             timepoint, timepoint_weight, number_of_hours_in_timepoint, 
             load_zone, 
             sum(scheduled_curtailment_mw) AS scheduled_curtailment_mw
-            FROM results_project_dispatch
+            FROM results_project_timepoint
             WHERE operational_type = 'gen_var'
             GROUP BY scenario_id, subproblem_id, stage_id, timepoint, load_zone
         ) as agg_curtailment_tbl

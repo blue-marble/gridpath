@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -45,11 +45,10 @@ startup and shutdown costs.
 
 """
 
-from __future__ import division
-from __future__ import print_function
 
 import csv
 import os.path
+import pandas as pd
 from pyomo.environ import (
     Var,
     Set,
@@ -63,16 +62,21 @@ from pyomo.environ import (
     Expression,
 )
 
-from gridpath.auxiliary.auxiliary import subset_init_by_param_value
+from gridpath.auxiliary.auxiliary import (
+    subset_init_by_param_value,
+    subset_init_by_set_membership,
+)
 from gridpath.auxiliary.dynamic_components import headroom_variables, footroom_variables
 from gridpath.project.operations.operational_types.common_functions import (
     determine_relevant_timepoints,
-    update_dispatch_results_table,
     load_optype_model_data,
     check_for_tmps_to_link,
     validate_opchars,
 )
-from gridpath.project.common_functions import check_if_boundary_type_and_first_timepoint
+from gridpath.common_functions import create_results_df
+from gridpath.project.common_functions import (
+    check_if_boundary_type_and_first_timepoint,
+)
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -413,8 +417,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.GEN_COMMIT_CAP_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: list(
-            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS if g in mod.GEN_COMMIT_CAP)
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod, superset="PRJ_OPR_TMPS", index=0, membership_set=mod.GEN_COMMIT_CAP
         ),
     )
 
@@ -623,6 +627,7 @@ def auxiliary_consumption_rule(mod, g, tmp):
 
 # Constraint Formulation Rules
 ###############################################################################
+
 
 # Commitment and power
 def commit_capacity_constraint_rule(mod, g, tmp):
@@ -1427,8 +1432,38 @@ def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
                 mod.gen_commit_cap_linked_shutdown,
             ),
         )
-    else:
-        pass
+
+
+def add_to_prj_tmp_results(mod):
+    results_columns = [
+        "gross_power_mw",
+        "auxiliary_consumption_mw",
+        "net_power_mw",
+        "committed_mw",
+        "committed_units",
+    ]
+    data = [
+        [
+            prj,
+            tmp,
+            value(mod.GenCommitCap_Provide_Power_MW[prj, tmp]),
+            value(mod.GenCommitCap_Auxiliary_Consumption_MW[prj, tmp]),
+            value(mod.GenCommitCap_Provide_Power_MW[prj, tmp])
+            - value(mod.GenCommitCap_Auxiliary_Consumption_MW[prj, tmp]),
+            value(mod.Commit_Capacity_MW[prj, tmp]),
+            value(mod.Commit_Capacity_MW[prj, tmp])
+            / mod.gen_commit_cap_unit_size_mw[prj],
+        ]
+        for (prj, tmp) in mod.GEN_COMMIT_CAP_OPR_TMPS
+    ]
+
+    optype_dispatch_df = create_results_df(
+        index_columns=["project", "timepoint"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    return results_columns, optype_dispatch_df
 
 
 def export_results(mod, d, scenario_directory, subproblem, stage):
@@ -1441,60 +1476,8 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
     :param d:
     :return:
     """
-    with open(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "dispatch_capacity_commit.csv",
-        ),
-        "w",
-        newline="",
-    ) as f:
-        writer = csv.writer(f)
-        writer.writerow(
-            [
-                "project",
-                "period",
-                "balancing_type_project",
-                "horizon",
-                "timepoint",
-                "timepoint_weight",
-                "number_of_hours_in_timepoint",
-                "technology",
-                "load_zone",
-                "power_mw",
-                "gross_power_mw",
-                "auxiliary_consumption_mw",
-                "net_power_mw",
-                "committed_mw",
-                "committed_units",
-            ]
-        )
 
-        for (p, tmp) in mod.GEN_COMMIT_CAP_OPR_TMPS:
-            writer.writerow(
-                [
-                    p,
-                    mod.period[tmp],
-                    mod.balancing_type_project[p],
-                    mod.horizon[tmp, mod.balancing_type_project[p]],
-                    tmp,
-                    mod.tmp_weight[tmp],
-                    mod.hrs_in_tmp[tmp],
-                    mod.technology[p],
-                    mod.load_zone[p],
-                    value(mod.Power_Provision_MW[p, tmp]),
-                    value(mod.GenCommitCap_Provide_Power_MW[p, tmp]),
-                    value(mod.GenCommitCap_Auxiliary_Consumption_MW[p, tmp]),
-                    value(mod.GenCommitCap_Provide_Power_MW[p, tmp])
-                    - value(mod.GenCommitCap_Auxiliary_Consumption_MW[p, tmp]),
-                    value(mod.Commit_Capacity_MW[p, tmp]),
-                    value(mod.Commit_Capacity_MW[p, tmp])
-                    / mod.gen_commit_cap_unit_size_mw[p],
-                ]
-            )
+    # Dispatch results added to project_timepoint.csv via add_to_prj_tmp_results()
 
     # If there's a linked_subproblems_map CSV file, check which of the
     # current subproblem TMPS we should export results for to link to the
@@ -1534,7 +1517,7 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
                     "linked_shutdown",
                 ]
             )
-            for (p, tmp) in sorted(mod.GEN_COMMIT_CAP_OPR_TMPS):
+            for p, tmp in sorted(mod.GEN_COMMIT_CAP_OPR_TMPS):
                 if tmp in tmps_to_link:
                     writer.writerow(
                         [
@@ -1550,38 +1533,6 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
                             max(value(mod.GenCommitCap_Shutdown_MW[p, tmp]), 0),
                         ]
                     )
-
-
-# Database
-###############################################################################
-
-
-def import_model_results_to_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    """
-
-    :param scenario_id:
-    :param subproblem:
-    :param stage:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-    if not quiet:
-        print("project dispatch capacity commit")
-
-    update_dispatch_results_table(
-        db=db,
-        c=c,
-        results_directory=results_directory,
-        scenario_id=scenario_id,
-        subproblem=subproblem,
-        stage=stage,
-        results_file="dispatch_capacity_commit.csv",
-    )
 
 
 # Validation

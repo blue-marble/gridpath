@@ -282,5 +282,3 @@ def write_model_inputs(
             writer.writerow(["energy_target_zone", "load_zone"])
             for row in energy_target_lz_map_list:
                 writer.writerow(row)
-    else:
-        pass

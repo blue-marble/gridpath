@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import print_function
-from __future__ import absolute_import
 
 from .reserve_balance import (
     generic_add_model_components,
@@ -54,16 +52,16 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
+
     generic_export_results(
-        scenario_directory,
-        subproblem,
-        stage,
-        m,
-        d,
-        "regulation_up_violation.csv",
-        "regulation_up_violation_mw",
-        "REGULATION_UP_ZONES",
-        "Regulation_Up_Violation_MW_Expression",
+        scenario_directory=scenario_directory,
+        subproblem=subproblem,
+        stage=stage,
+        m=m,
+        d=d,
+        reserve_type="regulation_up",
+        reserve_zone_set="REGULATION_UP_ZONES",
+        reserve_violation_expression="Regulation_Up_Violation_MW_Expression",
     )
 
 
@@ -88,9 +86,6 @@ def import_results_into_database(
     :param quiet:
     :return:
     """
-    if not quiet:
-        print("system regulation up balance")
-
     generic_import_results_to_database(
         scenario_id=scenario_id,
         subproblem=subproblem,
@@ -99,4 +94,5 @@ def import_results_into_database(
         db=db,
         results_directory=results_directory,
         reserve_type="regulation_up",
+        quiet=quiet,
     )

@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,20 +18,17 @@ module that adds to the formulation components that describe the amount of
 power that a project is providing in each study timepoint.
 """
 
-from __future__ import division
-from __future__ import print_function
 
-from builtins import next
-from builtins import str
-import csv
 import os.path
 import pandas as pd
 from pyomo.environ import Expression, value
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file
+from gridpath.auxiliary.auxiliary import get_required_subtype_modules
+from gridpath.common_functions import create_results_df
 from gridpath.project.operations.common_functions import load_operational_type_modules
 import gridpath.project.operations.operational_types as op_type_init
+from gridpath.project import PROJECT_TIMEPOINT_DF
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -59,7 +56,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Dynamic Inputs
     ###########################################################################
 
-    required_operational_modules = get_required_subtype_modules_from_projects_file(
+    required_operational_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
         subproblem=subproblem,
         stage=stage,
@@ -111,50 +108,49 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     Nothing
     """
 
-    # First power
-    with open(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "dispatch_all.csv",
-        ),
-        "w",
-        newline="",
-    ) as f:
-        writer = csv.writer(f)
-        writer.writerow(
-            [
-                "project",
-                "period",
-                "horizon",
-                "timepoint",
-                "operational_type",
-                "balancing_type",
-                "timepoint_weight",
-                "number_of_hours_in_timepoint",
-                "load_zone",
-                "technology",
-                "power_mw",
-            ]
-        )
-        for (p, tmp) in m.PRJ_OPR_TMPS:
-            writer.writerow(
-                [
-                    p,
-                    m.period[tmp],
-                    m.horizon[tmp, m.balancing_type_project[p]],
-                    tmp,
-                    m.operational_type[p],
-                    m.balancing_type_project[p],
-                    m.tmp_weight[tmp],
-                    m.hrs_in_tmp[tmp],
-                    m.load_zone[p],
-                    m.technology[p],
-                    value(m.Power_Provision_MW[p, tmp]),
-                ]
-            )
+    results_columns = [
+        "power_mw",
+    ]
+    data = [
+        [
+            prj,
+            tmp,
+            value(m.Power_Provision_MW[prj, tmp]),
+        ]
+        for (prj, tmp) in m.PRJ_OPR_TMPS
+    ]
+    results_df = create_results_df(
+        index_columns=["project", "timepoint"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    for c in results_columns:
+        getattr(d, PROJECT_TIMEPOINT_DF)[c] = None
+    getattr(d, PROJECT_TIMEPOINT_DF).update(results_df)
+
+    required_operational_modules = get_required_subtype_modules(
+        scenario_directory=scenario_directory,
+        subproblem=subproblem,
+        stage=stage,
+        which_type="operational_type",
+    )
+
+    imported_operational_modules = load_operational_type_modules(
+        required_operational_modules
+    )
+
+    for optype_module in imported_operational_modules:
+        if hasattr(
+            imported_operational_modules[optype_module], "add_to_prj_tmp_results"
+        ):
+            results_columns, optype_df = imported_operational_modules[
+                optype_module
+            ].add_to_prj_tmp_results(mod=m)
+            for column in results_columns:
+                if column not in getattr(d, PROJECT_TIMEPOINT_DF):
+                    getattr(d, PROJECT_TIMEPOINT_DF)[column] = None
+            getattr(d, PROJECT_TIMEPOINT_DF).update(optype_df)
 
 
 def summarize_results(scenario_directory, subproblem, stage):
@@ -187,9 +183,9 @@ def summarize_results(scenario_directory, subproblem, stage):
             str(subproblem),
             str(stage),
             "results",
-            "dispatch_all.csv",
+            "project_timepoint.csv",
         )
-    )
+    )[["project", "load_zone", "period", "technology", "power_mw", "timepoint_weight"]]
 
     operational_results_df["weighted_power_mwh"] = (
         operational_results_df["power_mw"] * operational_results_df["timepoint_weight"]
@@ -198,8 +194,9 @@ def summarize_results(scenario_directory, subproblem, stage):
     # Aggregate total power results by load_zone, technology, and period
     operational_results_agg_df = pd.DataFrame(
         operational_results_df.groupby(
-            by=["load_zone", "period", "technology"], as_index=True, group_keys=False
-        ).sum(numeric_only=False)["weighted_power_mwh"]
+            ["load_zone", "period", "technology"],
+            as_index=True,
+        ).sum(numeric_only=True)["weighted_power_mwh"]
     )
 
     operational_results_agg_df.columns = ["weighted_power_mwh"]
@@ -211,8 +208,9 @@ def summarize_results(scenario_directory, subproblem, stage):
         operational_results_df.groupby(
             by=["load_zone", "period"],
             as_index=True,
-            group_keys=False,
-        ).sum(numeric_only=False,)["weighted_power_mwh"]
+        ).sum(
+            numeric_only=True
+        )["weighted_power_mwh"]
     )
 
     # Name the power column
@@ -258,23 +256,6 @@ def summarize_results(scenario_directory, subproblem, stage):
 ###############################################################################
 
 
-def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    """
-
-    :param scenario_id:
-    :param subproblem:
-    :param stage:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-    pass
-
-
 def process_results(db, c, scenario_id, subscenarios, quiet):
     """
     Aggregate dispatch by technology
@@ -307,7 +288,7 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
         scenario_id, subproblem_id, stage_id, period, timepoint, 
         timepoint_weight, number_of_hours_in_timepoint, spinup_or_lookahead,
         load_zone, technology, sum(power_mw) AS power_mw
-        FROM results_project_dispatch
+        FROM results_project_timepoint
         WHERE scenario_id = ?
         GROUP BY subproblem_id, stage_id, timepoint, 
         load_zone, technology

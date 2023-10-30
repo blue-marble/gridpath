@@ -1,4 +1,4 @@
-# Copyright 2016-2021 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -45,9 +45,9 @@ Morales-Espana et al. (2013).
 """
 
 from gridpath.project.operations.operational_types.common_functions import (
-    update_dispatch_results_table,
     validate_opchars,
 )
+from gridpath.common_functions import create_results_df
 import gridpath.project.operations.operational_types.gen_commit_unit_common as gen_commit_unit_common
 
 
@@ -233,6 +233,46 @@ def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
     )
 
 
+def add_to_prj_tmp_results(mod):
+    results_columns, data = gen_commit_unit_common.add_to_prj_tmp_results(
+        mod=mod,
+        BIN_OR_LIN="BIN",
+        Bin_or_Lin="Bin",
+        bin_or_lin="bin",
+    )
+
+    (
+        duals_results_columns,
+        duals_data,
+    ) = gen_commit_unit_common.add_duals_to_dispatch_results(
+        mod=mod,
+        BIN_OR_LIN="BIN",
+        Bin_or_Lin="Bin",
+    )
+
+    # Create DF
+    optype_dispatch_df = create_results_df(
+        index_columns=["project", "timepoint"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    # Get the duals
+    optype_duals_df = create_results_df(
+        index_columns=["project", "timepoint"],
+        results_columns=duals_results_columns,
+        data=duals_data,
+    )
+
+    # Add duals to dispatch DF
+    results_columns += duals_results_columns
+    for column in duals_results_columns:
+        optype_dispatch_df[column] = None
+    optype_dispatch_df.update(optype_duals_df)
+
+    return results_columns, optype_dispatch_df
+
+
 def export_results(mod, d, scenario_directory, subproblem, stage):
     """
     :param scenario_directory:
@@ -242,7 +282,7 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
     :param d:
     :return:
     """
-    gen_commit_unit_common.export_results(
+    gen_commit_unit_common.export_linked_subproblem_inputs(
         mod=mod,
         d=d,
         scenario_directory=scenario_directory,
@@ -251,53 +291,11 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
         BIN_OR_LIN="BIN",
         Bin_or_Lin="Bin",
         bin_or_lin="bin",
-        results_filename="dispatch_binary_commit.csv",
     )
 
 
 def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
     gen_commit_unit_common.save_duals(instance, "Bin")
-
-
-# Database
-###############################################################################
-
-
-def import_model_results_to_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    """
-    :param scenario_id:
-    :param subproblem:
-    :param stage:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-    if not quiet:
-        print("project dispatch binary commit")
-
-    update_dispatch_results_table(
-        db=db,
-        c=c,
-        results_directory=results_directory,
-        scenario_id=scenario_id,
-        subproblem=subproblem,
-        stage=stage,
-        results_file="dispatch_binary_commit.csv",
-    )
-
-    # Update duals
-    gen_commit_unit_common.generic_update_duals_in_db(
-        conn=db,
-        results_directory=results_directory,
-        scenario_id=scenario_id,
-        subproblem=subproblem,
-        stage=stage,
-        bin_or_lin="Bin",
-    )
 
 
 # Validation

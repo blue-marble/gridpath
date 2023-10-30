@@ -101,8 +101,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             imported_tx_operational_modules[op_m].load_model_data(
                 m, d, data_portal, scenario_directory, subproblem, stage
             )
-        else:
-            pass
 
 
 # TODO: move this into SubScenarios class?
@@ -195,8 +193,6 @@ def write_model_inputs(
             imported_tx_operational_modules[op_m].write_model_inputs(
                 scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
             )
-        else:
-            pass
 
 
 # TODO: move this into operations.py?
@@ -229,8 +225,6 @@ def import_results_into_database(
             imported_tx_operational_modules[op_m].import_model_results_to_database(
                 scenario_id, subproblem, stage, c, db, results_directory, quiet
             )
-        else:
-            pass
 
 
 def process_results(db, c, scenario_id, subscenarios, quiet):
@@ -258,8 +252,6 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
             imported_tx_operational_modules[op_m].process_model_results(
                 db, c, scenario_id, subscenarios, quiet
             )
-        else:
-            pass
 
 
 # Validation
@@ -292,5 +284,3 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
             imported_tx_operational_modules[op_m].validate_inputs(
                 scenario_id, subscenarios, subproblem, stage, conn
             )
-        else:
-            pass

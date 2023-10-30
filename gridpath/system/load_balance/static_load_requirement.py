@@ -22,6 +22,8 @@ import os.path
 from pyomo.environ import Param, NonNegativeReals
 
 from gridpath.auxiliary.dynamic_components import load_balance_consumption_components
+from gridpath.common_functions import create_results_df
+from gridpath.system.load_balance import LOAD_ZONE_TMP_DF
 
 
 def record_dynamic_components(dynamic_components):
@@ -163,3 +165,37 @@ def write_model_inputs(
 
         for row in loads:
             writer.writerow(row)
+
+
+def export_results(scenario_directory, subproblem, stage, m, d):
+    """
+
+    :param scenario_directory:
+    :param stage:
+    :param stage:
+    :param m:
+    :param d:
+    :return:
+    """
+
+    results_columns = [
+        "static_load_mw",
+    ]
+    data = [
+        [
+            lz,
+            tmp,
+            m.static_load_mw[lz, tmp],
+        ]
+        for lz in getattr(m, "LOAD_ZONES")
+        for tmp in getattr(m, "TMPS")
+    ]
+    results_df = create_results_df(
+        index_columns=["load_zone", "timepoint"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    for c in results_columns:
+        getattr(d, LOAD_ZONE_TMP_DF)[c] = None
+    getattr(d, LOAD_ZONE_TMP_DF).update(results_df)

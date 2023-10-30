@@ -24,7 +24,6 @@ from gridpath.project.operations.reserves.reserve_provision import (
     generic_add_model_components,
     generic_load_model_data,
     generic_export_results,
-    generic_import_results_into_database,
     generic_get_inputs_from_database,
     generic_validate_project_bas,
 )
@@ -214,12 +213,12 @@ def write_model_inputs(
 
     # Make a dict for easy access
     prj_ba_dict = dict()
-    for (prj, ba) in project_bas:
+    for prj, ba in project_bas:
         prj_ba_dict[str(prj)] = "." if ba is None else str(ba)
 
     # Make a dict for easy access
     prj_derate_dict = dict()
-    for (prj, derate) in prj_derates:
+    for prj, derate in prj_derates:
         prj_derate_dict[str(prj)] = "." if derate is None else str(derate)
 
     # Add params to projects file
@@ -267,31 +266,3 @@ def write_model_inputs(
     ) as projects_file_out:
         writer = csv.writer(projects_file_out, delimiter="\t", lineterminator="\n")
         writer.writerows(new_rows)
-
-
-def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    """
-
-    :param scenario_id:
-    :param subproblem:
-    :param stage:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-    if not quiet:
-        print("project lf reserves down provision")
-
-    generic_import_results_into_database(
-        scenario_id=scenario_id,
-        subproblem=subproblem,
-        stage=stage,
-        c=c,
-        db=db,
-        results_directory=results_directory,
-        reserve_type="lf_reserves_down",
-    )

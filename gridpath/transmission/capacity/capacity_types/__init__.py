@@ -27,6 +27,79 @@ from gridpath.transmission.capacity.common_functions import (
 )
 
 
+def add_model_components(m, d, scenario_directory, subproblem, stage):
+    """ """
+
+    # Dynamic Inputs
+    ###########################################################################
+    df = pd.read_csv(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "transmission_lines.tab",
+        ),
+        sep="\t",
+        usecols=["transmission_line", "tx_capacity_type", "tx_operational_type"],
+    )
+
+    # Required capacity modules are the unique set of tx capacity types
+    # This list will be used to know which capacity modules to load
+    required_tx_capacity_modules = df.tx_capacity_type.unique()
+
+    # Import needed transmission capacity type modules for expression rules
+    imported_tx_capacity_modules = load_tx_capacity_type_modules(
+        required_tx_capacity_modules
+    )
+
+    # Add model components for each of the transmission capacity modules
+    for op_m in required_tx_capacity_modules:
+        imp_op_m = imported_tx_capacity_modules[op_m]
+        if hasattr(imp_op_m, "add_model_components"):
+            imp_op_m.add_model_components(m, d, scenario_directory, subproblem, stage)
+
+
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+    """
+
+    :param m:
+    :param d:
+    :param data_portal:
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :return:
+    """
+    df = pd.read_csv(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "transmission_lines.tab",
+        ),
+        sep="\t",
+        usecols=["transmission_line", "tx_capacity_type", "tx_operational_type"],
+    )
+
+    # Required capacity modules are the unique set of tx capacity types
+    # This list will be used to know which capacity modules to load
+    required_tx_capacity_modules = df.tx_capacity_type.unique()
+
+    # Import needed transmission capacity type modules for expression rules
+    imported_tx_capacity_modules = load_tx_capacity_type_modules(
+        required_tx_capacity_modules
+    )
+
+    # Add model components for each of the transmission capacity modules
+    for op_m in required_tx_capacity_modules:
+        if hasattr(imported_tx_capacity_modules[op_m], "load_model_data"):
+            imported_tx_capacity_modules[op_m].load_model_data(
+                m, d, data_portal, scenario_directory, subproblem, stage
+            )
+
+
 def get_required_capacity_type_modules(scenario_id, subscenarios, conn):
     """
     Get the required tx capacity type submodules based on the database inputs
@@ -97,8 +170,6 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
             imported_capacity_type_modules[op_m].validate_inputs(
                 scenario_id, subscenarios, subproblem, stage, conn
             )
-        else:
-            pass
 
 
 def write_model_inputs(
@@ -127,8 +198,6 @@ def write_model_inputs(
             imported_capacity_type_modules[op_m].write_model_inputs(
                 scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
             )
-        else:
-            pass
 
 
 # Capacity Type Module Method Defaults
@@ -137,4 +206,14 @@ def new_capacity_rule(mod, prj, prd):
     """
     New capacity built at project g in period p.
     """
+    return 0
+
+
+def capacity_cost_rule(mod, prj, prd):
+    """ """
+    return 0
+
+
+def fixed_cost_rule(mod, prj, prd):
+    """ """
     return 0

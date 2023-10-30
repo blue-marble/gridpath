@@ -23,7 +23,7 @@ rate. Adding a tuning cost prevents that behavior as it pushes the emissions
 variable down to be equal.
 """
 
-from builtins import next
+
 import csv
 import os.path
 from pyomo.environ import Param, Expression
@@ -97,8 +97,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             select=("import_carbon_tuning_cost_per_ton",),
             param=m.import_carbon_tuning_cost_per_ton,
         )
-    else:
-        pass
 
 
 def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):

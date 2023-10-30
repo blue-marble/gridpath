@@ -34,8 +34,7 @@ from pyomo.environ import (
     value,
 )
 
-from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.db_interface import setup_results_import
+from gridpath.auxiliary.db_interface import import_csv
 from gridpath.project.capacity.capacity_types.common_methods import (
     project_vintages_relevant_in_period,
     relevant_periods_by_project_vintage,
@@ -498,7 +497,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             str(subproblem),
             str(stage),
             "results",
-            "deliverability_group_capacity_and_costs.csv",
+            "project_deliverability_groups.csv",
         ),
         "w",
         newline="",
@@ -508,14 +507,14 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             [
                 "deliverability_group",
                 "period",
-                "deliverability_capacity_built_in_period_mw",
-                "cumulative_added_deliverability_capacity_mw",
-                "deliverability_cost_in_period",
+                "deliverable_capacity_built_in_period_mw",
+                "cumulative_added_deliverable_capacity_mw",
+                "deliverability_annual_cost_in_period",
             ]
         )
         # TODO: add limits to results
-        for g in m.DELIVERABILITY_GROUPS:
-            for p in m.PERIODS:
+        for g in sorted(m.DELIVERABILITY_GROUPS):
+            for p in sorted(m.PERIODS):
                 writer.writerow(
                     [
                         g,
@@ -732,8 +731,6 @@ def write_model_inputs(
             # Input data
             for row in existing:
                 writer.writerow(row)
-    else:
-        pass
 
     group_potential = group_potential.fetchall()
     if group_potential:
@@ -762,8 +759,6 @@ def write_model_inputs(
             # Input data
             for row in group_potential:
                 writer.writerow(row)
-    else:
-        pass
 
     with open(
         os.path.join(
@@ -821,80 +816,13 @@ def import_results_into_database(
     :return:
     """
 
-    # Group capacity cost results
-    if not quiet:
-        print("project prm group deliverability costs")
-
-    # Delete prior results and create temporary import table for ordering
-    setup_results_import(
+    import_csv(
         conn=db,
         cursor=c,
-        table="results_project_prm_deliverability_group_capacity_and_costs",
         scenario_id=scenario_id,
         subproblem=subproblem,
         stage=stage,
+        quiet=quiet,
+        results_directory=results_directory,
+        which_results="project_deliverability_groups",
     )
-
-    # Load results into the temporary table
-    results = []
-    with open(
-        os.path.join(results_directory, "deliverability_group_capacity_and_costs.csv"),
-        "r",
-    ) as capacity_costs_file:
-        reader = csv.reader(capacity_costs_file)
-
-        next(reader)  # skip header
-        for row in reader:
-            group = row[0]
-            period = row[1]
-            period_build = row[2]
-            cumulative_build = row[3]
-            cost_in_period = row[4]
-
-            results.append(
-                (
-                    scenario_id,
-                    group,
-                    period,
-                    subproblem,
-                    stage,
-                    period_build,
-                    cumulative_build,
-                    cost_in_period,
-                )
-            )
-
-    insert_temp_sql = """
-            INSERT INTO 
-            temp_results_project_prm_deliverability_group_capacity_and_costs{}
-            (scenario_id, deliverability_group, period, subproblem_id, stage_id,
-            deliverability_built_in_period_mw,
-            cumulative_added_deliverability_in_period_mw, 
-            deliverability_annual_cost_in_period)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?);
-            """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
-
-    # Insert sorted results into permanent results table
-    insert_sql = """
-            INSERT INTO 
-            results_project_prm_deliverability_group_capacity_and_costs
-            (scenario_id, deliverability_group, period, subproblem_id, stage_id, 
-            deliverability_built_in_period_mw,
-            cumulative_added_deliverability_in_period_mw, 
-            deliverability_annual_cost_in_period)
-            SELECT
-            scenario_id, deliverability_group, period, subproblem_id, stage_id, 
-            deliverability_built_in_period_mw,
-            cumulative_added_deliverability_in_period_mw, 
-            deliverability_annual_cost_in_period
-            FROM 
-            temp_results_project_prm_deliverability_group_capacity_and_costs{}
-            ORDER BY scenario_id, deliverability_group, period, subproblem_id, 
-            stage_id;
-            """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)

@@ -213,69 +213,47 @@ class ScenarioResultsPlot(Resource):
         ]
 
         filter_arguments = []
-        if load_zone == "default":
-            pass
-        else:
+        if not load_zone == "default":
             filter_arguments.append("--load_zone")
             filter_arguments.append(load_zone)
 
-        if energy_target_zone == "default":
-            pass
-        else:
+        if not energy_target_zone == "default":
             filter_arguments.append("--energy_target_zone")
             filter_arguments.append(energy_target_zone)
 
-        if carbon_cap_zone == "default":
-            pass
-        else:
+        if not carbon_cap_zone == "default":
             filter_arguments.append("--carbon_cap_zone")
             filter_arguments.append(carbon_cap_zone)
 
-        if period == "default":
-            pass
-        else:
+        if not period == "default":
             filter_arguments.append("--period")
             filter_arguments.append(period)
 
-        if horizon == "default":
-            pass
-        else:
+        if not horizon == "default":
             filter_arguments.append("--horizon")
             filter_arguments.append(horizon)
 
-        if start_timepoint == "default":
-            pass
-        else:
+        if not start_timepoint == "default":
             filter_arguments.append("--starting_tmp")
             filter_arguments.append(start_timepoint)
 
-        if end_timepoint == "default":
-            pass
-        else:
+        if not end_timepoint == "default":
             filter_arguments.append("--ending_tmp")
             filter_arguments.append(end_timepoint)
 
-        if subproblem == "default":
-            pass
-        else:
+        if not subproblem == "default":
             filter_arguments.append("--subproblem")
             filter_arguments.append(subproblem)
 
-        if stage == "default":
-            pass
-        else:
+        if not stage == "default":
             filter_arguments.append("--stage")
             filter_arguments.append(stage)
 
-        if project == "default":
-            pass
-        else:
+        if not project == "default":
             filter_arguments.append("--project")
             filter_arguments.append(project)
 
-        if commit_project == "default":
-            pass
-        else:
+        if not commit_project == "default":
             filter_arguments.append("--project")
             filter_arguments.append(commit_project)
 

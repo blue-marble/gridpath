@@ -16,14 +16,15 @@
 PRM projects and the zone they contribute to
 """
 
-from builtins import next
-from builtins import str
-from builtins import range
 import csv
 import os.path
 from pyomo.environ import Param, Set
 
-from gridpath.auxiliary.auxiliary import cursor_to_df, subset_init_by_param_value
+from gridpath.auxiliary.auxiliary import (
+    cursor_to_df,
+    subset_init_by_param_value,
+    subset_init_by_set_membership,
+)
 from gridpath.auxiliary.validations import (
     write_validation_to_database,
     validate_idxs,
@@ -61,9 +62,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Get operational carbon cap projects - timepoints combinations
     m.PRM_PRJ_OPR_PRDS = Set(
         within=m.PRJ_OPR_PRDS,
-        initialize=lambda mod: [
-            (prj, p) for (prj, p) in mod.PRJ_OPR_PRDS if prj in mod.PRM_PROJECTS
-        ],
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod, superset="PRJ_OPR_PRDS", index=0, membership_set=mod.PRM_PROJECTS
+        ),
     )
 
 
@@ -220,7 +221,7 @@ def write_model_inputs(
     # Only assign a type to projects that contribute to a PRM zone in case
     # we have projects with missing zones here
     prj_zone_type_dict = dict()
-    for (prj, zone, prm_type) in project_zones:
+    for prj, zone, prm_type in project_zones:
         prj_zone_type_dict[str(prj)] = (
             (".", ".") if zone is None else (str(zone), str(prm_type))
         )

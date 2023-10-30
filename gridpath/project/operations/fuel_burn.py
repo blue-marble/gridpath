@@ -31,9 +31,11 @@ from pyomo.environ import (
     value,
 )
 
-from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.db_interface import setup_results_import
-from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file
+from gridpath.auxiliary.db_interface import import_csv
+from gridpath.auxiliary.auxiliary import (
+    get_required_subtype_modules,
+    subset_init_by_set_membership,
+)
 from gridpath.project.operations.common_functions import load_operational_type_modules
 import gridpath.project.operations.operational_types as op_type_init
 
@@ -154,7 +156,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Dynamic Inputs
     ###########################################################################
 
-    required_operational_modules = get_required_subtype_modules_from_projects_file(
+    required_operational_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
         subproblem=subproblem,
         stage=stage,
@@ -171,9 +173,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.FUEL_PRJ_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: [
-            (p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS if p in mod.FUEL_PRJS
-        ],
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod, superset="PRJ_OPR_TMPS", index=0, membership_set=mod.FUEL_PRJS
+        ),
     )
 
     m.FUEL_PRJS_FUEL_OPR_TMPS = Set(
@@ -217,9 +219,12 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.STARTUP_FUEL_PRJ_OPR_TMPS = Set(
         dimen=2,
         within=m.FUEL_PRJ_OPR_TMPS,
-        initialize=lambda mod: [
-            (p, tmp) for (p, tmp) in mod.FUEL_PRJ_OPR_TMPS if p in mod.STARTUP_FUEL_PRJS
-        ],
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod,
+            superset="FUEL_PRJ_OPR_TMPS",
+            index=0,
+            membership_set=mod.STARTUP_FUEL_PRJS,
+        ),
     )
 
     m.STARTUP_FUEL_PRJS_FUEL_OPR_TMPS = Set(
@@ -570,7 +575,11 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     """
     with open(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "results", "fuel_burn.csv"
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "results",
+            "project_fuel_burn.csv",
         ),
         "w",
         newline="",
@@ -587,14 +596,14 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "load_zone",
                 "technology",
                 "fuel",
-                "fuel_burn_operations_mmbtu",
-                "fuel_burn_startup_mmbtu",
+                "operations_fuel_burn_mmbtu",
+                "startup_fuel_burn_mmbtu",
                 "total_fuel_burn_mmbtu",
                 "fuel_contribution_fuelunit",
                 "net_fuel_burn_fuelunit",
             ]
         )
-        for (p, f, tmp) in m.FUEL_PRJS_FUEL_OPR_TMPS:
+        for p, f, tmp in sorted(m.FUEL_PRJS_FUEL_OPR_TMPS):
             writer.writerow(
                 [
                     p,
@@ -636,95 +645,13 @@ def import_results_into_database(
     :param quiet:
     :return:
     """
-    # Fuel burned by project and timepoint
-    if not quiet:
-        print("project fuel burn")
-    # Delete prior results and create temporary import table for ordering
-    setup_results_import(
+    import_csv(
         conn=db,
         cursor=c,
-        table="results_project_fuel_burn",
         scenario_id=scenario_id,
         subproblem=subproblem,
         stage=stage,
+        quiet=quiet,
+        results_directory=results_directory,
+        which_results="project_fuel_burn",
     )
-
-    # Load results into the temporary table
-    results = []
-    with open(os.path.join(results_directory, "fuel_burn.csv"), "r") as fuel_burn_file:
-        reader = csv.reader(fuel_burn_file)
-
-        next(reader)  # skip header
-        for row in reader:
-            project = row[0]
-            period = row[1]
-            horizon = row[2]
-            timepoint = row[3]
-            timepoint_weight = row[4]
-            number_of_hours_in_timepoint = row[5]
-            load_zone = row[6]
-            technology = row[7]
-            fuel = row[8]
-            opr_fuel_burn_tons = row[9]
-            startup_fuel_burn_tons = row[10]
-            total_fuel_burn = row[11]
-            fuel_contribution = row[12]
-            net_fuel_burn = row[13]
-
-            results.append(
-                (
-                    scenario_id,
-                    project,
-                    period,
-                    subproblem,
-                    stage,
-                    horizon,
-                    timepoint,
-                    timepoint_weight,
-                    number_of_hours_in_timepoint,
-                    load_zone,
-                    technology,
-                    fuel,
-                    opr_fuel_burn_tons,
-                    startup_fuel_burn_tons,
-                    total_fuel_burn,
-                    fuel_contribution,
-                    net_fuel_burn,
-                )
-            )
-
-    insert_temp_sql = """
-        INSERT INTO 
-        temp_results_project_fuel_burn{}
-         (scenario_id, project, period, subproblem_id, stage_id, 
-         horizon, timepoint, timepoint_weight,
-         number_of_hours_in_timepoint,
-         load_zone, technology, fuel, operations_fuel_burn_mmbtu, 
-         startup_fuel_burn_mmbtu, total_fuel_burn_mmbtu, fuel_contribution_fuelunit, 
-         net_fuel_burn_fuelunit)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-         """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
-
-    # Insert sorted results into permanent results table
-    insert_sql = """
-        INSERT INTO results_project_fuel_burn
-        (scenario_id, project, period, subproblem_id, stage_id, 
-        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
-        load_zone, technology, fuel, operations_fuel_burn_mmbtu, 
-         startup_fuel_burn_mmbtu, total_fuel_burn_mmbtu, fuel_contribution_fuelunit, 
-         net_fuel_burn_fuelunit)
-        SELECT
-        scenario_id, project, period, subproblem_id, stage_id, 
-        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
-        load_zone, technology, fuel, operations_fuel_burn_mmbtu, 
-         startup_fuel_burn_mmbtu, total_fuel_burn_mmbtu, fuel_contribution_fuelunit, 
-         net_fuel_burn_fuelunit
-        FROM temp_results_project_fuel_burn{}
-         ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;
-         """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)

@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import print_function
 
-from builtins import str
 from collections import OrderedDict
 from importlib import import_module
 import os.path
@@ -129,7 +127,7 @@ class TestFuels(unittest.TestCase):
 
         # Set: FUELS_BY_FUEL_GROUP
         expected_fuels_by_fg = {}
-        for (fg, f) in expected_fuel_groups_fuels:
+        for fg, f in expected_fuel_groups_fuels:
             if fg not in expected_fuels_by_fg.keys():
                 expected_fuels_by_fg[fg] = [f]
             else:

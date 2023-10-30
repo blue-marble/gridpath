@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,13 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from builtins import next
+
 import csv
 import os.path
 from pyomo.environ import Var, Constraint, NonNegativeReals, Expression, value
 
-from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.db_interface import setup_results_import
+from gridpath.auxiliary.db_interface import import_csv
 
 
 def generic_add_model_components(
@@ -61,10 +60,10 @@ def generic_add_model_components(
         :param tmp:
         :return:
         """
-        return (
-            getattr(mod, reserve_violation_allowed_param)[ba]
-            * getattr(mod, reserve_violation_variable)[ba, tmp]
-        )
+        if getattr(mod, reserve_violation_allowed_param)[ba]:
+            return getattr(mod, reserve_violation_variable)[ba, tmp]
+        else:
+            return 0
 
     setattr(
         m,
@@ -95,8 +94,7 @@ def generic_export_results(
     stage,
     m,
     d,
-    filename,
-    column_name,
+    reserve_type,
     reserve_zone_set,
     reserve_violation_expression,
 ):
@@ -107,15 +105,30 @@ def generic_export_results(
     :param stage:
     :param m:
     :param d:
-    :param filename:
+    :param reserve_type:
     :param column_name:
     :param reserve_zone_set:
     :param reserve_violation_expression:
     :return:
     """
+
+    duals_map = {
+        "lf_reserves_up": "Meet_LF_Reserves_Up_Constraint",
+        "lf_reserves_down": "Meet_LF_Reserves_Down_Constraint",
+        "regulation_up": "Meet_Regulation_Up_Constraint",
+        "regulation_down": "Meet_Regulation_Down_Constraint",
+        "frequency_response": "Meet_Frequency_Response_Constraint",
+        "frequency_response_partial": "Meet_Frequency_Response_Partial_Constraint",
+        "spinning_reserves": "Meet_Spinning_Reserves_Constraint",
+    }
+
     with open(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "results", filename
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "results",
+            f"system_{reserve_type}.csv",
         ),
         "w",
         newline="",
@@ -123,17 +136,19 @@ def generic_export_results(
         writer = csv.writer(results_file)
         writer.writerow(
             [
-                "ba",
+                f"{reserve_type}_ba",
                 "period",
                 "timepoint",
                 "discount_factor",
                 "number_years_represented",
                 "timepoint_weight",
                 "number_of_hours_in_timepoint",
-                column_name,
+                "violation_mw",
+                "dual",
+                "marginal_price_per_mw",
             ]
         )
-        for (ba, tmp) in getattr(m, reserve_zone_set) * m.TMPS:
+        for ba, tmp in getattr(m, reserve_zone_set) * m.TMPS:
             writer.writerow(
                 [
                     ba,
@@ -144,6 +159,16 @@ def generic_export_results(
                     m.tmp_weight[tmp],
                     m.hrs_in_tmp[tmp],
                     value(getattr(m, reserve_violation_expression)[ba, tmp]),
+                    m.dual[getattr(m, duals_map[reserve_type])[ba, tmp]]
+                    if (ba, tmp) in [idx for idx in getattr(m, duals_map[reserve_type])]
+                    else None,
+                    (
+                        m.dual[getattr(m, duals_map[reserve_type])[ba, tmp]]
+                        / m.tmp_objective_coefficient[tmp]
+                        if (ba, tmp)
+                        in [idx for idx in getattr(m, duals_map[reserve_type])]
+                        else None
+                    ),
                 ]
             )
 
@@ -159,7 +184,7 @@ def generic_save_duals(m, reserve_constraint_name):
 
 
 def generic_import_results_to_database(
-    scenario_id, subproblem, stage, c, db, results_directory, reserve_type
+    scenario_id, subproblem, stage, c, db, results_directory, reserve_type, quiet
 ):
     """
 
@@ -173,139 +198,13 @@ def generic_import_results_to_database(
     :return:
     """
 
-    # Delete prior results and create temporary import table for ordering
-    setup_results_import(
+    import_csv(
         conn=db,
         cursor=c,
-        table="results_system_{}_balance" "".format(reserve_type),
         scenario_id=scenario_id,
         subproblem=subproblem,
         stage=stage,
-    )
-
-    # Load results into the temporary table
-    results = []
-    with open(
-        os.path.join(results_directory, reserve_type + "_violation.csv"), "r"
-    ) as violation_file:
-        reader = csv.reader(violation_file)
-
-        next(reader)  # skip header
-        for row in reader:
-            ba = row[0]
-            period = row[1]
-            timepoint = row[2]
-            discount_factor = row[3]
-            number_years_represented = row[4]
-            timepoint_weight = row[5]
-            number_of_hours_in_timepoint = row[6]
-            violation = row[7]
-
-            results.append(
-                (
-                    scenario_id,
-                    ba,
-                    period,
-                    subproblem,
-                    stage,
-                    timepoint,
-                    discount_factor,
-                    number_years_represented,
-                    timepoint_weight,
-                    number_of_hours_in_timepoint,
-                    violation,
-                )
-            )
-
-    insert_temp_sql = """
-        INSERT INTO 
-        temp_results_system_{}_balance{}
-        (scenario_id, {}_ba, period,
-        subproblem_id, stage_id, timepoint, 
-        discount_factor, number_years_represented, timepoint_weight, 
-        number_of_hours_in_timepoint,
-        violation_mw)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-        """.format(
-        reserve_type, scenario_id, reserve_type
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
-
-    # Insert sorted results into permanent results table
-    insert_sql = """
-        INSERT INTO results_system_{}_balance
-        (scenario_id, {}_ba, period, 
-        subproblem_id, stage_id, timepoint,
-        discount_factor, number_years_represented, timepoint_weight, 
-        number_of_hours_in_timepoint, violation_mw)
-        SELECT
-        scenario_id, {}_ba, period, 
-        subproblem_id, stage_id, timepoint,
-        discount_factor, number_years_represented, timepoint_weight, 
-        number_of_hours_in_timepoint, violation_mw
-        FROM temp_results_system_{}_balance{}
-        ORDER BY scenario_id, {}_ba, 
-        subproblem_id, stage_id, timepoint;
-        """.format(
-        reserve_type,
-        reserve_type,
-        reserve_type,
-        reserve_type,
-        scenario_id,
-        reserve_type,
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)
-
-    # Update duals
-    dual_files = {
-        "lf_reserves_up": "Meet_LF_Reserves_Up_Constraint.csv",
-        "lf_reserves_down": "Meet_LF_Reserves_Down_Constraint.csv",
-        "regulation_up": "Meet_Regulation_Up_Constraint.csv",
-        "regulation_down": "Meet_Regulation_Down_Constraint.csv",
-        "frequency_response": "Meet_Frequency_Response_Constraint.csv",
-        "frequency_response_partial": "Meet_Frequency_Response_Partial_Constraint.csv",
-        "spinning_reserves": "Meet_Spinning_Reserves_Constraint.csv",
-    }
-
-    duals_results = []
-    with open(
-        os.path.join(results_directory, dual_files[reserve_type]), "r"
-    ) as reserve_balance_duals_file:
-        reader = csv.reader(reserve_balance_duals_file)
-
-        next(reader)  # skip header
-
-        for row in reader:
-            duals_results.append(
-                (row[2], row[0], row[1], scenario_id, subproblem, stage)
-            )
-
-    duals_sql = """
-        UPDATE results_system_{}_balance
-        SET dual = ?
-        WHERE {}_ba = ?
-        AND timepoint = ?
-        AND scenario_id = ?
-        AND subproblem_id = ?
-        AND stage_id = ?;
-        """.format(
-        reserve_type, reserve_type
-    )
-
-    spin_on_database_lock(conn=db, cursor=c, sql=duals_sql, data=duals_results)
-
-    # Calculate marginal cost per MW
-    mc_sql = """
-        UPDATE results_system_{}_balance
-        SET marginal_price_per_mw = 
-        dual / (discount_factor * number_years_represented * timepoint_weight 
-        * number_of_hours_in_timepoint)
-        WHERE scenario_id = ?
-        AND subproblem_id = ?
-        AND stage_id = ?;
-        """.format(
-        reserve_type
-    )
-    spin_on_database_lock(
-        conn=db, cursor=c, sql=mc_sql, data=(scenario_id, subproblem, stage), many=False
+        quiet=quiet,
+        results_directory=results_directory,
+        which_results=f"system_{reserve_type}",
     )

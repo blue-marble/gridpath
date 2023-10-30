@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import print_function
 
-from builtins import str
 from collections import OrderedDict
 from importlib import import_module
 import os.path
@@ -100,14 +98,16 @@ class TestSpecifiedTransmission(unittest.TestCase):
         actual_tx_vintages = sorted([(tx, v) for (tx, v) in instance.TX_NEW_LIN_VNTS])
         self.assertListEqual(expected_tx_vintages, actual_tx_vintages)
 
-        # Param: tx_new_lin_lifetime_yrs
+        # Param: tx_new_lin_operational_lifetime_yrs_by_vintage
         expected_lifetime = OrderedDict(
             sorted({("Tx_New", 2020): 35, ("Tx_New", 2030): 35}.items())
         )
         actual_lifetime = OrderedDict(
             sorted(
                 {
-                    (tx, v): instance.tx_new_lin_lifetime_yrs[tx, v]
+                    (tx, v): instance.tx_new_lin_operational_lifetime_yrs_by_vintage[
+                        tx, v
+                    ]
                     for (tx, v) in instance.TX_NEW_LIN_VNTS
                 }.items()
             )
@@ -127,6 +127,20 @@ class TestSpecifiedTransmission(unittest.TestCase):
             )
         )
         self.assertDictEqual(expected_cost, actual_cost)
+
+        # Param: tx_new_lin_fixed_cost_per_mw_yr
+        expected_fcost = OrderedDict(
+            sorted({("Tx_New", 2020): 0, ("Tx_New", 2030): 5}.items())
+        )
+        actual_fcost = OrderedDict(
+            sorted(
+                {
+                    (tx, v): instance.tx_new_lin_fixed_cost_per_mw_yr[tx, v]
+                    for (tx, v) in instance.TX_NEW_LIN_VNTS
+                }.items()
+            )
+        )
+        self.assertDictEqual(expected_fcost, actual_fcost)
 
         # Set: TX_NEW_LIN_VNTS_W_MIN_CONSTRAINT
         expected_tx_vintage_min_set = sorted([("Tx_New", 2020), ("Tx_New", 2030)])

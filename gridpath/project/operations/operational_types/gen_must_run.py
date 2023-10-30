@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -43,7 +43,11 @@ from pyomo.environ import (
     value,
 )
 
-from gridpath.auxiliary.auxiliary import subset_init_by_param_value, cursor_to_df
+from gridpath.auxiliary.auxiliary import (
+    subset_init_by_param_value,
+    cursor_to_df,
+    subset_init_by_set_membership,
+)
 from gridpath.auxiliary.validations import (
     write_validation_to_database,
     get_projects_by_reserve,
@@ -55,6 +59,7 @@ from gridpath.project.operations.operational_types.common_functions import (
     load_optype_model_data,
     validate_opchars,
 )
+from gridpath.common_functions import create_results_df
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -120,8 +125,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.GEN_MUST_RUN_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: list(
-            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS if g in mod.GEN_MUST_RUN)
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod, superset="PRJ_OPR_TMPS", index=0, membership_set=mod.GEN_MUST_RUN
         ),
     )
 
@@ -228,9 +233,8 @@ def power_provision_rule(mod, g, tmp):
     timepoints when they are operational minus any auxiliary power consumption.
     """
     return (
-        mod.Capacity_MW[g, mod.period[tmp]]
-        * mod.Availability_Derate[g, tmp]
-        * (1 - mod.gen_must_run_aux_consumption_frac_capacity[g])
+        mod.Capacity_MW[g, mod.period[tmp]] * mod.Availability_Derate[g, tmp]
+        - mod.GenMustRun_Auxiliary_Consumption_MW[g, tmp]
     )
 
 
@@ -238,7 +242,8 @@ def fuel_burn_rule(mod, g, tmp):
     """ """
     return (
         mod.fuel_burn_slope_mmbtu_per_mwh[g, mod.period[tmp], 0]
-        * mod.Power_Provision_MW[g, tmp]
+        * mod.Capacity_MW[g, mod.period[tmp]]
+        * mod.Availability_Derate[g, tmp]
     )
 
 
@@ -272,65 +277,29 @@ def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
     )
 
 
-def export_results(mod, d, scenario_directory, subproblem, stage):
-    """
+def add_to_prj_tmp_results(mod):
+    results_columns = [
+        "gross_power_mw",
+        "auxiliary_consumption_mw",
+    ]
+    data = [
+        [
+            prj,
+            tmp,
+            value(mod.Capacity_MW[prj, mod.period[tmp]])
+            * value(mod.Availability_Derate[prj, tmp]),
+            value(mod.GenMustRun_Auxiliary_Consumption_MW[prj, tmp]),
+        ]
+        for (prj, tmp) in mod.GEN_MUST_RUN_OPR_TMPS
+    ]
 
-    :param scenario_directory:
-    :param subproblem:
-    :param stage:
-    :param mod:
-    :param d:
-    :return:
-    """
-    with open(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "dispatch_gen_must_run.csv",
-        ),
-        "w",
-        newline="",
-    ) as f:
-        writer = csv.writer(f)
-        writer.writerow(
-            [
-                "project",
-                "period",
-                "balancing_type_project",
-                "horizon",
-                "timepoint",
-                "timepoint_weight",
-                "number_of_hours_in_timepoint",
-                "technology",
-                "load_zone",
-                "power_mw",
-                "gross_power_mw",
-                "auxiliary_consumption_mw",
-            ]
-        )
+    optype_dispatch_df = create_results_df(
+        index_columns=["project", "timepoint"],
+        results_columns=results_columns,
+        data=data,
+    )
 
-        for (p, tmp) in mod.GEN_MUST_RUN_OPR_TMPS:
-            writer.writerow(
-                [
-                    p,
-                    mod.period[tmp],
-                    mod.balancing_type_project[p],
-                    mod.horizon[tmp, mod.balancing_type_project[p]],
-                    tmp,
-                    mod.tmp_weight[tmp],
-                    mod.hrs_in_tmp[tmp],
-                    mod.technology[p],
-                    mod.load_zone[p],
-                    value(mod.Power_Provision_MW[p, tmp]),
-                    value(mod.Capacity_MW[p, mod.period[tmp]])
-                    * value(mod.Availability_Derate[p, tmp]),
-                    value(mod.Capacity_MW[p, mod.period[tmp]])
-                    * value(mod.Availability_Derate[p, tmp])
-                    * mod.gen_must_run_aux_consumption_frac_capacity[p],
-                ]
-            )
+    return results_columns, optype_dispatch_df
 
 
 # Validation

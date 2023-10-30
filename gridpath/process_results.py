@@ -22,8 +22,6 @@ The main() function of this script can also be called with the
 """
 
 
-from __future__ import print_function
-
 from argparse import ArgumentParser
 import sys
 
@@ -51,8 +49,6 @@ def process_results(loaded_modules, db, cursor, scenario_id, subscenarios, quiet
     for m in loaded_modules:
         if hasattr(m, "process_results"):
             m.process_results(db, cursor, scenario_id, subscenarios, quiet)
-        else:
-            pass
 
 
 def parse_arguments(args):

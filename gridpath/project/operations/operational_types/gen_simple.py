@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -40,7 +40,11 @@ from pyomo.environ import (
     value,
 )
 
-from gridpath.auxiliary.auxiliary import subset_init_by_param_value, cursor_to_df
+from gridpath.auxiliary.auxiliary import (
+    subset_init_by_param_value,
+    cursor_to_df,
+    subset_init_by_set_membership,
+)
 from gridpath.auxiliary.validations import (
     write_validation_to_database,
     validate_single_input,
@@ -187,8 +191,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.GEN_SIMPLE_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: set(
-            (g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS if g in mod.GEN_SIMPLE
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod, superset="PRJ_OPR_TMPS", index=0, membership_set=mod.GEN_SIMPLE
         ),
     )
 
@@ -261,6 +265,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
 # Constraint Formulation Rules
 ###############################################################################
+
 
 # Power
 def max_power_rule(mod, g, tmp):
@@ -507,8 +512,6 @@ def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
                 mod.gen_simple_linked_downwards_reserves,
             ),
         )
-    else:
-        pass
 
 
 def export_results(mod, d, scenario_directory, subproblem, stage):
@@ -555,7 +558,7 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
                     "linked_downward_reserves",
                 ]
             )
-            for (p, tmp) in sorted(mod.GEN_SIMPLE_OPR_TMPS):
+            for p, tmp in sorted(mod.GEN_SIMPLE_OPR_TMPS):
                 if tmp in tmps_to_link:
                     writer.writerow(
                         [

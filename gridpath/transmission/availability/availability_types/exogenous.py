@@ -26,7 +26,7 @@ import csv
 import os.path
 from pyomo.environ import Param, Set, NonNegativeReals
 
-from gridpath.auxiliary.auxiliary import cursor_to_df
+from gridpath.auxiliary.auxiliary import cursor_to_df, subset_init_by_set_membership
 from gridpath.auxiliary.validations import (
     write_validation_to_database,
     get_expected_dtypes,
@@ -77,13 +77,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.TX_AVL_EXOG = Set(within=m.TX_LINES)
 
-    # TODO: factor out this lambda rule, as it is used in all operational type
-    #  modules and availability type modules
     m.TX_AVL_EXOG_OPR_TMPS = Set(
         dimen=2,
         within=m.TX_OPR_TMPS,
-        initialize=lambda mod: list(
-            set((tx, tmp) for (tx, tmp) in mod.TX_OPR_TMPS if tx in mod.TX_AVL_EXOG)
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod, superset="TX_OPR_TMPS", index=0, membership_set=mod.TX_AVL_EXOG
         ),
     )
 
@@ -147,8 +145,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 
     if os.path.exists(availability_file):
         data_portal.load(filename=availability_file, param=m.tx_avl_exog_derate)
-    else:
-        pass
 
 
 # Database

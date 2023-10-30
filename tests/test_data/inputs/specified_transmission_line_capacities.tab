@@ -1,7 +1,9 @@
-transmission_line	period	specified_tx_min_mw	specified_tx_max_mw
-Tx1	2020	-10	10
-Tx1	2030	-10	10
-Tx2	2020	-10	10
-Tx2	2030	-10	10
-Tx3	2020	-10	10
-Tx3	2030	-10	10
+transmission_line	period	specified_tx_min_mw	specified_tx_max_mw	fixed_cost_per_mw_yr
+Tx1	2020	-10	10	0
+Tx1	2030	-10	10	5
+Tx2	2020	-10	10	0
+Tx2	2030	-10	10	5
+Tx3	2020	-10	10	0
+Tx3	2030	-10	10	5
+Tx_binary_1	2020	-10	10	0
+Tx_binary_1	2030	-10	10	5

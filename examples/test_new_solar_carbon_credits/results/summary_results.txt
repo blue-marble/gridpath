@@ -1,0 +1,19 @@
+##### SUMMARY RESULTS FOR SCENARIO *test_new_solar_carbon_credits* #####
+
+### CAPACITY RESULTS ###
+
+--> New Generation Capacity <--
+                             New Capacity (MW)
+load_zone technology period                   
+Zone1     Solar      2020                 2.00
+
+### OPERATIONAL RESULTS ###
+
+--> Energy Production <--
+                             Annual Energy (MWh)  % Total Power
+load_zone period technology                                    
+Zone1     2020   Coal                  17,172.76          13.07
+                 Gas                   48,527.24          36.93
+                 Nuclear               52,560.00          40.00
+                 Solar                  8,760.00           6.67
+                 Wind                   4,380.00           3.33

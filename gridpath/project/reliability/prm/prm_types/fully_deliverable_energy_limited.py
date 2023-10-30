@@ -16,15 +16,17 @@
 Storage projects with additional constraints on deliverability based on their 
 duration
 """
-from __future__ import division
 
-from builtins import next
-from builtins import str
+
 import csv
 import os.path
 from pyomo.environ import Param, Var, Set, Constraint, PositiveReals, NonNegativeReals
 
-from gridpath.auxiliary.auxiliary import cursor_to_df
+from gridpath.auxiliary.auxiliary import (
+    cursor_to_df,
+    subset_init_by_param_value,
+    subset_init_by_set_membership,
+)
 from gridpath.auxiliary.validations import (
     write_validation_to_database,
     validate_values,
@@ -42,11 +44,12 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.FDDL_PRM_PROJECTS = Set(
         within=m.PRM_PROJECTS,
-        initialize=lambda mod: [
-            p
-            for p in mod.PRM_PROJECTS
-            if mod.prm_type[p] == "fully_deliverable_energy_limited"
-        ],
+        initialize=lambda mod: subset_init_by_param_value(
+            mod=mod,
+            set_name="PRM_PROJECTS",
+            param_name="prm_type",
+            param_value="fully_deliverable_energy_limited",
+        ),
     )
 
     # Will limit this to storage project operational periods in addition to
@@ -54,11 +57,12 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.FDDL_PRM_PRJ_OPR_PRDS = Set(
         dimen=2,
         within=m.PRM_PRJ_OPR_PRDS & m.PRJ_OPR_PRDS,
-        initialize=lambda mod: [
-            (project, period)
-            for (project, period) in mod.PRM_PRJ_OPR_PRDS
-            if project in mod.FDDL_PRM_PROJECTS
-        ],
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod,
+            superset="PRM_PRJ_OPR_PRDS",
+            index=0,
+            membership_set=mod.FDDL_PRM_PROJECTS,
+        ),
     )
 
     m.min_duration_for_full_capacity_credit = Param(
@@ -228,7 +232,7 @@ def write_model_inputs(
     # Only assign a min duration to projects that contribute to a PRM zone in
     # case we have projects with missing zones here
     prj_zone_dur_dict = dict()
-    for (prj, zone, min_dur) in project_zone_dur:
+    for prj, zone, min_dur in project_zone_dur:
         prj_zone_dur_dict[str(prj)] = "." if zone is None else min_dur
 
     with open(

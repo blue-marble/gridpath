@@ -19,23 +19,21 @@ capacity-related costs of projects (e.g. investment capital costs and fixed
 O&M costs).
 """
 
-from __future__ import print_function
 
-from builtins import next
-from builtins import str
 import csv
 import os.path
 from pyomo.environ import Set, Expression, value
 
 from db.common_functions import spin_on_database_lock
+from gridpath.common_functions import create_results_df
 from gridpath.auxiliary.auxiliary import (
-    get_required_subtype_modules_from_projects_file,
+    get_required_subtype_modules,
     join_sets,
 )
 from gridpath.project.capacity.common_functions import (
     load_project_capacity_type_modules,
 )
-from gridpath.auxiliary.db_interface import setup_results_import
+from gridpath.project import PROJECT_PERIOD_DF
 from gridpath.auxiliary.dynamic_components import capacity_type_financial_period_sets
 import gridpath.project.capacity.capacity_types as cap_type_init
 
@@ -63,7 +61,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Dynamic Inputs
     ###########################################################################
 
-    required_capacity_modules = get_required_subtype_modules_from_projects_file(
+    required_capacity_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
         subproblem=subproblem,
         stage=stage,
@@ -141,7 +139,6 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             / mod.hours_in_period_timepoints[prd]
         )
 
-    # TODO: make sure this gets added to the objective function downstream
     m.Fixed_Cost_in_Period = Expression(m.PRJ_OPR_PRDS, rule=fixed_cost_rule)
 
 
@@ -160,188 +157,57 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return:
     """
 
-    with open(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "costs_capacity_all_projects.csv",
-        ),
-        "w",
-        newline="",
-    ) as f:
-        writer = csv.writer(f)
-        writer.writerow(
-            [
-                "project",
-                "period",
-                "hours_in_period_timepoints",
-                "hours_in_subproblem_period",
-                "technology",
-                "load_zone",
-                "capacity_cost",
-            ]
-        )
-        for (prj, p) in m.PRJ_FIN_PRDS:
-            writer.writerow(
-                [
-                    prj,
-                    p,
-                    m.hours_in_period_timepoints[p],
-                    m.hours_in_subproblem_period[p],
-                    m.technology[prj],
-                    m.load_zone[prj],
-                    value(m.Capacity_Cost_in_Period[prj, p]),
-                ]
-            )
+    results_columns1 = [
+        "capacity_cost",
+    ]
+    data1 = [
+        [
+            prj,
+            prd,
+            value(m.Capacity_Cost_in_Period[prj, prd]),
+        ]
+        for (prj, prd) in m.PRJ_FIN_PRDS
+    ]
 
-    with open(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "costs_fixed_all_projects.csv",
-        ),
-        "w",
-        newline="",
-    ) as f:
-        writer = csv.writer(f)
-        writer.writerow(
-            [
-                "project",
-                "period",
-                "hours_in_period_timepoints",
-                "hours_in_subproblem_period",
-                "technology",
-                "load_zone",
-                "fixed_cost",
-            ]
-        )
-        for (prj, p) in m.PRJ_FIN_PRDS:
-            writer.writerow(
-                [
-                    prj,
-                    p,
-                    m.hours_in_period_timepoints[p],
-                    m.hours_in_subproblem_period[p],
-                    m.technology[prj],
-                    m.load_zone[prj],
-                    value(m.Fixed_Cost_in_Period[prj, p]),
-                ]
-            )
+    cost_df1 = create_results_df(
+        index_columns=["project", "period"],
+        results_columns=results_columns1,
+        data=data1,
+    )
+
+    for c in results_columns1:
+        getattr(d, PROJECT_PERIOD_DF)[c] = None
+    getattr(d, PROJECT_PERIOD_DF).update(cost_df1)
+
+    results_columns2 = [
+        "hours_in_period_timepoints",
+        "hours_in_subproblem_period",
+        "fixed_cost",
+    ]
+    data2 = [
+        [
+            prj,
+            prd,
+            m.hours_in_period_timepoints[prd],
+            m.hours_in_subproblem_period[prd],
+            value(m.Fixed_Cost_in_Period[prj, prd]),
+        ]
+        for (prj, prd) in m.PRJ_OPR_PRDS
+    ]
+
+    cost_df2 = create_results_df(
+        index_columns=["project", "period"],
+        results_columns=results_columns2,
+        data=data2,
+    )
+
+    for c in results_columns2:
+        getattr(d, PROJECT_PERIOD_DF)[c] = None
+    getattr(d, PROJECT_PERIOD_DF).update(cost_df2)
 
 
 # Database
 ###############################################################################
-
-
-def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    """
-
-    :param scenario_id:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-    # Capacity cost results
-    if not quiet:
-        print("project capacity costs")
-    setup_results_import(
-        conn=db,
-        cursor=c,
-        table="results_project_costs_capacity",
-        scenario_id=scenario_id,
-        subproblem=subproblem,
-        stage=stage,
-    )
-
-    # Load results into the temporary table
-    results = []
-    with open(
-        os.path.join(results_directory, "costs_capacity_all_projects.csv"), "r"
-    ) as capacity_costs_file:
-        reader = csv.reader(capacity_costs_file)
-
-        next(reader)  # skip header
-        for row in reader:
-            project = row[0]
-            period = row[1]
-            hours_in_period_timepoints = row[2]
-            hours_in_subproblem_period = row[3]
-            technology = row[4]
-            load_zone = row[5]
-            capacity_cost = row[6]
-
-            results.append(
-                (
-                    scenario_id,
-                    project,
-                    period,
-                    subproblem,
-                    stage,
-                    hours_in_period_timepoints,
-                    hours_in_subproblem_period,
-                    technology,
-                    load_zone,
-                    capacity_cost,
-                )
-            )
-
-    insert_temp_sql = """
-        INSERT INTO temp_results_project_costs_capacity{}
-        (scenario_id, project, period, subproblem_id, stage_id,
-        hours_in_period_timepoints, hours_in_subproblem_period, technology, load_zone, 
-        capacity_cost)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-        """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
-
-    # Insert sorted results into permanent results table
-    insert_sql = """
-        INSERT INTO results_project_costs_capacity
-        (scenario_id, project, period, subproblem_id, stage_id,
-        hours_in_period_timepoints, hours_in_subproblem_period, technology, load_zone, 
-        capacity_cost)
-        SELECT
-        scenario_id, project, period, subproblem_id, stage_id, 
-        hours_in_period_timepoints, hours_in_subproblem_period, technology, load_zone, 
-        capacity_cost
-        FROM temp_results_project_costs_capacity{}
-        ORDER BY scenario_id, project, period, subproblem_id, 
-        stage_id;""".format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)
-
-    # Update the capacity cost removing the fraction attributable to the
-    # spinup and lookahead hours
-    update_sql = """
-        UPDATE results_project_costs_capacity
-        SET capacity_cost_wo_spinup_or_lookahead = capacity_cost * (
-            SELECT fraction_of_hours_in_subproblem
-            FROM spinup_or_lookahead_ratios
-            WHERE spinup_or_lookahead = 0
-            AND results_project_costs_capacity.scenario_id = 
-            spinup_or_lookahead_ratios.scenario_id
-            AND results_project_costs_capacity.subproblem_id = 
-            spinup_or_lookahead_ratios.subproblem_id
-            AND results_project_costs_capacity.stage_id = 
-            spinup_or_lookahead_ratios.stage_id
-            AND results_project_costs_capacity.period = 
-            spinup_or_lookahead_ratios.period
-        )
-        ;
-    """
-
-    spin_on_database_lock(conn=db, cursor=c, sql=update_sql, data=(), many=False)
 
 
 def process_results(db, c, scenario_id, subscenarios, quiet):
@@ -394,7 +260,7 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
         INNER JOIN
         (SELECT scenario_id, subproblem_id, stage_id, period, load_zone,
         SUM(capacity_cost) AS capacity_cost
-        FROM results_project_costs_capacity
+        FROM results_project_period
         GROUP BY scenario_id, subproblem_id, stage_id, period, load_zone
         ) AS cap_table
         USING (scenario_id, subproblem_id, stage_id, period, load_zone)

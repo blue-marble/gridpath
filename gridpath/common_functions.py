@@ -17,6 +17,8 @@ import sys
 
 from argparse import ArgumentParser
 
+import pandas as pd
+
 
 def determine_scenario_directory(scenario_location, scenario_name):
     """
@@ -74,6 +76,13 @@ def get_required_e2e_arguments_parser():
     )
     parser.add_argument(
         "--quiet", default=False, action="store_true", help="Don't print run output."
+    )
+
+    parser.add_argument(
+        "--verbose",
+        default=False,
+        action="store_true",
+        help="Print extra output, e.g. current module info.",
     )
 
     return parser
@@ -242,7 +251,7 @@ def get_run_scenario_parser():
         "--testing",
         default=False,
         action="store_true",
-        help="Flag for test suite runs. Results not saved.",
+        help="Flag for test suite runs.",
     )
 
     # Parallel solve
@@ -250,6 +259,16 @@ def get_run_scenario_parser():
         "--n_parallel_solve",
         default=1,
         help="Solve n subproblems in parallel.",
+    )
+
+    # Solve only incomplete subproblems
+    parser.add_argument(
+        "--incomplete_only",
+        default=False,
+        action="store_true",
+        help="Solve only incomplete subproblems, i.e. do no re-solve if "
+        "results are found. The subproblem is assumed complete if the"
+        "termination_condition.txt file is found.",
     )
 
     # Results export rule name
@@ -340,6 +359,20 @@ class Logging(object):
         self.terminal.write(message)
         self.log_file.write(message)
 
+        # Find a print statement
+        # import collections
+        # import inspect
+
+        # if message.strip():
+        #     Record = collections.namedtuple(
+        #         'Record',
+        #         'frame filename line_number function_name lines index')
+        #
+        #     record = Record(*inspect.getouterframes(inspect.currentframe())[1])
+        #     self.terminal.write(
+        #         '{f} {n}: '.format(f=record.filename, n=record.line_number))
+        # self.terminal.write(message)
+
     def flush(self):
         """
         Flush both the terminal and the log file
@@ -356,3 +389,12 @@ def string_from_time(datetime_string):
     :return: formatted time string
     """
     return datetime_string.strftime("%Y-%m-%d_%H-%M-%S")
+
+
+def create_results_df(index_columns, results_columns, data):
+    df = pd.DataFrame(
+        columns=index_columns + results_columns,
+        data=data,
+    ).set_index(index_columns)
+
+    return df

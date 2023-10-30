@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -39,9 +39,10 @@ throw a warning (but not an error) at runtime.
 import numpy as np
 import os.path
 import pandas as pd
-from pyomo.environ import Set, Param, Any, NonNegativeReals, Reals, PositiveReals
+from pyomo.environ import Set, Param, NonNegativeReals, Reals, PositiveReals
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
+from gridpath.auxiliary.db_interface import import_csv
 from gridpath.auxiliary.dynamic_components import headroom_variables, footroom_variables
 from gridpath.auxiliary.validations import (
     write_validation_to_database,
@@ -174,6 +175,18 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     |                                                                         |
     | The set of projects that incur cost if curtailed.                       |
     +-------------------------------------------------------------------------+
+    | | :code:`SOC_PENALTY_COST_PRJS`                                         |
+    | | *Within*: :code:`PROJECTS`                                            |
+    |                                                                         |
+    | The set of projects that incur cost if their state of charge is below   |
+    | the maximum possible state of charge.                                   |
+    +-------------------------------------------------------------------------+
+    | | :code:`SOC_LAST_TMP_PENALTY_COST_PRJS`                                |
+    | | *Within*: :code:`PROJECTS`                                            |
+    |                                                                         |
+    | The set of projects that incur cost if their state of charge is below   |
+    | the maximum possible state of charge in the last tmp.                   |
+    +-------------------------------------------------------------------------+
 
     +-------------------------------------------------------------------------+
     | Optional Input Params                                                   |
@@ -280,6 +293,19 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     |                                                                         |
     | The project's cost of curtailment per power-unitXhour.                  |
     +-------------------------------------------------------------------------+
+    | | :code:`soc_penalty_cost_per_energyunit`                               |
+    | | *Defined over*: :code:`SOC_PENALTY_COST_PRJS`                         |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's cost per unit of energy below the maximum state of charge.|
+    +-------------------------------------------------------------------------+
+    | | :code:`soc_last_tmp_penalty_cost_per_energyunit`                      |
+    | | *Defined over*: :code:`SOC_LAST_TMP_PENALTY_COST_PRJS`                |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's cost per unit of energy below the maximum state of charge |
+    | in the last timepoint of the horizon.                                   |
+    +-------------------------------------------------------------------------+
     """
 
     # Sets
@@ -383,6 +409,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Projects with cost of curtailment
     m.CURTAILMENT_COST_PRJS = Set(within=m.PROJECTS)
 
+    # Projects with cost based on the state of charge
+    m.SOC_PENALTY_COST_PRJS = Set(within=m.PROJECTS)
+    m.SOC_LAST_TMP_PENALTY_COST_PRJS = Set(within=m.PROJECTS)
+
+    # Projects with non-fuel carbon emissions
+    m.NONFUEL_CARBON_EMISSIONS_PRJS = Set(within=m.PROJECTS)
+
     # Optional Params
     ###########################################################################
     m.variable_om_cost_per_mwh = Param(
@@ -430,6 +463,18 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
     m.curtailment_cost_per_pwh = Param(m.CURTAILMENT_COST_PRJS, within=NonNegativeReals)
+
+    m.soc_penalty_cost_per_energyunit = Param(
+        m.SOC_PENALTY_COST_PRJS, within=NonNegativeReals
+    )
+
+    m.soc_last_tmp_penalty_cost_per_energyunit = Param(
+        m.SOC_LAST_TMP_PENALTY_COST_PRJS, within=NonNegativeReals
+    )
+
+    m.nonfuel_carbon_emissions_per_mwh = Param(
+        m.NONFUEL_CARBON_EMISSIONS_PRJS, within=NonNegativeReals
+    )
 
     # Start list of headroom and footroom variables by project
     record_dynamic_components(d, scenario_directory, subproblem, stage)
@@ -502,6 +547,9 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             "min_up_time_violation_penalty",
             "min_down_time_violation_penalty",
             "curtailment_cost_per_pwh",
+            "soc_penalty_cost_per_energyunit",
+            "soc_last_tmp_penalty_cost_per_energyunit",
+            "nonfuel_carbon_emissions_per_mwh",
         ),
         param=(
             m.variable_om_cost_per_mwh,
@@ -513,6 +561,9 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             m.min_up_time_violation_penalty,
             m.min_down_time_violation_penalty,
             m.curtailment_cost_per_pwh,
+            m.soc_penalty_cost_per_energyunit,
+            m.soc_last_tmp_penalty_cost_per_energyunit,
+            m.nonfuel_carbon_emissions_per_mwh,
         ),
     )
 
@@ -561,6 +612,20 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 
     data_portal.data()["CURTAILMENT_COST_PRJS"] = {
         None: list(data_portal.data()["curtailment_cost_per_pwh"].keys())
+    }
+
+    data_portal.data()["SOC_PENALTY_COST_PRJS"] = {
+        None: list(data_portal.data()["soc_penalty_cost_per_energyunit"].keys())
+    }
+
+    data_portal.data()["SOC_LAST_TMP_PENALTY_COST_PRJS"] = {
+        None: list(
+            data_portal.data()["soc_last_tmp_penalty_cost_per_energyunit"].keys()
+        )
+    }
+
+    data_portal.data()["NONFUEL_CARBON_EMISSIONS_PRJS"] = {
+        None: list(data_portal.data()["nonfuel_carbon_emissions_per_mwh"].keys())
     }
 
     # VOM curves
@@ -641,7 +706,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     # Get column names as a few columns will be optional;
     # won't load data if fuel column does not exist
     if os.path.exists(hr_curves_file) and os.path.exists(project_fuels_file):
-
         hr_df = pd.read_csv(hr_curves_file, sep="\t")
         projects = set(hr_df["project"].unique())
 
@@ -693,12 +757,15 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         min_up_time_hours, min_up_time_violation_penalty,
         min_down_time_hours, min_down_time_violation_penalty,
         allow_startup_shutdown_power,
-        charging_efficiency, discharging_efficiency,
+        storage_efficiency, charging_efficiency, discharging_efficiency,
         charging_capacity_multiplier, discharging_capacity_multiplier,
         minimum_duration_hours, maximum_duration_hours,
         aux_consumption_frac_capacity, aux_consumption_frac_power,
         last_commitment_stage, curtailment_cost_per_pwh,
-        powerunithour_per_fuelunit
+        powerunithour_per_fuelunit, soc_penalty_cost_per_energyunit,
+        soc_last_tmp_penalty_cost_per_energyunit,
+        partial_availability_threshold,
+        nonfuel_carbon_emissions_per_mwh
         -- Get only the subset of projects in the portfolio with their 
         -- capacity types based on the project_portfolio_scenario_id 
         FROM
@@ -855,9 +922,15 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         INNER JOIN
         inputs_project_cap_factor_limits
         USING(project, cap_factor_limits_scenario_id)
+        JOIN
+        (SELECT balancing_type_horizon, horizon
+        FROM inputs_temporal_horizons
+        WHERE temporal_scenario_id = {temporal_scenario_id}) as relevant_horizons
+        USING (balancing_type_horizon, horizon)
         WHERE project_portfolio_scenario_id = {project_portfolio_scenario_id}
         AND cap_factor_limits_scenario_id IS NOT NULL
         """.format(
+            temporal_scenario_id=subscenarios.TEMPORAL_SCENARIO_ID,
             project_opchar_scenario_id=subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
             project_portfolio_scenario_id=subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
         )
@@ -943,6 +1016,7 @@ def write_model_inputs(
         "min_down_time_hours",
         "min_down_time_violation_penalty",
         "allow_startup_shutdown_power",
+        "storage_efficiency",
         "charging_efficiency",
         "discharging_efficiency",
         "charging_capacity_multiplier",
@@ -954,6 +1028,10 @@ def write_model_inputs(
         "last_commitment_stage",
         "curtailment_cost_per_pwh",
         "powerunithour_per_fuelunit",
+        "soc_penalty_cost_per_energyunit",
+        "soc_last_tmp_penalty_cost_per_energyunit",
+        "partial_availability_threshold",
+        "nonfuel_carbon_emissions_per_mwh",
     ]
     append_to_input_file(
         inputs_directory=inputs_directory,
@@ -1015,6 +1093,30 @@ def write_model_inputs(
         opchar_df=sf_df,
         inputs_directory=inputs_directory,
         filename="supplemental_firing.tab",
+    )
+
+
+def import_results_into_database(
+    scenario_id, subproblem, stage, c, db, results_directory, quiet
+):
+    """
+
+    :param scenario_id:
+    :param c:
+    :param db:
+    :param results_directory:
+    :param quiet:
+    :return:
+    """
+    import_csv(
+        conn=db,
+        cursor=c,
+        scenario_id=scenario_id,
+        subproblem=subproblem,
+        stage=stage,
+        quiet=quiet,
+        results_directory=results_directory,
+        which_results="project_timepoint",
     )
 
 
@@ -1247,6 +1349,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         "ramp_up_when_on_rate",
         "ramp_down_when_on_rate",
         "min_up_time_hours, min_down_time_hours",
+        "storage_efficiency",
         "charging_efficiency",
         "discharging_efficiency",
         "charging_capacity_multiplier",
@@ -1255,6 +1358,8 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         "maximum_duration_hours",
         "aux_consumption_frac_capacity",
         "aux_consumption_frac_power",
+        "partial_availability_threshold",
+        "nonfuel_carbon_emissions_per_mwh",
     ]
 
     sql = """SELECT {}

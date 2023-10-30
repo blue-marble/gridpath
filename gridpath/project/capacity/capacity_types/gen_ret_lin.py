@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,12 +26,10 @@ is avoided in the objective function.
 
 """
 
-from __future__ import print_function
-
-from builtins import next
-from builtins import zip
 import csv
 import os.path
+from pathlib import Path
+
 import pandas as pd
 from pyomo.environ import (
     Set,
@@ -58,11 +56,14 @@ from gridpath.auxiliary.validations import (
     validate_row_monotonicity,
     validate_missing_inputs,
 )
+from gridpath.common_functions import create_results_df
 from gridpath.project.capacity.capacity_types.common_methods import (
     spec_get_inputs_from_database,
     spec_write_tab_file,
     spec_determine_inputs,
-    update_capacity_results_table,
+    read_results_file_generic,
+    write_summary_results_generic,
+    get_units,
 )
 
 
@@ -312,7 +313,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     ]
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def add_to_project_period_results(scenario_directory, subproblem, stage, m, d):
     """
     Export gen_ret_lin retirement results.
     :param scenario_directory:
@@ -322,29 +323,18 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "capacity_gen_ret_lin" ".csv",
-        ),
-        "w",
-        newline="",
-    ) as f:
-        writer = csv.writer(f)
-        writer.writerow(["project", "period", "technology", "load_zone", "retired_mw"])
-        for (prj, p) in m.GEN_RET_LIN_OPR_PRDS:
-            writer.writerow(
-                [
-                    prj,
-                    p,
-                    m.technology[prj],
-                    m.load_zone[prj],
-                    value(m.GenRetLin_Retire_MW[prj, p]),
-                ]
-            )
+    results_columns = ["retired_mw"]
+    data = [
+        [prj, prd, value(m.GenRetLin_Retire_MW[prj, prd])]
+        for (prj, prd) in m.GEN_RET_LIN_OPR_PRDS
+    ]
+    captype_df = create_results_df(
+        index_columns=["project", "period"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    return results_columns, captype_df
 
 
 def summarize_results(scenario_directory, subproblem, stage, summary_results_file):
@@ -358,41 +348,31 @@ def summarize_results(scenario_directory, subproblem, stage, summary_results_fil
     """
 
     # Get the results CSV as dataframe
-    capacity_results_df = pd.read_csv(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "capacity_gen_ret_lin.csv",
-        )
+    capacity_results_agg_df = read_results_file_generic(
+        scenario_directory=scenario_directory,
+        subproblem=subproblem,
+        stage=stage,
+        capacity_type=Path(__file__).stem,
     )
-
-    capacity_results_agg_df = capacity_results_df.groupby(
-        by=["load_zone", "technology", "period"], as_index=True
-    ).sum(numeric_only=False)
 
     # Get all technologies with the new build capacity
     lin_retirement_df = pd.DataFrame(
         capacity_results_agg_df[capacity_results_agg_df["retired_mw"] > 0]["retired_mw"]
     )
 
-    # Get the power units from the units.csv file
-    units_df = pd.read_csv(
-        os.path.join(scenario_directory, "units.csv"), index_col="metric"
-    )
-    power_unit = units_df.loc["power", "unit"]
+    # Get the units from the units.csv file
+    power_unit, energy_unit, fuel_unit = get_units(scenario_directory)
 
     # Rename column header
-    lin_retirement_df.columns = ["Retired Capacity ({})".format(power_unit)]
+    columns = ["Retired (Linear) Generation Capacity ({})".format(power_unit)]
 
-    with open(summary_results_file, "a") as outfile:
-        outfile.write("\n--> Retired Capacity <--\n")
-        if lin_retirement_df.empty:
-            outfile.write("No retirements.\n")
-        else:
-            lin_retirement_df.to_string(outfile, float_format="{:,.2f}".format)
-            outfile.write("\n")
+    write_summary_results_generic(
+        results_df=lin_retirement_df,
+        columns=columns,
+        summary_results_file=summary_results_file,
+        title="Retired (Linear) Generation Capacity",
+        empty_title="No gen_ret_lin retirements.",
+    )
 
 
 # Database
@@ -438,35 +418,6 @@ def write_model_inputs(
         subproblem=subproblem,
         stage=stage,
         spec_project_params=spec_project_params,
-    )
-
-
-def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    """
-
-    :param scenario_id:
-    :param subproblem:
-    :param stage:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-    # New build capacity results
-    if not quiet:
-        print("project linear economic retirements")
-
-    update_capacity_results_table(
-        db=db,
-        c=c,
-        results_directory=results_directory,
-        scenario_id=scenario_id,
-        subproblem=subproblem,
-        stage=stage,
-        results_file="capacity_gen_ret_lin.csv",
     )
 
 

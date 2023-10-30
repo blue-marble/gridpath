@@ -15,10 +15,7 @@
 """
 Total ELCC of projects on ELCC surface
 """
-from __future__ import print_function
 
-from builtins import next
-from builtins import range
 import csv
 import os.path
 from pyomo.environ import (
@@ -36,6 +33,8 @@ from gridpath.auxiliary.dynamic_components import (
     prm_balance_provision_components,
     cost_components,
 )
+from gridpath.common_functions import create_results_df
+from gridpath.system.reliability.prm import PRM_ZONE_PRD_DF
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -149,6 +148,28 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
+    results_columns = [
+        "elcc_surface_mw",
+    ]
+    data = [
+        [
+            z,
+            p,
+            value(m.Total_Contribution_from_ELCC_Surfaces[z, p]),
+        ]
+        for (z, p) in m.PRM_ZONE_PERIODS_WITH_REQUIREMENT
+    ]
+    results_df = create_results_df(
+        index_columns=["prm_zone", "period"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    for c in results_columns:
+        getattr(d, PRM_ZONE_PRD_DF)[c] = None
+    getattr(d, PRM_ZONE_PRD_DF).update(results_df)
+
+    # By ELCC surface results
     with open(
         os.path.join(
             scenario_directory,
@@ -162,28 +183,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     ) as results_file:
         writer = csv.writer(results_file)
         writer.writerow(["elcc_surface_name", "prm_zone", "period", "elcc_mw"])
-        for (s, z, p) in m.ELCC_SURFACE_PRM_ZONE_PERIODS:
+        for s, z, p in m.ELCC_SURFACE_PRM_ZONE_PERIODS:
             writer.writerow([s, z, p, value(m.Dynamic_ELCC_MW[s, z, p])])
-
-    with open(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "prm_elcc_surface_total.csv",
-        ),
-        "w",
-        newline="",
-    ) as results_file:
-        writer = csv.writer(results_file)
-        writer.writerow(
-            ["prm_zone", "period", "total_contribution_from_elcc_surfaces_mw"]
-        )
-        for (z, p) in m.PRM_ZONE_PERIODS_WITH_REQUIREMENT:
-            writer.writerow(
-                [z, p, value(m.Total_Contribution_from_ELCC_Surfaces[z, p])]
-            )
 
 
 def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
@@ -279,65 +280,3 @@ def write_model_inputs(
         # Write data
         for row in intercepts:
             writer.writerow(row)
-
-
-def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    """
-
-    :param scenario_id:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-    if not quiet:
-        print("system prm elcc surface")
-    # PRM contribution from the ELCC surface
-    # Prior results should have already been cleared by
-    # system.prm.aggregate_project_simple_prm_contribution,
-    # then elcc_simple_mw imported
-    # Update results_system_prm with NULL for surface contribution just in
-    # case (instead of clearing prior results)
-    nullify_sql = """
-        UPDATE results_system_prm
-        SET elcc_surface_mw = NULL
-        WHERE scenario_id = ?
-        AND subproblem_id = ?
-        AND stage_id = ?;
-        """
-    spin_on_database_lock(
-        conn=db,
-        cursor=c,
-        sql=nullify_sql,
-        data=(scenario_id, subproblem, stage),
-        many=False,
-    )
-
-    results = []
-    with open(
-        os.path.join(results_directory, "prm_elcc_surface_total.csv"),
-        "r",
-    ) as surface_file:
-        reader = csv.reader(surface_file)
-
-        next(reader)  # skip header
-        for row in reader:
-            prm_zone = row[0]
-            period = row[1]
-            elcc = row[2]
-
-            results.append((elcc, scenario_id, prm_zone, period, subproblem, stage))
-
-    update_sql = """
-        UPDATE results_system_prm
-        SET elcc_surface_mw = ?
-        WHERE scenario_id = ?
-        AND prm_zone = ?
-        AND period = ?
-        AND subproblem_id = ?
-        AND stage_id = ?
-        """
-    spin_on_database_lock(conn=db, cursor=c, sql=update_sql, data=results)

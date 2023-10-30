@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -37,7 +37,6 @@ Costs for this operational type include variable O&M costs.
 
 """
 
-from __future__ import division
 
 import csv
 import os.path
@@ -51,18 +50,26 @@ from pyomo.environ import (
     PercentFraction,
     value,
 )
+import warnings
 
-from gridpath.auxiliary.auxiliary import subset_init_by_param_value
+from gridpath.auxiliary.auxiliary import (
+    subset_init_by_param_value,
+    subset_init_by_set_membership,
+)
 from gridpath.auxiliary.dynamic_components import headroom_variables, footroom_variables
 from gridpath.project.common_functions import (
     check_if_first_timepoint,
+    check_if_last_timepoint,
     check_boundary_type,
 )
 from gridpath.project.operations.operational_types.common_functions import (
     load_optype_model_data,
     check_for_tmps_to_link,
     validate_opchars,
+    write_tab_file_model_inputs,
+    get_prj_tmp_opr_inputs_from_db,
 )
+from gridpath.common_functions import create_results_df
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -110,6 +117,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +-------------------------------------------------------------------------+
     | Optional Input Params                                                   |
     +=========================================================================+
+    | | :code:`stor_storage_efficiency`                                       |
+    | | *Defined over*: :code:`STOR`                                          |
+    | | *Within*: :code:`PercentFraction`                                     |
+    | | *Default*: :code:`1`                                                  |
+    |                                                                         |
+    | The storage project's storage efficiency (1 = 100% efficient).          |
+    +-------------------------------------------------------------------------+
     | | :code:`stor_losses_factor_in_energy_target`                           |
     | | *Within*: :code:`PercentFraction`                                     |
     | | *Default*: :code:`1`                                                  |
@@ -137,6 +151,14 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     |                                                                         |
     | The storage project's discharging capacity multiplier to be used if the |
     | discharging capacity is different from the nameplate capacity.          |
+    +-------------------------------------------------------------------------+
+    | | :code:`stor_exogenous_starting_state_of_charge`                       |
+    | | *Defined over*: :code:`STOR_EXOG_SOC_TMPS`                            |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The storage project's exogenously specified starting state of charge.   |
+    | If not specified, the state of charge is endogenously determined by the |
+    | optimization subject to the rest of the constraints.                    |
     +-------------------------------------------------------------------------+
 
     |
@@ -249,8 +271,6 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | than available capacity to store energy in that timepoint.              |
     +-------------------------------------------------------------------------+
 
-
-
     """
 
     # Sets
@@ -266,12 +286,14 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.STOR_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: list(
-            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS if g in mod.STOR)
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod, superset="PRJ_OPR_TMPS", index=0, membership_set=mod.STOR
         ),
     )
 
     m.STOR_LINKED_TMPS = Set(dimen=2)
+
+    m.STOR_EXOG_SOC_TMPS = Set(within=m.STOR_OPR_TMPS)
 
     # Required Params
     ###########################################################################
@@ -283,6 +305,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Optional Params
     ###########################################################################
 
+    m.stor_storage_efficiency = Param(m.STOR, within=PercentFraction, default=1)
+
     m.stor_losses_factor_in_energy_target = Param(default=1)
 
     m.stor_losses_factor_curtailment = Param(default=1)
@@ -293,6 +317,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.stor_discharging_capacity_multiplier = Param(
         m.STOR, within=NonNegativeReals, default=1.0
+    )
+
+    m.stor_exogenous_starting_state_of_charge = Param(
+        m.STOR_EXOG_SOC_TMPS, within=NonNegativeReals
     )
 
     # Linked Params
@@ -319,6 +347,21 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     # Expressions
     ###########################################################################
+    def ending_energy_in_storage_expression_rule(mod, prj, tmp):
+        return (
+            mod.Stor_Starting_Energy_in_Storage_MWh[prj, tmp]
+            + mod.Stor_Charge_MW[prj, tmp]
+            * mod.hrs_in_tmp[tmp]
+            * mod.stor_charging_efficiency[prj]
+            - mod.Stor_Discharge_MW[prj, tmp]
+            * mod.hrs_in_tmp[tmp]
+            / mod.stor_discharging_efficiency[prj]
+        )
+
+    m.Stor_Ending_Energy_in_Storage_MWh = Expression(
+        m.STOR_OPR_TMPS,
+        initialize=ending_energy_in_storage_expression_rule,
+    )
 
     def upward_reserve_rule(mod, g, tmp):
         return sum(getattr(mod, c)[g, tmp] for c in getattr(d, headroom_variables)[g])
@@ -371,6 +414,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 # Constraint Formulation Rules
 ###############################################################################
 
+
 # Power and State of Charge
 def max_discharge_rule(mod, s, tmp):
     """
@@ -413,15 +457,13 @@ def energy_tracking_rule(mod, s, tmp):
     efficiency and timepoint duration) plus any charged power (adjusted for
     charging efficiency and timepoint duration).
     """
-    if check_if_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[s]
-    ) and check_boundary_type(
-        mod=mod,
-        tmp=tmp,
-        balancing_type=mod.balancing_type_project[s],
-        boundary_type="linear",
-    ):
-        return Constraint.Skip
+    if (s, tmp) in mod.STOR_EXOG_SOC_TMPS:
+        starting_soc = check_for_soc_infeasibilities(
+            mod=mod,
+            s=s,
+            tmp=tmp,
+            starting_soc=mod.stor_exogenous_starting_state_of_charge[s, tmp],
+        )
     else:
         if check_if_first_timepoint(
             mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[s]
@@ -429,38 +471,73 @@ def energy_tracking_rule(mod, s, tmp):
             mod=mod,
             tmp=tmp,
             balancing_type=mod.balancing_type_project[s],
-            boundary_type="linked",
+            boundary_type="linear",
         ):
-            prev_tmp_hrs_in_tmp = mod.hrs_in_linked_tmp[0]
-            prev_tmp_starting_energy_in_storage = (
-                mod.stor_linked_starting_energy_in_storage[s, 0]
-            )
-            prev_tmp_discharge = mod.stor_linked_discharge[s, 0]
-            prev_tmp_charge = mod.stor_linked_charge[s, 0]
+            return Constraint.Skip
         else:
-            prev_tmp_hrs_in_tmp = mod.hrs_in_tmp[
-                mod.prev_tmp[tmp, mod.balancing_type_project[s]]
-            ]
-            prev_tmp_starting_energy_in_storage = (
-                mod.Stor_Starting_Energy_in_Storage_MWh[
+            if check_if_first_timepoint(
+                mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[s]
+            ) and check_boundary_type(
+                mod=mod,
+                tmp=tmp,
+                balancing_type=mod.balancing_type_project[s],
+                boundary_type="linked",
+            ):
+                prev_tmp_hrs_in_tmp = mod.hrs_in_linked_tmp[0]
+                prev_tmp_starting_energy_in_storage = (
+                    mod.stor_linked_starting_energy_in_storage[s, 0]
+                )
+                prev_tmp_discharge = mod.stor_linked_discharge[s, 0]
+                prev_tmp_charge = mod.stor_linked_charge[s, 0]
+
+                calculated_starting_energy_in_storage = (
+                    prev_tmp_starting_energy_in_storage * mod.stor_storage_efficiency[s]
+                    + prev_tmp_charge
+                    * prev_tmp_hrs_in_tmp
+                    * mod.stor_charging_efficiency[s]
+                    - prev_tmp_discharge
+                    * prev_tmp_hrs_in_tmp
+                    / mod.stor_discharging_efficiency[s]
+                )
+
+                # Deal with possible precision-related infeasibilities, e.g. if
+                # the calculated energy in storage is just below or just above
+                # its boundaries of 0 and the energy capacity x availability
+                # If no infeasibilities found, just return the calculated value
+                starting_soc = check_for_soc_infeasibilities(
+                    mod=mod,
+                    s=s,
+                    tmp=tmp,
+                    starting_soc=calculated_starting_energy_in_storage,
+                )
+
+            else:
+                prev_tmp_hrs_in_tmp = mod.hrs_in_tmp[
+                    mod.prev_tmp[tmp, mod.balancing_type_project[s]]
+                ]
+                prev_tmp_starting_energy_in_storage = (
+                    mod.Stor_Starting_Energy_in_Storage_MWh[
+                        s, mod.prev_tmp[tmp, mod.balancing_type_project[s]]
+                    ]
+                )
+                prev_tmp_discharge = mod.Stor_Discharge_MW[
                     s, mod.prev_tmp[tmp, mod.balancing_type_project[s]]
                 ]
-            )
-            prev_tmp_discharge = mod.Stor_Discharge_MW[
-                s, mod.prev_tmp[tmp, mod.balancing_type_project[s]]
-            ]
-            prev_tmp_charge = mod.Stor_Charge_MW[
-                s, mod.prev_tmp[tmp, mod.balancing_type_project[s]]
-            ]
+                prev_tmp_charge = mod.Stor_Charge_MW[
+                    s, mod.prev_tmp[tmp, mod.balancing_type_project[s]]
+                ]
 
-        return (
-            mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp]
-            == prev_tmp_starting_energy_in_storage
-            + prev_tmp_charge * prev_tmp_hrs_in_tmp * mod.stor_charging_efficiency[s]
-            - prev_tmp_discharge
-            * prev_tmp_hrs_in_tmp
-            / mod.stor_discharging_efficiency[s]
-        )
+                starting_soc = (
+                    prev_tmp_starting_energy_in_storage * mod.stor_storage_efficiency[s]
+                    + prev_tmp_charge
+                    * prev_tmp_hrs_in_tmp
+                    * mod.stor_charging_efficiency[s]
+                    - prev_tmp_discharge
+                    * prev_tmp_hrs_in_tmp
+                    / mod.stor_discharging_efficiency[s]
+                )
+
+    return mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp] == starting_soc
 
 
 def max_energy_in_storage_rule(mod, s, tmp):
@@ -648,6 +725,54 @@ def power_delta_rule(mod, g, tmp):
 ###############################################################################
 
 
+def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+    """
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return: cursor object with query results
+    """
+
+    prj_tmp_data = get_prj_tmp_opr_inputs_from_db(
+        subscenarios=subscenarios,
+        subproblem=subproblem,
+        stage=stage,
+        conn=conn,
+        op_type="stor",
+        table="inputs_project_stor_exog_state_of_charge" "",
+        subscenario_id_column="stor_exog_state_of_charge_scenario_id",
+        data_column="exog_state_of_charge_mwh",
+    )
+
+    return prj_tmp_data
+
+
+def write_model_inputs(
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+):
+    """
+    Get inputs from database and write out the model input
+    variable_generator_profiles.tab file.
+    :param scenario_directory: string, the scenario directory
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+
+    data = get_model_inputs_from_database(
+        scenario_id, subscenarios, subproblem, stage, conn
+    )
+
+    fname = "stor_exogenous_state_of_charge.tab"
+
+    write_tab_file_model_inputs(
+        scenario_directory, subproblem, stage, fname, data, replace_nulls=True
+    )
+
+
 def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
     """
 
@@ -685,8 +810,49 @@ def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
                 mod.stor_linked_charge,
             ),
         )
+
+    # Exogenously specified SOC
+    exog_soc_filename = os.path.join(
+        scenario_directory,
+        str(subproblem),
+        str(stage),
+        "inputs",
+        "stor_exogenous_state_of_charge.tab",
+    )
+    if os.path.exists(exog_soc_filename):
+        data_portal.load(
+            filename=exog_soc_filename,
+            index=mod.STOR_EXOG_SOC_TMPS,
+            param=mod.stor_exogenous_starting_state_of_charge,
+        )
     else:
         pass
+
+
+def add_to_prj_tmp_results(mod):
+    results_columns = [
+        "starting_energy_mwh",
+        "charge_mw",
+        "discharge_mw",
+    ]
+    data = [
+        [
+            prj,
+            tmp,
+            value(mod.Stor_Starting_Energy_in_Storage_MWh[prj, tmp]),
+            value(mod.Stor_Charge_MW[prj, tmp]),
+            value(mod.Stor_Discharge_MW[prj, tmp]),
+        ]
+        for (prj, tmp) in mod.STOR_OPR_TMPS
+    ]
+
+    optype_dispatch_df = create_results_df(
+        index_columns=["project", "timepoint"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    return results_columns, optype_dispatch_df
 
 
 def export_results(mod, d, scenario_directory, subproblem, stage):
@@ -699,51 +865,8 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
     :param d:
     :return:
     """
-    with open(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "dispatch_stor.csv",
-        ),
-        "w",
-        newline="",
-    ) as f:
-        writer = csv.writer(f)
-        writer.writerow(
-            [
-                "project",
-                "period",
-                "balancing_type_project",
-                "horizon",
-                "timepoint",
-                "timepoint_weight",
-                "number_of_hours_in_timepoint",
-                "technology",
-                "load_zone",
-                "starting_energy_mwh",
-                "charge_mw",
-                "discharge_mw",
-            ]
-        )
-        for (p, tmp) in mod.STOR_OPR_TMPS:
-            writer.writerow(
-                [
-                    p,
-                    mod.period[tmp],
-                    mod.balancing_type_project[p],
-                    mod.horizon[tmp, mod.balancing_type_project[p]],
-                    tmp,
-                    mod.tmp_weight[tmp],
-                    mod.hrs_in_tmp[tmp],
-                    mod.technology[p],
-                    mod.load_zone[p],
-                    value(mod.Stor_Starting_Energy_in_Storage_MWh[p, tmp]),
-                    value(mod.Stor_Charge_MW[p, tmp]),
-                    value(mod.Stor_Discharge_MW[p, tmp]),
-                ]
-            )
+
+    # Dispatch results added to project_timepoint.csv via add_to_prj_tmp_results()
 
     # If there's a linked_subproblems_map CSV file, check which of the
     # current subproblem TMPS we should export results for to link to the
@@ -780,7 +903,7 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
                     "linked_charge",
                 ]
             )
-            for (p, tmp) in sorted(mod.STOR_OPR_TMPS):
+            for p, tmp in sorted(mod.STOR_OPR_TMPS):
                 if tmp in tmps_to_link:
                     writer.writerow(
                         [
@@ -825,3 +948,60 @@ def curtailment_cost_rule(mod, g, tmp):
         * mod.curtailment_cost_per_pwh[g]
         * mod.stor_losses_factor_curtailment
     )
+
+
+def soc_penalty_cost_rule(mod, prj, tmp):
+    """ """
+    return mod.soc_penalty_cost_per_energyunit[prj] * (
+        mod.Energy_Capacity_MWh[prj, mod.period[tmp]]
+        * mod.Availability_Derate[prj, tmp]
+        - mod.Stor_Ending_Energy_in_Storage_MWh[prj, tmp]
+    )
+
+
+def soc_last_tmp_penalty_cost_rule(mod, prj, tmp):
+    """ """
+    if check_if_last_timepoint(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[prj]
+    ):
+        return mod.soc_last_tmp_penalty_cost_per_energyunit[prj] * (
+            mod.Energy_Capacity_MWh[prj, mod.period[tmp]]
+            * mod.Availability_Derate[prj, tmp]
+            - mod.Stor_Ending_Energy_in_Storage_MWh[prj, tmp]
+        )
+    else:
+        return 0
+
+
+# ### OTHER ### #
+def check_for_soc_infeasibilities(mod, s, tmp, starting_soc):
+    if starting_soc < 0:
+        warnings.warn(
+            f"Starting energy in storage was "
+            f"{starting_soc} for project {s}, "
+            f"which would have resulted in infeasibility. "
+            f"Changed to 0. This can happen due to solver tolerances and "
+            f"precision of results. If you didn't expect this, check the "
+            f"inputs and results."
+        )
+        return 0
+    elif mod.capacity_type[s] == "stor_spec" and starting_soc > (
+        mod.stor_spec_energy_capacity_mwh[s, mod.period[tmp]]
+        * mod.avl_exog_cap_derate[s, tmp]
+    ):
+        warnings.warn(
+            f"Starting energy in storage was "
+            f"{starting_soc} for project {s}, "
+            f"which would have resulted in infeasibility. "
+            f"Changed to "
+            f"mod.stor_spec_energy_capacity_mwh[s,mod.period[tmp]] "
+            f"* mod.Availability_Derate[s, tmp]. This can happen due to "
+            f"solver tolerances and precision of results. If you didn't expect "
+            f"this, check the inputs and results."
+        )
+        return (
+            mod.stor_spec_energy_capacity_mwh[s, mod.period[tmp]]
+            * mod.Availability_Derate[s, tmp]
+        )
+    else:
+        return starting_soc

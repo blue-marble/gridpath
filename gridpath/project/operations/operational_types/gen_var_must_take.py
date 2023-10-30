@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,7 +22,10 @@ of this operational type cannot provide operational reserves .
 from pyomo.environ import Param, Set, Reals, Constraint
 import warnings
 
-from gridpath.auxiliary.auxiliary import subset_init_by_param_value
+from gridpath.auxiliary.auxiliary import (
+    subset_init_by_param_value,
+    subset_init_by_set_membership,
+)
 from gridpath.auxiliary.validations import (
     write_validation_to_database,
     get_projects_by_reserve,
@@ -35,7 +38,7 @@ from gridpath.project.common_functions import (
 )
 from gridpath.project.operations.operational_types.common_functions import (
     load_var_profile_inputs,
-    get_var_profile_inputs_from_database,
+    get_prj_tmp_opr_inputs_from_db,
     write_tab_file_model_inputs,
     validate_opchars,
     validate_var_profiles,
@@ -105,8 +108,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.GEN_VAR_MUST_TAKE_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: list(
-            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS if g in mod.GEN_VAR_MUST_TAKE)
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod,
+            superset="PRJ_OPR_TMPS",
+            index=0,
+            membership_set=mod.GEN_VAR_MUST_TAKE,
         ),
     )
 
@@ -283,9 +289,18 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
     :param conn: database connection
     :return: cursor object with query results
     """
-    return get_var_profile_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn, "gen_var_must_take"
+    prj_tmp_data = get_prj_tmp_opr_inputs_from_db(
+        subscenarios=subscenarios,
+        subproblem=subproblem,
+        stage=stage,
+        conn=conn,
+        op_type="gen_var_must_take",
+        table="inputs_project_variable_generator_profiles" "",
+        subscenario_id_column="variable_generator_profile_scenario_id",
+        data_column="cap_factor",
     )
+
+    return prj_tmp_data
 
 
 def write_model_inputs(

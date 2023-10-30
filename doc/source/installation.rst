@@ -24,11 +24,7 @@ Python
 
 Running GridPath requires a Python 3 installation. GridPath is `tested nightly
 <https://github.com/blue-marble/gridpath/actions/workflows/test_gridpath.yml>`__ in
-Python 3.8, 3.9, and 3.10. We recommend using Python 3.9. You can get the official
-CPython distribution (recommended) `here <https://www.python.org/downloads/>`__, the
-Anaconda Python distribution `here <https://www.anaconda.com/distribution/>`__, or
-`another Python distribution <https://wiki.python.org/moin/PythonDistributions>`_.
-
+Python 3.9, 3.10, and 3.11. You can get Python `here <https://www.python.org/downloads/>`__.
 
 .. _python-virtual-env-section-ref:
 
@@ -67,21 +63,6 @@ On Linux-based systems including MacOS, use::
 
     source PATH/TO/PYTHON/ENV/bin/activate
 
-^^^^^^^^
-Anaconda
-^^^^^^^^
-Another way to set up a virtual environment is via the Anaconda Python
-distribution. `You can obtain Anaconda here <https://www.anaconda
-.com/distribution/>`_. Create the GridPath environment with::
-
-    conda env create --name gridpath
-
-By default, environments are installed into the `envs` directory in your
-conda directory. To activate the environment before running GridPath, enter
-the following::
-
-    source activate gridpath
-
 
 Solver
 ------
@@ -104,16 +85,29 @@ instructions for Windows `here <https://www.java.com/en/download/help/path
 Installing GridPath
 ===================
 
-Basic installation
-------------------
+Before installing, **make sure to activate your :ref:`GridPath virtual environment
+<python-virtual-env-section-ref>`**.
+
+Installation from PyPi
+----------------------
+
+You can download and install the latest version of GridPath from PyPi with::
+
+    pip install GridPath
+
+To get a specific version, e.g., v0.16.0, use::
+
+    pip install GridPath==0.16.0
+
+Note that GridPath versions before 0.16.0 are not available on PyPi.
+
+Installation from Source
+------------------------
 
 GridPath's source code is stored in a GitHub repository. You can find the latest
 GridPath release `here <https://github.com/blue-marble/gridpath/releases/latest>`__.
 Download the source code zip file and extract it. We will refer to the directory
 where the code is extracted to as the :code:`PATH/TO/GRIDPATH` directory.
-
-Before installing, **make sure to activate your :ref:`GridPath virtual environment
-<python-virtual-env-section-ref>`**.
 
 Most users should install GridPath by navigating to the GridPath directory
 :code:`PATH/TO/GRIDPATH` with :code:`cd PATH/TO/GRIDPATH` and
@@ -122,13 +116,9 @@ running::
     pip install .
 
 
-If you want to use the GUI, you should install additional required packages with::
-
-    pip install .[ui]
-
-
+^^^^^^^^^^^^^^^^
 Developer extras
-----------------
+^^^^^^^^^^^^^^^^
 
 You may need to install additional packages if you plan to edit the GridPath code
 and, for example, build the documentation from source, use the Black code formatter,
@@ -145,8 +135,9 @@ If you would like to edit the user-interface code, you will also need Node.js in
 addition to Python and will be required to install various node packages.
 See the User Interface section for more info.
 
+^^^^^^^^^^^^^^^^^^^^^^^^^
 Testing Your Installation
--------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
 To test the GridPath codebase, use the unittest module as follows from the
 :code:`PATH/TO/GRIDPATH` directory::

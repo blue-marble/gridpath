@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import print_function
 
-from builtins import str
 from importlib import import_module
 import os.path
 import sys
@@ -122,7 +120,7 @@ class TestCapFactorLimits(unittest.TestCase):
             (prj, bt, h): instance.max_cap_factor[prj, bt, h]
             for (prj, bt, h) in instance.CAP_FACTOR_LIMIT_PRJ_BT_HRZ
         }
-        self.assertDictEqual(expected_min_cap_factor, actual_min_cap_factor)
+        self.assertDictEqual(expected_max_cap_factor, actual_max_cap_factor)
 
 
 if __name__ == "__main__":

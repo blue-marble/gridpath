@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import print_function
 
-from builtins import str
 from importlib import import_module
 import os.path
 import sys
@@ -133,6 +131,27 @@ class TestStor(unittest.TestCase):
         self.assertDictEqual(
             expected_discharging_efficiency, actual_discharging_efficiency
         )
+
+        # Param: stor_storage_efficiency
+        expected_storage_efficiency = {
+            "Battery": 0.9,
+            "Battery_Binary": 1.0,
+            "Battery_Specified": 0.5,
+        }
+        actual_storage_efficiency = {
+            prj: instance.stor_storage_efficiency[prj] for prj in instance.STOR
+        }
+        self.assertDictEqual(expected_storage_efficiency, actual_storage_efficiency)
+
+        # Param: stor_exogenous_starting_state_of_charge
+        expected_exog_soc = {
+            ("Battery", 20300101): 1,
+        }
+        actual_exog_soc = {
+            (prj, tmp): instance.stor_exogenous_starting_state_of_charge[prj, tmp]
+            for (prj, tmp) in instance.STOR_EXOG_SOC_TMPS
+        }
+        self.assertDictEqual(expected_exog_soc, actual_exog_soc)
 
 
 if __name__ == "__main__":

@@ -17,7 +17,10 @@ Aggregate delivered energy-target-eligible power from the project-timepoint
 level to the energy-target zone - balancing type - horizon level.
 """
 
-from pyomo.environ import Expression
+from pyomo.environ import Expression, value
+
+from gridpath.common_functions import create_results_df
+from gridpath.system.policy.energy_targets import ENERGY_TARGET_ZONE_HRZ_DF
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -83,9 +86,43 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             and tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, h]
         )
 
-    # TODO: is this only needed for export and, if so, should it be created on
-    # export?
     m.Total_Curtailed_Horizon_Energy_Target_Energy_MWh = Expression(
         m.ENERGY_TARGET_ZONE_BLN_TYPE_HRZS_WITH_ENERGY_TARGET,
         rule=total_curtailed_energy_target_energy_rule,
     )
+
+
+def export_results(scenario_directory, subproblem, stage, m, d):
+    """
+
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :param m:
+    :param d:
+    :return:
+    """
+
+    results_columns = [
+        "delivered_energy_target_energy_mwh",
+        "curtailed_energy_target_energy_mwh",
+    ]
+    data = [
+        [
+            z,
+            bt,
+            h,
+            value(m.Total_Delivered_Horizon_Energy_Target_Energy_MWh[z, bt, h]),
+            value(m.Total_Curtailed_Horizon_Energy_Target_Energy_MWh[z, bt, h]),
+        ]
+        for (z, bt, h) in m.ENERGY_TARGET_ZONE_BLN_TYPE_HRZS_WITH_ENERGY_TARGET
+    ]
+    results_df = create_results_df(
+        index_columns=["energy_target_zone", "balancing_type", "horizon"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    for c in results_columns:
+        getattr(d, ENERGY_TARGET_ZONE_HRZ_DF)[c] = None
+    getattr(d, ENERGY_TARGET_ZONE_HRZ_DF).update(results_df)

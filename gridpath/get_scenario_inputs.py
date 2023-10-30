@@ -148,7 +148,6 @@ def get_inputs_for_subproblem(
     subscenarios,
     db_path,
 ):
-
     loaded_modules = load_modules(modules_to_use=modules_to_use)
 
     # First make inputs directory if needed
@@ -196,8 +195,7 @@ def get_inputs_for_subproblem(
                     stage=stage_str,
                     conn=conn,
                 )
-            else:
-                pass
+
         conn.close()
 
     # If there are stages in the subproblem, we also need a pass-through
@@ -224,8 +222,6 @@ def get_inputs_for_subproblem(
                 m.write_pass_through_file_headers(
                     pass_through_directory=pass_through_directory
                 )
-            else:
-                pass
 
 
 def get_inputs_for_subproblem_pool(pool_datum):
@@ -272,8 +268,6 @@ def delete_prior_aux_files(scenario_directory):
     for f in prior_aux_files:
         if f in os.listdir(scenario_directory):
             os.remove(os.path.join(scenario_directory, f))
-        else:
-            pass
 
 
 def delete_prior_inputs(inputs_directory):
@@ -393,9 +387,10 @@ def write_solver_options(scenario_directory, solver_options):
     If a solver_options_id is specified, writer the solver options to the
     scenario directory.
     """
-    if solver_options.SOLVER_NAME is None and solver_options.SOLVER_OPTIONS is None:
-        pass
-    else:
+    if (
+        not solver_options.SOLVER_NAME is None
+        and not solver_options.SOLVER_OPTIONS is None
+    ):
         with open(
             os.path.join(scenario_directory, "solver_options.csv"),
             "w",

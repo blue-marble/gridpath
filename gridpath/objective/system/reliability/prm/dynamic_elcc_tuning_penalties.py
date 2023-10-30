@@ -19,7 +19,6 @@ case the PRM constraint is non-binding.
 """
 
 
-from builtins import next
 import csv
 import os.path
 from pyomo.environ import Param, Expression
@@ -93,8 +92,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             select=("dynamic_elcc_tuning_cost_per_mw",),
             param=m.dynamic_elcc_tuning_cost_per_mw,
         )
-    else:
-        pass
 
 
 def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):

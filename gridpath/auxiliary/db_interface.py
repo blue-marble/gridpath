@@ -1,4 +1,21 @@
-from db.common_functions import spin_on_database_lock
+# Copyright 2016-2023 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import os.path
+import pandas as pd
+
+from db.common_functions import spin_on_database_lock, spin_on_database_lock_generic
 
 
 def get_required_capacity_types_from_database(conn, scenario_id):
@@ -178,6 +195,45 @@ def setup_results_import(conn, cursor, table, scenario_id, subproblem, stage):
     )
 
 
+def import_csv(
+    conn,
+    cursor,
+    scenario_id,
+    subproblem,
+    stage,
+    quiet,
+    results_directory,
+    which_results,
+):
+    # First import the capacity_all results; the capacity type modules will
+    # then update the database tables rather than insert (all projects
+    # should have been inserted here)
+    # Delete prior results and create temporary import table for ordering
+    if not quiet:
+        print(which_results)
+
+    # Delete prior results and create temporary import table for ordering
+    setup_results_import(
+        conn=conn,
+        cursor=cursor,
+        table=f"results_{which_results}",
+        scenario_id=scenario_id,
+        subproblem=subproblem,
+        stage=stage,
+    )
+
+    df = pd.read_csv(os.path.join(results_directory, f"{which_results}.csv"))
+    df["scenario_id"] = scenario_id
+    df["subproblem_id"] = subproblem
+    df["stage_id"] = stage
+
+    spin_on_database_lock_generic(
+        command=df.to_sql(
+            name=f"results_{which_results}", con=conn, if_exists="append", index=False
+        )
+    )
+
+
 def update_prj_zone_column(
     conn, scenario_id, subscenarios, subscenario, subsc_tbl, prj_tbl, col
 ):
@@ -204,7 +260,7 @@ def update_prj_zone_column(
     ).fetchall()
 
     updates = []
-    for (prj, zone) in project_zones:
+    for prj, zone in project_zones:
         updates.append((zone, scenario_id, prj))
 
     sql = """

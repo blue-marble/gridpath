@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import print_function
 
-from builtins import str
 from importlib import import_module
 import os.path
 import pandas as pd
@@ -129,6 +127,7 @@ class TestExogenousAvailabilityType(unittest.TestCase):
                 "Fuel_Prod",
                 "Fuel_Prod_New",
                 "DAC",
+                "Flex_Load",
             ]
         )
         actual_project_subset = sorted([prj for prj in instance.AVL_EXOG])
@@ -163,7 +162,7 @@ class TestExogenousAvailabilityType(unittest.TestCase):
             )
         }
         expected_availability_derate = dict()
-        for (p, tmp) in defaults.keys():
+        for p, tmp in defaults.keys():
             if (p, tmp) in derates.keys():
                 expected_availability_derate[p, tmp] = derates[p, tmp]
             else:

@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import print_function
 
-from builtins import str
 from collections import OrderedDict
 from importlib import import_module
 import os.path
@@ -63,7 +61,6 @@ class TestGenCommitBin(unittest.TestCase):
     """ """
 
     def assertDictAlmostEqual(self, d1, d2, msg=None, places=7):
-
         # check if both inputs are dicts
         self.assertIsInstance(d1, dict, "First argument is not a dictionary")
         self.assertIsInstance(d2, dict, "Second argument is not a dictionary")
@@ -311,6 +308,14 @@ class TestGenCommitBin(unittest.TestCase):
         self.assertDictEqual(
             expected_down_time_cutoff_hours, actual_down_time_cutoff_hours
         )
+
+        # Param: gen_commit_bin_partial_availability_threshold
+        expected_threshold = {"Disp_Binary_Commit": 0.01}
+        actual_threshold = {
+            prj: instance.gen_commit_bin_partial_availability_threshold[prj]
+            for prj in instance.GEN_COMMIT_BIN
+        }
+        self.assertDictEqual(expected_threshold, actual_threshold)
 
 
 if __name__ == "__main__":

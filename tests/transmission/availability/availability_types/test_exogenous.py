@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import print_function
 
-from builtins import str
 from importlib import import_module
 import os.path
 import pandas as pd
@@ -34,6 +32,7 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.investment.periods",
     "geography.load_zones",
     "transmission",
+    "transmission.capacity.capacity_types",
     "transmission.capacity.capacity",
 ]
 NAME_OF_MODULE_BEING_TESTED = "transmission.availability.availability_types.exogenous"
@@ -99,7 +98,7 @@ class TestExogenousAvailabilityType(unittest.TestCase):
         instance = m.create_instance(data)
 
         # Set: TX_AVL_EXOG
-        expected_tx_subset = sorted(["Tx1", "Tx_New", "Tx3"])
+        expected_tx_subset = sorted(["Tx1", "Tx_New", "Tx3", "Tx_binary_1"])
         actual_tx_subset = sorted([prj for prj in instance.TX_AVL_EXOG])
         self.assertListEqual(expected_tx_subset, actual_tx_subset)
 
@@ -397,6 +396,102 @@ class TestExogenousAvailabilityType(unittest.TestCase):
                 ("Tx_New", 20300222),
                 ("Tx_New", 20300223),
                 ("Tx_New", 20300224),
+                ("Tx_binary_1", 20200101),
+                ("Tx_binary_1", 20200102),
+                ("Tx_binary_1", 20200103),
+                ("Tx_binary_1", 20200104),
+                ("Tx_binary_1", 20200105),
+                ("Tx_binary_1", 20200106),
+                ("Tx_binary_1", 20200107),
+                ("Tx_binary_1", 20200108),
+                ("Tx_binary_1", 20200109),
+                ("Tx_binary_1", 20200110),
+                ("Tx_binary_1", 20200111),
+                ("Tx_binary_1", 20200112),
+                ("Tx_binary_1", 20200113),
+                ("Tx_binary_1", 20200114),
+                ("Tx_binary_1", 20200115),
+                ("Tx_binary_1", 20200116),
+                ("Tx_binary_1", 20200117),
+                ("Tx_binary_1", 20200118),
+                ("Tx_binary_1", 20200119),
+                ("Tx_binary_1", 20200120),
+                ("Tx_binary_1", 20200121),
+                ("Tx_binary_1", 20200122),
+                ("Tx_binary_1", 20200123),
+                ("Tx_binary_1", 20200124),
+                ("Tx_binary_1", 20200201),
+                ("Tx_binary_1", 20200202),
+                ("Tx_binary_1", 20200203),
+                ("Tx_binary_1", 20200204),
+                ("Tx_binary_1", 20200205),
+                ("Tx_binary_1", 20200206),
+                ("Tx_binary_1", 20200207),
+                ("Tx_binary_1", 20200208),
+                ("Tx_binary_1", 20200209),
+                ("Tx_binary_1", 20200210),
+                ("Tx_binary_1", 20200211),
+                ("Tx_binary_1", 20200212),
+                ("Tx_binary_1", 20200213),
+                ("Tx_binary_1", 20200214),
+                ("Tx_binary_1", 20200215),
+                ("Tx_binary_1", 20200216),
+                ("Tx_binary_1", 20200217),
+                ("Tx_binary_1", 20200218),
+                ("Tx_binary_1", 20200219),
+                ("Tx_binary_1", 20200220),
+                ("Tx_binary_1", 20200221),
+                ("Tx_binary_1", 20200222),
+                ("Tx_binary_1", 20200223),
+                ("Tx_binary_1", 20200224),
+                ("Tx_binary_1", 20300101),
+                ("Tx_binary_1", 20300102),
+                ("Tx_binary_1", 20300103),
+                ("Tx_binary_1", 20300104),
+                ("Tx_binary_1", 20300105),
+                ("Tx_binary_1", 20300106),
+                ("Tx_binary_1", 20300107),
+                ("Tx_binary_1", 20300108),
+                ("Tx_binary_1", 20300109),
+                ("Tx_binary_1", 20300110),
+                ("Tx_binary_1", 20300111),
+                ("Tx_binary_1", 20300112),
+                ("Tx_binary_1", 20300113),
+                ("Tx_binary_1", 20300114),
+                ("Tx_binary_1", 20300115),
+                ("Tx_binary_1", 20300116),
+                ("Tx_binary_1", 20300117),
+                ("Tx_binary_1", 20300118),
+                ("Tx_binary_1", 20300119),
+                ("Tx_binary_1", 20300120),
+                ("Tx_binary_1", 20300121),
+                ("Tx_binary_1", 20300122),
+                ("Tx_binary_1", 20300123),
+                ("Tx_binary_1", 20300124),
+                ("Tx_binary_1", 20300201),
+                ("Tx_binary_1", 20300202),
+                ("Tx_binary_1", 20300203),
+                ("Tx_binary_1", 20300204),
+                ("Tx_binary_1", 20300205),
+                ("Tx_binary_1", 20300206),
+                ("Tx_binary_1", 20300207),
+                ("Tx_binary_1", 20300208),
+                ("Tx_binary_1", 20300209),
+                ("Tx_binary_1", 20300210),
+                ("Tx_binary_1", 20300211),
+                ("Tx_binary_1", 20300212),
+                ("Tx_binary_1", 20300213),
+                ("Tx_binary_1", 20300214),
+                ("Tx_binary_1", 20300215),
+                ("Tx_binary_1", 20300216),
+                ("Tx_binary_1", 20300217),
+                ("Tx_binary_1", 20300218),
+                ("Tx_binary_1", 20300219),
+                ("Tx_binary_1", 20300220),
+                ("Tx_binary_1", 20300221),
+                ("Tx_binary_1", 20300222),
+                ("Tx_binary_1", 20300223),
+                ("Tx_binary_1", 20300224),
             ]
         )
         actual_operational_timepoints_by_tx = sorted(
@@ -423,7 +518,7 @@ class TestExogenousAvailabilityType(unittest.TestCase):
             )
         }
         expected_availability_derate = dict()
-        for (tx, tmp) in defaults.keys():
+        for tx, tmp in defaults.keys():
             if (tx, tmp) in derates.keys():
                 expected_availability_derate[tx, tmp] = derates[tx, tmp]
             else:

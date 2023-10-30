@@ -283,7 +283,7 @@ def validate_dtypes(df, expected_dtypes):
     Helper function for input validation.
     :param df: DataFrame for which to check data types
     :param expected_dtypes: dictionary with expected datatype ("numeric" or
-        "string" for each column.
+        "string" for each column).
     :return: List of error messages for each column with invalid datatypes.
         Error message specifies the column and the expected data type.
         List of columns with erroneous data types.
@@ -291,22 +291,29 @@ def validate_dtypes(df, expected_dtypes):
     result = []
     columns = []
     for column in df.columns:
-        if pd.isna(df[column]).all():
-            pass
-        elif expected_dtypes[column] == "numeric" and not pd.api.types.is_numeric_dtype(
-            df[column]
-        ):
-            result.append(
-                "Invalid data type for column '{}'; expected numeric".format(column)
-            )
-            columns.append(column)
-        elif expected_dtypes[column] == "string" and not pd.api.types.is_string_dtype(
-            df[column]
-        ):
-            result.append(
-                "Invalid data type for column '{}'; expected string".format(column)
-            )
-            columns.append(column)
+        column_df = pd.DataFrame(df[column])
+        # Only check if not all values are null
+        # TODO: we need a separate validation for whether NULL values should
+        #  be allowed in a column; maybe shoud be NOT NULL in the database
+        if not pd.isna(column_df[column]).all():
+            # Drop any NaN/NULLs, so that they don't interfere with the data
+            # type of the column
+            if pd.isna(column_df[column]).any():
+                column_df = column_df.loc[:, column_df.isna().sum() > 0].dropna()
+            if expected_dtypes[
+                column
+            ] == "numeric" and not pd.api.types.is_numeric_dtype(column_df[column]):
+                result.append(
+                    "Invalid data type for column '{}'; expected numeric".format(column)
+                )
+                columns.append(column)
+            if expected_dtypes[column] == "string" and not pd.api.types.is_string_dtype(
+                column_df[column]
+            ):
+                result.append(
+                    "Invalid data type for column '{}'; expected string".format(column)
+                )
+                columns.append(column)
 
     # Alternative that avoids pd.api.types:
     # numeric_columns = [k for k, v in expected_dtypes.items() if v == "numeric"]

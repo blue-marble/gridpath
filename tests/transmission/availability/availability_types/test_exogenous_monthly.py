@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import print_function
 
-from builtins import str
 from importlib import import_module
 import os.path
 import pandas as pd
@@ -34,6 +32,7 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.investment.periods",
     "geography.load_zones",
     "transmission",
+    "transmission.capacity.capacity_types",
     "transmission.capacity.capacity",
 ]
 NAME_OF_MODULE_BEING_TESTED = (
@@ -128,7 +127,7 @@ class TestExogenousAvailabilityType(unittest.TestCase):
             )
         }
         expected_availability_derate = dict()
-        for (tx, tmp) in defaults.keys():
+        for tx, tmp in defaults.keys():
             if (tx, tmp) in derates.keys():
                 expected_availability_derate[tx, tmp] = derates[tx, tmp]
             else:

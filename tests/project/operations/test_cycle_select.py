@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import print_function
 
-from builtins import str
 from importlib import import_module
 import os.path
 import sys
@@ -131,7 +129,7 @@ class TestCycleSelect(unittest.TestCase):
             get_project_operational_timepoints(expected_gen_w_cycle_select)
         )
         expected_cycle_select_opr_tmps = list()
-        for (p, tmp) in expected_operational_timepoints_by_project:
+        for p, tmp in expected_operational_timepoints_by_project:
             cycle_select_prj_list = expected_select_cycle_by_prj[p]
             # Only expecting the timepoints for projects that do have cycle-select
             # projects

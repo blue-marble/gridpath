@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import print_function
 
-from builtins import str
 from collections import OrderedDict
 from importlib import import_module
 import os.path
@@ -184,14 +182,17 @@ class TestStorNewLin(unittest.TestCase):
         )
         self.assertDictEqual(expected_mwh_yr_fcost, actual_mwh_yr_fcost)
 
-        # Params: stor_new_lin_financial_lifetime_yrs
+        # Params: stor_new_lin_financial_lifetime_yrs_by_vintage
         expected_flifetime = OrderedDict(
             sorted({("Battery", 2020): 20, ("Battery", 2030): 5}.items())
         )
         actual_flifetime = OrderedDict(
             sorted(
                 {
-                    (prj, vintage): instance.stor_new_lin_financial_lifetime_yrs[
+                    (
+                        prj,
+                        vintage,
+                    ): instance.stor_new_lin_financial_lifetime_yrs_by_vintage[
                         prj, vintage
                     ]
                     for (prj, vintage) in instance.STOR_NEW_LIN_VNTS

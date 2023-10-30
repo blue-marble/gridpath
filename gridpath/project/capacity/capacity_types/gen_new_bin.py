@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,11 +26,11 @@ of years the period represents) for the duration of the project's financial
 lifetime.
 """
 
-from __future__ import print_function
 
-from builtins import str
 import csv
 import os.path
+from pathlib import Path
+
 import pandas as pd
 from pyomo.environ import Set, Param, Var, NonNegativeReals, Binary, Constraint, value
 
@@ -47,11 +47,14 @@ from gridpath.auxiliary.validations import (
     validate_dtypes,
     validate_idxs,
 )
+from gridpath.common_functions import create_results_df
 from gridpath.project.capacity.capacity_types.common_methods import (
     relevant_periods_by_project_vintage,
     project_relevant_periods,
     project_vintages_relevant_in_period,
-    update_capacity_results_table,
+    read_results_file_generic,
+    write_summary_results_generic,
+    get_units,
 )
 
 
@@ -472,7 +475,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     )
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def add_to_project_period_results(scenario_directory, subproblem, stage, m, d):
     """
     Export new build generation results.
     :param scenario_directory:
@@ -482,40 +485,26 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "capacity_gen_new_bin.csv",
-        ),
-        "w",
-        newline="",
-    ) as f:
+    results_columns = [
+        "new_build_binary",
+        "new_build_mw",
+    ]
+    data = [
+        [
+            prj,
+            prd,
+            value(m.GenNewBin_Build[prj, prd]),
+            value(m.GenNewBin_Build[prj, prd] * m.gen_new_bin_build_size_mw[prj]),
+        ]
+        for (prj, prd) in m.GEN_NEW_BIN_VNTS
+    ]
+    captype_df = create_results_df(
+        index_columns=["project", "period"],
+        results_columns=results_columns,
+        data=data,
+    )
 
-        writer = csv.writer(f)
-        writer.writerow(
-            [
-                "project",
-                "vintage",
-                "technology",
-                "load_zone",
-                "new_build_binary",
-                "new_build_mw",
-            ]
-        )
-        for (prj, v) in m.GEN_NEW_BIN_VNTS:
-            writer.writerow(
-                [
-                    prj,
-                    v,
-                    m.technology[prj],
-                    m.load_zone[prj],
-                    value(m.GenNewBin_Build[prj, v]),
-                    value(m.GenNewBin_Build[prj, v] * m.gen_new_bin_build_size_mw[prj]),
-                ]
-            )
+    return results_columns, captype_df
 
 
 def summarize_results(scenario_directory, subproblem, stage, summary_results_file):
@@ -529,19 +518,12 @@ def summarize_results(scenario_directory, subproblem, stage, summary_results_fil
     """
 
     # Get the results CSV as dataframe
-    capacity_results_df = pd.read_csv(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "capacity_gen_new_bin.csv",
-        )
+    capacity_results_agg_df = read_results_file_generic(
+        scenario_directory=scenario_directory,
+        subproblem=subproblem,
+        stage=stage,
+        capacity_type=Path(__file__).stem,
     )
-
-    capacity_results_agg_df = capacity_results_df.groupby(
-        by=["load_zone", "technology", "vintage"], as_index=True
-    ).sum(numeric_only=False)
 
     # Get all technologies with the new binary build capacity
     new_build_df = pd.DataFrame(
@@ -550,22 +532,19 @@ def summarize_results(scenario_directory, subproblem, stage, summary_results_fil
         ]
     )
 
-    # Get the power units from the units.csv file
-    units_df = pd.read_csv(
-        os.path.join(scenario_directory, "units.csv"), index_col="metric"
-    )
-    power_unit = units_df.loc["power", "unit"]
+    # Get the units from the units.csv file
+    power_unit, energy_unit, fuel_unit = get_units(scenario_directory)
 
     # Rename column header
-    new_build_df.columns = ["New Binary Build Capacity ({})".format(power_unit)]
+    columns = ["New Binary Build Capacity ({})".format(power_unit)]
 
-    with open(summary_results_file, "a") as outfile:
-        outfile.write("\n--> New Binary Build Generation Capacity <--\n")
-        if new_build_df.empty:
-            outfile.write("No new generation was built.\n")
-        else:
-            new_build_df.to_string(outfile, float_format="{:,.2f}".format)
-            outfile.write("\n")
+    write_summary_results_generic(
+        results_df=new_build_df,
+        columns=columns,
+        summary_results_file=summary_results_file,
+        title="New Binary Build Generation Capacity",
+        empty_title="No new gen_new_bin generation was built.",
+    )
 
 
 # Database
@@ -699,35 +678,6 @@ def write_model_inputs(
         for row in new_gen_build_size:
             replace_nulls = ["." if i is None else i for i in row]
             writer.writerow(replace_nulls)
-
-
-def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    """
-
-    :param scenario_id:
-    :param subproblem:
-    :param stage:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-    # New build capacity results
-    if not quiet:
-        print("project new binary build generator")
-
-    update_capacity_results_table(
-        db=db,
-        c=c,
-        results_directory=results_directory,
-        scenario_id=scenario_id,
-        subproblem=subproblem,
-        stage=stage,
-        results_file="capacity_gen_new_bin.csv",
-    )
 
 
 # Validation
