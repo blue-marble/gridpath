@@ -29,7 +29,7 @@ Infinity = float("inf")
 Negative_Infinity = float("-inf")
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
     """
     The tables below list the Pyomo model components defined in the
     'gen_commit_bin' module followed below by the respective components
@@ -151,7 +151,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+):
     """
     :param mod:
     :param data_portal:
@@ -179,7 +181,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         )
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
     """ """
     input_file = os.path.join(
         scenario_directory,
@@ -255,6 +257,7 @@ def import_results_into_database(
     if os.path.exists(
         os.path.join(
             results_directory,
+            str(hydro_year),
             str(subproblem),
             str(stage),
             "results",

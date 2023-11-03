@@ -36,7 +36,7 @@ from gridpath.project.capacity.common_functions import (
 import gridpath.project.capacity.capacity_types as cap_type_init
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
     """
     +-------------------------------------------------------------------------+
     | Optional Input Params                                                   |
@@ -161,6 +161,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Import needed capacity type modules
     required_capacity_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
         which_type="capacity_type",
@@ -379,7 +380,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 ###############################################################################
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+):
     """
 
     :param m:
@@ -456,7 +459,7 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory, scenario_id, subscenarios, hydro_year, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
@@ -480,6 +483,7 @@ def write_model_inputs(
         with open(
             os.path.join(
                 scenario_directory,
+                str(hydro_year),
                 str(subproblem),
                 str(stage),
                 "inputs",
@@ -511,7 +515,9 @@ def write_model_inputs(
                 writer.writerow(replace_nulls)
 
 
-def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
+def save_duals(
+    scenario_directory, hydro_year, subproblem, stage, instance, dynamic_components
+):
     instance.constraint_indices["Min_Build_Power_Constraint"] = [
         "project",
         "period",
@@ -561,7 +567,7 @@ def save_duals(scenario_directory, subproblem, stage, instance, dynamic_componen
     ]
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
     """
     Export capacity results.
     :param scenario_directory:

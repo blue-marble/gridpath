@@ -29,7 +29,7 @@ import os.path
 from pyomo.environ import Set, Param, Boolean
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
     """
 
     :param m:
@@ -44,7 +44,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+):
     """
 
     :param m:
@@ -58,6 +60,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     data_portal.load(
         filename=os.path.join(
             scenario_directory,
+            str(hydro_year),
             str(subproblem),
             str(stage),
             "inputs",
@@ -105,7 +108,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory, scenario_id, subscenarios, hydro_year, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
@@ -125,6 +128,7 @@ def write_model_inputs(
     with open(
         os.path.join(
             scenario_directory,
+            str(hydro_year),
             str(subproblem),
             str(stage),
             "inputs",

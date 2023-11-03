@@ -31,7 +31,7 @@ import gridpath.project.operations.operational_types as op_type_init
 from gridpath.project import PROJECT_TIMEPOINT_DF
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
     """
     The following Pyomo model components are defined in this module:
 
@@ -58,6 +58,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     required_operational_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
         which_type="operational_type",
@@ -94,7 +95,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 ###############################################################################
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
     """
     Export operations results.
     :param scenario_directory:
@@ -131,6 +132,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 
     required_operational_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
         which_type="operational_type",
@@ -153,7 +155,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             getattr(d, PROJECT_TIMEPOINT_DF).update(optype_df)
 
 
-def summarize_results(scenario_directory, subproblem, stage):
+def summarize_results(scenario_directory, hydro_year, subproblem, stage):
     """
     :param scenario_directory:
     :param subproblem:
@@ -164,7 +166,12 @@ def summarize_results(scenario_directory, subproblem, stage):
     """
 
     summary_results_file = os.path.join(
-        scenario_directory, subproblem, stage, "results", "summary_results.txt"
+        scenario_directory,
+        hydro_year,
+        subproblem,
+        stage,
+        "results",
+        "summary_results.txt",
     )
 
     # Open in 'append' mode, so that results already written by other
@@ -180,6 +187,7 @@ def summarize_results(scenario_directory, subproblem, stage):
     operational_results_df = pd.read_csv(
         os.path.join(
             scenario_directory,
+            str(hydro_year),
             str(subproblem),
             str(stage),
             "results",

@@ -30,7 +30,7 @@ from gridpath.auxiliary.validations import (
 )
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
     """
 
     :param m:
@@ -56,7 +56,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+):
     """
 
     :param m:
@@ -72,7 +74,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     # are no projects with fuels in the scenario
     # Fuel group column is optional
     fuels_file = os.path.join(
-        scenario_directory, subproblem, stage, "inputs", "fuels.tab"
+        scenario_directory, hydro_year, subproblem, stage, "inputs", "fuels.tab"
     )
     fuels_df = pd.read_csv(fuels_file, delimiter="\t")
     if not fuels_df.empty:
@@ -85,7 +87,12 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 
         header = pd.read_csv(
             os.path.join(
-                scenario_directory, str(subproblem), str(stage), "inputs", "fuels.tab"
+                scenario_directory,
+                str(hydro_year),
+                str(subproblem),
+                str(stage),
+                "inputs",
+                "fuels.tab",
             ),
             sep="\t",
             header=None,
@@ -106,7 +113,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     # There will be no data in this file if the database is used and there
     # are no projects with fuels in the scenario
     fuels_prices_file = os.path.join(
-        scenario_directory, subproblem, stage, "inputs", "fuel_prices.tab"
+        scenario_directory, hydro_year, subproblem, stage, "inputs", "fuel_prices.tab"
     )
     fuel_prices_df = pd.read_csv(fuels_prices_file)
     if not fuel_prices_df.empty:
@@ -334,7 +341,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory, scenario_id, subscenarios, hydro_year, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
@@ -353,7 +360,12 @@ def write_model_inputs(
 
     with open(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "fuels.tab"
+            scenario_directory,
+            str(hydro_year),
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "fuels.tab",
         ),
         "w",
         newline="",
@@ -369,7 +381,12 @@ def write_model_inputs(
 
     with open(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "fuel_prices.tab"
+            scenario_directory,
+            str(hydro_year),
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "fuel_prices.tab",
         ),
         "w",
         newline="",

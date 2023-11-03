@@ -23,7 +23,7 @@ import os
 from pyomo.environ import Var, NonNegativeReals, Constraint, Expression
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
     # Tuning cost can be applied on exports from a load zone to prioritize
     # meeting local load first
     m.LZ_Exports = Var(m.LOAD_ZONES, m.TMPS, within=NonNegativeReals)

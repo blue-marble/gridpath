@@ -1,0 +1,10 @@
+transmission_line,period,min_mw,max_mw,fixed_cost_per_mw_yr
+BS_CA,2035,-2960,3750,
+BS_NW,2035,-3106,4337,
+BS_RM,2035,-1530,1530,
+BS_SW,2035,-1840,1965,
+CA_NW,2035,-8120,6820,
+NW_RM,2035,-300,300,
+NW_SW,2035,-300,300,
+RM_SW,2035,-690,690,
+SW_CA,2035,-11200,11200,

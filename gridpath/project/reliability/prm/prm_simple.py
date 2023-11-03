@@ -33,7 +33,7 @@ from gridpath.auxiliary.validations import (
 )
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
     """
 
     :param m:
@@ -59,7 +59,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.PRM_Simple_Contribution_MW = Expression(m.PRM_PRJ_OPR_PRDS, rule=elcc_simple_rule)
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+):
     """
 
     :param m:
@@ -73,6 +75,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     data_portal.load(
         filename=os.path.join(
             scenario_directory,
+            hydro_year,
             subproblem,
             stage,
             "inputs",
@@ -82,7 +85,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     )
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
     """
 
     :param scenario_directory:
@@ -95,6 +98,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     with open(
         os.path.join(
             scenario_directory,
+            str(hydro_year),
             str(subproblem),
             str(stage),
             "results",
@@ -226,7 +230,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory, scenario_id, subscenarios, hydro_year, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
@@ -245,6 +249,7 @@ def write_model_inputs(
     with open(
         os.path.join(
             scenario_directory,
+            str(hydro_year),
             str(subproblem),
             str(stage),
             "inputs",

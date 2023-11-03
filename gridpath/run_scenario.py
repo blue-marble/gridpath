@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -60,7 +60,7 @@ from gridpath.auxiliary.dynamic_components import DynamicComponents
 from gridpath.auxiliary.module_list import determine_modules, load_modules
 
 
-def create_problem(scenario_directory, subproblem, stage, parsed_arguments):
+def create_problem(scenario_directory, hydro_year, subproblem, stage, parsed_arguments):
     """
     :param scenario_directory: the main scenario directory
     :param subproblem: the horizon subproblem name
@@ -106,7 +106,13 @@ def create_problem(scenario_directory, subproblem, stage, parsed_arguments):
     if not parsed_arguments.quiet:
         print("Building model...")
     create_abstract_model(
-        model, dynamic_components, loaded_modules, scenario_directory, subproblem, stage
+        model,
+        dynamic_components,
+        loaded_modules,
+        scenario_directory,
+        hydro_year,
+        subproblem,
+        stage,
     )
 
     # Create a dual suffix component
@@ -117,7 +123,13 @@ def create_problem(scenario_directory, subproblem, stage, parsed_arguments):
     if not parsed_arguments.quiet:
         print("Loading data...")
     scenario_data = load_scenario_data(
-        model, dynamic_components, loaded_modules, scenario_directory, subproblem, stage
+        model,
+        dynamic_components,
+        loaded_modules,
+        scenario_directory,
+        hydro_year,
+        subproblem,
+        stage,
     )
 
     if not parsed_arguments.quiet:
@@ -129,6 +141,7 @@ def create_problem(scenario_directory, subproblem, stage, parsed_arguments):
         instance,
         dynamic_components,
         scenario_directory,
+        hydro_year,
         subproblem,
         stage,
         loaded_modules,
@@ -148,6 +161,7 @@ def solve_problem(parsed_arguments, instance):
 
 def run_optimization_for_subproblem_stage(
     scenario_directory,
+    hydro_year_directory,
     subproblem_directory,
     stage_directory,
     parsed_arguments,
@@ -175,7 +189,10 @@ def run_optimization_for_subproblem_stage(
     # If directed to do so, log optimization run
     if parsed_arguments.log:
         logs_directory = create_logs_directory_if_not_exists(
-            scenario_directory, subproblem_directory, stage_directory
+            scenario_directory,
+            hydro_year_directory,
+            subproblem_directory,
+            stage_directory,
         )
 
         # Save sys.stdout, so we can return to it later
@@ -224,7 +241,10 @@ def run_optimization_for_subproblem_stage(
         # Use the --symbolic argument as well for best debugging results
         if parsed_arguments.write_solver_files_to_logs_dir:
             logs_directory = create_logs_directory_if_not_exists(
-                scenario_directory, subproblem_directory, stage_directory
+                scenario_directory,
+                hydro_year_directory,
+                subproblem_directory,
+                stage_directory,
             )
             TempfileManager.tempdir = logs_directory
 
@@ -265,6 +285,7 @@ def run_optimization_for_subproblem_stage(
         else:
             dynamic_components, instance = create_problem(
                 scenario_directory=scenario_directory,
+                hydro_year=hydro_year_directory,
                 subproblem=subproblem_directory,
                 stage=stage_directory,
                 parsed_arguments=parsed_arguments,
@@ -315,6 +336,7 @@ def run_optimization_for_subproblem_stage(
         # Save the scenario results to disk
         save_results(
             scenario_directory,
+            hydro_year_directory,
             subproblem_directory,
             stage_directory,
             solved_instance,
@@ -326,6 +348,7 @@ def run_optimization_for_subproblem_stage(
         # Summarize results
         summarize_results(
             scenario_directory,
+            hydro_year_directory,
             subproblem_directory,
             stage_directory,
             parsed_arguments,
@@ -349,6 +372,7 @@ def run_optimization_for_subproblem_stage(
 
 def run_optimization_for_subproblem(
     scenario_directory,
+    hydro_year_directory,
     subproblem_structure,
     subproblem,
     parsed_arguments,
@@ -377,6 +401,7 @@ def run_optimization_for_subproblem(
         stage_directory = ""
         objective_values[subproblem] = run_optimization_for_subproblem_stage(
             scenario_directory,
+            hydro_year_directory,
             subproblem_directory,
             stage_directory,
             parsed_arguments,
@@ -387,6 +412,7 @@ def run_optimization_for_subproblem(
             stage_directory = str(stage)
             objective_values[subproblem][stage] = run_optimization_for_subproblem_stage(
                 scenario_directory,
+                hydro_year_directory,
                 subproblem_directory,
                 stage_directory,
                 parsed_arguments,
@@ -400,6 +426,7 @@ def run_optimization_for_subproblem_pool(pool_datum):
     """
     [
         scenario_directory,
+        hydro_year_directory,
         subproblem_structure,
         subproblem,
         parsed_arguments,
@@ -408,6 +435,7 @@ def run_optimization_for_subproblem_pool(pool_datum):
 
     run_optimization_for_subproblem(
         scenario_directory=scenario_directory,
+        hydro_year_directory=hydro_year_directory,
         subproblem_structure=subproblem_structure,
         subproblem=subproblem,
         parsed_arguments=parsed_arguments,
@@ -442,6 +470,13 @@ def run_scenario(
         )
         n_parallel_subproblems = 1
 
+    # Determine whether we will have iterations
+    # Hydro years first
+    if len(subproblem_structure.HYDRO_YEARS) > 0:
+        hydro_years_true = True
+    else:
+        hydro_years_true = False
+
     # If only a single subproblem, run main problem
     if list(subproblem_structure.SUBPROBLEM_STAGES.keys()) == [1]:
         if n_parallel_subproblems > 1:
@@ -457,22 +492,28 @@ def run_scenario(
         # objective function values
         objective_values = {}
 
-        for subproblem in list(subproblem_structure.SUBPROBLEM_STAGES.keys()):
-            objective_values[subproblem] = {}
-            run_optimization_for_subproblem(
-                scenario_directory=scenario_directory,
-                subproblem_structure=subproblem_structure,
-                subproblem=subproblem,
-                parsed_arguments=parsed_arguments,
-                objective_values=objective_values,
-            )
+        for hydro_year in subproblem_structure.HYDRO_YEARS:
+            if hydro_years_true:
+                hydro_year_str = f"hydro_year_{hydro_year}"
+            else:
+                hydro_year_str = ""
+            for subproblem in list(subproblem_structure.SUBPROBLEM_STAGES.keys()):
+                objective_values[subproblem] = {}
+                run_optimization_for_subproblem(
+                    scenario_directory=scenario_directory,
+                    hydro_year_directory=hydro_year_str,
+                    subproblem_structure=subproblem_structure,
+                    subproblem=subproblem,
+                    parsed_arguments=parsed_arguments,
+                    objective_values=objective_values,
+                )
 
-        # Should probably just remove this logic here and have a dictionary
-        # for all objective functions
-        if len(objective_values.keys()) == 1:
-            objective_values = objective_values[list(objective_values.keys())[0]]
+            # Should probably just remove this logic here and have a dictionary
+            # for all objective functions
+            if len(objective_values.keys()) == 1:
+                objective_values = objective_values[list(objective_values.keys())[0]]
 
-        return objective_values
+            return objective_values
 
     # If parallelization is requested, proceed with some checks
     elif n_parallel_subproblems > 1:
@@ -489,23 +530,36 @@ def run_scenario(
             )
             # Solve sequentially
             objective_values = {}
-            for subproblem in list(subproblem_structure.SUBPROBLEM_STAGES.keys()):
-                run_optimization_for_subproblem(
-                    scenario_directory=scenario_directory,
-                    subproblem_structure=subproblem_structure,
-                    subproblem=subproblem,
-                    parsed_arguments=parsed_arguments,
-                    objective_values=objective_values,
-                )
+            for hydro_year in subproblem_structure.HYDRO_YEARS:
+                if hydro_years_true:
+                    hydro_year_str = f"hydro_year_{hydro_year}"
+                else:
+                    hydro_year_str = ""
+                for subproblem in list(subproblem_structure.SUBPROBLEM_STAGES.keys()):
+                    run_optimization_for_subproblem(
+                        scenario_directory=scenario_directory,
+                        hydro_year_directory=hydro_year_str,
+                        subproblem_structure=subproblem_structure,
+                        subproblem=subproblem,
+                        parsed_arguments=parsed_arguments,
+                        objective_values=objective_values,
+                    )
 
-            if len(objective_values.keys()) == 1:
-                objective_values = objective_values[1]
+                if len(objective_values.keys()) == 1:
+                    objective_values = objective_values[1]
 
-            return objective_values
+                return objective_values
 
         # If subproblems are independent, we create pool of subproblems
         # and solve them in parallel
         else:
+            if hydro_years_true:
+                hydro_year_str_list = [
+                    f"hydro_year_{yr}" for yr in subproblem_structure.HYDRO_YEARS
+                ]
+            else:
+                hydro_year_str_list = [""]
+
             # Create dictionary with which we'll keep track
             # of subproblem objective function values
             manager = Manager()
@@ -520,11 +574,13 @@ def run_scenario(
                 [
                     [
                         scenario_directory,
+                        hydro_year_str,
                         subproblem_structure,
                         subproblem,
                         parsed_arguments,
                         objective_values,
                     ]
+                    for hydro_year_str in hydro_year_str_list
                     for subproblem in subproblem_structure.SUBPROBLEM_STAGES.keys()
                 ]
             )
@@ -537,6 +593,7 @@ def run_scenario(
 
 def save_results(
     scenario_directory,
+    hydro_year,
     subproblem,
     stage,
     instance,
@@ -564,7 +621,7 @@ def save_results(
 
     # TODO: how best to handle non-empty results directories?
     results_directory = os.path.join(
-        scenario_directory, str(subproblem), str(stage), "results"
+        scenario_directory, str(hydro_year), str(subproblem), str(stage), "results"
     )
     if not os.path.exists(results_directory):
         os.makedirs(results_directory)
@@ -604,6 +661,7 @@ def save_results(
             print("...exporting CSV results")
         export_results(
             scenario_directory=scenario_directory,
+            hydro_year=hydro_year,
             subproblem=subproblem,
             stage=stage,
             instance=instance,
@@ -614,6 +672,7 @@ def save_results(
 
         export_pass_through_inputs(
             scenario_directory=scenario_directory,
+            hydro_year=hydro_year,
             subproblem=subproblem,
             stage=stage,
             instance=instance,
@@ -622,6 +681,7 @@ def save_results(
 
         save_objective_function_value(
             scenario_directory=scenario_directory,
+            hydro_year=hydro_year,
             subproblem=subproblem,
             stage=stage,
             instance=instance,
@@ -629,6 +689,7 @@ def save_results(
 
         save_duals(
             scenario_directory=scenario_directory,
+            hydro_year=hydro_year,
             subproblem=subproblem,
             stage=stage,
             instance=instance,
@@ -657,7 +718,13 @@ def save_results(
 
 
 def create_abstract_model(
-    model, dynamic_components, loaded_modules, scenario_directory, subproblem, stage
+    model,
+    dynamic_components,
+    loaded_modules,
+    scenario_directory,
+    hydro_year,
+    subproblem,
+    stage,
 ):
     """
     :param model: the Pyomo AbstractModel object
@@ -676,12 +743,23 @@ def create_abstract_model(
     for m in loaded_modules:
         if hasattr(m, "add_model_components"):
             m.add_model_components(
-                model, dynamic_components, scenario_directory, subproblem, stage
+                model,
+                dynamic_components,
+                scenario_directory,
+                hydro_year,
+                subproblem,
+                stage,
             )
 
 
 def load_scenario_data(
-    model, dynamic_components, loaded_modules, scenario_directory, subproblem, stage
+    model,
+    dynamic_components,
+    loaded_modules,
+    scenario_directory,
+    hydro_year,
+    subproblem,
+    stage,
 ):
     """
     :param model: the Pyomo abstract model object with components added
@@ -707,6 +785,7 @@ def load_scenario_data(
                 dynamic_components,
                 data_portal,
                 scenario_directory,
+                hydro_year,
                 subproblem,
                 stage,
             )
@@ -729,7 +808,13 @@ def create_problem_instance(model, loaded_data):
 
 
 def fix_variables(
-    instance, dynamic_components, scenario_directory, subproblem, stage, loaded_modules
+    instance,
+    dynamic_components,
+    scenario_directory,
+    hydro_year,
+    subproblem,
+    stage,
+    loaded_modules,
 ):
     """
     :param instance: the compiled problem instance
@@ -894,6 +979,7 @@ def solve(instance, parsed_arguments):
 
 def export_results(
     scenario_directory,
+    hydro_year,
     subproblem,
     stage,
     instance,
@@ -903,6 +989,7 @@ def export_results(
 ):
     """
     :param scenario_directory:
+    :param hydro_year:
     :param subproblem:
     :param stage:
     :param instance:
@@ -925,14 +1012,19 @@ def export_results(
                 if verbose:
                     print(f"... {modules_to_use[n]}")
                 m.export_results(
-                    scenario_directory, subproblem, stage, instance, dynamic_components
+                    scenario_directory,
+                    hydro_year,
+                    subproblem,
+                    stage,
+                    instance,
+                    dynamic_components,
                 )
 
             n += 1
 
 
 def export_pass_through_inputs(
-    scenario_directory, subproblem, stage, instance, verbose
+    scenario_directory, hydro_year, subproblem, stage, instance, verbose
 ):
     """
     :param scenario_directory:
@@ -955,12 +1047,14 @@ def export_pass_through_inputs(
             if verbose:
                 print(f"... {modules_to_use[n]}")
             m.export_pass_through_inputs(
-                scenario_directory, subproblem, stage, instance
+                scenario_directory, hydro_year, subproblem, stage, instance
             )
         n += 1
 
 
-def save_objective_function_value(scenario_directory, subproblem, stage, instance):
+def save_objective_function_value(
+    scenario_directory, hydro_year, subproblem, stage, instance
+):
     """
     Save the objective function value.
     :param scenario_directory:
@@ -978,6 +1072,7 @@ def save_objective_function_value(scenario_directory, subproblem, stage, instanc
     with open(
         os.path.join(
             scenario_directory,
+            hydro_year,
             subproblem,
             stage,
             "results",
@@ -990,7 +1085,13 @@ def save_objective_function_value(scenario_directory, subproblem, stage, instanc
 
 
 def save_duals(
-    scenario_directory, subproblem, stage, instance, dynamic_components, verbose
+    scenario_directory,
+    hydro_year,
+    subproblem,
+    stage,
+    instance,
+    dynamic_components,
+    verbose,
 ):
     """
     :param scenario_directory:
@@ -1016,7 +1117,12 @@ def save_duals(
             print(f"... {modules_to_use[n]}")
         if hasattr(m, "save_duals"):
             m.save_duals(
-                scenario_directory, subproblem, stage, instance, dynamic_components
+                scenario_directory,
+                hydro_year,
+                subproblem,
+                stage,
+                instance,
+                dynamic_components,
             )
         n += 1
 
@@ -1038,7 +1144,9 @@ def save_duals(
     #     )
 
 
-def summarize_results(scenario_directory, subproblem, stage, parsed_arguments):
+def summarize_results(
+    scenario_directory, hydro_year, subproblem, stage, parsed_arguments
+):
     """
     :param scenario_directory:
     :param subproblem:
@@ -1051,6 +1159,7 @@ def summarize_results(scenario_directory, subproblem, stage, parsed_arguments):
     if parsed_arguments.results_export_rule is None:
         summarize_rule = _summarize_rule(
             scenario_directory=scenario_directory,
+            hydro_year=hydro_year,
             subproblem=subproblem,
             stage=stage,
             quiet=parsed_arguments.quiet,
@@ -1060,6 +1169,7 @@ def summarize_results(scenario_directory, subproblem, stage, parsed_arguments):
             "summarize"
         ](
             scenario_directory=scenario_directory,
+            hydro_year=hydro_year,
             subproblem=subproblem,
             stage=stage,
             quiet=parsed_arguments.quiet,
@@ -1069,7 +1179,12 @@ def summarize_results(scenario_directory, subproblem, stage, parsed_arguments):
         # Only summarize results if solver status was "optimal"
         with open(
             os.path.join(
-                scenario_directory, subproblem, stage, "results", "solver_status.txt"
+                scenario_directory,
+                hydro_year,
+                subproblem,
+                stage,
+                "results",
+                "solver_status.txt",
             ),
             "r",
         ) as f:
@@ -1088,7 +1203,12 @@ def summarize_results(scenario_directory, subproblem, stage, parsed_arguments):
 
             # Make the summary results file
             summary_results_file = os.path.join(
-                scenario_directory, subproblem, stage, "results", "summary_results.txt"
+                scenario_directory,
+                hydro_year,
+                subproblem,
+                stage,
+                "results",
+                "summary_results.txt",
             )
 
             # TODO: how to handle results from previous runs
@@ -1106,7 +1226,9 @@ def summarize_results(scenario_directory, subproblem, stage, parsed_arguments):
                 if hasattr(m, "summarize_results"):
                     if parsed_arguments.verbose:
                         print(f"... {modules_to_use[n]}")
-                    m.summarize_results(scenario_directory, subproblem, stage)
+                    m.summarize_results(
+                        scenario_directory, hydro_year, subproblem, stage
+                    )
                 n += 1
 
 
@@ -1189,6 +1311,7 @@ def main(args=None):
             )
         )
 
+    # TODO: get from disk?
     subproblem_structure = get_subproblem_structure_from_disk(
         scenario_directory=scenario_directory
     )
@@ -1216,7 +1339,7 @@ def _export_rule(instance, quiet):
     return export_results
 
 
-def _summarize_rule(scenario_directory, subproblem, stage, quiet):
+def _summarize_rule(scenario_directory, hydro_year, subproblem, stage, quiet):
     """
     :return: boolean
 

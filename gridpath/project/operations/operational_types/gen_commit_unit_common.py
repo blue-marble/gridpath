@@ -82,7 +82,7 @@ from gridpath.project.common_functions import (
 
 
 def add_model_components(
-    m, d, scenario_directory, subproblem, stage, bin_or_lin_optype
+    m, d, scenario_directory, hydro_year, subproblem, stage, bin_or_lin_optype
 ):
     """
     The tables below list the Pyomo model components defined in the
@@ -3321,6 +3321,7 @@ def load_model_data(
     d,
     data_portal,
     scenario_directory,
+    hydro_year,
     subproblem,
     stage,
     bin_or_lin_optype,
@@ -3341,6 +3342,7 @@ def load_model_data(
         mod=mod,
         data_portal=data_portal,
         scenario_directory=scenario_directory,
+        hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
         op_type=bin_or_lin_optype,
@@ -3350,6 +3352,7 @@ def load_model_data(
     load_startup_chars(
         data_portal=data_portal,
         scenario_directory=scenario_directory,
+        hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
         op_type=bin_or_lin_optype,
@@ -3521,7 +3524,15 @@ def add_to_prj_tmp_results(
 
 
 def export_linked_subproblem_inputs(
-    mod, d, scenario_directory, subproblem, stage, Bin_or_Lin, BIN_OR_LIN, bin_or_lin
+    mod,
+    d,
+    scenario_directory,
+    hydro_year,
+    subproblem,
+    stage,
+    Bin_or_Lin,
+    BIN_OR_LIN,
+    bin_or_lin,
 ):
     # If there's a linked_subproblems_map CSV file, check which of the
     # current subproblem TMPS we should export results for to link to the
@@ -3540,6 +3551,7 @@ def export_linked_subproblem_inputs(
         with open(
             os.path.join(
                 scenario_directory,
+                hydro_year,
                 next_subproblem,
                 stage,
                 "inputs",

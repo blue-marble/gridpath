@@ -27,7 +27,7 @@ from gridpath.common_functions import create_results_df
 from gridpath.system.policy.energy_targets import ENERGY_TARGET_ZONE_HRZ_DF
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
     """
 
     :param m:
@@ -70,7 +70,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
     """
 
     :param scenario_directory:
@@ -139,7 +139,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     getattr(d, ENERGY_TARGET_ZONE_HRZ_DF).update(results_df)
 
 
-def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
+def save_duals(
+    scenario_directory, hydro_year, subproblem, stage, instance, dynamic_components
+):
     instance.constraint_indices["Horizon_Energy_Target_Constraint"] = [
         "energy_target_zone",
         "balancing_type",
@@ -148,7 +150,7 @@ def save_duals(scenario_directory, subproblem, stage, instance, dynamic_componen
     ]
 
 
-def summarize_results(scenario_directory, subproblem, stage):
+def summarize_results(scenario_directory, hydro_year, subproblem, stage):
     """
     :param scenario_directory:
     :param subproblem:
@@ -159,7 +161,12 @@ def summarize_results(scenario_directory, subproblem, stage):
     """
 
     summary_results_file = os.path.join(
-        scenario_directory, subproblem, stage, "results", "summary_results.txt"
+        scenario_directory,
+        hydro_year,
+        subproblem,
+        stage,
+        "results",
+        "summary_results.txt",
     )
 
     # Open in 'append' mode, so that results already written by other
@@ -173,6 +180,7 @@ def summarize_results(scenario_directory, subproblem, stage):
     results_df = pd.read_csv(
         os.path.join(
             scenario_directory,
+            str(hydro_year),
             str(subproblem),
             str(stage),
             "results",

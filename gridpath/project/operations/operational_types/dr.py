@@ -39,7 +39,7 @@ from gridpath.project.operations.operational_types.common_functions import (
 )
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
     """
     The following Pyomo model components are defined in this module:
 

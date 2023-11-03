@@ -37,7 +37,7 @@ from gridpath.auxiliary.module_list import determine_modules, load_modules
 from gridpath.auxiliary.scenario_chars import (
     OptionalFeatures,
     SubScenarios,
-    get_subproblem_structure_from_db,
+    get_scenario_structure_from_db,
 )
 
 
@@ -397,7 +397,7 @@ def main(args=None):
     # Get scenario characteristics (features, scenario_id, subscenarios, subproblems)
     optional_features = OptionalFeatures(conn=conn, scenario_id=scenario_id)
     subscenarios = SubScenarios(conn=conn, scenario_id=scenario_id)
-    subproblem_structure = get_subproblem_structure_from_db(
+    subproblem_structure = get_scenario_structure_from_db(
         conn=conn, scenario_id=scenario_id
     )
 

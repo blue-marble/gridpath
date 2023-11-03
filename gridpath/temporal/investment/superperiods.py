@@ -31,7 +31,7 @@ from gridpath.auxiliary.validations import (
 )
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
     """
     The following Pyomo model components are defined in this module:
 
@@ -60,10 +60,17 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 ###############################################################################
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+):
     """ """
     input_file = os.path.join(
-        scenario_directory, str(subproblem), str(stage), "inputs", "superperiods.tab"
+        scenario_directory,
+        str(hydro_year),
+        str(subproblem),
+        str(stage),
+        "inputs",
+        "superperiods.tab",
     )
 
     if os.path.exists(input_file):
@@ -105,7 +112,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory, scenario_id, subscenarios, hydro_year, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
@@ -126,6 +133,7 @@ def write_model_inputs(
         with open(
             os.path.join(
                 scenario_directory,
+                str(hydro_year),
                 str(subproblem),
                 str(stage),
                 "inputs",

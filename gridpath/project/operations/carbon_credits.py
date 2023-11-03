@@ -32,7 +32,7 @@ from gridpath.project.operations.common_functions import load_operational_type_m
 import gridpath.project.operations.operational_types as op_type_init
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
     """
     The following Pyomo model components are defined in this module:
 
@@ -105,6 +105,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     required_operational_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
         which_type="operational_type",
@@ -217,7 +218,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 ###############################################################################
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+):
     """
 
     :param m:
@@ -230,7 +233,12 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
     data_portal.load(
         filename=os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory,
+            str(hydro_year),
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "projects.tab",
         ),
         select=("project", "carbon_credits_zone"),
         param=(m.carbon_credits_zone,),
@@ -243,6 +251,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     data_portal.load(
         filename=os.path.join(
             scenario_directory,
+            str(hydro_year),
             str(subproblem),
             str(stage),
             "inputs",
@@ -331,7 +340,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory, scenario_id, subscenarios, hydro_year, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
@@ -355,7 +364,12 @@ def write_model_inputs(
 
     with open(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory,
+            str(hydro_year),
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "projects.tab",
         ),
         "r",
     ) as projects_file_in:
@@ -381,7 +395,12 @@ def write_model_inputs(
 
     with open(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory,
+            str(hydro_year),
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "projects.tab",
         ),
         "w",
         newline="",
@@ -395,6 +414,7 @@ def write_model_inputs(
         ct_df = ct_df.fillna(".")
         fpath = os.path.join(
             scenario_directory,
+            str(hydro_year),
             str(subproblem),
             str(stage),
             "inputs",
@@ -403,7 +423,7 @@ def write_model_inputs(
         ct_df.to_csv(fpath, index=False, sep="\t")
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
     """
 
     :param scenario_directory:

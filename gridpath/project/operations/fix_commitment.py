@@ -32,7 +32,7 @@ from gridpath.auxiliary.auxiliary import (
 from gridpath.project.operations.common_functions import load_operational_type_modules
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
     """
     The following Pyomo model components are defined in this module:
 
@@ -96,6 +96,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     required_operational_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
         which_type="operational_type",
@@ -171,6 +172,7 @@ def fix_variables(m, d, scenario_directory, subproblem, stage):
 
     required_operational_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
         which_type="operational_type",
@@ -192,7 +194,9 @@ def fix_variables(m, d, scenario_directory, subproblem, stage):
 ###############################################################################
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+):
     """
 
     :param m:
@@ -230,6 +234,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         df = read_csv(
             os.path.join(
                 scenario_directory,
+                str(hydro_year),
                 str(subproblem),
                 str(stage),
                 "inputs",
@@ -275,7 +280,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         data_portal.data()["fixed_commitment"] = fixed_commitment_dict
 
 
-def export_pass_through_inputs(scenario_directory, subproblem, stage, m):
+def export_pass_through_inputs(scenario_directory, hydro_year, subproblem, stage, m):
     """
     This function exports the commitment for all final commitment projects,
     i.e. projects for which the current stage or any of the previous stages
@@ -290,7 +295,12 @@ def export_pass_through_inputs(scenario_directory, subproblem, stage, m):
 
     df = read_csv(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory,
+            str(hydro_year),
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "projects.tab",
         ),
         sep="\t",
         usecols=["project", "last_commitment_stage"],

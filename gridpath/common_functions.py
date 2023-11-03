@@ -290,7 +290,9 @@ def get_import_results_parser():
     return parser
 
 
-def create_logs_directory_if_not_exists(scenario_directory, subproblem, stage):
+def create_logs_directory_if_not_exists(
+    scenario_directory, hydro_year, subproblem, stage
+):
     """
     Create a logs directory if it doesn't exist already
     :param scenario_directory:
@@ -299,7 +301,7 @@ def create_logs_directory_if_not_exists(scenario_directory, subproblem, stage):
     :return:
     """
     logs_directory = os.path.join(
-        scenario_directory, str(subproblem), str(stage), "logs"
+        scenario_directory, str(hydro_year), str(subproblem), str(stage), "logs"
     )
     if not os.path.exists(logs_directory):
         os.makedirs(logs_directory)

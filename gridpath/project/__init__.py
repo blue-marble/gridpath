@@ -37,7 +37,7 @@ PROJECT_PERIOD_DF = "project_period_df"
 PROJECT_TIMEPOINT_DF = "project_timepoint_df"
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
     """
     +-------------------------------------------------------------------------+
     | Sets                                                                    |
@@ -169,11 +169,18 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 ###############################################################################
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+):
     """ """
     data_portal.load(
         filename=os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory,
+            str(hydro_year),
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "projects.tab",
         ),
         index=m.PROJECTS,
         select=(
@@ -196,7 +203,12 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     # Technology column is optional (default param value is 'unspecified')
     header = pd.read_csv(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory,
+            str(hydro_year),
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "projects.tab",
         ),
         sep="\t",
         header=None,
@@ -207,6 +219,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         data_portal.load(
             filename=os.path.join(
                 scenario_directory,
+                str(hydro_year),
                 str(subproblem),
                 str(stage),
                 "inputs",
@@ -221,7 +234,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 ###############################################################################
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
     """
     Export operations results.
     :param scenario_directory:
@@ -371,7 +384,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory, scenario_id, subscenarios, hydro_year, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
@@ -392,12 +405,17 @@ def write_model_inputs(
     #   of the tab files. If going this route, would need to make sure database
     #   columns and tab file column names are the same everywhere
     #   projects.fillna(".", inplace=True)
-    #   filename = os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab")
+    #   filename = os.path.join(scenario_directory, str(hydro_year), str(subproblem), str(stage), "inputs", "projects.tab")
     #   projects.to_csv(filename, sep="\t", mode="w", newline="")
 
     with open(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory,
+            str(hydro_year),
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "projects.tab",
         ),
         "w",
         newline="",

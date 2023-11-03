@@ -158,6 +158,7 @@ def generic_load_model_data(
     d,
     data_portal,
     scenario_directory,
+    hydro_year,
     subproblem,
     stage,
     reserve_requirement_param,
@@ -185,7 +186,9 @@ def generic_load_model_data(
     :param reserve_type:
     :return:
     """
-    input_dir = os.path.join(scenario_directory, str(subproblem), str(stage), "inputs")
+    input_dir = os.path.join(
+        scenario_directory, str(hydro_year), str(subproblem), str(stage), "inputs"
+    )
 
     # Load by-tmp requriement if input file was written
     by_tmp_req_filename = os.path.join(

@@ -51,7 +51,7 @@ from gridpath.project.common_functions import (
 )
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
     """
     The following Pyomo model components are defined in this module:
 
@@ -331,7 +331,9 @@ def availability_derate_hyb_stor_cap_rule(mod, g, tmp):
 ###############################################################################
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+):
     """
     :param m:
     :param data_portal:
@@ -343,6 +345,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     # Figure out which projects have this availability type
     project_subset = determine_project_subset(
         scenario_directory=scenario_directory,
+        hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
         column="availability_type",
@@ -359,6 +362,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     with open(
         os.path.join(
             scenario_directory,
+            str(hydro_year),
             str(subproblem),
             str(stage),
             "inputs",
@@ -384,7 +388,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     ] = avl_cont_min_avl_hrs_between_events_dict
 
 
-def add_to_prj_tmp_results(scenario_directory, subproblem, stage, m, d):
+def add_to_prj_tmp_results(scenario_directory, hydro_year, subproblem, stage, m, d):
     """
     Export operations results.
     :param scenario_directory:
@@ -465,7 +469,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory, scenario_id, subscenarios, hydro_year, subproblem, stage, conn
 ):
     """
 

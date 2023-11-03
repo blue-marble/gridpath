@@ -19,7 +19,7 @@ from gridpath.auxiliary.db_interface import import_csv
 PERFORMANCE_STANDARD_Z_PRD_DF = "performance_standard_z_prd_df"
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
     """ """
     # First create the results dataframes
     # Other modules will update these dataframe with actual results

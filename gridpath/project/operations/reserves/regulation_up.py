@@ -50,7 +50,7 @@ RESERVE_BALANCING_AREAS_SET_NAME = "REGULATION_UP_ZONES"
 RESERVE_PRJ_OPR_TMPS_SET_NAME = "REGULATION_UP_PRJ_OPR_TMPS"
 
 
-def record_dynamic_components(d, scenario_directory, subproblem, stage):
+def record_dynamic_components(d, scenario_directory, hydro_yearsubproblem, stage):
     """
 
     :param d:
@@ -62,6 +62,7 @@ def record_dynamic_components(d, scenario_directory, subproblem, stage):
     generic_record_dynamic_components(
         d=d,
         scenario_directory=scenario_directory,
+        hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
         headroom_or_footroom_dict=HEADROOM_OR_FOOTROOM_DICT_NAME,
@@ -73,14 +74,14 @@ def record_dynamic_components(d, scenario_directory, subproblem, stage):
     )
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
     """
 
     :param m:
     :param d:
     :return:
     """
-    record_dynamic_components(d, scenario_directory, subproblem, stage)
+    record_dynamic_components(d, scenario_directory, hydro_yearsubproblem, stage)
 
     generic_add_model_components(
         m=m,
@@ -95,7 +96,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+):
     """
 
     :param m:
@@ -111,6 +114,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         d=d,
         data_portal=data_portal,
         scenario_directory=scenario_directory,
+        hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
         ba_column_name=BA_COLUMN_NAME_IN_INPUT_FILE,
@@ -123,7 +127,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     )
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
     """
     Export project-level results for upward regulation
     :param scenario_directory:
@@ -138,6 +142,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         m=m,
         d=d,
         scenario_directory=scenario_directory,
+        hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
         module_name=MODULE_NAME,
@@ -196,7 +201,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory, scenario_id, subscenarios, hydro_year, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
@@ -225,7 +230,12 @@ def write_model_inputs(
     # Add params to projects file
     with open(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory,
+            str(hydro_year),
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "projects.tab",
         ),
         "r",
     ) as projects_file_in:
@@ -260,7 +270,12 @@ def write_model_inputs(
 
     with open(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory,
+            str(hydro_year),
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "projects.tab",
         ),
         "w",
         newline="",

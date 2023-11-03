@@ -54,7 +54,7 @@ from gridpath.project.operations.operational_types.common_functions import (
 from gridpath.common_functions import create_results_df
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
     """
     The following Pyomo model components are defined in this module:
 
@@ -413,7 +413,9 @@ def power_delta_rule(mod, prj, tmp):
 ###############################################################################
 
 
-def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    mod, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+):
     """
 
     :param mod:
@@ -427,6 +429,7 @@ def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
         mod=mod,
         data_portal=data_portal,
         scenario_directory=scenario_directory,
+        hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
         op_type="fuel_prod",
@@ -482,7 +485,7 @@ def add_to_prj_tmp_results(mod):
     return results_columns, optype_dispatch_df
 
 
-def export_results(mod, d, scenario_directory, subproblem, stage):
+def export_results(mod, d, scenario_directory, hydro_year, subproblem, stage):
     """
 
     :param scenario_directory:

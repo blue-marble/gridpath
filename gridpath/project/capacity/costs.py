@@ -38,7 +38,7 @@ from gridpath.auxiliary.dynamic_components import capacity_type_financial_period
 import gridpath.project.capacity.capacity_types as cap_type_init
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
     """
     The following Pyomo model components are defined in this module:
 
@@ -63,6 +63,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     required_capacity_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
         which_type="capacity_type",
@@ -146,7 +147,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 ###############################################################################
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
     """
     Export operations results.
     :param scenario_directory:

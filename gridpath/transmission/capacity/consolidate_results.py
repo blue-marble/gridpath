@@ -22,7 +22,7 @@ import os.path
 from gridpath.transmission import TX_PERIOD_DF
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
     """
     Export all results from the TX_PERIOD_DF that various modules
     have added to
@@ -32,6 +32,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     tx_cap_df.to_csv(
         os.path.join(
             scenario_directory,
+            str(hydro_year),
             str(subproblem),
             str(stage),
             "results",

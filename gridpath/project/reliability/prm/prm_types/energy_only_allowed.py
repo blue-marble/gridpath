@@ -40,7 +40,7 @@ from gridpath.auxiliary.db_interface import import_csv
 # TODO: rename deliverability_group_deliverability_cost_per_mw --> deliverability_group_deliverability_cost_per_mw_yr
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
     """
     EOA: Energy-Only Allowed
     :param m:

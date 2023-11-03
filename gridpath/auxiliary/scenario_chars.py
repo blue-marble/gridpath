@@ -19,7 +19,10 @@ Scenario characteristics in database.
 import csv
 import os.path
 
-from gridpath.auxiliary.auxiliary import check_for_integer_subdirectories
+from gridpath.auxiliary.auxiliary import (
+    check_for_integer_subdirectories,
+    check_for_starting_string_subdirectories,
+)
 
 
 class OptionalFeatures(object):
@@ -95,21 +98,26 @@ class SubScenarios(object):
         return all_subscenarios
 
 
-class ScenarioSubproblemStructure(object):
-    def __init__(self, stages_by_subproblem):
+class ScenarioStructure(object):
+    def __init__(self, hydro_years, stages_by_subproblem):
+        # Hydro year iterations
+        self.HYDRO_YEARS = hydro_years
         # List of stages by subproblem in dict {subproblem: [stages]}
         # This should have a single key, 1, if a single subproblem
         # This should be subproblem: [1] when a single stage in the subproblem
         self.SUBPROBLEM_STAGES = stages_by_subproblem
 
 
-def get_subproblem_structure_from_db(conn, scenario_id):
+def get_scenario_structure_from_db(conn, scenario_id):
     """
 
     :param conn:
     :param scenario_id:
     """
     cursor = conn.cursor()
+
+    # Hydro years
+    hydro_years = [2012, 2014]
 
     # TODO: make sure there is data integrity between subproblems_stages
     #   and inputs_temporal_horizons and inputs_temporal
@@ -142,14 +150,32 @@ def get_subproblem_structure_from_db(conn, scenario_id):
         stages = [stage[0] for stage in stages]  # convert to simple list
         stages_by_subproblem[s] = stages
 
-    return ScenarioSubproblemStructure(stages_by_subproblem=stages_by_subproblem)
+    return ScenarioStructure(
+        stages_by_subproblem=stages_by_subproblem, hydro_years=hydro_years
+    )
 
 
 def get_subproblem_structure_from_disk(scenario_directory):
+    # Check if there are hydro year directories
+    hydro_directories = check_for_starting_string_subdirectories(
+        main_directory=scenario_directory, starting_string="hydro_year"
+    )
+
+    hydro_years = [d.replace("hydro_year_", "") for d in hydro_directories]
+
     # Check if there are subproblem directories
+    # If there are hydro directories, assume subproblem structure is the same
+    # for each hydro year
+    if hydro_years:
+        subproblem_main_directory = os.path.join(
+            scenario_directory, hydro_directories[0]
+        )
+    else:
+        subproblem_main_directory = scenario_directory
+
     # Convert to integers
     subproblem_directories = [
-        int(i) for i in check_for_integer_subdirectories(scenario_directory)
+        int(i) for i in check_for_integer_subdirectories(subproblem_main_directory)
     ]
 
     # Make dictionary for the stages by subproblem, starting with empty
@@ -160,7 +186,7 @@ def get_subproblem_structure_from_disk(scenario_directory):
     # subproblem directory
     if subproblem_directories:
         for subproblem in subproblem_directories:
-            subproblem_dir = os.path.join(scenario_directory, str(subproblem))
+            subproblem_dir = os.path.join(subproblem_main_directory, str(subproblem))
             # Convert to integers
             stages = [int(i) for i in check_for_integer_subdirectories(subproblem_dir)]
             if stages:
@@ -176,7 +202,9 @@ def get_subproblem_structure_from_disk(scenario_directory):
         # Downstream, we need {1: [1]}
         stages_by_subproblem[1] = [1]
 
-    return ScenarioSubproblemStructure(stages_by_subproblem=stages_by_subproblem)
+    return ScenarioStructure(
+        hydro_years=hydro_years, stages_by_subproblem=stages_by_subproblem
+    )
 
 
 class SolverOptions(object):

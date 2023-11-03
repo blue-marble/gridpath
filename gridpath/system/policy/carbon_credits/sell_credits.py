@@ -28,7 +28,7 @@ from gridpath.auxiliary.dynamic_components import (
 from gridpath.system.policy.carbon_credits import CARBON_CREDITS_ZONE_PRD_DF
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
     """
 
     :param m:
@@ -59,7 +59,9 @@ def record_dynamic_components(dynamic_components):
     )
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+):
     """
 
     :param m:
@@ -127,7 +129,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory, scenario_id, subscenarios, hydro_year, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
@@ -149,6 +151,7 @@ def write_model_inputs(
         df = df.fillna(".")
         fpath = os.path.join(
             scenario_directory,
+            str(hydro_year),
             str(subproblem),
             str(stage),
             "inputs",
@@ -157,7 +160,7 @@ def write_model_inputs(
         df.to_csv(fpath, index=False, sep="\t")
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
     """
 
     :param scenario_directory:

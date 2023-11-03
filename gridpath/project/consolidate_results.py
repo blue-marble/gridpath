@@ -23,7 +23,7 @@ from gridpath.project import PROJECT_PERIOD_DF
 from gridpath.project import PROJECT_TIMEPOINT_DF
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
     """
     Export all results from the PROJECT_CAPACITY_DF and PROJECT_OPERATIONS_DF
     that various modules have added to
@@ -31,6 +31,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     getattr(d, PROJECT_PERIOD_DF).to_csv(
         os.path.join(
             scenario_directory,
+            str(hydro_year),
             str(subproblem),
             str(stage),
             "results",
@@ -43,6 +44,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     getattr(d, PROJECT_TIMEPOINT_DF).to_csv(
         os.path.join(
             scenario_directory,
+            str(hydro_year),
             str(subproblem),
             str(stage),
             "results",

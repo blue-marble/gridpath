@@ -1,0 +1,10 @@
+transmission_line,availability_type,exogenous_availability_scenario_id,endogenous_availability_scenario_id
+BS_CA,exogenous,,
+BS_NW,exogenous,,
+BS_RM,exogenous,,
+BS_SW,exogenous,,
+CA_NW,exogenous,,
+NW_RM,exogenous,,
+NW_SW,exogenous,,
+RM_SW,exogenous,,
+SW_CA,exogenous,,

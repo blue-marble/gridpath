@@ -26,7 +26,7 @@ import os.path
 from pyomo.environ import Set, Constraint
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
     """
     The tables below list the Pyomo model components defined in the
     'gen_commit_bin' module followed below by the respective components
@@ -136,7 +136,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
 
-def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    mod, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+):
     """
     :param mod:
     :param data_portal:

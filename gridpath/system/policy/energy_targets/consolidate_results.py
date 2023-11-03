@@ -21,7 +21,7 @@ from gridpath.system.policy.energy_targets import (
 )
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
     """
     Export all results from the CARBON_CAP_ZONE_PRD_DF that various modules
     have added to

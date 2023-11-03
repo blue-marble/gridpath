@@ -23,7 +23,7 @@ from gridpath.common_functions import create_results_df
 from gridpath.project import PROJECT_TIMEPOINT_DF
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
     """
 
     :param m:
@@ -33,6 +33,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Import needed availability type modules
     required_availability_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
         which_type="availability_type",
@@ -45,7 +46,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     for op_m in required_availability_modules:
         imp_op_m = imported_availability_modules[op_m]
         if hasattr(imp_op_m, "add_model_components"):
-            imp_op_m.add_model_components(m, d, scenario_directory, subproblem, stage)
+            imp_op_m.add_model_components(
+                m, d, scenario_directory, hydro_year, subproblem, stage
+            )
 
     def availability_derate_cap_rule(mod, g, tmp):
         """
@@ -91,7 +94,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory, scenario_id, subscenarios, hydro_year, subproblem, stage, conn
 ):
     """
     :param scenario_directory: string, the scenario directory
@@ -118,11 +121,19 @@ def write_model_inputs(
     for op_m in required_availability_type_modules:
         if hasattr(imported_availability_type_modules[op_m], "write_model_inputs"):
             imported_availability_type_modules[op_m].write_model_inputs(
-                scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+                scenario_directory,
+                scenario_id,
+                subscenarios,
+                hydro_year,
+                subproblem,
+                stage,
+                conn,
             )
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+):
     """
 
     :param m:
@@ -135,6 +146,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
     required_availability_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
         which_type="availability_type",
@@ -145,11 +157,11 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     for op_m in required_availability_modules:
         if hasattr(imported_availability_modules[op_m], "load_model_data"):
             imported_availability_modules[op_m].load_model_data(
-                m, d, data_portal, scenario_directory, subproblem, stage
+                m, d, data_portal, scenario_directory, hydro_year, subproblem, stage
             )
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
     """
     :param scenario_directory:
     :param subproblem:
@@ -185,6 +197,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     # Module-specific availability results
     required_availability_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
         which_type="availability_type",
@@ -196,7 +209,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         if hasattr(imported_availability_modules[op_m], "add_to_prj_tmp_results"):
             results, results_df = imported_availability_modules[
                 op_m
-            ].add_to_prj_tmp_results(scenario_directory, subproblem, stage, m, d)
+            ].add_to_prj_tmp_results(
+                scenario_directory, hydro_year, subproblem, stage, m, d
+            )
             for c in results_columns:
                 getattr(d, PROJECT_TIMEPOINT_DF)[c] = None
             getattr(d, PROJECT_TIMEPOINT_DF).update(results_df)

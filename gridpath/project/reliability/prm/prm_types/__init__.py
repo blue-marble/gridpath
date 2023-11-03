@@ -25,7 +25,7 @@ from gridpath.project.reliability.prm.common_functions import load_prm_type_modu
 
 # TODO: rename to deliverability types; the PRM types are really 'simple'
 #  and 'elcc surface'
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
     """
 
     :param m:
@@ -35,7 +35,12 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Import needed PRM modules
     project_df = pd.read_csv(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory,
+            str(hydro_year),
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "projects.tab",
         ),
         sep="\t",
         usecols=["project", "prm_type"],
@@ -64,7 +69,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
 # TODO: refactor importing prm modules as it's used several places in this
 #  module
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+):
     """
 
     :param m:
@@ -77,7 +84,12 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
     project_df = pd.read_csv(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory,
+            str(hydro_year),
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "projects.tab",
         ),
         sep="\t",
         usecols=["project", "prm_type"],
@@ -91,11 +103,11 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     for prm_m in required_prm_modules:
         if hasattr(imported_prm_modules[prm_m], "load_model_data"):
             imported_prm_modules[prm_m].load_model_data(
-                m, d, data_portal, scenario_directory, subproblem, stage
+                m, d, data_portal, scenario_directory, hydro_year, subproblem, stage
             )
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
     """
     Export operations results.
     :param scenario_directory:
@@ -113,7 +125,12 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     # Operational type modules
     project_df = pd.read_csv(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory,
+            str(hydro_year),
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "projects.tab",
         ),
         sep="\t",
         usecols=["project", "prm_type"],
@@ -130,6 +147,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 m,
                 d,
                 scenario_directory,
+                hydro_year,
                 subproblem,
                 stage,
             )
@@ -210,7 +228,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory, scenario_id, subscenarios, hydro_year, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input .tab files.

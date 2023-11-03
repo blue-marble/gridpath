@@ -38,7 +38,7 @@ from db.common_functions import connect_to_database, spin_on_database_lock
 from db.utilities.scenario import delete_scenario_results
 from gridpath.auxiliary.module_list import determine_modules, load_modules
 from gridpath.auxiliary.scenario_chars import (
-    get_subproblem_structure_from_db,
+    get_scenario_structure_from_db,
     get_subproblem_structure_from_disk,
 )
 

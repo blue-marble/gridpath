@@ -27,7 +27,7 @@ from gridpath.transmission.capacity.common_functions import (
 )
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
     """ """
 
     # Dynamic Inputs
@@ -35,6 +35,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     df = pd.read_csv(
         os.path.join(
             scenario_directory,
+            str(hydro_year),
             str(subproblem),
             str(stage),
             "inputs",
@@ -57,10 +58,14 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     for op_m in required_tx_capacity_modules:
         imp_op_m = imported_tx_capacity_modules[op_m]
         if hasattr(imp_op_m, "add_model_components"):
-            imp_op_m.add_model_components(m, d, scenario_directory, subproblem, stage)
+            imp_op_m.add_model_components(
+                m, d, scenario_directory, hydro_year, subproblem, stage
+            )
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+):
     """
 
     :param m:
@@ -74,6 +79,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     df = pd.read_csv(
         os.path.join(
             scenario_directory,
+            str(hydro_year),
             str(subproblem),
             str(stage),
             "inputs",
@@ -96,7 +102,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     for op_m in required_tx_capacity_modules:
         if hasattr(imported_tx_capacity_modules[op_m], "load_model_data"):
             imported_tx_capacity_modules[op_m].load_model_data(
-                m, d, data_portal, scenario_directory, subproblem, stage
+                m, d, data_portal, scenario_directory, hydro_year, subproblem, stage
             )
 
 
@@ -173,7 +179,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory, scenario_id, subscenarios, hydro_year, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input .tab file.
@@ -196,7 +202,13 @@ def write_model_inputs(
     for op_m in required_capacity_type_modules:
         if hasattr(imported_capacity_type_modules[op_m], "write_model_inputs"):
             imported_capacity_type_modules[op_m].write_model_inputs(
-                scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+                scenario_directory,
+                scenario_id,
+                subscenarios,
+                hydro_year,
+                subproblem,
+                stage,
+                conn,
             )
 
 

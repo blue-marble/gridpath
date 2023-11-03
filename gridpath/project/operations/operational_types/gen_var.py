@@ -68,7 +68,7 @@ from gridpath.project.operations.operational_types.common_functions import (
 from gridpath.common_functions import create_results_df
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
     """
     The following Pyomo model components are defined in this module:
 
@@ -447,7 +447,9 @@ def power_delta_rule(mod, g, tmp):
 ###############################################################################
 
 
-def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    mod, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+):
     """
     :param mod:
     :param data_portal:
@@ -462,13 +464,14 @@ def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
         mod=mod,
         data_portal=data_portal,
         scenario_directory=scenario_directory,
+        hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
         op_type="gen_var",
     )
 
     load_var_profile_inputs(
-        data_portal, scenario_directory, subproblem, stage, "gen_var"
+        data_portal, scenario_directory, hydro_year, subproblem, stage, "gen_var"
     )
 
 
@@ -528,7 +531,7 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory, scenario_id, subscenarios, hydro_year, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
@@ -546,7 +549,9 @@ def write_model_inputs(
     )
     fname = "variable_generator_profiles.tab"
 
-    write_tab_file_model_inputs(scenario_directory, subproblem, stage, fname, data)
+    write_tab_file_model_inputs(
+        scenario_directory, hydro_year, subproblem, stage, fname, data
+    )
 
 
 def process_model_results(db, c, scenario_id, subscenarios, quiet):

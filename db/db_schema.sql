@@ -275,6 +275,30 @@ CREATE TABLE inputs_temporal_superperiods
         (temporal_scenario_id)
 );
 
+-- Bins
+-- Year, month, day_of_month, weekend index -- maybe can be made more flexible
+DROP TABLE IF EXISTS inputs_temporal_day_bins;
+CREATE TABLE inputs_temporal_day_bins
+(
+    temporal_scenario_id INTEGER,
+    year                 INTEGER,
+    month                INTEGER,
+    day_of_month         INTEGER,
+    weekend              INTEGER,
+    weather_bin          INTEGER,
+    PRIMARY KEY (temporal_scenario_id, year, month, day_of_month, weekend)
+);
+
+DROP TABLE IF EXISTS inputs_temporal_month_bins;
+CREATE TABLE inputs_temporal_month_bins
+(
+    temporal_scenario_id INTEGER,
+    year                 INTEGER,
+    month                INTEGER,
+    hydro_bin            INTEGER,
+    PRIMARY KEY (temporal_scenario_id, year, month)
+);
+
 -- Timepoints
 -- Note on linked timepoints: the user can designate timepoints from the last
 -- horizon of the subproblem to be linked to the first horizon of the next
@@ -304,7 +328,9 @@ CREATE TABLE inputs_temporal
     previous_stage_timepoint_map INTEGER,
     spinup_or_lookahead          INTEGER NOT NULL,
     linked_timepoint             INTEGER, -- should be non-positive
+    year                         INTEGER,
     month                        INTEGER,
+    day_of_month                 INTEGER,
     hour_of_day                  FLOAT,   -- FLOAT to accommodate subhourly timepoints
     timestamp                    DATETIME,
     PRIMARY KEY (temporal_scenario_id, subproblem_id, stage_id, timepoint),
@@ -1527,6 +1553,7 @@ CREATE TABLE subscenarios_project_variable_generator_profiles
     PRIMARY KEY (project, variable_generator_profile_scenario_id)
 );
 
+-- TODO: add subproblem ID
 DROP TABLE IF EXISTS inputs_project_variable_generator_profiles;
 CREATE TABLE inputs_project_variable_generator_profiles
 (
@@ -1535,8 +1562,8 @@ CREATE TABLE inputs_project_variable_generator_profiles
     stage_id                               INTEGER,
     timepoint                              INTEGER,
     cap_factor                             FLOAT,
-    PRIMARY KEY (project, variable_generator_profile_scenario_id, stage_id,
-                 timepoint),
+    PRIMARY KEY (project, variable_generator_profile_scenario_id,
+                 stage_id, timepoint),
     FOREIGN KEY (project, variable_generator_profile_scenario_id) REFERENCES
         subscenarios_project_variable_generator_profiles
             (project, variable_generator_profile_scenario_id)
@@ -1558,18 +1585,33 @@ CREATE TABLE inputs_project_hydro_operational_chars
 (
     project                             VARCHAR(64),
     hydro_operational_chars_scenario_id INTEGER,
+    subproblem_id                       INTEGER,
+    stage_id                            INTEGER,
     balancing_type_project              VARCHAR(64),
     horizon                             INTEGER,
-    period                              INTEGER,
     average_power_fraction              FLOAT,
     min_power_fraction                  FLOAT,
     max_power_fraction                  FLOAT,
     PRIMARY KEY (project, hydro_operational_chars_scenario_id,
-                 balancing_type_project, horizon),
+                 balancing_type_project, subproblem_id, horizon),
     FOREIGN KEY (project, hydro_operational_chars_scenario_id) REFERENCES
         subscenarios_project_hydro_operational_chars
             (project, hydro_operational_chars_scenario_id)
 );
+
+-- TODO: figure out what to call this table and how to link to subscenarios
+DROP TABLE IF EXISTS inputs_project_hydro_iterations;
+CREATE TABLE inputs_project_hydro_iterations
+(
+    unit                   VARCHAR(64),
+    year                   INTEGER,
+    month                  INTEGER,
+    average_power_fraction FLOAT,
+    min_power_fraction     FLOAT,
+    max_power_fraction     FLOAT,
+    PRIMARY KEY (unit, year, month)
+);
+
 
 -- Storage exogenously specified state of charge
 DROP TABLE IF EXISTS subscenarios_project_stor_exog_state_of_charge;
@@ -1582,11 +1624,12 @@ CREATE TABLE subscenarios_project_stor_exog_state_of_charge
     PRIMARY KEY (project, stor_exog_state_of_charge_scenario_id)
 );
 
+-- TODO: probably need to add subproblem id to other tables also
 DROP TABLE IF EXISTS inputs_project_stor_exog_state_of_charge;
 CREATE TABLE inputs_project_stor_exog_state_of_charge
 (
     project                                VARCHAR(64),
-    stor_exog_state_of_charge_scenario_id INTEGER,
+    stor_exog_state_of_charge_scenario_id  INTEGER,
     stage_id                               INTEGER,
     timepoint                              INTEGER,
     exog_state_of_charge_mwh               FLOAT,

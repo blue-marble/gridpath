@@ -1,0 +1,10 @@
+transmission_line,capacity_type
+BS_CA,tx_spec
+BS_NW,tx_spec
+BS_RM,tx_spec
+BS_SW,tx_spec
+CA_NW,tx_spec
+NW_RM,tx_spec
+NW_SW,tx_spec
+RM_SW,tx_spec
+SW_CA,tx_spec

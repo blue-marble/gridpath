@@ -27,7 +27,7 @@ from gridpath.common_functions import create_results_df
 from gridpath.system.policy.performance_standard import PERFORMANCE_STANDARD_Z_PRD_DF
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
     """ """
     m.PERFORMANCE_STANDARD_ZONES_CARBON_CREDITS_ZONES = Set(
         dimen=2, within=m.PERFORMANCE_STANDARD_ZONES * m.CARBON_CREDITS_ZONES
@@ -101,7 +101,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory, scenario_id, subscenarios, hydro_year, subproblem, stage, conn
 ):
     query_results = get_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn
@@ -120,7 +120,9 @@ def write_model_inputs(
         df.to_csv(fpath, index=False, sep="\t")
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+):
     """
 
     :param m:
@@ -145,7 +147,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         )
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
     """
 
     :param scenario_directory:

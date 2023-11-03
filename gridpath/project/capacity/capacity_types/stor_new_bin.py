@@ -64,7 +64,7 @@ from gridpath.project.capacity.capacity_types.common_methods import (
 )
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
     """
     The following Pyomo model components are defined in this module:
 
@@ -503,7 +503,9 @@ def new_energy_capacity_rule(mod, g, p):
 ###############################################################################
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+):
     """
 
     :param m:
@@ -520,6 +522,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     data_portal.load(
         filename=os.path.join(
             scenario_directory,
+            str(hydro_year),
             str(subproblem),
             str(stage),
             "inputs",
@@ -549,6 +552,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     data_portal.load(
         filename=os.path.join(
             scenario_directory,
+            str(hydro_year),
             str(subproblem),
             str(stage),
             "inputs",
@@ -560,7 +564,9 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     )
 
 
-def add_to_project_period_results(scenario_directory, subproblem, stage, m, d):
+def add_to_project_period_results(
+    scenario_directory, hydro_year, subproblem, stage, m, d
+):
     """
     Export new binary build storage results.
     :param scenario_directory:
@@ -594,7 +600,9 @@ def add_to_project_period_results(scenario_directory, subproblem, stage, m, d):
     return results_columns, captype_df
 
 
-def summarize_results(scenario_directory, subproblem, stage, summary_results_file):
+def summarize_results(
+    scenario_directory, hydro_year, subproblem, stage, summary_results_file
+):
     """
     Summarize new build storage capacity results.
     :param scenario_directory:
@@ -607,6 +615,7 @@ def summarize_results(scenario_directory, subproblem, stage, summary_results_fil
     # Get the results CSV as dataframe
     capacity_results_agg_df = read_results_file_generic(
         scenario_directory=scenario_directory,
+        hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
         capacity_type=Path(__file__).stem,
@@ -704,7 +713,7 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory, scenario_id, subscenarios, hydro_year, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
@@ -725,6 +734,7 @@ def write_model_inputs(
     with open(
         os.path.join(
             scenario_directory,
+            str(hydro_year),
             str(subproblem),
             str(stage),
             "inputs",
@@ -758,6 +768,7 @@ def write_model_inputs(
     with open(
         os.path.join(
             scenario_directory,
+            str(hydro_year),
             str(subproblem),
             str(stage),
             "inputs",

@@ -49,7 +49,7 @@ def write_pass_through_file_headers(pass_through_directory):
         )
 
 
-def export_pass_through_inputs(scenario_directory, subproblem, stage, m):
+def export_pass_through_inputs(scenario_directory, hydro_year, subproblem, stage, m):
     """
     This function exports the market position for all load zones and markets. This
     becomes the starting position for the following stage (for load balance purposes).

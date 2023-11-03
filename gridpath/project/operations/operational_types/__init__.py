@@ -28,7 +28,7 @@ from gridpath.auxiliary.auxiliary import get_required_subtype_modules
 from gridpath.project.operations.common_functions import load_operational_type_modules
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
     """
     +-------------------------------------------------------------------------+
     | Sets                                                                    |
@@ -45,6 +45,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Import needed operational modules
     required_operational_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
         which_type="operational_type",
@@ -58,7 +59,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     for op_m in required_operational_modules:
         imp_op_m = imported_operational_modules[op_m]
         if hasattr(imp_op_m, "add_model_components"):
-            imp_op_m.add_model_components(m, d, scenario_directory, subproblem, stage)
+            imp_op_m.add_model_components(
+                m, d, scenario_directory, hydro_year, subproblem, stage
+            )
 
     # Combined sets from operational type module sets (used to limit cycle select and
     # supplemental firing projects)
@@ -75,7 +78,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.GEN_COMMIT_BINLIN = Set(initialize=gen_commit_binlin_set_init)
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+):
     """
 
     :param m:
@@ -89,6 +94,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     # Import needed operational modules
     required_operational_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
         which_type="operational_type",
@@ -102,11 +108,11 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     for op_m in required_operational_modules:
         if hasattr(imported_operational_modules[op_m], "load_model_data"):
             imported_operational_modules[op_m].load_model_data(
-                m, d, data_portal, scenario_directory, subproblem, stage
+                m, d, data_portal, scenario_directory, hydro_year, subproblem, stage
             )
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
     """
     Export operations results.
     :param scenario_directory:
@@ -123,6 +129,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     # Operational type modules
     required_operational_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
         which_type="operational_type",
@@ -139,16 +146,20 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 m,
                 d,
                 scenario_directory,
+                hydro_year,
                 subproblem,
                 stage,
             )
 
 
-def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
+def save_duals(
+    scenario_directory, hydro_year, subproblem, stage, instance, dynamic_components
+):
     # Save module-specific duals
     # Operational type modules
     required_operational_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
         which_type="operational_type",
@@ -163,6 +174,7 @@ def save_duals(scenario_directory, subproblem, stage, instance, dynamic_componen
         if hasattr(imported_operational_modules[op_m], "save_duals"):
             imported_operational_modules[op_m].save_duals(
                 scenario_directory,
+                hydro_year,
                 subproblem,
                 stage,
                 instance,
@@ -253,7 +265,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory, scenario_id, subscenarios, hydro_year, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input .tab files
@@ -277,7 +289,13 @@ def write_model_inputs(
     for op_m in required_opchar_modules:
         if hasattr(imported_operational_modules[op_m], "write_model_inputs"):
             imported_operational_modules[op_m].write_model_inputs(
-                scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+                scenario_directory,
+                scenario_id,
+                subscenarios,
+                hydro_year,
+                subproblem,
+                stage,
+                conn,
             )
 
 

@@ -42,13 +42,14 @@ from gridpath.auxiliary.module_list import determine_modules, load_modules
 from gridpath.auxiliary.scenario_chars import (
     OptionalFeatures,
     SubScenarios,
-    get_subproblem_structure_from_db,
+    get_scenario_structure_from_db,
     SolverOptions,
 )
 
 
 def write_model_inputs(
     scenario_directory,
+    hydro_years,
     subproblem_structure,
     multi_stage,
     modules_to_use,
@@ -81,6 +82,13 @@ def write_model_inputs(
     # files
     delete_prior_aux_files(scenario_directory=scenario_directory)
 
+    # Determine whether we will have iterations
+    # Hydro years first
+    if len(hydro_years) > 0:
+        make_hydro_year_directories = True
+    else:
+        make_hydro_year_directories = False
+
     # Determine whether we will have subproblem directories
     # We write the subproblem directories if we have multiple subproblems or if we
     # have a single subroblem with stages (the multi_stage flag will be True)
@@ -102,24 +110,37 @@ def write_model_inputs(
         )
         n_parallel_subproblems = 1
 
-    # If no parallelization requested, loop through the subproblems
-    if n_parallel_subproblems == 1:
-        for subproblem in subproblem_structure.SUBPROBLEM_STAGES.keys():
-            get_inputs_for_subproblem(
-                scenario_directory=scenario_directory,
-                subproblem_structure=subproblem_structure,
-                subproblem=subproblem,
-                make_subproblem_directories=make_subproblem_directories,
-                modules_to_use=modules_to_use,
-                scenario_id=scenario_id,
-                subscenarios=subscenarios,
-                db_path=db_path,
-            )
+    # If no parallelization requested, loop through the iterations
+    # and subproblems
+    for hydro_year in hydro_years:
+        if make_hydro_year_directories:
+            hydro_year_str = f"hydro_year_{hydro_year}"
+        else:
+            hydro_year_str = ""
+        if n_parallel_subproblems == 1:
+            for subproblem in subproblem_structure.SUBPROBLEM_STAGES.keys():
+                get_inputs_for_subproblem(
+                    scenario_directory=scenario_directory,
+                    hydro_year_str=hydro_year_str,
+                    subproblem_structure=subproblem_structure,
+                    subproblem=subproblem,
+                    make_subproblem_directories=make_subproblem_directories,
+                    modules_to_use=modules_to_use,
+                    scenario_id=scenario_id,
+                    subscenarios=subscenarios,
+                    db_path=db_path,
+                )
+    # TODO: figure out how to parallelize with iterations
     else:
+        if make_hydro_year_directories:
+            hydro_year_str_list = [f"hydro_year_{yr}" for yr in hydro_years]
+        else:
+            hydro_year_str_list = [""]
         pool_data = tuple(
             [
                 [
                     scenario_directory,
+                    hydro_year_str,
                     subproblem_structure,
                     subproblem,
                     make_subproblem_directories,
@@ -128,6 +149,7 @@ def write_model_inputs(
                     subscenarios,
                     db_path,
                 ]
+                for hydro_year_str in hydro_year_str_list
                 for subproblem in subproblem_structure.SUBPROBLEM_STAGES.keys()
             ]
         )
@@ -140,6 +162,7 @@ def write_model_inputs(
 
 def get_inputs_for_subproblem(
     scenario_directory,
+    hydro_year_str,
     subproblem_structure,
     subproblem,
     make_subproblem_directories,
@@ -169,7 +192,7 @@ def get_inputs_for_subproblem(
         else:
             stage_str = ""
         inputs_directory = os.path.join(
-            scenario_directory, subproblem_str, stage_str, "inputs"
+            scenario_directory, hydro_year_str, subproblem_str, stage_str, "inputs"
         )
         if not os.path.exists(inputs_directory):
             os.makedirs(inputs_directory)
@@ -191,6 +214,7 @@ def get_inputs_for_subproblem(
                     scenario_directory=scenario_directory,
                     scenario_id=scenario_id,
                     subscenarios=subscenarios,
+                    hydro_year=hydro_year_str,
                     subproblem=subproblem_str,
                     stage=stage_str,
                     conn=conn,
@@ -231,6 +255,7 @@ def get_inputs_for_subproblem_pool(pool_datum):
     """
     [
         scenario_directory,
+        hydro_yr_str,
         subproblem_structure,
         subproblem,
         make_subproblem_directories,
@@ -242,6 +267,7 @@ def get_inputs_for_subproblem_pool(pool_datum):
 
     get_inputs_for_subproblem(
         scenario_directory=scenario_directory,
+        hydro_year_str=hydro_yr_str,
         subproblem_structure=subproblem_structure,
         subproblem=subproblem,
         make_subproblem_directories=make_subproblem_directories,
@@ -461,9 +487,11 @@ def main(args=None):
     #  some validation
     optional_features = OptionalFeatures(conn=conn, scenario_id=scenario_id)
     subscenarios = SubScenarios(conn=conn, scenario_id=scenario_id)
-    subproblem_structure = get_subproblem_structure_from_db(
+    # hydro_years = []
+    scenario_structure = get_scenario_structure_from_db(
         conn=conn, scenario_id=scenario_id
     )
+    hydro_years = scenario_structure.HYDRO_YEARS
     solver_options = SolverOptions(conn=conn, scenario_id=scenario_id)
 
     # Determine requested features and use this to determine what modules to
@@ -475,8 +503,8 @@ def main(args=None):
     # stages-related modules
     stages_flag = any(
         [
-            len(subproblem_structure.SUBPROBLEM_STAGES[subp]) > 1
-            for subp in list(subproblem_structure.SUBPROBLEM_STAGES.keys())
+            len(scenario_structure.SUBPROBLEM_STAGES[subp]) > 1
+            for subp in list(scenario_structure.SUBPROBLEM_STAGES.keys())
         ]
     )
 
@@ -486,7 +514,8 @@ def main(args=None):
     # Get appropriate inputs from database and write the .tab file model inputs
     write_model_inputs(
         scenario_directory=scenario_directory,
-        subproblem_structure=subproblem_structure,
+        hydro_years=hydro_years,
+        subproblem_structure=scenario_structure,
         multi_stage=stages_flag,
         modules_to_use=modules_to_use,
         scenario_id=scenario_id,

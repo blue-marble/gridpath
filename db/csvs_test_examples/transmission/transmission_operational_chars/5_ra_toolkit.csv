@@ -1,0 +1,10 @@
+transmission_line,operational_type,tx_simple_loss_factor,reactance_ohms
+BS_CA,tx_simple,0.02,
+BS_NW,tx_simple,0.02,
+BS_RM,tx_simple,0.02,
+BS_SW,tx_simple,0.02,
+CA_NW,tx_simple,0.02,
+NW_RM,tx_simple,0.02,
+NW_SW,tx_simple,0.02,
+RM_SW,tx_simple,0.02,
+SW_CA,tx_simple,0.02,

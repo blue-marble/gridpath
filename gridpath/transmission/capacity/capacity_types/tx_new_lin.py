@@ -69,7 +69,7 @@ from gridpath.project.capacity.capacity_types.common_methods import (
 
 
 # TODO: can we have different capacities depending on the direction
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
     """
     The following Pyomo model components are defined in this module:
 
@@ -527,12 +527,15 @@ def new_capacity_rule(mod, g, p):
 ###############################################################################
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+):
     # TODO: throw an error when a line of the 'tx_new_lin' capacity
     #   type is not found in new_build_transmission_vintage_costs.tab
     data_portal.load(
         filename=os.path.join(
             scenario_directory,
+            str(hydro_year),
             str(subproblem),
             str(stage),
             "inputs",
@@ -564,6 +567,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     header = pd.read_csv(
         os.path.join(
             scenario_directory,
+            str(hydro_year),
             str(subproblem),
             str(stage),
             "inputs",
@@ -580,6 +584,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     df = pd.read_csv(
         os.path.join(
             scenario_directory,
+            str(hydro_year),
             str(subproblem),
             str(stage),
             "inputs",
@@ -631,7 +636,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     data_portal.data()["tx_new_lin_max_cumulative_new_build_mw"] = max_cumulative_mw
 
 
-def add_to_tx_period_results(scenario_directory, subproblem, stage, m, d):
+def add_to_tx_period_results(scenario_directory, hydro_year, subproblem, stage, m, d):
     """
 
     :param m:
@@ -722,7 +727,7 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory, scenario_id, subscenarios, hydro_year, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input .tab file.
@@ -741,6 +746,7 @@ def write_model_inputs(
     with open(
         os.path.join(
             scenario_directory,
+            str(hydro_year),
             str(subproblem),
             str(stage),
             "inputs",
@@ -775,7 +781,9 @@ def write_model_inputs(
             writer.writerow(replace_nulls)
 
 
-def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
+def save_duals(
+    scenario_directory, hydro_year, subproblem, stage, instance, dynamic_components
+):
     instance.constraint_indices["TxNewLin_Min_Cum_Build_Constraint"] = [
         "capacity_group",
         "period",

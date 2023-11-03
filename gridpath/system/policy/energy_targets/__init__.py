@@ -21,7 +21,7 @@ ENERGY_TARGET_ZONE_PRD_DF = "energy_target_zone_period_df"
 ENERGY_TARGET_ZONE_HRZ_DF = "energy_target_zone_horizon_df"
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
     """ """
     # First create the results dataframes
     # Other modules will update these dataframe with actual results

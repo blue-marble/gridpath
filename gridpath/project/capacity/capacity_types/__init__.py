@@ -53,7 +53,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory, scenario_id, subscenarios, hydro_year, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input .tab files
@@ -78,7 +78,13 @@ def write_model_inputs(
     for op_m in required_capacity_type_modules:
         if hasattr(imported_capacity_type_modules[op_m], "write_model_inputs"):
             imported_capacity_type_modules[op_m].write_model_inputs(
-                scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+                scenario_directory,
+                scenario_id,
+                subscenarios,
+                hydro_year,
+                subproblem,
+                stage,
+                conn,
             )
 
 

@@ -68,6 +68,7 @@ def generic_add_model_components(
     # Import needed operational modules
     required_operational_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
         which_type="operational_type",
@@ -136,7 +137,12 @@ def generic_load_model_data(
     params_to_import = ()
     projects_file_header = pd.read_csv(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory,
+            str(hydro_year),
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "projects.tab",
         ),
         sep="\t",
         header=None,
@@ -153,7 +159,7 @@ def generic_load_model_data(
     # Load the needed data
     data_portal.load(
         filename=os.path.join(
-            scenario_directory, subproblem, stage, "inputs", "projects.tab"
+            scenario_directory, hydro_year, subproblem, stage, "inputs", "projects.tab"
         ),
         select=columns_to_import,
         param=params_to_import,

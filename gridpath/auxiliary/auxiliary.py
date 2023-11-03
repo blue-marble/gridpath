@@ -23,7 +23,7 @@ import traceback
 
 
 def get_required_subtype_modules(
-    scenario_directory, subproblem, stage, which_type, prj_or_tx="project"
+    scenario_directory, hydro_year, subproblem, stage, which_type, prj_or_tx="project"
 ):
     """
     Get a list of unique types from projects.tab.
@@ -31,6 +31,7 @@ def get_required_subtype_modules(
     df = pd.read_csv(
         os.path.join(
             scenario_directory,
+            str(hydro_year),
             str(subproblem),
             str(stage),
             "inputs",
@@ -193,6 +194,15 @@ def check_for_integer_subdirectories(main_directory):
     """
     subdirectories = sorted(
         [d for d in next(os.walk(main_directory))[1] if is_integer(d)], key=int
+    )
+
+    # There are subdirectories if the list isn't empty
+    return subdirectories
+
+
+def check_for_starting_string_subdirectories(main_directory, starting_string):
+    subdirectories = sorted(
+        [d for d in next(os.walk(main_directory))[1] if d.startswith(starting_string)],
     )
 
     # There are subdirectories if the list isn't empty

@@ -51,7 +51,7 @@ from gridpath.common_functions import create_results_df
 import gridpath.project.operations.operational_types.gen_commit_unit_common as gen_commit_unit_common
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
     """
     See the formulation documentation in the
     gen_commit_unit_common.add_model_components().
@@ -61,6 +61,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m=m,
         d=d,
         scenario_directory=scenario_directory,
+        hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
         bin_or_lin_optype="gen_commit_bin",
@@ -210,7 +211,9 @@ def operational_violation_cost_rule(mod, g, tmp):
 ###############################################################################
 
 
-def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    mod, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+):
     """
     :param mod:
     :param data_portal:
@@ -225,6 +228,7 @@ def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
         d=d,
         data_portal=data_portal,
         scenario_directory=scenario_directory,
+        hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
         bin_or_lin_optype="gen_commit_bin",
@@ -273,7 +277,7 @@ def add_to_prj_tmp_results(mod):
     return results_columns, optype_dispatch_df
 
 
-def export_results(mod, d, scenario_directory, subproblem, stage):
+def export_results(mod, d, scenario_directory, hydro_year, subproblem, stage):
     """
     :param scenario_directory:
     :param subproblem:
@@ -286,6 +290,7 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
         mod=mod,
         d=d,
         scenario_directory=scenario_directory,
+        hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
         BIN_OR_LIN="BIN",
@@ -294,7 +299,9 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
     )
 
 
-def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
+def save_duals(
+    scenario_directory, hydro_year, subproblem, stage, instance, dynamic_components
+):
     gen_commit_unit_common.save_duals(instance, "Bin")
 
 

@@ -130,7 +130,12 @@ def generic_record_dynamic_components(
     # project
     with open(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory,
+            str(hydro_year),
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "projects.tab",
         ),
         "r",
     ) as projects_file:
@@ -310,7 +315,12 @@ def generic_load_model_data(
     params_to_import = (getattr(m, reserve_balancing_area_param),)
     projects_file_header = pd.read_csv(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory,
+            str(hydro_year),
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "projects.tab",
         ),
         sep="\t",
         header=None,
@@ -327,7 +337,12 @@ def generic_load_model_data(
     # Load the needed data
     data_portal.load(
         filename=os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory,
+            str(hydro_year),
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "projects.tab",
         ),
         select=columns_to_import,
         param=params_to_import,
@@ -343,6 +358,7 @@ def generic_load_model_data(
     ba_file_header = pd.read_csv(
         os.path.join(
             scenario_directory,
+            str(hydro_year),
             str(subproblem),
             str(stage),
             "inputs",
@@ -357,6 +373,7 @@ def generic_load_model_data(
         data_portal.load(
             filename=os.path.join(
                 scenario_directory,
+                str(hydro_year),
                 str(subproblem),
                 str(stage),
                 "inputs",

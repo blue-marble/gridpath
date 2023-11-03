@@ -43,7 +43,7 @@ RESERVE_PROJECTS_SET_NAME = "LF_RESERVES_UP_PROJECTS"
 RESERVE_PRJ_OPR_TMPS_SET_NAME = "LF_RESERVES_UP_PRJ_OPR_TMPS"
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
     """
 
     :param m:
@@ -55,6 +55,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m=m,
         d=d,
         scenario_directory=scenario_directory,
+        hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
         reserve_projects_set=RESERVE_PROJECTS_SET_NAME,
@@ -65,7 +66,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+):
     """
 
     :param m:
@@ -81,6 +84,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         d=d,
         data_portal=data_portal,
         scenario_directory=scenario_directory,
+        hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
         ramp_rate_limit_column_name=RESERVE_PROVISION_RAMP_RATE_LIMIT_COLUMN_NAME_IN_INPUT_FILE,
@@ -140,7 +144,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory, scenario_id, subscenarios, hydro_year, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
@@ -164,7 +168,12 @@ def write_model_inputs(
     # Add params to projects file
     with open(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory,
+            str(hydro_year),
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "projects.tab",
         ),
         "r",
     ) as projects_file_in:
@@ -191,7 +200,12 @@ def write_model_inputs(
 
     with open(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory,
+            str(hydro_year),
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "projects.tab",
         ),
         "w",
         newline="",

@@ -275,12 +275,17 @@ def main(args=None):
         scenario_name=parsed_args.scenario,
     )
 
+    # TODO: why aren't we printing the log in the individual optimization
+    #  directory
     if parsed_args.log:
         logs_directory = create_logs_directory_if_not_exists(
-            scenario_directory=scenario_directory, subproblem="", stage=""
+            scenario_directory=scenario_directory,
+            hydro_year="",
+            subproblem="",
+            stage="",
         )
 
-        # Save sys.stdout so we can return to it later
+        # Save sys.stdout, so we can return to it later
         stdout_original = sys.stdout
         stderr_original = sys.stderr
 

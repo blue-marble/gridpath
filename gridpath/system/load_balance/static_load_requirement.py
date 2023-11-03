@@ -37,7 +37,7 @@ def record_dynamic_components(dynamic_components):
     )
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
     """
     :param m: the Pyomo abstract model object we are adding the components to
     :param d: the DynamicComponents class object we are adding components to
@@ -55,7 +55,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     record_dynamic_components(dynamic_components=d)
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+):
     """
 
     :param m:
@@ -68,7 +70,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
     data_portal.load(
         filename=os.path.join(
-            scenario_directory, subproblem, stage, "inputs", "load_mw.tab"
+            scenario_directory, hydro_year, subproblem, stage, "inputs", "load_mw.tab"
         ),
         param=m.static_load_mw,
     )
@@ -136,7 +138,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory, scenario_id, subscenarios, hydro_year, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
@@ -153,7 +155,12 @@ def write_model_inputs(
 
     with open(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "load_mw.tab"
+            scenario_directory,
+            str(hydro_year),
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "load_mw.tab",
         ),
         "w",
         newline="",
@@ -167,7 +174,7 @@ def write_model_inputs(
             writer.writerow(row)
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
     """
 
     :param scenario_directory:

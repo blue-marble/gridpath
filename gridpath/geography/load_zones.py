@@ -24,7 +24,7 @@ import os.path
 from pyomo.environ import Set, Param, Boolean, NonNegativeReals
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
     """
     :param m: the Pyomo abstract model object we are adding components to
     :param d: the dynamic inputs class object; not used here
@@ -53,7 +53,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.export_penalty_cost_per_mwh = Param(m.LOAD_ZONES, within=NonNegativeReals)
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+):
     """
 
     :param m:
@@ -66,7 +68,12 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
     data_portal.load(
         filename=os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "load_zones.tab"
+            scenario_directory,
+            str(hydro_year),
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "load_zones.tab",
         ),
         index=m.LOAD_ZONES,
         param=(
@@ -125,7 +132,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory, scenario_id, subscenarios, hydro_year, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
@@ -144,7 +151,12 @@ def write_model_inputs(
 
     with open(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "load_zones.tab"
+            scenario_directory,
+            str(hydro_year),
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "load_zones.tab",
         ),
         "w",
         newline="",
