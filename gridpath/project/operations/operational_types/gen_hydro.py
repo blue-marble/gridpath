@@ -847,7 +847,8 @@ def export_results(mod, d, scenario_directory, hydro_year, subproblem, stage):
 ###############################################################################
 
 
-def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_model_inputs_from_database(scenario_id, subscenarios,
+                                   hydro_year, subproblem, stage, conn):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -857,7 +858,8 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
     """
 
     return get_hydro_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn, op_type="gen_hydro"
+        scenario_id, subscenarios, hydro_year, subproblem, stage, conn,
+        op_type="gen_hydro"
     )
 
 
@@ -876,7 +878,7 @@ def write_model_inputs(
     """
 
     data = get_model_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id, subscenarios, hydro_year, subproblem, stage, conn
     )
     fname = "hydro_conventional_horizon_params.tab"
 

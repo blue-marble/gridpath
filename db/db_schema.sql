@@ -1600,16 +1600,16 @@ CREATE TABLE inputs_project_hydro_operational_chars
 );
 
 -- TODO: figure out what to call this table and how to link to subscenarios
-DROP TABLE IF EXISTS inputs_project_hydro_iterations;
-CREATE TABLE inputs_project_hydro_iterations
+DROP TABLE IF EXISTS inputs_project_hydro_operational_chars_years;
+CREATE TABLE inputs_project_hydro_operational_chars_years
 (
-    unit                   VARCHAR(64),
-    year                   INTEGER,
+    project                VARCHAR(64),
+    hydro_calendar_year    INTEGER,
     month                  INTEGER,
     average_power_fraction FLOAT,
     min_power_fraction     FLOAT,
     max_power_fraction     FLOAT,
-    PRIMARY KEY (unit, year, month)
+    PRIMARY KEY (project, hydro_calendar_year, month)
 );
 
 
@@ -5665,6 +5665,7 @@ SELECT project_portfolio_scenario_id,
        project_new_cost_scenario_id,
        temporal_scenario_id,
        operational_type,
+       balancing_type_project as balancing_type,
        hydro_operational_chars_scenario_id,
        subproblem_id,
        stage_id,

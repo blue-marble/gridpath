@@ -684,7 +684,7 @@ def load_hydro_opchars(
 
 
 def get_hydro_inputs_from_database(
-    scenario_id, subscenarios, subproblem, stage, conn, op_type
+    scenario_id, subscenarios, hydro_year, subproblem, stage, conn, op_type
 ):
     """
     Get the hydro-specific operational characteristics from the
@@ -705,54 +705,154 @@ def get_hydro_inputs_from_database(
     :param op_type:
     :return: cursor object with query results
     """
+    hydro_iterations = True if len(hydro_year) > 0 else False
+    hydro_year = (
+        hydro_year.replace("hydro_year_", "") if hydro_iterations else hydro_year
+    )
     subproblem = 1 if subproblem == "" else subproblem
     stage = 1 if stage == "" else stage
 
     c = conn.cursor()
 
-    # NOTE: There can be cases where a resource is both in specified capacity
-    # table and in new build table, but depending on capacity type you'd only
-    # use one of them, so filtering with OR is not 100% correct.
+    if not hydro_iterations:
+        # NOTE: There can be cases where a resource is both in specified capacity
+        # table and in new build table, but depending on capacity type you'd only
+        # use one of them, so filtering with OR is not 100% correct.
+        sql = f"""
+        SELECT project, horizon, average_power_fraction, min_power_fraction, 
+        max_power_fraction
+        -- Select only projects, horizons from the relevant portfolio, 
+        -- relevant opchar scenario id, operational type, and temporal scenario id
+        FROM 
+            (SELECT project, horizon, hydro_operational_chars_scenario_id
+            FROM project_operational_horizons
+            WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
+            AND project_operational_chars_scenario_id = {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
+            AND operational_type = '{op_type}'
+            AND temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+            AND (project_specified_capacity_scenario_id = {subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID}
+                 OR project_new_cost_scenario_id = {subscenarios.PROJECT_NEW_COST_SCENARIO_ID})
+            AND subproblem_id = {subproblem}
+            AND stage_id = {stage}
+            ) as projects_periods_horizon_tbl
+        -- Now that we have the relevant projects and horizons, get the 
+        -- respective hydro opchars (and no others) from 
+        -- inputs_project_hydro_operational_chars
+        LEFT OUTER JOIN
+            inputs_project_hydro_operational_chars
+        USING (hydro_operational_chars_scenario_id, project, horizon)
+        ;
+        """
+    else:
+        sql = f"""
+        SELECT project, horizon,
+        sum(month_weight * average_power_fraction) as average_power_fraction,
+        sum(month_weight * min_power_fraction) as min_power_fraction,
+        sum(month_weight * max_power_fraction) as max_power_fraction
+--SELECT * 
+FROM (
 
-    sql = """
-    SELECT project, horizon, average_power_fraction, min_power_fraction, 
-    max_power_fraction
-    -- Select only projects, horizons from the relevant portfolio, 
-    -- relevant opchar scenario id, operational type, and temporal scenario id
-    FROM 
-        (SELECT project, horizon, hydro_operational_chars_scenario_id
-        FROM project_operational_horizons
-        WHERE project_portfolio_scenario_id = {}
-        AND project_operational_chars_scenario_id = {}
-        AND operational_type = '{}'
-        AND temporal_scenario_id = {}
-        AND (project_specified_capacity_scenario_id = {}
-             OR project_new_cost_scenario_id = {})
-        AND subproblem_id = {}
-        AND stage_id = {}
-        ) as projects_periods_horizon_tbl
-    -- Now that we have the relevant projects and horizons, get the 
-    -- respective hydro opchars (and no others) from 
-    -- inputs_project_hydro_operational_chars
-    LEFT OUTER JOIN
-        inputs_project_hydro_operational_chars
-    USING (hydro_operational_chars_scenario_id, project, horizon)
-    ;
-    """.format(
-        subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-        subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
-        op_type,
-        subscenarios.TEMPORAL_SCENARIO_ID,
-        subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID,
-        subscenarios.PROJECT_NEW_COST_SCENARIO_ID,
-        subproblem,
-        stage,
-    )
+SELECT project, temporal_scenario_id, hydro_calendar_year, subproblem_id, stage_id, balancing_type, horizon, month_table.month, hours_in_month, total_hours, CAST(hours_in_month as REAL)/total_hours as month_weight, average_power_fraction, min_power_fraction, 
+        max_power_fraction
+FROM 
+(SELECT temporal_scenario_id, subproblem_id, stage_id, balancing_type_horizon as balancing_type, horizon, month, sum(number_of_hours_in_timepoint) as hours_in_month
+FROM inputs_temporal_horizon_timepoints
+JOIN inputs_temporal
+USING (temporal_scenario_id, subproblem_id, stage_id, timepoint)
+WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+AND subproblem_id = {subproblem}
+AND stage_id = {stage}
+GROUP BY temporal_scenario_id, subproblem_id, stage_id, balancing_type, horizon, month) as month_table
+
+JOIN 
+
+(SELECT temporal_scenario_id, subproblem_id, stage_id, balancing_type_horizon as balancing_type, horizon, sum(number_of_hours_in_timepoint) as total_hours
+FROM inputs_temporal_horizon_timepoints
+JOIN inputs_temporal
+USING (temporal_scenario_id, subproblem_id, stage_id, timepoint)
+WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+AND subproblem_id = {subproblem}
+AND stage_id = {stage}
+GROUP BY temporal_scenario_id, subproblem_id, stage_id, balancing_type_horizon, horizon)
+USING (temporal_scenario_id, subproblem_id, stage_id, balancing_type, horizon)
+
+JOIN 
+(SELECT project, temporal_scenario_id, subproblem_id, stage_id, 
+balancing_type, horizon, hydro_operational_chars_scenario_id
+            FROM project_operational_horizons
+            WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
+            AND project_operational_chars_scenario_id = {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
+            AND operational_type = '{op_type}'
+            AND temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+            AND (project_specified_capacity_scenario_id = 
+            {subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID})
+            AND subproblem_id = {subproblem}
+            AND stage_id = {stage}
+            ) as projects_periods_horizon_tbl
+USING (temporal_scenario_id, subproblem_id, stage_id, balancing_type, horizon)
+
+JOIN inputs_project_hydro_operational_chars_years
+USING (project, month)
+)
+WHERE hydro_calendar_year = {hydro_year}
+GROUP BY project, temporal_scenario_id, subproblem_id, stage_id, balancing_type, horizon
+
+        """
+
+    print(sql)
 
     hydro_chars = c.execute(sql)
 
     return hydro_chars
 
+
+"""
+SELECT project, temporal_scenario_id, hydro_calendar_year, subproblem_id, stage_id, balancing_type_horizon, horizon, sum(month_weight * average_power_fraction), sum(month_weight * min_power_fraction), sum(month_weight * max_power_fraction)
+--SELECT * 
+FROM (
+
+SELECT project, temporal_scenario_id, hydro_calendar_year, subproblem_id, stage_id, balancing_type_horizon, horizon, month_table.month, hours_in_month, total_hours, CAST(hours_in_month as REAL)/total_hours as month_weight, average_power_fraction, min_power_fraction, 
+        max_power_fraction
+FROM 
+(SELECT temporal_scenario_id, subproblem_id, stage_id, balancing_type_horizon, horizon, month, sum(number_of_hours_in_timepoint) as hours_in_month
+FROM inputs_temporal_horizon_timepoints
+JOIN inputs_temporal
+USING (temporal_scenario_id, subproblem_id, stage_id, timepoint)
+WHERE temporal_scenario_id = 15
+AND balancing_type_horizon = 'hydro'
+GROUP BY temporal_scenario_id, subproblem_id, stage_id, balancing_type_horizon, horizon, month) as month_table
+
+JOIN 
+
+(SELECT temporal_scenario_id, subproblem_id, stage_id, balancing_type_horizon, horizon, sum(number_of_hours_in_timepoint) as total_hours
+FROM inputs_temporal_horizon_timepoints
+JOIN inputs_temporal
+USING (temporal_scenario_id, subproblem_id, stage_id, timepoint)
+WHERE temporal_scenario_id = 15
+AND balancing_type_horizon = 'hydro'
+GROUP BY temporal_scenario_id, subproblem_id, stage_id, balancing_type_horizon, horizon)
+USING (temporal_scenario_id, subproblem_id, stage_id, balancing_type_horizon, horizon)
+
+JOIN 
+(SELECT project, horizon, hydro_operational_chars_scenario_id
+            FROM project_operational_horizons
+            WHERE project_portfolio_scenario_id = 23
+            AND project_operational_chars_scenario_id = 26
+            AND operational_type = 'gen_hydro_must_take'
+            AND temporal_scenario_id = 15
+            AND (project_specified_capacity_scenario_id = 5)
+            AND subproblem_id = 1
+            AND stage_id = 1
+            ) as projects_periods_horizon_tbl
+USING (horizon)
+
+JOIN inputs_project_hydro_operational_chars_years
+USING (project, month)
+)
+WHERE hydro_calendar_year = 2012
+GROUP BY project, temporal_scenario_id, subproblem_id, stage_id, balancing_type_horizon, horizon
+
+"""
 
 def validate_hydro_opchars(scenario_id, subscenarios, subproblem, stage, conn, op_type):
     """
