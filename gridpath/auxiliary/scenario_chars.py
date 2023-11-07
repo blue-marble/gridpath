@@ -124,7 +124,7 @@ def get_scenario_structure_from_db(conn, scenario_id):
         hydro_year[0]
         for hydro_year in cursor.execute(
             """SELECT hydro_year
-               FROM inputs_temporal_hydro_years
+               FROM inputs_temporal_iterations
                INNER JOIN scenarios
                USING (temporal_scenario_id)
                WHERE scenario_id = {};""".format(

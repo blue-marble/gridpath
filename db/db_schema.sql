@@ -224,8 +224,8 @@ CREATE TABLE subscenarios_temporal
 );
 
 -- Hydro year iterations
-DROP TABLE IF EXISTS inputs_temporal_hydro_years;
-CREATE TABLE inputs_temporal_hydro_years
+DROP TABLE IF EXISTS inputs_temporal_iterations;
+CREATE TABLE inputs_temporal_iterations
 (
     temporal_scenario_id INTEGER,
     hydro_year           INTEGER,

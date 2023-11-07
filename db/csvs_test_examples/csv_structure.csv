@@ -2,7 +2,7 @@ path,feature,subscenario,table,subscenario_type,custom_method,project_input,proj
 solver,core,solver_options_id,options_solver,simple,,0,0,,,,
 temporal,core,temporal_scenario_id,temporal,dir_subsc_only,,0,0,,"ignore
 ",,
-temporal,core,temporal_scenario_id,temporal_hydro_years,dir_aux,,0,0,hydro_years.csv,,,
+temporal,core,temporal_scenario_id,temporal_iterations,dir_aux,,0,0,iterations.csv,,,
 temporal,core,temporal_scenario_id,temporal_periods,dir_aux,,0,0,period_params.csv,,,
 temporal,core,temporal_scenario_id,temporal_superperiods,dir_aux,,0,0,superperiods.csv,,,
 temporal,core,temporal_scenario_id,temporal_horizons,dir_aux,,0,0,horizon_params.csv,,,
