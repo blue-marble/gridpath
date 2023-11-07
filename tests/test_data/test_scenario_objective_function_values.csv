@@ -101,5 +101,5 @@ test_new_solar_carbon_cap_2zones_tx_hydrogen_prod_new,-186998077.6,-186998077.6
 test_w_solver_options,-3796309121478.12,-3796309121478.1226
 test_tx_flow,-59124336744013.484,-59124336744013.484
 test_variable_om_curves,-3796309193923.3223,-3796309193923.3223
-test_startup_shutdown_rates,-560795927282.98,-560795927282.98
+test_startup_shutdown_rates,-560795927282.98,-560795927282.5082
 test_performance_standard_carbon_credits_w_cap_no_credits_mapping,,-3592014778836.2856

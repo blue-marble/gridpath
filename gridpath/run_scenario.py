@@ -47,7 +47,7 @@ import sys
 import warnings
 
 from gridpath.auxiliary.import_export_rules import import_export_rules
-from gridpath.auxiliary.scenario_chars import get_subproblem_structure_from_disk
+from gridpath.auxiliary.scenario_chars import get_scenario_structure_from_disk
 from gridpath.common_functions import (
     determine_scenario_directory,
     get_scenario_name_parser,
@@ -373,7 +373,7 @@ def run_optimization_for_subproblem_stage(
 def run_optimization_for_subproblem(
     scenario_directory,
     hydro_year_directory,
-    subproblem_structure,
+    scenario_structure,
     subproblem,
     parsed_arguments,
     objective_values,
@@ -382,22 +382,21 @@ def run_optimization_for_subproblem(
     Check if there are stages in the subproblem; if not solve subproblem;
     if, yes, solve each stage sequentially
     """
-
     # If we only have a single subproblem AND it does not have stages, set the
     # subproblem_string to an empty string (the subproblem directory should not
     # have been created)
     # If we have multiple subproblems or a single subproblems with stages,
     # we're expecting a subproblem directory
-    if list(subproblem_structure.SUBPROBLEM_STAGES.keys()) == [
+    if list(scenario_structure.SUBPROBLEM_STAGES.keys()) == [
         1
-    ] and subproblem_structure.SUBPROBLEM_STAGES[subproblem] == [1]:
+    ] and scenario_structure.SUBPROBLEM_STAGES[subproblem] == [1]:
         subproblem_directory = ""
     else:
         subproblem_directory = str(subproblem)
 
     # If no stages in this subproblem (empty list), run the
     # subproblem
-    if subproblem_structure.SUBPROBLEM_STAGES[subproblem] == [1]:
+    if scenario_structure.SUBPROBLEM_STAGES[subproblem] == [1]:
         stage_directory = ""
         objective_values[subproblem] = run_optimization_for_subproblem_stage(
             scenario_directory,
@@ -408,7 +407,7 @@ def run_optimization_for_subproblem(
         )
     # Otherwise, run the stage problem
     else:
-        for stage in subproblem_structure.SUBPROBLEM_STAGES[subproblem]:
+        for stage in scenario_structure.SUBPROBLEM_STAGES[subproblem]:
             stage_directory = str(stage)
             objective_values[subproblem][stage] = run_optimization_for_subproblem_stage(
                 scenario_directory,
@@ -436,7 +435,7 @@ def run_optimization_for_subproblem_pool(pool_datum):
     run_optimization_for_subproblem(
         scenario_directory=scenario_directory,
         hydro_year_directory=hydro_year_directory,
-        subproblem_structure=subproblem_structure,
+        scenario_structure=subproblem_structure,
         subproblem=subproblem,
         parsed_arguments=parsed_arguments,
         objective_values=objective_values,
@@ -445,7 +444,7 @@ def run_optimization_for_subproblem_pool(pool_datum):
 
 def run_scenario(
     scenario_directory,
-    subproblem_structure,
+    scenario_structure,
     parsed_arguments,
 ):
     """
@@ -456,7 +455,7 @@ def run_scenario(
     are in 'testing' mode.
 
     :param scenario_directory: scenario directory path
-    :param subproblem_structure: the subproblem structure object
+    :param scenario_structure: the subproblem structure object
     :param parsed_arguments:
     :return: the objective function value (NPV); only used in
      'testing' mode.
@@ -472,13 +471,15 @@ def run_scenario(
 
     # Determine whether we will have iterations
     # Hydro years first
-    if len(subproblem_structure.HYDRO_YEARS) > 0:
-        hydro_years_true = True
+    if len(scenario_structure.HYDRO_YEARS) > 0:
+        hydro_year_str_list = [
+            f"hydro_year_{yr}" for yr in scenario_structure.HYDRO_YEARS
+        ]
     else:
-        hydro_years_true = False
+        hydro_year_str_list = [""]
 
     # If only a single subproblem, run main problem
-    if list(subproblem_structure.SUBPROBLEM_STAGES.keys()) == [1]:
+    if list(scenario_structure.SUBPROBLEM_STAGES.keys()) == [1]:
         if n_parallel_subproblems > 1:
             warnings.warn(
                 "GridPath WARNING: only a single subproblem in "
@@ -492,17 +493,13 @@ def run_scenario(
         # objective function values
         objective_values = {}
 
-        for hydro_year in subproblem_structure.HYDRO_YEARS:
-            if hydro_years_true:
-                hydro_year_str = f"hydro_year_{hydro_year}"
-            else:
-                hydro_year_str = ""
-            for subproblem in list(subproblem_structure.SUBPROBLEM_STAGES.keys()):
+        for hydro_year_str in hydro_year_str_list:
+            for subproblem in list(scenario_structure.SUBPROBLEM_STAGES.keys()):
                 objective_values[subproblem] = {}
                 run_optimization_for_subproblem(
                     scenario_directory=scenario_directory,
                     hydro_year_directory=hydro_year_str,
-                    subproblem_structure=subproblem_structure,
+                    scenario_structure=scenario_structure,
                     subproblem=subproblem,
                     parsed_arguments=parsed_arguments,
                     objective_values=objective_values,
@@ -530,16 +527,12 @@ def run_scenario(
             )
             # Solve sequentially
             objective_values = {}
-            for hydro_year in subproblem_structure.HYDRO_YEARS:
-                if hydro_years_true:
-                    hydro_year_str = f"hydro_year_{hydro_year}"
-                else:
-                    hydro_year_str = ""
-                for subproblem in list(subproblem_structure.SUBPROBLEM_STAGES.keys()):
+            for hydro_year_str in hydro_year_str_list:
+                for subproblem in list(scenario_structure.SUBPROBLEM_STAGES.keys()):
                     run_optimization_for_subproblem(
                         scenario_directory=scenario_directory,
                         hydro_year_directory=hydro_year_str,
-                        subproblem_structure=subproblem_structure,
+                        scenario_structure=scenario_structure,
                         subproblem=subproblem,
                         parsed_arguments=parsed_arguments,
                         objective_values=objective_values,
@@ -553,19 +546,12 @@ def run_scenario(
         # If subproblems are independent, we create pool of subproblems
         # and solve them in parallel
         else:
-            if hydro_years_true:
-                hydro_year_str_list = [
-                    f"hydro_year_{yr}" for yr in subproblem_structure.HYDRO_YEARS
-                ]
-            else:
-                hydro_year_str_list = [""]
-
             # Create dictionary with which we'll keep track
             # of subproblem objective function values
             manager = Manager()
             objective_values = manager.dict()
 
-            for subproblem in subproblem_structure.SUBPROBLEM_STAGES.keys():
+            for subproblem in scenario_structure.SUBPROBLEM_STAGES.keys():
                 objective_values[subproblem] = manager.dict()
 
             # Pool must use spawn to work properly on Linux
@@ -575,13 +561,13 @@ def run_scenario(
                     [
                         scenario_directory,
                         hydro_year_str,
-                        subproblem_structure,
+                        scenario_structure,
                         subproblem,
                         parsed_arguments,
                         objective_values,
                     ]
                     for hydro_year_str in hydro_year_str_list
-                    for subproblem in subproblem_structure.SUBPROBLEM_STAGES.keys()
+                    for subproblem in scenario_structure.SUBPROBLEM_STAGES.keys()
                 ]
             )
 
@@ -832,7 +818,12 @@ def fix_variables(
     for m in loaded_modules:
         if hasattr(m, "fix_variables"):
             m.fix_variables(
-                instance, dynamic_components, scenario_directory, subproblem, stage
+                instance,
+                dynamic_components,
+                scenario_directory,
+                hydro_year,
+                subproblem,
+                stage,
             )
 
     return instance
@@ -1311,15 +1302,14 @@ def main(args=None):
             )
         )
 
-    # TODO: get from disk?
-    subproblem_structure = get_subproblem_structure_from_disk(
+    scenario_structure = get_scenario_structure_from_disk(
         scenario_directory=scenario_directory
     )
 
     # Run the scenario (can be multiple optimization subproblems)
     expected_objective_values = run_scenario(
         scenario_directory=scenario_directory,
-        subproblem_structure=subproblem_structure,
+        scenario_structure=scenario_structure,
         parsed_arguments=parsed_args,
     )
 

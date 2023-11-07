@@ -173,7 +173,7 @@ def write_model_inputs(
 
 
 def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id, hydro_year, subproblem, stage, c, db, results_directory, quiet
 ):
     """
 

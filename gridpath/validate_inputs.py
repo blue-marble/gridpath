@@ -41,7 +41,9 @@ from gridpath.auxiliary.scenario_chars import (
 )
 
 
-def validate_inputs(subproblems, loaded_modules, scenario_id, subscenarios, conn):
+def validate_inputs(
+    subproblems, loaded_modules, scenario_id, hydro_year, subscenarios, conn
+):
     """ "
     For each module, load the inputs from the database and validate them
 
@@ -72,6 +74,7 @@ def validate_inputs(subproblems, loaded_modules, scenario_id, subscenarios, conn
                     m.validate_inputs(
                         scenario_id=scenario_id,
                         subscenarios=subscenarios,
+                        hydro_year=hydro_year,
                         subproblem=subproblem,
                         stage=stage,
                         conn=conn,
@@ -397,7 +400,7 @@ def main(args=None):
     # Get scenario characteristics (features, scenario_id, subscenarios, subproblems)
     optional_features = OptionalFeatures(conn=conn, scenario_id=scenario_id)
     subscenarios = SubScenarios(conn=conn, scenario_id=scenario_id)
-    subproblem_structure = get_scenario_structure_from_db(
+    scenario_structure = get_scenario_structure_from_db(
         conn=conn, scenario_id=scenario_id
     )
 
@@ -417,8 +420,8 @@ def main(args=None):
         # stages-related modules
         stages_flag = any(
             [
-                len(subproblem_structure.SUBPROBLEM_STAGES[subp]) > 1
-                for subp in list(subproblem_structure.SUBPROBLEM_STAGES.keys())
+                len(scenario_structure.SUBPROBLEM_STAGES[subp]) > 1
+                for subp in list(scenario_structure.SUBPROBLEM_STAGES.keys())
             ]
         )
         modules_to_use = determine_modules(
@@ -427,9 +430,15 @@ def main(args=None):
         loaded_modules = load_modules(modules_to_use=modules_to_use)
 
         # Read in inputs from db and validate inputs for loaded modules
-        validate_inputs(
-            subproblem_structure, loaded_modules, scenario_id, subscenarios, conn
-        )
+        for hydro_year in scenario_structure.HYDRO_YEARS:
+            validate_inputs(
+                scenario_structure,
+                loaded_modules,
+                scenario_id,
+                hydro_year,
+                subscenarios,
+                conn,
+            )
     else:
         if not parsed_arguments.quiet:
             print("Invalid subscenario ID(s). Skipped detailed input validation.")

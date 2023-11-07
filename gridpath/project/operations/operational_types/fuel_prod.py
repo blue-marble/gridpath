@@ -549,7 +549,7 @@ def export_results(mod, d, scenario_directory, hydro_year, subproblem, stage):
     #                 )
 
 
-def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info

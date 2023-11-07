@@ -82,7 +82,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     return markets
 
 
-def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, conn):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:

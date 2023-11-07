@@ -624,7 +624,7 @@ def save_duals(
 
 
 def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id, hydro_year, subproblem, stage, c, db, results_directory, quiet
 ):
     which_results = "project_group_capacity"
     # Import only if a results-file was exported
@@ -634,6 +634,7 @@ def import_results_into_database(
             conn=db,
             cursor=c,
             scenario_id=scenario_id,
+            hydro_year=hydro_year,
             subproblem=subproblem,
             stage=stage,
             quiet=quiet,

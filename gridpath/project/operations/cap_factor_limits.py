@@ -22,8 +22,7 @@ import csv
 import os.path
 from pyomo.environ import Set, Param, Constraint, Expression, Reals, value
 
-from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.db_interface import setup_results_import, import_csv
+from gridpath.auxiliary.db_interface import import_csv
 
 Infinity = float("inf")
 Negative_Infinity = float("-inf")
@@ -242,7 +241,7 @@ def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
 
 
 def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id, hydro_year, subproblem, stage, c, db, results_directory, quiet
 ):
     """
     :param scenario_id:
@@ -268,6 +267,7 @@ def import_results_into_database(
             conn=db,
             cursor=c,
             scenario_id=scenario_id,
+            hydro_year=hydro_year,
             subproblem=subproblem,
             stage=stage,
             quiet=quiet,

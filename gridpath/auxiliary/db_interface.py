@@ -132,7 +132,9 @@ def get_scenario_id_and_name(scenario_id_arg, scenario_name_arg, c, script):
             return scenario_id_arg, scenario_name_arg
 
 
-def setup_results_import(conn, cursor, table, scenario_id, subproblem, stage):
+def setup_results_import(
+    conn, cursor, table, scenario_id, hydro_year, subproblem, stage
+):
     """
     :param conn: the connection object
     :param cursor: the cursor object
@@ -149,6 +151,7 @@ def setup_results_import(conn, cursor, table, scenario_id, subproblem, stage):
     del_sql = """
         DELETE FROM {} 
         WHERE scenario_id = ?
+        AND hydro_year = ?
         AND subproblem_id = ?
         AND stage_id = ?;
         """.format(
@@ -158,7 +161,7 @@ def setup_results_import(conn, cursor, table, scenario_id, subproblem, stage):
         conn=conn,
         cursor=cursor,
         sql=del_sql,
-        data=(scenario_id, subproblem, stage),
+        data=(scenario_id, hydro_year, subproblem, stage),
         many=False,
     )
 
@@ -199,6 +202,7 @@ def import_csv(
     conn,
     cursor,
     scenario_id,
+    hydro_year,
     subproblem,
     stage,
     quiet,
@@ -218,12 +222,14 @@ def import_csv(
         cursor=cursor,
         table=f"results_{which_results}",
         scenario_id=scenario_id,
+        hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
     )
 
     df = pd.read_csv(os.path.join(results_directory, f"{which_results}.csv"))
     df["scenario_id"] = scenario_id
+    df["hydro_year"] = hydro_year
     df["subproblem_id"] = subproblem
     df["stage_id"] = stage
 

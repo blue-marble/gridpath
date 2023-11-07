@@ -45,6 +45,7 @@ class TestSpinningReservesBAs(unittest.TestCase):
             prereq_modules=[],
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
+            hydro_year="",
             subproblem="",
             stage="",
         )
@@ -58,6 +59,7 @@ class TestSpinningReservesBAs(unittest.TestCase):
             prereq_modules=[],
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
+            hydro_year="",
             subproblem="",
             stage="",
         )
@@ -71,6 +73,7 @@ class TestSpinningReservesBAs(unittest.TestCase):
             prereq_modules=[],
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
+            hydro_year="",
             subproblem="",
             stage="",
         )

@@ -60,6 +60,7 @@ def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage
     required_tx_capacity_modules = (
         get_required_subtype_modules(
             scenario_directory=scenario_directory,
+            hydro_year=hydro_year,
             subproblem=subproblem,
             stage=stage,
             which_type="tx_capacity_type",

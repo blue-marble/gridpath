@@ -156,7 +156,7 @@ def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage
 ###############################################################################
 
 
-def fix_variables(m, d, scenario_directory, subproblem, stage):
+def fix_variables(m, d, scenario_directory, hydro_year, subproblem, stage):
     """
     This function fixes the commitment of all fixed commitment projects by
     running the :code:`fix_commitment` function in the appropriate operational

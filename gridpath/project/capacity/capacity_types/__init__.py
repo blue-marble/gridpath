@@ -25,7 +25,7 @@ from gridpath.project.capacity.common_functions import (
 from gridpath.auxiliary.db_interface import get_required_capacity_types_from_database
 
 
-def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info

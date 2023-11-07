@@ -45,6 +45,7 @@ class TestTimepoints(unittest.TestCase):
             prereq_modules=[],
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
+            hydro_year="",
             subproblem="",
             stage="",
         )
@@ -58,6 +59,7 @@ class TestTimepoints(unittest.TestCase):
             prereq_modules=[],
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
+            hydro_year="",
             subproblem="",
             stage="",
         )
@@ -84,6 +86,7 @@ class TestTimepoints(unittest.TestCase):
             prereq_modules=[],
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
+            hydro_year="",
             subproblem="",
             stage="",
         )
@@ -166,6 +169,7 @@ class TestTimepoints(unittest.TestCase):
             prereq_modules=[],
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=os.path.join(TEST_DATA_DIRECTORY, "subproblems"),
+            hydro_year="",
             subproblem="202002",
             stage="",
         )

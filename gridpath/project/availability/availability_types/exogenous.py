@@ -288,7 +288,7 @@ def write_model_inputs(
 ###############################################################################
 
 
-def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, conn):
     """
     :param subscenarios:
     :param subproblem:

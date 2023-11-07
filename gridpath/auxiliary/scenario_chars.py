@@ -25,6 +25,9 @@ from gridpath.auxiliary.auxiliary import (
 )
 
 
+# TODO: use 0s instead of 1s to indicate no subdirectories?
+
+
 class OptionalFeatures(object):
     def __init__(self, conn, scenario_id):
         """
@@ -117,7 +120,18 @@ def get_scenario_structure_from_db(conn, scenario_id):
     cursor = conn.cursor()
 
     # Hydro years
-    hydro_years = [2012, 2014]
+    hydro_years = [
+        hydro_year[0]
+        for hydro_year in cursor.execute(
+            """SELECT hydro_year
+               FROM inputs_temporal_hydro_years
+               INNER JOIN scenarios
+               USING (temporal_scenario_id)
+               WHERE scenario_id = {};""".format(
+                scenario_id
+            )
+        ).fetchall()
+    ]
 
     # TODO: make sure there is data integrity between subproblems_stages
     #   and inputs_temporal_horizons and inputs_temporal
@@ -155,7 +169,7 @@ def get_scenario_structure_from_db(conn, scenario_id):
     )
 
 
-def get_subproblem_structure_from_disk(scenario_directory):
+def get_scenario_structure_from_disk(scenario_directory):
     # Check if there are hydro year directories
     hydro_directories = check_for_starting_string_subdirectories(
         main_directory=scenario_directory, starting_string="hydro_year"

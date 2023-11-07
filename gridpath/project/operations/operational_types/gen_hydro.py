@@ -847,8 +847,9 @@ def export_results(mod, d, scenario_directory, hydro_year, subproblem, stage):
 ###############################################################################
 
 
-def get_model_inputs_from_database(scenario_id, subscenarios,
-                                   hydro_year, subproblem, stage, conn):
+def get_model_inputs_from_database(
+    scenario_id, subscenarios, hydro_year, subproblem, stage, conn
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -858,8 +859,13 @@ def get_model_inputs_from_database(scenario_id, subscenarios,
     """
 
     return get_hydro_inputs_from_database(
-        scenario_id, subscenarios, hydro_year, subproblem, stage, conn,
-        op_type="gen_hydro"
+        scenario_id,
+        subscenarios,
+        hydro_year,
+        subproblem,
+        stage,
+        conn,
+        op_type="gen_hydro",
     )
 
 
@@ -949,7 +955,7 @@ def process_model_results(db, c, scenario_id, subscenarios, quiet):
 ###############################################################################
 
 
-def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -964,7 +970,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
 
     # Validate hydro opchars input table
     hydro_opchar_fraction_error = validate_hydro_opchars(
-        scenario_id, subscenarios, subproblem, stage, conn, "gen_hydro"
+        scenario_id, subscenarios, hydro_year, subproblem, stage, conn, "gen_hydro"
     )
 
     if hydro_opchar_fraction_error:

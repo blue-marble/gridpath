@@ -65,6 +65,7 @@ class TestOperationalTypeCommonFunctions(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=None,  # No need to name since not adding components
             test_data_dir=TEST_DATA_DIRECTORY,
+            hydro_year="",
             subproblem="",
             stage="",
         )
@@ -205,6 +206,7 @@ class TestOperationalTypeCommonFunctions(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=None,  # No need to name since not adding components
             test_data_dir=os.path.join(TEST_DATA_DIRECTORY, "subproblems"),
+            hydro_year="",
             subproblem="202002",
             stage="",
         )

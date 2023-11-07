@@ -186,7 +186,15 @@ def generic_save_duals(m, reserve_constraint_name):
 
 
 def generic_import_results_to_database(
-    scenario_id, subproblem, stage, c, db, results_directory, reserve_type, quiet
+    scenario_id,
+    hydro_year,
+    subproblem,
+    stage,
+    c,
+    db,
+    results_directory,
+    reserve_type,
+    quiet,
 ):
     """
 
@@ -204,6 +212,7 @@ def generic_import_results_to_database(
         conn=db,
         cursor=c,
         scenario_id=scenario_id,
+        hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
         quiet=quiet,

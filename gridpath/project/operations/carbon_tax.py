@@ -593,7 +593,7 @@ def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
 
 
 def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id, hydro_year, subproblem, stage, c, db, results_directory, quiet
 ):
     """
     :param scenario_id:
@@ -608,6 +608,7 @@ def import_results_into_database(
         conn=db,
         cursor=c,
         scenario_id=scenario_id,
+        hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
         quiet=quiet,
@@ -620,7 +621,7 @@ def import_results_into_database(
 ###############################################################################
 
 
-def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info

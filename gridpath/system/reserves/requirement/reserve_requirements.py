@@ -373,6 +373,7 @@ def generic_get_inputs_from_database(
 
 def generic_write_model_inputs(
     scenario_directory,
+    hydro_year,
     subproblem,
     stage,
     timepoint_req,
@@ -394,7 +395,9 @@ def generic_write_model_inputs(
     :param reserve_type:
     :return:
     """
-    inputs_dir = os.path.join(scenario_directory, str(subproblem), str(stage), "inputs")
+    inputs_dir = os.path.join(
+        scenario_directory, str(hydro_year), str(subproblem), str(stage), "inputs"
+    )
 
     # Write the by-timepoint requirement file if by-tmp requirement specified
     timepoint_req = timepoint_req.fetchall()

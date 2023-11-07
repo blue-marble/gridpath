@@ -2,6 +2,7 @@ path,feature,subscenario,table,subscenario_type,custom_method,project_input,proj
 solver,core,solver_options_id,options_solver,simple,,0,0,,,,
 temporal,core,temporal_scenario_id,temporal,dir_subsc_only,,0,0,,"ignore
 ",,
+temporal,core,temporal_scenario_id,temporal_hydro_years,dir_aux,,0,0,hydro_years.csv,,,
 temporal,core,temporal_scenario_id,temporal_periods,dir_aux,,0,0,period_params.csv,,,
 temporal,core,temporal_scenario_id,temporal_superperiods,dir_aux,,0,0,superperiods.csv,,,
 temporal,core,temporal_scenario_id,temporal_horizons,dir_aux,,0,0,horizon_params.csv,,,
@@ -26,6 +27,7 @@ project/project_variable_om_curves,data_dependent,variable_om_curves_scenario_id
 project/project_startup_chars,data_dependent,startup_chars_scenario_id,project_startup_chars,simple,,1,0,,,inputs_project_operational_chars,project_operational_chars_scenario_id
 project/project_flex_load_static_profiles,data_dependent,flex_load_static_profile_scenario_id,project_flex_load_static_profiles,simple,,1,0,,,inputs_project_operational_chars,project_operational_chars_scenario_id
 project/project_hydro_operational_chars,data_dependent,hydro_operational_chars_scenario_id,project_hydro_operational_chars,simple,,1,0,,,inputs_project_operational_chars,project_operational_chars_scenario_id
+project/project_hydro_operational_chars_years,data_dependent,hydro_operational_chars_years_scenario_id,project_hydro_operational_chars_years,simple,,1,0,,,inputs_project_operational_chars,project_operational_chars_scenario_id
 project/project_variable_generator_profiles,data_dependent,variable_generator_profile_scenario_id,project_variable_generator_profiles,simple,,1,0,,,inputs_project_operational_chars,project_operational_chars_scenario_id
 project/project_stor_exog_soc,data_dependent,stor_exog_state_of_charge_scenario_id,project_stor_exog_state_of_charge,simple,,1,0,,,inputs_project_operational_chars,project_operational_chars_scenario_id
 project/project_cycle_selection,data_dependent,cycle_selection_scenario_id,project_cycle_selection,simple,,1,0,,,inputs_project_operational_chars,project_operational_chars_scenario_id

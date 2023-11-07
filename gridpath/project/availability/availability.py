@@ -217,7 +217,7 @@ def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
             getattr(d, PROJECT_TIMEPOINT_DF).update(results_df)
 
 
-def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, conn):
     """
 
     :param subscenarios:

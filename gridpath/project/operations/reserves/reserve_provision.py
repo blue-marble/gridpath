@@ -39,6 +39,7 @@ from gridpath.project import PROJECT_TIMEPOINT_DF
 def generic_record_dynamic_components(
     d,
     scenario_directory,
+    hydro_year,
     subproblem,
     stage,
     headroom_or_footroom_dict,
@@ -280,6 +281,7 @@ def generic_load_model_data(
     d,
     data_portal,
     scenario_directory,
+    hydro_year,
     subproblem,
     stage,
     ba_column_name,
@@ -388,6 +390,7 @@ def generic_export_results(
     m,
     d,
     scenario_directory,
+    hydro_year,
     subproblem,
     stage,
     module_name,

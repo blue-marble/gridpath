@@ -55,7 +55,9 @@ def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage
     for prm_m in required_prm_modules:
         imp_prm_m = imported_prm_modules[prm_m]
         if hasattr(imp_prm_m, "add_model_components"):
-            imp_prm_m.add_model_components(m, d, scenario_directory, subproblem, stage)
+            imp_prm_m.add_model_components(
+                m, d, scenario_directory, hydro_year, subproblem, stage
+            )
 
     # For each PRM project, get the ELCC-eligible capacity
     def elcc_eligible_capacity_rule(mod, g, p):
@@ -199,7 +201,7 @@ def get_required_prm_type_modules(
     return required_prm_type_modules
 
 
-def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -258,7 +260,7 @@ def write_model_inputs(
 
 
 def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id, hydro_year, subproblem, stage, c, db, results_directory, quiet
 ):
     """
 
@@ -302,7 +304,14 @@ def import_results_into_database(
     for prm_m in required_prm_type_modules:
         if hasattr(imported_prm_modules[prm_m], "import_results_into_database"):
             imported_prm_modules[prm_m].import_results_into_database(
-                scenario_id, subproblem, stage, c, db, results_directory, quiet
+                scenario_id,
+                hydro_year,
+                subproblem,
+                stage,
+                c,
+                db,
+                results_directory,
+                quiet,
             )
 
 

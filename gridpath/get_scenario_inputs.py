@@ -84,7 +84,7 @@ def write_model_inputs(
 
     # Determine whether we will have iterations
     # Hydro years first
-    if len(hydro_years) > 0:
+    if len(hydro_years) > 0 and hydro_years != [0]:
         make_hydro_year_directories = True
     else:
         make_hydro_year_directories = False
@@ -130,7 +130,6 @@ def write_model_inputs(
                     subscenarios=subscenarios,
                     db_path=db_path,
                 )
-    # TODO: figure out how to parallelize with iterations
     else:
         if make_hydro_year_directories:
             hydro_year_str_list = [f"hydro_year_{yr}" for yr in hydro_years]
@@ -236,7 +235,7 @@ def get_inputs_for_subproblem(
         # exist
         # TODO: need better handling of deleting prior results?
         pass_through_directory = os.path.join(
-            scenario_directory, str(subproblem), "pass_through_inputs"
+            scenario_directory, hydro_year_str, str(subproblem), "pass_through_inputs"
         )
         if not os.path.exists(pass_through_directory):
             os.makedirs(pass_through_directory)

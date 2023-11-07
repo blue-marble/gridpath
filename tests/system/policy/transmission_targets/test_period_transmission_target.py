@@ -64,6 +64,7 @@ class TestPeriodTxTarget(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
+            hydro_year="",
             subproblem="",
             stage="",
         )
@@ -77,6 +78,7 @@ class TestPeriodTxTarget(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
+            hydro_year="",
             subproblem="",
             stage="",
         )
@@ -90,6 +92,7 @@ class TestPeriodTxTarget(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
+            hydro_year="",
             subproblem="",
             stage="",
         )

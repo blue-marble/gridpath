@@ -209,7 +209,7 @@ def write_model_inputs(
 
 # TODO: move this into operations.py?
 def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id, hydro_year, subproblem, stage, c, db, results_directory, quiet
 ):
     """
     Go through each relevant operational type and import the results into the
@@ -270,7 +270,7 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
 ###############################################################################
 
 
-def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, conn):
     """
     Go through each relevant operational type and validate the database inputs
     for that operational type.

@@ -67,6 +67,7 @@ class TestFixCommitment(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=os.path.join(TEST_DATA_DIRECTORY, "subproblems"),
+            hydro_year="",
             subproblem="202001",
             stage="2",
         )
@@ -80,6 +81,7 @@ class TestFixCommitment(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=os.path.join(TEST_DATA_DIRECTORY, "subproblems"),
+            hydro_year="",
             subproblem="202001",
             stage="2",
         )
@@ -93,6 +95,7 @@ class TestFixCommitment(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=os.path.join(TEST_DATA_DIRECTORY, "subproblems"),
+            hydro_year="",
             subproblem="202001",
             stage="2",
         )

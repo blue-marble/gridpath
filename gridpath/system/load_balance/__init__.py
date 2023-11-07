@@ -58,7 +58,7 @@ def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
 
 
 def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id, hydro_year, subproblem, stage, c, db, results_directory, quiet
 ):
     """
 
@@ -73,6 +73,7 @@ def import_results_into_database(
         conn=db,
         cursor=c,
         scenario_id=scenario_id,
+        hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
         quiet=quiet,

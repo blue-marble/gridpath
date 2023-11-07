@@ -808,8 +808,9 @@ def export_results(mod, d, scenario_directory, hydro_year, subproblem, stage):
 ###############################################################################
 
 
-def get_model_inputs_from_database(scenario_id, subscenarios,
-                                   hydro_year, subproblem, stage, conn):
+def get_model_inputs_from_database(
+    scenario_id, subscenarios, hydro_year, subproblem, stage, conn
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -856,7 +857,7 @@ def write_model_inputs(
 ###############################################################################
 
 
-def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -873,7 +874,13 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
 
     # Validate hydro opchars input table
     hydro_opchar_fraction_error = validate_hydro_opchars(
-        scenario_id, subscenarios, subproblem, stage, conn, "gen_hydro_must_take"
+        scenario_id,
+        subscenarios,
+        hydro_year,
+        subproblem,
+        stage,
+        conn,
+        "gen_hydro_must_take",
     )
 
     if hydro_opchar_fraction_error:

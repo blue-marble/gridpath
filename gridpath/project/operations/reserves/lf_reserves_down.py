@@ -48,7 +48,7 @@ RESERVE_BALANCING_AREAS_SET_NAME = "LF_RESERVES_DOWN_ZONES"
 RESERVE_PRJ_OPR_TMPS_SET_NAME = "LF_RESERVES_DOWN_PRJ_OPR_TMPS"
 
 
-def record_dynamic_components(d, scenario_directory, hydro_yearsubproblem, stage):
+def record_dynamic_components(d, scenario_directory, hydro_year, subproblem, stage):
     """
 
     :param d:
@@ -81,7 +81,7 @@ def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage
     :return:
     """
 
-    record_dynamic_components(d, scenario_directory, hydro_yearsubproblem, stage)
+    record_dynamic_components(d, scenario_directory, hydro_year, subproblem, stage)
 
     generic_add_model_components(
         m=m,
@@ -177,7 +177,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     return project_bas, prj_derates
 
 
-def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
