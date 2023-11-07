@@ -16,7 +16,6 @@
 Scenario characteristics in database.
 """
 
-import csv
 import os.path
 
 from gridpath.auxiliary.auxiliary import (
@@ -25,7 +24,7 @@ from gridpath.auxiliary.auxiliary import (
 )
 
 
-# TODO: use 0s instead of 1s to indicate no subdirectories?
+# TODO: conslidate use 0s and 1s to indicate no subdirectories?
 
 
 class OptionalFeatures(object):
@@ -102,9 +101,9 @@ class SubScenarios(object):
 
 
 class ScenarioStructure(object):
-    def __init__(self, hydro_years, stages_by_subproblem):
+    def __init__(self, hydro_years_by_weather_year, stages_by_subproblem):
         # Hydro year iterations
-        self.HYDRO_YEARS = hydro_years
+        self.WEATHER_YEAR_HYDRO_YEARS = hydro_years_by_weather_year
         # List of stages by subproblem in dict {subproblem: [stages]}
         # This should have a single key, 1, if a single subproblem
         # This should be subproblem: [1] when a single stage in the subproblem
@@ -119,11 +118,11 @@ def get_scenario_structure_from_db(conn, scenario_id):
     """
     cursor = conn.cursor()
 
-    # Hydro years
-    hydro_years = [
-        hydro_year[0]
-        for hydro_year in cursor.execute(
-            """SELECT hydro_year
+    # Weather years
+    all_weather_years = [
+        row[0]
+        for row in cursor.execute(
+            """SELECT weather_year
                FROM inputs_temporal_iterations
                INNER JOIN scenarios
                USING (temporal_scenario_id)
@@ -133,8 +132,25 @@ def get_scenario_structure_from_db(conn, scenario_id):
         ).fetchall()
     ]
 
+    # Store weather years and hydro years in dict {weather_year: [hydro_years]}
+    hydro_years_by_weather_year = {}
+    for weather_year in all_weather_years:
+        hydro_years = cursor.execute(
+            """SELECT hydro_year
+               FROM inputs_temporal_iterations
+               INNER JOIN scenarios
+               USING (temporal_scenario_id)
+               WHERE scenario_id = {};""".format(
+                scenario_id, weather_year
+            )
+        ).fetchall()
+        hydro_years = [hydro_year[0] for hydro_year in hydro_years]  # to list
+        hydro_years_by_weather_year[weather_year] = hydro_years
+
     # TODO: make sure there is data integrity between subproblems_stages
     #   and inputs_temporal_horizons and inputs_temporal
+    # TODO: probably don't need a separate table for subproblems, but can get
+    #  the subproblems from the subproblems_stages table
     all_subproblems = [
         subproblem[0]
         for subproblem in cursor.execute(
@@ -150,7 +166,7 @@ def get_scenario_structure_from_db(conn, scenario_id):
 
     # Store subproblems and stages in dict {subproblem: [stages]}
     stages_by_subproblem = {}
-    for s in all_subproblems:
+    for weather_year in all_subproblems:
         stages = cursor.execute(
             """SELECT stage_id
                FROM inputs_temporal_subproblems_stages
@@ -158,21 +174,58 @@ def get_scenario_structure_from_db(conn, scenario_id):
                USING (temporal_scenario_id)
                WHERE scenario_id = {}
                AND subproblem_id = {};""".format(
-                scenario_id, s
+                scenario_id, weather_year
             )
         ).fetchall()
         stages = [stage[0] for stage in stages]  # convert to simple list
-        stages_by_subproblem[s] = stages
+        stages_by_subproblem[weather_year] = stages
 
     return ScenarioStructure(
-        stages_by_subproblem=stages_by_subproblem, hydro_years=hydro_years
+        stages_by_subproblem=stages_by_subproblem,
+        hydro_years_by_weather_year=hydro_years_by_weather_year,
     )
 
 
 def get_scenario_structure_from_disk(scenario_directory):
-    # Check if there are hydro year directories
+    hydro_years_by_weather_year = {}
+    stages_by_subproblem = {}
+
+    # Check if there are weather directories
+    weather_directories = check_for_starting_string_subdirectories(
+        main_directory=scenario_directory, starting_string="weather_year"
+    )
+
+    weather_years = [d.replace("weather_year_", "") for d in weather_directories]
+
+    if not weather_directories:
+        (
+            hydro_years,
+            subproblem_main_directory,
+        ) = check_for_hydro_year_directories(starting_directory=scenario_directory)
+        hydro_years_by_weather_year = {0: hydro_years}
+        stages_by_subproblem = check_subproblem_structure(
+            subproblem_main_directory=subproblem_main_directory
+        )
+    else:
+        for w_d in weather_directories:
+            (
+                hydro_years,
+                subproblem_main_directory,
+            ) = check_for_hydro_year_directories(starting_directory=w_d)
+            hydro_years_by_weather_year[w_d] = hydro_years
+            stages_by_subproblem = check_subproblem_structure(
+                subproblem_main_directory=subproblem_main_directory
+            )
+
+    return ScenarioStructure(
+        hydro_years_by_weather_year=hydro_years_by_weather_year,
+        stages_by_subproblem=stages_by_subproblem,
+    )
+
+
+def check_for_hydro_year_directories(starting_directory):
     hydro_directories = check_for_starting_string_subdirectories(
-        main_directory=scenario_directory, starting_string="hydro_year"
+        main_directory=starting_directory, starting_string="hydro_year"
     )
 
     hydro_years = [d.replace("hydro_year_", "") for d in hydro_directories]
@@ -182,11 +235,15 @@ def get_scenario_structure_from_disk(scenario_directory):
     # for each hydro year
     if hydro_years:
         subproblem_main_directory = os.path.join(
-            scenario_directory, hydro_directories[0]
+            starting_directory, hydro_directories[0]
         )
     else:
-        subproblem_main_directory = scenario_directory
+        subproblem_main_directory = starting_directory
 
+    return hydro_years, subproblem_main_directory
+
+
+def check_subproblem_structure(subproblem_main_directory):
     # Convert to integers
     subproblem_directories = [
         int(i) for i in check_for_integer_subdirectories(subproblem_main_directory)
@@ -216,9 +273,7 @@ def get_scenario_structure_from_disk(scenario_directory):
         # Downstream, we need {1: [1]}
         stages_by_subproblem[1] = [1]
 
-    return ScenarioStructure(
-        hydro_years=hydro_years, stages_by_subproblem=stages_by_subproblem
-    )
+    return stages_by_subproblem
 
 
 class SolverOptions(object):

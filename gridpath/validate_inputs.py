@@ -430,15 +430,28 @@ def main(args=None):
         loaded_modules = load_modules(modules_to_use=modules_to_use)
 
         # Read in inputs from db and validate inputs for loaded modules
-        for hydro_year in scenario_structure.HYDRO_YEARS:
+        weather_years = [y for y in scenario_structure.WEATHER_YEAR_HYDRO_YEARS.keys()]
+        if weather_years:
+            weather_year = 0
+            for hydro_year in scenario_structure.WEATHER_YEAR_HYDRO_YEARS[weather_year]:
+                validate_inputs(
+                    scenario_structure,
+                    loaded_modules,
+                    scenario_id,
+                    hydro_year,
+                    subscenarios,
+                    conn,
+                )
+        else:
             validate_inputs(
                 scenario_structure,
                 loaded_modules,
                 scenario_id,
-                hydro_year,
+                0,
                 subscenarios,
                 conn,
             )
+
     else:
         if not parsed_arguments.quiet:
             print("Invalid subscenario ID(s). Skipped detailed input validation.")

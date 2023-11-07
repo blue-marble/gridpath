@@ -470,14 +470,19 @@ def run_scenario(
         n_parallel_subproblems = 1
 
     # Determine whether we will have iterations
-    # Hydro years first
-    if len(scenario_structure.HYDRO_YEARS) > 0:
-        hydro_year_str_list = [
-            f"hydro_year_{yr}" for yr in scenario_structure.HYDRO_YEARS
-        ]
+    weather_years = [y for y in scenario_structure.WEATHER_YEAR_HYDRO_YEARS.keys()]
+    if weather_years:
+        weather_year = 0
+        # Hydro years first
+        if len(scenario_structure.WEATHER_YEAR_HYDRO_YEARS[weather_year]) > 0:
+            hydro_year_str_list = [
+                f"hydro_year_{yr}"
+                for yr in scenario_structure.WEATHER_YEAR_HYDRO_YEARS[weather_year]
+            ]
+        else:
+            hydro_year_str_list = [""]
     else:
         hydro_year_str_list = [""]
-
     # If only a single subproblem, run main problem
     if list(scenario_structure.SUBPROBLEM_STAGES.keys()) == [1]:
         if n_parallel_subproblems > 1:

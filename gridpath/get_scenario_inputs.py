@@ -486,11 +486,16 @@ def main(args=None):
     #  some validation
     optional_features = OptionalFeatures(conn=conn, scenario_id=scenario_id)
     subscenarios = SubScenarios(conn=conn, scenario_id=scenario_id)
-    # hydro_years = []
     scenario_structure = get_scenario_structure_from_db(
         conn=conn, scenario_id=scenario_id
     )
-    hydro_years = scenario_structure.HYDRO_YEARS
+
+    weather_years = [y for y in scenario_structure.WEATHER_YEAR_HYDRO_YEARS.keys()]
+    if weather_years:
+        weather_year = 0
+        hydro_years = scenario_structure.WEATHER_YEAR_HYDRO_YEARS[weather_year]
+    else:
+        hydro_years = []
     solver_options = SolverOptions(conn=conn, scenario_id=scenario_id)
 
     # Determine requested features and use this to determine what modules to

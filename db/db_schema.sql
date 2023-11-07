@@ -228,30 +228,31 @@ DROP TABLE IF EXISTS inputs_temporal_iterations;
 CREATE TABLE inputs_temporal_iterations
 (
     temporal_scenario_id INTEGER,
-    hydro_year           INTEGER,
-    PRIMARY KEY (temporal_scenario_id, hydro_year),
+    weather_year         INTEGER NOT NULL,
+    hydro_year           INTEGER NOT NULL,
+    PRIMARY KEY (temporal_scenario_id, weather_year, hydro_year),
     FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
         (temporal_scenario_id)
 );
 
--- Subproblems (for production cost modeling)
+-- Subproblems
 DROP TABLE IF EXISTS inputs_temporal_subproblems;
 CREATE TABLE inputs_temporal_subproblems
 (
     temporal_scenario_id INTEGER,
-    subproblem_id        INTEGER,
+    subproblem_id        INTEGER NOT NULL,
     PRIMARY KEY (temporal_scenario_id, subproblem_id),
     FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
         (temporal_scenario_id)
 );
 
--- Stages (within subproblems; for production cost modeling)
+-- Stages (within subproblems)
 DROP TABLE IF EXISTS inputs_temporal_subproblems_stages;
 CREATE TABLE inputs_temporal_subproblems_stages
 (
     temporal_scenario_id INTEGER,
-    subproblem_id        INTEGER,
-    stage_id             INTEGER,
+    subproblem_id        INTEGER NOT NULL,
+    stage_id             INTEGER NOT NULL,
     PRIMARY KEY (temporal_scenario_id, subproblem_id, stage_id),
     FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
         (temporal_scenario_id),
@@ -331,12 +332,12 @@ DROP TABLE IF EXISTS inputs_temporal;
 CREATE TABLE inputs_temporal
 (
     temporal_scenario_id         INTEGER,
-    subproblem_id                INTEGER,
-    stage_id                     INTEGER,
-    timepoint                    INTEGER,
-    period                       INTEGER,
-    number_of_hours_in_timepoint INTEGER,
-    timepoint_weight             FLOAT,
+    subproblem_id                INTEGER NOT NULL,
+    stage_id                     INTEGER NOT NULL,
+    timepoint                    INTEGER NOT NULL,
+    period                       INTEGER NOT NULL,
+    number_of_hours_in_timepoint INTEGER NOT NULL,
+    timepoint_weight             FLOAT NOT NULL,
     previous_stage_timepoint_map INTEGER,
     spinup_or_lookahead          INTEGER NOT NULL,
     linked_timepoint             INTEGER, -- should be non-positive
@@ -367,11 +368,11 @@ CREATE TABLE inputs_temporal
 DROP TABLE IF EXISTS inputs_temporal_horizons;
 CREATE TABLE inputs_temporal_horizons
 (
-    temporal_scenario_id   INTEGER,
-    subproblem_id          INTEGER,
-    balancing_type_horizon VARCHAR(32),
-    horizon                INTEGER,
-    boundary               VARCHAR(16),
+    temporal_scenario_id   INTEGER NOT NULL,
+    subproblem_id          INTEGER NOT NULL,
+    balancing_type_horizon VARCHAR(32) NOT NULL,
+    horizon                INTEGER NOT NULL,
+    boundary               VARCHAR(16) NOT NULL,
     PRIMARY KEY (temporal_scenario_id, subproblem_id, balancing_type_horizon,
                  horizon),
     FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
@@ -388,13 +389,13 @@ CREATE TABLE inputs_temporal_horizons
 DROP TABLE IF EXISTS inputs_temporal_horizon_timepoints_start_end;
 CREATE TABLE inputs_temporal_horizon_timepoints_start_end
 (
-    temporal_scenario_id   INTEGER,
-    subproblem_id          INTEGER,
-    stage_id               INTEGER,
-    balancing_type_horizon VARCHAR(32),
-    horizon                INTEGER,
-    tmp_start              INTEGER,
-    tmp_end                INTEGER,
+    temporal_scenario_id   INTEGER NOT NULL,
+    subproblem_id          INTEGER NOT NULL,
+    stage_id               INTEGER NOT NULL,
+    balancing_type_horizon VARCHAR(32) NOT NULL,
+    horizon                INTEGER NOT NULL,
+    tmp_start              INTEGER NOT NULL,
+    tmp_end                INTEGER NOT NULL,
     PRIMARY KEY (temporal_scenario_id, subproblem_id, stage_id,
                  balancing_type_horizon, horizon, tmp_start, tmp_end),
     FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
@@ -414,12 +415,12 @@ CREATE TABLE inputs_temporal_horizon_timepoints_start_end
 DROP TABLE IF EXISTS inputs_temporal_horizon_timepoints;
 CREATE TABLE inputs_temporal_horizon_timepoints
 (
-    temporal_scenario_id   INTEGER,
-    subproblem_id          INTEGER,
-    stage_id               INTEGER,
-    timepoint              INTEGER,
-    balancing_type_horizon VARCHAR(32),
-    horizon                INTEGER,
+    temporal_scenario_id   INTEGER NOT NULL,
+    subproblem_id          INTEGER NOT NULL,
+    stage_id               INTEGER NOT NULL,
+    timepoint              INTEGER NOT NULL,
+    balancing_type_horizon VARCHAR(32) NOT NULL,
+    horizon                INTEGER NOT NULL,
     PRIMARY KEY (temporal_scenario_id, subproblem_id, stage_id, timepoint,
                  balancing_type_horizon, horizon),
     FOREIGN KEY (temporal_scenario_id)
