@@ -37,7 +37,8 @@ from gridpath.common_functions import (
 from db.common_functions import connect_to_database, spin_on_database_lock
 from db.utilities.scenario import delete_scenario_results
 from gridpath.auxiliary.module_list import determine_modules, load_modules
-from gridpath.auxiliary.scenario_chars import get_scenario_structure_from_disk
+from gridpath.auxiliary.scenario_chars import get_scenario_structure_from_disk, \
+    get_scenario_structure_from_db
 
 
 def _import_rule(results_directory, quiet):
@@ -312,8 +313,8 @@ def main(args=None):
         script="import_scenario_results",
     )
 
-    scenario_structure = get_scenario_structure_from_disk(
-        scenario_directory=os.path.join(scenario_location, scenario_name)
+    scenario_structure = get_scenario_structure_from_db(
+        conn=conn, scenario_id=scenario_id
     )
 
     # Determine scenario directory
