@@ -171,7 +171,7 @@ def get_required_tx_opchar_modules(scenario_id, c):
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, hydro_year, subproblem, stage, conn
+    scenario_directory, scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
 ):
     """
     Go through each relevant operational type and write the model inputs

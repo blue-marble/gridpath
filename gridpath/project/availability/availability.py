@@ -94,7 +94,7 @@ def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, hydro_year, subproblem, stage, conn
+    scenario_directory, scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
 ):
     """
     :param scenario_directory: string, the scenario directory

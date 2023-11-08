@@ -280,7 +280,9 @@ def load_model_data(
         data_portal.data()["fixed_commitment"] = fixed_commitment_dict
 
 
-def export_pass_through_inputs(scenario_directory, hydro_year, subproblem, stage, m):
+def export_pass_through_inputs(
+    scenario_directory, weather_year, hydro_year, subproblem, stage, m
+):
     """
     This function exports the commitment for all final commitment projects,
     i.e. projects for which the current stage or any of the previous stages
@@ -296,6 +298,7 @@ def export_pass_through_inputs(scenario_directory, hydro_year, subproblem, stage
     df = read_csv(
         os.path.join(
             scenario_directory,
+            str(weather_year),
             str(hydro_year),
             str(subproblem),
             str(stage),

@@ -663,6 +663,7 @@ def save_results(
 
         export_pass_through_inputs(
             scenario_directory=scenario_directory,
+            weather_year=weather_year,
             hydro_year=hydro_year,
             subproblem=subproblem,
             stage=stage,
@@ -1020,7 +1021,7 @@ def export_results(
 
 
 def export_pass_through_inputs(
-    scenario_directory, hydro_year, subproblem, stage, instance, verbose
+    scenario_directory, weather_year, hydro_year, subproblem, stage, instance, verbose
 ):
     """
     :param scenario_directory:
@@ -1032,6 +1033,19 @@ def export_pass_through_inputs(
 
     Export pass through inputs for each loaded module (if applicable)
     """
+    # First create the pass-through directory if it doesn't
+    # exist
+    # TODO: need better handling of deleting prior results?
+    pass_through_directory = os.path.join(
+        scenario_directory,
+        weather_year,
+        hydro_year,
+        str(subproblem),
+        "pass_through_inputs",
+    )
+    if not os.path.exists(pass_through_directory):
+        os.makedirs(pass_through_directory)
+
     # Determine/load modules and dynamic components
     modules_to_use, loaded_modules = set_up_gridpath_modules(
         scenario_directory=scenario_directory, subproblem=subproblem, stage=stage
@@ -1039,11 +1053,22 @@ def export_pass_through_inputs(
 
     n = 0
     for m in loaded_modules:
+        # Writing the headers will delete prior data in the file
+        if hasattr(m, "write_pass_through_file_headers"):
+            m.write_pass_through_file_headers(
+                pass_through_directory=pass_through_directory
+            )
+
         if hasattr(m, "export_pass_through_inputs"):
             if verbose:
                 print(f"... {modules_to_use[n]}")
             m.export_pass_through_inputs(
-                scenario_directory, hydro_year, subproblem, stage, instance
+                scenario_directory,
+                weather_year,
+                hydro_year,
+                subproblem,
+                stage,
+                instance,
             )
         n += 1
 

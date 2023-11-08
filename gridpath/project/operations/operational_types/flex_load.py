@@ -649,7 +649,7 @@ def export_results(mod, d, scenario_directory, hydro_year, subproblem, stage):
 
 # ### Database ### #
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, hydro_year, subproblem, stage, conn
+    scenario_directory, scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
