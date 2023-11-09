@@ -18,7 +18,9 @@ import os.path
 from gridpath.system.policy.performance_standard import PERFORMANCE_STANDARD_Z_PRD_DF
 
 
-def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
+def export_results(
+    scenario_directory, weather_year, hydro_year, subproblem, stage, m, d
+):
     """
     Export all results from the CARBON_CAP_ZONE_PRD_DF that various modules
     have added to
@@ -27,9 +29,10 @@ def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
     getattr(d, PERFORMANCE_STANDARD_Z_PRD_DF).to_csv(
         os.path.join(
             scenario_directory,
-            str(hydro_year),
-            str(subproblem),
-            str(stage),
+            weather_year,
+            hydro_year,
+            subproblem,
+            stage,
             "results",
             "system_performance_standard.csv",
         ),

@@ -40,7 +40,9 @@ from gridpath.project.operations.common_functions import load_operational_type_m
 import gridpath.project.operations.operational_types as op_type_init
 
 
-def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
+def add_model_components(
+    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+):
     """
     The following Pyomo model components are defined in this module:
 
@@ -158,6 +160,7 @@ def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage
 
     required_operational_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        weather_year=weather_year,
         hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
@@ -537,7 +540,7 @@ def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage
 
 
 def load_model_data(
-    m, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+    m, d, data_portal, scenario_directory, weather_year, hydro_year, subproblem, stage
 ):
     """
 
@@ -551,9 +554,10 @@ def load_model_data(
     """
     project_fuels_file = os.path.join(
         scenario_directory,
-        str(hydro_year),
-        str(subproblem),
-        str(stage),
+        weather_year,
+        hydro_year,
+        subproblem,
+        stage,
         "inputs",
         "project_fuels.tab",
     )
@@ -568,7 +572,9 @@ def load_model_data(
         )
 
 
-def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
+def export_results(
+    scenario_directory, weather_year, hydro_year, subproblem, stage, m, d
+):
     """
     Export fuel burn results.
     :param scenario_directory:
@@ -584,9 +590,10 @@ def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
     with open(
         os.path.join(
             scenario_directory,
-            str(hydro_year),
-            str(subproblem),
-            str(stage),
+            weather_year,
+            hydro_year,
+            subproblem,
+            stage,
             "results",
             "project_fuel_burn.csv",
         ),

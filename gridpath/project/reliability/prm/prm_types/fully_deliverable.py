@@ -21,7 +21,9 @@ from pyomo.environ import Set
 from gridpath.auxiliary.auxiliary import subset_init_by_param_value
 
 
-def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
+def add_model_components(
+    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+):
     """
 
     :param m:

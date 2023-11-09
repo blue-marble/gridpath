@@ -37,7 +37,9 @@ from gridpath.common_functions import create_results_df
 from gridpath.system.reliability.prm import PRM_ZONE_PRD_DF
 
 
-def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
+def add_model_components(
+    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+):
     """
 
     :param m:
@@ -107,7 +109,7 @@ def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage
 
 
 def load_model_data(
-    m, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+    m, d, data_portal, scenario_directory, weather_year, hydro_year, subproblem, stage
 ):
     """
 
@@ -123,6 +125,7 @@ def load_model_data(
     data_portal.load(
         filename=os.path.join(
             scenario_directory,
+            weather_year,
             hydro_year,
             subproblem,
             stage,
@@ -141,7 +144,9 @@ def load_model_data(
     )
 
 
-def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
+def export_results(
+    scenario_directory, weather_year, hydro_year, subproblem, stage, m, d
+):
     """
 
     :param scenario_directory:
@@ -176,9 +181,10 @@ def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
     with open(
         os.path.join(
             scenario_directory,
-            str(hydro_year),
-            str(subproblem),
-            str(stage),
+            weather_year,
+            hydro_year,
+            subproblem,
+            stage,
             "results",
             "prm_elcc_surface.csv",
         ),
@@ -192,7 +198,13 @@ def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
 
 
 def save_duals(
-    scenario_directory, hydro_year, subproblem, stage, instance, dynamic_components
+    scenario_directory,
+    weather_year,
+    hydro_year,
+    subproblem,
+    stage,
+    instance,
+    dynamic_components,
 ):
     instance.constraint_indices["Dynamic_ELCC_Constraint"] = [
         "surface_name",
@@ -244,7 +256,14 @@ def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, co
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_year,
+    hydro_year,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     Get inputs from database and write out the model input

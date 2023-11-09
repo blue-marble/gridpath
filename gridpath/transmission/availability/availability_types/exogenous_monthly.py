@@ -37,7 +37,9 @@ from gridpath.auxiliary.validations import (
 from gridpath.project.common_functions import determine_project_subset
 
 
-def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
+def add_model_components(
+    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+):
     """
     The following Pyomo model components are defined in this module:
 
@@ -94,7 +96,7 @@ def availability_derate_rule(mod, g, tmp):
 
 
 def load_model_data(
-    m, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+    m, d, data_portal, scenario_directory, weather_year, hydro_year, subproblem, stage
 ):
     """
     :param m:
@@ -108,6 +110,7 @@ def load_model_data(
     # TODO: move determine_project_subset and rename, as we're using for tx too
     tx_subset = determine_project_subset(
         scenario_directory=scenario_directory,
+        weather_year=weather_year,
         hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
@@ -199,7 +202,14 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_year,
+    hydro_year,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     :param scenario_directory:
@@ -217,9 +227,10 @@ def write_model_inputs(
         with open(
             os.path.join(
                 scenario_directory,
-                str(hydro_year),
-                str(subproblem),
-                str(stage),
+                weather_year,
+                hydro_year,
+                subproblem,
+                stage,
                 "inputs",
                 "transmission_availability_exogenous_monthly.tab",
             ),

@@ -23,7 +23,9 @@ from gridpath.common_functions import create_results_df
 from gridpath.project import PROJECT_TIMEPOINT_DF
 
 
-def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
+def add_model_components(
+    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+):
     """
 
     :param m:
@@ -33,6 +35,7 @@ def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage
     # Import needed availability type modules
     required_availability_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        weather_year=weather_year,
         hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
@@ -47,7 +50,7 @@ def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage
         imp_op_m = imported_availability_modules[op_m]
         if hasattr(imp_op_m, "add_model_components"):
             imp_op_m.add_model_components(
-                m, d, scenario_directory, hydro_year, subproblem, stage
+                m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
             )
 
     def availability_derate_cap_rule(mod, g, tmp):
@@ -94,7 +97,14 @@ def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_year,
+    hydro_year,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     :param scenario_directory: string, the scenario directory
@@ -124,6 +134,7 @@ def write_model_inputs(
                 scenario_directory,
                 scenario_id,
                 subscenarios,
+                weather_year,
                 hydro_year,
                 subproblem,
                 stage,
@@ -132,7 +143,7 @@ def write_model_inputs(
 
 
 def load_model_data(
-    m, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+    m, d, data_portal, scenario_directory, weather_year, hydro_year, subproblem, stage
 ):
     """
 
@@ -146,6 +157,7 @@ def load_model_data(
     """
     required_availability_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        weather_year=weather_year,
         hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
@@ -157,11 +169,20 @@ def load_model_data(
     for op_m in required_availability_modules:
         if hasattr(imported_availability_modules[op_m], "load_model_data"):
             imported_availability_modules[op_m].load_model_data(
-                m, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+                m,
+                d,
+                data_portal,
+                scenario_directory,
+                weather_year,
+                hydro_year,
+                subproblem,
+                stage,
             )
 
 
-def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
+def export_results(
+    scenario_directory, weather_year, hydro_year, subproblem, stage, m, d
+):
     """
     :param scenario_directory:
     :param subproblem:
@@ -197,6 +218,7 @@ def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
     # Module-specific availability results
     required_availability_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        weather_year=weather_year,
         hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
@@ -210,7 +232,7 @@ def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
             results, results_df = imported_availability_modules[
                 op_m
             ].add_to_prj_tmp_results(
-                scenario_directory, hydro_year, subproblem, stage, m, d
+                scenario_directory, weather_year, hydro_year, subproblem, stage, m, d
             )
             for c in results_columns:
                 getattr(d, PROJECT_TIMEPOINT_DF)[c] = None

@@ -67,7 +67,9 @@ from gridpath.project.capacity.capacity_types.common_methods import (
 )
 
 
-def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
+def add_model_components(
+    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+):
     """
     The following Pyomo model components are defined in this module:
 
@@ -285,7 +287,7 @@ def fixed_cost_rule(mod, g, p):
 
 
 def load_model_data(
-    m, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+    m, d, data_portal, scenario_directory, weather_year, hydro_year, subproblem, stage
 ):
     """
 
@@ -299,6 +301,7 @@ def load_model_data(
 
     project_period_list, spec_params_dict = spec_determine_inputs(
         scenario_directory=scenario_directory,
+        weather_year=weather_year,
         hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
@@ -317,7 +320,7 @@ def load_model_data(
 
 
 def add_to_project_period_results(
-    scenario_directory, hydro_year, subproblem, stage, m, d
+    scenario_directory, weather_year, hydro_year, subproblem, stage, m, d
 ):
     """
     Export gen_ret_lin retirement results.
@@ -343,7 +346,12 @@ def add_to_project_period_results(
 
 
 def summarize_results(
-    scenario_directory, hydro_year, subproblem, stage, summary_results_file
+    scenario_directory,
+    weather_year,
+    hydro_year,
+    subproblem,
+    stage,
+    summary_results_file,
 ):
     """
     Summarize existing gen linear economic retirement capacity results.
@@ -357,6 +365,7 @@ def summarize_results(
     # Get the results CSV as dataframe
     capacity_results_agg_df = read_results_file_generic(
         scenario_directory=scenario_directory,
+        weather_year=weather_year,
         hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
@@ -402,7 +411,14 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_year,
+    hydro_year,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     Get inputs from database and write out the model input
@@ -423,6 +439,7 @@ def write_model_inputs(
     # rows to it
     spec_write_tab_file(
         scenario_directory=scenario_directory,
+        weather_year=weather_year,
         hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,

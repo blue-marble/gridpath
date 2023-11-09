@@ -158,6 +158,7 @@ def generic_load_model_data(
     d,
     data_portal,
     scenario_directory,
+    weather_year,
     hydro_year,
     subproblem,
     stage,
@@ -187,7 +188,7 @@ def generic_load_model_data(
     :return:
     """
     input_dir = os.path.join(
-        scenario_directory, str(hydro_year), str(subproblem), str(stage), "inputs"
+        scenario_directory, weather_year, hydro_year, subproblem, stage, "inputs"
     )
 
     # Load by-tmp requriement if input file was written
@@ -373,6 +374,7 @@ def generic_get_inputs_from_database(
 
 def generic_write_model_inputs(
     scenario_directory,
+    weather_year,
     hydro_year,
     subproblem,
     stage,
@@ -396,7 +398,7 @@ def generic_write_model_inputs(
     :return:
     """
     inputs_dir = os.path.join(
-        scenario_directory, str(hydro_year), str(subproblem), str(stage), "inputs"
+        scenario_directory, weather_year, hydro_year, subproblem, stage, "inputs"
     )
 
     # Write the by-timepoint requirement file if by-tmp requirement specified

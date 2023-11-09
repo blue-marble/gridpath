@@ -90,6 +90,7 @@ def generic_add_model_components(
 
 def generic_export_results(
     scenario_directory,
+    weather_year,
     hydro_year,
     subproblem,
     stage,
@@ -126,9 +127,10 @@ def generic_export_results(
     with open(
         os.path.join(
             scenario_directory,
-            str(hydro_year),
-            str(subproblem),
-            str(stage),
+            weather_year,
+            hydro_year,
+            subproblem,
+            stage,
             "results",
             f"system_{reserve_type}.csv",
         ),

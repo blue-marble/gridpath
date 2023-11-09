@@ -51,7 +51,9 @@ from gridpath.common_functions import create_results_df
 import gridpath.project.operations.operational_types.gen_commit_unit_common as gen_commit_unit_common
 
 
-def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
+def add_model_components(
+    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+):
     """
     See the formulation documentation in the
     gen_commit_unit_common.add_model_components().
@@ -61,6 +63,7 @@ def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage
         m=m,
         d=d,
         scenario_directory=scenario_directory,
+        weather_year=weather_year,
         hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
@@ -212,7 +215,7 @@ def operational_violation_cost_rule(mod, g, tmp):
 
 
 def load_model_data(
-    mod, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+    mod, d, data_portal, scenario_directory, weather_year, hydro_year, subproblem, stage
 ):
     """
     :param mod:
@@ -228,6 +231,7 @@ def load_model_data(
         d=d,
         data_portal=data_portal,
         scenario_directory=scenario_directory,
+        weather_year=weather_year,
         hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
@@ -277,7 +281,9 @@ def add_to_prj_tmp_results(mod):
     return results_columns, optype_dispatch_df
 
 
-def export_results(mod, d, scenario_directory, hydro_year, subproblem, stage):
+def export_results(
+    mod, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+):
     """
     :param scenario_directory:
     :param subproblem:
@@ -290,6 +296,7 @@ def export_results(mod, d, scenario_directory, hydro_year, subproblem, stage):
         mod=mod,
         d=d,
         scenario_directory=scenario_directory,
+        weather_year=weather_year,
         hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
@@ -300,7 +307,13 @@ def export_results(mod, d, scenario_directory, hydro_year, subproblem, stage):
 
 
 def save_duals(
-    scenario_directory, hydro_year, subproblem, stage, instance, dynamic_components
+    scenario_directory,
+    weather_year,
+    hydro_year,
+    subproblem,
+    stage,
+    instance,
+    dynamic_components,
 ):
     gen_commit_unit_common.save_duals(instance, "Bin")
 

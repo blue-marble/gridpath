@@ -109,6 +109,107 @@ class ScenarioStructure(object):
         # This should be subproblem: [1] when a single stage in the subproblem
         self.SUBPROBLEM_STAGES = stages_by_subproblem
 
+        # If any subproblem's stage list is non-empty, we have stages, so set
+        # the MULTI_STAGE flag to True to pass to determine_modules
+        # This tells the determine_modules function to include the
+        # stages-related modules
+        self.MULTI_STAGE = any(
+            [
+                len(self.SUBPROBLEM_STAGES[subp]) > 1
+                for subp in list(self.SUBPROBLEM_STAGES.keys())
+            ]
+        )
+
+
+class ScenarioDirectoryStructure(object):
+    def __init__(self, scenario_structure):
+        self.WEATHER_YEAR_HYDRO_YEAR_DIRECTORIES = (
+            determine_weather_year_hydro_year_directory_structure(scenario_structure)
+        )
+        self.SUBPROBLEM_STAGE_DIRECTORIES = (
+            determine_subproblem_stage_directory_structure(scenario_structure)
+        )
+
+
+def determine_weather_year_hydro_year_directory_structure(scenario_structure):
+    """
+    Determine whether we will have iteration (weather, hydro year),
+    We write the subdirectories if we have multiple items at that level
+    """
+    weather_year_hydro_year_directory_strings = {}
+    if len(scenario_structure.WEATHER_YEAR_HYDRO_YEARS.keys()) == 0:
+        weather_year_hydro_year_directory_strings[""] = ""
+
+    else:
+        if len(scenario_structure.WEATHER_YEAR_HYDRO_YEARS.keys()) == 1:
+            make_weather_year_dirs = False
+        else:
+            make_weather_year_dirs = True
+        for weather_year in scenario_structure.WEATHER_YEAR_HYDRO_YEARS.keys():
+            weather_year_str = (
+                f"weather_year_{weather_year}" if make_weather_year_dirs else ""
+            )
+            # Determine whether we will have hydro iterations
+            # Hydro years first
+            if len(scenario_structure.WEATHER_YEAR_HYDRO_YEARS[weather_year]) > 1:
+                make_hydro_year_dirs = True
+            else:
+                make_hydro_year_dirs = False
+            weather_year_hydro_year_directory_strings[weather_year_str] = []
+            for hydro_year in scenario_structure.WEATHER_YEAR_HYDRO_YEARS[weather_year]:
+                hydro_year_str = (
+                    f"hydro_year_{hydro_year}" if make_hydro_year_dirs else ""
+                )
+                weather_year_hydro_year_directory_strings[weather_year_str].append(
+                    hydro_year_str
+                )
+    return weather_year_hydro_year_directory_strings
+
+
+def determine_subproblem_stage_directory_structure(scenario_structure):
+    """
+    The subproblem structure is the same within each iteration
+    If we only have a single subproblem AND it does not have stages, set the
+    subproblem_string to an empty string (the subproblem directory should not
+    have been created)
+    If we have multiple subproblems or a single subproblems with stages,
+    we're expecting a subproblem directory
+    """
+    subproblem_stage_directory_strings = {}
+
+    if (
+        len(scenario_structure.SUBPROBLEM_STAGES) <= 1
+        and scenario_structure.MULTI_STAGE is False
+    ):
+        make_subproblem_directories = False
+    else:
+        make_subproblem_directories = True
+
+    for subproblem in scenario_structure.SUBPROBLEM_STAGES.keys():
+        # If there are subproblems/stages, input directory will be nested
+        if make_subproblem_directories:
+            subproblem_str = str(subproblem)
+        else:
+            subproblem_str = ""
+
+        subproblem_stage_directory_strings[subproblem_str] = []
+
+        stages = scenario_structure.SUBPROBLEM_STAGES[subproblem]
+        if len(stages) == 1:
+            make_stage_directories = False
+        else:
+            make_stage_directories = True
+
+        for stage in stages:
+            if make_stage_directories:
+                stage_str = str(stage)
+            else:
+                stage_str = ""
+
+            subproblem_stage_directory_strings[subproblem_str].append(stage_str)
+
+    return subproblem_stage_directory_strings
+
 
 def get_scenario_structure_from_db(conn, scenario_id):
     """
@@ -195,8 +296,6 @@ def get_scenario_structure_from_disk(scenario_directory):
         main_directory=scenario_directory, starting_string="weather_year"
     )
 
-    weather_years = [d.replace("weather_year_", "") for d in weather_directories]
-
     if not weather_directories:
         (
             hydro_years,
@@ -246,7 +345,7 @@ def check_for_hydro_year_directories(starting_directory):
 def check_subproblem_structure(subproblem_main_directory):
     # Convert to integers
     subproblem_directories = [
-        int(i) for i in check_for_integer_subdirectories(subproblem_main_directory)
+        str(i) for i in check_for_integer_subdirectories(subproblem_main_directory)
     ]
 
     # Make dictionary for the stages by subproblem, starting with empty
@@ -257,9 +356,9 @@ def check_subproblem_structure(subproblem_main_directory):
     # subproblem directory
     if subproblem_directories:
         for subproblem in subproblem_directories:
-            subproblem_dir = os.path.join(subproblem_main_directory, str(subproblem))
+            subproblem_dir = os.path.join(subproblem_main_directory, subproblem)
             # Convert to integers
-            stages = [int(i) for i in check_for_integer_subdirectories(subproblem_dir)]
+            stages = [str(i) for i in check_for_integer_subdirectories(subproblem_dir)]
             if stages:
                 stages_by_subproblem[subproblem] = stages
             else:

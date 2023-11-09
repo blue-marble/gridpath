@@ -19,7 +19,9 @@ from gridpath.auxiliary.db_interface import import_csv
 CARBON_CREDITS_ZONE_PRD_DF = "carbon_credits_zone_period_df"
 
 
-def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
+def export_results(
+    scenario_directory, weather_year, hydro_year, subproblem, stage, m, d
+):
     """ """
     # First create the results dataframes
     # Other modules will update these dataframe with actual results

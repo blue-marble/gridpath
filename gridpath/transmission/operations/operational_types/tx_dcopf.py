@@ -61,7 +61,9 @@ from gridpath.auxiliary.auxiliary import (
 )
 
 
-def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
+def add_model_components(
+    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+):
     """
     The following Pyomo model components are defined in this module:
 
@@ -517,7 +519,7 @@ def transmit_power_losses_lz_to_rule(mod, line, tmp):
 
 
 def load_model_data(
-    m, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+    m, d, data_portal, scenario_directory, weather_year, hydro_year, subproblem, stage
 ):
     """
 
@@ -533,9 +535,10 @@ def load_model_data(
     df = pd.read_csv(
         os.path.join(
             scenario_directory,
-            str(hydro_year),
-            str(subproblem),
-            str(stage),
+            weather_year,
+            hydro_year,
+            subproblem,
+            stage,
             "inputs",
             "transmission_lines.tab",
         ),

@@ -44,6 +44,7 @@ from gridpath.auxiliary.scenario_chars import (
     SubScenarios,
     get_scenario_structure_from_db,
     SolverOptions,
+    ScenarioDirectoryStructure,
 )
 
 
@@ -82,78 +83,13 @@ def write_model_inputs(
 
     # Determine whether we will have iteration (weather, hydro year),
     # and subproblem and stage directories
-    # We write the subdirectories if we have multiple items at that level
-    weather_year_hydro_year_directory_strings = {}
-    if len(scenario_structure.WEATHER_YEAR_HYDRO_YEARS.keys()) == 0:
-        weather_year_hydro_year_directory_strings[""] = ""
-
-    else:
-        if len(scenario_structure.WEATHER_YEAR_HYDRO_YEARS.keys()) == 1:
-            make_weather_year_dirs = False
-        else:
-            make_weather_year_dirs = True
-        for weather_year in scenario_structure.WEATHER_YEAR_HYDRO_YEARS.keys():
-            weather_year_str = (
-                f"weather_year_{weather_year}" if make_weather_year_dirs else ""
-            )
-            # Determine whether we will have hydro iterations
-            # Hydro years first
-            if len(
-                scenario_structure.WEATHER_YEAR_HYDRO_YEARS[weather_year]
-            ) > 1:
-                make_hydro_year_dirs = True
-            else:
-                make_hydro_year_dirs = False
-            weather_year_hydro_year_directory_strings[weather_year_str] = []
-            for hydro_year in scenario_structure.WEATHER_YEAR_HYDRO_YEARS[weather_year]:
-                hydro_year_str = (
-                    f"hydro_year_{hydro_year}" if make_hydro_year_dirs else ""
-                )
-                weather_year_hydro_year_directory_strings[weather_year_str].append(
-                    hydro_year_str
-                )
-
-    # Subproblem structure is the same within each iteration
-    # If any subproblem's stage list is non-empty, we have stages, so set
-    # the stages_flag to True to pass to determine_modules below
-    # In addition to knowing to make the stage directories, this tells the
-    # determine_modules function to include the stages-related modules
-    subproblem_stage_directory_strings = {}
-
-    multi_stage = any(
-        [
-            len(scenario_structure.SUBPROBLEM_STAGES[subp]) > 1
-            for subp in list(scenario_structure.SUBPROBLEM_STAGES.keys())
-        ]
-    )
-    if len(scenario_structure.SUBPROBLEM_STAGES) <= 1 and multi_stage is False:
-        make_subproblem_directories = False
-    else:
-        make_subproblem_directories = True
-
-    for subproblem in scenario_structure.SUBPROBLEM_STAGES.keys():
-        # First make inputs directory if needed
-        # If there are subproblems/stages, input directory will be nested
-        if make_subproblem_directories:
-            subproblem_str = str(subproblem)
-        else:
-            subproblem_str = ""
-
-        subproblem_stage_directory_strings[subproblem_str] = []
-
-        stages = scenario_structure.SUBPROBLEM_STAGES[subproblem]
-        if len(stages) == 1:
-            make_stage_directories = False
-        else:
-            make_stage_directories = True
-
-        for stage in stages:
-            if make_stage_directories:
-                stage_str = str(stage)
-            else:
-                stage_str = ""
-
-            subproblem_stage_directory_strings[subproblem_str].append(stage_str)
+    # The subproblem structure is the same within each iteration
+    weather_year_hydro_year_directory_strings = ScenarioDirectoryStructure(
+        scenario_structure
+    ).WEATHER_YEAR_HYDRO_YEAR_DIRECTORIES
+    subproblem_stage_directory_strings = ScenarioDirectoryStructure(
+        scenario_structure
+    ).SUBPROBLEM_STAGE_DIRECTORIES
 
     # Do a few checks on parallelization request
     if n_parallel_subproblems < 1:
@@ -228,7 +164,6 @@ def write_inputs(
 ):
     loaded_modules = load_modules(modules_to_use=modules_to_use)
 
-    print(weather_year_str, hydro_year_str, subproblem_str, stage_str)
     inputs_directory = os.path.join(
         scenario_directory,
         weather_year_str,
@@ -515,19 +450,11 @@ def main(args=None):
     # Determine requested features and use this to determine what modules to
     # load for Gridpath
     feature_list = optional_features.get_active_features()
-    # If any subproblem's stage list is non-empty, we have stages, so set
-    # the stages_flag to True to pass to determine_modules below
-    # This tells the determine_modules function to include the
-    # stages-related modules
-    stages_flag = any(
-        [
-            len(scenario_structure.SUBPROBLEM_STAGES[subp]) > 1
-            for subp in list(scenario_structure.SUBPROBLEM_STAGES.keys())
-        ]
-    )
 
     # Figure out which modules to use and load the modules
-    modules_to_use = determine_modules(features=feature_list, multi_stage=stages_flag)
+    modules_to_use = determine_modules(
+        features=feature_list, multi_stage=scenario_structure.MULTI_STAGE
+    )
 
     # Get appropriate inputs from database and write the .tab file model inputs
     write_model_inputs(

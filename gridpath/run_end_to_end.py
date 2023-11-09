@@ -280,6 +280,7 @@ def main(args=None):
     if parsed_args.log:
         logs_directory = create_logs_directory_if_not_exists(
             scenario_directory=scenario_directory,
+            weather_year="",
             hydro_year="",
             subproblem="",
             stage="",

@@ -30,7 +30,9 @@ from gridpath.transmission.capacity.common_functions import (
 )
 
 
-def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
+def add_model_components(
+    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+):
     """
     The following Pyomo model components are defined in this module:
 
@@ -124,6 +126,7 @@ def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage
     # Import needed capacity type modules
     required_tx_capacity_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        weather_year=weather_year,
         hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
@@ -196,7 +199,7 @@ def new_capacity_min_rule(mod, grp, prd):
 
 
 def load_model_data(
-    m, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+    m, d, data_portal, scenario_directory, weather_year, hydro_year, subproblem, stage
 ):
     """ """
     # Only load data if the input files were written; otherwise, we won't
@@ -236,10 +239,13 @@ def load_model_data(
         data_portal.data()["TX_IN_TX_CAPACITY_GROUP"] = tx_groups_dict
 
 
-def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
+def export_results(
+    scenario_directory, weather_year, hydro_year, subproblem, stage, m, d
+):
     """ """
     req_file = os.path.join(
         scenario_directory,
+        weather_year,
         hydro_year,
         subproblem,
         stage,
@@ -259,9 +265,10 @@ def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
         with open(
             os.path.join(
                 scenario_directory,
-                str(hydro_year),
-                str(subproblem),
-                str(stage),
+                weather_year,
+                hydro_year,
+                subproblem,
+                stage,
                 "results",
                 "transmission_group_capacity.csv",
             ),
@@ -330,7 +337,14 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_year,
+    hydro_year,
+    subproblem,
+    stage,
+    conn,
 ):
     """ """
     cap_grp_reqs, cap_grp_tx = get_inputs_from_database(
@@ -342,9 +356,10 @@ def write_model_inputs(
         with open(
             os.path.join(
                 scenario_directory,
-                str(hydro_year),
-                str(subproblem),
-                str(stage),
+                weather_year,
+                hydro_year,
+                subproblem,
+                stage,
                 "inputs",
                 "transmission_capacity_group_requirements.tab",
             ),
@@ -371,9 +386,10 @@ def write_model_inputs(
         with open(
             os.path.join(
                 scenario_directory,
-                str(hydro_year),
-                str(subproblem),
-                str(stage),
+                weather_year,
+                hydro_year,
+                subproblem,
+                stage,
                 "inputs",
                 "transmission_capacity_group_transmission_lines.tab",
             ),
@@ -390,7 +406,13 @@ def write_model_inputs(
 
 
 def save_duals(
-    scenario_directory, hydro_year, subproblem, stage, instance, dynamic_components
+    scenario_directory,
+    weather_year,
+    hydro_year,
+    subproblem,
+    stage,
+    instance,
+    dynamic_components,
 ):
     instance.constraint_indices["Max_Tx_Group_Build_in_Period_Constraint"] = [
         "capacity_group",
@@ -413,9 +435,9 @@ def import_results_into_database(
     if os.path.exists(
         os.path.join(
             results_directory,
-            str(hydro_year),
-            str(subproblem),
-            str(stage),
+            hydro_year,
+            subproblem,
+            stage,
             "results",
             f"{which_results}.csv",
         )

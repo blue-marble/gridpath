@@ -34,7 +34,9 @@ from gridpath.auxiliary.dynamic_components import tx_capacity_type_financial_per
 import gridpath.transmission.capacity.capacity_types as tx_cap_type_init
 
 
-def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
+def add_model_components(
+    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+):
     """
     Before adding any components, this module will go through each relevant
     capacity type and add the module components for that capacity type.
@@ -94,9 +96,10 @@ def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage
     df = pd.read_csv(
         os.path.join(
             scenario_directory,
-            str(hydro_year),
-            str(subproblem),
-            str(stage),
+            weather_year,
+            hydro_year,
+            subproblem,
+            stage,
             "inputs",
             "transmission_lines.tab",
         ),
@@ -178,7 +181,7 @@ def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage
 
 
 def load_model_data(
-    m, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+    m, d, data_portal, scenario_directory, weather_year, hydro_year, subproblem, stage
 ):
     """
 
@@ -193,9 +196,10 @@ def load_model_data(
     df = pd.read_csv(
         os.path.join(
             scenario_directory,
-            str(hydro_year),
-            str(subproblem),
-            str(stage),
+            weather_year,
+            hydro_year,
+            subproblem,
+            stage,
             "inputs",
             "transmission_lines.tab",
         ),
@@ -216,11 +220,20 @@ def load_model_data(
     for op_m in required_tx_capacity_modules:
         if hasattr(imported_tx_capacity_modules[op_m], "load_model_data"):
             imported_tx_capacity_modules[op_m].load_model_data(
-                m, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+                m,
+                d,
+                data_portal,
+                scenario_directory,
+                weather_year,
+                hydro_year,
+                subproblem,
+                stage,
             )
 
 
-def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
+def export_results(
+    scenario_directory, weather_year, hydro_year, subproblem, stage, m, d
+):
     """
 
     :param scenario_directory:
@@ -281,16 +294,23 @@ def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
 
 
 def save_duals(
-    scenario_directory, hydro_year, subproblem, stage, instance, dynamic_components
+    scenario_directory,
+    weather_year,
+    hydro_year,
+    subproblem,
+    stage,
+    instance,
+    dynamic_components,
 ):
     # Save module-specific duals
     # Capacity type modules
     df = pd.read_csv(
         os.path.join(
             scenario_directory,
-            str(hydro_year),
-            str(subproblem),
-            str(stage),
+            weather_year,
+            hydro_year,
+            subproblem,
+            stage,
             "inputs",
             "transmission_lines.tab",
         ),
@@ -312,6 +332,7 @@ def save_duals(
         if hasattr(imported_tx_capacity_modules[op_m], "save_duals"):
             imported_tx_capacity_modules[op_m].save_duals(
                 scenario_directory,
+                weather_year,
                 hydro_year,
                 subproblem,
                 stage,

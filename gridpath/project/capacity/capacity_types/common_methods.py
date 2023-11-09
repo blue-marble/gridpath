@@ -191,13 +191,14 @@ def spec_get_inputs_from_database(conn, subscenarios, capacity_type):
 
 
 def spec_write_tab_file(
-    scenario_directory, hydro_year, subproblem, stage, spec_project_params
+    scenario_directory, weather_year, hydro_year, subproblem, stage, spec_project_params
 ):
     spec_params_filepath = os.path.join(
         scenario_directory,
-        str(hydro_year),
-        str(subproblem),
-        str(stage),
+        weather_year,
+        hydro_year,
+        subproblem,
+        stage,
         "inputs",
         "spec_capacity_period_params.tab",
     )
@@ -285,7 +286,7 @@ def write_from_query(spec_project_params, writer):
 
 
 def spec_determine_inputs(
-    scenario_directory, hydro_year, subproblem, stage, capacity_type
+    scenario_directory, weather_year, hydro_year, subproblem, stage, capacity_type
 ):
     # Determine the relevant projects
     project_list = list()
@@ -293,9 +294,10 @@ def spec_determine_inputs(
     df = pd.read_csv(
         os.path.join(
             scenario_directory,
-            str(hydro_year),
-            str(subproblem),
-            str(stage),
+            weather_year,
+            hydro_year,
+            subproblem,
+            stage,
             "inputs",
             "projects.tab",
         ),
@@ -327,9 +329,10 @@ def spec_determine_inputs(
     df = pd.read_csv(
         os.path.join(
             scenario_directory,
-            str(hydro_year),
-            str(subproblem),
-            str(stage),
+            weather_year,
+            hydro_year,
+            subproblem,
+            stage,
             "inputs",
             "spec_capacity_period_params.tab",
         ),
@@ -408,7 +411,7 @@ def spec_determine_inputs(
 
 
 def read_results_file_generic(
-    scenario_directory, hydro_year, subproblem, stage, capacity_type
+    scenario_directory, weather_year, hydro_year, subproblem, stage, capacity_type
 ):
     """
     :param scenario_directory:
@@ -422,9 +425,9 @@ def read_results_file_generic(
     df = pd.read_csv(
         os.path.join(
             scenario_directory,
-            str(hydro_year),
-            str(subproblem),
-            str(stage),
+            hydro_year,
+            subproblem,
+            stage,
             "results",
             "project_period.csv",
         )

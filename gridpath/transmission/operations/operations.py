@@ -31,7 +31,9 @@ from gridpath.transmission.operations.common_functions import (
 from gridpath.transmission import TX_TIMEPOINT_DF
 
 
-def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
+def add_model_components(
+    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+):
     """
     The following Pyomo model components are defined in this module:
 
@@ -67,6 +69,7 @@ def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage
 
     required_operational_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        weather_year=weather_year,
         hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
@@ -118,7 +121,9 @@ def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage
 ###############################################################################
 
 
-def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
+def export_results(
+    scenario_directory, weather_year, hydro_year, subproblem, stage, m, d
+):
     """
     Export operations results.
     :param scenario_directory:
@@ -158,6 +163,7 @@ def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
 
     required_operational_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        weather_year=weather_year,
         hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,

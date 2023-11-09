@@ -20,7 +20,9 @@ from gridpath.system.reserves.requirement.reserve_requirements import (
 )
 
 
-def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
+def add_model_components(
+    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+):
     """
 
     :param m:
@@ -43,13 +45,14 @@ def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage
 
 
 def load_model_data(
-    m, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+    m, d, data_portal, scenario_directory, weather_year, hydro_year, subproblem, stage
 ):
     generic_load_model_data(
         m=m,
         d=d,
         data_portal=data_portal,
         scenario_directory=scenario_directory,
+        weather_year=weather_year,
         hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
@@ -99,7 +102,14 @@ def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, co
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_year,
+    hydro_year,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     Get inputs from database and write out the model input
@@ -118,6 +128,7 @@ def write_model_inputs(
 
     generic_write_model_inputs(
         scenario_directory=scenario_directory,
+        weather_year=weather_year,
         hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,

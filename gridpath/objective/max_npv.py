@@ -58,7 +58,9 @@ from gridpath.auxiliary.dynamic_components import cost_components, revenue_compo
 from gridpath.auxiliary.db_interface import setup_results_import
 
 
-def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
+def add_model_components(
+    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+):
     """
     :param m: the Pyomo abstract model object we are adding components to
     :param d: the DynamicComponents class object we will get components from
@@ -97,7 +99,9 @@ def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage
 ###############################################################################
 
 
-def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
+def export_results(
+    scenario_directory, weather_year, hydro_year, subproblem, stage, m, d
+):
     """
     Export objective function cost components
     :param scenario_directory:
@@ -113,9 +117,10 @@ def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
     with open(
         os.path.join(
             scenario_directory,
-            str(hydro_year),
-            str(subproblem),
-            str(stage),
+            weather_year,
+            hydro_year,
+            subproblem,
+            stage,
             "results",
             "npv.csv",
         ),

@@ -17,7 +17,9 @@ import os.path
 from pyomo.environ import value
 
 
-def fix_variables(m, d, scenario_directory, hydro_year, subproblem, stage):
+def fix_variables(
+    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+):
     """
     Don't allow market participation if the final participation stage was before the
     current stage

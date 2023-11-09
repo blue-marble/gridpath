@@ -41,7 +41,9 @@ from gridpath.common_functions import create_results_df
 from gridpath.system.reliability.prm import PRM_ZONE_PRD_DF
 
 
-def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
+def add_model_components(
+    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+):
     """
     The following Pyomo model components are defined in this module:
 
@@ -257,7 +259,7 @@ def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage
 
 
 def load_model_data(
-    m, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+    m, d, data_portal, scenario_directory, weather_year, hydro_year, subproblem, stage
 ):
     """
 
@@ -273,8 +275,10 @@ def load_model_data(
     #  and rename file
     limits_tab_file = os.path.join(
         scenario_directory,
-        str(subproblem),
-        str(stage),
+        weather_year,
+        hydro_year,
+        subproblem,
+        stage,
         "inputs",
         "prm_capacity_transfer_params.tab",
     )
@@ -291,6 +295,7 @@ def load_model_data(
     data_portal.load(
         filename=os.path.join(
             scenario_directory,
+            weather_year,
             hydro_year,
             subproblem,
             stage,
@@ -355,7 +360,14 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_year,
+    hydro_year,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     Get inputs from database and write out the model input
@@ -377,9 +389,10 @@ def write_model_inputs(
         with open(
             os.path.join(
                 scenario_directory,
-                str(hydro_year),
-                str(subproblem),
-                str(stage),
+                weather_year,
+                hydro_year,
+                subproblem,
+                stage,
                 "inputs",
                 "prm_capacity_transfer_params.tab",
             ),
@@ -407,9 +420,10 @@ def write_model_inputs(
     with open(
         os.path.join(
             scenario_directory,
-            str(hydro_year),
-            str(subproblem),
-            str(stage),
+            weather_year,
+            hydro_year,
+            subproblem,
+            stage,
             "inputs",
             "prm_transmission_lines.tab",
         ),
@@ -434,7 +448,9 @@ def write_model_inputs(
             writer.writerow(replace_nulls)
 
 
-def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
+def export_results(
+    scenario_directory, weather_year, hydro_year, subproblem, stage, m, d
+):
     """
 
     :param scenario_directory:
@@ -472,9 +488,9 @@ def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
     with open(
         os.path.join(
             scenario_directory,
-            str(hydro_year),
-            str(subproblem),
-            str(stage),
+            hydro_year,
+            subproblem,
+            stage,
             "results",
             "capacity_contribution_transfers.csv",
         ),

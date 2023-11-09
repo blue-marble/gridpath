@@ -21,7 +21,9 @@ ENERGY_TARGET_ZONE_PRD_DF = "energy_target_zone_period_df"
 ENERGY_TARGET_ZONE_HRZ_DF = "energy_target_zone_horizon_df"
 
 
-def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
+def export_results(
+    scenario_directory, weather_year, hydro_year, subproblem, stage, m, d
+):
     """ """
     # First create the results dataframes
     # Other modules will update these dataframe with actual results
@@ -109,8 +111,8 @@ def import_results_into_database(
         if os.path.exists(
             os.path.join(
                 results_directory,
-                str(subproblem),
-                str(stage),
+                subproblem,
+                stage,
                 "results",
                 f"{which_results}.csv",
             )

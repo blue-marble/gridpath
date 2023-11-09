@@ -27,7 +27,9 @@ from gridpath.common_functions import create_results_df
 from gridpath.system.policy.performance_standard import PERFORMANCE_STANDARD_Z_PRD_DF
 
 
-def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
+def add_model_components(
+    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+):
     """ """
     m.PERFORMANCE_STANDARD_ZONES_CARBON_CREDITS_ZONES = Set(
         dimen=2, within=m.PERFORMANCE_STANDARD_ZONES * m.CARBON_CREDITS_ZONES
@@ -101,7 +103,14 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_year,
+    hydro_year,
+    subproblem,
+    stage,
+    conn,
 ):
     query_results = get_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn
@@ -111,8 +120,8 @@ def write_model_inputs(
     df = df.fillna(".")
     fpath = os.path.join(
         scenario_directory,
-        str(subproblem),
-        str(stage),
+        subproblem,
+        stage,
         "inputs",
         "performance_standard_zones_carbon_credits_zone_mapping.tab",
     )
@@ -121,7 +130,7 @@ def write_model_inputs(
 
 
 def load_model_data(
-    m, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+    m, d, data_portal, scenario_directory, weather_year, hydro_year, subproblem, stage
 ):
     """
 
@@ -135,8 +144,10 @@ def load_model_data(
     """
     map_file = os.path.join(
         scenario_directory,
-        str(subproblem),
-        str(stage),
+        weather_year,
+        hydro_year,
+        subproblem,
+        stage,
         "inputs",
         "performance_standard_zones_carbon_credits_zone_mapping.tab",
     )
@@ -147,7 +158,9 @@ def load_model_data(
         )
 
 
-def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
+def export_results(
+    scenario_directory, weather_year, hydro_year, subproblem, stage, m, d
+):
     """
 
     :param scenario_directory:

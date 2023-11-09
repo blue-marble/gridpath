@@ -26,7 +26,9 @@ import os.path
 from pyomo.environ import Set, Constraint
 
 
-def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
+def add_model_components(
+    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+):
     """
     The tables below list the Pyomo model components defined in the
     'gen_commit_bin' module followed below by the respective components
@@ -137,7 +139,7 @@ def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage
 
 
 def load_model_data(
-    mod, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+    mod, d, data_portal, scenario_directory, weather_year, hydro_year, subproblem, stage
 ):
     """
     :param mod:
@@ -150,8 +152,10 @@ def load_model_data(
     # Load any projects for cycle selection
     supplemental_firing_tab_file = os.path.join(
         scenario_directory,
-        str(subproblem),
-        str(stage),
+        weather_year,
+        hydro_year,
+        subproblem,
+        stage,
         "inputs",
         "supplemental_firing.tab",
     )

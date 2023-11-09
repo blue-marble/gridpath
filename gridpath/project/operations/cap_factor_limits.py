@@ -28,7 +28,9 @@ Infinity = float("inf")
 Negative_Infinity = float("-inf")
 
 
-def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
+def add_model_components(
+    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+):
     """
     The tables below list the Pyomo model components defined in the
     'gen_commit_bin' module followed below by the respective components
@@ -151,7 +153,7 @@ def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage
 
 
 def load_model_data(
-    m, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+    m, d, data_portal, scenario_directory, weather_year, hydro_year, subproblem, stage
 ):
     """
     :param mod:
@@ -163,8 +165,10 @@ def load_model_data(
     """
     input_file = os.path.join(
         scenario_directory,
-        str(subproblem),
-        str(stage),
+        weather_year,
+        hydro_year,
+        subproblem,
+        stage,
         "inputs",
         "cap_factor_limits.tab",
     )
@@ -180,12 +184,16 @@ def load_model_data(
         )
 
 
-def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
+def export_results(
+    scenario_directory, weather_year, hydro_year, subproblem, stage, m, d
+):
     """ """
     input_file = os.path.join(
         scenario_directory,
-        str(subproblem),
-        str(stage),
+        weather_year,
+        hydro_year,
+        subproblem,
+        stage,
         "inputs",
         "cap_factor_limits.tab",
     )
@@ -194,8 +202,8 @@ def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
         with open(
             os.path.join(
                 scenario_directory,
-                str(subproblem),
-                str(stage),
+                subproblem,
+                stage,
                 "results",
                 "project_cap_factor_limits.csv",
             ),
@@ -256,9 +264,9 @@ def import_results_into_database(
     if os.path.exists(
         os.path.join(
             results_directory,
-            str(hydro_year),
-            str(subproblem),
-            str(stage),
+            hydro_year,
+            subproblem,
+            stage,
             "results",
             f"{which_results}.csv",
         )

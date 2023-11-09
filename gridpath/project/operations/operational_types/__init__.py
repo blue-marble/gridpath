@@ -28,7 +28,9 @@ from gridpath.auxiliary.auxiliary import get_required_subtype_modules
 from gridpath.project.operations.common_functions import load_operational_type_modules
 
 
-def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
+def add_model_components(
+    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+):
     """
     +-------------------------------------------------------------------------+
     | Sets                                                                    |
@@ -45,6 +47,7 @@ def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage
     # Import needed operational modules
     required_operational_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        weather_year=weather_year,
         hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
@@ -60,7 +63,7 @@ def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage
         imp_op_m = imported_operational_modules[op_m]
         if hasattr(imp_op_m, "add_model_components"):
             imp_op_m.add_model_components(
-                m, d, scenario_directory, hydro_year, subproblem, stage
+                m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
             )
 
     # Combined sets from operational type module sets (used to limit cycle select and
@@ -79,7 +82,7 @@ def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage
 
 
 def load_model_data(
-    m, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+    m, d, data_portal, scenario_directory, weather_year, hydro_year, subproblem, stage
 ):
     """
 
@@ -94,6 +97,7 @@ def load_model_data(
     # Import needed operational modules
     required_operational_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        weather_year=weather_year,
         hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
@@ -108,11 +112,20 @@ def load_model_data(
     for op_m in required_operational_modules:
         if hasattr(imported_operational_modules[op_m], "load_model_data"):
             imported_operational_modules[op_m].load_model_data(
-                m, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+                m,
+                d,
+                data_portal,
+                scenario_directory,
+                weather_year,
+                hydro_year,
+                subproblem,
+                stage,
             )
 
 
-def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
+def export_results(
+    scenario_directory, weather_year, hydro_year, subproblem, stage, m, d
+):
     """
     Export operations results.
     :param scenario_directory:
@@ -129,6 +142,7 @@ def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
     # Operational type modules
     required_operational_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        weather_year=weather_year,
         hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
@@ -146,6 +160,7 @@ def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
                 m,
                 d,
                 scenario_directory,
+                weather_year,
                 hydro_year,
                 subproblem,
                 stage,
@@ -153,12 +168,19 @@ def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
 
 
 def save_duals(
-    scenario_directory, hydro_year, subproblem, stage, instance, dynamic_components
+    scenario_directory,
+    weather_year,
+    hydro_year,
+    subproblem,
+    stage,
+    instance,
+    dynamic_components,
 ):
     # Save module-specific duals
     # Operational type modules
     required_operational_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        weather_year=weather_year,
         hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
@@ -174,6 +196,7 @@ def save_duals(
         if hasattr(imported_operational_modules[op_m], "save_duals"):
             imported_operational_modules[op_m].save_duals(
                 scenario_directory,
+                weather_year,
                 hydro_year,
                 subproblem,
                 stage,
@@ -265,7 +288,14 @@ def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, co
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_year,
+    hydro_year,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     Get inputs from database and write out the model input .tab files
@@ -292,6 +322,7 @@ def write_model_inputs(
                 scenario_directory,
                 scenario_id,
                 subscenarios,
+                weather_year,
                 hydro_year,
                 subproblem,
                 stage,

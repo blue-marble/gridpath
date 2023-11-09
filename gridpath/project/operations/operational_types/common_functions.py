@@ -197,6 +197,7 @@ def determine_relevant_timepoints(mod, g, tmp, min_time):
 
 def get_optype_inputs_as_df(
     scenario_directory,
+    weather_year,
     hydro_year,
     subproblem,
     stage,
@@ -222,7 +223,13 @@ def get_optype_inputs_as_df(
     # Figure out which headers we have
     header = pd.read_csv(
         os.path.join(
-            scenario_directory, hydro_year, subproblem, stage, "inputs", "projects.tab"
+            scenario_directory,
+            weather_year,
+            hydro_year,
+            subproblem,
+            stage,
+            "inputs",
+            "projects.tab",
         ),
         sep="\t",
         header=None,
@@ -237,9 +244,10 @@ def get_optype_inputs_as_df(
     df = pd.read_csv(
         os.path.join(
             scenario_directory,
-            str(hydro_year),
-            str(subproblem),
-            str(stage),
+            weather_year,
+            hydro_year,
+            subproblem,
+            stage,
             "inputs",
             "projects.tab",
         ),
@@ -319,7 +327,14 @@ def get_types_dict():
 
 
 def load_optype_model_data(
-    mod, data_portal, scenario_directory, hydro_year, subproblem, stage, op_type
+    mod,
+    data_portal,
+    scenario_directory,
+    weather_year,
+    hydro_year,
+    subproblem,
+    stage,
+    op_type,
 ):
     """
 
@@ -342,6 +357,7 @@ def load_optype_model_data(
     # Load in the inputs dataframe for the op type module
     op_type_df = get_optype_inputs_as_df(
         scenario_directory=scenario_directory,
+        weather_year=weather_year,
         hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
@@ -382,7 +398,14 @@ def load_optype_model_data(
 
 
 def write_tab_file_model_inputs(
-    scenario_directory, hydro_year, subproblem, stage, fname, data, replace_nulls=False
+    scenario_directory,
+    weather_year,
+    hydro_year,
+    subproblem,
+    stage,
+    fname,
+    data,
+    replace_nulls=False,
 ):
     """
     Write inputs to tab-delimited file in appropriate directory
@@ -402,9 +425,9 @@ def write_tab_file_model_inputs(
 
     out_file = os.path.join(
         scenario_directory,
-        str(hydro_year),
-        str(subproblem),
-        str(stage),
+        hydro_year,
+        subproblem,
+        stage,
         "inputs",
         fname,
     )
@@ -429,7 +452,13 @@ def write_tab_file_model_inputs(
 
 
 def load_var_profile_inputs(
-    data_portal, scenario_directory, hydro_year, subproblem, stage, op_type
+    data_portal,
+    scenario_directory,
+    weather_year,
+    hydro_year,
+    subproblem,
+    stage,
+    op_type,
 ):
     """
     Capacity factors vary by horizon and stage, so get inputs from appropriate
@@ -451,7 +480,13 @@ def load_var_profile_inputs(
     # TODO: re-factor getting projects of certain op-type?
     prj_df = pd.read_csv(
         os.path.join(
-            scenario_directory, hydro_year, subproblem, stage, "inputs", "projects.tab"
+            scenario_directory,
+            weather_year,
+            hydro_year,
+            subproblem,
+            stage,
+            "inputs",
+            "projects.tab",
         ),
         sep="\t",
         usecols=["project", "operational_type"],
@@ -625,7 +660,14 @@ def validate_var_profiles(scenario_id, subscenarios, subproblem, stage, conn, op
 
 
 def load_hydro_opchars(
-    data_portal, scenario_directory, hydro_year, subproblem, stage, op_type, projects
+    data_portal,
+    scenario_directory,
+    weather_year,
+    hydro_year,
+    subproblem,
+    stage,
+    op_type,
+    projects,
 ):
     """
     Load hydro operational data from hydro-specific input files
@@ -648,9 +690,10 @@ def load_hydro_opchars(
     prj_hor_opchar_df = pd.read_csv(
         os.path.join(
             scenario_directory,
-            str(hydro_year),
-            str(subproblem),
-            str(stage),
+            weather_year,
+            hydro_year,
+            subproblem,
+            stage,
             "inputs",
             "hydro_conventional_horizon_params.tab",
         ),
@@ -934,7 +977,14 @@ def validate_hydro_opchars(
 
 
 def load_startup_chars(
-    data_portal, scenario_directory, hydro_year, subproblem, stage, op_type, projects
+    data_portal,
+    scenario_directory,
+    weather_year,
+    hydro_year,
+    subproblem,
+    stage,
+    op_type,
+    projects,
 ):
     """
 
@@ -949,9 +999,9 @@ def load_startup_chars(
 
     startup_chars_file = os.path.join(
         scenario_directory,
-        str(hydro_year),
-        str(subproblem),
-        str(stage),
+        hydro_year,
+        subproblem,
+        stage,
         "inputs",
         "startup_chars.tab",
     )

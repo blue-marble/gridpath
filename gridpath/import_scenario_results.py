@@ -108,20 +108,20 @@ def import_scenario_results_into_database(
                     results_directory = os.path.join(
                         scenario_directory,
                         hydro_year_str,
-                        str(subproblem),
-                        str(stage),
+                        subproblem,
+                        stage,
                         "results",
                     )
                     if not quiet:
-                        print("--- subproblem {}".format(str(subproblem)))
-                        print("--- stage {}".format(str(stage)))
+                        print("--- subproblem {}".format(subproblem))
+                        print("--- stage {}".format(stage))
                 # If no stages but more than one subproblem, we need a subproblem directory
                 elif len(subproblems_list) > 1:
                     results_directory = os.path.join(
-                        scenario_directory, hydro_year_str, str(subproblem), "results"
+                        scenario_directory, hydro_year_str, subproblem, "results"
                     )
                     if not quiet:
-                        print("--- subproblem {}".format(str(subproblem)))
+                        print("--- subproblem {}".format(subproblem))
                 # If single subproblem and single stage, we skip the subproblem and stage
                 # directories
                 else:

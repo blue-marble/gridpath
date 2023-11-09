@@ -38,7 +38,9 @@ from gridpath.project import PROJECT_PERIOD_DF
 import gridpath.project.capacity.capacity_types as cap_type_init
 
 
-def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
+def add_model_components(
+    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+):
     """
     First, we iterate over all required *capacity_types* modules (this is the
     set of distinct project capacity types in the list of projects specified
@@ -113,6 +115,7 @@ def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage
 
     required_capacity_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        weather_year=weather_year,
         hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
@@ -129,7 +132,7 @@ def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage
         imp_op_m = imported_capacity_modules[op_m]
         if hasattr(imp_op_m, "add_model_components"):
             imp_op_m.add_model_components(
-                m, d, scenario_directory, hydro_year, subproblem, stage
+                m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
             )
 
     # Sets
@@ -282,11 +285,12 @@ def operational_periods_by_project(prj, project_operational_periods):
 
 
 def load_model_data(
-    m, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+    m, d, data_portal, scenario_directory, weather_year, hydro_year, subproblem, stage
 ):
     """ """
     required_capacity_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        weather_year=weather_year,
         hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
@@ -300,12 +304,21 @@ def load_model_data(
     for op_m in required_capacity_modules:
         if hasattr(imported_capacity_modules[op_m], "load_model_data"):
             imported_capacity_modules[op_m].load_model_data(
-                m, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+                m,
+                d,
+                data_portal,
+                scenario_directory,
+                weather_year,
+                hydro_year,
+                subproblem,
+                stage,
             )
 
 
 # TODO: move this to gridpath.project.capacity.__init__?
-def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
+def export_results(
+    scenario_directory, weather_year, hydro_year, subproblem, stage, m, d
+):
     """
     Export capacity results.
     :param scenario_directory:
@@ -352,6 +365,7 @@ def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
     # Module-specific capacity results
     required_capacity_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        weather_year=weather_year,
         hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
@@ -367,7 +381,7 @@ def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
             results_columns, optype_df = imported_capacity_modules[
                 op_m
             ].add_to_project_period_results(
-                scenario_directory, hydro_year, subproblem, stage, m, d
+                scenario_directory, weather_year, hydro_year, subproblem, stage, m, d
             )
             for column in results_columns:
                 if column not in getattr(d, PROJECT_PERIOD_DF):
@@ -375,7 +389,7 @@ def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
             getattr(d, PROJECT_PERIOD_DF).update(optype_df)
 
 
-def summarize_results(scenario_directory, hydro_year, subproblem, stage):
+def summarize_results(scenario_directory, weather_year, hydro_year, subproblem, stage):
     """
     :param scenario_directory:
     :param subproblem:
@@ -405,9 +419,9 @@ def summarize_results(scenario_directory, hydro_year, subproblem, stage):
     capacity_results_df = pd.read_csv(
         os.path.join(
             scenario_directory,
-            str(hydro_year),
-            str(subproblem),
-            str(stage),
+            hydro_year,
+            subproblem,
+            stage,
             "results",
             "project_period.csv",
         )
@@ -415,6 +429,7 @@ def summarize_results(scenario_directory, hydro_year, subproblem, stage):
 
     required_capacity_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        weather_year=weather_year,
         hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
@@ -428,5 +443,10 @@ def summarize_results(scenario_directory, hydro_year, subproblem, stage):
     for op_m in required_capacity_modules:
         if hasattr(imported_capacity_modules[op_m], "summarize_results"):
             imported_capacity_modules[op_m].summarize_results(
-                scenario_directory, hydro_year, subproblem, stage, summary_results_file
+                scenario_directory,
+                weather_year,
+                hydro_year,
+                subproblem,
+                stage,
+                summary_results_file,
             )

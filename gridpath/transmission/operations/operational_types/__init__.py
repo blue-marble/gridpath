@@ -29,7 +29,9 @@ from gridpath.transmission.operations.common_functions import (
 # TODO: missing test for this module
 
 
-def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
+def add_model_components(
+    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+):
     """
     Go through each relevant operational type and add the module components
     for that operational type.
@@ -38,9 +40,10 @@ def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage
     df = pd.read_csv(
         os.path.join(
             scenario_directory,
-            str(hydro_year),
-            str(subproblem),
-            str(stage),
+            weather_year,
+            hydro_year,
+            subproblem,
+            stage,
             "inputs",
             "transmission_lines.tab",
         ),
@@ -59,7 +62,7 @@ def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage
         imp_op_m = imported_tx_operational_modules[op_m]
         if hasattr(imp_op_m, "add_model_components"):
             imp_op_m.add_model_components(
-                m, d, scenario_directory, hydro_year, subproblem, stage
+                m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
             )
 
 
@@ -68,7 +71,7 @@ def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage
 
 
 def load_model_data(
-    m, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+    m, d, data_portal, scenario_directory, weather_year, hydro_year, subproblem, stage
 ):
     """
     Go through each relevant operational type and add load the model data
@@ -86,9 +89,10 @@ def load_model_data(
     df = pd.read_csv(
         os.path.join(
             scenario_directory,
-            str(hydro_year),
-            str(subproblem),
-            str(stage),
+            weather_year,
+            hydro_year,
+            subproblem,
+            stage,
             "inputs",
             "transmission_lines.tab",
         ),
@@ -105,7 +109,14 @@ def load_model_data(
     for op_m in required_tx_operational_modules:
         if hasattr(imported_tx_operational_modules[op_m], "load_model_data"):
             imported_tx_operational_modules[op_m].load_model_data(
-                m, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+                m,
+                d,
+                data_portal,
+                scenario_directory,
+                weather_year,
+                hydro_year,
+                subproblem,
+                stage,
             )
 
 
@@ -171,7 +182,14 @@ def get_required_tx_opchar_modules(scenario_id, c):
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_year,
+    hydro_year,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     Go through each relevant operational type and write the model inputs
@@ -200,6 +218,7 @@ def write_model_inputs(
                 scenario_directory,
                 scenario_id,
                 subscenarios,
+                weather_year,
                 hydro_year,
                 subproblem,
                 stage,

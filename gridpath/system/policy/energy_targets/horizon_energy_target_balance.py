@@ -27,7 +27,9 @@ from gridpath.common_functions import create_results_df
 from gridpath.system.policy.energy_targets import ENERGY_TARGET_ZONE_HRZ_DF
 
 
-def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
+def add_model_components(
+    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+):
     """
 
     :param m:
@@ -70,7 +72,9 @@ def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage
     )
 
 
-def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
+def export_results(
+    scenario_directory, weather_year, hydro_year, subproblem, stage, m, d
+):
     """
 
     :param scenario_directory:
@@ -140,7 +144,13 @@ def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
 
 
 def save_duals(
-    scenario_directory, hydro_year, subproblem, stage, instance, dynamic_components
+    scenario_directory,
+    weather_year,
+    hydro_year,
+    subproblem,
+    stage,
+    instance,
+    dynamic_components,
 ):
     instance.constraint_indices["Horizon_Energy_Target_Constraint"] = [
         "energy_target_zone",
@@ -150,7 +160,7 @@ def save_duals(
     ]
 
 
-def summarize_results(scenario_directory, hydro_year, subproblem, stage):
+def summarize_results(scenario_directory, weather_year, hydro_year, subproblem, stage):
     """
     :param scenario_directory:
     :param subproblem:
@@ -180,9 +190,9 @@ def summarize_results(scenario_directory, hydro_year, subproblem, stage):
     results_df = pd.read_csv(
         os.path.join(
             scenario_directory,
-            str(hydro_year),
-            str(subproblem),
-            str(stage),
+            hydro_year,
+            subproblem,
+            stage,
             "results",
             "system_horizon_energy_target.csv",
         )

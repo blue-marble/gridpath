@@ -36,7 +36,9 @@ import gridpath.project.capacity.capacity_types as cap_type_init
 import gridpath.transmission.capacity.capacity_types as tx_cap_type_init
 
 
-def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
+def add_model_components(
+    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+):
     """
 
     :param m:
@@ -50,6 +52,7 @@ def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage
     # We'll need the project vintages financial in each period
     required_capacity_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        weather_year=weather_year,
         hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
@@ -275,7 +278,7 @@ def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage
 
 # ### Input-Output ### #
 def load_model_data(
-    m, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+    m, d, data_portal, scenario_directory, weather_year, hydro_year, subproblem, stage
 ):
     """ """
     # Only load data if the input files were written; otehrwise, we won't
@@ -283,6 +286,8 @@ def load_model_data(
 
     budgets_file = os.path.join(
         scenario_directory,
+        weather_year,
+        hydro_year,
         subproblem,
         stage,
         "inputs",
@@ -296,6 +301,7 @@ def load_model_data(
 
     prj_file = os.path.join(
         scenario_directory,
+        weather_year,
         hydro_year,
         subproblem,
         stage,
@@ -312,14 +318,17 @@ def load_model_data(
     )
 
 
-def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
+def export_results(
+    scenario_directory, weather_year, hydro_year, subproblem, stage, m, d
+):
     """ """
     with open(
         os.path.join(
             scenario_directory,
-            str(hydro_year),
-            str(subproblem),
-            str(stage),
+            weather_year,
+            hydro_year,
+            subproblem,
+            stage,
             "results",
             "subsidies.csv",
         ),
@@ -401,7 +410,14 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_year,
+    hydro_year,
+    subproblem,
+    stage,
+    conn,
 ):
     """ """
     program_budgets, project_subsidies = get_inputs_from_database(
@@ -411,9 +427,10 @@ def write_model_inputs(
     with open(
         os.path.join(
             scenario_directory,
-            str(hydro_year),
-            str(subproblem),
-            str(stage),
+            weather_year,
+            hydro_year,
+            subproblem,
+            stage,
             "inputs",
             "subsidies_program_budgets.tab",
         ),
@@ -438,9 +455,10 @@ def write_model_inputs(
     with open(
         os.path.join(
             scenario_directory,
-            str(hydro_year),
-            str(subproblem),
-            str(stage),
+            weather_year,
+            hydro_year,
+            subproblem,
+            stage,
             "inputs",
             "subsidies_projects.tab",
         ),

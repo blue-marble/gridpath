@@ -47,7 +47,9 @@ from gridpath.project.operations.operational_types.common_functions import (
 from gridpath.common_functions import create_results_df
 
 
-def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
+def add_model_components(
+    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+):
     """
     The following Pyomo model components are defined in this module:
 
@@ -494,7 +496,7 @@ def power_delta_rule(mod, g, tmp):
 
 
 def load_model_data(
-    mod, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+    mod, d, data_portal, scenario_directory, weather_year, hydro_year, subproblem, stage
 ):
     """
 
@@ -509,6 +511,7 @@ def load_model_data(
         mod=mod,
         data_portal=data_portal,
         scenario_directory=scenario_directory,
+        weather_year=weather_year,
         hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
@@ -534,8 +537,8 @@ def load_model_data(
     # Linked timepoint params
     linked_inputs_filename = os.path.join(
         scenario_directory,
-        str(subproblem),
-        str(stage),
+        subproblem,
+        stage,
         "inputs",
         "flex_load_linked_timepoint_params.tab",
     )
@@ -581,7 +584,9 @@ def add_to_prj_tmp_results(mod):
     return results_columns, optype_dispatch_df
 
 
-def export_results(mod, d, scenario_directory, hydro_year, subproblem, stage):
+def export_results(
+    mod, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+):
     """
 
     :param scenario_directory:
@@ -649,7 +654,14 @@ def export_results(mod, d, scenario_directory, hydro_year, subproblem, stage):
 
 # ### Database ### #
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_year,
+    hydro_year,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     Get inputs from database and write out the model input
@@ -702,7 +714,7 @@ def write_model_inputs(
     fname = "flex_load_profiles.tab"
 
     write_tab_file_model_inputs(
-        scenario_directory, hydro_year, subproblem, stage, fname, data
+        scenario_directory, weather_year, hydro_year, subproblem, stage, fname, data
     )
 
 

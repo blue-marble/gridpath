@@ -55,7 +55,9 @@ from gridpath.auxiliary.validations import (
 from gridpath.project.common_functions import append_to_input_file
 
 
-def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
+def add_model_components(
+    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+):
     """
      The following Pyomo model components are defined in this module:
 
@@ -477,10 +479,14 @@ def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage
     )
 
     # Start list of headroom and footroom variables by project
-    record_dynamic_components(d, scenario_directory, hydro_year, subproblem, stage)
+    record_dynamic_components(
+        d, scenario_directory, weather_year, hydro_year, subproblem, stage
+    )
 
 
-def record_dynamic_components(d, scenario_directory, hydro_year, subproblem, stage):
+def record_dynamic_components(
+    d, scenario_directory, weather_year, hydro_year, subproblem, stage
+):
     """
     :param d: the dynamic components class object we'll be adding to
     :param scenario_directory: the base scenario directory
@@ -503,9 +509,10 @@ def record_dynamic_components(d, scenario_directory, hydro_year, subproblem, sta
     project_df = pd.read_csv(
         os.path.join(
             scenario_directory,
-            str(hydro_year),
-            str(subproblem),
-            str(stage),
+            weather_year,
+            hydro_year,
+            subproblem,
+            stage,
             "inputs",
             "projects.tab",
         ),
@@ -527,7 +534,7 @@ def record_dynamic_components(d, scenario_directory, hydro_year, subproblem, sta
 
 
 def load_model_data(
-    m, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+    m, d, data_portal, scenario_directory, weather_year, hydro_year, subproblem, stage
 ):
     """
 
@@ -542,9 +549,10 @@ def load_model_data(
     data_portal.load(
         filename=os.path.join(
             scenario_directory,
-            str(hydro_year),
-            str(subproblem),
-            str(stage),
+            weather_year,
+            hydro_year,
+            subproblem,
+            stage,
             "inputs",
             "projects.tab",
         ),
@@ -581,9 +589,9 @@ def load_model_data(
 
     project_fuels_file = os.path.join(
         scenario_directory,
-        str(hydro_year),
-        str(subproblem),
-        str(stage),
+        hydro_year,
+        subproblem,
+        stage,
         "inputs",
         "project_fuels.tab",
     )
@@ -648,16 +656,16 @@ def load_model_data(
     # VOM curves
     vom_curves_file = os.path.join(
         scenario_directory,
-        str(subproblem),
-        str(stage),
+        subproblem,
+        stage,
         "inputs",
         "variable_om_curves.tab",
     )
     periods_file = os.path.join(
         scenario_directory,
-        str(hydro_year),
-        str(subproblem),
-        str(stage),
+        hydro_year,
+        subproblem,
+        stage,
         "inputs",
         "periods.tab",
     )
@@ -683,9 +691,9 @@ def load_model_data(
     # Startup chars
     startup_chars_file = os.path.join(
         scenario_directory,
-        str(hydro_year),
-        str(subproblem),
-        str(stage),
+        hydro_year,
+        subproblem,
+        stage,
         "inputs",
         "startup_chars.tab",
     )
@@ -718,24 +726,24 @@ def load_model_data(
     # HR curves
     hr_curves_file = os.path.join(
         scenario_directory,
-        str(subproblem),
-        str(stage),
+        subproblem,
+        stage,
         "inputs",
         "heat_rate_curves.tab",
     )
     periods_file = os.path.join(
         scenario_directory,
-        str(hydro_year),
-        str(subproblem),
-        str(stage),
+        hydro_year,
+        subproblem,
+        stage,
         "inputs",
         "periods.tab",
     )
     project_fuels_file = os.path.join(
         scenario_directory,
-        str(hydro_year),
-        str(subproblem),
-        str(stage),
+        hydro_year,
+        subproblem,
+        stage,
         "inputs",
         "project_fuels.tab",
     )
@@ -1008,7 +1016,14 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_year,
+    hydro_year,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     Get inputs from database and write out the model inputs
@@ -1031,7 +1046,7 @@ def write_model_inputs(
     ) = get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
     inputs_directory = os.path.join(
-        scenario_directory, str(hydro_year), str(subproblem), str(stage), "inputs"
+        scenario_directory, hydro_year, subproblem, stage, "inputs"
     )
 
     # Update the projects.tab file

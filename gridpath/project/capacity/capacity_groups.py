@@ -29,7 +29,9 @@ from gridpath.auxiliary.db_interface import import_csv
 import gridpath.project.capacity.capacity_types as cap_type_init
 
 
-def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
+def add_model_components(
+    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+):
     """
     The following Pyomo model components are defined in this module:
 
@@ -157,6 +159,7 @@ def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage
     # Import needed capacity type modules
     required_capacity_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        weather_year=weather_year,
         hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
@@ -278,7 +281,7 @@ def total_capacity_min_rule(mod, grp, prd):
 
 
 def load_model_data(
-    m, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+    m, d, data_portal, scenario_directory, weather_year, hydro_year, subproblem, stage
 ):
     """ """
     # Only load data if the input files were written; otehrwise, we won't
@@ -286,6 +289,8 @@ def load_model_data(
 
     req_file = os.path.join(
         scenario_directory,
+        weather_year,
+        hydro_year,
         subproblem,
         stage,
         "inputs",
@@ -305,6 +310,7 @@ def load_model_data(
 
     prj_file = os.path.join(
         scenario_directory,
+        weather_year,
         hydro_year,
         subproblem,
         stage,
@@ -320,10 +326,14 @@ def load_model_data(
         data_portal.data()["PROJECTS_IN_CAPACITY_GROUP"] = proj_groups_dict
 
 
-def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
+def export_results(
+    scenario_directory, weather_year, hydro_year, subproblem, stage, m, d
+):
     """ """
     req_file = os.path.join(
         scenario_directory,
+        weather_year,
+        hydro_year,
         subproblem,
         stage,
         "inputs",
@@ -331,6 +341,7 @@ def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
     )
     prj_file = os.path.join(
         scenario_directory,
+        weather_year,
         hydro_year,
         subproblem,
         stage,
@@ -342,8 +353,10 @@ def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
         with open(
             os.path.join(
                 scenario_directory,
-                str(subproblem),
-                str(stage),
+                weather_year,
+                hydro_year,
+                subproblem,
+                stage,
                 "results",
                 "project_group_capacity.csv",
             ),
@@ -534,7 +547,14 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_year,
+    hydro_year,
+    subproblem,
+    stage,
+    conn,
 ):
     """ """
     cap_grp_reqs, cap_grp_prj = get_inputs_from_database(
@@ -546,9 +566,10 @@ def write_model_inputs(
         with open(
             os.path.join(
                 scenario_directory,
-                str(hydro_year),
-                str(subproblem),
-                str(stage),
+                weather_year,
+                hydro_year,
+                subproblem,
+                stage,
                 "inputs",
                 "capacity_group_requirements.tab",
             ),
@@ -577,9 +598,10 @@ def write_model_inputs(
         with open(
             os.path.join(
                 scenario_directory,
-                str(hydro_year),
-                str(subproblem),
-                str(stage),
+                weather_year,
+                hydro_year,
+                subproblem,
+                stage,
                 "inputs",
                 "capacity_group_projects.tab",
             ),
@@ -596,7 +618,13 @@ def write_model_inputs(
 
 
 def save_duals(
-    scenario_directory, hydro_year, subproblem, stage, instance, dynamic_components
+    scenario_directory,
+    weather_year,
+    hydro_year,
+    subproblem,
+    stage,
+    instance,
+    dynamic_components,
 ):
     instance.constraint_indices["Max_Group_Build_in_Period_Constraint"] = [
         "capacity_group",

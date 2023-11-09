@@ -25,7 +25,9 @@ from gridpath.project.reliability.prm.common_functions import load_prm_type_modu
 
 # TODO: rename to deliverability types; the PRM types are really 'simple'
 #  and 'elcc surface'
-def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
+def add_model_components(
+    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+):
     """
 
     :param m:
@@ -36,9 +38,10 @@ def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage
     project_df = pd.read_csv(
         os.path.join(
             scenario_directory,
-            str(hydro_year),
-            str(subproblem),
-            str(stage),
+            weather_year,
+            hydro_year,
+            subproblem,
+            stage,
             "inputs",
             "projects.tab",
         ),
@@ -56,7 +59,7 @@ def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage
         imp_prm_m = imported_prm_modules[prm_m]
         if hasattr(imp_prm_m, "add_model_components"):
             imp_prm_m.add_model_components(
-                m, d, scenario_directory, hydro_year, subproblem, stage
+                m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
             )
 
     # For each PRM project, get the ELCC-eligible capacity
@@ -72,7 +75,7 @@ def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage
 # TODO: refactor importing prm modules as it's used several places in this
 #  module
 def load_model_data(
-    m, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+    m, d, data_portal, scenario_directory, weather_year, hydro_year, subproblem, stage
 ):
     """
 
@@ -87,9 +90,10 @@ def load_model_data(
     project_df = pd.read_csv(
         os.path.join(
             scenario_directory,
-            str(hydro_year),
-            str(subproblem),
-            str(stage),
+            weather_year,
+            hydro_year,
+            subproblem,
+            stage,
             "inputs",
             "projects.tab",
         ),
@@ -105,11 +109,20 @@ def load_model_data(
     for prm_m in required_prm_modules:
         if hasattr(imported_prm_modules[prm_m], "load_model_data"):
             imported_prm_modules[prm_m].load_model_data(
-                m, d, data_portal, scenario_directory, hydro_year, subproblem, stage
+                m,
+                d,
+                data_portal,
+                scenario_directory,
+                weather_year,
+                hydro_year,
+                subproblem,
+                stage,
             )
 
 
-def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
+def export_results(
+    scenario_directory, weather_year, hydro_year, subproblem, stage, m, d
+):
     """
     Export operations results.
     :param scenario_directory:
@@ -128,9 +141,10 @@ def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
     project_df = pd.read_csv(
         os.path.join(
             scenario_directory,
-            str(hydro_year),
-            str(subproblem),
-            str(stage),
+            weather_year,
+            hydro_year,
+            subproblem,
+            stage,
             "inputs",
             "projects.tab",
         ),
@@ -149,6 +163,7 @@ def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
                 m,
                 d,
                 scenario_directory,
+                weather_year,
                 hydro_year,
                 subproblem,
                 stage,
@@ -230,7 +245,14 @@ def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, co
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_year,
+    hydro_year,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     Get inputs from database and write out the model input .tab files.

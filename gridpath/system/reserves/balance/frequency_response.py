@@ -12,9 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-import csv
-import os.path
 from pyomo.environ import Var, Constraint, NonNegativeReals
 
 from .reserve_balance import (
@@ -25,7 +22,9 @@ from .reserve_balance import (
 )
 
 
-def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage):
+def add_model_components(
+    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+):
     """
 
     :param m:
@@ -62,7 +61,9 @@ def add_model_components(m, d, scenario_directory, hydro_year, subproblem, stage
     )
 
 
-def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
+def export_results(
+    scenario_directory, weather_year, hydro_year, subproblem, stage, m, d
+):
     """
 
     :param scenario_directory:
@@ -74,6 +75,7 @@ def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
     """
     generic_export_results(
         scenario_directory=scenario_directory,
+        weather_year=weather_year,
         hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
@@ -86,6 +88,7 @@ def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
 
     generic_export_results(
         scenario_directory=scenario_directory,
+        weather_year=weather_year,
         hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
@@ -98,7 +101,13 @@ def export_results(scenario_directory, hydro_year, subproblem, stage, m, d):
 
 
 def save_duals(
-    scenario_directory, hydro_year, subproblem, stage, instance, dynamic_components
+    scenario_directory,
+    weather_year,
+    hydro_year,
+    subproblem,
+    stage,
+    instance,
+    dynamic_components,
 ):
     """
 
