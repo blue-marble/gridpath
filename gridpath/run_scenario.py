@@ -454,7 +454,6 @@ def run_scenario(
     :return: the objective function value (NPV); only used in
      'testing' mode.
     """
-    multi_stage = scenario_structure.MULTI_STAGE
     weather_year_hydro_year_directory_strings = ScenarioDirectoryStructure(
         scenario_structure
     ).WEATHER_YEAR_HYDRO_YEAR_DIRECTORIES
@@ -538,7 +537,7 @@ def run_scenario(
                             scenario_directory=scenario_directory,
                             weather_year_directory=weather_year_str,
                             hydro_year_directory=hydro_year_str,
-                            subproblem_str=subproblem_str,
+                            subproblem_directory=subproblem_str,
                             stage_directories=subproblem_stage_directory_strings[
                                 subproblem_str
                             ],

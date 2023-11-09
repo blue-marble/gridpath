@@ -138,7 +138,15 @@ def export_results(
 
 
 def import_results_into_database(
-    scenario_id, hydro_year, subproblem, stage, c, db, results_directory, quiet
+    scenario_id,
+    weather_year,
+    hydro_year,
+    subproblem,
+    stage,
+    c,
+    db,
+    results_directory,
+    quiet,
 ):
     """
     :param scenario_id:
@@ -158,6 +166,7 @@ def import_results_into_database(
         cursor=c,
         table="results_system_costs",
         scenario_id=scenario_id,
+        weather_year=weather_year,
         hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
@@ -165,6 +174,8 @@ def import_results_into_database(
 
     df = pd.read_csv(os.path.join(results_directory, "npv.csv"))
     df["scenario_id"] = scenario_id
+    df["weather_year"] = weather_year
+    df["hydro_year"] = hydro_year
     df["subproblem_id"] = subproblem
     df["stage_id"] = stage
     results = df.to_records(index=False)

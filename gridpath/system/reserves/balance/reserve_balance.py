@@ -214,6 +214,7 @@ def generic_import_results_to_database(
         conn=db,
         cursor=c,
         scenario_id=scenario_id,
+        weather_year=weather_year,
         hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,

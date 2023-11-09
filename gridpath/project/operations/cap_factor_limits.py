@@ -249,7 +249,15 @@ def export_results(
 
 
 def import_results_into_database(
-    scenario_id, hydro_year, subproblem, stage, c, db, results_directory, quiet
+    scenario_id,
+    weather_year,
+    hydro_year,
+    subproblem,
+    stage,
+    c,
+    db,
+    results_directory,
+    quiet,
 ):
     """
     :param scenario_id:
@@ -264,6 +272,7 @@ def import_results_into_database(
     if os.path.exists(
         os.path.join(
             results_directory,
+            weather_year,
             hydro_year,
             subproblem,
             stage,

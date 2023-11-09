@@ -428,13 +428,22 @@ def save_duals(
 
 
 def import_results_into_database(
-    scenario_id, hydro_year, subproblem, stage, c, db, results_directory, quiet
+    scenario_id,
+    weather_year,
+    hydro_year,
+    subproblem,
+    stage,
+    c,
+    db,
+    results_directory,
+    quiet,
 ):
     which_results = "transmission_group_capacity"
 
     if os.path.exists(
         os.path.join(
             results_directory,
+            weather_year,
             hydro_year,
             subproblem,
             stage,

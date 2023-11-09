@@ -89,7 +89,15 @@ def save_duals(
 
 
 def import_results_into_database(
-    scenario_id, hydro_year, subproblem, stage, c, db, results_directory, quiet
+    scenario_id,
+    weather_year,
+    hydro_year,
+    subproblem,
+    stage,
+    c,
+    db,
+    results_directory,
+    quiet,
 ):
     """
 
@@ -102,6 +110,7 @@ def import_results_into_database(
     """
     generic_import_results_to_database(
         scenario_id=scenario_id,
+        weather_year=weather_year,
         hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,

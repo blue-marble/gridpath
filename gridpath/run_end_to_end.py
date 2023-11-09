@@ -453,7 +453,8 @@ def main(args=None):
         sys.stderr = stderr_original
 
     # Return expected objective values (for testing)
-    return expected_objective_values
+    if parsed_args.testing:
+        return expected_objective_values
 
 
 def update_db_for_run_end(db_path, scenario, queue_order_id, process_id, run_status_id):

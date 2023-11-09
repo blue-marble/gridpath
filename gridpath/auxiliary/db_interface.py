@@ -133,7 +133,7 @@ def get_scenario_id_and_name(scenario_id_arg, scenario_name_arg, c, script):
 
 
 def setup_results_import(
-    conn, cursor, table, scenario_id, hydro_year, subproblem, stage
+    conn, cursor, table, scenario_id, weather_year, hydro_year, subproblem, stage
 ):
     """
     :param conn: the connection object
@@ -151,6 +151,7 @@ def setup_results_import(
     del_sql = """
         DELETE FROM {} 
         WHERE scenario_id = ?
+        AND weather_year = ?
         AND hydro_year = ?
         AND subproblem_id = ?
         AND stage_id = ?;
@@ -161,7 +162,7 @@ def setup_results_import(
         conn=conn,
         cursor=cursor,
         sql=del_sql,
-        data=(scenario_id, hydro_year, subproblem, stage),
+        data=(scenario_id, weather_year, hydro_year, subproblem, stage),
         many=False,
     )
 
@@ -202,6 +203,7 @@ def import_csv(
     conn,
     cursor,
     scenario_id,
+    weather_year,
     hydro_year,
     subproblem,
     stage,
@@ -222,6 +224,7 @@ def import_csv(
         cursor=cursor,
         table=f"results_{which_results}",
         scenario_id=scenario_id,
+        weather_year=weather_year,
         hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
