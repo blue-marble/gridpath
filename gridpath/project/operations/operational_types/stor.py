@@ -963,7 +963,16 @@ def validate_inputs(
     """
 
     # Validate operational chars table inputs
-    validate_opchars(scenario_id, subscenarios, subproblem, stage, conn, "stor")
+    validate_opchars(
+        scenario_id,
+        subscenarios,
+        weather_year,
+        hydro_year,
+        subproblem,
+        stage,
+        conn,
+        "stor",
+    )
 
 
 def curtailment_cost_rule(mod, g, tmp):

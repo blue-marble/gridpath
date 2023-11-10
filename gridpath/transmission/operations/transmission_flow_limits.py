@@ -290,9 +290,6 @@ def get_model_inputs_from_database(
     :param conn: database connection
     :return:
     """
-    db_weather_year, db_hydro_year, db_subproblem, db_stage = directories_to_db_values(
-        weather_year, hydro_year, subproblem, stage
-    )
 
     c = conn.cursor()
     tx_flow = c.execute(
@@ -341,9 +338,18 @@ def write_model_inputs(
     :param conn: database connection
     :return:
     """
+    db_weather_year, db_hydro_year, db_subproblem, db_stage = directories_to_db_values(
+        weather_year, hydro_year, subproblem, stage
+    )
 
     tx_flow = get_model_inputs_from_database(
-        scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        db_weather_year,
+        db_hydro_year,
+        db_subproblem,
+        db_stage,
+        conn,
     ).fetchall()
 
     # Only write tab file if we have data to limit flows

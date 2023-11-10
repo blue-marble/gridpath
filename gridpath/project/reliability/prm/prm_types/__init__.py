@@ -337,6 +337,7 @@ def import_results_into_database(
         if hasattr(imported_prm_modules[prm_m], "import_results_into_database"):
             imported_prm_modules[prm_m].import_results_into_database(
                 scenario_id,
+                weather_year,
                 hydro_year,
                 subproblem,
                 stage,

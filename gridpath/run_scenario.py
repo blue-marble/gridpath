@@ -64,7 +64,13 @@ from gridpath.auxiliary.module_list import determine_modules, load_modules
 
 
 def create_problem(
-    scenario_directory, weather_year, hydro_year, subproblem, stage, parsed_arguments
+    scenario_directory,
+    weather_year,
+    hydro_year,
+    subproblem,
+    stage,
+    multi_stage,
+    parsed_arguments,
 ):
     """
     :param scenario_directory: the main scenario directory
@@ -104,7 +110,7 @@ def create_problem(
 
     # Determine/load modules and dynamic components
     modules_to_use, loaded_modules = set_up_gridpath_modules(
-        scenario_directory=scenario_directory, subproblem=subproblem, stage=stage
+        scenario_directory=scenario_directory, multi_stage=multi_stage
     )
 
     # Create the abstract model; some components are initialized here
@@ -173,6 +179,7 @@ def run_optimization_for_subproblem_stage(
     hydro_year_directory,
     subproblem_directory,
     stage_directory,
+    multi_stage,
     parsed_arguments,
 ):
     """
@@ -300,6 +307,7 @@ def run_optimization_for_subproblem_stage(
                 hydro_year=hydro_year_directory,
                 subproblem=subproblem_directory,
                 stage=stage_directory,
+                multi_stage=multi_stage,
                 parsed_arguments=parsed_arguments,
             )
 
@@ -352,6 +360,7 @@ def run_optimization_for_subproblem_stage(
             hydro_year_directory,
             subproblem_directory,
             stage_directory,
+            multi_stage,
             solved_instance,
             results,
             dynamic_components,
@@ -365,6 +374,7 @@ def run_optimization_for_subproblem_stage(
             hydro_year_directory,
             subproblem_directory,
             stage_directory,
+            multi_stage,
             parsed_arguments,
         )
 
@@ -390,6 +400,7 @@ def run_optimization_for_subproblem(
     hydro_year_directory,
     subproblem_directory,
     stage_directories,
+    multi_stage,
     parsed_arguments,
     objective_values,
 ):
@@ -397,15 +408,17 @@ def run_optimization_for_subproblem(
     Check if there are stages in the subproblem; if not solve subproblem;
     if, yes, solve each stage sequentially
     """
+    subproblem = 1 if subproblem_directory == "" else int(subproblem_directory)
+
     for stage_directory in stage_directories:
-        objective_values[subproblem_directory][
-            stage_directory
-        ] = run_optimization_for_subproblem_stage(
+        stage = 1 if stage_directory == "" else int(stage_directory)
+        objective_values[subproblem][stage] = run_optimization_for_subproblem_stage(
             scenario_directory,
             weather_year_directory,
             hydro_year_directory,
             subproblem_directory,
             stage_directory,
+            multi_stage,
             parsed_arguments,
         )
 
@@ -421,6 +434,7 @@ def run_optimization_for_subproblem_pool(pool_datum):
         hydro_year_directory,
         subproblem_directory,
         stage_directories,
+        multi_stage,
         parsed_arguments,
         objective_values,
     ] = pool_datum
@@ -431,6 +445,7 @@ def run_optimization_for_subproblem_pool(pool_datum):
         hydro_year_directory=hydro_year_directory,
         subproblem_directory=subproblem_directory,
         stage_directories=stage_directories,
+        multi_stage=multi_stage,
         parsed_arguments=parsed_arguments,
         objective_values=objective_values,
     )
@@ -454,6 +469,7 @@ def run_scenario(
     :return: the objective function value (NPV); only used in
      'testing' mode.
     """
+
     weather_year_hydro_year_directory_strings = ScenarioDirectoryStructure(
         scenario_structure
     ).WEATHER_YEAR_HYDRO_YEAR_DIRECTORIES
@@ -496,7 +512,8 @@ def run_scenario(
                 else next(iter(weather_year_hydro_year_directory_strings.values()))
             ):
                 for subproblem_str in subproblem_stage_directory_strings.keys():
-                    objective_values[subproblem_str] = {}
+                    subproblem = 1 if subproblem_str == "" else int(subproblem_str)
+                    objective_values[subproblem] = {}
                     run_optimization_for_subproblem(
                         scenario_directory=scenario_directory,
                         weather_year_directory=weather_year_str,
@@ -505,18 +522,24 @@ def run_scenario(
                         stage_directories=subproblem_stage_directory_strings[
                             subproblem_str
                         ],
+                        multi_stage=scenario_structure.MULTI_STAGE,
                         parsed_arguments=parsed_arguments,
                         objective_values=objective_values,
                     )
 
-                    # Should probably just remove this logic here and have a dictionary
-                    # for all objective functions
-                    if len(objective_values.keys()) == 1:
-                        objective_values = objective_values[
-                            list(objective_values.keys())[0]
-                        ]
+                # Should probably just remove this logic here and have a dictionary
+                # for all objective functions
+                if len(objective_values.keys()) == 1:
+                    objective_values = objective_values[
+                        list(objective_values.keys())[0]
+                    ]
+                    if isinstance(objective_values, dict):
+                        if len(objective_values.keys()) == 1:
+                            objective_values = objective_values[
+                                list(objective_values.keys())[0]
+                            ]
 
-                    return objective_values
+        return objective_values
 
     # If parallelization is requested, proceed with some checks
     elif n_parallel_subproblems > 1:
@@ -548,12 +571,14 @@ def run_scenario(
                             stage_directories=subproblem_stage_directory_strings[
                                 subproblem_str
                             ],
+                            multi_stage=scenario_structure.MULTI_STAGE,
                             parsed_arguments=parsed_arguments,
                             objective_values=objective_values,
                         )
 
-                if len(objective_values.keys()) == 1:
-                    objective_values = objective_values[1]
+                    # TODO: will need to check this for iterations
+                    if len(objective_values.keys()) == 1:
+                        objective_values = objective_values[1]
 
                 return objective_values
 
@@ -605,6 +630,7 @@ def save_results(
     hydro_year,
     subproblem,
     stage,
+    multi_stage,
     instance,
     results,
     dynamic_components,
@@ -679,6 +705,7 @@ def save_results(
             hydro_year=hydro_year,
             subproblem=subproblem,
             stage=stage,
+            multi_stage=multi_stage,
             instance=instance,
             dynamic_components=dynamic_components,
             export_rule=export_rule,
@@ -691,6 +718,7 @@ def save_results(
             hydro_year=hydro_year,
             subproblem=subproblem,
             stage=stage,
+            multi_stage=multi_stage,
             instance=instance,
             verbose=parsed_arguments.verbose,
         )
@@ -710,6 +738,7 @@ def save_results(
             hydro_year=hydro_year,
             subproblem=subproblem,
             stage=stage,
+            multi_stage=multi_stage,
             instance=instance,
             dynamic_components=dynamic_components,
             verbose=parsed_arguments.verbose,
@@ -1012,6 +1041,7 @@ def export_results(
     hydro_year,
     subproblem,
     stage,
+    multi_stage,
     instance,
     dynamic_components,
     export_rule,
@@ -1033,7 +1063,7 @@ def export_results(
     if export_rule:
         # Determine/load modules and dynamic components
         modules_to_use, loaded_modules = set_up_gridpath_modules(
-            scenario_directory=scenario_directory, subproblem=subproblem, stage=stage
+            scenario_directory=scenario_directory, multi_stage=multi_stage
         )
 
         n = 0
@@ -1055,7 +1085,14 @@ def export_results(
 
 
 def export_pass_through_inputs(
-    scenario_directory, weather_year, hydro_year, subproblem, stage, instance, verbose
+    scenario_directory,
+    weather_year,
+    hydro_year,
+    subproblem,
+    stage,
+    multi_stage,
+    instance,
+    verbose,
 ):
     """
     :param scenario_directory:
@@ -1082,7 +1119,7 @@ def export_pass_through_inputs(
 
     # Determine/load modules and dynamic components
     modules_to_use, loaded_modules = set_up_gridpath_modules(
-        scenario_directory=scenario_directory, subproblem=subproblem, stage=stage
+        scenario_directory=scenario_directory, multi_stage=multi_stage
     )
 
     n = 0
@@ -1146,6 +1183,7 @@ def save_duals(
     hydro_year,
     subproblem,
     stage,
+    multi_stage,
     instance,
     dynamic_components,
     verbose,
@@ -1163,7 +1201,7 @@ def save_duals(
     """
     # Determine/load modules and dynamic components
     modules_to_use, loaded_modules = set_up_gridpath_modules(
-        scenario_directory=scenario_directory, subproblem=subproblem, stage=stage
+        scenario_directory=scenario_directory, multi_stage=multi_stage
     )
 
     instance.constraint_indices = {}
@@ -1203,7 +1241,13 @@ def save_duals(
 
 
 def summarize_results(
-    scenario_directory, weather_year, hydro_year, subproblem, stage, parsed_arguments
+    scenario_directory,
+    weather_year,
+    hydro_year,
+    subproblem,
+    stage,
+    multi_stage,
+    parsed_arguments,
 ):
     """
     :param scenario_directory:
@@ -1257,9 +1301,7 @@ def summarize_results(
 
             # Determine/load modules and dynamic components
             modules_to_use, loaded_modules = set_up_gridpath_modules(
-                scenario_directory=scenario_directory,
-                subproblem=subproblem,
-                stage=stage,
+                scenario_directory=scenario_directory, multi_stage=multi_stage
             )
 
             # Make the summary results file
@@ -1294,7 +1336,7 @@ def summarize_results(
                 n += 1
 
 
-def set_up_gridpath_modules(scenario_directory, subproblem, stage):
+def set_up_gridpath_modules(scenario_directory, multi_stage):
     """
     :return: list of the names of the modules the scenario uses, list of the
         loaded modules, and the populated dynamic components for the scenario
@@ -1303,7 +1345,9 @@ def set_up_gridpath_modules(scenario_directory, subproblem, stage):
     instance.
     """
     # Determine and load modules
-    modules_to_use = determine_modules(scenario_directory=scenario_directory)
+    modules_to_use = determine_modules(
+        scenario_directory=scenario_directory, multi_stage=multi_stage
+    )
     loaded_modules = load_modules(modules_to_use)
     # Determine the dynamic components based on the needed modules and input
     # data

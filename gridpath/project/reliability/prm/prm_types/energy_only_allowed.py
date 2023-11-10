@@ -110,6 +110,7 @@ def export_results(
     m,
     d,
     scenario_directory,
+    weather_year,
     hydro_year,
     subproblem,
     stage,
@@ -128,6 +129,7 @@ def export_results(
     with open(
         os.path.join(
             scenario_directory,
+            weather_year,
             hydro_year,
             subproblem,
             stage,

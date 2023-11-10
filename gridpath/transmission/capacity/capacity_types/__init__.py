@@ -187,7 +187,13 @@ def validate_inputs(
     for op_m in required_capacity_type_modules:
         if hasattr(imported_capacity_type_modules[op_m], "validate_inputs"):
             imported_capacity_type_modules[op_m].validate_inputs(
-                scenario_id, subscenarios, subproblem, stage, conn
+                scenario_id,
+                subscenarios,
+                weather_year,
+                hydro_year,
+                subproblem,
+                stage,
+                conn,
             )
 
 

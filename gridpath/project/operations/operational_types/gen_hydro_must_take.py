@@ -907,6 +907,7 @@ def validate_inputs(
     hydro_opchar_fraction_error = validate_hydro_opchars(
         scenario_id,
         subscenarios,
+        weather_year,
         hydro_year,
         subproblem,
         stage,

@@ -993,7 +993,16 @@ def validate_inputs(
     """
 
     # Validate operational chars table inputs
-    validate_opchars(scenario_id, subscenarios, subproblem, stage, conn, "gen_hydro")
+    validate_opchars(
+        scenario_id,
+        subscenarios,
+        weather_year,
+        hydro_year,
+        subproblem,
+        stage,
+        conn,
+        "gen_hydro",
+    )
 
     # Validate hydro opchars input table
     hydro_opchar_fraction_error = validate_hydro_opchars(

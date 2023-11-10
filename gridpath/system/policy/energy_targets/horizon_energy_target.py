@@ -152,9 +152,6 @@ def get_inputs_from_database(
     :param conn: database connection
     :return:
     """
-    db_weather_year, db_hydro_year, db_subproblem, db_stage = directories_to_db_values(
-        weather_year, hydro_year, subproblem, stage
-    )
 
     # Get the energy and percent targets
     c = conn.cursor()
@@ -243,6 +240,10 @@ def write_model_inputs(
     :param conn: database connection
     :return:
     """
+
+    db_weather_year, db_hydro_year, db_subproblem, db_stage = directories_to_db_values(
+        weather_year, hydro_year, subproblem, stage
+    )
 
     energy_targets, lz_mapping = get_inputs_from_database(
         scenario_id,

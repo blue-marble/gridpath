@@ -779,7 +779,7 @@ def get_hydro_inputs_from_database(
     # NOTE: There can be cases where a resource is both in specified capacity
     # table and in new build table, but depending on capacity type you'd only
     # use one of them, so filtering with OR is not 100% correct.
-    if hydro_year != 0:
+    if hydro_year == 0:
         sql = f"""
         SELECT project, horizon, average_power_fraction, min_power_fraction, 
         max_power_fraction
