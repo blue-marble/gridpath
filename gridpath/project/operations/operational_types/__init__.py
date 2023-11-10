@@ -261,7 +261,9 @@ def get_required_opchar_modules(scenario_id, c):
     return required_opchar_modules
 
 
-def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, conn):
+def validate_inputs(
+    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -283,7 +285,13 @@ def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, co
     for op_m in required_opchar_modules:
         if hasattr(imported_operational_modules[op_m], "validate_inputs"):
             imported_operational_modules[op_m].validate_inputs(
-                scenario_id, subscenarios, subproblem, stage, conn
+                scenario_id,
+                subscenarios,
+                weather_year,
+                hydro_year,
+                subproblem,
+                stage,
+                conn,
             )
 
 

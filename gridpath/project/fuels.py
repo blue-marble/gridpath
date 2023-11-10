@@ -21,6 +21,7 @@ import os.path
 import pandas as pd
 from pyomo.environ import Param, Set, NonNegativeReals, Reals, Any
 from gridpath.auxiliary.auxiliary import cursor_to_df
+from gridpath.auxiliary.db_interface import directories_to_db_values
 from gridpath.auxiliary.validations import (
     write_validation_to_database,
     validate_dtypes,
@@ -135,7 +136,9 @@ def load_model_data(
         data_portal.load(filename=fuels_prices_file, param=m.fuel_price_per_mmbtu)
 
 
-def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(
+    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -143,8 +146,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     :param conn: database connection
     :return:
     """
-    subproblem = 1 if subproblem == "" else subproblem
-    stage = 1 if stage == "" else stage
+
     c1 = conn.cursor()
     fuels = c1.execute(
         """SELECT DISTINCT fuel, co2_intensity_tons_per_mmbtu, fuel_group
@@ -232,7 +234,9 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     return fuels, fuel_prices
 
 
-def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, conn):
+def validate_inputs(
+    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -244,7 +248,13 @@ def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, co
 
     # Get the fuel input data
     fuels, fuel_prices = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        weather_year,
+        hydro_year,
+        subproblem,
+        stage,
+        conn,
     )
 
     # Get the projects fuels
@@ -304,6 +314,8 @@ def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, co
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_year=weather_year,
+        hydro_year=hydro_year,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -316,6 +328,8 @@ def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, co
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_year=weather_year,
+        hydro_year=hydro_year,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -330,6 +344,8 @@ def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, co
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_year=weather_year,
+        hydro_year=hydro_year,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -342,6 +358,8 @@ def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, co
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_year=weather_year,
+        hydro_year=hydro_year,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -376,8 +394,18 @@ def write_model_inputs(
     :return:
     """
 
+    db_weather_year, db_hydro_year, db_subproblem, db_stage = directories_to_db_values(
+        weather_year, hydro_year, subproblem, stage
+    )
+
     fuels, fuel_prices = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        db_weather_year,
+        db_hydro_year,
+        db_subproblem,
+        db_stage,
+        conn,
     )
 
     with open(

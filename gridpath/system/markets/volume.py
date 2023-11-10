@@ -16,6 +16,8 @@ import csv
 import os.path
 from pyomo.environ import Expression, Param, Constraint
 
+from gridpath.auxiliary.db_interface import directories_to_db_values
+
 Infinity = float("inf")
 
 
@@ -116,7 +118,9 @@ def load_model_data(
     )
 
 
-def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(
+    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -124,8 +128,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     :param conn: database connection
     :return:
     """
-    subproblem = 1 if subproblem == "" else subproblem
-    stage = 1 if stage == "" else stage
+
     c = conn.cursor()
 
     # Get load zones and their markets; only include load zones that are
@@ -190,8 +193,18 @@ def write_model_inputs(
     market_prices.tab file.
     """
 
+    db_weather_year, db_hydro_year, db_subproblem, db_stage = directories_to_db_values(
+        weather_year, hydro_year, subproblem, stage
+    )
+
     market_limits = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        db_weather_year,
+        db_hydro_year,
+        db_subproblem,
+        db_stage,
+        conn,
     )
 
     with open(

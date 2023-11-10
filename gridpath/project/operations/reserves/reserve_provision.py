@@ -21,6 +21,7 @@ import pandas as pd
 from pyomo.environ import Set, Param, Var, NonNegativeReals, PercentFraction, value
 
 from db.common_functions import spin_on_database_lock
+from gridpath.auxiliary.db_interface import directories_to_db_values
 from gridpath.auxiliary.validations import write_validation_to_database, validate_idxs
 from gridpath.auxiliary.auxiliary import (
     check_list_items_are_unique,
@@ -39,6 +40,7 @@ from gridpath.project import PROJECT_TIMEPOINT_DF
 def generic_record_dynamic_components(
     d,
     scenario_directory,
+    weather_year,
     hydro_year,
     subproblem,
     stage,
@@ -282,6 +284,7 @@ def generic_load_model_data(
     d,
     data_portal,
     scenario_directory,
+    weather_year,
     hydro_year,
     subproblem,
     stage,
@@ -395,6 +398,7 @@ def generic_export_results(
     m,
     d,
     scenario_directory,
+    weather_year,
     hydro_year,
     subproblem,
     stage,
@@ -446,6 +450,8 @@ def generic_export_results(
 def generic_get_inputs_from_database(
     scenario_id,
     subscenarios,
+    weather_year,
+    hydro_year,
     subproblem,
     stage,
     conn,
@@ -536,6 +542,8 @@ def generic_get_inputs_from_database(
 def generic_validate_project_bas(
     scenario_id,
     subscenarios,
+    weather_year,
+    hydro_year,
     subproblem,
     stage,
     conn,
@@ -554,13 +562,12 @@ def generic_validate_project_bas(
     :param ba_subscenario_id:
     :return:
     """
-    # TODO: is this actually needed?
-    subproblem = 1 if subproblem == "" else subproblem
-    stage = 1 if stage == "" else stage
 
     project_bas, prj_derates = generic_get_inputs_from_database(
         scenario_id=scenario_id,
         subscenarios=subscenarios,
+        weather_year=weather_year,
+        hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
         conn=conn,
@@ -594,6 +601,8 @@ def generic_validate_project_bas(
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_year=weather_year,
+        hydro_year=hydro_year,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -612,6 +621,8 @@ def generic_validate_project_bas(
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_year=weather_year,
+        hydro_year=hydro_year,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,

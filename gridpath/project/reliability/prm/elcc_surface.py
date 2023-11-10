@@ -20,7 +20,7 @@ import csv
 import os.path
 from pyomo.environ import Param, Set, NonNegativeReals, Binary, Expression, value, Any
 
-from gridpath.auxiliary.db_interface import import_csv
+from gridpath.auxiliary.db_interface import import_csv, directories_to_db_values
 
 
 def add_model_components(
@@ -237,7 +237,9 @@ def export_results(
             )
 
 
-def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(
+    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -245,9 +247,6 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     :param conn: database connection
     :return:
     """
-    subproblem = 1 if subproblem == "" else subproblem
-    stage = 1 if stage == "" else stage
-
     c1 = conn.cursor()
 
     # Which projects will contribute to the surface and their cap factors
@@ -332,7 +331,9 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     return project_contr_cf, coefficients, elcc_norm_loads
 
 
-def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, conn):
+def validate_inputs(
+    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -369,8 +370,19 @@ def write_model_inputs(
     :param conn: database connection
     :return:
     """
+
+    db_weather_year, db_hydro_year, db_subproblem, db_stage = directories_to_db_values(
+        weather_year, hydro_year, subproblem, stage
+    )
+
     project_contr_cf, coefficients, elcc_norm_loads = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        db_weather_year,
+        db_hydro_year,
+        db_subproblem,
+        db_stage,
+        conn,
     )
 
     # Make a dict for easy access

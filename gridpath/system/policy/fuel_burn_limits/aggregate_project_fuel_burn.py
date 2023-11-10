@@ -21,6 +21,7 @@ import csv
 import os.path
 from pyomo.environ import Param, Set, Expression
 
+from gridpath.auxiliary.db_interface import directories_to_db_values
 from gridpath.auxiliary.dynamic_components import fuel_burn_balance_components
 
 
@@ -139,7 +140,9 @@ def load_model_data(
 ###############################################################################
 
 
-def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(
+    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -147,8 +150,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     :param conn: database connection
     :return:
     """
-    subproblem = 1 if subproblem == "" else subproblem
-    stage = 1 if stage == "" else stage
+
     c = conn.cursor()
 
     # TODO: do we need additional filtering
@@ -220,8 +222,19 @@ def write_model_inputs(
     :param conn: database connection
     :return:
     """
+
+    db_weather_year, db_hydro_year, db_subproblem, db_stage = directories_to_db_values(
+        weather_year, hydro_year, subproblem, stage
+    )
+
     project_fuel_bas = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        db_weather_year,
+        db_hydro_year,
+        db_subproblem,
+        db_stage,
+        conn,
     )
 
     with open(

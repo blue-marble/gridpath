@@ -42,6 +42,7 @@ def summarize_results_use(
     if os.path.exists(
         os.path.join(
             scenario_directory,
+            weather_year,
             hydro_year,
             subproblem,
             stage,

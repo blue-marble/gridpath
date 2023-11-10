@@ -28,6 +28,7 @@ from gridpath.auxiliary.auxiliary import (
 from gridpath.auxiliary.db_interface import (
     update_prj_zone_column,
     determine_table_subset_by_start_and_column,
+    directories_to_db_values,
 )
 from gridpath.common_functions import create_results_df
 from gridpath.project.operations.common_functions import load_operational_type_modules
@@ -328,7 +329,9 @@ def export_results(
 ###############################################################################
 
 
-def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(
+    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -336,8 +339,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     :param conn: database connection
     :return:
     """
-    subproblem = 1 if subproblem == "" else subproblem
-    stage = 1 if stage == "" else stage
+
     c = conn.cursor()
 
     # Get the energy-target zones for project in our portfolio and with zones in our
@@ -394,8 +396,18 @@ def write_model_inputs(
     :param conn: database connection
     :return:
     """
+
+    db_weather_year, db_hydro_year, db_subproblem, db_stage = directories_to_db_values(
+        weather_year, hydro_year, subproblem, stage
+    )
     project_zones = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        db_weather_year,
+        db_hydro_year,
+        db_subproblem,
+        db_stage,
+        conn,
     )
 
     # Make a dict for easy access
@@ -484,7 +496,9 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
 ###############################################################################
 
 
-def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, conn):
+def validate_inputs(
+    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -496,7 +510,13 @@ def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, co
 
     # Get the projects and energy-target zones
     project_zones = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        weather_year,
+        hydro_year,
+        subproblem,
+        stage,
+        conn,
     )
 
     # Convert input data into pandas DataFrame
@@ -520,6 +540,8 @@ def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, co
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_year=weather_year,
+        hydro_year=hydro_year,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,

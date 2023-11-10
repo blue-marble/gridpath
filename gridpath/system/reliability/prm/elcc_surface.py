@@ -29,6 +29,7 @@ from pyomo.environ import (
 )
 
 from db.common_functions import spin_on_database_lock
+from gridpath.auxiliary.db_interface import directories_to_db_values
 from gridpath.auxiliary.dynamic_components import (
     prm_balance_provision_components,
     cost_components,
@@ -215,7 +216,9 @@ def save_duals(
     ]
 
 
-def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(
+    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -239,7 +242,9 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     return intercepts
 
 
-def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, conn):
+def validate_inputs(
+    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -275,8 +280,19 @@ def write_model_inputs(
     :param c: database cursor
     :return:
     """
+
+    db_weather_year, db_hydro_year, db_subproblem, db_stage = directories_to_db_values(
+        weather_year, hydro_year, subproblem, stage
+    )
+
     intercepts = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        db_weather_year,
+        db_hydro_year,
+        db_subproblem,
+        db_stage,
+        conn,
     )
 
     with open(

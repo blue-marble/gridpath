@@ -42,7 +42,7 @@ import pandas as pd
 from pyomo.environ import Set, Param, NonNegativeReals, Reals, PositiveReals
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
-from gridpath.auxiliary.db_interface import import_csv
+from gridpath.auxiliary.db_interface import import_csv, directories_to_db_values
 from gridpath.auxiliary.dynamic_components import headroom_variables, footroom_variables
 from gridpath.auxiliary.validations import (
     write_validation_to_database,
@@ -589,6 +589,7 @@ def load_model_data(
 
     project_fuels_file = os.path.join(
         scenario_directory,
+        weather_year,
         hydro_year,
         subproblem,
         stage,
@@ -656,6 +657,8 @@ def load_model_data(
     # VOM curves
     vom_curves_file = os.path.join(
         scenario_directory,
+        weather_year,
+        hydro_year,
         subproblem,
         stage,
         "inputs",
@@ -663,6 +666,7 @@ def load_model_data(
     )
     periods_file = os.path.join(
         scenario_directory,
+        weather_year,
         hydro_year,
         subproblem,
         stage,
@@ -691,6 +695,7 @@ def load_model_data(
     # Startup chars
     startup_chars_file = os.path.join(
         scenario_directory,
+        weather_year,
         hydro_year,
         subproblem,
         stage,
@@ -726,6 +731,8 @@ def load_model_data(
     # HR curves
     hr_curves_file = os.path.join(
         scenario_directory,
+        weather_year,
+        hydro_year,
         subproblem,
         stage,
         "inputs",
@@ -733,6 +740,7 @@ def load_model_data(
     )
     periods_file = os.path.join(
         scenario_directory,
+        weather_year,
         hydro_year,
         subproblem,
         stage,
@@ -741,6 +749,7 @@ def load_model_data(
     )
     project_fuels_file = os.path.join(
         scenario_directory,
+        weather_year,
         hydro_year,
         subproblem,
         stage,
@@ -776,7 +785,9 @@ def load_model_data(
 ###############################################################################
 
 
-def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(
+    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -784,8 +795,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     :param conn: database connection
     :return:
     """
-    subproblem = 1 if subproblem == "" else subproblem
-    stage = 1 if stage == "" else stage
+
     c = conn.cursor()
     proj_opchar = c.execute(
         """
@@ -1034,6 +1044,11 @@ def write_model_inputs(
     :param conn: database connection
     :return:
     """
+
+    db_weather_year, db_hydro_year, db_subproblem, db_stage = directories_to_db_values(
+        weather_year, hydro_year, subproblem, stage
+    )
+
     (
         proj_opchar,
         fuels,
@@ -1043,10 +1058,18 @@ def write_model_inputs(
         cycle_selection,
         cap_factor_limits,
         supplemental_firing,
-    ) = get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
+    ) = get_inputs_from_database(
+        scenario_id,
+        subscenarios,
+        db_weather_year,
+        db_hydro_year,
+        db_subproblem,
+        db_stage,
+        conn,
+    )
 
     inputs_directory = os.path.join(
-        scenario_directory, hydro_year, subproblem, stage, "inputs"
+        scenario_directory, weather_year, hydro_year, subproblem, stage, "inputs"
     )
 
     # Update the projects.tab file
@@ -1186,7 +1209,9 @@ def import_results_into_database(
 ###############################################################################
 
 
-def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, conn):
+def validate_inputs(
+    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -1206,7 +1231,15 @@ def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, co
         cycle_select,
         cap_factor_limits,
         supplemental_firing,
-    ) = get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
+    ) = get_inputs_from_database(
+        scenario_id,
+        subscenarios,
+        weather_year,
+        hydro_year,
+        subproblem,
+        stage,
+        conn,
+    )
 
     # Convert input data into DataFrame
     prj_df = cursor_to_df(proj_opchar)
@@ -1218,6 +1251,8 @@ def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, co
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_year=weather_year,
+        hydro_year=hydro_year,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -1232,6 +1267,8 @@ def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, co
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_year=weather_year,
+        hydro_year=hydro_year,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -1245,6 +1282,8 @@ def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, co
         write_validation_to_database(
             conn=conn,
             scenario_id=scenario_id,
+            weather_year=weather_year,
+            hydro_year=hydro_year,
             subproblem_id=subproblem,
             stage_id=stage,
             gridpath_module=__name__,
@@ -1264,6 +1303,8 @@ def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, co
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_year=weather_year,
+        hydro_year=hydro_year,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -1278,6 +1319,8 @@ def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, co
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_year=weather_year,
+        hydro_year=hydro_year,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -1316,6 +1359,8 @@ def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, co
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_year=weather_year,
+        hydro_year=hydro_year,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -1339,6 +1384,8 @@ def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, co
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_year=weather_year,
+        hydro_year=hydro_year,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -1353,6 +1400,8 @@ def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, co
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_year=weather_year,
+        hydro_year=hydro_year,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -1365,6 +1414,8 @@ def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, co
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_year=weather_year,
+        hydro_year=hydro_year,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -1443,6 +1494,8 @@ def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, co
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_year=weather_year,
+        hydro_year=hydro_year,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,

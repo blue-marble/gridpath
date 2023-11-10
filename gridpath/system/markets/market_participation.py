@@ -29,7 +29,11 @@ from pyomo.environ import (
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import check_for_integer_subdirectories
 from gridpath.auxiliary.dynamic_components import load_balance_production_components
-from gridpath.auxiliary.db_interface import setup_results_import, import_csv
+from gridpath.auxiliary.db_interface import (
+    setup_results_import,
+    import_csv,
+    directories_to_db_values,
+)
 from gridpath.common_functions import create_results_df
 from gridpath.system.load_balance import LOAD_ZONE_TMP_DF
 
@@ -176,7 +180,9 @@ def load_model_data(
     data_portal.data()["first_stage_flag"] = first_stage_flag
 
 
-def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(
+    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -184,8 +190,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     :param conn: database connection
     :return:
     """
-    subproblem = 1 if subproblem == "" else subproblem
-    stage = 1 if stage == "" else stage
+
     c = conn.cursor()
 
     # Get load zones and their markets; only include load zones that are
@@ -246,8 +251,18 @@ def write_model_inputs(
     load_zone_markets.tab file.
     """
 
+    db_weather_year, db_hydro_year, db_subproblem, db_stage = directories_to_db_values(
+        weather_year, hydro_year, subproblem, stage
+    )
+
     load_zone_markets = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        db_weather_year,
+        db_hydro_year,
+        db_subproblem,
+        db_stage,
+        conn,
     )
 
     with open(

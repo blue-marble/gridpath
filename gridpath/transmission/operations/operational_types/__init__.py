@@ -297,7 +297,9 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
 ###############################################################################
 
 
-def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, conn):
+def validate_inputs(
+    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+):
     """
     Go through each relevant operational type and validate the database inputs
     for that operational type.

@@ -22,6 +22,7 @@ def add_model_components(
     model,
     d,
     test_data_dir,
+    weather_year,
     hydro_year,
     subproblem,
     stage,
@@ -38,18 +39,24 @@ def add_model_components(
     for m in prereq_modules:
         if hasattr(m, "add_model_components"):
             m.add_model_components(
-                model, d, test_data_dir, hydro_year, subproblem, stage
+                model, d, test_data_dir, weather_year, hydro_year, subproblem, stage
             )
     if hasattr(module_to_test, "add_model_components"):
         module_to_test.add_model_components(
-            model, d, test_data_dir, hydro_year, subproblem, stage
+            model, d, test_data_dir, weather_year, hydro_year, subproblem, stage
         )
 
     return model
 
 
 def create_abstract_model(
-    prereq_modules, module_to_test, test_data_dir, hydro_year, subproblem, stage
+    prereq_modules,
+    module_to_test,
+    test_data_dir,
+    weather_year,
+    hydro_year,
+    subproblem,
+    stage,
 ):
     """
     Determine dynamic components and build abstract model
@@ -68,6 +75,7 @@ def create_abstract_model(
         m,
         d,
         test_data_dir,
+        weather_year,
         hydro_year,
         subproblem,
         stage,
@@ -77,7 +85,13 @@ def create_abstract_model(
 
 
 def add_components_and_load_data(
-    prereq_modules, module_to_test, test_data_dir, hydro_year, subproblem, stage
+    prereq_modules,
+    module_to_test,
+    test_data_dir,
+    weather_year,
+    hydro_year,
+    subproblem,
+    stage,
 ):
     """
     Test that data are loaded with no errors
@@ -85,17 +99,23 @@ def add_components_and_load_data(
     """
 
     m, d = create_abstract_model(
-        prereq_modules, module_to_test, test_data_dir, hydro_year, subproblem, stage
+        prereq_modules,
+        module_to_test,
+        test_data_dir,
+        weather_year,
+        hydro_year,
+        subproblem,
+        stage,
     )
     data = DataPortal()
     for mod in prereq_modules:
         if hasattr(mod, "load_model_data"):
             mod.load_model_data(
-                m, d, data, test_data_dir, hydro_year, subproblem, stage
+                m, d, data, test_data_dir, weather_year, hydro_year, subproblem, stage
             )
     if hasattr(module_to_test, "load_model_data"):
         module_to_test.load_model_data(
-            m, d, data, test_data_dir, hydro_year, subproblem, stage
+            m, d, data, test_data_dir, weather_year, hydro_year, subproblem, stage
         )
 
     return m, data

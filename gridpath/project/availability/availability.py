@@ -14,7 +14,6 @@
 
 from pyomo.environ import Expression, value
 
-from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import (
     get_required_subtype_modules,
     load_subtype_modules,
@@ -239,7 +238,9 @@ def export_results(
             getattr(d, PROJECT_TIMEPOINT_DF).update(results_df)
 
 
-def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, conn):
+def validate_inputs(
+    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+):
     """
 
     :param subscenarios:
@@ -261,7 +262,13 @@ def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, co
     for op_m in required_opchar_modules:
         if hasattr(imported_operational_modules[op_m], "validate_inputs"):
             imported_operational_modules[op_m].validate_inputs(
-                scenario_id, subscenarios, subproblem, stage, conn
+                scenario_id,
+                subscenarios,
+                weather_year,
+                hydro_year,
+                subproblem,
+                stage,
+                conn,
             )
 
 

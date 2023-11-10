@@ -35,7 +35,10 @@ from pyomo.environ import (
 )
 
 from db.common_functions import spin_on_database_lock, spin_on_database_lock_generic
-from gridpath.auxiliary.db_interface import setup_results_import
+from gridpath.auxiliary.db_interface import (
+    setup_results_import,
+    directories_to_db_values,
+)
 from gridpath.auxiliary.dynamic_components import prm_balance_provision_components
 from gridpath.common_functions import create_results_df
 from gridpath.system.reliability.prm import PRM_ZONE_PRD_DF
@@ -314,7 +317,9 @@ def load_model_data(
 ###############################################################################
 
 
-def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(
+    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -322,8 +327,6 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     :param conn: database connection
     :return:
     """
-    subproblem = 1 if subproblem == "" else subproblem
-    stage = 1 if stage == "" else stage
 
     c1 = conn.cursor()
     limits = c1.execute(
@@ -380,8 +383,18 @@ def write_model_inputs(
     :return:
     """
 
+    db_weather_year, db_hydro_year, db_subproblem, db_stage = directories_to_db_values(
+        weather_year, hydro_year, subproblem, stage
+    )
+
     limits, transmission_lines = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        db_weather_year,
+        db_hydro_year,
+        db_subproblem,
+        db_stage,
+        conn,
     )
 
     limits = limits.fetchall()

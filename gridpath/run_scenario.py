@@ -472,7 +472,7 @@ def run_scenario(
         n_parallel_subproblems = 1
 
     # If only a single subproblem, run main problem
-    if list(scenario_structure.SUBPROBLEM_STAGES.keys()) == [1]:
+    if len(list(scenario_structure.SUBPROBLEM_STAGES.keys())) == 1:
         if n_parallel_subproblems > 1:
             warnings.warn(
                 "GridPath WARNING: only a single subproblem in "
@@ -487,9 +487,14 @@ def run_scenario(
         objective_values = {}
 
         for weather_year_str in weather_year_hydro_year_directory_strings.keys():
-            for hydro_year_str in weather_year_hydro_year_directory_strings[
-                weather_year_str
-            ]:
+            for hydro_year_str in (
+                weather_year_hydro_year_directory_strings[weather_year_str]
+                if not weather_year_str == ""
+                # If the weather year is just a string, we can't get the hydro
+                # years by dictionary key, so we'll just get the values of the
+                # next dictionary key instead (there will be only one)
+                else next(iter(weather_year_hydro_year_directory_strings.values()))
+            ):
                 for subproblem_str in subproblem_stage_directory_strings.keys():
                     objective_values[subproblem_str] = {}
                     run_optimization_for_subproblem(
@@ -529,9 +534,11 @@ def run_scenario(
             # Solve sequentially
             objective_values = {}
             for weather_year_str in weather_year_hydro_year_directory_strings.keys():
-                for hydro_year_str in weather_year_hydro_year_directory_strings[
-                    weather_year_str
-                ]:
+                for hydro_year_str in (
+                    weather_year_hydro_year_directory_strings[weather_year_str]
+                    if not weather_year_str == ""
+                    else next(iter(weather_year_hydro_year_directory_strings.values()))
+                ):
                     for subproblem_str in subproblem_stage_directory_strings.keys():
                         run_optimization_for_subproblem(
                             scenario_directory=scenario_directory,
@@ -575,9 +582,13 @@ def run_scenario(
                         objective_values,
                     ]
                     for weather_year_str in weather_year_hydro_year_directory_strings.keys()
-                    for hydro_year_str in weather_year_hydro_year_directory_strings[
-                        weather_year_str
-                    ]
+                    for hydro_year_str in (
+                        weather_year_hydro_year_directory_strings[weather_year_str]
+                        if not weather_year_str == ""
+                        else next(
+                            iter(weather_year_hydro_year_directory_strings.values())
+                        )
+                    )
                     for subproblem_str in subproblem_stage_directory_strings.keys()
                 ]
             )

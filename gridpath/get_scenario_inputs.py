@@ -106,9 +106,12 @@ def write_model_inputs(
     # and subproblems
     if n_parallel_subproblems == 1:
         for weather_year_str in weather_year_hydro_year_directory_strings.keys():
-            for hydro_year_str in weather_year_hydro_year_directory_strings[
-                weather_year_str
-            ]:
+            for hydro_year_str in (
+                weather_year_hydro_year_directory_strings[weather_year_str]
+                if not weather_year_str == ""
+                # If the weather year is just a string, we can't get the hydro years by dictionary key, so we'll just get the values of the next dictionary key instead (there will be only one)
+                else next(iter(weather_year_hydro_year_directory_strings.values()))
+            ):
                 for subproblem_str in subproblem_stage_directory_strings.keys():
                     for stage_str in subproblem_stage_directory_strings[subproblem_str]:
                         write_inputs(
@@ -137,9 +140,11 @@ def write_model_inputs(
                     db_path,
                 ]
                 for weather_year_str in weather_year_hydro_year_directory_strings.keys()
-                for hydro_year_str in weather_year_hydro_year_directory_strings[
-                    weather_year_str
-                ]
+                for hydro_year_str in (
+                    weather_year_hydro_year_directory_strings[weather_year_str]
+                    if not weather_year_str == ""
+                    else next(iter(weather_year_hydro_year_directory_strings.values()))
+                )
                 for subproblem_str in subproblem_stage_directory_strings.keys()
                 for stage_str in subproblem_stage_directory_strings[subproblem_str]
             ]

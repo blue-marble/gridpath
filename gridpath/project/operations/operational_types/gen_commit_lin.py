@@ -300,7 +300,9 @@ def save_duals(
 ###############################################################################
 
 
-def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, conn):
+def validate_inputs(
+    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+):
     """
     Get inputs from database and validate the inputs
 
@@ -313,5 +315,12 @@ def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, co
 
     # Validate operational chars table inputs
     opchar_df = validate_opchars(
-        scenario_id, subscenarios, subproblem, stage, conn, "gen_commit_lin"
+        scenario_id,
+        subscenarios,
+        weather_year,
+        hydro_year,
+        subproblem,
+        stage,
+        conn,
+        "gen_commit_lin",
     )

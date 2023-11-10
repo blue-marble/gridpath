@@ -564,7 +564,9 @@ def summarize_results(
 ###############################################################################
 
 
-def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_model_inputs_from_database(
+    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -623,7 +625,7 @@ def write_model_inputs(
     """
 
     new_gen_costs = get_model_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
     )
 
     with open(
@@ -661,7 +663,9 @@ def write_model_inputs(
 ###############################################################################
 
 
-def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, conn):
+def validate_inputs(
+    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -672,7 +676,7 @@ def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, co
     """
 
     new_gen_costs = get_model_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
     )
 
     projects = get_projects(
@@ -696,6 +700,8 @@ def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, co
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_year=weather_year,
+        hydro_year=hydro_year,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -710,6 +716,8 @@ def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, co
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_year=weather_year,
+        hydro_year=hydro_year,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -723,6 +731,8 @@ def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, co
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_year=weather_year,
+        hydro_year=hydro_year,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,

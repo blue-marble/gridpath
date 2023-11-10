@@ -34,6 +34,8 @@ from pyomo.environ import (
     PercentFraction,
 )
 
+from gridpath.auxiliary.db_interface import directories_to_db_values
+
 Negative_Infinity = float("-inf")
 Infinity = float("inf")
 
@@ -278,7 +280,9 @@ def load_model_data(
         data_portal.data()["tx_simple_max_flow_mw"] = max_flow_mw
 
 
-def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_model_inputs_from_database(
+    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -286,8 +290,9 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
     :param conn: database connection
     :return:
     """
-    subproblem = 1 if subproblem == "" else subproblem
-    stage = 1 if stage == "" else stage
+    db_weather_year, db_hydro_year, db_subproblem, db_stage = directories_to_db_values(
+        weather_year, hydro_year, subproblem, stage
+    )
 
     c = conn.cursor()
     tx_flow = c.execute(
@@ -338,7 +343,7 @@ def write_model_inputs(
     """
 
     tx_flow = get_model_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
     ).fetchall()
 
     # Only write tab file if we have data to limit flows

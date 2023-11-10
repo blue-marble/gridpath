@@ -25,7 +25,9 @@ from gridpath.project.capacity.common_functions import (
 from gridpath.auxiliary.db_interface import get_required_capacity_types_from_database
 
 
-def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, conn):
+def validate_inputs(
+    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -48,7 +50,13 @@ def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, co
     for op_m in required_capacity_type_modules:
         if hasattr(imported_capacity_type_modules[op_m], "validate_inputs"):
             imported_capacity_type_modules[op_m].validate_inputs(
-                scenario_id, subscenarios, subproblem, stage, conn
+                scenario_id,
+                subscenarios,
+                weather_year,
+                hydro_year,
+                subproblem,
+                stage,
+                conn,
             )
 
 

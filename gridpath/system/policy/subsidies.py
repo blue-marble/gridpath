@@ -29,6 +29,7 @@ from pyomo.environ import (
 )
 
 from gridpath.auxiliary.auxiliary import get_required_subtype_modules
+from gridpath.auxiliary.db_interface import directories_to_db_values
 from gridpath.project.capacity.common_functions import (
     load_project_capacity_type_modules,
 )
@@ -358,7 +359,9 @@ def export_results(
 
 
 # ### Database ### #
-def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(
+    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -420,8 +423,19 @@ def write_model_inputs(
     conn,
 ):
     """ """
+
+    db_weather_year, db_hydro_year, db_subproblem, db_stage = directories_to_db_values(
+        weather_year, hydro_year, subproblem, stage
+    )
+
     program_budgets, project_subsidies = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        db_weather_year,
+        db_hydro_year,
+        db_subproblem,
+        db_stage,
+        conn,
     )
 
     with open(

@@ -535,7 +535,9 @@ def export_results(
                 )
 
 
-def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_model_inputs_from_database(
+    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -640,7 +642,9 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
     return group_costs, existing, group_potential, group_projects, project_multipliers
 
 
-def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, conn):
+def validate_inputs(
+    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -685,7 +689,7 @@ def write_model_inputs(
         group_projects,
         project_multipliers,
     ) = get_model_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
     )
 
     with open(

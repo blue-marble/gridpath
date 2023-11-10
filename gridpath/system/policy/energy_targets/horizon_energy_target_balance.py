@@ -172,6 +172,7 @@ def summarize_results(scenario_directory, weather_year, hydro_year, subproblem, 
 
     summary_results_file = os.path.join(
         scenario_directory,
+        weather_year,
         hydro_year,
         subproblem,
         stage,

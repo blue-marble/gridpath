@@ -16,6 +16,8 @@ import csv
 import os.path
 from pyomo.environ import Param, Set, NonNegativeReals, PercentFraction, Expression
 
+from gridpath.auxiliary.db_interface import directories_to_db_values
+
 
 def generic_add_model_components(
     m,
@@ -240,6 +242,8 @@ def generic_load_model_data(
 def generic_get_inputs_from_database(
     scenario_id,
     subscenarios,
+    weather_year,
+    hydro_year,
     subproblem,
     stage,
     conn,
@@ -257,8 +261,7 @@ def generic_get_inputs_from_database(
     :param reserve_type_req_subscenario_id:
     :return:
     """
-    subproblem = 1 if subproblem == "" else subproblem
-    stage = 1 if stage == "" else stage
+
     c = conn.cursor()
 
     partial_freq_resp_extra_column = (
@@ -397,6 +400,11 @@ def generic_write_model_inputs(
     :param reserve_type:
     :return:
     """
+
+    db_weather_year, db_hydro_year, db_subproblem, db_stage = directories_to_db_values(
+        weather_year, hydro_year, subproblem, stage
+    )
+
     inputs_dir = os.path.join(
         scenario_directory, weather_year, hydro_year, subproblem, stage, "inputs"
     )

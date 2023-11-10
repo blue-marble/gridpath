@@ -21,6 +21,8 @@ import csv
 import os.path
 from pyomo.environ import Set, Param, Boolean, NonNegativeReals
 
+from gridpath.auxiliary.db_interface import directories_to_db_values
+
 
 def add_model_components(
     m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
@@ -61,7 +63,9 @@ def load_model_data(
     )
 
 
-def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(
+    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -69,8 +73,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     :param conn: database connection
     :return:
     """
-    subproblem = 1 if subproblem == "" else subproblem
-    stage = 1 if stage == "" else stage
+
     c = conn.cursor()
     carbon_cap_zone = c.execute(
         """SELECT carbon_cap_zone, allow_violation, 
@@ -85,7 +88,9 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     return carbon_cap_zone
 
 
-def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, conn):
+def validate_inputs(
+    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -121,8 +126,18 @@ def write_model_inputs(
     :return:
     """
 
+    db_weather_year, db_hydro_year, db_subproblem, db_stage = directories_to_db_values(
+        weather_year, hydro_year, subproblem, stage
+    )
+
     carbon_cap_zone = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        db_weather_year,
+        db_hydro_year,
+        db_subproblem,
+        db_stage,
+        conn,
     )
 
     with open(

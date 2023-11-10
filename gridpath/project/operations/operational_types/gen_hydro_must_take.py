@@ -39,6 +39,7 @@ from gridpath.auxiliary.auxiliary import (
     subset_init_by_param_value,
     subset_init_by_set_membership,
 )
+from gridpath.auxiliary.db_interface import directories_to_db_values
 from gridpath.auxiliary.dynamic_components import headroom_variables, footroom_variables
 from gridpath.project.common_functions import (
     check_if_boundary_type_and_first_timepoint,
@@ -771,6 +772,8 @@ def export_results(
         with open(
             os.path.join(
                 scenario_directory,
+                weather_year,
+                hydro_year,
                 next_subproblem,
                 stage,
                 "inputs",
@@ -815,7 +818,7 @@ def export_results(
 
 
 def get_model_inputs_from_database(
-    scenario_id, subscenarios, hydro_year, subproblem, stage, conn
+    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
 ):
     """
     :param subscenarios: SubScenarios object with all subscenario info
@@ -824,12 +827,18 @@ def get_model_inputs_from_database(
     :param conn: database connection
     :return: cursor object with query results
     """
+
+    db_weather_year, db_hydro_year, db_subproblem, db_stage = directories_to_db_values(
+        weather_year, hydro_year, subproblem, stage
+    )
+
     return get_hydro_inputs_from_database(
         scenario_id,
         subscenarios,
-        hydro_year,
-        subproblem,
-        stage,
+        db_weather_year,
+        db_hydro_year,
+        db_subproblem,
+        db_stage,
         conn,
         op_type="gen_hydro_must_take",
     )
@@ -857,7 +866,7 @@ def write_model_inputs(
     """
 
     data = get_model_inputs_from_database(
-        scenario_id, subscenarios, hydro_year, subproblem, stage, conn
+        scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
     )
     fname = "hydro_conventional_horizon_params.tab"
 
@@ -870,7 +879,9 @@ def write_model_inputs(
 ###############################################################################
 
 
-def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, conn):
+def validate_inputs(
+    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -882,7 +893,14 @@ def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, co
 
     # Validate operational chars table inputs
     validate_opchars(
-        scenario_id, subscenarios, subproblem, stage, conn, "gen_hydro_must_take"
+        scenario_id,
+        subscenarios,
+        weather_year,
+        hydro_year,
+        subproblem,
+        stage,
+        conn,
+        "gen_hydro_must_take",
     )
 
     # Validate hydro opchars input table

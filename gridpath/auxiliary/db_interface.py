@@ -306,3 +306,16 @@ def determine_table_subset_by_start_and_column(conn, tbl_start, cols):
                 table_subset.append(table)
 
     return table_subset
+
+
+def directories_to_db_values(weather_year, hydro_year, subproblem, stage):
+    db_weather_year = (
+        0 if weather_year == "" else int(weather_year.replace("weather_year_", ""))
+    )
+    db_hydro_year = (
+        0 if hydro_year == "" else int(hydro_year.replace("hydro_year_", ""))
+    )
+    db_subproblem = 1 if subproblem == "" else subproblem
+    db_stage = 1 if stage == "" else stage
+
+    return db_weather_year, db_hydro_year, db_subproblem, db_stage

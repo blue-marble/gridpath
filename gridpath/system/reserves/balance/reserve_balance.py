@@ -189,6 +189,7 @@ def generic_save_duals(m, reserve_constraint_name):
 
 def generic_import_results_to_database(
     scenario_id,
+    weather_year,
     hydro_year,
     subproblem,
     stage,

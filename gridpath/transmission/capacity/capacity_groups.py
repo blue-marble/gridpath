@@ -23,7 +23,7 @@ import pandas as pd
 from pyomo.environ import Set, Param, Constraint, NonNegativeReals, Expression, value
 
 from gridpath.auxiliary.auxiliary import get_required_subtype_modules
-from gridpath.auxiliary.db_interface import import_csv
+from gridpath.auxiliary.db_interface import import_csv, directories_to_db_values
 import gridpath.transmission.capacity.capacity_types as cap_type_init
 from gridpath.transmission.capacity.common_functions import (
     load_tx_capacity_type_modules,
@@ -301,7 +301,9 @@ def export_results(
 ###############################################################################
 
 
-def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(
+    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -347,8 +349,19 @@ def write_model_inputs(
     conn,
 ):
     """ """
+
+    db_weather_year, db_hydro_year, db_subproblem, db_stage = directories_to_db_values(
+        weather_year, hydro_year, subproblem, stage
+    )
+
     cap_grp_reqs, cap_grp_tx = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        db_weather_year,
+        db_hydro_year,
+        db_subproblem,
+        db_stage,
+        conn,
     )
 
     # Write the input files only if a subscenario is specified

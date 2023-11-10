@@ -65,6 +65,7 @@ class TestOperationalTypeCommonFunctions(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=None,  # No need to name since not adding components
             test_data_dir=TEST_DATA_DIRECTORY,
+            weather_year="",
             hydro_year="",
             subproblem="",
             stage="",

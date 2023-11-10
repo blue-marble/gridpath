@@ -20,6 +20,7 @@ import os.path
 from pyomo.environ import Set, Var, NonNegativeReals, Expression, value
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
+from gridpath.auxiliary.db_interface import directories_to_db_values
 from gridpath.auxiliary.dynamic_components import (
     performance_standard_balance_credit_components,
 )
@@ -69,7 +70,9 @@ def record_dynamic_components(dynamic_components):
     )
 
 
-def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(
+    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -77,8 +80,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     :param conn: database connection
     :return:
     """
-    subproblem = 1 if subproblem == "" else subproblem
-    stage = 1 if stage == "" else stage
+
     c = conn.cursor()
     mapping = c.execute(
         f"""SELECT performance_standard_zone, carbon_credits_zone
@@ -112,8 +114,18 @@ def write_model_inputs(
     stage,
     conn,
 ):
+    db_weather_year, db_hydro_year, db_subproblem, db_stage = directories_to_db_values(
+        weather_year, hydro_year, subproblem, stage
+    )
+
     query_results = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        db_weather_year,
+        db_hydro_year,
+        db_subproblem,
+        db_stage,
+        conn,
     )
     # performance_standard_zones_carbon_credits_zone_mapping.tab
     df = cursor_to_df(query_results)

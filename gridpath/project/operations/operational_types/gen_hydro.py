@@ -45,6 +45,7 @@ from gridpath.auxiliary.auxiliary import (
     subset_init_by_param_value,
     subset_init_by_set_membership,
 )
+from gridpath.auxiliary.db_interface import directories_to_db_values
 from gridpath.auxiliary.dynamic_components import headroom_variables, footroom_variables
 from gridpath.project.common_functions import (
     check_if_boundary_type_and_first_timepoint,
@@ -854,7 +855,7 @@ def export_results(
 
 
 def get_model_inputs_from_database(
-    scenario_id, subscenarios, hydro_year, subproblem, stage, conn
+    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
 ):
     """
     :param subscenarios: SubScenarios object with all subscenario info
@@ -867,6 +868,7 @@ def get_model_inputs_from_database(
     return get_hydro_inputs_from_database(
         scenario_id,
         subscenarios,
+        weather_year,
         hydro_year,
         subproblem,
         stage,
@@ -896,8 +898,18 @@ def write_model_inputs(
     :return:
     """
 
+    db_weather_year, db_hydro_year, db_subproblem, db_stage = directories_to_db_values(
+        weather_year, hydro_year, subproblem, stage
+    )
+
     data = get_model_inputs_from_database(
-        scenario_id, subscenarios, hydro_year, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        db_weather_year,
+        db_hydro_year,
+        db_subproblem,
+        db_stage,
+        conn,
     )
     fname = "hydro_conventional_horizon_params.tab"
 
@@ -968,7 +980,9 @@ def process_model_results(db, c, scenario_id, subscenarios, quiet):
 ###############################################################################
 
 
-def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, conn):
+def validate_inputs(
+    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -983,7 +997,14 @@ def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, co
 
     # Validate hydro opchars input table
     hydro_opchar_fraction_error = validate_hydro_opchars(
-        scenario_id, subscenarios, hydro_year, subproblem, stage, conn, "gen_hydro"
+        scenario_id,
+        subscenarios,
+        weather_year,
+        hydro_year,
+        subproblem,
+        stage,
+        conn,
+        "gen_hydro",
     )
 
     if hydro_opchar_fraction_error:

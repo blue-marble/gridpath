@@ -21,6 +21,7 @@ import os.path
 
 from pyomo.environ import Set, Param, NonNegativeReals
 
+from gridpath.auxiliary.db_interface import directories_to_db_values
 from gridpath.common_functions import create_results_df
 from gridpath.system.reliability.local_capacity import LOCAL_CAPACITY_ZONE_PRD_DF
 
@@ -72,7 +73,9 @@ def load_model_data(
     )
 
 
-def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(
+    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -105,7 +108,9 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     return local_capacity_requirement
 
 
-def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, conn):
+def validate_inputs(
+    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -141,8 +146,18 @@ def write_model_inputs(
     :return:
     """
 
+    db_weather_year, db_hydro_year, db_subproblem, db_stage = directories_to_db_values(
+        weather_year, hydro_year, subproblem, stage
+    )
+
     local_capacity_requirement = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        db_weather_year,
+        db_hydro_year,
+        db_subproblem,
+        db_stage,
+        conn,
     )
 
     with open(

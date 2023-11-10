@@ -99,9 +99,11 @@ def import_scenario_results_into_database(
 
     # Hydro years first
     for weather_year_str in weather_year_hydro_year_directory_strings.keys():
-        for hydro_year_str in weather_year_hydro_year_directory_strings[
-            weather_year_str
-        ]:
+        for hydro_year_str in (
+            weather_year_hydro_year_directory_strings[weather_year_str]
+            if not weather_year_str == ""
+            else next(iter(weather_year_hydro_year_directory_strings.values()))
+        ):
             for subproblem_str in subproblem_stage_directory_strings.keys():
                 for stage_str in subproblem_stage_directory_strings[subproblem_str]:
                     results_directory = os.path.join(
@@ -113,7 +115,8 @@ def import_scenario_results_into_database(
                         "results",
                     )
                     if not quiet:
-                        print("--- subproblem {}".format(subproblem_str))
+                        if subproblem_str != "":
+                            print("--- subproblem {}".format(subproblem_str))
                         if stage_str != "":
                             print("--- stage {}".format(stage_str))
 

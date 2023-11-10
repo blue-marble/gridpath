@@ -26,6 +26,7 @@ from gridpath.auxiliary.auxiliary import (
     subset_init_by_param_value,
     subset_init_by_set_membership,
 )
+from gridpath.auxiliary.db_interface import directories_to_db_values
 from gridpath.auxiliary.validations import (
     write_validation_to_database,
     get_projects_by_reserve,
@@ -293,7 +294,9 @@ def load_model_data(
 ###############################################################################
 
 
-def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_model_inputs_from_database(
+    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -301,10 +304,16 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
     :param conn: database connection
     :return: cursor object with query results
     """
+    db_weather_year, db_hydro_year, db_subproblem, db_stage = directories_to_db_values(
+        weather_year, hydro_year, subproblem, stage
+    )
+
     prj_tmp_data = get_prj_tmp_opr_inputs_from_db(
         subscenarios=subscenarios,
-        subproblem=subproblem,
-        stage=stage,
+        weather_year=db_weather_year,
+        hydro_year=db_hydro_year,
+        subproblem=db_subproblem,
+        stage=db_stage,
         conn=conn,
         op_type="gen_var_must_take",
         table="inputs_project_variable_generator_profiles" "",
@@ -337,7 +346,7 @@ def write_model_inputs(
     """
 
     data = get_model_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
     )
     fname = "variable_generator_profiles.tab"
 
@@ -350,7 +359,9 @@ def write_model_inputs(
 ###############################################################################
 
 
-def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, conn):
+def validate_inputs(
+    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -362,7 +373,14 @@ def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, co
 
     # Validate operational chars table inputs
     opchar_df = validate_opchars(
-        scenario_id, subscenarios, subproblem, stage, conn, "gen_var_must_take"
+        scenario_id,
+        subscenarios,
+        weather_year,
+        hydro_year,
+        subproblem,
+        stage,
+        conn,
+        "gen_var_must_take",
     )
 
     # Validate var profiles input table
@@ -394,6 +412,8 @@ def validate_inputs(scenario_id, subscenarios, hydro_year, subproblem, stage, co
         write_validation_to_database(
             conn=conn,
             scenario_id=scenario_id,
+            weather_year=weather_year,
+            hydro_year=hydro_year,
             subproblem_id=subproblem,
             stage_id=stage,
             gridpath_module=__name__,

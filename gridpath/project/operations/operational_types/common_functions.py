@@ -17,6 +17,7 @@ import os.path
 import pandas as pd
 import warnings
 
+from gridpath.auxiliary.db_interface import directories_to_db_values
 from gridpath.project.common_functions import (
     check_if_boundary_type_and_first_timepoint,
     check_boundary_type,
@@ -425,6 +426,7 @@ def write_tab_file_model_inputs(
 
     out_file = os.path.join(
         scenario_directory,
+        weather_year,
         hydro_year,
         subproblem,
         stage,
@@ -502,6 +504,7 @@ def load_var_profile_inputs(
     cf_df = pd.read_csv(
         os.path.join(
             scenario_directory,
+            weather_year,
             hydro_year,
             subproblem,
             stage,
@@ -538,6 +541,8 @@ def load_var_profile_inputs(
 
 def get_prj_tmp_opr_inputs_from_db(
     subscenarios,
+    weather_year,
+    hydro_year,
     subproblem,
     stage,
     conn,
@@ -562,9 +567,6 @@ def get_prj_tmp_opr_inputs_from_db(
     :param op_type:
     :return: cursor object with query results
     """
-    subproblem = 1 if subproblem == "" else subproblem
-    stage = 1 if stage == "" else stage
-
     c = conn.cursor()
 
     # TODO: see note below; can produce this problem by having two scenarios
@@ -606,7 +608,16 @@ def get_prj_tmp_opr_inputs_from_db(
     return prj_tmp_data
 
 
-def validate_var_profiles(scenario_id, subscenarios, subproblem, stage, conn, op_type):
+def validate_var_profiles(
+    scenario_id,
+    subscenarios,
+    weather_year,
+    hydro_year,
+    subproblem,
+    stage,
+    conn,
+    op_type,
+):
     """
 
     :param subscenarios:
@@ -618,6 +629,8 @@ def validate_var_profiles(scenario_id, subscenarios, subproblem, stage, conn, op
     """
     var_profiles = get_prj_tmp_opr_inputs_from_db(
         subscenarios=subscenarios,
+        weather_year=weather_year,
+        hydro_year=hydro_year,
         subproblem=subproblem,
         stage=stage,
         conn=conn,
@@ -636,6 +649,8 @@ def validate_var_profiles(scenario_id, subscenarios, subproblem, stage, conn, op
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_year=weather_year,
+        hydro_year=hydro_year,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -648,6 +663,8 @@ def validate_var_profiles(scenario_id, subscenarios, subproblem, stage, conn, op
     cap_factor_validation_error = write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_year=weather_year,
+        hydro_year=hydro_year,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -727,7 +744,14 @@ def load_hydro_opchars(
 
 
 def get_hydro_inputs_from_database(
-    scenario_id, subscenarios, hydro_year, subproblem, stage, conn, op_type
+    scenario_id,
+    subscenarios,
+    weather_year,
+    hydro_year,
+    subproblem,
+    stage,
+    conn,
+    op_type,
 ):
     """
     Get the hydro-specific operational characteristics from the
@@ -748,19 +772,14 @@ def get_hydro_inputs_from_database(
     :param op_type:
     :return: cursor object with query results
     """
-    hydro_iterations = True if len(hydro_year) > 0 else False
-    hydro_year = (
-        hydro_year.replace("hydro_year_", "") if hydro_iterations else hydro_year
-    )
-    subproblem = 1 if subproblem == "" else subproblem
-    stage = 1 if stage == "" else stage
 
     c = conn.cursor()
 
-    if not hydro_iterations:
-        # NOTE: There can be cases where a resource is both in specified capacity
-        # table and in new build table, but depending on capacity type you'd only
-        # use one of them, so filtering with OR is not 100% correct.
+    # TODO: make if logic for iterations  more robust
+    # NOTE: There can be cases where a resource is both in specified capacity
+    # table and in new build table, but depending on capacity type you'd only
+    # use one of them, so filtering with OR is not 100% correct.
+    if hydro_year != 0:
         sql = f"""
         SELECT project, horizon, average_power_fraction, min_power_fraction, 
         max_power_fraction
@@ -786,8 +805,8 @@ def get_hydro_inputs_from_database(
         USING (hydro_operational_chars_scenario_id, project, horizon)
         ;
         """
-    # TODO: figure out how the hydro opchar ID figures here
     else:
+        # TODO: figure out how the hydro opchar ID figures here
         sql = f"""
         SELECT project, horizon,
         sum(month_weight * average_power_fraction) as average_power_fraction,
@@ -836,7 +855,7 @@ def get_hydro_inputs_from_database(
                     horizon,
                     month
             ) as month_table
-
+    
             JOIN (
                 SELECT 
                     temporal_scenario_id,
@@ -865,7 +884,7 @@ def get_hydro_inputs_from_database(
                 balancing_type,
                 horizon
                 )
-
+    
             -- Join to the relevant projects and their characteristics for 
             -- the relevant hydro year and temporal_scenario_id, subproblem, 
             -- stage, balancing type, horizon 
@@ -916,7 +935,14 @@ def get_hydro_inputs_from_database(
 
 
 def validate_hydro_opchars(
-    scenario_id, subscenarios, hydro_year, subproblem, stage, conn, op_type
+    scenario_id,
+    subscenarios,
+    weather_year,
+    hydro_year,
+    subproblem,
+    stage,
+    conn,
+    op_type,
 ):
     """
 
@@ -928,7 +954,14 @@ def validate_hydro_opchars(
     :return:
     """
     hydro_chars = get_hydro_inputs_from_database(
-        scenario_id, subscenarios, hydro_year, subproblem, stage, conn, op_type
+        scenario_id,
+        subscenarios,
+        weather_year,
+        hydro_year,
+        subproblem,
+        stage,
+        conn,
+        op_type,
     )
 
     # Convert input data into pandas DataFrame
@@ -939,6 +972,8 @@ def validate_hydro_opchars(
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_year=weather_year,
+        hydro_year=hydro_year,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -951,6 +986,8 @@ def validate_hydro_opchars(
     hydro_opchar_fraction_error = write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_year=weather_year,
+        hydro_year=hydro_year,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -963,6 +1000,8 @@ def validate_hydro_opchars(
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_year=weather_year,
+        hydro_year=hydro_year,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -1143,7 +1182,16 @@ def get_optype_inputs_from_db(scenario_id, subscenarios, conn, op_type):
     return df
 
 
-def validate_opchars(scenario_id, subscenarios, subproblem, stage, conn, op_type):
+def validate_opchars(
+    scenario_id,
+    subscenarios,
+    weather_year,
+    hydro_year,
+    subproblem,
+    stage,
+    conn,
+    op_type,
+):
     """
 
     :param subscenarios:
@@ -1173,6 +1221,8 @@ def validate_opchars(scenario_id, subscenarios, subproblem, stage, conn, op_type
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_year=weather_year,
+        hydro_year=hydro_year,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -1185,6 +1235,8 @@ def validate_opchars(scenario_id, subscenarios, subproblem, stage, conn, op_type
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_year=weather_year,
+        hydro_year=hydro_year,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,

@@ -37,9 +37,12 @@ def _get_idx_col(df):
         )
 
 
+# TODO: add iterations to validation?
 def write_validation_to_database(
     conn,
     scenario_id,
+    weather_year,
+    hydro_year,
     subproblem_id,
     stage_id,
     gridpath_module,
