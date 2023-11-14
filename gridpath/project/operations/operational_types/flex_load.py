@@ -732,4 +732,13 @@ def validate_inputs(
     """
 
     # Validate operational chars table inputs
-    validate_opchars(scenario_id, subscenarios, subproblem, stage, conn, "flex_load")
+    validate_opchars(
+        scenario_id,
+        subscenarios,
+        weather_year,
+        hydro_year,
+        subproblem,
+        stage,
+        conn,
+        "flex_load",
+    )

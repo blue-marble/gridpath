@@ -385,7 +385,14 @@ def validate_inputs(
 
     # Validate var profiles input table
     cap_factor_validation_error = validate_var_profiles(
-        scenario_id, subscenarios, subproblem, stage, conn, "gen_var_must_take"
+        scenario_id,
+        subscenarios,
+        weather_year,
+        hydro_year,
+        subproblem,
+        stage,
+        conn,
+        "gen_var_must_take",
     )
     if cap_factor_validation_error:
         warnings.warn(

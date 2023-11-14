@@ -567,7 +567,16 @@ def validate_inputs(
     """
 
     # Validate operational chars table inputs
-    validate_opchars(scenario_id, subscenarios, subproblem, stage, conn, "fuel_prod")
+    validate_opchars(
+        scenario_id,
+        subscenarios,
+        weather_year,
+        hydro_year,
+        subproblem,
+        stage,
+        conn,
+        "fuel_prod",
+    )
 
 
 # TODO: validate that these projects have only a single fuel specified

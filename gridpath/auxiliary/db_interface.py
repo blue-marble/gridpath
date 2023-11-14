@@ -232,9 +232,16 @@ def import_csv(
 
     df = pd.read_csv(os.path.join(results_directory, f"{which_results}.csv"))
     df["scenario_id"] = scenario_id
-    df["hydro_year"] = hydro_year
-    df["subproblem_id"] = subproblem
-    df["stage_id"] = stage
+
+    # TODO: DB defaults need to be specified somewhere
+    df["weather_year"] = (
+        0 if weather_year == "" else int(weather_year.replace("weather_year_", ""))
+    )
+    df["hydro_year"] = (
+        0 if hydro_year == "" else int(hydro_year.replace("hydro_year_", ""))
+    )
+    df["subproblem_id"] = 1 if subproblem == "" else int(subproblem)
+    df["stage_id"] = 1 if stage == "" else int(stage)
 
     spin_on_database_lock_generic(
         command=df.to_sql(

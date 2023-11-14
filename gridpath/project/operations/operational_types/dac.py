@@ -243,7 +243,16 @@ def validate_inputs(
     """
 
     # Validate operational chars table inputs
-    validate_opchars(scenario_id, subscenarios, subproblem, stage, conn, "dac")
+    validate_opchars(
+        scenario_id,
+        subscenarios,
+        weather_year,
+        hydro_year,
+        subproblem,
+        stage,
+        conn,
+        "dac",
+    )
 
     # Other module specific validations
 

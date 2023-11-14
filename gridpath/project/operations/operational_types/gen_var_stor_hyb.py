@@ -994,5 +994,12 @@ def validate_inputs(
 
     # Validate var profiles input table
     validate_var_profiles(
-        scenario_id, subscenarios, subproblem, stage, conn, "gen_var_stor_hyb"
+        scenario_id,
+        subscenarios,
+        weather_year,
+        hydro_year,
+        subproblem,
+        stage,
+        conn,
+        "gen_var_stor_hyb",
     )

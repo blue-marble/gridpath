@@ -174,7 +174,6 @@ def fix_variables(
     :param stage:
     :return:
     """
-
     required_operational_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
         weather_year=weather_year,
@@ -215,7 +214,7 @@ def load_model_data(
     """
 
     stages = check_for_integer_subdirectories(
-        os.path.join(scenario_directory, subproblem)
+        os.path.join(scenario_directory, weather_year, hydro_year, subproblem)
     )
 
     fixed_commitment_df = read_csv(
@@ -303,11 +302,9 @@ def export_pass_through_inputs(
     :param m:
     :return:
     """
-
     df = read_csv(
         os.path.join(
             scenario_directory,
-            weather_year,
             weather_year,
             hydro_year,
             subproblem,
@@ -324,6 +321,8 @@ def export_pass_through_inputs(
     with open(
         os.path.join(
             scenario_directory,
+            weather_year,
+            hydro_year,
             subproblem,
             "pass_through_inputs",
             "fixed_commitment.tab",

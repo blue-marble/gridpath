@@ -83,27 +83,37 @@ def import_scenario_results_into_database(
         scenario_structure
     ).SUBPROBLEM_STAGE_DIRECTORIES
 
-    weather_years = [y for y in scenario_structure.WEATHER_YEAR_HYDRO_YEARS.keys()]
-    if weather_years:
-        weather_year = 0
-        # Hydro years first
-        if len(scenario_structure.WEATHER_YEAR_HYDRO_YEARS[weather_year]) > 0:
-            hydro_year_str_list = [
-                f"hydro_year_{yr}"
-                for yr in scenario_structure.WEATHER_YEAR_HYDRO_YEARS[weather_year]
-            ]
-        else:
-            hydro_year_str_list = [""]
-    else:
-        hydro_year_str_list = [""]
+    # weather_years = [y for y in scenario_structure.WEATHER_YEAR_HYDRO_YEARS.keys()]
+    # if weather_years:
+    #     weather_year = 0
+    #     # Hydro years first
+    #     if len(scenario_structure.WEATHER_YEAR_HYDRO_YEARS[weather_year]) > 0:
+    #         hydro_year_str_list = [
+    #             f"hydro_year_{yr}"
+    #             for yr in scenario_structure.WEATHER_YEAR_HYDRO_YEARS[weather_year]
+    #         ]
+    #     else:
+    #         hydro_year_str_list = [""]
+    # else:
+    #     hydro_year_str_list = [""]
 
     # Hydro years first
     for weather_year_str in weather_year_hydro_year_directory_strings.keys():
+        weather_year = (
+            0
+            if weather_year_str == ""
+            else int(weather_year_str.replace("weather_year_", ""))
+        )
         for hydro_year_str in (
             weather_year_hydro_year_directory_strings[weather_year_str]
             if not weather_year_str == ""
             else next(iter(weather_year_hydro_year_directory_strings.values()))
         ):
+            hydro_year = (
+                0
+                if hydro_year_str == ""
+                else int(hydro_year_str.replace("hydro_year_", ""))
+            )
             for subproblem_str in subproblem_stage_directory_strings.keys():
                 for stage_str in subproblem_stage_directory_strings[subproblem_str]:
                     results_directory = os.path.join(
@@ -136,8 +146,8 @@ def import_scenario_results_into_database(
                     ;"""
                     termination_condition_data = (
                         scenario_id,
-                        weather_year_str,
-                        hydro_year_str,
+                        weather_year,
+                        hydro_year,
                         subproblem_str,
                         stage_str,
                         termination_condition,

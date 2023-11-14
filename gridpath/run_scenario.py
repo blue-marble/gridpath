@@ -513,6 +513,24 @@ def run_scenario(
             ):
                 for subproblem_str in subproblem_stage_directory_strings.keys():
                     subproblem = 1 if subproblem_str == "" else int(subproblem_str)
+
+                    # Write pass through input file headers
+                    # TODO: this is not the best place for this; we should
+                    #  probably set up the gridpath modules only once and do
+                    #  this first
+                    #  It needs to be created BEFORE stage 1 is run; it could
+                    #  alternatively be created by the first stage that
+                    #  exports pass through inputs, but this will require
+                    #  changes to the formulation (for commitment)
+                    if scenario_structure.MULTI_STAGE:
+                        create_pass_through_inputs(
+                            hydro_year_str,
+                            scenario_directory,
+                            scenario_structure,
+                            subproblem_str,
+                            weather_year_str,
+                        )
+
                     objective_values[subproblem] = {}
                     run_optimization_for_subproblem(
                         scenario_directory=scenario_directory,
@@ -527,8 +545,8 @@ def run_scenario(
                         objective_values=objective_values,
                     )
 
-                # Should probably just remove this logic here and have a dictionary
-                # for all objective functions
+                # TODO: Should probably just remove this logic here and have a
+                # dictionary for all objective functions
                 if len(objective_values.keys()) == 1:
                     objective_values = objective_values[
                         list(objective_values.keys())[0]
@@ -563,6 +581,15 @@ def run_scenario(
                     else next(iter(weather_year_hydro_year_directory_strings.values()))
                 ):
                     for subproblem_str in subproblem_stage_directory_strings.keys():
+                        if scenario_structure.MULTI_STAGE:
+                            create_pass_through_inputs(
+                                hydro_year_str,
+                                scenario_directory,
+                                scenario_structure,
+                                subproblem_str,
+                                weather_year_str,
+                            )
+
                         run_optimization_for_subproblem(
                             scenario_directory=scenario_directory,
                             weather_year_directory=weather_year_str,
@@ -590,8 +617,25 @@ def run_scenario(
             manager = Manager()
             objective_values = manager.dict()
 
-            for subproblem in scenario_structure.SUBPROBLEM_STAGES.keys():
-                objective_values[subproblem] = manager.dict()
+            for weather_year_str in weather_year_hydro_year_directory_strings.keys():
+                for hydro_year_str in (
+                    weather_year_hydro_year_directory_strings[weather_year_str]
+                    if not weather_year_str == ""
+                    else next(iter(weather_year_hydro_year_directory_strings.values()))
+                ):
+                    for subproblem_str in subproblem_stage_directory_strings.keys():
+                        if scenario_structure.MULTI_STAGE:
+                            create_pass_through_inputs(
+                                hydro_year_str,
+                                scenario_directory,
+                                scenario_structure,
+                                subproblem_str,
+                                weather_year_str,
+                            )
+
+                        # TODO: create management of iteration objective functions
+                        subproblem = 1 if subproblem_str == "" else int(subproblem_str)
+                        objective_values[subproblem] = manager.dict()
 
             # Pool must use spawn to work properly on Linux
             pool = get_context("spawn").Pool(n_parallel_subproblems)
@@ -603,6 +647,7 @@ def run_scenario(
                         hydro_year_str,
                         subproblem_str,
                         subproblem_stage_directory_strings[subproblem_str],
+                        scenario_structure.MULTI_STAGE,
                         parsed_arguments,
                         objective_values,
                     ]
@@ -622,6 +667,34 @@ def run_scenario(
             pool.close()
 
             return objective_values
+
+
+def create_pass_through_inputs(
+    hydro_year_str,
+    scenario_directory,
+    scenario_structure,
+    subproblem_str,
+    weather_year_str,
+):
+    modules_to_use, loaded_modules = set_up_gridpath_modules(
+        scenario_directory=scenario_directory,
+        multi_stage=scenario_structure.MULTI_STAGE,
+    )
+    pass_through_directory = os.path.join(
+        scenario_directory,
+        weather_year_str,
+        hydro_year_str,
+        subproblem_str,
+        "pass_through_inputs",
+    )
+    if not os.path.exists(pass_through_directory):
+        os.makedirs(pass_through_directory)
+    for m in loaded_modules:
+        # Writing the headers will delete prior data in the file
+        if hasattr(m, "write_pass_through_file_headers"):
+            m.write_pass_through_file_headers(
+                pass_through_directory=pass_through_directory
+            )
 
 
 def save_results(
@@ -1104,19 +1177,6 @@ def export_pass_through_inputs(
 
     Export pass through inputs for each loaded module (if applicable)
     """
-    # First create the pass-through directory if it doesn't
-    # exist
-    # TODO: need better handling of deleting prior results?
-    pass_through_directory = os.path.join(
-        scenario_directory,
-        weather_year,
-        hydro_year,
-        subproblem,
-        "pass_through_inputs",
-    )
-    if not os.path.exists(pass_through_directory):
-        os.makedirs(pass_through_directory)
-
     # Determine/load modules and dynamic components
     modules_to_use, loaded_modules = set_up_gridpath_modules(
         scenario_directory=scenario_directory, multi_stage=multi_stage
@@ -1124,12 +1184,6 @@ def export_pass_through_inputs(
 
     n = 0
     for m in loaded_modules:
-        # Writing the headers will delete prior data in the file
-        if hasattr(m, "write_pass_through_file_headers"):
-            m.write_pass_through_file_headers(
-                pass_through_directory=pass_through_directory
-            )
-
         if hasattr(m, "export_pass_through_inputs"):
             if verbose:
                 print(f"... {modules_to_use[n]}")
