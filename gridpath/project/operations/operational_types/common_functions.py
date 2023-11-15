@@ -897,7 +897,7 @@ def get_hydro_inputs_from_database(
                     stage_id, 
                     balancing_type,
                     horizon,
-                    hydro_operational_chars_years_scenario_id
+                    hydro_operational_chars_iterations_scenario_id
                 FROM project_operational_horizons
                 WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
                 AND project_operational_chars_scenario_id = {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
@@ -916,8 +916,8 @@ def get_hydro_inputs_from_database(
                 horizon
                 )
             -- Hydro chars
-            JOIN inputs_project_hydro_operational_chars_years 
-            USING (project, hydro_operational_chars_years_scenario_id, month)
+            JOIN inputs_project_hydro_operational_chars_iterations 
+            USING (project, hydro_operational_chars_iterations_scenario_id, month)
         )
         WHERE hydro_iteration = {hydro_iteration}
         GROUP BY 

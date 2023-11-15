@@ -1321,7 +1321,7 @@ CREATE TABLE inputs_project_operational_chars
     variable_generator_profile_scenario_id    INTEGER, -- determines var profiles
     curtailment_cost_per_pwh                  FLOAT,   -- curtailment cost per unit-powerXhour
     hydro_operational_chars_scenario_id       INTEGER, -- determines hydro MWa, min, max
-    hydro_operational_chars_years_scenario_id INTEGER,
+    hydro_operational_chars_iterations_scenario_id INTEGER,
     lf_reserves_up_derate                     FLOAT,
     lf_reserves_down_derate                   FLOAT,
     regulation_up_derate                      FLOAT,
@@ -1370,9 +1370,9 @@ CREATE TABLE inputs_project_operational_chars
     FOREIGN KEY (project, hydro_operational_chars_scenario_id) REFERENCES
         subscenarios_project_hydro_operational_chars
             (project, hydro_operational_chars_scenario_id),
-    FOREIGN KEY (project, hydro_operational_chars_years_scenario_id) REFERENCES
-        subscenarios_project_hydro_operational_chars_years
-            (project, hydro_operational_chars_years_scenario_id),
+    FOREIGN KEY (project, hydro_operational_chars_iterations_scenario_id) REFERENCES
+        subscenarios_project_hydro_operational_chars_iterations
+            (project, hydro_operational_chars_iterations_scenario_id),
     FOREIGN KEY (project, cap_factor_limits_scenario_id) REFERENCES
         subscenarios_project_cap_factor_limits (project, cap_factor_limits_scenario_id),
     FOREIGN KEY (operational_type) REFERENCES mod_operational_types
@@ -1620,31 +1620,31 @@ CREATE TABLE inputs_project_hydro_operational_chars
 
 -- TODO: figure out what to call this table and how to link to subscenarios
 
-DROP TABLE IF EXISTS subscenarios_project_hydro_operational_chars_years;
-CREATE TABLE subscenarios_project_hydro_operational_chars_years
+DROP TABLE IF EXISTS subscenarios_project_hydro_operational_chars_iterations;
+CREATE TABLE subscenarios_project_hydro_operational_chars_iterations
 (
     project                                   VARCHAR(64),
-    hydro_operational_chars_years_scenario_id INTEGER,
+    hydro_operational_chars_iterations_scenario_id INTEGER,
     name                                      VARCHAR(32),
     description                               VARCHAR(128),
-    PRIMARY KEY (project, hydro_operational_chars_years_scenario_id)
+    PRIMARY KEY (project, hydro_operational_chars_iterations_scenario_id)
 );
 
-DROP TABLE IF EXISTS inputs_project_hydro_operational_chars_years;
-CREATE TABLE inputs_project_hydro_operational_chars_years
+DROP TABLE IF EXISTS inputs_project_hydro_operational_chars_iterations;
+CREATE TABLE inputs_project_hydro_operational_chars_iterations
 (
     project                                   VARCHAR(64),
-    hydro_operational_chars_years_scenario_id INTEGER,
+    hydro_operational_chars_iterations_scenario_id INTEGER,
     hydro_iteration                                INTEGER,
     month                                     INTEGER,
     average_power_fraction                    FLOAT,
     min_power_fraction                        FLOAT,
     max_power_fraction                        FLOAT,
-    PRIMARY KEY (project, hydro_operational_chars_years_scenario_id,
+    PRIMARY KEY (project, hydro_operational_chars_iterations_scenario_id,
                  hydro_iteration, month),
-    FOREIGN KEY (project, hydro_operational_chars_years_scenario_id) REFERENCES
-        subscenarios_project_hydro_operational_chars_years
-            (project, hydro_operational_chars_years_scenario_id)
+    FOREIGN KEY (project, hydro_operational_chars_iterations_scenario_id) REFERENCES
+        subscenarios_project_hydro_operational_chars_iterations
+            (project, hydro_operational_chars_iterations_scenario_id)
 );
 
 
@@ -5838,7 +5838,7 @@ SELECT project_portfolio_scenario_id,
        operational_type,
        balancing_type_project as balancing_type,
        hydro_operational_chars_scenario_id,
-       hydro_operational_chars_years_scenario_id,
+       hydro_operational_chars_iterations_scenario_id,
        subproblem_id,
        stage_id,
        project,
