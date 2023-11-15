@@ -83,20 +83,6 @@ def import_scenario_results_into_database(
         scenario_structure
     ).SUBPROBLEM_STAGE_DIRECTORIES
 
-    # weather_years = [y for y in scenario_structure.WEATHER_YEAR_HYDRO_YEARS.keys()]
-    # if weather_years:
-    #     weather_year = 0
-    #     # Hydro years first
-    #     if len(scenario_structure.WEATHER_YEAR_HYDRO_YEARS[weather_year]) > 0:
-    #         hydro_year_str_list = [
-    #             f"hydro_year_{yr}"
-    #             for yr in scenario_structure.WEATHER_YEAR_HYDRO_YEARS[weather_year]
-    #         ]
-    #     else:
-    #         hydro_year_str_list = [""]
-    # else:
-    #     hydro_year_str_list = [""]
-
     # Hydro years first
     for weather_year_str in weather_year_hydro_year_directory_strings.keys():
         weather_year = (
@@ -115,7 +101,9 @@ def import_scenario_results_into_database(
                 else int(hydro_year_str.replace("hydro_year_", ""))
             )
             for subproblem_str in subproblem_stage_directory_strings.keys():
+                subproblem = 0 if subproblem_str == "" else int(subproblem_str)
                 for stage_str in subproblem_stage_directory_strings[subproblem_str]:
+                    stage = 0 if stage_str == "" else int(stage_str)
                     results_directory = os.path.join(
                         scenario_directory,
                         weather_year_str,
@@ -125,6 +113,10 @@ def import_scenario_results_into_database(
                         "results",
                     )
                     if not quiet:
+                        if weather_year_str != "":
+                            print("--- weather_year {}".format(weather_year))
+                        if hydro_year_str != "":
+                            print("--- hydro_year {}".format(hydro_year))
                         if subproblem_str != "":
                             print("--- subproblem {}".format(subproblem_str))
                         if stage_str != "":
@@ -144,12 +136,13 @@ def import_scenario_results_into_database(
                         stage_id, solver_termination_condition)
                         VALUES (?, ?, ?, ?, ?, ?)
                     ;"""
+
                     termination_condition_data = (
                         scenario_id,
                         weather_year,
                         hydro_year,
-                        subproblem_str,
-                        stage_str,
+                        subproblem,
+                        stage,
                         termination_condition,
                     )
                     spin_on_database_lock(

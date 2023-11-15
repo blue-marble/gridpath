@@ -4210,7 +4210,8 @@ CREATE TABLE results_project_period
     max_total_energy_dual                  FLOAT,
     carbon_credits_zone                    VARCHAR(32),
     carbon_credits_generated_tCO2          FLOAT,
-    PRIMARY KEY (scenario_id, project, hydro_year, period, subproblem_id,
+    PRIMARY KEY (scenario_id, project, weather_year, hydro_year, period,
+                 subproblem_id,
                  stage_id)
 );
 
@@ -4329,8 +4330,7 @@ CREATE TABLE results_project_timepoint
     start_unavailability                            FLOAT,
     stop_unavailability                             FLOAT,
     PRIMARY KEY (scenario_id, project, weather_year, hydro_year, subproblem_id,
-                 stage_id,
-                 timepoint)
+                 stage_id, timepoint)
 );
 
 DROP TABLE IF EXISTS results_project_curtailment_variable_periodagg;

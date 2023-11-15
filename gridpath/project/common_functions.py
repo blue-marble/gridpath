@@ -134,6 +134,7 @@ def append_to_input_file(
         dict_by_project[indx] = ["." if x is None else x for x in indx_char]
 
     # Open the projects file
+
     with open(os.path.join(inputs_directory, input_file), "r") as f_in:
         # Read in the file
         reader = csv.reader(f_in, delimiter="\t", lineterminator="\n")

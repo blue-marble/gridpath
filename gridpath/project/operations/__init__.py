@@ -1108,6 +1108,7 @@ def write_model_inputs(
         "partial_availability_threshold",
         "nonfuel_carbon_emissions_per_mwh",
     ]
+
     append_to_input_file(
         inputs_directory=inputs_directory,
         input_file="projects.tab",

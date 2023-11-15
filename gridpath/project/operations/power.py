@@ -194,6 +194,7 @@ def summarize_results(scenario_directory, weather_year, hydro_year, subproblem, 
     operational_results_df = pd.read_csv(
         os.path.join(
             scenario_directory,
+            weather_year,
             hydro_year,
             subproblem,
             stage,

@@ -47,6 +47,7 @@ def export_results(
     getattr(d, PROJECT_TIMEPOINT_DF).to_csv(
         os.path.join(
             scenario_directory,
+            weather_year,
             hydro_year,
             subproblem,
             stage,

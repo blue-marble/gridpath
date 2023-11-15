@@ -230,7 +230,7 @@ def get_scenario_structure_from_db(conn, scenario_id):
     all_weather_years = [
         row[0]
         for row in cursor.execute(
-            """SELECT weather_year
+            """SELECT DISTINCT weather_year
                FROM inputs_temporal_iterations
                INNER JOIN scenarios
                USING (temporal_scenario_id)
@@ -250,13 +250,12 @@ def get_scenario_structure_from_db(conn, scenario_id):
         hydro_years_by_weather_year = {}
         for weather_year in all_weather_years:
             hydro_years = cursor.execute(
-                """SELECT hydro_year
+                f"""SELECT hydro_year
                    FROM inputs_temporal_iterations
                    INNER JOIN scenarios
                    USING (temporal_scenario_id)
-                   WHERE scenario_id = {};""".format(
-                    scenario_id, weather_year
-                )
+                   WHERE scenario_id = {scenario_id}
+                   AND weather_year = {weather_year};"""
             ).fetchall()
             hydro_years = [hydro_year[0] for hydro_year in hydro_years]  # to list
             hydro_years_by_weather_year[weather_year] = hydro_years
