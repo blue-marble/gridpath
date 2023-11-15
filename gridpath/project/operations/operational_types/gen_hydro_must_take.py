@@ -59,7 +59,7 @@ from gridpath.common_functions import create_results_df
 
 
 def add_model_components(
-    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+    m, d, scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
 ):
     """
     The following Pyomo model components are defined in this module:
@@ -659,7 +659,14 @@ def power_delta_rule(mod, g, tmp):
 
 
 def load_model_data(
-    m, d, data_portal, scenario_directory, weather_year, hydro_year, subproblem, stage
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    subproblem,
+    stage,
 ):
     """
 
@@ -677,8 +684,8 @@ def load_model_data(
         mod=m,
         data_portal=data_portal,
         scenario_directory=scenario_directory,
-        weather_year=weather_year,
-        hydro_year=hydro_year,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
         subproblem=subproblem,
         stage=stage,
         op_type="gen_hydro_must_take",
@@ -688,8 +695,8 @@ def load_model_data(
     load_hydro_opchars(
         data_portal=data_portal,
         scenario_directory=scenario_directory,
-        weather_year=weather_year,
-        hydro_year=hydro_year,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
         subproblem=subproblem,
         stage=stage,
         op_type="gen_hydro_must_take",
@@ -741,7 +748,7 @@ def add_to_prj_tmp_results(mod):
 
 
 def export_results(
-    mod, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+    mod, d, scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
 ):
     """
 
@@ -772,8 +779,8 @@ def export_results(
         with open(
             os.path.join(
                 scenario_directory,
-                weather_year,
-                hydro_year,
+                weather_iteration,
+                hydro_iteration,
                 next_subproblem,
                 stage,
                 "inputs",
@@ -818,7 +825,13 @@ def export_results(
 
 
 def get_model_inputs_from_database(
-    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     :param subscenarios: SubScenarios object with all subscenario info
@@ -828,15 +841,18 @@ def get_model_inputs_from_database(
     :return: cursor object with query results
     """
 
-    db_weather_year, db_hydro_year, db_subproblem, db_stage = directories_to_db_values(
-        weather_year, hydro_year, subproblem, stage
-    )
+    (
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_subproblem,
+        db_stage,
+    ) = directories_to_db_values(weather_iteration, hydro_iteration, subproblem, stage)
 
     return get_hydro_inputs_from_database(
         scenario_id,
         subscenarios,
-        db_weather_year,
-        db_hydro_year,
+        db_weather_iteration,
+        db_hydro_iteration,
         db_subproblem,
         db_stage,
         conn,
@@ -848,8 +864,8 @@ def write_model_inputs(
     scenario_directory,
     scenario_id,
     subscenarios,
-    weather_year,
-    hydro_year,
+    weather_iteration,
+    hydro_iteration,
     subproblem,
     stage,
     conn,
@@ -866,12 +882,24 @@ def write_model_inputs(
     """
 
     data = get_model_inputs_from_database(
-        scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        weather_iteration,
+        hydro_iteration,
+        subproblem,
+        stage,
+        conn,
     )
     fname = "hydro_conventional_horizon_params.tab"
 
     write_tab_file_model_inputs(
-        scenario_directory, weather_year, hydro_year, subproblem, stage, fname, data
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        subproblem,
+        stage,
+        fname,
+        data,
     )
 
 
@@ -880,7 +908,13 @@ def write_model_inputs(
 
 
 def validate_inputs(
-    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     Get inputs from database and validate the inputs
@@ -895,8 +929,8 @@ def validate_inputs(
     validate_opchars(
         scenario_id,
         subscenarios,
-        weather_year,
-        hydro_year,
+        weather_iteration,
+        hydro_iteration,
         subproblem,
         stage,
         conn,
@@ -907,8 +941,8 @@ def validate_inputs(
     hydro_opchar_fraction_error = validate_hydro_opchars(
         scenario_id,
         subscenarios,
-        weather_year,
-        hydro_year,
+        weather_iteration,
+        hydro_iteration,
         subproblem,
         stage,
         conn,

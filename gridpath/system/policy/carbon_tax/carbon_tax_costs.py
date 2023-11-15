@@ -25,7 +25,7 @@ from gridpath.system.policy.carbon_tax import CARBON_TAX_ZONE_PRD_DF
 
 
 def add_model_components(
-    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+    m, d, scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
 ):
     """
 
@@ -55,7 +55,7 @@ def add_model_components(
 
 
 def export_results(
-    scenario_directory, weather_year, hydro_year, subproblem, stage, m, d
+    scenario_directory, weather_iteration, hydro_iteration, subproblem, stage, m, d
 ):
     """
 

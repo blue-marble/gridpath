@@ -160,8 +160,8 @@ def generic_load_model_data(
     d,
     data_portal,
     scenario_directory,
-    weather_year,
-    hydro_year,
+    weather_iteration,
+    hydro_iteration,
     subproblem,
     stage,
     reserve_requirement_param,
@@ -190,7 +190,12 @@ def generic_load_model_data(
     :return:
     """
     input_dir = os.path.join(
-        scenario_directory, weather_year, hydro_year, subproblem, stage, "inputs"
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        subproblem,
+        stage,
+        "inputs",
     )
 
     # Load by-tmp requriement if input file was written
@@ -242,8 +247,8 @@ def generic_load_model_data(
 def generic_get_inputs_from_database(
     scenario_id,
     subscenarios,
-    weather_year,
-    hydro_year,
+    weather_iteration,
+    hydro_iteration,
     subproblem,
     stage,
     conn,
@@ -377,8 +382,8 @@ def generic_get_inputs_from_database(
 
 def generic_write_model_inputs(
     scenario_directory,
-    weather_year,
-    hydro_year,
+    weather_iteration,
+    hydro_iteration,
     subproblem,
     stage,
     timepoint_req,
@@ -401,12 +406,20 @@ def generic_write_model_inputs(
     :return:
     """
 
-    db_weather_year, db_hydro_year, db_subproblem, db_stage = directories_to_db_values(
-        weather_year, hydro_year, subproblem, stage
-    )
+    (
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_subproblem,
+        db_stage,
+    ) = directories_to_db_values(weather_iteration, hydro_iteration, subproblem, stage)
 
     inputs_dir = os.path.join(
-        scenario_directory, weather_year, hydro_year, subproblem, stage, "inputs"
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        subproblem,
+        stage,
+        "inputs",
     )
 
     # Write the by-timepoint requirement file if by-tmp requirement specified

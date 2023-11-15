@@ -29,8 +29,8 @@ def generic_add_model_components(
     m,
     d,
     scenario_directory,
-    weather_year,
-    hydro_year,
+    weather_iteration,
+    hydro_iteration,
     subproblem,
     stage,
     reserve_projects_set,
@@ -70,8 +70,8 @@ def generic_add_model_components(
     # Import needed operational modules
     required_operational_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
-        weather_year=weather_year,
-        hydro_year=hydro_year,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
         subproblem=subproblem,
         stage=stage,
         which_type="operational_type",
@@ -118,8 +118,8 @@ def generic_load_model_data(
     d,
     data_portal,
     scenario_directory,
-    weather_year,
-    hydro_year,
+    weather_iteration,
+    hydro_iteration,
     subproblem,
     stage,
     ramp_rate_limit_column_name,
@@ -143,8 +143,8 @@ def generic_load_model_data(
     projects_file_header = pd.read_csv(
         os.path.join(
             scenario_directory,
-            weather_year,
-            hydro_year,
+            weather_iteration,
+            hydro_iteration,
             subproblem,
             stage,
             "inputs",
@@ -166,8 +166,8 @@ def generic_load_model_data(
     data_portal.load(
         filename=os.path.join(
             scenario_directory,
-            weather_year,
-            hydro_year,
+            weather_iteration,
+            hydro_iteration,
             subproblem,
             stage,
             "inputs",

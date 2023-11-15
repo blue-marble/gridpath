@@ -33,7 +33,7 @@ from gridpath.project.operations.common_functions import load_operational_type_m
 
 
 def add_model_components(
-    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+    m, d, scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
 ):
     """
     The following Pyomo model components are defined in this module:
@@ -98,8 +98,8 @@ def add_model_components(
 
     required_operational_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
-        weather_year=weather_year,
-        hydro_year=hydro_year,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
         subproblem=subproblem,
         stage=stage,
         which_type="operational_type",
@@ -160,7 +160,7 @@ def add_model_components(
 
 
 def fix_variables(
-    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+    m, d, scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
 ):
     """
     This function fixes the commitment of all fixed commitment projects by
@@ -176,8 +176,8 @@ def fix_variables(
     """
     required_operational_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
-        weather_year=weather_year,
-        hydro_year=hydro_year,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
         subproblem=subproblem,
         stage=stage,
         which_type="operational_type",
@@ -200,7 +200,14 @@ def fix_variables(
 
 
 def load_model_data(
-    m, d, data_portal, scenario_directory, weather_year, hydro_year, subproblem, stage
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    subproblem,
+    stage,
 ):
     """
 
@@ -214,14 +221,14 @@ def load_model_data(
     """
 
     stages = check_for_integer_subdirectories(
-        os.path.join(scenario_directory, weather_year, hydro_year, subproblem)
+        os.path.join(scenario_directory, weather_iteration, hydro_iteration, subproblem)
     )
 
     fixed_commitment_df = read_csv(
         os.path.join(
             scenario_directory,
-            weather_year,
-            hydro_year,
+            weather_iteration,
+            hydro_iteration,
             subproblem,
             "pass_through_inputs",
             "fixed_commitment.tab",
@@ -241,8 +248,8 @@ def load_model_data(
         df = read_csv(
             os.path.join(
                 scenario_directory,
-                weather_year,
-                hydro_year,
+                weather_iteration,
+                hydro_iteration,
                 subproblem,
                 stage,
                 "inputs",
@@ -289,7 +296,7 @@ def load_model_data(
 
 
 def export_pass_through_inputs(
-    scenario_directory, weather_year, hydro_year, subproblem, stage, m
+    scenario_directory, weather_iteration, hydro_iteration, subproblem, stage, m
 ):
     """
     This function exports the commitment for all final commitment projects,
@@ -305,8 +312,8 @@ def export_pass_through_inputs(
     df = read_csv(
         os.path.join(
             scenario_directory,
-            weather_year,
-            hydro_year,
+            weather_iteration,
+            hydro_iteration,
             subproblem,
             stage,
             "inputs",
@@ -321,8 +328,8 @@ def export_pass_through_inputs(
     with open(
         os.path.join(
             scenario_directory,
-            weather_year,
-            hydro_year,
+            weather_iteration,
+            hydro_iteration,
             subproblem,
             "pass_through_inputs",
             "fixed_commitment.tab",

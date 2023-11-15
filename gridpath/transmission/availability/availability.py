@@ -21,7 +21,7 @@ from gridpath.auxiliary.auxiliary import (
 
 
 def add_model_components(
-    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+    m, d, scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
 ):
     """
 
@@ -32,8 +32,8 @@ def add_model_components(
     # Import needed availability type modules
     required_availability_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
-        weather_year=weather_year,
-        hydro_year=hydro_year,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
         subproblem=subproblem,
         stage=stage,
         prj_or_tx="transmission_line",
@@ -48,7 +48,13 @@ def add_model_components(
         imp_op_m = imported_availability_modules[op_m]
         if hasattr(imp_op_m, "add_model_components"):
             imp_op_m.add_model_components(
-                m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+                m,
+                d,
+                scenario_directory,
+                weather_iteration,
+                hydro_iteration,
+                subproblem,
+                stage,
             )
 
     def availability_derate_rule(mod, tx, tmp):
@@ -72,7 +78,14 @@ def add_model_components(
 
 
 def load_model_data(
-    m, d, data_portal, scenario_directory, weather_year, hydro_year, subproblem, stage
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    subproblem,
+    stage,
 ):
     """
 
@@ -86,8 +99,8 @@ def load_model_data(
     """
     required_availability_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
-        weather_year=weather_year,
-        hydro_year=hydro_year,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
         subproblem=subproblem,
         stage=stage,
         prj_or_tx="transmission_line",
@@ -103,15 +116,15 @@ def load_model_data(
                 d,
                 data_portal,
                 scenario_directory,
-                weather_year,
-                hydro_year,
+                weather_iteration,
+                hydro_iteration,
                 subproblem,
                 stage,
             )
 
 
 def export_results(
-    scenario_directory, weather_year, hydro_year, subproblem, stage, m, d
+    scenario_directory, weather_iteration, hydro_iteration, subproblem, stage, m, d
 ):
     """
     :param scenario_directory:
@@ -127,8 +140,8 @@ def export_results(
     # Module-specific capacity results
     required_availability_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
-        weather_year=weather_year,
-        hydro_year=hydro_year,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
         subproblem=subproblem,
         stage=stage,
         which_type="tx_availability_type",
@@ -140,7 +153,13 @@ def export_results(
     for op_m in required_availability_modules:
         if hasattr(imported_availability_modules[op_m], "export_results"):
             imported_availability_modules[op_m].export_results(
-                scenario_directory, weather_year, hydro_year, subproblem, stage, m, d
+                scenario_directory,
+                weather_iteration,
+                hydro_iteration,
+                subproblem,
+                stage,
+                m,
+                d,
             )
 
 
@@ -152,8 +171,8 @@ def write_model_inputs(
     scenario_directory,
     scenario_id,
     subscenarios,
-    weather_year,
-    hydro_year,
+    weather_iteration,
+    hydro_iteration,
     subproblem,
     stage,
     conn,
@@ -186,8 +205,8 @@ def write_model_inputs(
                 scenario_directory,
                 scenario_id,
                 subscenarios,
-                weather_year,
-                hydro_year,
+                weather_iteration,
+                hydro_iteration,
                 subproblem,
                 stage,
                 conn,
@@ -196,8 +215,8 @@ def write_model_inputs(
 
 def import_results_into_database(
     scenario_id,
-    weather_year,
-    hydro_year,
+    weather_iteration,
+    hydro_iteration,
     subproblem,
     stage,
     c,

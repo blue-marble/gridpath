@@ -40,8 +40,8 @@ from gridpath.project import PROJECT_TIMEPOINT_DF
 def generic_record_dynamic_components(
     d,
     scenario_directory,
-    weather_year,
-    hydro_year,
+    weather_iteration,
+    hydro_iteration,
     subproblem,
     stage,
     headroom_or_footroom_dict,
@@ -134,8 +134,8 @@ def generic_record_dynamic_components(
     with open(
         os.path.join(
             scenario_directory,
-            weather_year,
-            hydro_year,
+            weather_iteration,
+            hydro_iteration,
             subproblem,
             stage,
             "inputs",
@@ -284,8 +284,8 @@ def generic_load_model_data(
     d,
     data_portal,
     scenario_directory,
-    weather_year,
-    hydro_year,
+    weather_iteration,
+    hydro_iteration,
     subproblem,
     stage,
     ba_column_name,
@@ -322,8 +322,8 @@ def generic_load_model_data(
     projects_file_header = pd.read_csv(
         os.path.join(
             scenario_directory,
-            weather_year,
-            hydro_year,
+            weather_iteration,
+            hydro_iteration,
             subproblem,
             stage,
             "inputs",
@@ -345,8 +345,8 @@ def generic_load_model_data(
     data_portal.load(
         filename=os.path.join(
             scenario_directory,
-            weather_year,
-            hydro_year,
+            weather_iteration,
+            hydro_iteration,
             subproblem,
             stage,
             "inputs",
@@ -366,8 +366,8 @@ def generic_load_model_data(
     ba_file_header = pd.read_csv(
         os.path.join(
             scenario_directory,
-            weather_year,
-            hydro_year,
+            weather_iteration,
+            hydro_iteration,
             subproblem,
             stage,
             "inputs",
@@ -382,8 +382,8 @@ def generic_load_model_data(
         data_portal.load(
             filename=os.path.join(
                 scenario_directory,
-                weather_year,
-                hydro_year,
+                weather_iteration,
+                hydro_iteration,
                 subproblem,
                 stage,
                 "inputs",
@@ -398,8 +398,8 @@ def generic_export_results(
     m,
     d,
     scenario_directory,
-    weather_year,
-    hydro_year,
+    weather_iteration,
+    hydro_iteration,
     subproblem,
     stage,
     module_name,
@@ -450,8 +450,8 @@ def generic_export_results(
 def generic_get_inputs_from_database(
     scenario_id,
     subscenarios,
-    weather_year,
-    hydro_year,
+    weather_iteration,
+    hydro_iteration,
     subproblem,
     stage,
     conn,
@@ -542,8 +542,8 @@ def generic_get_inputs_from_database(
 def generic_validate_project_bas(
     scenario_id,
     subscenarios,
-    weather_year,
-    hydro_year,
+    weather_iteration,
+    hydro_iteration,
     subproblem,
     stage,
     conn,
@@ -566,8 +566,8 @@ def generic_validate_project_bas(
     project_bas, prj_derates = generic_get_inputs_from_database(
         scenario_id=scenario_id,
         subscenarios=subscenarios,
-        weather_year=weather_year,
-        hydro_year=hydro_year,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
         subproblem=subproblem,
         stage=stage,
         conn=conn,
@@ -601,8 +601,8 @@ def generic_validate_project_bas(
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
-        weather_year=weather_year,
-        hydro_year=hydro_year,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -621,8 +621,8 @@ def generic_validate_project_bas(
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
-        weather_year=weather_year,
-        hydro_year=hydro_year,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,

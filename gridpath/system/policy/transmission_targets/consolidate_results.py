@@ -19,7 +19,7 @@ from gridpath.system.policy.transmission_targets import TX_TARGETS_DF
 
 
 def export_results(
-    scenario_directory, weather_year, hydro_year, subproblem, stage, m, d
+    scenario_directory, weather_iteration, hydro_iteration, subproblem, stage, m, d
 ):
     """
     Export all results from the CARBON_CAP_ZONE_PRD_DF that various modules
@@ -29,8 +29,8 @@ def export_results(
     getattr(d, TX_TARGETS_DF).to_csv(
         os.path.join(
             scenario_directory,
-            weather_year,
-            hydro_year,
+            weather_iteration,
+            hydro_iteration,
             subproblem,
             stage,
             "results",

@@ -39,7 +39,7 @@ from gridpath.project.common_functions import determine_project_subset
 
 
 def add_model_components(
-    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+    m, d, scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
 ):
     """
     The following Pyomo model components are defined in this module:
@@ -97,7 +97,14 @@ def availability_derate_rule(mod, g, tmp):
 
 
 def load_model_data(
-    m, d, data_portal, scenario_directory, weather_year, hydro_year, subproblem, stage
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    subproblem,
+    stage,
 ):
     """
     :param m:
@@ -111,8 +118,8 @@ def load_model_data(
     # TODO: move determine_project_subset and rename, as we're using for tx too
     tx_subset = determine_project_subset(
         scenario_directory=scenario_directory,
-        weather_year=weather_year,
-        hydro_year=hydro_year,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
         subproblem=subproblem,
         stage=stage,
         column="tx_availability_type",
@@ -146,7 +153,13 @@ def load_model_data(
 
 
 def get_inputs_from_database(
-    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     :param subscenarios:
@@ -206,8 +219,8 @@ def write_model_inputs(
     scenario_directory,
     scenario_id,
     subscenarios,
-    weather_year,
-    hydro_year,
+    weather_iteration,
+    hydro_iteration,
     subproblem,
     stage,
     conn,
@@ -221,15 +234,18 @@ def write_model_inputs(
     :return:
     """
 
-    db_weather_year, db_hydro_year, db_subproblem, db_stage = directories_to_db_values(
-        weather_year, hydro_year, subproblem, stage
-    )
+    (
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_subproblem,
+        db_stage,
+    ) = directories_to_db_values(weather_iteration, hydro_iteration, subproblem, stage)
 
     availabilities = get_inputs_from_database(
         scenario_id,
         subscenarios,
-        db_weather_year,
-        db_hydro_year,
+        db_weather_iteration,
+        db_hydro_iteration,
         db_subproblem,
         db_stage,
         conn,
@@ -239,8 +255,8 @@ def write_model_inputs(
         with open(
             os.path.join(
                 scenario_directory,
-                weather_year,
-                hydro_year,
+                weather_iteration,
+                hydro_iteration,
                 subproblem,
                 stage,
                 "inputs",
@@ -265,7 +281,13 @@ def write_model_inputs(
 
 
 def validate_inputs(
-    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     :param subscenarios:
@@ -277,8 +299,8 @@ def validate_inputs(
     availabilities = get_inputs_from_database(
         scenario_id,
         subscenarios,
-        weather_year,
-        hydro_year,
+        weather_iteration,
+        hydro_iteration,
         subproblem,
         stage,
         conn,
@@ -300,8 +322,8 @@ def validate_inputs(
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
-        weather_year=weather_year,
-        hydro_year=hydro_year,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -320,8 +342,8 @@ def validate_inputs(
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
-        weather_year=weather_year,
-        hydro_year=hydro_year,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -335,8 +357,8 @@ def validate_inputs(
         write_validation_to_database(
             conn=conn,
             scenario_id=scenario_id,
-            weather_year=weather_year,
-            hydro_year=hydro_year,
+            weather_iteration=weather_iteration,
+            hydro_iteration=hydro_iteration,
             subproblem_id=subproblem,
             stage_id=stage,
             gridpath_module=__name__,

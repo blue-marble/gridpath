@@ -45,8 +45,8 @@ def validate_inputs(
     subproblems,
     loaded_modules,
     scenario_id,
-    weather_year,
-    hydro_year,
+    weather_iteration,
+    hydro_iteration,
     subscenarios,
     conn,
 ):
@@ -80,8 +80,8 @@ def validate_inputs(
                     m.validate_inputs(
                         scenario_id=scenario_id,
                         subscenarios=subscenarios,
-                        weather_year=weather_year,
-                        hydro_year=hydro_year,
+                        weather_iteration=weather_iteration,
+                        hydro_iteration=hydro_iteration,
                         subproblem=subproblem,
                         stage=stage,
                         conn=conn,
@@ -165,8 +165,8 @@ def validate_feature_subscenario_ids(
         write_validation_to_database(
             conn=conn,
             scenario_id=scenario_id,
-            weather_year="N/A",
-            hydro_year="N/A",
+            weather_iteration="N/A",
+            hydro_iteration="N/A",
             subproblem_id="N/A",
             stage_id="N/A",
             gridpath_module="N/A",
@@ -199,8 +199,8 @@ def validate_required_subscenario_ids(scenario_id, subscenarios, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
-        weather_year="N/A",
-        hydro_year="N/A",
+        weather_iteration="N/A",
+        hydro_iteration="N/A",
         subproblem_id="N/A",
         stage_id="N/A",
         gridpath_module="N/A",
@@ -262,8 +262,8 @@ def validate_data_dependent_subscenario_ids(scenario_id, subscenarios, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
-        weather_year="N/A",
-        hydro_year="N/A",
+        weather_iteration="N/A",
+        hydro_iteration="N/A",
         subproblem_id="N/A",
         stage_id="N/A",
         gridpath_module="N/A",
@@ -443,14 +443,16 @@ def main(args=None):
         loaded_modules = load_modules(modules_to_use=modules_to_use)
 
         # Read in inputs from db and validate inputs for loaded modules
-        for weather_year in scenario_structure.WEATHER_YEAR_HYDRO_YEARS.keys():
-            for hydro_year in scenario_structure.WEATHER_YEAR_HYDRO_YEARS[weather_year]:
+        for weather_iteration in scenario_structure.WEATHER_YEAR_HYDRO_YEARS.keys():
+            for hydro_iteration in scenario_structure.WEATHER_YEAR_HYDRO_YEARS[
+                weather_iteration
+            ]:
                 validate_inputs(
                     scenario_structure,
                     loaded_modules,
                     scenario_id,
-                    weather_year,
-                    hydro_year,
+                    weather_iteration,
+                    hydro_iteration,
                     subscenarios,
                     conn,
                 )

@@ -82,10 +82,16 @@ def create_parser():
         "--stage", default=1, type=int, help="The stage ID. Defaults to 1."
     )
     parser.add_argument(
-        "--weather_year", default=0, type=int, help="The weather year. Defaults to 0."
+        "--weather_iteration",
+        default=0,
+        type=int,
+        help="The weather iteration. Defaults to 0.",
     )
     parser.add_argument(
-        "--hydro_year", default=0, type=int, help="The hydro year. Defaults to 0."
+        "--hydro_iteration",
+        default=0,
+        type=int,
+        help="The hydro iteration. Defaults to 0.",
     )
 
     return parser
@@ -296,7 +302,9 @@ def get_market_participation_results(c, scenario_id, load_zone, stage, timepoint
     return sales, purchases
 
 
-def get_load(c, scenario_id, load_zone, weather_year, hydro_year, stage, timepoints):
+def get_load(
+    c, scenario_id, load_zone, weather_iteration, hydro_iteration, stage, timepoints
+):
     """
 
     :param c:
@@ -311,14 +319,14 @@ def get_load(c, scenario_id, load_zone, weather_year, hydro_year, stage, timepoi
         FROM results_system_load_zone_timepoint
         WHERE scenario_id = {}
         AND load_zone = '{}'
-        AND weather_year = {}
-        AND hydro_year = {}
+        AND weather_iteration = {}
+        AND hydro_iteration = {}
         AND stage_id = {}
         AND timepoint IN ({});""".format(
         scenario_id,
         load_zone,
-        weather_year,
-        hydro_year,
+        weather_iteration,
+        hydro_iteration,
         stage,
         ",".join(["?"] * len(timepoints)),
     )
@@ -337,8 +345,8 @@ def get_plotting_data(
     load_zone,
     starting_tmp,
     ending_tmp,
-    weather_year,
-    hydro_year,
+    weather_iteration,
+    hydro_iteration,
     stage,
     **kwargs
 ):
@@ -354,8 +362,8 @@ def get_plotting_data(
     :param load_zone:
     :param starting_tmp:
     :param ending_tmp:
-    :param weather_year:
-    :param hydro_year:
+    :param weather_iteration:
+    :param hydro_iteration:
     :param stage:
     :return:
     """
@@ -441,8 +449,8 @@ def get_plotting_data(
         c=c,
         scenario_id=scenario_id,
         load_zone=load_zone,
-        weather_year=weather_year,
-        hydro_year=hydro_year,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
         stage=stage,
         timepoints=timepoints,
     )
@@ -734,8 +742,8 @@ def main(args=None):
         load_zone=parsed_args.load_zone,
         starting_tmp=parsed_args.starting_tmp,
         ending_tmp=parsed_args.ending_tmp,
-        weather_year=parsed_args.weather_year,
-        hydro_year=parsed_args.hydro_year,
+        weather_iteration=parsed_args.weather_iteration,
+        hydro_iteration=parsed_args.hydro_iteration,
         stage=parsed_args.stage,
     )
 

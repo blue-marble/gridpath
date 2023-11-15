@@ -27,7 +27,7 @@ from gridpath.project import PROJECT_TIMEPOINT_DF
 
 
 def add_model_components(
-    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+    m, d, scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
 ):
     """
     The following Pyomo model components are defined in this module:
@@ -83,7 +83,7 @@ def add_model_components(
 
 
 def export_results(
-    scenario_directory, weather_year, hydro_year, subproblem, stage, m, d
+    scenario_directory, weather_iteration, hydro_iteration, subproblem, stage, m, d
 ):
     """
 

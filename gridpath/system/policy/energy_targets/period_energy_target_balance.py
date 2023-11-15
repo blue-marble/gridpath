@@ -28,7 +28,7 @@ from gridpath.system.policy.energy_targets import ENERGY_TARGET_ZONE_PRD_DF
 
 
 def add_model_components(
-    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+    m, d, scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
 ):
     """
 
@@ -71,7 +71,7 @@ def add_model_components(
 
 
 def export_results(
-    scenario_directory, weather_year, hydro_year, subproblem, stage, m, d
+    scenario_directory, weather_iteration, hydro_iteration, subproblem, stage, m, d
 ):
     """
 
@@ -141,8 +141,8 @@ def export_results(
 
 def save_duals(
     scenario_directory,
-    weather_year,
-    hydro_year,
+    weather_iteration,
+    hydro_iteration,
     subproblem,
     stage,
     instance,
@@ -155,7 +155,9 @@ def save_duals(
     ]
 
 
-def summarize_results(scenario_directory, weather_year, hydro_year, subproblem, stage):
+def summarize_results(
+    scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
+):
     """
     :param scenario_directory:
     :param subproblem:
@@ -167,7 +169,7 @@ def summarize_results(scenario_directory, weather_year, hydro_year, subproblem, 
 
     summary_results_file = os.path.join(
         scenario_directory,
-        hydro_year,
+        hydro_iteration,
         subproblem,
         stage,
         "results",
@@ -185,7 +187,7 @@ def summarize_results(scenario_directory, weather_year, hydro_year, subproblem, 
     results_df = pd.read_csv(
         os.path.join(
             scenario_directory,
-            hydro_year,
+            hydro_iteration,
             subproblem,
             stage,
             "results",

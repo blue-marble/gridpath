@@ -35,7 +35,7 @@ import gridpath.transmission.capacity.capacity_types as tx_cap_type_init
 
 
 def add_model_components(
-    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+    m, d, scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
 ):
     """
     Before adding any components, this module will go through each relevant
@@ -96,8 +96,8 @@ def add_model_components(
     df = pd.read_csv(
         os.path.join(
             scenario_directory,
-            weather_year,
-            hydro_year,
+            weather_iteration,
+            hydro_iteration,
             subproblem,
             stage,
             "inputs",
@@ -181,7 +181,14 @@ def add_model_components(
 
 
 def load_model_data(
-    m, d, data_portal, scenario_directory, weather_year, hydro_year, subproblem, stage
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    subproblem,
+    stage,
 ):
     """
 
@@ -196,8 +203,8 @@ def load_model_data(
     df = pd.read_csv(
         os.path.join(
             scenario_directory,
-            weather_year,
-            hydro_year,
+            weather_iteration,
+            hydro_iteration,
             subproblem,
             stage,
             "inputs",
@@ -224,15 +231,15 @@ def load_model_data(
                 d,
                 data_portal,
                 scenario_directory,
-                weather_year,
-                hydro_year,
+                weather_iteration,
+                hydro_iteration,
                 subproblem,
                 stage,
             )
 
 
 def export_results(
-    scenario_directory, weather_year, hydro_year, subproblem, stage, m, d
+    scenario_directory, weather_iteration, hydro_iteration, subproblem, stage, m, d
 ):
     """
 
@@ -295,8 +302,8 @@ def export_results(
 
 def save_duals(
     scenario_directory,
-    weather_year,
-    hydro_year,
+    weather_iteration,
+    hydro_iteration,
     subproblem,
     stage,
     instance,
@@ -307,8 +314,8 @@ def save_duals(
     df = pd.read_csv(
         os.path.join(
             scenario_directory,
-            weather_year,
-            hydro_year,
+            weather_iteration,
+            hydro_iteration,
             subproblem,
             stage,
             "inputs",
@@ -332,8 +339,8 @@ def save_duals(
         if hasattr(imported_tx_capacity_modules[op_m], "save_duals"):
             imported_tx_capacity_modules[op_m].save_duals(
                 scenario_directory,
-                weather_year,
-                hydro_year,
+                weather_iteration,
+                hydro_iteration,
                 subproblem,
                 stage,
                 instance,

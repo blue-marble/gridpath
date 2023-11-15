@@ -18,7 +18,7 @@ from pyomo.environ import value
 
 
 def fix_variables(
-    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+    m, d, scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
 ):
     """
     Don't allow market participation if the final participation stage was before the
@@ -52,7 +52,7 @@ def write_pass_through_file_headers(pass_through_directory):
 
 
 def export_pass_through_inputs(
-    scenario_directory, weather_year, hydro_year, subproblem, stage, m
+    scenario_directory, weather_iteration, hydro_iteration, subproblem, stage, m
 ):
     """
     This function exports the market position for all load zones and markets. This
@@ -68,8 +68,8 @@ def export_pass_through_inputs(
     with open(
         os.path.join(
             scenario_directory,
-            weather_year,
-            hydro_year,
+            weather_iteration,
+            hydro_iteration,
             subproblem,
             "pass_through_inputs",
             "market_positions.tab",

@@ -1,4 +1,4 @@
-project,subscenario_id,subscenario_name,hydro_year,month,average_power_fraction,min_power_fraction,max_power_fraction
+project,subscenario_id,subscenario_name,hydro_iteration,month,average_power_fraction,min_power_fraction,max_power_fraction
 Hydro_PAUT,1,ra_toolkit,2001,1,0.23689467,0.235364035,0.243364437
 Hydro_PAUT,1,ra_toolkit,2001,2,0.289280627,0.287784757,0.295547065
 Hydro_PAUT,1,ra_toolkit,2001,3,0.342033498,0.340129497,0.347857992

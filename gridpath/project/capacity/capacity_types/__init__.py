@@ -26,7 +26,13 @@ from gridpath.auxiliary.db_interface import get_required_capacity_types_from_dat
 
 
 def validate_inputs(
-    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     Get inputs from database and validate the inputs
@@ -52,8 +58,8 @@ def validate_inputs(
             imported_capacity_type_modules[op_m].validate_inputs(
                 scenario_id,
                 subscenarios,
-                weather_year,
-                hydro_year,
+                weather_iteration,
+                hydro_iteration,
                 subproblem,
                 stage,
                 conn,
@@ -64,8 +70,8 @@ def write_model_inputs(
     scenario_directory,
     scenario_id,
     subscenarios,
-    weather_year,
-    hydro_year,
+    weather_iteration,
+    hydro_iteration,
     subproblem,
     stage,
     conn,
@@ -96,8 +102,8 @@ def write_model_inputs(
                 scenario_directory,
                 scenario_id,
                 subscenarios,
-                weather_year,
-                hydro_year,
+                weather_iteration,
+                hydro_iteration,
                 subproblem,
                 stage,
                 conn,

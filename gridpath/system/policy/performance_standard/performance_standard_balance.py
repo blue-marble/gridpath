@@ -28,7 +28,7 @@ from gridpath.system.policy.performance_standard import PERFORMANCE_STANDARD_Z_P
 
 
 def add_model_components(
-    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+    m, d, scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
 ):
     """
 
@@ -96,7 +96,7 @@ def add_model_components(
 
 
 def export_results(
-    scenario_directory, weather_year, hydro_year, subproblem, stage, m, d
+    scenario_directory, weather_iteration, hydro_iteration, subproblem, stage, m, d
 ):
     """
 
@@ -131,8 +131,8 @@ def export_results(
 
 def save_duals(
     scenario_directory,
-    weather_year,
-    hydro_year,
+    weather_iteration,
+    hydro_iteration,
     subproblem,
     stage,
     instance,

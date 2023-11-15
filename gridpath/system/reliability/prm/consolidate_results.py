@@ -19,7 +19,7 @@ from gridpath.system.reliability.prm import PRM_ZONE_PRD_DF
 
 
 def export_results(
-    scenario_directory, weather_year, hydro_year, subproblem, stage, m, d
+    scenario_directory, weather_iteration, hydro_iteration, subproblem, stage, m, d
 ):
     """
     Export all results from the PROJECT_OPERATIONS_DF that various modules
@@ -29,8 +29,8 @@ def export_results(
     getattr(d, PRM_ZONE_PRD_DF).to_csv(
         os.path.join(
             scenario_directory,
-            weather_year,
-            hydro_year,
+            weather_iteration,
+            hydro_iteration,
             subproblem,
             stage,
             "results",

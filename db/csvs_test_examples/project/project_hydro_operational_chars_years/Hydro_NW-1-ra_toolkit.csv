@@ -1,4 +1,4 @@
-hydro_year,month,average_power_fraction,min_power_fraction,max_power_fraction
+hydro_iteration,month,average_power_fraction,min_power_fraction,max_power_fraction
 2001,1,0.452224431,0.206761008,0.634572184
 2001,2,0.515632315,0.263403749,0.674554242
 2001,3,0.521739965,0.269881574,0.678666013

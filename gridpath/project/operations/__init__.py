@@ -56,7 +56,7 @@ from gridpath.project.common_functions import append_to_input_file
 
 
 def add_model_components(
-    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+    m, d, scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
 ):
     """
      The following Pyomo model components are defined in this module:
@@ -480,12 +480,12 @@ def add_model_components(
 
     # Start list of headroom and footroom variables by project
     record_dynamic_components(
-        d, scenario_directory, weather_year, hydro_year, subproblem, stage
+        d, scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
     )
 
 
 def record_dynamic_components(
-    d, scenario_directory, weather_year, hydro_year, subproblem, stage
+    d, scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
 ):
     """
     :param d: the dynamic components class object we'll be adding to
@@ -509,8 +509,8 @@ def record_dynamic_components(
     project_df = pd.read_csv(
         os.path.join(
             scenario_directory,
-            weather_year,
-            hydro_year,
+            weather_iteration,
+            hydro_iteration,
             subproblem,
             stage,
             "inputs",
@@ -534,7 +534,14 @@ def record_dynamic_components(
 
 
 def load_model_data(
-    m, d, data_portal, scenario_directory, weather_year, hydro_year, subproblem, stage
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    subproblem,
+    stage,
 ):
     """
 
@@ -549,8 +556,8 @@ def load_model_data(
     data_portal.load(
         filename=os.path.join(
             scenario_directory,
-            weather_year,
-            hydro_year,
+            weather_iteration,
+            hydro_iteration,
             subproblem,
             stage,
             "inputs",
@@ -589,8 +596,8 @@ def load_model_data(
 
     project_fuels_file = os.path.join(
         scenario_directory,
-        weather_year,
-        hydro_year,
+        weather_iteration,
+        hydro_iteration,
         subproblem,
         stage,
         "inputs",
@@ -657,8 +664,8 @@ def load_model_data(
     # VOM curves
     vom_curves_file = os.path.join(
         scenario_directory,
-        weather_year,
-        hydro_year,
+        weather_iteration,
+        hydro_iteration,
         subproblem,
         stage,
         "inputs",
@@ -666,8 +673,8 @@ def load_model_data(
     )
     periods_file = os.path.join(
         scenario_directory,
-        weather_year,
-        hydro_year,
+        weather_iteration,
+        hydro_iteration,
         subproblem,
         stage,
         "inputs",
@@ -695,8 +702,8 @@ def load_model_data(
     # Startup chars
     startup_chars_file = os.path.join(
         scenario_directory,
-        weather_year,
-        hydro_year,
+        weather_iteration,
+        hydro_iteration,
         subproblem,
         stage,
         "inputs",
@@ -731,8 +738,8 @@ def load_model_data(
     # HR curves
     hr_curves_file = os.path.join(
         scenario_directory,
-        weather_year,
-        hydro_year,
+        weather_iteration,
+        hydro_iteration,
         subproblem,
         stage,
         "inputs",
@@ -740,8 +747,8 @@ def load_model_data(
     )
     periods_file = os.path.join(
         scenario_directory,
-        weather_year,
-        hydro_year,
+        weather_iteration,
+        hydro_iteration,
         subproblem,
         stage,
         "inputs",
@@ -749,8 +756,8 @@ def load_model_data(
     )
     project_fuels_file = os.path.join(
         scenario_directory,
-        weather_year,
-        hydro_year,
+        weather_iteration,
+        hydro_iteration,
         subproblem,
         stage,
         "inputs",
@@ -786,7 +793,13 @@ def load_model_data(
 
 
 def get_inputs_from_database(
-    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     :param subscenarios: SubScenarios object with all subscenario info
@@ -1029,8 +1042,8 @@ def write_model_inputs(
     scenario_directory,
     scenario_id,
     subscenarios,
-    weather_year,
-    hydro_year,
+    weather_iteration,
+    hydro_iteration,
     subproblem,
     stage,
     conn,
@@ -1045,9 +1058,12 @@ def write_model_inputs(
     :return:
     """
 
-    db_weather_year, db_hydro_year, db_subproblem, db_stage = directories_to_db_values(
-        weather_year, hydro_year, subproblem, stage
-    )
+    (
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_subproblem,
+        db_stage,
+    ) = directories_to_db_values(weather_iteration, hydro_iteration, subproblem, stage)
 
     (
         proj_opchar,
@@ -1061,15 +1077,20 @@ def write_model_inputs(
     ) = get_inputs_from_database(
         scenario_id,
         subscenarios,
-        db_weather_year,
-        db_hydro_year,
+        db_weather_iteration,
+        db_hydro_iteration,
         db_subproblem,
         db_stage,
         conn,
     )
 
     inputs_directory = os.path.join(
-        scenario_directory, weather_year, hydro_year, subproblem, stage, "inputs"
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        subproblem,
+        stage,
+        "inputs",
     )
 
     # Update the projects.tab file
@@ -1174,8 +1195,8 @@ def write_model_inputs(
 
 def import_results_into_database(
     scenario_id,
-    weather_year,
-    hydro_year,
+    weather_iteration,
+    hydro_iteration,
     subproblem,
     stage,
     c,
@@ -1196,8 +1217,8 @@ def import_results_into_database(
         conn=db,
         cursor=c,
         scenario_id=scenario_id,
-        weather_year=weather_year,
-        hydro_year=hydro_year,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
         subproblem=subproblem,
         stage=stage,
         quiet=quiet,
@@ -1211,7 +1232,13 @@ def import_results_into_database(
 
 
 def validate_inputs(
-    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     Get inputs from database and validate the inputs
@@ -1235,8 +1262,8 @@ def validate_inputs(
     ) = get_inputs_from_database(
         scenario_id,
         subscenarios,
-        weather_year,
-        hydro_year,
+        weather_iteration,
+        hydro_iteration,
         subproblem,
         stage,
         conn,
@@ -1252,8 +1279,8 @@ def validate_inputs(
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
-        weather_year=weather_year,
-        hydro_year=hydro_year,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -1268,8 +1295,8 @@ def validate_inputs(
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
-        weather_year=weather_year,
-        hydro_year=hydro_year,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -1283,8 +1310,8 @@ def validate_inputs(
         write_validation_to_database(
             conn=conn,
             scenario_id=scenario_id,
-            weather_year=weather_year,
-            hydro_year=hydro_year,
+            weather_iteration=weather_iteration,
+            hydro_iteration=hydro_iteration,
             subproblem_id=subproblem,
             stage_id=stage,
             gridpath_module=__name__,
@@ -1304,8 +1331,8 @@ def validate_inputs(
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
-        weather_year=weather_year,
-        hydro_year=hydro_year,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -1320,8 +1347,8 @@ def validate_inputs(
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
-        weather_year=weather_year,
-        hydro_year=hydro_year,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -1360,8 +1387,8 @@ def validate_inputs(
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
-        weather_year=weather_year,
-        hydro_year=hydro_year,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -1385,8 +1412,8 @@ def validate_inputs(
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
-        weather_year=weather_year,
-        hydro_year=hydro_year,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -1401,8 +1428,8 @@ def validate_inputs(
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
-        weather_year=weather_year,
-        hydro_year=hydro_year,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -1415,8 +1442,8 @@ def validate_inputs(
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
-        weather_year=weather_year,
-        hydro_year=hydro_year,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -1495,8 +1522,8 @@ def validate_inputs(
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
-        weather_year=weather_year,
-        hydro_year=hydro_year,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,

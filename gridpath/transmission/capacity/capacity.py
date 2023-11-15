@@ -43,7 +43,7 @@ from gridpath.auxiliary.dynamic_components import (
 
 
 def add_model_components(
-    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+    m, d, scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
 ):
     """
     Before adding any components, this module will go through each relevant
@@ -109,8 +109,8 @@ def add_model_components(
     ###########################################################################
     required_tx_capacity_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
-        weather_year=weather_year,
-        hydro_year=hydro_year,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
         subproblem=subproblem,
         stage=stage,
         which_type="tx_capacity_type",
@@ -190,7 +190,7 @@ def add_model_components(
 
 
 def export_results(
-    scenario_directory, weather_year, hydro_year, subproblem, stage, m, d
+    scenario_directory, weather_iteration, hydro_iteration, subproblem, stage, m, d
 ):
     """
 
@@ -232,8 +232,8 @@ def export_results(
     # Module-specific capacity results
     required_capacity_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
-        weather_year=weather_year,
-        hydro_year=hydro_year,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
         subproblem=subproblem,
         stage=stage,
         which_type="tx_capacity_type",
@@ -248,7 +248,13 @@ def export_results(
             results_columns, optype_df = imported_capacity_modules[
                 op_m
             ].add_to_tx_period_results(
-                scenario_directory, weather_year, hydro_year, subproblem, stage, m, d
+                scenario_directory,
+                weather_iteration,
+                hydro_iteration,
+                subproblem,
+                stage,
+                m,
+                d,
             )
             for column in results_columns:
                 if column not in getattr(d, TX_PERIOD_DF):
@@ -258,8 +264,8 @@ def export_results(
 
 def save_duals(
     scenario_directory,
-    weather_year,
-    hydro_year,
+    weather_iteration,
+    hydro_iteration,
     subproblem,
     stage,
     instance,
@@ -270,8 +276,8 @@ def save_duals(
     df = pd.read_csv(
         os.path.join(
             scenario_directory,
-            weather_year,
-            hydro_year,
+            weather_iteration,
+            hydro_iteration,
             subproblem,
             stage,
             "inputs",
@@ -295,8 +301,8 @@ def save_duals(
         if hasattr(imported_tx_capacity_modules[op_m], "save_duals"):
             imported_tx_capacity_modules[op_m].save_duals(
                 scenario_directory,
-                weather_year,
-                hydro_year,
+                weather_iteration,
+                hydro_iteration,
                 subproblem,
                 stage,
                 instance,

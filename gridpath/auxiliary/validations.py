@@ -41,8 +41,8 @@ def _get_idx_col(df):
 def write_validation_to_database(
     conn,
     scenario_id,
-    weather_year,
-    hydro_year,
+    weather_iteration,
+    hydro_iteration,
     subproblem_id,
     stage_id,
     gridpath_module,

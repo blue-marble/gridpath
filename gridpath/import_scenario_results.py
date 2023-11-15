@@ -76,7 +76,7 @@ def import_scenario_results_into_database(
     :return:
     """
 
-    weather_year_hydro_year_directory_strings = ScenarioDirectoryStructure(
+    weather_iteration_hydro_iteration_directory_strings = ScenarioDirectoryStructure(
         scenario_structure
     ).WEATHER_YEAR_HYDRO_YEAR_DIRECTORIES
     subproblem_stage_directory_strings = ScenarioDirectoryStructure(
@@ -84,21 +84,25 @@ def import_scenario_results_into_database(
     ).SUBPROBLEM_STAGE_DIRECTORIES
 
     # Hydro years first
-    for weather_year_str in weather_year_hydro_year_directory_strings.keys():
-        weather_year = (
+    for (
+        weather_iteration_str
+    ) in weather_iteration_hydro_iteration_directory_strings.keys():
+        weather_iteration = (
             0
-            if weather_year_str == ""
-            else int(weather_year_str.replace("weather_year_", ""))
+            if weather_iteration_str == ""
+            else int(weather_iteration_str.replace("weather_iteration_", ""))
         )
-        for hydro_year_str in (
-            weather_year_hydro_year_directory_strings[weather_year_str]
-            if not weather_year_str == ""
-            else next(iter(weather_year_hydro_year_directory_strings.values()))
+        for hydro_iteration_str in (
+            weather_iteration_hydro_iteration_directory_strings[weather_iteration_str]
+            if not weather_iteration_str == ""
+            else next(
+                iter(weather_iteration_hydro_iteration_directory_strings.values())
+            )
         ):
-            hydro_year = (
+            hydro_iteration = (
                 0
-                if hydro_year_str == ""
-                else int(hydro_year_str.replace("hydro_year_", ""))
+                if hydro_iteration_str == ""
+                else int(hydro_iteration_str.replace("hydro_iteration_", ""))
             )
             for subproblem_str in subproblem_stage_directory_strings.keys():
                 subproblem = 0 if subproblem_str == "" else int(subproblem_str)
@@ -106,21 +110,21 @@ def import_scenario_results_into_database(
                     stage = 0 if stage_str == "" else int(stage_str)
                     results_directory = os.path.join(
                         scenario_directory,
-                        weather_year_str,
-                        hydro_year_str,
+                        weather_iteration_str,
+                        hydro_iteration_str,
                         subproblem_str,
                         stage_str,
                         "results",
                     )
                     if not quiet:
-                        if weather_year_str != "":
-                            print("--- weather_year {}".format(weather_year))
-                        if hydro_year_str != "":
-                            print("--- hydro_year {}".format(hydro_year))
+                        if weather_iteration_str != "":
+                            print(f"--- weather iteration {weather_iteration}")
+                        if hydro_iteration_str != "":
+                            print(f"--- hydro iteration {hydro_iteration}")
                         if subproblem_str != "":
-                            print("--- subproblem {}".format(subproblem_str))
+                            print(f"--- subproblem {subproblem_str}")
                         if stage_str != "":
-                            print("--- stage {}".format(stage_str))
+                            print(f"--- stage {stage_str}")
 
                     # Import termination condition data
                     c = db.cursor()
@@ -132,15 +136,15 @@ def import_scenario_results_into_database(
 
                     termination_condition_sql = """
                         INSERT INTO results_scenario
-                        (scenario_id, weather_year, hydro_year, subproblem_id, 
+                        (scenario_id, weather_iteration, hydro_iteration, subproblem_id, 
                         stage_id, solver_termination_condition)
                         VALUES (?, ?, ?, ?, ?, ?)
                     ;"""
 
                     termination_condition_data = (
                         scenario_id,
-                        weather_year,
-                        hydro_year,
+                        weather_iteration,
+                        hydro_iteration,
                         subproblem,
                         stage,
                         termination_condition,
@@ -167,8 +171,8 @@ def import_scenario_results_into_database(
                         import_objective_function_value(
                             db=db,
                             scenario_id=scenario_id,
-                            weather_year=weather_year_str,
-                            hydro_year=hydro_year_str,
+                            weather_iteration=weather_iteration_str,
+                            hydro_iteration=hydro_iteration_str,
                             subproblem=subproblem_str,
                             stage=stage_str,
                             results_directory=results_directory,
@@ -177,8 +181,8 @@ def import_scenario_results_into_database(
                             import_rule=import_rule,
                             db=db,
                             scenario_id=scenario_id,
-                            weather_year=weather_year_str,
-                            hydro_year=hydro_year_str,
+                            weather_iteration=weather_iteration_str,
+                            hydro_iteration=hydro_iteration_str,
                             subproblem=subproblem_str,
                             stage=stage_str,
                             results_directory=results_directory,
@@ -189,8 +193,8 @@ def import_scenario_results_into_database(
                         if not quiet:
                             print(
                                 f"""
-                            Solver status for weather year {weather_year_str}, 
-                            hydro_year {hydro_year_str}, subproblem {subproblem_str}, 
+                            Solver status for weather iteration {weather_iteration_str}, 
+                            hydro_iteration {hydro_iteration_str}, subproblem {subproblem_str}, 
                             stage {stage_str} was '{solver_status}', 
                             not 'ok', so there are no results to import. 
                             Termination condition was '{termination_condition}'.
@@ -199,7 +203,13 @@ def import_scenario_results_into_database(
 
 
 def import_objective_function_value(
-    db, scenario_id, weather_year, hydro_year, subproblem, stage, results_directory
+    db,
+    scenario_id,
+    weather_iteration,
+    hydro_iteration,
+    subproblem,
+    stage,
+    results_directory,
 ):
     """
     Import the objective function value for the subproblem/stage. Delete
@@ -216,8 +226,8 @@ def import_objective_function_value(
         UPDATE results_scenario
         SET objective_function_value = ?
         WHERE scenario_id = ?
-        AND weather_year = ?
-        AND hydro_year = ?
+        AND weather_iteration = ?
+        AND hydro_iteration = ?
         AND subproblem_id = ?
         AND stage_id = ?
     ;"""
@@ -225,8 +235,8 @@ def import_objective_function_value(
     obj_data = (
         objective_function,
         scenario_id,
-        weather_year,
-        hydro_year,
+        weather_iteration,
+        hydro_iteration,
         subproblem,
         stage,
     )
@@ -236,8 +246,8 @@ def import_objective_function_value(
 def import_subproblem_stage_results_into_database(
     import_rule,
     db,
-    weather_year,
-    hydro_year,
+    weather_iteration,
+    hydro_iteration,
     scenario_id,
     subproblem,
     stage,
@@ -262,8 +272,8 @@ def import_subproblem_stage_results_into_database(
             if hasattr(m, "import_results_into_database"):
                 m.import_results_into_database(
                     scenario_id=scenario_id,
-                    weather_year=weather_year,
-                    hydro_year=hydro_year,
+                    weather_iteration=weather_iteration,
+                    hydro_iteration=hydro_iteration,
                     subproblem=subproblem,
                     stage=stage,
                     c=c,

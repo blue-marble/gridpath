@@ -22,7 +22,7 @@ from gridpath.auxiliary.auxiliary import subset_init_by_param_value
 
 
 def add_model_components(
-    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+    m, d, scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
 ):
     """
 

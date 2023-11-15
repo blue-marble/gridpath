@@ -26,7 +26,7 @@ from gridpath.project.reliability.prm.common_functions import load_prm_type_modu
 # TODO: rename to deliverability types; the PRM types are really 'simple'
 #  and 'elcc surface'
 def add_model_components(
-    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+    m, d, scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
 ):
     """
 
@@ -38,8 +38,8 @@ def add_model_components(
     project_df = pd.read_csv(
         os.path.join(
             scenario_directory,
-            weather_year,
-            hydro_year,
+            weather_iteration,
+            hydro_iteration,
             subproblem,
             stage,
             "inputs",
@@ -59,7 +59,13 @@ def add_model_components(
         imp_prm_m = imported_prm_modules[prm_m]
         if hasattr(imp_prm_m, "add_model_components"):
             imp_prm_m.add_model_components(
-                m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+                m,
+                d,
+                scenario_directory,
+                weather_iteration,
+                hydro_iteration,
+                subproblem,
+                stage,
             )
 
     # For each PRM project, get the ELCC-eligible capacity
@@ -75,7 +81,14 @@ def add_model_components(
 # TODO: refactor importing prm modules as it's used several places in this
 #  module
 def load_model_data(
-    m, d, data_portal, scenario_directory, weather_year, hydro_year, subproblem, stage
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    subproblem,
+    stage,
 ):
     """
 
@@ -90,8 +103,8 @@ def load_model_data(
     project_df = pd.read_csv(
         os.path.join(
             scenario_directory,
-            weather_year,
-            hydro_year,
+            weather_iteration,
+            hydro_iteration,
             subproblem,
             stage,
             "inputs",
@@ -113,15 +126,15 @@ def load_model_data(
                 d,
                 data_portal,
                 scenario_directory,
-                weather_year,
-                hydro_year,
+                weather_iteration,
+                hydro_iteration,
                 subproblem,
                 stage,
             )
 
 
 def export_results(
-    scenario_directory, weather_year, hydro_year, subproblem, stage, m, d
+    scenario_directory, weather_iteration, hydro_iteration, subproblem, stage, m, d
 ):
     """
     Export operations results.
@@ -141,8 +154,8 @@ def export_results(
     project_df = pd.read_csv(
         os.path.join(
             scenario_directory,
-            weather_year,
-            hydro_year,
+            weather_iteration,
+            hydro_iteration,
             subproblem,
             stage,
             "inputs",
@@ -163,8 +176,8 @@ def export_results(
                 m,
                 d,
                 scenario_directory,
-                weather_year,
-                hydro_year,
+                weather_iteration,
+                hydro_iteration,
                 subproblem,
                 stage,
             )
@@ -217,7 +230,13 @@ def get_required_prm_type_modules(
 
 
 def validate_inputs(
-    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     Get inputs from database and validate the inputs
@@ -250,8 +269,8 @@ def write_model_inputs(
     scenario_directory,
     scenario_id,
     subscenarios,
-    weather_year,
-    hydro_year,
+    weather_iteration,
+    hydro_iteration,
     subproblem,
     stage,
     conn,
@@ -285,8 +304,8 @@ def write_model_inputs(
 
 def import_results_into_database(
     scenario_id,
-    weather_year,
-    hydro_year,
+    weather_iteration,
+    hydro_iteration,
     subproblem,
     stage,
     c,
@@ -337,8 +356,8 @@ def import_results_into_database(
         if hasattr(imported_prm_modules[prm_m], "import_results_into_database"):
             imported_prm_modules[prm_m].import_results_into_database(
                 scenario_id,
-                weather_year,
-                hydro_year,
+                weather_iteration,
+                hydro_iteration,
                 subproblem,
                 stage,
                 c,

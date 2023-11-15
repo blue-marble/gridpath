@@ -67,8 +67,8 @@ class TestProjPRMSimple(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
-            weather_year="",
-            hydro_year="",
+            weather_iteration="",
+            hydro_iteration="",
             subproblem="",
             stage="",
         )
@@ -82,8 +82,8 @@ class TestProjPRMSimple(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
-            weather_year="",
-            hydro_year="",
+            weather_iteration="",
+            hydro_iteration="",
             subproblem="",
             stage="",
         )
@@ -97,8 +97,8 @@ class TestProjPRMSimple(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
-            weather_year="",
-            hydro_year="",
+            weather_iteration="",
+            hydro_iteration="",
             subproblem="",
             stage="",
         )

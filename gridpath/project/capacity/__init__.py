@@ -27,8 +27,8 @@ from gridpath.auxiliary.db_interface import import_csv
 
 def import_results_into_database(
     scenario_id,
-    weather_year,
-    hydro_year,
+    weather_iteration,
+    hydro_iteration,
     subproblem,
     stage,
     c,
@@ -48,8 +48,8 @@ def import_results_into_database(
         conn=db,
         cursor=c,
         scenario_id=scenario_id,
-        weather_year=weather_year,
-        hydro_year=hydro_year,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
         subproblem=subproblem,
         stage=stage,
         quiet=quiet,

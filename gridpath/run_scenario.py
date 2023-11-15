@@ -65,8 +65,8 @@ from gridpath.auxiliary.module_list import determine_modules, load_modules
 
 def create_problem(
     scenario_directory,
-    weather_year,
-    hydro_year,
+    weather_iteration,
+    hydro_iteration,
     subproblem,
     stage,
     multi_stage,
@@ -121,8 +121,8 @@ def create_problem(
         dynamic_components,
         loaded_modules,
         scenario_directory,
-        weather_year,
-        hydro_year,
+        weather_iteration,
+        hydro_iteration,
         subproblem,
         stage,
     )
@@ -139,8 +139,8 @@ def create_problem(
         dynamic_components,
         loaded_modules,
         scenario_directory,
-        weather_year,
-        hydro_year,
+        weather_iteration,
+        hydro_iteration,
         subproblem,
         stage,
     )
@@ -154,8 +154,8 @@ def create_problem(
         instance,
         dynamic_components,
         scenario_directory,
-        weather_year,
-        hydro_year,
+        weather_iteration,
+        hydro_iteration,
         subproblem,
         stage,
         loaded_modules,
@@ -175,8 +175,8 @@ def solve_problem(parsed_arguments, instance):
 
 def run_optimization_for_subproblem_stage(
     scenario_directory,
-    weather_year_directory,
-    hydro_year_directory,
+    weather_iteration_directory,
+    hydro_iteration_directory,
     subproblem_directory,
     stage_directory,
     multi_stage,
@@ -206,8 +206,8 @@ def run_optimization_for_subproblem_stage(
     if parsed_arguments.log:
         logs_directory = create_logs_directory_if_not_exists(
             scenario_directory,
-            weather_year_directory,
-            hydro_year_directory,
+            weather_iteration_directory,
+            hydro_iteration_directory,
             subproblem_directory,
             stage_directory,
         )
@@ -259,8 +259,8 @@ def run_optimization_for_subproblem_stage(
         if parsed_arguments.write_solver_files_to_logs_dir:
             logs_directory = create_logs_directory_if_not_exists(
                 scenario_directory,
-                weather_year_directory,
-                hydro_year_directory,
+                weather_iteration_directory,
+                hydro_iteration_directory,
                 subproblem_directory,
                 stage_directory,
             )
@@ -303,8 +303,8 @@ def run_optimization_for_subproblem_stage(
         else:
             dynamic_components, instance = create_problem(
                 scenario_directory=scenario_directory,
-                weather_year=weather_year_directory,
-                hydro_year=hydro_year_directory,
+                weather_iteration=weather_iteration_directory,
+                hydro_iteration=hydro_iteration_directory,
                 subproblem=subproblem_directory,
                 stage=stage_directory,
                 multi_stage=multi_stage,
@@ -356,8 +356,8 @@ def run_optimization_for_subproblem_stage(
         # Save the scenario results to disk
         save_results(
             scenario_directory,
-            weather_year_directory,
-            hydro_year_directory,
+            weather_iteration_directory,
+            hydro_iteration_directory,
             subproblem_directory,
             stage_directory,
             multi_stage,
@@ -370,8 +370,8 @@ def run_optimization_for_subproblem_stage(
         # Summarize results
         summarize_results(
             scenario_directory,
-            weather_year_directory,
-            hydro_year_directory,
+            weather_iteration_directory,
+            hydro_iteration_directory,
             subproblem_directory,
             stage_directory,
             multi_stage,
@@ -396,8 +396,8 @@ def run_optimization_for_subproblem_stage(
 
 def run_optimization_for_subproblem(
     scenario_directory,
-    weather_year_directory,
-    hydro_year_directory,
+    weather_iteration_directory,
+    hydro_iteration_directory,
     subproblem_directory,
     stage_directories,
     multi_stage,
@@ -414,8 +414,8 @@ def run_optimization_for_subproblem(
         stage = 1 if stage_directory == "" else int(stage_directory)
         objective_values[subproblem][stage] = run_optimization_for_subproblem_stage(
             scenario_directory,
-            weather_year_directory,
-            hydro_year_directory,
+            weather_iteration_directory,
+            hydro_iteration_directory,
             subproblem_directory,
             stage_directory,
             multi_stage,
@@ -430,8 +430,8 @@ def run_optimization_for_subproblem_pool(pool_datum):
     """
     [
         scenario_directory,
-        weather_year_directory,
-        hydro_year_directory,
+        weather_iteration_directory,
+        hydro_iteration_directory,
         subproblem_directory,
         stage_directories,
         multi_stage,
@@ -441,8 +441,8 @@ def run_optimization_for_subproblem_pool(pool_datum):
 
     run_optimization_for_subproblem(
         scenario_directory=scenario_directory,
-        weather_year_directory=weather_year_directory,
-        hydro_year_directory=hydro_year_directory,
+        weather_iteration_directory=weather_iteration_directory,
+        hydro_iteration_directory=hydro_iteration_directory,
         subproblem_directory=subproblem_directory,
         stage_directories=stage_directories,
         multi_stage=multi_stage,
@@ -470,7 +470,7 @@ def run_scenario(
      'testing' mode.
     """
 
-    weather_year_hydro_year_directory_strings = ScenarioDirectoryStructure(
+    weather_iteration_hydro_iteration_directory_strings = ScenarioDirectoryStructure(
         scenario_structure
     ).WEATHER_YEAR_HYDRO_YEAR_DIRECTORIES
     subproblem_stage_directory_strings = ScenarioDirectoryStructure(
@@ -502,14 +502,20 @@ def run_scenario(
         # objective function values
         objective_values = {}
 
-        for weather_year_str in weather_year_hydro_year_directory_strings.keys():
-            for hydro_year_str in (
-                weather_year_hydro_year_directory_strings[weather_year_str]
-                if not weather_year_str == ""
-                # If the weather year is just a string, we can't get the hydro
+        for (
+            weather_iteration_str
+        ) in weather_iteration_hydro_iteration_directory_strings.keys():
+            for hydro_iteration_str in (
+                weather_iteration_hydro_iteration_directory_strings[
+                    weather_iteration_str
+                ]
+                if not weather_iteration_str == ""
+                # If the weather iteration is just a string, we can't get the hydro
                 # years by dictionary key, so we'll just get the values of the
                 # next dictionary key instead (there will be only one)
-                else next(iter(weather_year_hydro_year_directory_strings.values()))
+                else next(
+                    iter(weather_iteration_hydro_iteration_directory_strings.values())
+                )
             ):
                 for subproblem_str in subproblem_stage_directory_strings.keys():
                     subproblem = 1 if subproblem_str == "" else int(subproblem_str)
@@ -524,18 +530,18 @@ def run_scenario(
                     #  changes to the formulation (for commitment)
                     if scenario_structure.MULTI_STAGE:
                         create_pass_through_inputs(
-                            hydro_year_str,
+                            hydro_iteration_str,
                             scenario_directory,
                             scenario_structure,
                             subproblem_str,
-                            weather_year_str,
+                            weather_iteration_str,
                         )
 
                     objective_values[subproblem] = {}
                     run_optimization_for_subproblem(
                         scenario_directory=scenario_directory,
-                        weather_year_directory=weather_year_str,
-                        hydro_year_directory=hydro_year_str,
+                        weather_iteration_directory=weather_iteration_str,
+                        hydro_iteration_directory=hydro_iteration_str,
                         subproblem_directory=subproblem_str,
                         stage_directories=subproblem_stage_directory_strings[
                             subproblem_str
@@ -574,26 +580,34 @@ def run_scenario(
             )
             # Solve sequentially
             objective_values = {}
-            for weather_year_str in weather_year_hydro_year_directory_strings.keys():
-                for hydro_year_str in (
-                    weather_year_hydro_year_directory_strings[weather_year_str]
-                    if not weather_year_str == ""
-                    else next(iter(weather_year_hydro_year_directory_strings.values()))
+            for (
+                weather_iteration_str
+            ) in weather_iteration_hydro_iteration_directory_strings.keys():
+                for hydro_iteration_str in (
+                    weather_iteration_hydro_iteration_directory_strings[
+                        weather_iteration_str
+                    ]
+                    if not weather_iteration_str == ""
+                    else next(
+                        iter(
+                            weather_iteration_hydro_iteration_directory_strings.values()
+                        )
+                    )
                 ):
                     for subproblem_str in subproblem_stage_directory_strings.keys():
                         if scenario_structure.MULTI_STAGE:
                             create_pass_through_inputs(
-                                hydro_year_str,
+                                hydro_iteration_str,
                                 scenario_directory,
                                 scenario_structure,
                                 subproblem_str,
-                                weather_year_str,
+                                weather_iteration_str,
                             )
 
                         run_optimization_for_subproblem(
                             scenario_directory=scenario_directory,
-                            weather_year_directory=weather_year_str,
-                            hydro_year_directory=hydro_year_str,
+                            weather_iteration_directory=weather_iteration_str,
+                            hydro_iteration_directory=hydro_iteration_str,
                             subproblem_directory=subproblem_str,
                             stage_directories=subproblem_stage_directory_strings[
                                 subproblem_str
@@ -617,20 +631,28 @@ def run_scenario(
             manager = Manager()
             objective_values = manager.dict()
 
-            for weather_year_str in weather_year_hydro_year_directory_strings.keys():
-                for hydro_year_str in (
-                    weather_year_hydro_year_directory_strings[weather_year_str]
-                    if not weather_year_str == ""
-                    else next(iter(weather_year_hydro_year_directory_strings.values()))
+            for (
+                weather_iteration_str
+            ) in weather_iteration_hydro_iteration_directory_strings.keys():
+                for hydro_iteration_str in (
+                    weather_iteration_hydro_iteration_directory_strings[
+                        weather_iteration_str
+                    ]
+                    if not weather_iteration_str == ""
+                    else next(
+                        iter(
+                            weather_iteration_hydro_iteration_directory_strings.values()
+                        )
+                    )
                 ):
                     for subproblem_str in subproblem_stage_directory_strings.keys():
                         if scenario_structure.MULTI_STAGE:
                             create_pass_through_inputs(
-                                hydro_year_str,
+                                hydro_iteration_str,
                                 scenario_directory,
                                 scenario_structure,
                                 subproblem_str,
-                                weather_year_str,
+                                weather_iteration_str,
                             )
 
                         # TODO: create management of iteration objective functions
@@ -643,20 +665,24 @@ def run_scenario(
                 [
                     [
                         scenario_directory,
-                        weather_year_str,
-                        hydro_year_str,
+                        weather_iteration_str,
+                        hydro_iteration_str,
                         subproblem_str,
                         subproblem_stage_directory_strings[subproblem_str],
                         scenario_structure.MULTI_STAGE,
                         parsed_arguments,
                         objective_values,
                     ]
-                    for weather_year_str in weather_year_hydro_year_directory_strings.keys()
-                    for hydro_year_str in (
-                        weather_year_hydro_year_directory_strings[weather_year_str]
-                        if not weather_year_str == ""
+                    for weather_iteration_str in weather_iteration_hydro_iteration_directory_strings.keys()
+                    for hydro_iteration_str in (
+                        weather_iteration_hydro_iteration_directory_strings[
+                            weather_iteration_str
+                        ]
+                        if not weather_iteration_str == ""
                         else next(
-                            iter(weather_year_hydro_year_directory_strings.values())
+                            iter(
+                                weather_iteration_hydro_iteration_directory_strings.values()
+                            )
                         )
                     )
                     for subproblem_str in subproblem_stage_directory_strings.keys()
@@ -670,11 +696,11 @@ def run_scenario(
 
 
 def create_pass_through_inputs(
-    hydro_year_str,
+    hydro_iteration_str,
     scenario_directory,
     scenario_structure,
     subproblem_str,
-    weather_year_str,
+    weather_iteration_str,
 ):
     modules_to_use, loaded_modules = set_up_gridpath_modules(
         scenario_directory=scenario_directory,
@@ -682,8 +708,8 @@ def create_pass_through_inputs(
     )
     pass_through_directory = os.path.join(
         scenario_directory,
-        weather_year_str,
-        hydro_year_str,
+        weather_iteration_str,
+        hydro_iteration_str,
         subproblem_str,
         "pass_through_inputs",
     )
@@ -699,8 +725,8 @@ def create_pass_through_inputs(
 
 def save_results(
     scenario_directory,
-    weather_year,
-    hydro_year,
+    weather_iteration,
+    hydro_iteration,
     subproblem,
     stage,
     multi_stage,
@@ -730,8 +756,8 @@ def save_results(
     # TODO: how best to handle non-empty results directories?
     results_directory = os.path.join(
         scenario_directory,
-        weather_year,
-        hydro_year,
+        weather_iteration,
+        hydro_iteration,
         subproblem,
         stage,
         "results",
@@ -774,8 +800,8 @@ def save_results(
             print("...exporting CSV results")
         export_results(
             scenario_directory=scenario_directory,
-            weather_year=weather_year,
-            hydro_year=hydro_year,
+            weather_iteration=weather_iteration,
+            hydro_iteration=hydro_iteration,
             subproblem=subproblem,
             stage=stage,
             multi_stage=multi_stage,
@@ -787,8 +813,8 @@ def save_results(
 
         export_pass_through_inputs(
             scenario_directory=scenario_directory,
-            weather_year=weather_year,
-            hydro_year=hydro_year,
+            weather_iteration=weather_iteration,
+            hydro_iteration=hydro_iteration,
             subproblem=subproblem,
             stage=stage,
             multi_stage=multi_stage,
@@ -798,8 +824,8 @@ def save_results(
 
         save_objective_function_value(
             scenario_directory=scenario_directory,
-            weather_year=weather_year,
-            hydro_year=hydro_year,
+            weather_iteration=weather_iteration,
+            hydro_iteration=hydro_iteration,
             subproblem=subproblem,
             stage=stage,
             instance=instance,
@@ -807,8 +833,8 @@ def save_results(
 
         save_duals(
             scenario_directory=scenario_directory,
-            weather_year=weather_year,
-            hydro_year=hydro_year,
+            weather_iteration=weather_iteration,
+            hydro_iteration=hydro_iteration,
             subproblem=subproblem,
             stage=stage,
             multi_stage=multi_stage,
@@ -842,8 +868,8 @@ def create_abstract_model(
     dynamic_components,
     loaded_modules,
     scenario_directory,
-    weather_year,
-    hydro_year,
+    weather_iteration,
+    hydro_iteration,
     subproblem,
     stage,
 ):
@@ -867,8 +893,8 @@ def create_abstract_model(
                 model,
                 dynamic_components,
                 scenario_directory,
-                weather_year,
-                hydro_year,
+                weather_iteration,
+                hydro_iteration,
                 subproblem,
                 stage,
             )
@@ -879,8 +905,8 @@ def load_scenario_data(
     dynamic_components,
     loaded_modules,
     scenario_directory,
-    weather_year,
-    hydro_year,
+    weather_iteration,
+    hydro_iteration,
     subproblem,
     stage,
 ):
@@ -908,8 +934,8 @@ def load_scenario_data(
                 dynamic_components,
                 data_portal,
                 scenario_directory,
-                weather_year,
-                hydro_year,
+                weather_iteration,
+                hydro_iteration,
                 subproblem,
                 stage,
             )
@@ -935,8 +961,8 @@ def fix_variables(
     instance,
     dynamic_components,
     scenario_directory,
-    weather_year,
-    hydro_year,
+    weather_iteration,
+    hydro_iteration,
     subproblem,
     stage,
     loaded_modules,
@@ -960,8 +986,8 @@ def fix_variables(
                 instance,
                 dynamic_components,
                 scenario_directory,
-                weather_year,
-                hydro_year,
+                weather_iteration,
+                hydro_iteration,
                 subproblem,
                 stage,
             )
@@ -1110,8 +1136,8 @@ def solve(instance, parsed_arguments):
 
 def export_results(
     scenario_directory,
-    weather_year,
-    hydro_year,
+    weather_iteration,
+    hydro_iteration,
     subproblem,
     stage,
     multi_stage,
@@ -1122,7 +1148,7 @@ def export_results(
 ):
     """
     :param scenario_directory:
-    :param hydro_year:
+    :param hydro_iteration:
     :param subproblem:
     :param stage:
     :param instance:
@@ -1146,8 +1172,8 @@ def export_results(
                     print(f"... {modules_to_use[n]}")
                 m.export_results(
                     scenario_directory,
-                    weather_year,
-                    hydro_year,
+                    weather_iteration,
+                    hydro_iteration,
                     subproblem,
                     stage,
                     instance,
@@ -1159,8 +1185,8 @@ def export_results(
 
 def export_pass_through_inputs(
     scenario_directory,
-    weather_year,
-    hydro_year,
+    weather_iteration,
+    hydro_iteration,
     subproblem,
     stage,
     multi_stage,
@@ -1189,8 +1215,8 @@ def export_pass_through_inputs(
                 print(f"... {modules_to_use[n]}")
             m.export_pass_through_inputs(
                 scenario_directory,
-                weather_year,
-                hydro_year,
+                weather_iteration,
+                hydro_iteration,
                 subproblem,
                 stage,
                 instance,
@@ -1199,7 +1225,7 @@ def export_pass_through_inputs(
 
 
 def save_objective_function_value(
-    scenario_directory, weather_year, hydro_year, subproblem, stage, instance
+    scenario_directory, weather_iteration, hydro_iteration, subproblem, stage, instance
 ):
     """
     Save the objective function value.
@@ -1218,8 +1244,8 @@ def save_objective_function_value(
     with open(
         os.path.join(
             scenario_directory,
-            weather_year,
-            hydro_year,
+            weather_iteration,
+            hydro_iteration,
             subproblem,
             stage,
             "results",
@@ -1233,8 +1259,8 @@ def save_objective_function_value(
 
 def save_duals(
     scenario_directory,
-    weather_year,
-    hydro_year,
+    weather_iteration,
+    hydro_iteration,
     subproblem,
     stage,
     multi_stage,
@@ -1267,8 +1293,8 @@ def save_duals(
         if hasattr(m, "save_duals"):
             m.save_duals(
                 scenario_directory,
-                weather_year,
-                hydro_year,
+                weather_iteration,
+                hydro_iteration,
                 subproblem,
                 stage,
                 instance,
@@ -1296,8 +1322,8 @@ def save_duals(
 
 def summarize_results(
     scenario_directory,
-    weather_year,
-    hydro_year,
+    weather_iteration,
+    hydro_iteration,
     subproblem,
     stage,
     multi_stage,
@@ -1315,8 +1341,8 @@ def summarize_results(
     if parsed_arguments.results_export_rule is None:
         summarize_rule = _summarize_rule(
             scenario_directory=scenario_directory,
-            weather_year=weather_year,
-            hydro_year=hydro_year,
+            weather_iteration=weather_iteration,
+            hydro_iteration=hydro_iteration,
             subproblem=subproblem,
             stage=stage,
             quiet=parsed_arguments.quiet,
@@ -1326,8 +1352,8 @@ def summarize_results(
             "summarize"
         ](
             scenario_directory=scenario_directory,
-            weather_year=weather_year,
-            hydro_year=hydro_year,
+            weather_iteration=weather_iteration,
+            hydro_iteration=hydro_iteration,
             subproblem=subproblem,
             stage=stage,
             quiet=parsed_arguments.quiet,
@@ -1338,8 +1364,8 @@ def summarize_results(
         with open(
             os.path.join(
                 scenario_directory,
-                weather_year,
-                hydro_year,
+                weather_iteration,
+                hydro_iteration,
                 subproblem,
                 stage,
                 "results",
@@ -1361,8 +1387,8 @@ def summarize_results(
             # Make the summary results file
             summary_results_file = os.path.join(
                 scenario_directory,
-                weather_year,
-                hydro_year,
+                weather_iteration,
+                hydro_iteration,
                 subproblem,
                 stage,
                 "results",
@@ -1385,7 +1411,11 @@ def summarize_results(
                     if parsed_arguments.verbose:
                         print(f"... {modules_to_use[n]}")
                     m.summarize_results(
-                        scenario_directory, weather_year, hydro_year, subproblem, stage
+                        scenario_directory,
+                        weather_iteration,
+                        hydro_iteration,
+                        subproblem,
+                        stage,
                     )
                 n += 1
 
@@ -1499,7 +1529,7 @@ def _export_rule(instance, quiet):
 
 
 def _summarize_rule(
-    scenario_directory, weather_year, hydro_year, subproblem, stage, quiet
+    scenario_directory, weather_iteration, hydro_iteration, subproblem, stage, quiet
 ):
     """
     :return: boolean

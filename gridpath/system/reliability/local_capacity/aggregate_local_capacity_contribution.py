@@ -30,7 +30,7 @@ from gridpath.system.reliability.local_capacity import LOCAL_CAPACITY_ZONE_PRD_D
 
 
 def add_model_components(
-    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+    m, d, scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
 ):
     """
 
@@ -74,7 +74,7 @@ def record_dynamic_components(dynamic_components):
 
 
 def export_results(
-    scenario_directory, weather_year, hydro_year, subproblem, stage, m, d
+    scenario_directory, weather_iteration, hydro_iteration, subproblem, stage, m, d
 ):
     """
 

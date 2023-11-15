@@ -28,7 +28,7 @@ from gridpath.transmission.capacity.common_functions import (
 
 
 def add_model_components(
-    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+    m, d, scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
 ):
     """ """
 
@@ -37,8 +37,8 @@ def add_model_components(
     df = pd.read_csv(
         os.path.join(
             scenario_directory,
-            weather_year,
-            hydro_year,
+            weather_iteration,
+            hydro_iteration,
             subproblem,
             stage,
             "inputs",
@@ -62,12 +62,25 @@ def add_model_components(
         imp_op_m = imported_tx_capacity_modules[op_m]
         if hasattr(imp_op_m, "add_model_components"):
             imp_op_m.add_model_components(
-                m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+                m,
+                d,
+                scenario_directory,
+                weather_iteration,
+                hydro_iteration,
+                subproblem,
+                stage,
             )
 
 
 def load_model_data(
-    m, d, data_portal, scenario_directory, weather_year, hydro_year, subproblem, stage
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    subproblem,
+    stage,
 ):
     """
 
@@ -82,8 +95,8 @@ def load_model_data(
     df = pd.read_csv(
         os.path.join(
             scenario_directory,
-            weather_year,
-            hydro_year,
+            weather_iteration,
+            hydro_iteration,
             subproblem,
             stage,
             "inputs",
@@ -110,8 +123,8 @@ def load_model_data(
                 d,
                 data_portal,
                 scenario_directory,
-                weather_year,
-                hydro_year,
+                weather_iteration,
+                hydro_iteration,
                 subproblem,
                 stage,
             )
@@ -163,7 +176,13 @@ def get_required_capacity_type_modules(scenario_id, subscenarios, conn):
 
 
 def validate_inputs(
-    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     Get inputs from database and validate the inputs
@@ -189,8 +208,8 @@ def validate_inputs(
             imported_capacity_type_modules[op_m].validate_inputs(
                 scenario_id,
                 subscenarios,
-                weather_year,
-                hydro_year,
+                weather_iteration,
+                hydro_iteration,
                 subproblem,
                 stage,
                 conn,
@@ -201,8 +220,8 @@ def write_model_inputs(
     scenario_directory,
     scenario_id,
     subscenarios,
-    weather_year,
-    hydro_year,
+    weather_iteration,
+    hydro_iteration,
     subproblem,
     stage,
     conn,
@@ -231,8 +250,8 @@ def write_model_inputs(
                 scenario_directory,
                 scenario_id,
                 subscenarios,
-                weather_year,
-                hydro_year,
+                weather_iteration,
+                hydro_iteration,
                 subproblem,
                 stage,
                 conn,

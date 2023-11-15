@@ -70,7 +70,7 @@ from gridpath.project.capacity.capacity_types.common_methods import (
 
 # TODO: can we have different capacities depending on the direction
 def add_model_components(
-    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+    m, d, scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
 ):
     """
     The following Pyomo model components are defined in this module:
@@ -530,15 +530,22 @@ def new_capacity_rule(mod, g, p):
 
 
 def load_model_data(
-    m, d, data_portal, scenario_directory, weather_year, hydro_year, subproblem, stage
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    subproblem,
+    stage,
 ):
     # TODO: throw an error when a line of the 'tx_new_lin' capacity
     #   type is not found in new_build_transmission_vintage_costs.tab
     data_portal.load(
         filename=os.path.join(
             scenario_directory,
-            weather_year,
-            hydro_year,
+            weather_iteration,
+            hydro_iteration,
             subproblem,
             stage,
             "inputs",
@@ -570,8 +577,8 @@ def load_model_data(
     header = pd.read_csv(
         os.path.join(
             scenario_directory,
-            weather_year,
-            hydro_year,
+            weather_iteration,
+            hydro_iteration,
             subproblem,
             stage,
             "inputs",
@@ -588,8 +595,8 @@ def load_model_data(
     df = pd.read_csv(
         os.path.join(
             scenario_directory,
-            weather_year,
-            hydro_year,
+            weather_iteration,
+            hydro_iteration,
             subproblem,
             stage,
             "inputs",
@@ -642,7 +649,7 @@ def load_model_data(
 
 
 def add_to_tx_period_results(
-    scenario_directory, weather_year, hydro_year, subproblem, stage, m, d
+    scenario_directory, weather_iteration, hydro_iteration, subproblem, stage, m, d
 ):
     """
 
@@ -673,7 +680,13 @@ def add_to_tx_period_results(
 
 
 def get_model_inputs_from_database(
-    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     :param subscenarios: SubScenarios object with all subscenario info
@@ -739,8 +752,8 @@ def write_model_inputs(
     scenario_directory,
     scenario_id,
     subscenarios,
-    weather_year,
-    hydro_year,
+    weather_iteration,
+    hydro_iteration,
     subproblem,
     stage,
     conn,
@@ -756,14 +769,20 @@ def write_model_inputs(
     """
 
     tx_cost = get_model_inputs_from_database(
-        scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        weather_iteration,
+        hydro_iteration,
+        subproblem,
+        stage,
+        conn,
     )
 
     with open(
         os.path.join(
             scenario_directory,
-            weather_year,
-            hydro_year,
+            weather_iteration,
+            hydro_iteration,
             subproblem,
             stage,
             "inputs",
@@ -800,8 +819,8 @@ def write_model_inputs(
 
 def save_duals(
     scenario_directory,
-    weather_year,
-    hydro_year,
+    weather_iteration,
+    hydro_iteration,
     subproblem,
     stage,
     instance,
@@ -825,7 +844,13 @@ def save_duals(
 
 
 def validate_inputs(
-    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     Get inputs from database and validate the inputs
@@ -837,7 +862,13 @@ def validate_inputs(
     """
 
     tx_cost = get_model_inputs_from_database(
-        scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        weather_iteration,
+        hydro_iteration,
+        subproblem,
+        stage,
+        conn,
     )
 
     tx_lines = get_tx_lines(
@@ -862,8 +893,8 @@ def validate_inputs(
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
-        weather_year=weather_year,
-        hydro_year=hydro_year,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -878,8 +909,8 @@ def validate_inputs(
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
-        weather_year=weather_year,
-        hydro_year=hydro_year,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -893,8 +924,8 @@ def validate_inputs(
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
-        weather_year=weather_year,
-        hydro_year=hydro_year,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -914,8 +945,8 @@ def validate_inputs(
         write_validation_to_database(
             conn=conn,
             scenario_id=scenario_id,
-            weather_year=weather_year,
-            hydro_year=hydro_year,
+            weather_iteration=weather_iteration,
+            hydro_iteration=hydro_iteration,
             subproblem_id=subproblem,
             stage_id=stage,
             gridpath_module=__name__,
@@ -931,8 +962,8 @@ def validate_inputs(
         write_validation_to_database(
             conn=conn,
             scenario_id=scenario_id,
-            weather_year=weather_year,
-            hydro_year=hydro_year,
+            weather_iteration=weather_iteration,
+            hydro_iteration=hydro_iteration,
             subproblem_id=subproblem,
             stage_id=stage,
             gridpath_module=__name__,

@@ -32,7 +32,7 @@ from gridpath.project import PROJECT_TIMEPOINT_DF
 
 
 def add_model_components(
-    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+    m, d, scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
 ):
     """
     The following Pyomo model components are defined in this module:
@@ -60,8 +60,8 @@ def add_model_components(
 
     required_operational_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
-        weather_year=weather_year,
-        hydro_year=hydro_year,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
         subproblem=subproblem,
         stage=stage,
         which_type="operational_type",
@@ -99,7 +99,7 @@ def add_model_components(
 
 
 def export_results(
-    scenario_directory, weather_year, hydro_year, subproblem, stage, m, d
+    scenario_directory, weather_iteration, hydro_iteration, subproblem, stage, m, d
 ):
     """
     Export operations results.
@@ -137,8 +137,8 @@ def export_results(
 
     required_operational_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
-        weather_year=weather_year,
-        hydro_year=hydro_year,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
         subproblem=subproblem,
         stage=stage,
         which_type="operational_type",
@@ -161,7 +161,9 @@ def export_results(
             getattr(d, PROJECT_TIMEPOINT_DF).update(optype_df)
 
 
-def summarize_results(scenario_directory, weather_year, hydro_year, subproblem, stage):
+def summarize_results(
+    scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
+):
     """
     :param scenario_directory:
     :param subproblem:
@@ -173,8 +175,8 @@ def summarize_results(scenario_directory, weather_year, hydro_year, subproblem, 
 
     summary_results_file = os.path.join(
         scenario_directory,
-        weather_year,
-        hydro_year,
+        weather_iteration,
+        hydro_iteration,
         subproblem,
         stage,
         "results",
@@ -194,8 +196,8 @@ def summarize_results(scenario_directory, weather_year, hydro_year, subproblem, 
     operational_results_df = pd.read_csv(
         os.path.join(
             scenario_directory,
-            weather_year,
-            hydro_year,
+            weather_iteration,
+            hydro_iteration,
             subproblem,
             stage,
             "results",

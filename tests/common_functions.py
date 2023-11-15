@@ -22,8 +22,8 @@ def add_model_components(
     model,
     d,
     test_data_dir,
-    weather_year,
-    hydro_year,
+    weather_iteration,
+    hydro_iteration,
     subproblem,
     stage,
 ):
@@ -39,11 +39,23 @@ def add_model_components(
     for m in prereq_modules:
         if hasattr(m, "add_model_components"):
             m.add_model_components(
-                model, d, test_data_dir, weather_year, hydro_year, subproblem, stage
+                model,
+                d,
+                test_data_dir,
+                weather_iteration,
+                hydro_iteration,
+                subproblem,
+                stage,
             )
     if hasattr(module_to_test, "add_model_components"):
         module_to_test.add_model_components(
-            model, d, test_data_dir, weather_year, hydro_year, subproblem, stage
+            model,
+            d,
+            test_data_dir,
+            weather_iteration,
+            hydro_iteration,
+            subproblem,
+            stage,
         )
 
     return model
@@ -53,8 +65,8 @@ def create_abstract_model(
     prereq_modules,
     module_to_test,
     test_data_dir,
-    weather_year,
-    hydro_year,
+    weather_iteration,
+    hydro_iteration,
     subproblem,
     stage,
 ):
@@ -75,8 +87,8 @@ def create_abstract_model(
         m,
         d,
         test_data_dir,
-        weather_year,
-        hydro_year,
+        weather_iteration,
+        hydro_iteration,
         subproblem,
         stage,
     )
@@ -88,8 +100,8 @@ def add_components_and_load_data(
     prereq_modules,
     module_to_test,
     test_data_dir,
-    weather_year,
-    hydro_year,
+    weather_iteration,
+    hydro_iteration,
     subproblem,
     stage,
 ):
@@ -102,8 +114,8 @@ def add_components_and_load_data(
         prereq_modules,
         module_to_test,
         test_data_dir,
-        weather_year,
-        hydro_year,
+        weather_iteration,
+        hydro_iteration,
         subproblem,
         stage,
     )
@@ -111,11 +123,25 @@ def add_components_and_load_data(
     for mod in prereq_modules:
         if hasattr(mod, "load_model_data"):
             mod.load_model_data(
-                m, d, data, test_data_dir, weather_year, hydro_year, subproblem, stage
+                m,
+                d,
+                data,
+                test_data_dir,
+                weather_iteration,
+                hydro_iteration,
+                subproblem,
+                stage,
             )
     if hasattr(module_to_test, "load_model_data"):
         module_to_test.load_model_data(
-            m, d, data, test_data_dir, weather_year, hydro_year, subproblem, stage
+            m,
+            d,
+            data,
+            test_data_dir,
+            weather_iteration,
+            hydro_iteration,
+            subproblem,
+            stage,
         )
 
     return m, data

@@ -81,10 +81,10 @@ def write_model_inputs(
     # files
     delete_prior_aux_files(scenario_directory=scenario_directory)
 
-    # Determine whether we will have iteration (weather, hydro year),
+    # Determine whether we will have iteration (weather, hydro iteration),
     # and subproblem and stage directories
     # The subproblem structure is the same within each iteration
-    weather_year_hydro_year_directory_strings = ScenarioDirectoryStructure(
+    weather_iteration_hydro_iteration_directory_strings = ScenarioDirectoryStructure(
         scenario_structure
     ).WEATHER_YEAR_HYDRO_YEAR_DIRECTORIES
     subproblem_stage_directory_strings = ScenarioDirectoryStructure(
@@ -105,19 +105,25 @@ def write_model_inputs(
     # If no parallelization requested, loop through the iterations
     # and subproblems
     if n_parallel_subproblems == 1:
-        for weather_year_str in weather_year_hydro_year_directory_strings.keys():
-            for hydro_year_str in (
-                weather_year_hydro_year_directory_strings[weather_year_str]
-                if not weather_year_str == ""
-                # If the weather year is just a string, we can't get the hydro years by dictionary key, so we'll just get the values of the next dictionary key instead (there will be only one)
-                else next(iter(weather_year_hydro_year_directory_strings.values()))
+        for (
+            weather_iteration_str
+        ) in weather_iteration_hydro_iteration_directory_strings.keys():
+            for hydro_iteration_str in (
+                weather_iteration_hydro_iteration_directory_strings[
+                    weather_iteration_str
+                ]
+                if not weather_iteration_str == ""
+                # If the weather iteration is just a string, we can't get the hydro iterations by dictionary key, so we'll just get the values of the next dictionary key instead (there will be only one)
+                else next(
+                    iter(weather_iteration_hydro_iteration_directory_strings.values())
+                )
             ):
                 for subproblem_str in subproblem_stage_directory_strings.keys():
                     for stage_str in subproblem_stage_directory_strings[subproblem_str]:
                         write_inputs(
                             scenario_directory=scenario_directory,
-                            weather_year_str=weather_year_str,
-                            hydro_year_str=hydro_year_str,
+                            weather_iteration_str=weather_iteration_str,
+                            hydro_iteration_str=hydro_iteration_str,
                             subproblem_str=subproblem_str,
                             stage_str=stage_str,
                             modules_to_use=modules_to_use,
@@ -130,8 +136,8 @@ def write_model_inputs(
             [
                 [
                     scenario_directory,
-                    weather_year_str,
-                    hydro_year_str,
+                    weather_iteration_str,
+                    hydro_iteration_str,
                     subproblem_str,
                     stage_str,
                     modules_to_use,
@@ -139,11 +145,17 @@ def write_model_inputs(
                     subscenarios,
                     db_path,
                 ]
-                for weather_year_str in weather_year_hydro_year_directory_strings.keys()
-                for hydro_year_str in (
-                    weather_year_hydro_year_directory_strings[weather_year_str]
-                    if not weather_year_str == ""
-                    else next(iter(weather_year_hydro_year_directory_strings.values()))
+                for weather_iteration_str in weather_iteration_hydro_iteration_directory_strings.keys()
+                for hydro_iteration_str in (
+                    weather_iteration_hydro_iteration_directory_strings[
+                        weather_iteration_str
+                    ]
+                    if not weather_iteration_str == ""
+                    else next(
+                        iter(
+                            weather_iteration_hydro_iteration_directory_strings.values()
+                        )
+                    )
                 )
                 for subproblem_str in subproblem_stage_directory_strings.keys()
                 for stage_str in subproblem_stage_directory_strings[subproblem_str]
@@ -158,8 +170,8 @@ def write_model_inputs(
 
 def write_inputs(
     scenario_directory,
-    weather_year_str,
-    hydro_year_str,
+    weather_iteration_str,
+    hydro_iteration_str,
     subproblem_str,
     stage_str,
     modules_to_use,
@@ -171,8 +183,8 @@ def write_inputs(
 
     inputs_directory = os.path.join(
         scenario_directory,
-        weather_year_str,
-        hydro_year_str,
+        weather_iteration_str,
+        hydro_iteration_str,
         subproblem_str,
         stage_str,
         "inputs",
@@ -198,8 +210,8 @@ def write_inputs(
                 scenario_directory=scenario_directory,
                 scenario_id=scenario_id,
                 subscenarios=subscenarios,
-                weather_year=weather_year_str,
-                hydro_year=hydro_year_str,
+                weather_iteration=weather_iteration_str,
+                hydro_iteration=hydro_iteration_str,
                 subproblem=subproblem_str,
                 stage=stage_str,
                 conn=conn,
@@ -215,7 +227,7 @@ def get_inputs_for_subproblem_pool(pool_datum):
     """
     [
         scenario_directory,
-        weather_year_str,
+        weather_iteration_str,
         hydro_yr_str,
         subproblem_str,
         stage_str,
@@ -227,8 +239,8 @@ def get_inputs_for_subproblem_pool(pool_datum):
 
     write_inputs(
         scenario_directory=scenario_directory,
-        weather_year_str=weather_year_str,
-        hydro_year_str=hydro_yr_str,
+        weather_iteration_str=weather_iteration_str,
+        hydro_iteration_str=hydro_yr_str,
         subproblem_str=subproblem_str,
         stage_str=stage_str,
         modules_to_use=modules_to_use,

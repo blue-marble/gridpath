@@ -48,7 +48,7 @@ from gridpath.project.operations.operational_types.common_functions import (
 
 
 def add_model_components(
-    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+    m, d, scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
 ):
     """
     The following Pyomo model components are defined in this module:
@@ -256,7 +256,14 @@ def power_delta_rule(mod, g, tmp):
 
 
 def load_model_data(
-    mod, d, data_portal, scenario_directory, weather_year, hydro_year, subproblem, stage
+    mod,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    subproblem,
+    stage,
 ):
     """
     :param mod:
@@ -272,8 +279,8 @@ def load_model_data(
         mod=mod,
         data_portal=data_portal,
         scenario_directory=scenario_directory,
-        weather_year=weather_year,
-        hydro_year=hydro_year,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
         subproblem=subproblem,
         stage=stage,
         op_type="gen_var_must_take",
@@ -282,8 +289,8 @@ def load_model_data(
     load_var_profile_inputs(
         data_portal,
         scenario_directory,
-        weather_year,
-        hydro_year,
+        weather_iteration,
+        hydro_iteration,
         subproblem,
         stage,
         "gen_var_must_take",
@@ -295,7 +302,13 @@ def load_model_data(
 
 
 def get_model_inputs_from_database(
-    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     :param subscenarios: SubScenarios object with all subscenario info
@@ -304,14 +317,17 @@ def get_model_inputs_from_database(
     :param conn: database connection
     :return: cursor object with query results
     """
-    db_weather_year, db_hydro_year, db_subproblem, db_stage = directories_to_db_values(
-        weather_year, hydro_year, subproblem, stage
-    )
+    (
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_subproblem,
+        db_stage,
+    ) = directories_to_db_values(weather_iteration, hydro_iteration, subproblem, stage)
 
     prj_tmp_data = get_prj_tmp_opr_inputs_from_db(
         subscenarios=subscenarios,
-        weather_year=db_weather_year,
-        hydro_year=db_hydro_year,
+        weather_iteration=db_weather_iteration,
+        hydro_iteration=db_hydro_iteration,
         subproblem=db_subproblem,
         stage=db_stage,
         conn=conn,
@@ -328,8 +344,8 @@ def write_model_inputs(
     scenario_directory,
     scenario_id,
     subscenarios,
-    weather_year,
-    hydro_year,
+    weather_iteration,
+    hydro_iteration,
     subproblem,
     stage,
     conn,
@@ -346,12 +362,24 @@ def write_model_inputs(
     """
 
     data = get_model_inputs_from_database(
-        scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        weather_iteration,
+        hydro_iteration,
+        subproblem,
+        stage,
+        conn,
     )
     fname = "variable_generator_profiles.tab"
 
     write_tab_file_model_inputs(
-        scenario_directory, weather_year, hydro_year, subproblem, stage, fname, data
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        subproblem,
+        stage,
+        fname,
+        data,
     )
 
 
@@ -360,7 +388,13 @@ def write_model_inputs(
 
 
 def validate_inputs(
-    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     Get inputs from database and validate the inputs
@@ -375,8 +409,8 @@ def validate_inputs(
     opchar_df = validate_opchars(
         scenario_id,
         subscenarios,
-        weather_year,
-        hydro_year,
+        weather_iteration,
+        hydro_iteration,
         subproblem,
         stage,
         conn,
@@ -387,8 +421,8 @@ def validate_inputs(
     cap_factor_validation_error = validate_var_profiles(
         scenario_id,
         subscenarios,
-        weather_year,
-        hydro_year,
+        weather_iteration,
+        hydro_iteration,
         subproblem,
         stage,
         conn,
@@ -419,8 +453,8 @@ def validate_inputs(
         write_validation_to_database(
             conn=conn,
             scenario_id=scenario_id,
-            weather_year=weather_year,
-            hydro_year=hydro_year,
+            weather_iteration=weather_iteration,
+            hydro_iteration=hydro_iteration,
             subproblem_id=subproblem,
             stage_id=stage,
             gridpath_module=__name__,

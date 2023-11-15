@@ -74,7 +74,7 @@ from gridpath.common_functions import create_results_df
 
 
 def add_model_components(
-    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+    m, d, scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
 ):
     """
     The following Pyomo model components are defined in this module:
@@ -729,7 +729,13 @@ def power_delta_rule(mod, g, tmp):
 
 
 def get_model_inputs_from_database(
-    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     :param subscenarios: SubScenarios object with all subscenario info
@@ -739,14 +745,17 @@ def get_model_inputs_from_database(
     :return: cursor object with query results
     """
 
-    db_weather_year, db_hydro_year, db_subproblem, db_stage = directories_to_db_values(
-        weather_year, hydro_year, subproblem, stage
-    )
+    (
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_subproblem,
+        db_stage,
+    ) = directories_to_db_values(weather_iteration, hydro_iteration, subproblem, stage)
 
     prj_tmp_data = get_prj_tmp_opr_inputs_from_db(
         subscenarios=subscenarios,
-        weather_year=db_weather_year,
-        hydro_year=db_hydro_year,
+        weather_iteration=db_weather_iteration,
+        hydro_iteration=db_hydro_iteration,
         subproblem=db_subproblem,
         stage=db_stage,
         conn=conn,
@@ -763,8 +772,8 @@ def write_model_inputs(
     scenario_directory,
     scenario_id,
     subscenarios,
-    weather_year,
-    hydro_year,
+    weather_iteration,
+    hydro_iteration,
     subproblem,
     stage,
     conn,
@@ -781,15 +790,21 @@ def write_model_inputs(
     """
 
     data = get_model_inputs_from_database(
-        scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        weather_iteration,
+        hydro_iteration,
+        subproblem,
+        stage,
+        conn,
     )
 
     fname = "stor_exogenous_state_of_charge.tab"
 
     write_tab_file_model_inputs(
         scenario_directory,
-        weather_year,
-        hydro_year,
+        weather_iteration,
+        hydro_iteration,
         subproblem,
         stage,
         fname,
@@ -799,7 +814,14 @@ def write_model_inputs(
 
 
 def load_model_data(
-    mod, d, data_portal, scenario_directory, weather_year, hydro_year, subproblem, stage
+    mod,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    subproblem,
+    stage,
 ):
     """
 
@@ -814,8 +836,8 @@ def load_model_data(
         mod=mod,
         data_portal=data_portal,
         scenario_directory=scenario_directory,
-        weather_year=weather_year,
-        hydro_year=hydro_year,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
         subproblem=subproblem,
         stage=stage,
         op_type="stor",
@@ -885,7 +907,7 @@ def add_to_prj_tmp_results(mod):
 
 
 def export_results(
-    mod, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+    mod, d, scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
 ):
     """
 
@@ -951,7 +973,13 @@ def export_results(
 
 
 def validate_inputs(
-    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     Get inputs from database and validate the inputs
@@ -966,8 +994,8 @@ def validate_inputs(
     validate_opchars(
         scenario_id,
         subscenarios,
-        weather_year,
-        hydro_year,
+        weather_iteration,
+        hydro_iteration,
         subproblem,
         stage,
         conn,

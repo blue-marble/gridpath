@@ -90,8 +90,8 @@ def generic_add_model_components(
 
 def generic_export_results(
     scenario_directory,
-    weather_year,
-    hydro_year,
+    weather_iteration,
+    hydro_iteration,
     subproblem,
     stage,
     m,
@@ -127,8 +127,8 @@ def generic_export_results(
     with open(
         os.path.join(
             scenario_directory,
-            weather_year,
-            hydro_year,
+            weather_iteration,
+            hydro_iteration,
             subproblem,
             stage,
             "results",
@@ -189,8 +189,8 @@ def generic_save_duals(m, reserve_constraint_name):
 
 def generic_import_results_to_database(
     scenario_id,
-    weather_year,
-    hydro_year,
+    weather_iteration,
+    hydro_iteration,
     subproblem,
     stage,
     c,
@@ -215,8 +215,8 @@ def generic_import_results_to_database(
         conn=db,
         cursor=c,
         scenario_id=scenario_id,
-        weather_year=weather_year,
-        hydro_year=hydro_year,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
         subproblem=subproblem,
         stage=stage,
         quiet=quiet,

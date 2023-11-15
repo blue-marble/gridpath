@@ -25,8 +25,8 @@ import pandas as pd
 #  determinations
 def determine_project_subset(
     scenario_directory,
-    weather_year,
-    hydro_year,
+    weather_iteration,
+    hydro_iteration,
     subproblem,
     stage,
     column,
@@ -48,8 +48,8 @@ def determine_project_subset(
     dynamic_components = pd.read_csv(
         os.path.join(
             scenario_directory,
-            weather_year,
-            hydro_year,
+            weather_iteration,
+            hydro_iteration,
             subproblem,
             stage,
             "inputs",

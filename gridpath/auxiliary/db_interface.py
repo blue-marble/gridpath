@@ -133,7 +133,14 @@ def get_scenario_id_and_name(scenario_id_arg, scenario_name_arg, c, script):
 
 
 def setup_results_import(
-    conn, cursor, table, scenario_id, weather_year, hydro_year, subproblem, stage
+    conn,
+    cursor,
+    table,
+    scenario_id,
+    weather_iteration,
+    hydro_iteration,
+    subproblem,
+    stage,
 ):
     """
     :param conn: the connection object
@@ -151,8 +158,8 @@ def setup_results_import(
     del_sql = """
         DELETE FROM {} 
         WHERE scenario_id = ?
-        AND weather_year = ?
-        AND hydro_year = ?
+        AND weather_iteration = ?
+        AND hydro_iteration = ?
         AND subproblem_id = ?
         AND stage_id = ?;
         """.format(
@@ -162,7 +169,7 @@ def setup_results_import(
         conn=conn,
         cursor=cursor,
         sql=del_sql,
-        data=(scenario_id, weather_year, hydro_year, subproblem, stage),
+        data=(scenario_id, weather_iteration, hydro_iteration, subproblem, stage),
         many=False,
     )
 
@@ -203,8 +210,8 @@ def import_csv(
     conn,
     cursor,
     scenario_id,
-    weather_year,
-    hydro_year,
+    weather_iteration,
+    hydro_iteration,
     subproblem,
     stage,
     quiet,
@@ -224,8 +231,8 @@ def import_csv(
         cursor=cursor,
         table=f"results_{which_results}",
         scenario_id=scenario_id,
-        weather_year=weather_year,
-        hydro_year=hydro_year,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
         subproblem=subproblem,
         stage=stage,
     )
@@ -234,11 +241,15 @@ def import_csv(
     df["scenario_id"] = scenario_id
 
     # TODO: DB defaults need to be specified somewhere
-    df["weather_year"] = (
-        0 if weather_year == "" else int(weather_year.replace("weather_year_", ""))
+    df["weather_iteration"] = (
+        0
+        if weather_iteration == ""
+        else int(weather_iteration.replace("weather_iteration_", ""))
     )
-    df["hydro_year"] = (
-        0 if hydro_year == "" else int(hydro_year.replace("hydro_year_", ""))
+    df["hydro_iteration"] = (
+        0
+        if hydro_iteration == ""
+        else int(hydro_iteration.replace("hydro_iteration_", ""))
     )
     df["subproblem_id"] = 1 if subproblem == "" else int(subproblem)
     df["stage_id"] = 1 if stage == "" else int(stage)
@@ -315,14 +326,18 @@ def determine_table_subset_by_start_and_column(conn, tbl_start, cols):
     return table_subset
 
 
-def directories_to_db_values(weather_year, hydro_year, subproblem, stage):
-    db_weather_year = (
-        0 if weather_year == "" else int(weather_year.replace("weather_year_", ""))
+def directories_to_db_values(weather_iteration, hydro_iteration, subproblem, stage):
+    db_weather_iteration = (
+        0
+        if weather_iteration == ""
+        else int(weather_iteration.replace("weather_iteration_", ""))
     )
-    db_hydro_year = (
-        0 if hydro_year == "" else int(hydro_year.replace("hydro_year_", ""))
+    db_hydro_iteration = (
+        0
+        if hydro_iteration == ""
+        else int(hydro_iteration.replace("hydro_iteration_", ""))
     )
     db_subproblem = 1 if subproblem == "" else subproblem
     db_stage = 1 if stage == "" else stage
 
-    return db_weather_year, db_hydro_year, db_subproblem, db_stage
+    return db_weather_iteration, db_hydro_iteration, db_subproblem, db_stage

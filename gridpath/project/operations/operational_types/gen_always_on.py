@@ -64,7 +64,7 @@ from gridpath.common_functions import create_results_df
 
 
 def add_model_components(
-    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+    m, d, scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
 ):
     """
     The following Pyomo model components are defined in this module:
@@ -603,7 +603,14 @@ def power_delta_rule(mod, g, tmp):
 
 
 def load_model_data(
-    mod, d, data_portal, scenario_directory, weather_year, hydro_year, subproblem, stage
+    mod,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    subproblem,
+    stage,
 ):
     """
 
@@ -619,8 +626,8 @@ def load_model_data(
         mod=mod,
         data_portal=data_portal,
         scenario_directory=scenario_directory,
-        weather_year=weather_year,
-        hydro_year=hydro_year,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
         subproblem=subproblem,
         stage=stage,
         op_type="gen_always_on",
@@ -671,7 +678,7 @@ def add_to_prj_tmp_results(mod):
 
 
 def export_results(
-    mod, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+    mod, d, scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
 ):
     """
     :param scenario_directory:
@@ -743,7 +750,13 @@ def export_results(
 
 
 def validate_inputs(
-    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     Get inputs from database and validate the inputs
@@ -758,8 +771,8 @@ def validate_inputs(
     validate_opchars(
         scenario_id,
         subscenarios,
-        weather_year,
-        hydro_year,
+        weather_iteration,
+        hydro_iteration,
         subproblem,
         stage,
         conn,

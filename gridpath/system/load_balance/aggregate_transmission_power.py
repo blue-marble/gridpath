@@ -29,7 +29,7 @@ from gridpath.system.load_balance import LOAD_ZONE_TMP_DF
 
 
 def add_model_components(
-    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+    m, d, scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
 ):
     """
     Add net transmitted power to load balance
@@ -96,7 +96,7 @@ def record_dynamic_components(dynamic_components):
 
 
 def export_results(
-    scenario_directory, weather_year, hydro_year, subproblem, stage, m, d
+    scenario_directory, weather_iteration, hydro_iteration, subproblem, stage, m, d
 ):
     """
 

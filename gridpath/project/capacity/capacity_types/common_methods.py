@@ -191,12 +191,17 @@ def spec_get_inputs_from_database(conn, subscenarios, capacity_type):
 
 
 def spec_write_tab_file(
-    scenario_directory, weather_year, hydro_year, subproblem, stage, spec_project_params
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    subproblem,
+    stage,
+    spec_project_params,
 ):
     spec_params_filepath = os.path.join(
         scenario_directory,
-        weather_year,
-        hydro_year,
+        weather_iteration,
+        hydro_iteration,
         subproblem,
         stage,
         "inputs",
@@ -286,7 +291,12 @@ def write_from_query(spec_project_params, writer):
 
 
 def spec_determine_inputs(
-    scenario_directory, weather_year, hydro_year, subproblem, stage, capacity_type
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    subproblem,
+    stage,
+    capacity_type,
 ):
     # Determine the relevant projects
     project_list = list()
@@ -294,8 +304,8 @@ def spec_determine_inputs(
     df = pd.read_csv(
         os.path.join(
             scenario_directory,
-            weather_year,
-            hydro_year,
+            weather_iteration,
+            hydro_iteration,
             subproblem,
             stage,
             "inputs",
@@ -329,8 +339,8 @@ def spec_determine_inputs(
     df = pd.read_csv(
         os.path.join(
             scenario_directory,
-            weather_year,
-            hydro_year,
+            weather_iteration,
+            hydro_iteration,
             subproblem,
             stage,
             "inputs",
@@ -411,7 +421,12 @@ def spec_determine_inputs(
 
 
 def read_results_file_generic(
-    scenario_directory, weather_year, hydro_year, subproblem, stage, capacity_type
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    subproblem,
+    stage,
+    capacity_type,
 ):
     """
     :param scenario_directory:
@@ -425,7 +440,7 @@ def read_results_file_generic(
     df = pd.read_csv(
         os.path.join(
             scenario_directory,
-            hydro_year,
+            hydro_iteration,
             subproblem,
             stage,
             "results",

@@ -30,7 +30,7 @@ import gridpath.project.operations.operational_types.gen_commit_unit_common as g
 
 
 def add_model_components(
-    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+    m, d, scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
 ):
     """
     See the formulation documentation in the
@@ -41,8 +41,8 @@ def add_model_components(
         m=m,
         d=d,
         scenario_directory=scenario_directory,
-        weather_year=weather_year,
-        hydro_year=hydro_year,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
         subproblem=subproblem,
         stage=stage,
         bin_or_lin_optype="gen_commit_lin",
@@ -193,7 +193,14 @@ def operational_violation_cost_rule(mod, g, tmp):
 
 
 def load_model_data(
-    mod, d, data_portal, scenario_directory, weather_year, hydro_year, subproblem, stage
+    mod,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    subproblem,
+    stage,
 ):
     """
     :param mod:
@@ -209,8 +216,8 @@ def load_model_data(
         d=d,
         data_portal=data_portal,
         scenario_directory=scenario_directory,
-        weather_year=weather_year,
-        hydro_year=hydro_year,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
         subproblem=subproblem,
         stage=stage,
         bin_or_lin_optype="gen_commit_lin",
@@ -260,7 +267,7 @@ def add_to_prj_tmp_results(mod):
 
 
 def export_results(
-    mod, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+    mod, d, scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
 ):
     """
     :param scenario_directory:
@@ -274,8 +281,8 @@ def export_results(
         mod=mod,
         d=d,
         scenario_directory=scenario_directory,
-        weather_year=weather_year,
-        hydro_year=hydro_year,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
         subproblem=subproblem,
         stage=stage,
         BIN_OR_LIN="LIN",
@@ -286,8 +293,8 @@ def export_results(
 
 def save_duals(
     scenario_directory,
-    weather_year,
-    hydro_year,
+    weather_iteration,
+    hydro_iteration,
     subproblem,
     stage,
     instance,
@@ -301,7 +308,13 @@ def save_duals(
 
 
 def validate_inputs(
-    scenario_id, subscenarios, weather_year, hydro_year, subproblem, stage, conn
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     Get inputs from database and validate the inputs
@@ -317,8 +330,8 @@ def validate_inputs(
     opchar_df = validate_opchars(
         scenario_id,
         subscenarios,
-        weather_year,
-        hydro_year,
+        weather_iteration,
+        hydro_iteration,
         subproblem,
         stage,
         conn,

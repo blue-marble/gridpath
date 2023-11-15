@@ -101,12 +101,12 @@ class SubScenarios(object):
 
 
 class ScenarioStructure(object):
-    def __init__(self, hydro_years_by_weather_year, stages_by_subproblem):
-        # Weather and hydro iterations {weather_year: [hydro_years]}
+    def __init__(self, hydro_iterations_by_weather_iteration, stages_by_subproblem):
+        # Weather and hydro iterations {weather_iteration: [hydro_iterations]}
         # If no weather iterations, we're expecting a single key with 0 as value
         # If no hydro iterations, we're expecting a list with 0 as member [0]
         # No weather, no hydro: {0: [0]}
-        self.WEATHER_YEAR_HYDRO_YEARS = hydro_years_by_weather_year
+        self.WEATHER_YEAR_HYDRO_YEARS = hydro_iterations_by_weather_iteration
         # List of stages by subproblem in dict {subproblem: [stages]}
         # This should have a single key, 1, if a single subproblem
         # This should be subproblem: [1] when a single stage in the subproblem
@@ -127,20 +127,22 @@ class ScenarioStructure(object):
 class ScenarioDirectoryStructure(object):
     def __init__(self, scenario_structure):
         self.WEATHER_YEAR_HYDRO_YEAR_DIRECTORIES = (
-            determine_weather_year_hydro_year_directory_structure(scenario_structure)
+            determine_weather_iteration_hydro_iteration_directory_structure(
+                scenario_structure
+            )
         )
         self.SUBPROBLEM_STAGE_DIRECTORIES = (
             determine_subproblem_stage_directory_structure(scenario_structure)
         )
 
 
-def determine_weather_year_hydro_year_directory_structure(scenario_structure):
+def determine_weather_iteration_hydro_iteration_directory_structure(scenario_structure):
     """
-    Determine whether we will have iteration (weather, hydro year),
+    Determine whether we will have iteration (weather, hydro iteration),
     We write the subdirectories if we have multiple items at that level
     """
 
-    weather_year_hydro_year_directory_strings = {}
+    weather_iteration_hydro_iteration_directory_strings = {}
 
     # If no weather iterations, something went wrong upstream, so raise an
     # error (we're expecting at least 1)
@@ -148,29 +150,37 @@ def determine_weather_year_hydro_year_directory_structure(scenario_structure):
         raise ValueError("Expecting at least one weather iteration.")
 
     if len(scenario_structure.WEATHER_YEAR_HYDRO_YEARS.keys()) > 1:
-        make_weather_year_dirs = True
+        make_weather_iteration_dirs = True
     else:
-        make_weather_year_dirs = False
+        make_weather_iteration_dirs = False
 
-    for weather_year in scenario_structure.WEATHER_YEAR_HYDRO_YEARS.keys():
-        weather_year_str = (
-            f"weather_year_{weather_year}" if make_weather_year_dirs else ""
+    for weather_iteration in scenario_structure.WEATHER_YEAR_HYDRO_YEARS.keys():
+        weather_iteration_str = (
+            f"weather_iteration_{weather_iteration}"
+            if make_weather_iteration_dirs
+            else ""
         )
 
-        weather_year_hydro_year_directory_strings[weather_year_str] = []
+        weather_iteration_hydro_iteration_directory_strings[weather_iteration_str] = []
         # Determine whether we will have hydro iterations
-        if len(scenario_structure.WEATHER_YEAR_HYDRO_YEARS[weather_year]) > 1:
-            make_hydro_year_dirs = True
+        if len(scenario_structure.WEATHER_YEAR_HYDRO_YEARS[weather_iteration]) > 1:
+            make_hydro_iteration_dirs = True
         else:
-            make_hydro_year_dirs = False
+            make_hydro_iteration_dirs = False
 
-        for hydro_year in scenario_structure.WEATHER_YEAR_HYDRO_YEARS[weather_year]:
-            hydro_year_str = f"hydro_year_{hydro_year}" if make_hydro_year_dirs else ""
-            weather_year_hydro_year_directory_strings[weather_year_str].append(
-                hydro_year_str
+        for hydro_iteration in scenario_structure.WEATHER_YEAR_HYDRO_YEARS[
+            weather_iteration
+        ]:
+            hydro_iteration_str = (
+                f"hydro_iteration_{hydro_iteration}"
+                if make_hydro_iteration_dirs
+                else ""
             )
+            weather_iteration_hydro_iteration_directory_strings[
+                weather_iteration_str
+            ].append(hydro_iteration_str)
 
-    return weather_year_hydro_year_directory_strings
+    return weather_iteration_hydro_iteration_directory_strings
 
 
 def determine_subproblem_stage_directory_structure(scenario_structure):
@@ -227,10 +237,10 @@ def get_scenario_structure_from_db(conn, scenario_id):
     cursor = conn.cursor()
 
     # Weather years
-    all_weather_years = [
+    all_weather_iterations = [
         row[0]
         for row in cursor.execute(
-            """SELECT DISTINCT weather_year
+            """SELECT DISTINCT weather_iteration
                FROM inputs_temporal_iterations
                INNER JOIN scenarios
                USING (temporal_scenario_id)
@@ -240,25 +250,27 @@ def get_scenario_structure_from_db(conn, scenario_id):
         ).fetchall()
     ]
 
-    # Store weather years and hydro years in dict {weather_year: [hydro_years]}
-    # If we don't find any weather years, there were no iterations (we know
-    # there are no hydro years since NULL values are not allowed for weather
-    # or hydro years)
-    if not all_weather_years:
-        hydro_years_by_weather_year = {0: [0]}
+    # Store weather iterations and hydro iterations in dict {weather_iteration: [hydro_iterations]}
+    # If we don't find any weather iterations, there were no iterations (we know
+    # there are no hydro iterations since NULL values are not allowed for weather
+    # or hydro iterations)
+    if not all_weather_iterations:
+        hydro_iterations_by_weather_iteration = {0: [0]}
     else:
-        hydro_years_by_weather_year = {}
-        for weather_year in all_weather_years:
-            hydro_years = cursor.execute(
-                f"""SELECT hydro_year
+        hydro_iterations_by_weather_iteration = {}
+        for weather_iteration in all_weather_iterations:
+            hydro_iterations = cursor.execute(
+                f"""SELECT hydro_iteration
                    FROM inputs_temporal_iterations
                    INNER JOIN scenarios
                    USING (temporal_scenario_id)
                    WHERE scenario_id = {scenario_id}
-                   AND weather_year = {weather_year};"""
+                   AND weather_iteration = {weather_iteration};"""
             ).fetchall()
-            hydro_years = [hydro_year[0] for hydro_year in hydro_years]  # to list
-            hydro_years_by_weather_year[weather_year] = hydro_years
+            hydro_iterations = [
+                hydro_iteration[0] for hydro_iteration in hydro_iterations
+            ]  # to list
+            hydro_iterations_by_weather_iteration[weather_iteration] = hydro_iterations
 
     # TODO: make sure there is data integrity between subproblems_stages
     #   and inputs_temporal_horizons and inputs_temporal
@@ -279,7 +291,7 @@ def get_scenario_structure_from_db(conn, scenario_id):
 
     # Store subproblems and stages in dict {subproblem: [stages]}
     stages_by_subproblem = {}
-    for weather_year in all_subproblems:
+    for weather_iteration in all_subproblems:
         stages = cursor.execute(
             """SELECT stage_id
                FROM inputs_temporal_subproblems_stages
@@ -287,77 +299,77 @@ def get_scenario_structure_from_db(conn, scenario_id):
                USING (temporal_scenario_id)
                WHERE scenario_id = {}
                AND subproblem_id = {};""".format(
-                scenario_id, weather_year
+                scenario_id, weather_iteration
             )
         ).fetchall()
         stages = [stage[0] for stage in stages]  # convert to simple list
-        stages_by_subproblem[weather_year] = stages
+        stages_by_subproblem[weather_iteration] = stages
 
     return ScenarioStructure(
         stages_by_subproblem=stages_by_subproblem,
-        hydro_years_by_weather_year=hydro_years_by_weather_year,
+        hydro_iterations_by_weather_iteration=hydro_iterations_by_weather_iteration,
     )
 
 
 def get_scenario_structure_from_disk(scenario_directory):
-    hydro_years_by_weather_year = {}
+    hydro_iterations_by_weather_iteration = {}
     stages_by_subproblem = {}
 
     # Check if there are weather directories
     weather_directories = check_for_starting_string_subdirectories(
-        main_directory=scenario_directory, starting_string="weather_year"
+        main_directory=scenario_directory, starting_string="weather_iteration"
     )
 
     if not weather_directories:
         (
-            hydro_years,
+            hydro_iterations,
             subproblem_main_directory,
-        ) = check_for_hydro_year_directories(starting_directory=scenario_directory)
-        hydro_years_by_weather_year = {0: hydro_years}
+        ) = check_for_hydro_iteration_directories(starting_directory=scenario_directory)
+        hydro_iterations_by_weather_iteration = {0: hydro_iterations}
         stages_by_subproblem = check_subproblem_structure(
             subproblem_main_directory=subproblem_main_directory
         )
     else:
         for w_d in weather_directories:
-            weather_year = int(w_d.replace("weather_year_", ""))
+            weather_iteration = int(w_d.replace("weather_iteration_", ""))
             w_d_full_path = os.path.join(scenario_directory, w_d)
             (
-                hydro_years,
+                hydro_iterations,
                 subproblem_main_directory,
-            ) = check_for_hydro_year_directories(starting_directory=w_d_full_path)
-            hydro_years_by_weather_year[weather_year] = hydro_years
+            ) = check_for_hydro_iteration_directories(starting_directory=w_d_full_path)
+            hydro_iterations_by_weather_iteration[weather_iteration] = hydro_iterations
             stages_by_subproblem = check_subproblem_structure(
                 subproblem_main_directory=subproblem_main_directory
             )
 
     return ScenarioStructure(
-        hydro_years_by_weather_year=hydro_years_by_weather_year,
+        hydro_iterations_by_weather_iteration=hydro_iterations_by_weather_iteration,
         stages_by_subproblem=stages_by_subproblem,
     )
 
 
-def check_for_hydro_year_directories(starting_directory):
+def check_for_hydro_iteration_directories(starting_directory):
     hydro_directories = check_for_starting_string_subdirectories(
-        main_directory=starting_directory, starting_string="hydro_year"
+        main_directory=starting_directory, starting_string="hydro_iteration"
     )
 
-    hydro_years = [d.replace("hydro_year_", "") for d in hydro_directories]
+    hydro_iterations = [d.replace("hydro_iteration_", "") for d in hydro_directories]
 
     # Check if there are subproblem directories
     # If there are hydro directories, assume subproblem structure is the same
-    # for each hydro year
+    # for each hydro iteration
     # If there are no hydro directories, the starting directory is the main
     # subproblem directory
-    if hydro_years:
+    if hydro_iterations:
         subproblem_main_directory = os.path.join(
             starting_directory, hydro_directories[0]
         )
     else:
         # If we don't find any directories, return a list with 0
-        hydro_years = [0]
+        hydro_iterations = [0]
         subproblem_main_directory = starting_directory
 
-    return hydro_years, subproblem_main_directory
+    return hydro_iterations, subproblem_main_directory
 
 
 def check_subproblem_structure(subproblem_main_directory):

@@ -24,8 +24,8 @@ import traceback
 
 def get_required_subtype_modules(
     scenario_directory,
-    weather_year,
-    hydro_year,
+    weather_iteration,
+    hydro_iteration,
     subproblem,
     stage,
     which_type,
@@ -37,8 +37,8 @@ def get_required_subtype_modules(
     df = pd.read_csv(
         os.path.join(
             scenario_directory,
-            weather_year,
-            hydro_year,
+            weather_iteration,
+            hydro_iteration,
             subproblem,
             stage,
             "inputs",

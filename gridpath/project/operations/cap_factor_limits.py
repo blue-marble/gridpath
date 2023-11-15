@@ -29,7 +29,7 @@ Negative_Infinity = float("-inf")
 
 
 def add_model_components(
-    m, d, scenario_directory, weather_year, hydro_year, subproblem, stage
+    m, d, scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
 ):
     """
     The tables below list the Pyomo model components defined in the
@@ -153,7 +153,14 @@ def add_model_components(
 
 
 def load_model_data(
-    m, d, data_portal, scenario_directory, weather_year, hydro_year, subproblem, stage
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    subproblem,
+    stage,
 ):
     """
     :param mod:
@@ -165,8 +172,8 @@ def load_model_data(
     """
     input_file = os.path.join(
         scenario_directory,
-        weather_year,
-        hydro_year,
+        weather_iteration,
+        hydro_iteration,
         subproblem,
         stage,
         "inputs",
@@ -185,13 +192,13 @@ def load_model_data(
 
 
 def export_results(
-    scenario_directory, weather_year, hydro_year, subproblem, stage, m, d
+    scenario_directory, weather_iteration, hydro_iteration, subproblem, stage, m, d
 ):
     """ """
     input_file = os.path.join(
         scenario_directory,
-        weather_year,
-        hydro_year,
+        weather_iteration,
+        hydro_iteration,
         subproblem,
         stage,
         "inputs",
@@ -250,8 +257,8 @@ def export_results(
 
 def import_results_into_database(
     scenario_id,
-    weather_year,
-    hydro_year,
+    weather_iteration,
+    hydro_iteration,
     subproblem,
     stage,
     c,
@@ -272,8 +279,8 @@ def import_results_into_database(
     if os.path.exists(
         os.path.join(
             results_directory,
-            weather_year,
-            hydro_year,
+            weather_iteration,
+            hydro_iteration,
             subproblem,
             stage,
             "results",
@@ -284,7 +291,7 @@ def import_results_into_database(
             conn=db,
             cursor=c,
             scenario_id=scenario_id,
-            hydro_year=hydro_year,
+            hydro_iteration=hydro_iteration,
             subproblem=subproblem,
             stage=stage,
             quiet=quiet,
