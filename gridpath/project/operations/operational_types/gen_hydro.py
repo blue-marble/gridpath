@@ -879,9 +879,7 @@ def get_model_inputs_from_database(
     """
 
     return get_hydro_inputs_from_database(
-        scenario_id,
         subscenarios,
-        weather_iteration,
         hydro_iteration,
         subproblem,
         stage,

@@ -152,7 +152,7 @@ def spin_on_database_lock_generic(
                 else:
                     time.sleep(interval)
             else:
-                print("Error while running the following query:\n", sql)
+                print("Error while running the following query:\n", command)
                 traceback.print_exc()
                 sys.exit()
         # Do this if exception not caught

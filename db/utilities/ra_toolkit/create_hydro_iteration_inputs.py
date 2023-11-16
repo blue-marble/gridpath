@@ -18,10 +18,15 @@ type from an year/month table.
 """
 
 from argparse import ArgumentParser
+import pandas as pd
+import os.path
 import sys
 
-from db.common_functions import connect_to_database, spin_on_database_lock
-from db.utilities.common_functions import generic_insert_subscenario_info
+from db.common_functions import (
+    connect_to_database,
+    spin_on_database_lock,
+    spin_on_database_lock_generic,
+)
 
 
 def parse_arguments(args):
@@ -35,6 +40,7 @@ def parse_arguments(args):
     parser = ArgumentParser(add_help=True)
 
     parser.add_argument("--database")
+    parser.add_argument("--csv_path")
     parser.add_argument("--temporal_scenario_id")
     parser.add_argument("--balancing_type")
     parser.add_argument("--hydro_operational_chars_scenario_id")
@@ -167,6 +173,16 @@ def calculate_from_project_year_month_data(
 if __name__ == "__main__":
     parsed_args = parse_arguments(args=sys.argv[1:])
     conn = connect_to_database(db_path=parsed_args.database)
+
+    df = pd.read_csv(os.path.join(parsed_args.csv_path))
+    spin_on_database_lock_generic(
+        command=df.to_sql(
+            name="inputs_project_hydro_operational_chars_by_year_month",
+            con=conn,
+            if_exists="append",
+            index=False,
+        )
+    )
 
     calculate_from_project_year_month_data(
         conn=conn,

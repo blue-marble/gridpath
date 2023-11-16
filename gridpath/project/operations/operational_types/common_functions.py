@@ -744,9 +744,7 @@ def load_hydro_opchars(
 
 
 def get_hydro_inputs_from_database(
-    scenario_id,
     subscenarios,
-    weather_iteration,
     hydro_iteration,
     subproblem,
     stage,

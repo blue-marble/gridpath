@@ -849,9 +849,7 @@ def get_model_inputs_from_database(
     ) = directories_to_db_values(weather_iteration, hydro_iteration, subproblem, stage)
 
     return get_hydro_inputs_from_database(
-        scenario_id,
         subscenarios,
-        db_weather_iteration,
         db_hydro_iteration,
         db_subproblem,
         db_stage,
