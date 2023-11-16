@@ -61,7 +61,7 @@ def calculate_from_project_year_month_data(
         SELECT
                 project,
                 {hydro_operational_chars_scenario_id},
-                hydro_iteration,
+                hydro_year AS hydro_iteration,
                 subproblem_id,
                 stage_id,
                 balancing_type,
@@ -74,7 +74,7 @@ def calculate_from_project_year_month_data(
                 SELECT
                 project,
                 temporal_scenario_id,
-                hydro_iteration,
+                hydro_year,
                 subproblem_id,
                 stage_id,
                 balancing_type,
@@ -140,12 +140,12 @@ def calculate_from_project_year_month_data(
                         horizon
                         )
                   -- Hydro chars
-                    JOIN inputs_project_hydro_operational_chars_iterations 
+                    JOIN inputs_project_hydro_operational_chars_by_year_month 
                     USING (month)
                 GROUP BY 
                     project,
                     temporal_scenario_id,
-                    hydro_iteration,
+                    hydro_year,
                     subproblem_id,
                     stage_id,
                     balancing_type,
@@ -154,7 +154,7 @@ def calculate_from_project_year_month_data(
                 )
             GROUP BY project,
             temporal_scenario_id,
-            hydro_iteration,
+            hydro_year,
             subproblem_id,
             stage_id,
             balancing_type,

@@ -5,7 +5,7 @@
 **Relevant tables:**
 
 +---------------------------+-----------------------------------------------------+
-|key column                 |:code:`hydro_operational_chars_iterations_scenario_id`    |
+|key column                 |:code:`hydro_operational_chars_by_year_month_scenario_id`    |
 +---------------------------+-----------------------------------------------------+
 |:code:`subscenario_` table |:code:`subscenarios_project_hydro_operational_chars` |
 +---------------------------+-----------------------------------------------------+
