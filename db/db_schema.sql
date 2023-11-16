@@ -1616,9 +1616,8 @@ CREATE TABLE inputs_project_hydro_operational_chars
             (project, hydro_operational_chars_scenario_id)
 );
 
--- TODO: maybe start these types of tables with something other than inputs_
-DROP TABLE IF EXISTS inputs_project_hydro_operational_chars_by_year_month;
-CREATE TABLE inputs_project_hydro_operational_chars_by_year_month
+DROP TABLE IF EXISTS raw_inputs_project_hydro_operational_chars_by_year_month;
+CREATE TABLE raw_inputs_project_hydro_operational_chars_by_year_month
 (
     project                VARCHAR(64),
     hydro_year             INTEGER,

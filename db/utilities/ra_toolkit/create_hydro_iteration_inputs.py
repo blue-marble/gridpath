@@ -146,7 +146,7 @@ def calculate_from_project_year_month_data(
                         horizon
                         )
                   -- Hydro chars
-                    JOIN inputs_project_hydro_operational_chars_by_year_month 
+                    JOIN raw_inputs_project_hydro_operational_chars_by_year_month 
                     USING (month)
                 GROUP BY 
                     project,
@@ -177,7 +177,7 @@ if __name__ == "__main__":
     df = pd.read_csv(os.path.join(parsed_args.csv_path))
     spin_on_database_lock_generic(
         command=df.to_sql(
-            name="inputs_project_hydro_operational_chars_by_year_month",
+            name="raw_inputs_project_hydro_operational_chars_by_year_month",
             con=conn,
             if_exists="append",
             index=False,
