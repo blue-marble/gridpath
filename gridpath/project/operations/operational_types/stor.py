@@ -760,7 +760,7 @@ def get_model_inputs_from_database(
         stage=db_stage,
         conn=conn,
         op_type="stor",
-        table="inputs_project_stor_exog_state_of_charge" "",
+        table="inputs_project_stor_exog_state_of_charge",
         subscenario_id_column="stor_exog_state_of_charge_scenario_id",
         data_column="exog_state_of_charge_mwh",
     )

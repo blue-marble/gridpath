@@ -1277,67 +1277,67 @@ CREATE TABLE subscenarios_project_operational_chars
 DROP TABLE IF EXISTS inputs_project_operational_chars;
 CREATE TABLE inputs_project_operational_chars
 (
-    project_operational_chars_scenario_id          INTEGER,
-    project                                        VARCHAR(64),
-    technology                                     VARCHAR(32),
-    operational_type                               VARCHAR(32),
-    balancing_type_project                         VARCHAR(32),
-    variable_om_cost_per_mwh                       FLOAT,
-    project_fuel_scenario_id                       INTEGER,
-    heat_rate_curves_scenario_id                   INTEGER, -- determined heat rate curve
-    variable_om_curves_scenario_id                 INTEGER, -- determined variable O&M curve
-    startup_chars_scenario_id                      INTEGER, -- determines startup ramp chars
-    min_stable_level_fraction                      FLOAT,
-    unit_size_mw                                   FLOAT,
-    startup_cost_per_mw                            FLOAT,
-    shutdown_cost_per_mw                           FLOAT,
-    startup_fuel_mmbtu_per_mw                      FLOAT,
-    startup_plus_ramp_up_rate                      FLOAT,   -- Not used for gen_commit_lin/bin!
-    shutdown_plus_ramp_down_rate                   FLOAT,
-    ramp_up_when_on_rate                           FLOAT,
-    ramp_down_when_on_rate                         FLOAT,
-    ramp_up_violation_penalty                      FLOAT,   -- leave NULL for hard constraints
-    ramp_down_violation_penalty                    FLOAT,   -- leave NULL for hard constraints
-    min_up_time_hours                              INTEGER,
-    min_up_time_violation_penalty                  FLOAT,   -- leave NULL for hard constraint
-    min_down_time_hours                            INTEGER,
-    min_down_time_violation_penalty                FLOAT,   -- leave NULL for hard constraint
-    cycle_selection_scenario_id                    INTEGER,
-    supplemental_firing_scenario_id                INTEGER,
-    allow_startup_shutdown_power                   INTEGER, -- defaults to 0 in the model if not specified
-    storage_efficiency                             FLOAT,   -- hourly losses from storage; default 1 (no losses)
-    charging_efficiency                            FLOAT,
-    discharging_efficiency                         FLOAT,
-    charging_capacity_multiplier                   FLOAT,   -- default 1 in model if not specified
-    discharging_capacity_multiplier                FLOAT,   -- default 1 in model if not specified
-    soc_penalty_cost_per_energyunit                FLOAT,
-    soc_last_tmp_penalty_cost_per_energyunit       FLOAT,
-    flex_load_static_profile_scenario_id           INTEGER,
-    minimum_duration_hours                         FLOAT,
-    maximum_duration_hours                         FLOAT,
-    aux_consumption_frac_capacity                  FLOAT,
-    aux_consumption_frac_power                     FLOAT,
-    last_commitment_stage                          INTEGER,
-    variable_generator_profile_scenario_id         INTEGER, -- determines var profiles
-    curtailment_cost_per_pwh                       FLOAT,   -- curtailment cost per unit-powerXhour
-    hydro_operational_chars_scenario_id            INTEGER, -- determines hydro MWa, min, max
-    lf_reserves_up_derate                          FLOAT,
-    lf_reserves_down_derate                        FLOAT,
-    regulation_up_derate                           FLOAT,
-    regulation_down_derate                         FLOAT,
-    frequency_response_derate                      FLOAT,
-    spinning_reserves_derate                       FLOAT,
-    lf_reserves_up_ramp_rate                       FLOAT,
-    lf_reserves_down_ramp_rate                     FLOAT,
-    regulation_up_ramp_rate                        FLOAT,
-    regulation_down_ramp_rate                      FLOAT,
-    frequency_response_ramp_rate                   FLOAT,
-    spinning_reserves_ramp_rate                    FLOAT,
-    powerunithour_per_fuelunit                     FLOAT,
-    cap_factor_limits_scenario_id                  INTEGER,
-    partial_availability_threshold                 FLOAT,
-    stor_exog_state_of_charge_scenario_id          INTEGER, -- determines storage SOC
-    nonfuel_carbon_emissions_per_mwh               FLOAT,
+    project_operational_chars_scenario_id    INTEGER,
+    project                                  VARCHAR(64),
+    technology                               VARCHAR(32),
+    operational_type                         VARCHAR(32),
+    balancing_type_project                   VARCHAR(32),
+    variable_om_cost_per_mwh                 FLOAT,
+    project_fuel_scenario_id                 INTEGER,
+    heat_rate_curves_scenario_id             INTEGER, -- determined heat rate curve
+    variable_om_curves_scenario_id           INTEGER, -- determined variable O&M curve
+    startup_chars_scenario_id                INTEGER, -- determines startup ramp chars
+    min_stable_level_fraction                FLOAT,
+    unit_size_mw                             FLOAT,
+    startup_cost_per_mw                      FLOAT,
+    shutdown_cost_per_mw                     FLOAT,
+    startup_fuel_mmbtu_per_mw                FLOAT,
+    startup_plus_ramp_up_rate                FLOAT,   -- Not used for gen_commit_lin/bin!
+    shutdown_plus_ramp_down_rate             FLOAT,
+    ramp_up_when_on_rate                     FLOAT,
+    ramp_down_when_on_rate                   FLOAT,
+    ramp_up_violation_penalty                FLOAT,   -- leave NULL for hard constraints
+    ramp_down_violation_penalty              FLOAT,   -- leave NULL for hard constraints
+    min_up_time_hours                        INTEGER,
+    min_up_time_violation_penalty            FLOAT,   -- leave NULL for hard constraint
+    min_down_time_hours                      INTEGER,
+    min_down_time_violation_penalty          FLOAT,   -- leave NULL for hard constraint
+    cycle_selection_scenario_id              INTEGER,
+    supplemental_firing_scenario_id          INTEGER,
+    allow_startup_shutdown_power             INTEGER, -- defaults to 0 in the model if not specified
+    storage_efficiency                       FLOAT,   -- hourly losses from storage; default 1 (no losses)
+    charging_efficiency                      FLOAT,
+    discharging_efficiency                   FLOAT,
+    charging_capacity_multiplier             FLOAT,   -- default 1 in model if not specified
+    discharging_capacity_multiplier          FLOAT,   -- default 1 in model if not specified
+    soc_penalty_cost_per_energyunit          FLOAT,
+    soc_last_tmp_penalty_cost_per_energyunit FLOAT,
+    flex_load_static_profile_scenario_id     INTEGER,
+    minimum_duration_hours                   FLOAT,
+    maximum_duration_hours                   FLOAT,
+    aux_consumption_frac_capacity            FLOAT,
+    aux_consumption_frac_power               FLOAT,
+    last_commitment_stage                    INTEGER,
+    variable_generator_profile_scenario_id   INTEGER, -- determines var profiles
+    curtailment_cost_per_pwh                 FLOAT,   -- curtailment cost per unit-powerXhour
+    hydro_operational_chars_scenario_id      INTEGER, -- determines hydro MWa, min, max
+    lf_reserves_up_derate                    FLOAT,
+    lf_reserves_down_derate                  FLOAT,
+    regulation_up_derate                     FLOAT,
+    regulation_down_derate                   FLOAT,
+    frequency_response_derate                FLOAT,
+    spinning_reserves_derate                 FLOAT,
+    lf_reserves_up_ramp_rate                 FLOAT,
+    lf_reserves_down_ramp_rate               FLOAT,
+    regulation_up_ramp_rate                  FLOAT,
+    regulation_down_ramp_rate                FLOAT,
+    frequency_response_ramp_rate             FLOAT,
+    spinning_reserves_ramp_rate              FLOAT,
+    powerunithour_per_fuelunit               FLOAT,
+    cap_factor_limits_scenario_id            INTEGER,
+    partial_availability_threshold           FLOAT,
+    stor_exog_state_of_charge_scenario_id    INTEGER, -- determines storage SOC
+    nonfuel_carbon_emissions_per_mwh         FLOAT,
     PRIMARY KEY (project_operational_chars_scenario_id, project),
     FOREIGN KEY (project_operational_chars_scenario_id) REFERENCES
         subscenarios_project_operational_chars (project_operational_chars_scenario_id),
@@ -1568,17 +1568,21 @@ CREATE TABLE subscenarios_project_variable_generator_profiles
     PRIMARY KEY (project, variable_generator_profile_scenario_id)
 );
 
--- TODO: add subproblem ID
+-- Variable generator profiles by weather year and stage
+-- (Subproblem is omitted, as timepoints in a temporal scenario ID must be
+-- unique -- they can then be subdivided into different subproblems for other
+-- temporal scenario IDs)
 DROP TABLE IF EXISTS inputs_project_variable_generator_profiles;
 CREATE TABLE inputs_project_variable_generator_profiles
 (
     project                                VARCHAR(64),
     variable_generator_profile_scenario_id INTEGER,
+    weather_iteration                      INTEGER,
     stage_id                               INTEGER,
     timepoint                              INTEGER,
     cap_factor                             FLOAT,
     PRIMARY KEY (project, variable_generator_profile_scenario_id,
-                 stage_id, timepoint),
+                 weather_iteration, stage_id, timepoint),
     FOREIGN KEY (project, variable_generator_profile_scenario_id) REFERENCES
         subscenarios_project_variable_generator_profiles
             (project, variable_generator_profile_scenario_id)
@@ -1646,11 +1650,12 @@ CREATE TABLE inputs_project_stor_exog_state_of_charge
 (
     project                               VARCHAR(64),
     stor_exog_state_of_charge_scenario_id INTEGER,
+    weather_iteration                     INTEGER,
     stage_id                              INTEGER,
     timepoint                             INTEGER,
     exog_state_of_charge_mwh              FLOAT,
-    PRIMARY KEY (project, stor_exog_state_of_charge_scenario_id, stage_id,
-                 timepoint),
+    PRIMARY KEY (project, stor_exog_state_of_charge_scenario_id,
+                 weather_iteration, stage_id, timepoint),
     FOREIGN KEY (project, stor_exog_state_of_charge_scenario_id) REFERENCES
         subscenarios_project_stor_exog_state_of_charge
             (project, stor_exog_state_of_charge_scenario_id)
@@ -2960,12 +2965,14 @@ CREATE TABLE subscenarios_system_load
 DROP TABLE IF EXISTS inputs_system_load;
 CREATE TABLE inputs_system_load
 (
-    load_scenario_id INTEGER,
-    load_zone        VARCHAR(32),
-    stage_id         INTEGER,
-    timepoint        INTEGER,
-    load_mw          FLOAT,
-    PRIMARY KEY (load_scenario_id, load_zone, stage_id, timepoint),
+    load_scenario_id  INTEGER,
+    load_zone         VARCHAR(32),
+    weather_iteration INTEGER,
+    stage_id          INTEGER,
+    timepoint         INTEGER,
+    load_mw           FLOAT,
+    PRIMARY KEY (load_scenario_id, load_zone, weather_iteration, stage_id,
+                 timepoint),
     FOREIGN KEY (load_scenario_id) REFERENCES subscenarios_system_load
         (load_scenario_id)
 );

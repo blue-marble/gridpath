@@ -116,30 +116,24 @@ def get_inputs_from_database(
     # load_zone_scenario
     # Select only profiles for the correct load_scenario
     loads = c.execute(
-        """SELECT load_zone, timepoint, load_mw
+        f"""SELECT load_zone, timepoint, load_mw
         FROM inputs_system_load
         INNER JOIN
         (SELECT timepoint
         FROM inputs_temporal
-        WHERE temporal_scenario_id = {}
-        AND subproblem_id ={}
-        AND stage_id = {}) as relevant_timepoints
+        WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+        AND subproblem_id ={subproblem}
+        AND stage_id = {stage}) as relevant_timepoints
         USING (timepoint)
         INNER JOIN
         (SELECT load_zone
         FROM inputs_geography_load_zones
-        WHERE load_zone_scenario_id = {}) as relevant_load_zones
+        WHERE load_zone_scenario_id = {subscenarios.LOAD_ZONE_SCENARIO_ID}) as relevant_load_zones
         USING (load_zone)
-        WHERE load_scenario_id = {}
-        and stage_id = {}
-        """.format(
-            subscenarios.TEMPORAL_SCENARIO_ID,
-            subproblem,
-            stage,
-            subscenarios.LOAD_ZONE_SCENARIO_ID,
-            subscenarios.LOAD_SCENARIO_ID,
-            stage,
-        )
+        WHERE load_scenario_id = {subscenarios.LOAD_SCENARIO_ID}
+        AND weather_iteration = {weather_iteration}
+        AND stage_id = {stage}
+        """
     )
 
     return loads

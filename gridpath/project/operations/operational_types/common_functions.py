@@ -577,30 +577,34 @@ def get_prj_tmp_opr_inputs_from_db(
 
     sql = f"""
         SELECT project, timepoint, {data_column}
-        -- Select only projects, periods, horizons from the relevant portfolio, 
-        -- relevant opchar scenario id, operational type, 
-        -- and temporal scenario id
-        FROM 
-            (SELECT project, stage_id, timepoint, 
-            {subscenario_id_column}
-            FROM project_operational_timepoints
+        --limit to portfolio projects
+        FROM (
+            SELECT project from inputs_project_portfolios
             WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
-            AND project_operational_chars_scenario_id = {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
+        ) as portfolio_projects
+        --limit to optype and get var profile opchar id
+        JOIN (
+            SELECT project, {subscenario_id_column}
+            FROM inputs_project_operational_chars
+            WHERE project_operational_chars_scenario_id = {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
             AND operational_type = '{op_type}'
-            AND temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
-            AND (project_specified_capacity_scenario_id = {subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID}
-                 OR project_new_cost_scenario_id = {subscenarios.PROJECT_NEW_COST_SCENARIO_ID})
-            AND subproblem_id = {subproblem}
+        ) as op_type_projects_with_btype_and_opchar_id
+        USING (project)
+        -- Get the data
+        JOIN (
+            SELECT project, {subscenario_id_column}, timepoint, {data_column}
+            FROM {table}
+            WHERE weather_iteration = {weather_iteration}
             AND stage_id = {stage}
-            AND {subscenario_id_column} IS NOT NULL
-            ) as projects_periods_timepoints_tbl
-        -- Now that we have the relevant projects and timepoints, get the 
-        -- respective cap factors (and no others) from the inputs table
-        LEFT OUTER JOIN
-            {table}
-        USING ({subscenario_id_column}, project, stage_id, timepoint)
-        WHERE {data_column} IS NOT NULL
-        ;
+        )
+        USING (project, {subscenario_id_column})
+        -- Limit to the current temporal scenario ID
+        WHERE (timepoint) IN (
+        SELECT timepoint
+        FROM inputs_temporal
+        WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+        AND subproblem_id = {subproblem}
+    );
         """
 
     prj_tmp_data = c.execute(sql)
@@ -790,7 +794,7 @@ def get_hydro_inputs_from_database(
     ) as op_type_projects_with_btype_and_opchar_id
     USING (project)
     -- get the power fractions for the projects for this project, 
-    -- balancign type, and hydro opchar id; get only the inputs for 
+    -- balancing type, and hydro opchar id; get only the inputs for 
     -- this hydro iteration, subproblem, and stage
     JOIN (
         SELECT project, hydro_operational_chars_scenario_id, 
@@ -837,9 +841,7 @@ def validate_hydro_opchars(
     :return:
     """
     hydro_chars = get_hydro_inputs_from_database(
-        scenario_id,
         subscenarios,
-        weather_iteration,
         hydro_iteration,
         subproblem,
         stage,
