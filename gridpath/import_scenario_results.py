@@ -76,130 +76,154 @@ def import_scenario_results_into_database(
     :return:
     """
 
-    weather_iteration_hydro_iteration_directory_strings = ScenarioDirectoryStructure(
+    iteration_directory_strings = ScenarioDirectoryStructure(
         scenario_structure
-    ).WEATHER_YEAR_HYDRO_YEAR_DIRECTORIES
+    ).ITERATION_DIRECTORIES
     subproblem_stage_directory_strings = ScenarioDirectoryStructure(
         scenario_structure
     ).SUBPROBLEM_STAGE_DIRECTORIES
 
     # Hydro years first
-    for (
-        weather_iteration_str
-    ) in weather_iteration_hydro_iteration_directory_strings.keys():
-        weather_iteration = (
-            0
-            if weather_iteration_str == ""
-            else int(weather_iteration_str.replace("weather_iteration_", ""))
-        )
-        for hydro_iteration_str in (
-            weather_iteration_hydro_iteration_directory_strings[weather_iteration_str]
-            if not weather_iteration_str == ""
-            else next(
-                iter(weather_iteration_hydro_iteration_directory_strings.values())
-            )
-        ):
-            hydro_iteration = (
-                0
-                if hydro_iteration_str == ""
-                else int(hydro_iteration_str.replace("hydro_iteration_", ""))
-            )
-            for subproblem_str in subproblem_stage_directory_strings.keys():
-                subproblem = 0 if subproblem_str == "" else int(subproblem_str)
-                for stage_str in subproblem_stage_directory_strings[subproblem_str]:
-                    stage = 0 if stage_str == "" else int(stage_str)
-                    results_directory = os.path.join(
-                        scenario_directory,
-                        weather_iteration_str,
-                        hydro_iteration_str,
-                        subproblem_str,
-                        stage_str,
-                        "results",
-                    )
-                    if not quiet:
-                        if weather_iteration_str != "":
-                            print(f"--- weather iteration {weather_iteration}")
-                        if hydro_iteration_str != "":
-                            print(f"--- hydro iteration {hydro_iteration}")
-                        if subproblem_str != "":
-                            print(f"--- subproblem {subproblem_str}")
-                        if stage_str != "":
-                            print(f"--- stage {stage_str}")
-
-                    # Import termination condition data
-                    c = db.cursor()
-                    with open(
-                        os.path.join(results_directory, "termination_condition.txt"),
-                        "r",
-                    ) as f:
-                        termination_condition = f.read()
-
-                    termination_condition_sql = """
-                        INSERT INTO results_scenario
-                        (scenario_id, weather_iteration, hydro_iteration, subproblem_id, 
-                        stage_id, solver_termination_condition)
-                        VALUES (?, ?, ?, ?, ?, ?)
-                    ;"""
-
-                    termination_condition_data = (
-                        scenario_id,
-                        weather_iteration,
-                        hydro_iteration,
-                        subproblem,
-                        stage,
-                        termination_condition,
-                    )
-                    spin_on_database_lock(
-                        conn=db,
-                        cursor=c,
-                        sql=termination_condition_sql,
-                        data=termination_condition_data,
-                        many=False,
-                    )
-
-                    with open(
-                        os.path.join(results_directory, "solver_status.txt"), "r"
-                    ) as status_f:
-                        solver_status = status_f.read()
-
-                    # Only import other results if solver status was "ok"
-                    # When the problem is infeasible, the solver status is "warning"
-                    # If there's no solution, variables remain uninitialized,
-                    # throwing an error at some point during results-export,
-                    # so we don't attempt to import missing results into the database
-                    if solver_status == "ok":
-                        import_objective_function_value(
-                            db=db,
-                            scenario_id=scenario_id,
-                            weather_iteration=weather_iteration_str,
-                            hydro_iteration=hydro_iteration_str,
-                            subproblem=subproblem_str,
-                            stage=stage_str,
-                            results_directory=results_directory,
+    for weather_iteration_str in iteration_directory_strings.keys():
+        for hydro_iteration_str in iteration_directory_strings[
+            weather_iteration_str
+        ].keys():
+            for availability_iteration_str in iteration_directory_strings[
+                weather_iteration_str
+            ][hydro_iteration_str]:
+                # We may have passed "empty_string" to avoid actual empty
+                # strings as dictionary keys; convert to actual empty
+                # strings here to pass to the directory creation methods
+                weather_iteration_str = (
+                    ""
+                    if weather_iteration_str == "empty_string"
+                    else weather_iteration_str
+                )
+                weather_iteration = (
+                    0
+                    if weather_iteration_str == ""
+                    else int(weather_iteration_str.replace("weather_iteration_", ""))
+                )
+                hydro_iteration_str = (
+                    "" if hydro_iteration_str == "empty_string" else hydro_iteration_str
+                )
+                hydro_iteration = (
+                    0
+                    if hydro_iteration_str == ""
+                    else int(hydro_iteration_str.replace("hydro_iteration_", ""))
+                )
+                availability_iteration_str = (
+                    ""
+                    if availability_iteration_str == ""
+                    else availability_iteration_str
+                )
+                availability_iteration = (
+                    0
+                    if availability_iteration_str == "empty_string"
+                    else int(
+                        availability_iteration_str.replace(
+                            "availability_iteration_", ""
                         )
-                        import_subproblem_stage_results_into_database(
-                            import_rule=import_rule,
-                            db=db,
-                            scenario_id=scenario_id,
-                            weather_iteration=weather_iteration_str,
-                            hydro_iteration=hydro_iteration_str,
-                            subproblem=subproblem_str,
-                            stage=stage_str,
-                            results_directory=results_directory,
-                            loaded_modules=loaded_modules,
-                            quiet=quiet,
+                    )
+                )
+                for subproblem_str in subproblem_stage_directory_strings.keys():
+                    subproblem = 0 if subproblem_str == "" else int(subproblem_str)
+                    for stage_str in subproblem_stage_directory_strings[subproblem_str]:
+                        stage = 0 if stage_str == "" else int(stage_str)
+                        results_directory = os.path.join(
+                            scenario_directory,
+                            weather_iteration_str,
+                            hydro_iteration_str,
+                            subproblem_str,
+                            stage_str,
+                            "results",
                         )
-                    else:
                         if not quiet:
-                            print(
-                                f"""
-                            Solver status for weather iteration {weather_iteration_str}, 
-                            hydro_iteration {hydro_iteration_str}, subproblem {subproblem_str}, 
-                            stage {stage_str} was '{solver_status}', 
-                            not 'ok', so there are no results to import. 
-                            Termination condition was '{termination_condition}'.
-                            """
+                            if weather_iteration_str != "empty_string":
+                                print(f"--- weather iteration " f"{weather_iteration}")
+                            if hydro_iteration_str != "empty_string":
+                                print(f"--- hydro iteration " f"{hydro_iteration}")
+                            if subproblem_str != "":
+                                print(f"--- subproblem {subproblem_str}")
+                            if stage_str != "":
+                                print(f"--- stage {stage_str}")
+
+                        # Import termination condition data
+                        c = db.cursor()
+                        with open(
+                            os.path.join(
+                                results_directory, "termination_condition.txt"
+                            ),
+                            "r",
+                        ) as f:
+                            termination_condition = f.read()
+
+                        termination_condition_sql = """
+                            INSERT INTO results_scenario
+                            (scenario_id, weather_iteration, hydro_iteration, subproblem_id, 
+                            stage_id, solver_termination_condition)
+                            VALUES (?, ?, ?, ?, ?, ?)
+                        ;"""
+
+                        termination_condition_data = (
+                            scenario_id,
+                            weather_iteration,
+                            hydro_iteration,
+                            subproblem,
+                            stage,
+                            termination_condition,
+                        )
+                        spin_on_database_lock(
+                            conn=db,
+                            cursor=c,
+                            sql=termination_condition_sql,
+                            data=termination_condition_data,
+                            many=False,
+                        )
+
+                        with open(
+                            os.path.join(results_directory, "solver_status.txt"), "r"
+                        ) as status_f:
+                            solver_status = status_f.read()
+
+                        # Only import other results if solver status was "ok"
+                        # When the problem is infeasible, the solver status is "warning"
+                        # If there's no solution, variables remain uninitialized,
+                        # throwing an error at some point during results-export,
+                        # so we don't attempt to import missing results into the database
+                        if solver_status == "ok":
+                            import_objective_function_value(
+                                db=db,
+                                scenario_id=scenario_id,
+                                weather_iteration=weather_iteration_str,
+                                hydro_iteration=hydro_iteration_str,
+                                subproblem=subproblem_str,
+                                stage=stage_str,
+                                results_directory=results_directory,
                             )
+                            import_subproblem_stage_results_into_database(
+                                import_rule=import_rule,
+                                db=db,
+                                scenario_id=scenario_id,
+                                weather_iteration=weather_iteration_str,
+                                hydro_iteration=hydro_iteration_str,
+                                subproblem=subproblem_str,
+                                stage=stage_str,
+                                results_directory=results_directory,
+                                loaded_modules=loaded_modules,
+                                quiet=quiet,
+                            )
+                        else:
+                            if not quiet:
+                                print(
+                                    f"""
+                                Solver status for weather iteration {weather_iteration_str}, 
+                                hydro_iteration {hydro_iteration_str}, subproblem {subproblem_str}, 
+                                stage {stage_str} was '{solver_status}', 
+                                not 'ok', so there are no results to import. 
+                                Termination condition was '{termination_condition}'.
+                                """
+                                )
 
 
 def import_objective_function_value(

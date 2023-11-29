@@ -443,8 +443,8 @@ def main(args=None):
         loaded_modules = load_modules(modules_to_use=modules_to_use)
 
         # Read in inputs from db and validate inputs for loaded modules
-        for weather_iteration in scenario_structure.WEATHER_YEAR_HYDRO_YEARS.keys():
-            for hydro_iteration in scenario_structure.WEATHER_YEAR_HYDRO_YEARS[
+        for weather_iteration in scenario_structure.ITERATION_STRUCTURE.keys():
+            for hydro_iteration in scenario_structure.ITERATION_STRUCTURE[
                 weather_iteration
             ]:
                 validate_inputs(
