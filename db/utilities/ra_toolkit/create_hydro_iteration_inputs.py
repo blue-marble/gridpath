@@ -167,8 +167,6 @@ def calculate_from_project_year_month_data(
             horizon
     """
 
-    print(sql)
-
     spin_on_database_lock(conn=conn, cursor=c, sql=sql, data=(), many=False)
 
 

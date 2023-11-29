@@ -225,14 +225,16 @@ CREATE TABLE subscenarios_temporal
     description          VARCHAR(128)
 );
 
--- Hydro year iterations
+-- Weather, hydro, and availability iterations
 DROP TABLE IF EXISTS inputs_temporal_iterations;
 CREATE TABLE inputs_temporal_iterations
 (
-    temporal_scenario_id INTEGER,
-    weather_iteration    INTEGER NOT NULL,
-    hydro_iteration      INTEGER NOT NULL,
-    PRIMARY KEY (temporal_scenario_id, weather_iteration, hydro_iteration),
+    temporal_scenario_id   INTEGER,
+    weather_iteration      INTEGER NOT NULL,
+    hydro_iteration        INTEGER NOT NULL,
+    availability_iteration INTEGER NOT NULL,
+    PRIMARY KEY (temporal_scenario_id, weather_iteration, hydro_iteration,
+                 availability_iteration),
     FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
         (temporal_scenario_id)
 );
