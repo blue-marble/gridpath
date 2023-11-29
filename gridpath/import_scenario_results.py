@@ -33,6 +33,7 @@ from gridpath.common_functions import (
     get_db_parser,
     get_required_e2e_arguments_parser,
     get_import_results_parser,
+    ensure_empty_string,
 )
 from db.common_functions import connect_to_database, spin_on_database_lock
 from db.utilities.scenario import delete_scenario_results
@@ -94,32 +95,25 @@ def import_scenario_results_into_database(
                 # We may have passed "empty_string" to avoid actual empty
                 # strings as dictionary keys; convert to actual empty
                 # strings here to pass to the directory creation methods
-                weather_iteration_str = (
-                    ""
-                    if weather_iteration_str == "empty_string"
-                    else weather_iteration_str
+                weather_iteration_str = ensure_empty_string(weather_iteration_str)
+                hydro_iteration_str = ensure_empty_string(hydro_iteration_str)
+                availability_iteration_str = ensure_empty_string(
+                    availability_iteration_str
                 )
+
                 weather_iteration = (
                     0
                     if weather_iteration_str == ""
                     else int(weather_iteration_str.replace("weather_iteration_", ""))
-                )
-                hydro_iteration_str = (
-                    "" if hydro_iteration_str == "empty_string" else hydro_iteration_str
                 )
                 hydro_iteration = (
                     0
                     if hydro_iteration_str == ""
                     else int(hydro_iteration_str.replace("hydro_iteration_", ""))
                 )
-                availability_iteration_str = (
-                    ""
-                    if availability_iteration_str == ""
-                    else availability_iteration_str
-                )
                 availability_iteration = (
                     0
-                    if availability_iteration_str == "empty_string"
+                    if availability_iteration_str == ""
                     else int(
                         availability_iteration_str.replace(
                             "availability_iteration_", ""
@@ -139,9 +133,9 @@ def import_scenario_results_into_database(
                             "results",
                         )
                         if not quiet:
-                            if weather_iteration_str != "empty_string":
+                            if weather_iteration_str != "":
                                 print(f"--- weather iteration " f"{weather_iteration}")
-                            if hydro_iteration_str != "empty_string":
+                            if hydro_iteration_str != "":
                                 print(f"--- hydro iteration " f"{hydro_iteration}")
                             if subproblem_str != "":
                                 print(f"--- subproblem {subproblem_str}")

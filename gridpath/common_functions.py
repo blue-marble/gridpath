@@ -290,6 +290,12 @@ def get_import_results_parser():
     return parser
 
 
+def ensure_empty_string(string):
+    empty_string_ensured = "" if string == "empty_string" else string
+
+    return empty_string_ensured
+
+
 def create_logs_directory_if_not_exists(
     scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
 ):

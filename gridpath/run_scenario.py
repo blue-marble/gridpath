@@ -58,6 +58,7 @@ from gridpath.common_functions import (
     get_run_scenario_parser,
     create_logs_directory_if_not_exists,
     Logging,
+    ensure_empty_string,
 )
 from gridpath.auxiliary.dynamic_components import DynamicComponents
 from gridpath.auxiliary.module_list import determine_modules, load_modules
@@ -177,6 +178,7 @@ def run_optimization_for_subproblem_stage(
     scenario_directory,
     weather_iteration_directory,
     hydro_iteration_directory,
+    availability_iteration_directory,
     subproblem_directory,
     stage_directory,
     multi_stage,
@@ -398,6 +400,7 @@ def run_optimization_for_subproblem(
     scenario_directory,
     weather_iteration_directory,
     hydro_iteration_directory,
+    availability_iteration_directory,
     subproblem_directory,
     stage_directories,
     multi_stage,
@@ -416,6 +419,7 @@ def run_optimization_for_subproblem(
             scenario_directory,
             weather_iteration_directory,
             hydro_iteration_directory,
+            availability_iteration_directory,
             subproblem_directory,
             stage_directory,
             multi_stage,
@@ -432,6 +436,7 @@ def run_optimization_for_subproblem_pool(pool_datum):
         scenario_directory,
         weather_iteration_directory,
         hydro_iteration_directory,
+        availability_iteration_directory,
         subproblem_directory,
         stage_directories,
         multi_stage,
@@ -443,6 +448,7 @@ def run_optimization_for_subproblem_pool(pool_datum):
         scenario_directory=scenario_directory,
         weather_iteration_directory=weather_iteration_directory,
         hydro_iteration_directory=hydro_iteration_directory,
+        availability_iteration_directory=availability_iteration_directory,
         subproblem_directory=subproblem_directory,
         stage_directories=stage_directories,
         multi_stage=multi_stage,
@@ -513,21 +519,12 @@ def run_scenario(
                     # We may have passed "empty_string" to avoid actual empty
                     # strings as dictionary keys; convert to actual empty
                     # strings here to pass to the directory creation methods
-                    weather_iteration_str = (
-                        ""
-                        if weather_iteration_str == "empty_string"
-                        else weather_iteration_str
+                    weather_iteration_str = ensure_empty_string(weather_iteration_str)
+                    hydro_iteration_str = ensure_empty_string(hydro_iteration_str)
+                    availability_iteration_str = ensure_empty_string(
+                        availability_iteration_str
                     )
-                    hydro_iteration_str = (
-                        ""
-                        if hydro_iteration_str == "empty_string"
-                        else hydro_iteration_str
-                    )
-                    availability_iteration_str = (
-                        ""
-                        if availability_iteration_str == "empty_string"
-                        else availability_iteration_str
-                    )
+
                     for subproblem_str in subproblem_stage_directory_strings.keys():
                         subproblem = 1 if subproblem_str == "" else int(subproblem_str)
 
@@ -554,6 +551,7 @@ def run_scenario(
                             scenario_directory=scenario_directory,
                             weather_iteration_directory=weather_iteration_str,
                             hydro_iteration_directory=hydro_iteration_str,
+                            availability_iteration_directory=availability_iteration_str,
                             subproblem_directory=subproblem_str,
                             stage_directories=subproblem_stage_directory_strings[
                                 subproblem_str
@@ -592,39 +590,46 @@ def run_scenario(
             )
             # Solve sequentially
             objective_values = {}
-            for weather_iteration_str in iteration_structure_strings.keys():
-                for hydro_iteration_str in (
-                    iteration_structure_strings[weather_iteration_str]
-                    if not weather_iteration_str == ""
-                    else next(iter(iteration_structure_strings.values()))
-                ):
-                    for subproblem_str in subproblem_stage_directory_strings.keys():
-                        if scenario_structure.MULTI_STAGE:
-                            create_pass_through_inputs(
-                                scenario_directory,
-                                scenario_structure,
-                                subproblem_str,
-                                weather_iteration_str,
-                                hydro_iteration_str,
-                                availability_iteration_str,
-                            )
-
-                        run_optimization_for_subproblem(
-                            scenario_directory=scenario_directory,
-                            weather_iteration_directory=weather_iteration_str,
-                            hydro_iteration_directory=hydro_iteration_str,
-                            subproblem_directory=subproblem_str,
-                            stage_directories=subproblem_stage_directory_strings[
-                                subproblem_str
-                            ],
-                            multi_stage=scenario_structure.MULTI_STAGE,
-                            parsed_arguments=parsed_arguments,
-                            objective_values=objective_values,
+            for weather_iteration_str in iteration_directory_strings.keys():
+                for hydro_iteration_str in iteration_directory_strings[
+                    weather_iteration_str
+                ].keys():
+                    for availability_iteration_str in iteration_directory_strings[
+                        weather_iteration_str
+                    ][hydro_iteration_str]:
+                        # We may have passed "empty_string" to avoid actual empty
+                        # strings as dictionary keys; convert to actual empty
+                        # strings here to pass to the directory creation methods
+                        weather_iteration_str = ensure_empty_string(
+                            weather_iteration_str
+                        )
+                        hydro_iteration_str = ensure_empty_string(hydro_iteration_str)
+                        availability_iteration_str = ensure_empty_string(
+                            availability_iteration_str
                         )
 
-                    # TODO: will need to check this for iterations
-                    if len(objective_values.keys()) == 1:
-                        objective_values = objective_values[1]
+                        for subproblem_str in subproblem_stage_directory_strings.keys():
+                            subproblem = (
+                                1 if subproblem_str == "" else int(subproblem_str)
+                            )
+
+                            run_optimization_for_subproblem(
+                                scenario_directory=scenario_directory,
+                                weather_iteration_directory=weather_iteration_str,
+                                hydro_iteration_directory=hydro_iteration_str,
+                                availability_iteration_directory=availability_iteration_str,
+                                subproblem_directory=subproblem_str,
+                                stage_directories=subproblem_stage_directory_strings[
+                                    subproblem_str
+                                ],
+                                multi_stage=scenario_structure.MULTI_STAGE,
+                                parsed_arguments=parsed_arguments,
+                                objective_values=objective_values,
+                            )
+
+                        # TODO: will need to check this for iterations
+                        if len(objective_values.keys()) == 1:
+                            objective_values = objective_values[1]
 
                 return objective_values
 
@@ -636,50 +641,77 @@ def run_scenario(
             manager = Manager()
             objective_values = manager.dict()
 
-            for weather_iteration_str in iteration_structure_strings.keys():
-                for hydro_iteration_str in (
-                    iteration_structure_strings[weather_iteration_str]
-                    if not weather_iteration_str == ""
-                    else next(iter(iteration_structure_strings.values()))
-                ):
-                    for subproblem_str in subproblem_stage_directory_strings.keys():
-                        if scenario_structure.MULTI_STAGE:
-                            create_pass_through_inputs(
-                                scenario_directory,
-                                scenario_structure,
-                                subproblem_str,
-                                weather_iteration_str,
-                                hydro_iteration_str,
-                                availability_iteration_str,
-                            )
+            for weather_iteration_str in iteration_directory_strings.keys():
+                for hydro_iteration_str in iteration_directory_strings[
+                    weather_iteration_str
+                ].keys():
+                    for availability_iteration_str in iteration_directory_strings[
+                        weather_iteration_str
+                    ][hydro_iteration_str]:
+                        # We may have passed "empty_string" to avoid actual empty
+                        # strings as dictionary keys; convert to actual empty
+                        # strings here to pass to the directory creation methods
+                        weather_iteration_str = ensure_empty_string(
+                            weather_iteration_str
+                        )
+                        hydro_iteration_str = ensure_empty_string(hydro_iteration_str)
+                        availability_iteration_str = ensure_empty_string(
+                            availability_iteration_str
+                        )
+                        for subproblem_str in subproblem_stage_directory_strings.keys():
+                            if scenario_structure.MULTI_STAGE:
+                                create_pass_through_inputs(
+                                    scenario_directory,
+                                    scenario_structure,
+                                    subproblem_str,
+                                    weather_iteration_str,
+                                    hydro_iteration_str,
+                                    availability_iteration_str,
+                                )
 
-                        # TODO: create management of iteration objective functions
-                        subproblem = 1 if subproblem_str == "" else int(subproblem_str)
-                        objective_values[subproblem] = manager.dict()
+                            # TODO: create management of iteration objective functions
+                            subproblem = (
+                                1 if subproblem_str == "" else int(subproblem_str)
+                            )
+                            objective_values[subproblem] = manager.dict()
 
             # Pool must use spawn to work properly on Linux
             pool = get_context("spawn").Pool(n_parallel_subproblems)
-            pool_data = tuple(
-                [
-                    [
-                        scenario_directory,
-                        weather_iteration_str,
-                        hydro_iteration_str,
-                        subproblem_str,
-                        subproblem_stage_directory_strings[subproblem_str],
-                        scenario_structure.MULTI_STAGE,
-                        parsed_arguments,
-                        objective_values,
-                    ]
-                    for weather_iteration_str in iteration_structure_strings.keys()
-                    for hydro_iteration_str in (
-                        iteration_structure_strings[weather_iteration_str]
-                        if not weather_iteration_str == ""
-                        else next(iter(iteration_structure_strings.values()))
-                    )
-                    for subproblem_str in subproblem_stage_directory_strings.keys()
-                ]
-            )
+
+            pool_data = []
+            for weather_iteration_str in iteration_directory_strings.keys():
+                for hydro_iteration_str in iteration_directory_strings[
+                    weather_iteration_str
+                ].keys():
+                    for availability_iteration_str in iteration_directory_strings[
+                        weather_iteration_str
+                    ][hydro_iteration_str]:
+                        # We may have passed "empty_string" to avoid actual empty
+                        # strings as dictionary keys; convert to actual empty
+                        # strings here to pass to the directory creation methods
+                        weather_iteration_str = ensure_empty_string(
+                            weather_iteration_str
+                        )
+                        hydro_iteration_str = ensure_empty_string(hydro_iteration_str)
+                        availability_iteration_str = ensure_empty_string(
+                            availability_iteration_str
+                        )
+                        for subproblem_str in subproblem_stage_directory_strings.keys():
+                            pool_data.append(
+                                [
+                                    scenario_directory,
+                                    weather_iteration_str,
+                                    hydro_iteration_str,
+                                    availability_iteration_str,
+                                    subproblem_str,
+                                    subproblem_stage_directory_strings[subproblem_str],
+                                    scenario_structure.MULTI_STAGE,
+                                    parsed_arguments,
+                                    objective_values,
+                                ]
+                            )
+
+            pool_data = tuple(pool_data)
 
             pool.map(run_optimization_for_subproblem_pool, pool_data)
             pool.close()

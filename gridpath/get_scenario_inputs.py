@@ -37,6 +37,7 @@ from gridpath.common_functions import (
     get_db_parser,
     get_required_e2e_arguments_parser,
     get_get_inputs_parser,
+    ensure_empty_string,
 )
 from gridpath.auxiliary.module_list import determine_modules, load_modules
 from gridpath.auxiliary.scenario_chars import (
@@ -115,21 +116,12 @@ def write_model_inputs(
                     # We may have passed "empty_string" to avoid actual empty
                     # strings as dictionary keys; convert to actual empty
                     # strings here to pass to the directory creation methods
-                    weather_iteration_str = (
-                        ""
-                        if weather_iteration_str == "empty_string"
-                        else weather_iteration_str
+                    weather_iteration_str = ensure_empty_string(weather_iteration_str)
+                    hydro_iteration_str = ensure_empty_string(hydro_iteration_str)
+                    availability_iteration_str = ensure_empty_string(
+                        availability_iteration_str
                     )
-                    hydro_iteration_str = (
-                        ""
-                        if hydro_iteration_str == "empty_string"
-                        else hydro_iteration_str
-                    )
-                    availability_iteration_str = (
-                        ""
-                        if availability_iteration_str == "empty_string"
-                        else availability_iteration_str
-                    )
+
                     for subproblem_str in subproblem_stage_directory_strings.keys():
                         for stage_str in subproblem_stage_directory_strings[
                             subproblem_str
@@ -147,29 +139,43 @@ def write_model_inputs(
                                 db_path=db_path,
                             )
     else:
-        pool_data = tuple(
-            [
-                [
-                    scenario_directory,
-                    weather_iteration_str,
-                    hydro_iteration_str,
-                    subproblem_str,
-                    stage_str,
-                    modules_to_use,
-                    scenario_id,
-                    subscenarios,
-                    db_path,
-                ]
-                for weather_iteration_str in iteration_directory_strings.keys()
-                for hydro_iteration_str in (
-                    iteration_directory_strings[weather_iteration_str]
-                    if not weather_iteration_str == ""
-                    else next(iter(iteration_directory_strings.values()))
-                )
-                for subproblem_str in subproblem_stage_directory_strings.keys()
-                for stage_str in subproblem_stage_directory_strings[subproblem_str]
-            ]
-        )
+        pool_data = []
+        for weather_iteration_str in iteration_directory_strings.keys():
+            for hydro_iteration_str in iteration_directory_strings[
+                weather_iteration_str
+            ].keys():
+                for availability_iteration_str in iteration_directory_strings[
+                    weather_iteration_str
+                ][hydro_iteration_str]:
+                    # We may have passed "empty_string" to avoid actual empty
+                    # strings as dictionary keys; convert to actual empty
+                    # strings here to pass to the directory creation methods
+                    weather_iteration_str = ensure_empty_string(weather_iteration_str)
+                    hydro_iteration_str = ensure_empty_string(hydro_iteration_str)
+                    availability_iteration_str = ensure_empty_string(
+                        availability_iteration_str
+                    )
+
+                    for subproblem_str in subproblem_stage_directory_strings.keys():
+                        for stage_str in subproblem_stage_directory_strings[
+                            subproblem_str
+                        ]:
+                            pool_data.append(
+                                [
+                                    scenario_directory,
+                                    weather_iteration_str,
+                                    hydro_iteration_str,
+                                    availability_iteration_str,
+                                    subproblem_str,
+                                    stage_str,
+                                    modules_to_use,
+                                    scenario_id,
+                                    subscenarios,
+                                    db_path,
+                                ]
+                            )
+
+        pool_data = tuple(pool_data)
 
         # Pool must use spawn to work properly on Linux
         pool = get_context("spawn").Pool(n_parallel_subproblems)
@@ -239,7 +245,8 @@ def get_inputs_for_subproblem_pool(pool_datum):
     [
         scenario_directory,
         weather_iteration_str,
-        hydro_yr_str,
+        hydro_iteration_str,
+        availability_iteration_str,
         subproblem_str,
         stage_str,
         modules_to_use,
@@ -251,7 +258,8 @@ def get_inputs_for_subproblem_pool(pool_datum):
     write_inputs(
         scenario_directory=scenario_directory,
         weather_iteration_str=weather_iteration_str,
-        hydro_iteration_str=hydro_yr_str,
+        hydro_iteration_str=hydro_iteration_str,
+        availability_iteration_str=availability_iteration_str,
         subproblem_str=subproblem_str,
         stage_str=stage_str,
         modules_to_use=modules_to_use,
