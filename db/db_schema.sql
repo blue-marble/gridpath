@@ -1730,12 +1730,13 @@ CREATE TABLE inputs_project_availability_exogenous
 (
     project                            VARCHAR(64),
     exogenous_availability_scenario_id INTEGER,
+    availability_iteration             INTEGER,
     stage_id                           INTEGER,
     timepoint                          INTEGER,
     availability_derate                FLOAT,
     hyb_stor_cap_availability_derate   FLOAT,
-    PRIMARY KEY (project, exogenous_availability_scenario_id, stage_id,
-                 timepoint),
+    PRIMARY KEY (project, exogenous_availability_scenario_id,
+                 availability_iteration, stage_id, timepoint),
     FOREIGN KEY (project, exogenous_availability_scenario_id)
         REFERENCES subscenarios_project_availability_exogenous
             (project, exogenous_availability_scenario_id)

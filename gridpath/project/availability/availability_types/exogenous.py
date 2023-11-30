@@ -208,7 +208,7 @@ def get_inputs_from_database(
     :return:
     """
 
-    sql = """
+    sql = f"""
         SELECT project, timepoint, availability_derate, 
         hyb_stor_cap_availability_derate
         -- Select only projects, periods, timepoints from the relevant 
@@ -217,13 +217,13 @@ def get_inputs_from_database(
         FROM 
             (SELECT project, stage_id, timepoint
             FROM project_operational_timepoints
-            WHERE project_portfolio_scenario_id = {}
-            AND project_operational_chars_scenario_id = {}
-            AND temporal_scenario_id = {}
-            AND (project_specified_capacity_scenario_id = {}
-                 OR project_new_cost_scenario_id = {})
-            AND subproblem_id = {}
-            AND stage_id = {}
+            WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
+            AND project_operational_chars_scenario_id = {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
+            AND temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+            AND (project_specified_capacity_scenario_id = {subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID}
+                 OR project_new_cost_scenario_id = {subscenarios.PROJECT_NEW_COST_SCENARIO_ID})
+            AND subproblem_id = {subproblem}
+            AND stage_id = {stage}
             ) as projects_periods_timepoints_tbl
         -- Of the projects in the portfolio, select only those that are in 
         -- this project_availability_scenario_id and have 'exogenous' as 
@@ -234,30 +234,21 @@ def get_inputs_from_database(
         INNER JOIN (
             SELECT project, exogenous_availability_scenario_id
             FROM inputs_project_availability
-            WHERE project_availability_scenario_id = {}
-            AND availability_type = '{}'
+            WHERE project_availability_scenario_id = {subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID}
+            AND availability_type = 'exogenous'
             AND exogenous_availability_scenario_id IS NOT NULL
             ) AS avail_char
         USING (project)
         -- Now that we have the relevant projects and timepoints, get the 
         -- respective availability_derate (and no others) from 
         -- inputs_project_availability_exogenous
-        left outer JOIN
+        LEFT OUTER JOIN
             inputs_project_availability_exogenous
         USING (exogenous_availability_scenario_id, project, stage_id, 
         timepoint)
+        WHERE availability_iteration = {availability_iteration}
         ;
-    """.format(
-        subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-        subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
-        subscenarios.TEMPORAL_SCENARIO_ID,
-        subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID,
-        subscenarios.PROJECT_NEW_COST_SCENARIO_ID,
-        subproblem,
-        stage,
-        subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID,
-        "exogenous",
-    )
+    """
 
     c = conn.cursor()
     availabilities = c.execute(sql)
