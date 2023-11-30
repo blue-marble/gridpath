@@ -59,7 +59,14 @@ from gridpath.auxiliary.db_interface import setup_results_import
 
 
 def add_model_components(
-    m, d, scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
 ):
     """
     :param m: the Pyomo abstract model object we are adding components to
@@ -100,7 +107,14 @@ def add_model_components(
 
 
 def export_results(
-    scenario_directory, weather_iteration, hydro_iteration, subproblem, stage, m, d
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
 ):
     """
     Export objective function cost components
@@ -119,6 +133,7 @@ def export_results(
             scenario_directory,
             weather_iteration,
             hydro_iteration,
+            availability_iteration,
             subproblem,
             stage,
             "results",
@@ -141,6 +156,7 @@ def import_results_into_database(
     scenario_id,
     weather_iteration,
     hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
     c,
@@ -168,6 +184,7 @@ def import_results_into_database(
         scenario_id=scenario_id,
         weather_iteration=weather_iteration,
         hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
     )

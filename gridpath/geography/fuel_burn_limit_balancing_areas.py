@@ -25,7 +25,14 @@ from gridpath.auxiliary.db_interface import directories_to_db_values
 
 
 def add_model_components(
-    m, d, scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
 ):
     """
 
@@ -65,6 +72,7 @@ def load_model_data(
     scenario_directory,
     weather_iteration,
     hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
 ):
@@ -73,6 +81,7 @@ def load_model_data(
             scenario_directory,
             weather_iteration,
             hydro_iteration,
+            availability_iteration,
             subproblem,
             stage,
             "inputs",
@@ -95,6 +104,7 @@ def get_inputs_from_database(
     subscenarios,
     weather_iteration,
     hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
     conn,
@@ -144,6 +154,7 @@ def validate_inputs(
     subscenarios,
     weather_iteration,
     hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
     conn,
@@ -166,6 +177,7 @@ def write_model_inputs(
     subscenarios,
     weather_iteration,
     hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
     conn,
@@ -184,15 +196,19 @@ def write_model_inputs(
     (
         db_weather_iteration,
         db_hydro_iteration,
+        db_availability_iteration,
         db_subproblem,
         db_stage,
-    ) = directories_to_db_values(weather_iteration, hydro_iteration, subproblem, stage)
+    ) = directories_to_db_values(
+        weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
+    )
 
     fuel_burn_limit_bas = get_inputs_from_database(
         scenario_id,
         subscenarios,
         db_weather_iteration,
         db_hydro_iteration,
+        db_availability_iteration,
         db_subproblem,
         db_stage,
         conn,
@@ -203,6 +219,7 @@ def write_model_inputs(
             scenario_directory,
             weather_iteration,
             hydro_iteration,
+            availability_iteration,
             subproblem,
             stage,
             "inputs",

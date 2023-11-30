@@ -21,7 +21,14 @@ from gridpath.transmission import TX_TIMEPOINT_DF
 
 
 def export_results(
-    scenario_directory, weather_iteration, hydro_iteration, subproblem, stage, m, d
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
 ):
     """
     Export all results from the TX_OPERATIONS_DF that various modules
@@ -32,6 +39,7 @@ def export_results(
             scenario_directory,
             weather_iteration,
             hydro_iteration,
+            availability_iteration,
             subproblem,
             stage,
             "results",

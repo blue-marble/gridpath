@@ -16,7 +16,14 @@ from pyomo.environ import Param, NonNegativeReals, PercentFraction
 
 
 def add_model_components(
-    m, d, scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
 ):
     """ """
     # Derived params to use downstream instead of always having to keep track

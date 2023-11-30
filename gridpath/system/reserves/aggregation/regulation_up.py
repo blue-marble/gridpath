@@ -17,7 +17,14 @@ from .reserve_aggregation import generic_add_model_components
 
 
 def add_model_components(
-    m, d, scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
 ):
     """
 

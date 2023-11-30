@@ -24,7 +24,14 @@ from gridpath.system.policy.energy_targets import ENERGY_TARGET_ZONE_PRD_DF
 
 
 def add_model_components(
-    m, d, scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
 ):
     """
 
@@ -92,7 +99,14 @@ def add_model_components(
 
 
 def export_results(
-    scenario_directory, weather_iteration, hydro_iteration, subproblem, stage, m, d
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
 ):
     """
 

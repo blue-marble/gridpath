@@ -24,7 +24,14 @@ from gridpath.project import PROJECT_TIMEPOINT_DF
 
 
 def export_results(
-    scenario_directory, weather_iteration, hydro_iteration, subproblem, stage, m, d
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
 ):
     """
     Export all results from the PROJECT_CAPACITY_DF and PROJECT_OPERATIONS_DF
@@ -35,6 +42,7 @@ def export_results(
             scenario_directory,
             weather_iteration,
             hydro_iteration,
+            availability_iteration,
             subproblem,
             stage,
             "results",
@@ -49,6 +57,7 @@ def export_results(
             scenario_directory,
             weather_iteration,
             hydro_iteration,
+            availability_iteration,
             subproblem,
             stage,
             "results",

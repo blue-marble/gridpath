@@ -62,7 +62,14 @@ from gridpath.auxiliary.auxiliary import (
 
 
 def add_model_components(
-    m, d, scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
 ):
     """
     The following Pyomo model components are defined in this module:
@@ -525,6 +532,7 @@ def load_model_data(
     scenario_directory,
     weather_iteration,
     hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
 ):
@@ -544,6 +552,7 @@ def load_model_data(
             scenario_directory,
             weather_iteration,
             hydro_iteration,
+            availability_iteration,
             subproblem,
             stage,
             "inputs",

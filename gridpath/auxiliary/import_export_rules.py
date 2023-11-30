@@ -37,13 +37,20 @@ def export_rule_use(instance, quiet):
 
 
 def summarize_results_use(
-    scenario_directory, weather_iteration, hydro_iteration, subproblem, stage, quiet
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    quiet,
 ):
     if os.path.exists(
         os.path.join(
             scenario_directory,
             weather_iteration,
             hydro_iteration,
+            availability_iteration,
             subproblem,
             stage,
             "results",

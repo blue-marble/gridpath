@@ -52,7 +52,14 @@ import gridpath.project.operations.operational_types.gen_commit_unit_common as g
 
 
 def add_model_components(
-    m, d, scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
 ):
     """
     See the formulation documentation in the
@@ -65,6 +72,7 @@ def add_model_components(
         scenario_directory=scenario_directory,
         weather_iteration=weather_iteration,
         hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         bin_or_lin_optype="gen_commit_bin",
@@ -221,6 +229,7 @@ def load_model_data(
     scenario_directory,
     weather_iteration,
     hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
 ):
@@ -240,6 +249,7 @@ def load_model_data(
         scenario_directory=scenario_directory,
         weather_iteration=weather_iteration,
         hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         bin_or_lin_optype="gen_commit_bin",
@@ -289,7 +299,14 @@ def add_to_prj_tmp_results(mod):
 
 
 def export_results(
-    mod, d, scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
+    mod,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
 ):
     """
     :param scenario_directory:
@@ -305,6 +322,7 @@ def export_results(
         scenario_directory=scenario_directory,
         weather_iteration=weather_iteration,
         hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         BIN_OR_LIN="BIN",
@@ -317,6 +335,7 @@ def save_duals(
     scenario_directory,
     weather_iteration,
     hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
     instance,
@@ -334,6 +353,7 @@ def validate_inputs(
     subscenarios,
     weather_iteration,
     hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
     conn,
@@ -354,6 +374,7 @@ def validate_inputs(
         subscenarios,
         weather_iteration,
         hydro_iteration,
+        availability_iteration,
         subproblem,
         stage,
         conn,

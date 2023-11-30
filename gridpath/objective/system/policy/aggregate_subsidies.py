@@ -22,7 +22,14 @@ from gridpath.auxiliary.dynamic_components import cost_components
 
 
 def add_model_components(
-    m, d, scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
 ):
     """
     :param m: the Pyomo abstract model object we are adding the components to

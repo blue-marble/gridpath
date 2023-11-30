@@ -41,7 +41,14 @@ import gridpath.project.operations.operational_types as op_type_init
 
 
 def add_model_components(
-    m, d, scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
 ):
     """
     The following Pyomo model components are defined in this module:
@@ -162,6 +169,7 @@ def add_model_components(
         scenario_directory=scenario_directory,
         weather_iteration=weather_iteration,
         hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         which_type="operational_type",
@@ -546,6 +554,7 @@ def load_model_data(
     scenario_directory,
     weather_iteration,
     hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
 ):
@@ -563,6 +572,7 @@ def load_model_data(
         scenario_directory,
         weather_iteration,
         hydro_iteration,
+        availability_iteration,
         subproblem,
         stage,
         "inputs",
@@ -580,7 +590,14 @@ def load_model_data(
 
 
 def export_results(
-    scenario_directory, weather_iteration, hydro_iteration, subproblem, stage, m, d
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
 ):
     """
     Export fuel burn results.
@@ -599,6 +616,7 @@ def export_results(
             scenario_directory,
             weather_iteration,
             hydro_iteration,
+            availability_iteration,
             subproblem,
             stage,
             "results",
@@ -660,6 +678,7 @@ def import_results_into_database(
     scenario_id,
     weather_iteration,
     hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
     c,
@@ -682,6 +701,7 @@ def import_results_into_database(
         scenario_id=scenario_id,
         weather_iteration=weather_iteration,
         hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         quiet=quiet,

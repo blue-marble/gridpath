@@ -40,7 +40,14 @@ from gridpath.project.operations.operational_types.common_functions import (
 
 
 def add_model_components(
-    m, d, scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
 ):
     """
     The following Pyomo model components are defined in this module:
@@ -277,6 +284,7 @@ def validate_inputs(
     subscenarios,
     weather_iteration,
     hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
     conn,
@@ -296,6 +304,7 @@ def validate_inputs(
         subscenarios,
         weather_iteration,
         hydro_iteration,
+        availability_iteration,
         subproblem,
         stage,
         conn,

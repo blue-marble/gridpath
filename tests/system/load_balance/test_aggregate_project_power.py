@@ -64,6 +64,7 @@ class TestOperations(unittest.TestCase):
             test_data_dir=TEST_DATA_DIRECTORY,
             weather_iteration="",
             hydro_iteration="",
+            availability_iteration="",
             subproblem="",
             stage="",
         )
@@ -79,6 +80,7 @@ class TestOperations(unittest.TestCase):
             test_data_dir=TEST_DATA_DIRECTORY,
             weather_iteration="",
             hydro_iteration="",
+            availability_iteration="",
             subproblem="",
             stage="",
         )

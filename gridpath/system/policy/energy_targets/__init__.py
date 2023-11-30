@@ -22,7 +22,14 @@ ENERGY_TARGET_ZONE_HRZ_DF = "energy_target_zone_horizon_df"
 
 
 def export_results(
-    scenario_directory, weather_iteration, hydro_iteration, subproblem, stage, m, d
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
 ):
     """ """
     # First create the results dataframes
@@ -97,6 +104,7 @@ def import_results_into_database(
     scenario_id,
     weather_iteration,
     hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
     c,
@@ -130,6 +138,7 @@ def import_results_into_database(
                 cursor=c,
                 scenario_id=scenario_id,
                 hydro_iteration=hydro_iteration,
+                availability_iteration=availability_iteration,
                 subproblem=subproblem,
                 stage=stage,
                 quiet=quiet,

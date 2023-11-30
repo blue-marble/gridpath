@@ -39,7 +39,14 @@ import gridpath.project.capacity.capacity_types as cap_type_init
 
 
 def add_model_components(
-    m, d, scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
 ):
     """
     First, we iterate over all required *capacity_types* modules (this is the
@@ -117,6 +124,7 @@ def add_model_components(
         scenario_directory=scenario_directory,
         weather_iteration=weather_iteration,
         hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         which_type="capacity_type",
@@ -137,6 +145,7 @@ def add_model_components(
                 scenario_directory,
                 weather_iteration,
                 hydro_iteration,
+                availability_iteration,
                 subproblem,
                 stage,
             )
@@ -297,6 +306,7 @@ def load_model_data(
     scenario_directory,
     weather_iteration,
     hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
 ):
@@ -305,6 +315,7 @@ def load_model_data(
         scenario_directory=scenario_directory,
         weather_iteration=weather_iteration,
         hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         which_type="capacity_type",
@@ -323,6 +334,7 @@ def load_model_data(
                 scenario_directory,
                 weather_iteration,
                 hydro_iteration,
+                availability_iteration,
                 subproblem,
                 stage,
             )
@@ -330,7 +342,14 @@ def load_model_data(
 
 # TODO: move this to gridpath.project.capacity.__init__?
 def export_results(
-    scenario_directory, weather_iteration, hydro_iteration, subproblem, stage, m, d
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
 ):
     """
     Export capacity results.
@@ -380,6 +399,7 @@ def export_results(
         scenario_directory=scenario_directory,
         weather_iteration=weather_iteration,
         hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         which_type="capacity_type",
@@ -397,6 +417,7 @@ def export_results(
                 scenario_directory,
                 weather_iteration,
                 hydro_iteration,
+                availability_iteration,
                 subproblem,
                 stage,
                 m,
@@ -409,7 +430,12 @@ def export_results(
 
 
 def summarize_results(
-    scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
 ):
     """
     :param scenario_directory:
@@ -424,6 +450,7 @@ def summarize_results(
         scenario_directory,
         weather_iteration,
         hydro_iteration,
+        availability_iteration,
         subproblem,
         stage,
         "results",
@@ -443,6 +470,7 @@ def summarize_results(
             scenario_directory,
             weather_iteration,
             hydro_iteration,
+            availability_iteration,
             subproblem,
             stage,
             "results",
@@ -454,6 +482,7 @@ def summarize_results(
         scenario_directory=scenario_directory,
         weather_iteration=weather_iteration,
         hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         which_type="capacity_type",
@@ -469,6 +498,7 @@ def summarize_results(
                 scenario_directory,
                 weather_iteration,
                 hydro_iteration,
+                availability_iteration,
                 subproblem,
                 stage,
                 summary_results_file,

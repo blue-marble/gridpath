@@ -139,6 +139,7 @@ def setup_results_import(
     scenario_id,
     weather_iteration,
     hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
 ):
@@ -160,6 +161,7 @@ def setup_results_import(
         WHERE scenario_id = ?
         AND weather_iteration = ?
         AND hydro_iteration = ?
+        AND availability_iteration = ?
         AND subproblem_id = ?
         AND stage_id = ?;
         """.format(
@@ -169,7 +171,14 @@ def setup_results_import(
         conn=conn,
         cursor=cursor,
         sql=del_sql,
-        data=(scenario_id, weather_iteration, hydro_iteration, subproblem, stage),
+        data=(
+            scenario_id,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+        ),
         many=False,
     )
 
@@ -212,6 +221,7 @@ def import_csv(
     scenario_id,
     weather_iteration,
     hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
     quiet,
@@ -233,6 +243,7 @@ def import_csv(
         scenario_id=scenario_id,
         weather_iteration=weather_iteration,
         hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
     )
@@ -250,6 +261,11 @@ def import_csv(
         0
         if hydro_iteration == ""
         else int(hydro_iteration.replace("hydro_iteration_", ""))
+    )
+    df["availability_iteration"] = (
+        0
+        if availability_iteration == ""
+        else int(availability_iteration.replace("availability_iteration_", ""))
     )
     df["subproblem_id"] = 1 if subproblem == "" else int(subproblem)
     df["stage_id"] = 1 if stage == "" else int(stage)
@@ -326,18 +342,35 @@ def determine_table_subset_by_start_and_column(conn, tbl_start, cols):
     return table_subset
 
 
-def directories_to_db_values(weather_iteration, hydro_iteration, subproblem, stage):
+def directories_to_db_values(
+    weather_iteration_dir,
+    hydro_iteration_dir,
+    availability_iteration_dir,
+    subproblem,
+    stage,
+):
     db_weather_iteration = (
         0
-        if weather_iteration == ""
-        else int(weather_iteration.replace("weather_iteration_", ""))
+        if weather_iteration_dir == ""
+        else int(weather_iteration_dir.replace("weather_iteration_", ""))
     )
     db_hydro_iteration = (
         0
-        if hydro_iteration == ""
-        else int(hydro_iteration.replace("hydro_iteration_", ""))
+        if hydro_iteration_dir == ""
+        else int(hydro_iteration_dir.replace("hydro_iteration_", ""))
+    )
+    db_availability_iteration = (
+        0
+        if availability_iteration_dir == ""
+        else int(availability_iteration_dir.replace("availability_iteration_", ""))
     )
     db_subproblem = 1 if subproblem == "" else subproblem
     db_stage = 1 if stage == "" else stage
 
-    return db_weather_iteration, db_hydro_iteration, db_subproblem, db_stage
+    return (
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+    )

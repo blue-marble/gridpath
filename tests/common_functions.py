@@ -24,6 +24,7 @@ def add_model_components(
     test_data_dir,
     weather_iteration,
     hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
 ):
@@ -44,6 +45,7 @@ def add_model_components(
                 test_data_dir,
                 weather_iteration,
                 hydro_iteration,
+                availability_iteration,
                 subproblem,
                 stage,
             )
@@ -54,6 +56,7 @@ def add_model_components(
             test_data_dir,
             weather_iteration,
             hydro_iteration,
+            availability_iteration,
             subproblem,
             stage,
         )
@@ -67,6 +70,7 @@ def create_abstract_model(
     test_data_dir,
     weather_iteration,
     hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
 ):
@@ -89,6 +93,7 @@ def create_abstract_model(
         test_data_dir,
         weather_iteration,
         hydro_iteration,
+        availability_iteration,
         subproblem,
         stage,
     )
@@ -102,6 +107,7 @@ def add_components_and_load_data(
     test_data_dir,
     weather_iteration,
     hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
 ):
@@ -116,6 +122,7 @@ def add_components_and_load_data(
         test_data_dir,
         weather_iteration,
         hydro_iteration,
+        availability_iteration,
         subproblem,
         stage,
     )
@@ -129,6 +136,7 @@ def add_components_and_load_data(
                 test_data_dir,
                 weather_iteration,
                 hydro_iteration,
+                availability_iteration,
                 subproblem,
                 stage,
             )
@@ -140,6 +148,7 @@ def add_components_and_load_data(
             test_data_dir,
             weather_iteration,
             hydro_iteration,
+            availability_iteration,
             subproblem,
             stage,
         )

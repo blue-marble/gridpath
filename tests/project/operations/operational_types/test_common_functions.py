@@ -67,6 +67,7 @@ class TestOperationalTypeCommonFunctions(unittest.TestCase):
             test_data_dir=TEST_DATA_DIRECTORY,
             weather_iteration="",
             hydro_iteration="",
+            availability_iteration="",
             subproblem="",
             stage="",
         )
@@ -209,6 +210,7 @@ class TestOperationalTypeCommonFunctions(unittest.TestCase):
             test_data_dir=os.path.join(TEST_DATA_DIRECTORY, "subproblems"),
             weather_iteration="",
             hydro_iteration="",
+            availability_iteration="",
             subproblem="202002",
             stage="",
         )

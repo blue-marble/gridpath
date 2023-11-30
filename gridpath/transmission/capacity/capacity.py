@@ -43,7 +43,14 @@ from gridpath.auxiliary.dynamic_components import (
 
 
 def add_model_components(
-    m, d, scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
 ):
     """
     Before adding any components, this module will go through each relevant
@@ -111,6 +118,7 @@ def add_model_components(
         scenario_directory=scenario_directory,
         weather_iteration=weather_iteration,
         hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         which_type="tx_capacity_type",
@@ -190,7 +198,14 @@ def add_model_components(
 
 
 def export_results(
-    scenario_directory, weather_iteration, hydro_iteration, subproblem, stage, m, d
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
 ):
     """
 
@@ -234,6 +249,7 @@ def export_results(
         scenario_directory=scenario_directory,
         weather_iteration=weather_iteration,
         hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         which_type="tx_capacity_type",
@@ -251,6 +267,7 @@ def export_results(
                 scenario_directory,
                 weather_iteration,
                 hydro_iteration,
+                availability_iteration,
                 subproblem,
                 stage,
                 m,
@@ -266,6 +283,7 @@ def save_duals(
     scenario_directory,
     weather_iteration,
     hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
     instance,
@@ -278,6 +296,7 @@ def save_duals(
             scenario_directory,
             weather_iteration,
             hydro_iteration,
+            availability_iteration,
             subproblem,
             stage,
             "inputs",
@@ -303,6 +322,7 @@ def save_duals(
                 scenario_directory,
                 weather_iteration,
                 hydro_iteration,
+                availability_iteration,
                 subproblem,
                 stage,
                 instance,

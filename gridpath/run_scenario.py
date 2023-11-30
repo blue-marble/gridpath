@@ -68,6 +68,7 @@ def create_problem(
     scenario_directory,
     weather_iteration,
     hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
     multi_stage,
@@ -124,6 +125,7 @@ def create_problem(
         scenario_directory,
         weather_iteration,
         hydro_iteration,
+        availability_iteration,
         subproblem,
         stage,
     )
@@ -142,6 +144,7 @@ def create_problem(
         scenario_directory,
         weather_iteration,
         hydro_iteration,
+        availability_iteration,
         subproblem,
         stage,
     )
@@ -157,6 +160,7 @@ def create_problem(
         scenario_directory,
         weather_iteration,
         hydro_iteration,
+        availability_iteration,
         subproblem,
         stage,
         loaded_modules,
@@ -210,6 +214,7 @@ def run_optimization_for_subproblem_stage(
             scenario_directory,
             weather_iteration_directory,
             hydro_iteration_directory,
+            availability_iteration_directory,
             subproblem_directory,
             stage_directory,
         )
@@ -263,6 +268,7 @@ def run_optimization_for_subproblem_stage(
                 scenario_directory,
                 weather_iteration_directory,
                 hydro_iteration_directory,
+                availability_iteration_directory,
                 subproblem_directory,
                 stage_directory,
             )
@@ -307,6 +313,7 @@ def run_optimization_for_subproblem_stage(
                 scenario_directory=scenario_directory,
                 weather_iteration=weather_iteration_directory,
                 hydro_iteration=hydro_iteration_directory,
+                availability_iteration=hydro_iteration_directory,
                 subproblem=subproblem_directory,
                 stage=stage_directory,
                 multi_stage=multi_stage,
@@ -360,6 +367,7 @@ def run_optimization_for_subproblem_stage(
             scenario_directory,
             weather_iteration_directory,
             hydro_iteration_directory,
+            availability_iteration_directory,
             subproblem_directory,
             stage_directory,
             multi_stage,
@@ -374,6 +382,7 @@ def run_optimization_for_subproblem_stage(
             scenario_directory,
             weather_iteration_directory,
             hydro_iteration_directory,
+            availability_iteration_directory,
             subproblem_directory,
             stage_directory,
             multi_stage,
@@ -753,6 +762,7 @@ def save_results(
     scenario_directory,
     weather_iteration,
     hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
     multi_stage,
@@ -784,6 +794,7 @@ def save_results(
         scenario_directory,
         weather_iteration,
         hydro_iteration,
+        availability_iteration,
         subproblem,
         stage,
         "results",
@@ -828,6 +839,7 @@ def save_results(
             scenario_directory=scenario_directory,
             weather_iteration=weather_iteration,
             hydro_iteration=hydro_iteration,
+            availability_iteration=availability_iteration,
             subproblem=subproblem,
             stage=stage,
             multi_stage=multi_stage,
@@ -841,6 +853,7 @@ def save_results(
             scenario_directory=scenario_directory,
             weather_iteration=weather_iteration,
             hydro_iteration=hydro_iteration,
+            availability_iteration=availability_iteration,
             subproblem=subproblem,
             stage=stage,
             multi_stage=multi_stage,
@@ -852,6 +865,7 @@ def save_results(
             scenario_directory=scenario_directory,
             weather_iteration=weather_iteration,
             hydro_iteration=hydro_iteration,
+            availability_iteration=availability_iteration,
             subproblem=subproblem,
             stage=stage,
             instance=instance,
@@ -861,6 +875,7 @@ def save_results(
             scenario_directory=scenario_directory,
             weather_iteration=weather_iteration,
             hydro_iteration=hydro_iteration,
+            availability_iteration=availability_iteration,
             subproblem=subproblem,
             stage=stage,
             multi_stage=multi_stage,
@@ -896,6 +911,7 @@ def create_abstract_model(
     scenario_directory,
     weather_iteration,
     hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
 ):
@@ -921,6 +937,7 @@ def create_abstract_model(
                 scenario_directory,
                 weather_iteration,
                 hydro_iteration,
+                availability_iteration,
                 subproblem,
                 stage,
             )
@@ -933,6 +950,7 @@ def load_scenario_data(
     scenario_directory,
     weather_iteration,
     hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
 ):
@@ -962,6 +980,7 @@ def load_scenario_data(
                 scenario_directory,
                 weather_iteration,
                 hydro_iteration,
+                availability_iteration,
                 subproblem,
                 stage,
             )
@@ -989,6 +1008,7 @@ def fix_variables(
     scenario_directory,
     weather_iteration,
     hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
     loaded_modules,
@@ -1014,6 +1034,7 @@ def fix_variables(
                 scenario_directory,
                 weather_iteration,
                 hydro_iteration,
+                availability_iteration,
                 subproblem,
                 stage,
             )
@@ -1164,6 +1185,7 @@ def export_results(
     scenario_directory,
     weather_iteration,
     hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
     multi_stage,
@@ -1200,6 +1222,7 @@ def export_results(
                     scenario_directory,
                     weather_iteration,
                     hydro_iteration,
+                    availability_iteration,
                     subproblem,
                     stage,
                     instance,
@@ -1213,6 +1236,7 @@ def export_pass_through_inputs(
     scenario_directory,
     weather_iteration,
     hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
     multi_stage,
@@ -1243,6 +1267,7 @@ def export_pass_through_inputs(
                 scenario_directory,
                 weather_iteration,
                 hydro_iteration,
+                availability_iteration,
                 subproblem,
                 stage,
                 instance,
@@ -1251,7 +1276,13 @@ def export_pass_through_inputs(
 
 
 def save_objective_function_value(
-    scenario_directory, weather_iteration, hydro_iteration, subproblem, stage, instance
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    instance,
 ):
     """
     Save the objective function value.
@@ -1272,6 +1303,7 @@ def save_objective_function_value(
             scenario_directory,
             weather_iteration,
             hydro_iteration,
+            availability_iteration,
             subproblem,
             stage,
             "results",
@@ -1287,6 +1319,7 @@ def save_duals(
     scenario_directory,
     weather_iteration,
     hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
     multi_stage,
@@ -1321,6 +1354,7 @@ def save_duals(
                 scenario_directory,
                 weather_iteration,
                 hydro_iteration,
+                availability_iteration,
                 subproblem,
                 stage,
                 instance,
@@ -1350,6 +1384,7 @@ def summarize_results(
     scenario_directory,
     weather_iteration,
     hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
     multi_stage,
@@ -1369,6 +1404,7 @@ def summarize_results(
             scenario_directory=scenario_directory,
             weather_iteration=weather_iteration,
             hydro_iteration=hydro_iteration,
+            availability_iteration=availability_iteration,
             subproblem=subproblem,
             stage=stage,
             quiet=parsed_arguments.quiet,
@@ -1380,6 +1416,7 @@ def summarize_results(
             scenario_directory=scenario_directory,
             weather_iteration=weather_iteration,
             hydro_iteration=hydro_iteration,
+            availability_iteration=availability_iteration,
             subproblem=subproblem,
             stage=stage,
             quiet=parsed_arguments.quiet,
@@ -1392,6 +1429,7 @@ def summarize_results(
                 scenario_directory,
                 weather_iteration,
                 hydro_iteration,
+                availability_iteration,
                 subproblem,
                 stage,
                 "results",
@@ -1415,6 +1453,7 @@ def summarize_results(
                 scenario_directory,
                 weather_iteration,
                 hydro_iteration,
+                availability_iteration,
                 subproblem,
                 stage,
                 "results",
@@ -1440,6 +1479,7 @@ def summarize_results(
                         scenario_directory,
                         weather_iteration,
                         hydro_iteration,
+                        availability_iteration,
                         subproblem,
                         stage,
                     )
@@ -1555,7 +1595,13 @@ def _export_rule(instance, quiet):
 
 
 def _summarize_rule(
-    scenario_directory, weather_iteration, hydro_iteration, subproblem, stage, quiet
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    quiet,
 ):
     """
     :return: boolean

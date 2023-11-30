@@ -229,6 +229,7 @@ def write_inputs(
                 subscenarios=subscenarios,
                 weather_iteration=weather_iteration_str,
                 hydro_iteration=hydro_iteration_str,
+                availability_iteration=availability_iteration_str,
                 subproblem=subproblem_str,
                 stage=stage_str,
                 conn=conn,

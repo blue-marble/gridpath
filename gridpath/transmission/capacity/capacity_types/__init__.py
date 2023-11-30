@@ -28,7 +28,14 @@ from gridpath.transmission.capacity.common_functions import (
 
 
 def add_model_components(
-    m, d, scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
 ):
     """ """
 
@@ -39,6 +46,7 @@ def add_model_components(
             scenario_directory,
             weather_iteration,
             hydro_iteration,
+            availability_iteration,
             subproblem,
             stage,
             "inputs",
@@ -67,6 +75,7 @@ def add_model_components(
                 scenario_directory,
                 weather_iteration,
                 hydro_iteration,
+                availability_iteration,
                 subproblem,
                 stage,
             )
@@ -79,6 +88,7 @@ def load_model_data(
     scenario_directory,
     weather_iteration,
     hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
 ):
@@ -97,6 +107,7 @@ def load_model_data(
             scenario_directory,
             weather_iteration,
             hydro_iteration,
+            availability_iteration,
             subproblem,
             stage,
             "inputs",
@@ -125,6 +136,7 @@ def load_model_data(
                 scenario_directory,
                 weather_iteration,
                 hydro_iteration,
+                availability_iteration,
                 subproblem,
                 stage,
             )
@@ -180,6 +192,7 @@ def validate_inputs(
     subscenarios,
     weather_iteration,
     hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
     conn,
@@ -210,6 +223,7 @@ def validate_inputs(
                 subscenarios,
                 weather_iteration,
                 hydro_iteration,
+                availability_iteration,
                 subproblem,
                 stage,
                 conn,
@@ -222,6 +236,7 @@ def write_model_inputs(
     subscenarios,
     weather_iteration,
     hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
     conn,
@@ -252,6 +267,7 @@ def write_model_inputs(
                 subscenarios,
                 weather_iteration,
                 hydro_iteration,
+                availability_iteration,
                 subproblem,
                 stage,
                 conn,

@@ -297,7 +297,12 @@ def ensure_empty_string(string):
 
 
 def create_logs_directory_if_not_exists(
-    scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
 ):
     """
     Create a logs directory if it doesn't exist already
@@ -310,6 +315,7 @@ def create_logs_directory_if_not_exists(
         scenario_directory,
         weather_iteration,
         hydro_iteration,
+        availability_iteration,
         subproblem,
         stage,
         "logs",

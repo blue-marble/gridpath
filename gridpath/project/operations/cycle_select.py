@@ -27,7 +27,14 @@ from pyomo.environ import Set, Constraint
 
 
 def add_model_components(
-    m, d, scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
 ):
     """
     The tables below list the Pyomo model components defined in the
@@ -140,6 +147,7 @@ def load_model_data(
     scenario_directory,
     weather_iteration,
     hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
 ):
@@ -156,6 +164,7 @@ def load_model_data(
         scenario_directory,
         weather_iteration,
         hydro_iteration,
+        availability_iteration,
         subproblem,
         stage,
         "inputs",

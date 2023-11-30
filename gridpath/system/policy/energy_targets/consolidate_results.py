@@ -22,7 +22,14 @@ from gridpath.system.policy.energy_targets import (
 
 
 def export_results(
-    scenario_directory, weather_iteration, hydro_iteration, subproblem, stage, m, d
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
 ):
     """
     Export all results from the CARBON_CAP_ZONE_PRD_DF that various modules
@@ -35,6 +42,7 @@ def export_results(
                 scenario_directory,
                 weather_iteration,
                 hydro_iteration,
+                availability_iteration,
                 subproblem,
                 stage,
                 "results",

@@ -29,7 +29,14 @@ from gridpath.project.operations.common_functions import load_operational_type_m
 
 
 def add_model_components(
-    m, d, scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
 ):
     """
     +-------------------------------------------------------------------------+
@@ -49,6 +56,7 @@ def add_model_components(
         scenario_directory=scenario_directory,
         weather_iteration=weather_iteration,
         hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         which_type="operational_type",
@@ -68,6 +76,7 @@ def add_model_components(
                 scenario_directory,
                 weather_iteration,
                 hydro_iteration,
+                availability_iteration,
                 subproblem,
                 stage,
             )
@@ -94,6 +103,7 @@ def load_model_data(
     scenario_directory,
     weather_iteration,
     hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
 ):
@@ -112,6 +122,7 @@ def load_model_data(
         scenario_directory=scenario_directory,
         weather_iteration=weather_iteration,
         hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         which_type="operational_type",
@@ -131,13 +142,21 @@ def load_model_data(
                 scenario_directory,
                 weather_iteration,
                 hydro_iteration,
+                availability_iteration,
                 subproblem,
                 stage,
             )
 
 
 def export_results(
-    scenario_directory, weather_iteration, hydro_iteration, subproblem, stage, m, d
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
 ):
     """
     Export operations results.
@@ -157,6 +176,7 @@ def export_results(
         scenario_directory=scenario_directory,
         weather_iteration=weather_iteration,
         hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         which_type="operational_type",
@@ -175,6 +195,7 @@ def export_results(
                 scenario_directory,
                 weather_iteration,
                 hydro_iteration,
+                availability_iteration,
                 subproblem,
                 stage,
             )
@@ -184,6 +205,7 @@ def save_duals(
     scenario_directory,
     weather_iteration,
     hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
     instance,
@@ -195,6 +217,7 @@ def save_duals(
         scenario_directory=scenario_directory,
         weather_iteration=weather_iteration,
         hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         which_type="operational_type",
@@ -211,6 +234,7 @@ def save_duals(
                 scenario_directory,
                 weather_iteration,
                 hydro_iteration,
+                availability_iteration,
                 subproblem,
                 stage,
                 instance,
@@ -279,6 +303,7 @@ def validate_inputs(
     subscenarios,
     weather_iteration,
     hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
     conn,
@@ -308,6 +333,7 @@ def validate_inputs(
                 subscenarios,
                 weather_iteration,
                 hydro_iteration,
+                availability_iteration,
                 subproblem,
                 stage,
                 conn,
@@ -320,6 +346,7 @@ def write_model_inputs(
     subscenarios,
     weather_iteration,
     hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
     conn,
@@ -351,6 +378,7 @@ def write_model_inputs(
                 subscenarios,
                 weather_iteration,
                 hydro_iteration,
+                availability_iteration,
                 subproblem,
                 stage,
                 conn,

@@ -20,7 +20,14 @@ CARBON_TAX_ZONE_PRD_DF = "carbon_tax_zone_period_df"
 
 
 def export_results(
-    scenario_directory, weather_iteration, hydro_iteration, subproblem, stage, m, d
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
 ):
     """ """
     # First create the results dataframes
@@ -56,6 +63,7 @@ def import_results_into_database(
     scenario_id,
     weather_iteration,
     hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
     c,
@@ -78,6 +86,7 @@ def import_results_into_database(
         scenario_id=scenario_id,
         weather_iteration=weather_iteration,
         hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         quiet=quiet,

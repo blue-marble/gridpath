@@ -43,6 +43,7 @@ def write_validation_to_database(
     scenario_id,
     weather_iteration,
     hydro_iteration,
+    availability_iteration,
     subproblem_id,
     stage_id,
     gridpath_module,

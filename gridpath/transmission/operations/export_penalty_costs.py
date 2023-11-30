@@ -24,7 +24,14 @@ from pyomo.environ import Var, NonNegativeReals, Constraint, Expression
 
 
 def add_model_components(
-    m, d, scenario_directory, weather_iteration, hydro_iteration, subproblem, stage
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
 ):
     # Tuning cost can be applied on exports from a load zone to prioritize
     # meeting local load first

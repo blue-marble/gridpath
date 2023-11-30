@@ -154,15 +154,16 @@ def import_scenario_results_into_database(
 
                         termination_condition_sql = """
                             INSERT INTO results_scenario
-                            (scenario_id, weather_iteration, hydro_iteration, subproblem_id, 
+                            (scenario_id, weather_iteration, hydro_iteration, availability_iteration, subproblem_id, 
                             stage_id, solver_termination_condition)
-                            VALUES (?, ?, ?, ?, ?, ?)
+                            VALUES (?, ?, ?, ?, ?, ?, ?)
                         ;"""
 
                         termination_condition_data = (
                             scenario_id,
                             weather_iteration,
                             hydro_iteration,
+                            availability_iteration,
                             subproblem,
                             stage,
                             termination_condition,
@@ -191,6 +192,7 @@ def import_scenario_results_into_database(
                                 scenario_id=scenario_id,
                                 weather_iteration=weather_iteration_str,
                                 hydro_iteration=hydro_iteration_str,
+                                availability_iteration=availability_iteration,
                                 subproblem=subproblem_str,
                                 stage=stage_str,
                                 results_directory=results_directory,
@@ -201,6 +203,7 @@ def import_scenario_results_into_database(
                                 scenario_id=scenario_id,
                                 weather_iteration=weather_iteration_str,
                                 hydro_iteration=hydro_iteration_str,
+                                availability_iteration=availability_iteration_str,
                                 subproblem=subproblem_str,
                                 stage=stage_str,
                                 results_directory=results_directory,
@@ -225,6 +228,7 @@ def import_objective_function_value(
     scenario_id,
     weather_iteration,
     hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
     results_directory,
@@ -246,6 +250,7 @@ def import_objective_function_value(
         WHERE scenario_id = ?
         AND weather_iteration = ?
         AND hydro_iteration = ?
+        AND availability_iteration = ?
         AND subproblem_id = ?
         AND stage_id = ?
     ;"""
@@ -255,6 +260,7 @@ def import_objective_function_value(
         scenario_id,
         weather_iteration,
         hydro_iteration,
+        availability_iteration,
         subproblem,
         stage,
     )
@@ -266,6 +272,7 @@ def import_subproblem_stage_results_into_database(
     db,
     weather_iteration,
     hydro_iteration,
+    availability_iteration,
     scenario_id,
     subproblem,
     stage,
@@ -292,6 +299,7 @@ def import_subproblem_stage_results_into_database(
                     scenario_id=scenario_id,
                     weather_iteration=weather_iteration,
                     hydro_iteration=hydro_iteration,
+                    availability_iteration=availability_iteration,
                     subproblem=subproblem,
                     stage=stage,
                     c=c,
