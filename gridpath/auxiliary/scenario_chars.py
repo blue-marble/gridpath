@@ -193,6 +193,26 @@ def determine_iteration_directories_from_iteration_structure(scenario_structure)
                 > 1
             ):
                 make_availability_iteration_dirs = True
+            # TODO: need this for hydro years also
+            elif (
+                len(
+                    set(
+                        [
+                            i
+                            for sublist in [
+                                scenario_structure.ITERATION_STRUCTURE[w][h]
+                                for w in scenario_structure.ITERATION_STRUCTURE.keys()
+                                for h in scenario_structure.ITERATION_STRUCTURE[
+                                    w
+                                ].keys()
+                            ]
+                            for i in sublist
+                        ]
+                    )
+                )
+                > 1
+            ):
+                make_availability_iteration_dirs = True
             else:
                 make_availability_iteration_dirs = False
             for availability_iteration in scenario_structure.ITERATION_STRUCTURE[
@@ -369,6 +389,8 @@ def get_scenario_structure_from_disk(scenario_directory):
     weather_directories = check_for_starting_string_subdirectories(
         main_directory=scenario_directory, starting_string="weather_iteration"
     )
+
+    iteration_structure_dict = {}
     if not weather_directories:
         # Check if there are hydro and availability iterations
         hydro_and_availability_iterations = (
@@ -388,9 +410,7 @@ def get_scenario_structure_from_disk(scenario_directory):
                     starting_directory=w_d_full_path
                 )
             )
-            iteration_structure_dict = {
-                weather_iteration: hydro_and_availability_iterations
-            }
+            iteration_structure_dict[weather_iteration] = hydro_and_availability_iterations
 
     # Get the subproblem structure
     subproblem_main_directory = get_directory_for_subproblem_structure(
@@ -431,10 +451,11 @@ def check_hydro_and_availability_iteration_levels(starting_directory):
         hydro_and_availability_iterations = {}
         for hydro_directory in hydro_directories:
             hydro_iteration = int(
-                hydro_directory.replace("hydro_iteration_iteration_", "")
+                hydro_directory.replace("hydro_iteration_", "")
             )
             availability_iterations = check_availability_iteration_level(
-                starting_directory=starting_directory
+                starting_directory=os.path.join(starting_directory,
+                                                hydro_directory)
             )
 
             hydro_and_availability_iterations[hydro_iteration] = availability_iterations
@@ -452,6 +473,7 @@ def check_availability_iteration_level(starting_directory):
         main_directory=starting_directory,
         starting_string="availability_iteration",
     )
+
     # If there are no availability directories, return the "empty"
     # iteration structure
     if not availability_directories:

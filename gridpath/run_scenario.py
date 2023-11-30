@@ -313,7 +313,7 @@ def run_optimization_for_subproblem_stage(
                 scenario_directory=scenario_directory,
                 weather_iteration=weather_iteration_directory,
                 hydro_iteration=hydro_iteration_directory,
-                availability_iteration=hydro_iteration_directory,
+                availability_iteration=availability_iteration_directory,
                 subproblem=subproblem_directory,
                 stage=stage_directory,
                 multi_stage=multi_stage,
