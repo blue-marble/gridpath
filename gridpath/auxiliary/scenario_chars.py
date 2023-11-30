@@ -410,7 +410,9 @@ def get_scenario_structure_from_disk(scenario_directory):
                     starting_directory=w_d_full_path
                 )
             )
-            iteration_structure_dict[weather_iteration] = hydro_and_availability_iterations
+            iteration_structure_dict[
+                weather_iteration
+            ] = hydro_and_availability_iterations
 
     # Get the subproblem structure
     subproblem_main_directory = get_directory_for_subproblem_structure(
@@ -450,12 +452,9 @@ def check_hydro_and_availability_iteration_levels(starting_directory):
     else:
         hydro_and_availability_iterations = {}
         for hydro_directory in hydro_directories:
-            hydro_iteration = int(
-                hydro_directory.replace("hydro_iteration_", "")
-            )
+            hydro_iteration = int(hydro_directory.replace("hydro_iteration_", ""))
             availability_iterations = check_availability_iteration_level(
-                starting_directory=os.path.join(starting_directory,
-                                                hydro_directory)
+                starting_directory=os.path.join(starting_directory, hydro_directory)
             )
 
             hydro_and_availability_iterations[hydro_iteration] = availability_iterations

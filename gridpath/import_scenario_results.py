@@ -128,6 +128,7 @@ def import_scenario_results_into_database(
                             scenario_directory,
                             weather_iteration_str,
                             hydro_iteration_str,
+                            availability_iteration_str,
                             subproblem_str,
                             stage_str,
                             "results",
@@ -137,6 +138,11 @@ def import_scenario_results_into_database(
                                 print(f"--- weather iteration " f"{weather_iteration}")
                             if hydro_iteration_str != "":
                                 print(f"--- hydro iteration " f"{hydro_iteration}")
+                            if availability_iteration_str != "":
+                                print(
+                                    f"--- availability iteration "
+                                    f"{availability_iteration}"
+                                )
                             if subproblem_str != "":
                                 print(f"--- subproblem {subproblem_str}")
                             if stage_str != "":
