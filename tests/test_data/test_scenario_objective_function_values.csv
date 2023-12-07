@@ -77,7 +77,7 @@ test_new_solar_reserve_prj_contribution,-3796311064738.0493,-3796311064738.0493
 test_new_solar_w_relative_capacity_instead_of_potential,-3796301348838.3267,-3796301348838.3267
 test_no_overgen_allowed,-5256303226874.182,-5256303226874.182
 test_no_reserves,-233812049.889,-233812049.889
-test_period_tx_targets,-58248345119704.586,-58248345119704.586
+test_tx_targets,-58248345119704.586,-58248345119704.586
 test_ramp_up_and_down_constraints,-4730755816658.181,-4730755816658.181
 test_ramp_up_constraints,-3796309121478.1226,-3796309121478.1226
 test_supplemental_firing,-4380327039279.8545,-4380327039279.8545
@@ -101,5 +101,5 @@ test_new_solar_carbon_cap_2zones_tx_hydrogen_prod_new,-186998077.6,-186998077.6
 test_w_solver_options,-3796309121478.12,-3796309121478.1226
 test_tx_flow,-59124336744013.484,-59124336744013.484
 test_variable_om_curves,-3796309193923.3223,-3796309193923.3223
-test_startup_shutdown_rates,-560795927282.98,-560795927282.98
+test_startup_shutdown_rates,-560795927282.98,-560795927282.5082
 test_performance_standard_carbon_credits_w_cap_no_credits_mapping,,-3592014778836.2856

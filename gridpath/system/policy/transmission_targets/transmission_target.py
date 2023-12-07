@@ -22,9 +22,6 @@ from pyomo.environ import (
     Set,
     Param,
     NonNegativeReals,
-    PercentFraction,
-    Expression,
-    value,
 )
 
 from gridpath.common_functions import create_results_df
@@ -39,22 +36,22 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     :return:
     """
 
-    m.TRANSMISSION_TARGET_ZONE_PERIODS_WITH_TRANSMISSION_TARGET = Set(
-        dimen=2, within=m.TRANSMISSION_TARGET_ZONES * m.PERIODS
+    m.TRANSMISSION_TARGET_ZONE_BLN_TYPE_HRZS_WITH_TRANSMISSION_TARGET = Set(
+        dimen=3, within=m.TRANSMISSION_TARGET_ZONES * m.BLN_TYPE_HRZS
     )
 
     # Transmission target specified in energy terms for the positive direction of the
     # tx line
-    m.period_transmission_target_pos_dir_mwh = Param(
-        m.TRANSMISSION_TARGET_ZONE_PERIODS_WITH_TRANSMISSION_TARGET,
+    m.transmission_target_pos_dir_mwh = Param(
+        m.TRANSMISSION_TARGET_ZONE_BLN_TYPE_HRZS_WITH_TRANSMISSION_TARGET,
         within=NonNegativeReals,
         default=0,
     )
 
     # Transmission target specified in energy terms for the negative direction of the
     # tx line
-    m.period_transmission_target_neg_dir_mwh = Param(
-        m.TRANSMISSION_TARGET_ZONE_PERIODS_WITH_TRANSMISSION_TARGET,
+    m.transmission_target_neg_dir_mwh = Param(
+        m.TRANSMISSION_TARGET_ZONE_BLN_TYPE_HRZS_WITH_TRANSMISSION_TARGET,
         within=NonNegativeReals,
         default=0,
     )
@@ -78,12 +75,12 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             str(subproblem),
             str(stage),
             "inputs",
-            "period_transmission_targets.tab",
+            "transmission_targets.tab",
         ),
-        index=m.TRANSMISSION_TARGET_ZONE_PERIODS_WITH_TRANSMISSION_TARGET,
+        index=m.TRANSMISSION_TARGET_ZONE_BLN_TYPE_HRZS_WITH_TRANSMISSION_TARGET,
         param=(
-            m.period_transmission_target_pos_dir_mwh,
-            m.period_transmission_target_neg_dir_mwh,
+            m.transmission_target_pos_dir_mwh,
+            m.transmission_target_neg_dir_mwh,
         ),
     )
 
@@ -101,30 +98,31 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
     # Get the transmission flow and percent targets
     c = conn.cursor()
+
     transmission_targets = c.execute(
-        """SELECT transmission_target_zone, period, transmission_target_positive_direction_mwh, 
+        f"""SELECT transmission_target_zone, balancing_type, 
+        inputs_system_transmission_targets.horizon, 
+        transmission_target_positive_direction_mwh, 
         transmission_target_negative_direction_mwh
-        FROM inputs_system_period_transmission_targets
+        FROM inputs_system_transmission_targets
         JOIN
-        (SELECT period
-        FROM inputs_temporal_periods
-        WHERE temporal_scenario_id = {}) as relevant_periods
-        USING (period)
+        (SELECT balancing_type_horizon, horizon
+        FROM inputs_temporal_horizons
+        WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}) AS 
+        relevant_bt_horizons
+        ON (inputs_system_transmission_targets.balancing_type
+        =relevant_bt_horizons.balancing_type_horizon AND 
+        inputs_system_transmission_targets.horizon=relevant_bt_horizons.horizon)
         JOIN
         (SELECT transmission_target_zone
         FROM inputs_geography_transmission_target_zones
-        WHERE transmission_target_zone_scenario_id = {}) as relevant_zones
+        WHERE transmission_target_zone_scenario_id = {subscenarios.TRANSMISSION_TARGET_ZONE_SCENARIO_ID}) as relevant_zones
         USING (transmission_target_zone)
-        WHERE period_transmission_target_scenario_id = {}
-        AND subproblem_id = {}
-        AND stage_ID = {};
-        """.format(
-            subscenarios.TEMPORAL_SCENARIO_ID,
-            subscenarios.TRANSMISSION_TARGET_ZONE_SCENARIO_ID,
-            subscenarios.PERIOD_TRANSMISSION_TARGET_SCENARIO_ID,
-            subproblem,
-            stage,
-        )
+        WHERE transmission_target_scenario_id = {subscenarios.TRANSMISSION_TARGET_SCENARIO_ID}
+        AND subproblem_id = {subproblem}
+        AND stage_ID = {stage}
+        ;
+        """
     )
 
     return transmission_targets
@@ -147,7 +145,7 @@ def write_model_inputs(
 ):
     """
     Get inputs from database and write out the model input
-    period_transmission_targets.tab file.
+    transmission_targets.tab file.
     :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -166,7 +164,7 @@ def write_model_inputs(
             str(subproblem),
             str(stage),
             "inputs",
-            "period_transmission_targets.tab",
+            "transmission_targets.tab",
         ),
         "w",
         newline="",
@@ -179,7 +177,8 @@ def write_model_inputs(
         writer.writerow(
             [
                 "transmission_target_zone",
-                "period",
+                "balancing_type",
+                "horizon",
                 "transmission_target_positive_direction_mwh",
                 "transmission_target_negative_direction_mwh",
             ]
@@ -202,20 +201,25 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return:
     """
     results_columns = [
-        "period_transmission_target_pos_dir_mwh",
-        "period_transmission_target_neg_dir_mwh",
+        "transmission_target_pos_dir_mwh",
+        "transmission_target_neg_dir_mwh",
     ]
     data = [
         [
             z,
-            p,
-            m.period_transmission_target_pos_dir_mwh[z, p],
-            m.period_transmission_target_neg_dir_mwh[z, p],
+            bt,
+            hz,
+            m.transmission_target_pos_dir_mwh[z, bt, hz],
+            m.transmission_target_neg_dir_mwh[z, bt, hz],
         ]
-        for (z, p) in m.TRANSMISSION_TARGET_ZONE_PERIODS_WITH_TRANSMISSION_TARGET
+        for (
+            z,
+            bt,
+            hz,
+        ) in m.TRANSMISSION_TARGET_ZONE_BLN_TYPE_HRZS_WITH_TRANSMISSION_TARGET
     ]
     results_df = create_results_df(
-        index_columns=["transmission_target_zone", "period"],
+        index_columns=["transmission_target_zone", "balancing_type", "horizon"],
         results_columns=results_columns,
         data=data,
     )

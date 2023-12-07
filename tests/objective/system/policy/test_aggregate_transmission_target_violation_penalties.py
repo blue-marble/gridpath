@@ -13,7 +13,6 @@
 # limitations under the License.
 
 
-from collections import OrderedDict
 from importlib import import_module
 import os.path
 import sys
@@ -30,6 +29,7 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.operations.timepoints",
     "temporal.operations.horizons",
     "temporal.investment.periods",
+    "temporal.finalize",
     "geography.load_zones",
     "transmission",
     "transmission.capacity",
@@ -39,14 +39,13 @@ PREREQUISITE_MODULE_NAMES = [
     "transmission.operations.operational_types",
     "transmission.operations.operations",
     "geography.transmission_target_zones",
-    "system.policy.transmission_targets.period_transmission_target",
+    "system.policy.transmission_targets.transmission_target",
     "transmission.operations.transmission_target_contributions",
-    "system.policy.transmission_targets"
-    ".aggregate_period_transmission_target_contributions",
-    "system.policy.transmission_targets.period_transmission_target_balance",
+    "system.policy.transmission_targets" ".aggregate_transmission_target_contributions",
+    "system.policy.transmission_targets.transmission_target_balance",
 ]
 NAME_OF_MODULE_BEING_TESTED = (
-    "objective.system.policy.aggregate_period_transmission_target_violation_penalties"
+    "objective.system.policy.aggregate_transmission_target_violation_penalties"
 )
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
