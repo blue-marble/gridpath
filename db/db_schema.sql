@@ -3433,14 +3433,16 @@ CREATE TABLE subscenarios_system_transmission_targets
 DROP TABLE IF EXISTS inputs_system_transmission_targets;
 CREATE TABLE inputs_system_transmission_targets
 (
-    transmission_target_scenario_id            INTEGER,
-    transmission_target_zone                   VARCHAR(32),
-    subproblem_id                              INTEGER,
-    stage_id                                   INTEGER,
-    balancing_type                             VARCHAR(32),
-    horizon                                    INTEGER,
-    transmission_target_positive_direction_mwh FLOAT,
-    transmission_target_negative_direction_mwh FLOAT,
+    transmission_target_scenario_id     INTEGER,
+    transmission_target_zone            VARCHAR(32),
+    subproblem_id                       INTEGER,
+    stage_id                            INTEGER,
+    balancing_type                      VARCHAR(32),
+    horizon                             INTEGER,
+    transmission_target_pos_dir_min_mwh FLOAT,
+    transmission_target_pos_dir_max_mwh FLOAT,
+    transmission_target_neg_dir_min_mwh FLOAT,
+    transmission_target_neg_dir_max_mwh FLOAT,
     PRIMARY KEY (transmission_target_scenario_id, transmission_target_zone,
                  subproblem_id, stage_id, balancing_type, horizon)
 );
@@ -5035,10 +5037,18 @@ CREATE TABLE results_system_transmission_targets
     total_transmission_target_energy_pos_dir_min_mwh FLOAT,
     fraction_of_transmission_target_pos_dir_min_met  FLOAT,
     transmission_target_shortage_pos_dir_min_mwh     FLOAT,
+    transmission_target_pos_dir_max_mwh              FLOAT,
+    total_transmission_target_energy_pos_dir_max_mwh FLOAT,
+    fraction_of_transmission_target_pos_dir_max_met  FLOAT,
+    transmission_target_shortage_pos_dir_max_mwh     FLOAT,
     transmission_target_neg_dir_min_mwh              FLOAT,
     total_transmission_target_energy_neg_dir_min_mwh FLOAT,
-    fraction_of_transmission_target_neg_dir_met      FLOAT,
+    fraction_of_transmission_target_neg_dir_min_met  FLOAT,
     transmission_target_shortage_neg_dir_min_mwh     FLOAT,
+    transmission_target_neg_dir_max_mwh              FLOAT,
+    total_transmission_target_energy_neg_dir_max_mwh FLOAT,
+    fraction_of_transmission_target_neg_dir_max_met  FLOAT,
+    transmission_target_shortage_neg_dir_max_mwh     FLOAT,
     PRIMARY KEY (scenario_id, transmission_target_zone,
                  subproblem_id, stage_id, balancing_type, horizon)
 );

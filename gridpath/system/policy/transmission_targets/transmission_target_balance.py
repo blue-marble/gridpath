@@ -130,7 +130,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     results_columns = [
         "fraction_of_transmission_target_pos_dir_min_met",
         "transmission_target_shortage_pos_dir_min_mwh",
-        "fraction_of_transmission_target_neg_dir_met",
+        "fraction_of_transmission_target_neg_dir_min_met",
         "transmission_target_shortage_neg_dir_min_mwh",
     ]
     data = [
