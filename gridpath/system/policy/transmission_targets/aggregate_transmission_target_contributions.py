@@ -97,8 +97,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     """
 
     results_columns = [
-        "total_transmission_target_energy_positive_direction_mwh",
-        "total_transmission_target_energy_negative_direction_mwh",
+        "total_transmission_target_energy_pos_dir_min_mwh",
+        "total_transmission_target_energy_neg_dir_min_mwh",
     ]
     data = [
         [

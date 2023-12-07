@@ -78,13 +78,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         :param p:
         :return:
         """
-        if mod.transmission_target_pos_dir_mwh[z, bt, hz] == 0:
+        if mod.transmission_target_pos_dir_min_mwh[z, bt, hz] == 0:
             return Constraint.Skip
         else:
             return (
                 mod.Total_Transmission_Target_Energy_Pos_Dir_MWh[z, bt, hz]
                 + mod.Transmission_Target_Shortage_Pos_Dir_MWh_Expression[z, bt, hz]
-                >= mod.transmission_target_pos_dir_mwh[z, bt, hz]
+                >= mod.transmission_target_pos_dir_min_mwh[z, bt, hz]
             )
 
     m.Transmission_Target_Pos_Dir_Constraint = Constraint(
@@ -101,13 +101,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         :param p:
         :return:
         """
-        if mod.transmission_target_neg_dir_mwh[z, bt, hz] == 0:
+        if mod.transmission_target_neg_dir_min_mwh[z, bt, hz] == 0:
             return Constraint.Skip
         else:
             return (
                 mod.Total_Transmission_Target_Energy_Neg_Dir_MWh[z, bt, hz]
                 + mod.Transmission_Target_Shortage_Neg_Dir_MWh_Expression[z, bt, hz]
-                >= mod.transmission_target_neg_dir_mwh[z, bt, hz]
+                >= mod.transmission_target_neg_dir_min_mwh[z, bt, hz]
             )
 
     m.Transmission_Target_Neg_Dir_Constraint = Constraint(
@@ -128,10 +128,10 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     """
 
     results_columns = [
-        "fraction_of_transmission_target_positive_direction_met",
-        "transmission_target_shortage_positive_direction_mwh",
-        "fraction_of_transmission_target_negative_direction_met",
-        "transmission_target_shortage_negative_direction_mwh",
+        "fraction_of_transmission_target_pos_dir_min_met",
+        "transmission_target_shortage_pos_dir_min_mwh",
+        "fraction_of_transmission_target_neg_dir_met",
+        "transmission_target_shortage_neg_dir_min_mwh",
     ]
     data = [
         [
@@ -139,14 +139,14 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             bt,
             hz,
             1
-            if float(m.transmission_target_pos_dir_mwh[z, bt, hz]) == 0
+            if float(m.transmission_target_pos_dir_min_mwh[z, bt, hz]) == 0
             else value(m.Total_Transmission_Target_Energy_Pos_Dir_MWh[z, bt, hz])
-            / float(m.transmission_target_pos_dir_mwh[z, bt, hz]),
+            / float(m.transmission_target_pos_dir_min_mwh[z, bt, hz]),
             value(m.Transmission_Target_Shortage_Pos_Dir_MWh_Expression[z, bt, hz]),
             1
-            if float(m.transmission_target_neg_dir_mwh[z, bt, hz]) == 0
+            if float(m.transmission_target_neg_dir_min_mwh[z, bt, hz]) == 0
             else value(m.Total_Transmission_Target_Energy_Neg_Dir_MWh[z, bt, hz])
-            / float(m.transmission_target_neg_dir_mwh[z, bt, hz]),
+            / float(m.transmission_target_neg_dir_min_mwh[z, bt, hz]),
             value(m.Transmission_Target_Shortage_Neg_Dir_MWh_Expression[z, bt, hz]),
         ]
         for (

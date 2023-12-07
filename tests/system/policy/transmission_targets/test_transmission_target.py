@@ -130,7 +130,7 @@ class TestPeriodTxTarget(unittest.TestCase):
         actual_tx_target_pos = OrderedDict(
             sorted(
                 {
-                    (z, bt, hz): instance.transmission_target_pos_dir_mwh[z, bt, hz]
+                    (z, bt, hz): instance.transmission_target_pos_dir_min_mwh[z, bt, hz]
                     for (
                         z,
                         bt,
@@ -141,7 +141,7 @@ class TestPeriodTxTarget(unittest.TestCase):
         )
         self.assertDictEqual(expected_tx_target_pos, actual_tx_target_pos)
 
-        # Param: transmission_target_neg_dir_mwh
+        # Param: transmission_target_neg_dir_min_mwh
         expected_tx_target_neg = OrderedDict(
             sorted(
                 {
@@ -155,7 +155,7 @@ class TestPeriodTxTarget(unittest.TestCase):
         actual_tx_target_neg = OrderedDict(
             sorted(
                 {
-                    (z, bt, hz): instance.transmission_target_neg_dir_mwh[z, bt, hz]
+                    (z, bt, hz): instance.transmission_target_neg_dir_min_mwh[z, bt, hz]
                     for (
                         z,
                         bt,

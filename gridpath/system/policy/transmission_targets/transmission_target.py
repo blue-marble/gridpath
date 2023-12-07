@@ -42,7 +42,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     # Transmission target specified in energy terms for the positive direction of the
     # tx line
-    m.transmission_target_pos_dir_mwh = Param(
+    m.transmission_target_pos_dir_min_mwh = Param(
         m.TRANSMISSION_TARGET_ZONE_BLN_TYPE_HRZS_WITH_TRANSMISSION_TARGET,
         within=NonNegativeReals,
         default=0,
@@ -50,7 +50,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     # Transmission target specified in energy terms for the negative direction of the
     # tx line
-    m.transmission_target_neg_dir_mwh = Param(
+    m.transmission_target_neg_dir_min_mwh = Param(
         m.TRANSMISSION_TARGET_ZONE_BLN_TYPE_HRZS_WITH_TRANSMISSION_TARGET,
         within=NonNegativeReals,
         default=0,
@@ -79,8 +79,8 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         ),
         index=m.TRANSMISSION_TARGET_ZONE_BLN_TYPE_HRZS_WITH_TRANSMISSION_TARGET,
         param=(
-            m.transmission_target_pos_dir_mwh,
-            m.transmission_target_neg_dir_mwh,
+            m.transmission_target_pos_dir_min_mwh,
+            m.transmission_target_neg_dir_min_mwh,
         ),
     )
 
@@ -201,16 +201,16 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return:
     """
     results_columns = [
-        "transmission_target_pos_dir_mwh",
-        "transmission_target_neg_dir_mwh",
+        "transmission_target_pos_dir_min_mwh",
+        "transmission_target_neg_dir_min_mwh",
     ]
     data = [
         [
             z,
             bt,
             hz,
-            m.transmission_target_pos_dir_mwh[z, bt, hz],
-            m.transmission_target_neg_dir_mwh[z, bt, hz],
+            m.transmission_target_pos_dir_min_mwh[z, bt, hz],
+            m.transmission_target_neg_dir_min_mwh[z, bt, hz],
         ]
         for (
             z,
