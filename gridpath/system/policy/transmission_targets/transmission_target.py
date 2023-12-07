@@ -1,4 +1,5 @@
 # Copyright 2022 (c) Crown Copyright, GC.
+# Modifications Copyright Blue Marble Analytics LLC 2023.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -51,7 +52,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.transmission_target_pos_dir_max_mwh = Param(
         m.TRANSMISSION_TARGET_ZONE_BLN_TYPE_HRZS_WITH_TRANSMISSION_TARGET,
         within=NonNegativeReals,
-        default=0,
+        default=float("inf"),
     )
 
     # Transmission targets specified in energy terms for the negative
@@ -65,7 +66,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.transmission_target_neg_dir_max_mwh = Param(
         m.TRANSMISSION_TARGET_ZONE_BLN_TYPE_HRZS_WITH_TRANSMISSION_TARGET,
         within=NonNegativeReals,
-        default=0,
+        default=float("inf"),
     )
 
 
