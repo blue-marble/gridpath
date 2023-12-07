@@ -205,8 +205,7 @@ class TestPeriodTxTarget(unittest.TestCase):
         actual_tx_target_neg_max = OrderedDict(
             sorted(
                 {
-                    (z, bt, hz): instance.transmission_target_neg_dir_max_mwh[
-                        z, bt, hz]
+                    (z, bt, hz): instance.transmission_target_neg_dir_max_mwh[z, bt, hz]
                     for (
                         z,
                         bt,

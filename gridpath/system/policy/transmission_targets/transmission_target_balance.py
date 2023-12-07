@@ -202,8 +202,12 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     results_columns = [
         "fraction_of_transmission_target_pos_dir_min_met",
         "transmission_target_shortage_pos_dir_min_mwh",
+        "fraction_of_transmission_target_pos_dir_max_met",
+        "transmission_target_overage_pos_dir_max_mwh",
         "fraction_of_transmission_target_neg_dir_min_met",
         "transmission_target_shortage_neg_dir_min_mwh",
+        "fraction_of_transmission_target_neg_dir_max_met",
+        "transmission_target_overage_neg_dir_min_mwh",
     ]
     data = [
         [
@@ -216,10 +220,20 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             / float(m.transmission_target_pos_dir_min_mwh[z, bt, hz]),
             value(m.Transmission_Target_Shortage_Pos_Dir_Min_MWh_Expression[z, bt, hz]),
             None
+            if float(m.transmission_target_pos_dir_max_mwh[z, bt, hz]) == float("inf")
+            else value(m.Total_Transmission_Target_Energy_Pos_Dir_MWh[z, bt, hz])
+            / float(m.transmission_target_pos_dir_max_mwh[z, bt, hz]),
+            value(m.Transmission_Target_Overage_Pos_Dir_Max_MWh_Expression[z, bt, hz]),
+            None
             if float(m.transmission_target_neg_dir_min_mwh[z, bt, hz]) == 0
             else value(m.Total_Transmission_Target_Energy_Neg_Dir_MWh[z, bt, hz])
             / float(m.transmission_target_neg_dir_min_mwh[z, bt, hz]),
             value(m.Transmission_Target_Shortage_Neg_Dir_Min_MWh_Expression[z, bt, hz]),
+            None
+            if float(m.transmission_target_neg_dir_max_mwh[z, bt, hz]) == float("inf")
+            else value(m.Total_Transmission_Target_Energy_Neg_Dir_MWh[z, bt, hz])
+            / float(m.transmission_target_neg_dir_max_mwh[z, bt, hz]),
+            value(m.Transmission_Target_Overage_Neg_Dir_Max_MWh_Expression[z, bt, hz]),
         ]
         for (
             z,
