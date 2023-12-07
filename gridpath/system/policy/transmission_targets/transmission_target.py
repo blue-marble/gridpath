@@ -40,7 +40,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         dimen=3, within=m.TRANSMISSION_TARGET_ZONES * m.BLN_TYPE_HRZS
     )
 
-    # Transmission targets specified in energy terms for the positive 
+    # Transmission targets specified in energy terms for the positive
     # direction of the tx line
     m.transmission_target_pos_dir_min_mwh = Param(
         m.TRANSMISSION_TARGET_ZONE_BLN_TYPE_HRZS_WITH_TRANSMISSION_TARGET,
@@ -54,7 +54,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         default=0,
     )
 
-    # Transmission targets specified in energy terms for the negative 
+    # Transmission targets specified in energy terms for the negative
     # direction of the tx line
     m.transmission_target_neg_dir_min_mwh = Param(
         m.TRANSMISSION_TARGET_ZONE_BLN_TYPE_HRZS_WITH_TRANSMISSION_TARGET,
