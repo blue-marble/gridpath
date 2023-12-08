@@ -1182,7 +1182,7 @@ def add_model_components(
         Param(
             getattr(m, "GEN_COMMIT_{}".format(BIN_OR_LIN)),
             within=Boolean,
-            default=0,
+            default=1,
         ),
     )
 
