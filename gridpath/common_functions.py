@@ -14,6 +14,7 @@
 
 import os.path
 import sys
+import warnings
 
 from argparse import ArgumentParser
 
@@ -398,3 +399,24 @@ def create_results_df(index_columns, results_columns, data):
     ).set_index(index_columns)
 
     return df
+
+
+def duals_wrapper(m, component):
+    try:
+        return m.dual[component]
+    except KeyError:
+        warnings.warn(
+            f"""
+            KeyError caught when saving duals for {component}. Duals were not 
+            exported. This is expected if solving a MIP with CPLEX, 
+            not otherwise.
+            """
+        )
+        return None
+
+
+def none_dual_type_error_wrapper(component, coefficient):
+    try:
+        return component / coefficient
+    except TypeError:
+        return None

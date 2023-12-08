@@ -23,7 +23,11 @@ import pandas as pd
 
 from pyomo.environ import Var, Constraint, NonNegativeReals, Expression, value
 
-from gridpath.common_functions import create_results_df
+from gridpath.common_functions import (
+    create_results_df,
+    duals_wrapper,
+    none_dual_type_error_wrapper,
+)
 from gridpath.system.policy.energy_targets import ENERGY_TARGET_ZONE_HRZ_DF
 
 
@@ -114,13 +118,17 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 + value(m.Total_Curtailed_Horizon_Energy_Target_Energy_MWh[z, bt, h])
             ),
             value(m.Horizon_Energy_Target_Shortage_MWh_Expression[z, bt, h]),
-            m.dual[getattr(m, "Horizon_Energy_Target_Constraint")[z, bt, h]]
+            duals_wrapper(m, getattr(m, "Horizon_Energy_Target_Constraint")[z, bt, h])
             if (z, bt, h)
             in [idx for idx in getattr(m, "Horizon_Energy_Target_Constraint")]
             else None,
             (
-                m.dual[getattr(m, "Horizon_Energy_Target_Constraint")[z, bt, h]]
-                / m.hrz_objective_coefficient[bt, h]
+                none_dual_type_error_wrapper(
+                    duals_wrapper(
+                        m, getattr(m, "Horizon_Energy_Target_Constraint")[z, bt, h]
+                    ),
+                    m.hrz_objective_coefficient[bt, h],
+                )
                 if (z, bt, h)
                 in [idx for idx in getattr(m, "Horizon_Energy_Target_Constraint")]
                 else None

@@ -67,6 +67,7 @@ from gridpath.auxiliary.auxiliary import (
     subset_init_by_set_membership,
 )
 from gridpath.auxiliary.dynamic_components import headroom_variables, footroom_variables
+from gridpath.common_functions import duals_wrapper
 from gridpath.project.operations.operational_types.common_functions import (
     determine_relevant_timepoints,
     load_optype_model_data,
@@ -3802,7 +3803,7 @@ def add_duals_to_dispatch_results(mod, Bin_or_Lin, BIN_OR_LIN):
         for c in sorted(constraint_column_dict.keys()):
             constraint_object = getattr(mod, c)
             if (prj, tmp) in constraint_object:
-                duals.append(mod.dual[constraint_object[prj, tmp]])
+                duals.append(duals_wrapper(mod, constraint_object[prj, tmp]))
             else:
                 duals.append(None)
 
