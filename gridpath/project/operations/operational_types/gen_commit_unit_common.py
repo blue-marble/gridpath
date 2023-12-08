@@ -2930,36 +2930,41 @@ def add_model_components(
         model can abuse this by providing stopping power in some timepoints without
         previously having committed the unit.
         """
-        if check_if_last_timepoint(
-            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
-        ) and (
-            check_boundary_type(
-                mod=mod,
-                tmp=tmp,
-                balancing_type=mod.balancing_type_project[g],
-                boundary_type="linear",
-            )
-            or check_boundary_type(
+        if check_if_boundary_type_and_first_timepoint(
+            mod=mod,
+            tmp=tmp,
+            balancing_type=mod.balancing_type_project[g],
+            boundary_type="linear",
+        ):
+            return Constraint.Skip
+        else:
+            if check_if_boundary_type_and_first_timepoint(
                 mod=mod,
                 tmp=tmp,
                 balancing_type=mod.balancing_type_project[g],
                 boundary_type="linked",
-            )
-        ):
-            return Constraint.Skip
-        else:
-            return (
-                getattr(
+            ):
+                prev_tmp_provide_power_shutdown = getattr(
+                    mod,
+                    "gen_commit_{}_linked_provide_power_shutdown_mw".format(
+                        bin_or_lin
+                    ),
+                )[g, 0]
+            else:
+                prev_tmp_provide_power_shutdown = getattr(
                     mod, "GenCommit{}_Provide_Power_Shutdown_MW".format(Bin_or_Lin)
-                )[g, tmp]
-                - getattr(
-                    mod, "GenCommit{}_Provide_Power_Shutdown_MW".format(Bin_or_Lin)
-                )[g, mod.next_tmp[tmp, mod.balancing_type_project[g]]]
-                >= -getattr(mod, "GenCommit{}_Shutdown".format(Bin_or_Lin))[
-                    g, mod.next_tmp[tmp, mod.balancing_type_project[g]]
-                ]
-                * getattr(mod, "GenCommit{}_Pmin_MW".format(Bin_or_Lin))[g, tmp]
-            )
+                )[g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
+
+        return (
+            prev_tmp_provide_power_shutdown
+            - getattr(
+                mod, "GenCommit{}_Provide_Power_Shutdown_MW".format(Bin_or_Lin)
+            )[g, tmp]
+            >= -getattr(mod, "GenCommit{}_Shutdown".format(Bin_or_Lin))[
+                g, mod.next_tmp[tmp, mod.balancing_type_project[g]]
+            ]
+            * getattr(mod, "GenCommit{}_Pmin_MW".format(Bin_or_Lin))[g, tmp]
+        )
 
     setattr(
         m,
