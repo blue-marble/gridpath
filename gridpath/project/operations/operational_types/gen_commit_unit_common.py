@@ -2922,8 +2922,8 @@ def add_model_components(
         **Constraint Name**: GenCommitBin_Decreasing_Shutdown_Power_Constraint
         **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS
 
-        GenCommitBin_Provide_Power_Shutdown_MW[t] can only be less than
-        GenCommitBin_Provide_Power_Shutdown_MW[t+1] if the unit stops in t+1 (when
+        GenCommitBin_Provide_Power_Shutdown_MW[t-1] can only be less than
+        GenCommitBin_Provide_Power_Shutdown_MW[t] if the unit stops in t (when
         it is back above 0). In other words, GenCommitBin_Provide_Power_Shutdown_MW
         can only increase in the stopping timepoint; in all other timepoints it
         should decrease or stay constant. This prevents situations in which the
@@ -2960,9 +2960,7 @@ def add_model_components(
             - getattr(
                 mod, "GenCommit{}_Provide_Power_Shutdown_MW".format(Bin_or_Lin)
             )[g, tmp]
-            >= -getattr(mod, "GenCommit{}_Shutdown".format(Bin_or_Lin))[
-                g, mod.next_tmp[tmp, mod.balancing_type_project[g]]
-            ]
+            >= -getattr(mod, "GenCommit{}_Shutdown".format(Bin_or_Lin))[g, tmp]
             * getattr(mod, "GenCommit{}_Pmin_MW".format(Bin_or_Lin))[g, tmp]
         )
 
