@@ -1,4 +1,4 @@
-# Copyright 2016-2023 Blue Marble Analytics LLC
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,37 +13,51 @@
 # limitations under the License.
 
 """
-
+Aggregate carbon credits from the project-period level to the
+performance standard zone - period level.
 """
 
 import os.path
-from pyomo.environ import Set, Var, NonNegativeReals, Expression, value
+from pyomo.environ import Set, Expression, value
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
-from gridpath.auxiliary.dynamic_components import carbon_cap_balance_credit_components
+from gridpath.auxiliary.dynamic_components import (
+    performance_standard_balance_credit_components,
+)
 from gridpath.common_functions import create_results_df
-from gridpath.system.policy.carbon_cap import CARBON_CAP_ZONE_PRD_DF
+from gridpath.system.policy.performance_standard import PERFORMANCE_STANDARD_Z_PRD_DF
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
-    """ """
-    m.CARBON_CAP_ZONES_CARBON_CREDITS_ZONES = Set(
-        within=m.CARBON_CAP_ZONES * m.CARBON_CREDITS_ZONES
+    """
+
+    :param m:
+    :param d:
+    :return:
+    """
+    m.PERFORMANCE_STANDARD_ZONES_CARBON_CREDITS_ZONES = Set(
+        dimen=2, within=m.PERFORMANCE_STANDARD_ZONES * m.CARBON_CREDITS_ZONES
     )
 
-    m.Carbon_Cap_Purchase_Credits = Var(
-        m.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP, within=NonNegativeReals
-    )
-
-    def aggregate_purchases(mod, z, prd):
+    def total_carbon_emissions_credits_rule(mod, cap_z, prd):
+        """
+        Purchased credits for projects in this carbon cap zone.
+        We also need to check that we only count credits projects can
+        purchase from credits zone that this performance_standard zone maps to.
+        """
         return sum(
-            mod.Carbon_Cap_Purchase_Credits[z, prd]
-            for (cap_zone, credit_zone) in mod.CARBON_CAP_ZONES_CARBON_CREDITS_ZONES
-            if z == cap_zone
+            mod.Project_Purchase_Carbon_Credits[prj, prd]
+            # Projects in this carbon cap zone
+            for prj in mod.PERFORMANCE_STANDARD_PRJS_BY_PERFORMANCE_STANDARD_ZONE[cap_z]
+            if (prj, prd) in mod.CARBON_CREDITS_PRJ_OPR_PRDS
+            # Limit to projects in a credit zone mapped to this performance_standard zone
+            and (cap_z, mod.carbon_credits_zone[prj])
+            in mod.PERFORMANCE_STANDARD_ZONES_CARBON_CREDITS_ZONES
         )
 
-    m.Carbon_Cap_Total_Credit_Purchases = Expression(
-        m.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP, initialize=aggregate_purchases
+    m.Total_Performance_Standard_Emissions_Credits = Expression(
+        m.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD,
+        rule=total_carbon_emissions_credits_rule,
     )
 
     record_dynamic_components(dynamic_components=d)
@@ -53,11 +67,11 @@ def record_dynamic_components(dynamic_components):
     """
     :param dynamic_components:
 
-    This method adds project emissions to carbon balance
+    This method adds project credits to carbon balance
     """
 
-    getattr(dynamic_components, carbon_cap_balance_credit_components).append(
-        "Carbon_Cap_Total_Credit_Purchases"
+    getattr(dynamic_components, performance_standard_balance_credit_components).append(
+        "Total_Performance_Standard_Emissions_Credits"
     )
 
 
@@ -73,14 +87,14 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     stage = 1 if stage == "" else stage
     c = conn.cursor()
     mapping = c.execute(
-        f"""SELECT carbon_cap_zone, carbon_credits_zone
-        FROM inputs_system_carbon_cap_zones_carbon_credits_zones
-        WHERE carbon_cap_zones_carbon_credits_zones_scenario_id = 
-        {subscenarios.CARBON_CAP_ZONES_CARBON_CREDITS_ZONES_SCENARIO_ID}
-        AND carbon_cap_zone in (
-            SELECT carbon_cap_zone
-            FROM inputs_geography_carbon_cap_zones
-            WHERE carbon_cap_zone_scenario_id = {subscenarios.CARBON_CAP_ZONE_SCENARIO_ID}
+        f"""SELECT performance_standard_zone, carbon_credits_zone
+        FROM inputs_system_performance_standard_zones_carbon_credits_zones
+        WHERE performance_standard_zones_carbon_credits_zones_scenario_id = 
+        {subscenarios.PERFORMANCE_STANDARD_ZONES_CARBON_CREDITS_ZONES_SCENARIO_ID}
+        AND performance_standard_zone in (
+            SELECT performance_standard_zone
+            FROM inputs_geography_performance_standard_zones
+            WHERE performance_standard_zone_scenario_id = {subscenarios.PERFORMANCE_STANDARD_ZONE_SCENARIO_ID}
         )
         AND carbon_credits_zone in (
             SELECT carbon_credits_zone
@@ -100,7 +114,7 @@ def write_model_inputs(
     query_results = get_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn
     )
-    # carbon_cap_zones_carbon_credits_zone_mapping.tab
+    # performance_standard_zones_carbon_credits_zone_mapping.tab
     df = cursor_to_df(query_results)
     df = df.fillna(".")
     fpath = os.path.join(
@@ -108,7 +122,7 @@ def write_model_inputs(
         str(subproblem),
         str(stage),
         "inputs",
-        "carbon_cap_zones_carbon_credits_zone_mapping.tab",
+        "performance_standard_zones_carbon_credits_zone_mapping.tab",
     )
     if not df.empty:
         df.to_csv(fpath, index=False, sep="\t")
@@ -130,13 +144,12 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         str(subproblem),
         str(stage),
         "inputs",
-        "carbon_cap_zones_carbon_credits_zone_mapping.tab",
+        "performance_standard_zones_carbon_credits_zone_mapping.tab",
     )
-
     if os.path.exists(map_file):
         data_portal.load(
             filename=map_file,
-            set=m.CARBON_CAP_ZONES_CARBON_CREDITS_ZONES,
+            set=m.PERFORMANCE_STANDARD_ZONES_CARBON_CREDITS_ZONES,
         )
 
 
@@ -152,22 +165,18 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     """
 
     results_columns = [
-        "credit_purchases",
+        "project_credits",
     ]
     data = [
-        [
-            z,
-            p,
-            value(m.Carbon_Cap_Total_Credit_Purchases[z, p]),
-        ]
-        for (z, p) in m.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP
+        [z, p, value(m.Total_Performance_Standard_Emissions_Credits[z, p])]
+        for (z, p) in m.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD
     ]
     results_df = create_results_df(
-        index_columns=["carbon_cap_zone", "period"],
+        index_columns=["performance_standard_zone", "period"],
         results_columns=results_columns,
         data=data,
     )
 
     for c in results_columns:
-        getattr(d, CARBON_CAP_ZONE_PRD_DF)[c] = None
-    getattr(d, CARBON_CAP_ZONE_PRD_DF).update(results_df)
+        getattr(d, PERFORMANCE_STANDARD_Z_PRD_DF)[c] = None
+    getattr(d, PERFORMANCE_STANDARD_Z_PRD_DF).update(results_df)
