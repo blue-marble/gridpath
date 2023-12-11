@@ -2946,9 +2946,7 @@ def add_model_components(
             ):
                 prev_tmp_provide_power_shutdown = getattr(
                     mod,
-                    "gen_commit_{}_linked_provide_power_shutdown_mw".format(
-                        bin_or_lin
-                    ),
+                    "gen_commit_{}_linked_provide_power_shutdown_mw".format(bin_or_lin),
                 )[g, 0]
             else:
                 prev_tmp_provide_power_shutdown = getattr(
@@ -2957,9 +2955,9 @@ def add_model_components(
 
         return (
             prev_tmp_provide_power_shutdown
-            - getattr(
-                mod, "GenCommit{}_Provide_Power_Shutdown_MW".format(Bin_or_Lin)
-            )[g, tmp]
+            - getattr(mod, "GenCommit{}_Provide_Power_Shutdown_MW".format(Bin_or_Lin))[
+                g, tmp
+            ]
             >= -getattr(mod, "GenCommit{}_Shutdown".format(Bin_or_Lin))[g, tmp]
             * getattr(mod, "GenCommit{}_Pmin_MW".format(Bin_or_Lin))[g, tmp]
         )
