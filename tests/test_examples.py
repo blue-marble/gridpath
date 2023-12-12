@@ -1272,6 +1272,17 @@ class TestExamples(unittest.TestCase):
             -3592014778836.2856,
         )
 
+    def test_example_single_stage_prod_cost_w_spinup_lookahead(self):
+        """
+        Check validation and objective function values of
+        "single_stage_prod_cost_w_spinup_lookahead" example
+        :return:
+        """
+        scenario_name = "single_stage_prod_cost_w_spinup_lookahead"
+        self.validate_and_test_example_generic(
+            scenario_name=scenario_name, literal=True
+        )
+
     @classmethod
     def tearDownClass(cls):
         os.remove(DB_PATH)
