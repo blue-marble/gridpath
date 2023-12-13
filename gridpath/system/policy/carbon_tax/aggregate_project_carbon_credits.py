@@ -58,6 +58,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         rule=total_carbon_emissions_credits_rule,
     )
 
+    def credit_cost_reduction(mod, z, prd):
+        return -mod.Total_Carbon_Tax_Emissions_Credits[z, prd] * mod.carbon_tax[z, prd]
+
+    m.Total_Carbon_Tax_Credit_Cost_Reduction = Expression(
+        m.CARBON_TAX_ZONE_PERIODS_WITH_CARBON_TAX, rule=credit_cost_reduction
+    )
+
     record_dynamic_components(dynamic_components=d)
 
 
@@ -69,7 +76,7 @@ def record_dynamic_components(dynamic_components):
     """
 
     getattr(dynamic_components, carbon_tax_cost_components).append(
-        "Total_Carbon_Tax_Emissions_Credits"
+        "Total_Carbon_Tax_Credit_Cost_Reduction"
     )
 
 
