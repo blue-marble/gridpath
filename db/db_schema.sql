@@ -291,6 +291,8 @@ CREATE TABLE inputs_temporal_superperiods
 -- (subproblem_id + 1) BUT ONLY IF the first horizon of the next subproblem has
 -- a 'linked' boundary
 -- The spinup_or_lookahead is not NULL, as we rely on 0s downstream
+-- TODO: unique key on timepoint/spinup_or_lookahead, as some functionality
+--  requires unique timepoint IDs
 DROP TABLE IF EXISTS inputs_temporal;
 CREATE TABLE inputs_temporal
 (
