@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,6 +14,7 @@
 
 import os.path
 import sys
+import warnings
 
 from argparse import ArgumentParser
 
@@ -398,3 +399,25 @@ def create_results_df(index_columns, results_columns, data):
     ).set_index(index_columns)
 
     return df
+
+
+def duals_wrapper(m, component, verbose=False):
+    try:
+        return m.dual[component]
+    except KeyError:
+        if verbose:
+            warnings.warn(
+                f"""
+                KeyError caught when saving duals for {component}. Duals were 
+                not exported. This is expected if solving a MIP with CPLEX (and 
+                possibly other solvers), not otherwise.
+                """
+            )
+        return None
+
+
+def none_dual_type_error_wrapper(component, coefficient):
+    try:
+        return component / coefficient
+    except TypeError:
+        return None

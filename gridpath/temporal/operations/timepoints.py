@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -320,16 +320,17 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
     :return:
     """
     # Check if there are any spinup or lookahead timepoints
-    spinup_or_lookahead_sql = """
+    spinup_or_lookahead_sql = f"""
     SELECT spinup_or_lookahead
     FROM inputs_temporal
     WHERE spinup_or_lookahead = 1
     AND temporal_scenario_id = (
         SELECT temporal_scenario_id
         FROM scenarios
-        WHERE scenario_id = ?)
+        WHERE scenario_id = {scenario_id})
     """
-    spinup_or_lookahead = c.execute(spinup_or_lookahead_sql, (scenario_id,)).fetchall()
+
+    spinup_or_lookahead = c.execute(spinup_or_lookahead_sql).fetchall()
     if spinup_or_lookahead:
         if not quiet:
             print("add spinup_or_lookahead flag")
@@ -342,28 +343,27 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
         for tbl in tables_to_update:
             if not quiet:
                 print("... {}".format(tbl))
-            sql = """
-                UPDATE {}
+            sql = f"""
+                UPDATE {tbl}
                 SET spinup_or_lookahead = (
                 SELECT spinup_or_lookahead
                 FROM inputs_temporal
                 WHERE temporal_scenario_id = (
                     SELECT temporal_scenario_id 
                     FROM scenarios 
-                    WHERE scenario_id = ?
+                    WHERE scenario_id = {scenario_id}
                     )
-                AND {}.subproblem_id = 
+                AND {tbl}.subproblem_id = 
                 inputs_temporal.subproblem_id
-                AND {}.stage_id = inputs_temporal.stage_id
-                AND {}.timepoint = inputs_temporal.timepoint
-                );
+                AND {tbl}.stage_id = inputs_temporal.stage_id
+                AND {tbl}.timepoint = inputs_temporal.timepoint
+                )
+                WHERE scenario_id = {scenario_id};
                 """.format(
                 tbl, tbl, tbl, tbl
             )
 
-            spin_on_database_lock(
-                conn=db, cursor=c, sql=sql, data=(scenario_id,), many=False
-            )
+            spin_on_database_lock(conn=db, cursor=c, sql=sql, data=(), many=False)
 
 
 # Validation

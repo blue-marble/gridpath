@@ -1,4 +1,4 @@
-# Copyright 2016-2022 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -194,12 +194,13 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     )
     for op_m in required_availability_modules:
         if hasattr(imported_availability_modules[op_m], "add_to_prj_tmp_results"):
-            results, results_df = imported_availability_modules[
+            op_m_results_columns, op_m_results_df = imported_availability_modules[
                 op_m
             ].add_to_prj_tmp_results(scenario_directory, subproblem, stage, m, d)
-            for c in results_columns:
+            for c in op_m_results_columns:
                 getattr(d, PROJECT_TIMEPOINT_DF)[c] = None
-            getattr(d, PROJECT_TIMEPOINT_DF).update(results_df)
+
+            getattr(d, PROJECT_TIMEPOINT_DF).update(op_m_results_df)
 
 
 def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):

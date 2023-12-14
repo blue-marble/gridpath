@@ -1,4 +1,4 @@
-# Copyright 2016-2022 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ from gridpath.auxiliary.validations import (
     validate_column_monotonicity,
 )
 from gridpath.auxiliary.auxiliary import get_required_subtype_modules
-from gridpath.common_functions import create_results_df
+from gridpath.common_functions import create_results_df, duals_wrapper
 from gridpath.project import PROJECT_PERIOD_DF
 from gridpath.project.capacity.common_functions import (
     load_project_capacity_type_modules,
@@ -586,28 +586,28 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         [
             prj,
             prd,
-            m.dual[getattr(m, "Min_Build_Power_Constraint")[prj, prd]]
+            duals_wrapper(m, getattr(m, "Min_Build_Power_Constraint")[prj, prd])
             if (prj, prd) in [idx for idx in getattr(m, "Min_Build_Power_Constraint")]
             else None,
-            m.dual[getattr(m, "Max_Build_Power_Constraint")[prj, prd]]
+            duals_wrapper(m, getattr(m, "Max_Build_Power_Constraint")[prj, prd])
             if (prj, prd) in [idx for idx in getattr(m, "Max_Build_Power_Constraint")]
             else None,
-            m.dual[getattr(m, "Min_Power_Constraint")[prj, prd]]
+            duals_wrapper(m, getattr(m, "Min_Power_Constraint")[prj, prd])
             if (prj, prd) in [idx for idx in getattr(m, "Min_Power_Constraint")]
             else None,
-            m.dual[getattr(m, "Max_Power_Constraint")[prj, prd]]
+            duals_wrapper(m, getattr(m, "Max_Power_Constraint")[prj, prd])
             if (prj, prd) in [idx for idx in getattr(m, "Max_Power_Constraint")]
             else None,
-            m.dual[getattr(m, "Min_Build_Energy_Constraint")[prj, prd]]
+            duals_wrapper(m, getattr(m, "Min_Build_Energy_Constraint")[prj, prd])
             if (prj, prd) in [idx for idx in getattr(m, "Min_Build_Energy_Constraint")]
             else None,
-            m.dual[getattr(m, "Max_Build_Energy_Constraint")[prj, prd]]
+            duals_wrapper(m, getattr(m, "Max_Build_Energy_Constraint")[prj, prd])
             if (prj, prd) in [idx for idx in getattr(m, "Max_Build_Energy_Constraint")]
             else None,
-            m.dual[getattr(m, "Min_Energy_Constraint")[prj, prd]]
+            duals_wrapper(m, getattr(m, "Min_Energy_Constraint")[prj, prd])
             if (prj, prd) in [idx for idx in getattr(m, "Min_Energy_Constraint")]
             else None,
-            m.dual[getattr(m, "Max_Energy_Constraint")[prj, prd]]
+            duals_wrapper(m, getattr(m, "Max_Energy_Constraint")[prj, prd])
             if (prj, prd) in [idx for idx in getattr(m, "Max_Energy_Constraint")]
             else None,
         ]

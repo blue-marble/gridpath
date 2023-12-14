@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -1019,23 +1019,6 @@ def save_duals(
                 scenario_directory, subproblem, stage, instance, dynamic_components
             )
         n += 1
-
-    # for index in constraint_object:
-    # try:
-    #     duals_writer.writerow(
-    #         list(index) + [instance.dual[constraint_object[index]]]
-    #     )
-    # # We get an error when trying to export duals with CPLEX
-    # # when solving MIPs, so catch it here and ignore to avoid
-    # # breaking the script, but throw a warning
-    # except KeyError:
-    #     warnings.warn(
-    #         """
-    #     KeyError caught when saving duals. Duals were not exported.
-    #     This is expected if solving a MIP with CPLEX,
-    #     not otherwise.
-    #     """
-    #     )
 
 
 def summarize_results(scenario_directory, subproblem, stage, parsed_arguments):

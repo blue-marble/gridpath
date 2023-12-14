@@ -67,6 +67,7 @@ from gridpath.auxiliary.auxiliary import (
     subset_init_by_set_membership,
 )
 from gridpath.auxiliary.dynamic_components import headroom_variables, footroom_variables
+from gridpath.common_functions import duals_wrapper
 from gridpath.project.operations.operational_types.common_functions import (
     determine_relevant_timepoints,
     load_optype_model_data,
@@ -2922,44 +2923,45 @@ def add_model_components(
         **Constraint Name**: GenCommitBin_Decreasing_Shutdown_Power_Constraint
         **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS
 
-        GenCommitBin_Provide_Power_Shutdown_MW[t] can only be less than
-        GenCommitBin_Provide_Power_Shutdown_MW[t+1] if the unit stops in t+1 (when
+        GenCommitBin_Provide_Power_Shutdown_MW[t-1] can only be less than
+        GenCommitBin_Provide_Power_Shutdown_MW[t] if the unit stops in t (when
         it is back above 0). In other words, GenCommitBin_Provide_Power_Shutdown_MW
         can only increase in the stopping timepoint; in all other timepoints it
         should decrease or stay constant. This prevents situations in which the
         model can abuse this by providing stopping power in some timepoints without
         previously having committed the unit.
         """
-        if check_if_last_timepoint(
-            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
-        ) and (
-            check_boundary_type(
-                mod=mod,
-                tmp=tmp,
-                balancing_type=mod.balancing_type_project[g],
-                boundary_type="linear",
-            )
-            or check_boundary_type(
+        if check_if_boundary_type_and_first_timepoint(
+            mod=mod,
+            tmp=tmp,
+            balancing_type=mod.balancing_type_project[g],
+            boundary_type="linear",
+        ):
+            return Constraint.Skip
+        else:
+            if check_if_boundary_type_and_first_timepoint(
                 mod=mod,
                 tmp=tmp,
                 balancing_type=mod.balancing_type_project[g],
                 boundary_type="linked",
-            )
-        ):
-            return Constraint.Skip
-        else:
-            return (
-                getattr(
+            ):
+                prev_tmp_provide_power_shutdown = getattr(
+                    mod,
+                    "gen_commit_{}_linked_provide_power_shutdown_mw".format(bin_or_lin),
+                )[g, 0]
+            else:
+                prev_tmp_provide_power_shutdown = getattr(
                     mod, "GenCommit{}_Provide_Power_Shutdown_MW".format(Bin_or_Lin)
-                )[g, tmp]
-                - getattr(
-                    mod, "GenCommit{}_Provide_Power_Shutdown_MW".format(Bin_or_Lin)
-                )[g, mod.next_tmp[tmp, mod.balancing_type_project[g]]]
-                >= -getattr(mod, "GenCommit{}_Shutdown".format(Bin_or_Lin))[
-                    g, mod.next_tmp[tmp, mod.balancing_type_project[g]]
-                ]
-                * getattr(mod, "GenCommit{}_Pmin_MW".format(Bin_or_Lin))[g, tmp]
-            )
+                )[g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
+
+        return (
+            prev_tmp_provide_power_shutdown
+            - getattr(mod, "GenCommit{}_Provide_Power_Shutdown_MW".format(Bin_or_Lin))[
+                g, tmp
+            ]
+            >= -getattr(mod, "GenCommit{}_Shutdown".format(Bin_or_Lin))[g, tmp]
+            * getattr(mod, "GenCommit{}_Pmin_MW".format(Bin_or_Lin))[g, tmp]
+        )
 
     setattr(
         m,
@@ -3802,7 +3804,7 @@ def add_duals_to_dispatch_results(mod, Bin_or_Lin, BIN_OR_LIN):
         for c in sorted(constraint_column_dict.keys()):
             constraint_object = getattr(mod, c)
             if (prj, tmp) in constraint_object:
-                duals.append(mod.dual[constraint_object[prj, tmp]])
+                duals.append(duals_wrapper(mod, constraint_object[prj, tmp]))
             else:
                 duals.append(None)
 

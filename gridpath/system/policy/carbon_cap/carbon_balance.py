@@ -22,7 +22,11 @@ from gridpath.auxiliary.dynamic_components import (
     carbon_cap_balance_emission_components,
     carbon_cap_balance_credit_components,
 )
-from gridpath.common_functions import create_results_df
+from gridpath.common_functions import (
+    create_results_df,
+    duals_wrapper,
+    none_dual_type_error_wrapper,
+)
 from gridpath.system.policy.carbon_cap import CARBON_CAP_ZONE_PRD_DF
 
 
@@ -107,12 +111,14 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             p,
             value(m.Total_Carbon_Emissions_from_All_Sources_Expression[z, p]),
             value(m.Total_Carbon_Credits_from_All_Sources_Expression[z, p]),
-            m.dual[getattr(m, "Carbon_Cap_Constraint")[z, p]]
+            duals_wrapper(m, getattr(m, "Carbon_Cap_Constraint")[z, p])
             if (z, p) in [idx for idx in getattr(m, "Carbon_Cap_Constraint")]
             else None,
             (
-                m.dual[getattr(m, "Carbon_Cap_Constraint")[z, p]]
-                / m.period_objective_coefficient[p]
+                none_dual_type_error_wrapper(
+                    duals_wrapper(m, getattr(m, "Carbon_Cap_Constraint")[z, p]),
+                    m.period_objective_coefficient[p],
+                )
                 if (z, p) in [idx for idx in getattr(m, "Carbon_Cap_Constraint")]
                 else None
             ),
