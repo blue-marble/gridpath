@@ -93,16 +93,89 @@ class TestSellAndBuyCredits(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # # Param: allow_carbon_credits_infinite_demand
-        # expected_allow_carbon_credits_infinite_demand = {
-        #     ("Carbon_Credits_Zone1", 2020): 0,
-        #     ("Carbon_Credits_Zone1", 2030): 1,
-        # }
-        # actual_allow_carbon_credits_infinite_demand = {
-        #     (z, prd): instance.allow_carbon_credits_infinite_demand[z, prd]
-        #     for (z, prd) in instance.CARBON_CREDITS_PRJ_OPR_PRDS
-        # }
-        # self.assertDictEqual(expected_allow_carbon_credits_infinite_demand, actual_allow_carbon_credits_infinite_demand)
+        # Param: allow_carbon_credits_infinite_demand
+        expected_allow_carbon_credits_infinite_demand = {
+            ("Carbon_Credits_Zone1", 2020): 0,
+            ("Carbon_Credits_Zone1", 2030): 1,
+            ("Carbon_Credits_Zone2", 2020): 0,
+            ("Carbon_Credits_Zone2", 2030): 0,
+        }
+        actual_allow_carbon_credits_infinite_demand = {
+            (z, prd): instance.allow_carbon_credits_infinite_demand[z, prd]
+            for z in instance.CARBON_CREDITS_ZONES
+            for prd in instance.PERIODS
+        }
+        self.assertDictEqual(expected_allow_carbon_credits_infinite_demand, actual_allow_carbon_credits_infinite_demand)
+
+        # Param: carbon_credits_demand_tco2
+        expected_carbon_credits_demand_tco2 = {
+            ("Carbon_Credits_Zone1", 2020): 0,
+            ("Carbon_Credits_Zone1", 2030): 80,
+            ("Carbon_Credits_Zone2", 2020): 0,
+            ("Carbon_Credits_Zone2", 2030): 0,
+        }
+        actual_carbon_credits_demand_tco2 = {
+            (z, prd): instance.carbon_credits_demand_tco2[z, prd]
+            for z in instance.CARBON_CREDITS_ZONES
+            for prd in instance.PERIODS
+        }
+        self.assertDictEqual(expected_carbon_credits_demand_tco2, actual_carbon_credits_demand_tco2)
+
+        # Param: carbon_credits_demand_price
+        expected_carbon_credits_demand_price = {
+            ("Carbon_Credits_Zone1", 2020): 0,
+            ("Carbon_Credits_Zone1", 2030): 100,
+            ("Carbon_Credits_Zone2", 2020): 0,
+            ("Carbon_Credits_Zone2", 2030): 0,
+        }
+        actual_carbon_credits_demand_price = {
+            (z, prd): instance.carbon_credits_demand_price[z, prd]
+            for z in instance.CARBON_CREDITS_ZONES
+            for prd in instance.PERIODS
+        }
+        self.assertDictEqual(expected_carbon_credits_demand_price, actual_carbon_credits_demand_price)
+
+        # Param: allow_carbon_credits_infinite_supply
+        expected_allow_carbon_credits_infinite_supply = {
+            ("Carbon_Credits_Zone1", 2020): 0,
+            ("Carbon_Credits_Zone1", 2030): 1,
+            ("Carbon_Credits_Zone2", 2020): 0,
+            ("Carbon_Credits_Zone2", 2030): 0,
+        }
+        actual_allow_carbon_credits_infinite_supply = {
+            (z, prd): instance.allow_carbon_credits_infinite_supply[z, prd]
+            for z in instance.CARBON_CREDITS_ZONES
+            for prd in instance.PERIODS
+        }
+        self.assertDictEqual(expected_allow_carbon_credits_infinite_supply, actual_allow_carbon_credits_infinite_supply)
+
+        # Param: carbon_credits_supply_tco2
+        expected_carbon_credits_supply_tco2 = {
+            ("Carbon_Credits_Zone1", 2020): 0,
+            ("Carbon_Credits_Zone1", 2030): 80,
+            ("Carbon_Credits_Zone2", 2020): 0,
+            ("Carbon_Credits_Zone2", 2030): 0,
+        }
+        actual_carbon_credits_supply_tco2 = {
+            (z, prd): instance.carbon_credits_supply_tco2[z, prd]
+            for z in instance.CARBON_CREDITS_ZONES
+            for prd in instance.PERIODS
+        }
+        self.assertDictEqual(expected_carbon_credits_supply_tco2, actual_carbon_credits_supply_tco2)
+
+        # Param: carbon_credits_supply_price
+        expected_carbon_credits_supply_price = {
+            ("Carbon_Credits_Zone1", 2020): 0,
+            ("Carbon_Credits_Zone1", 2030): 100,
+            ("Carbon_Credits_Zone2", 2020): 0,
+            ("Carbon_Credits_Zone2", 2030): 0,
+        }
+        actual_carbon_credits_supply_price = {
+            (z, prd): instance.carbon_credits_supply_price[z, prd]
+            for z in instance.CARBON_CREDITS_ZONES
+            for prd in instance.PERIODS
+        }
+        self.assertDictEqual(expected_carbon_credits_supply_price, actual_carbon_credits_supply_price)
 
 
 if __name__ == "__main__":
