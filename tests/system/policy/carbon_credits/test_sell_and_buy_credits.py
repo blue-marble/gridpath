@@ -105,7 +105,10 @@ class TestSellAndBuyCredits(unittest.TestCase):
             for z in instance.CARBON_CREDITS_ZONES
             for prd in instance.PERIODS
         }
-        self.assertDictEqual(expected_allow_carbon_credits_infinite_demand, actual_allow_carbon_credits_infinite_demand)
+        self.assertDictEqual(
+            expected_allow_carbon_credits_infinite_demand,
+            actual_allow_carbon_credits_infinite_demand,
+        )
 
         # Param: carbon_credits_demand_tco2
         expected_carbon_credits_demand_tco2 = {
@@ -119,7 +122,9 @@ class TestSellAndBuyCredits(unittest.TestCase):
             for z in instance.CARBON_CREDITS_ZONES
             for prd in instance.PERIODS
         }
-        self.assertDictEqual(expected_carbon_credits_demand_tco2, actual_carbon_credits_demand_tco2)
+        self.assertDictEqual(
+            expected_carbon_credits_demand_tco2, actual_carbon_credits_demand_tco2
+        )
 
         # Param: carbon_credits_demand_price
         expected_carbon_credits_demand_price = {
@@ -133,7 +138,9 @@ class TestSellAndBuyCredits(unittest.TestCase):
             for z in instance.CARBON_CREDITS_ZONES
             for prd in instance.PERIODS
         }
-        self.assertDictEqual(expected_carbon_credits_demand_price, actual_carbon_credits_demand_price)
+        self.assertDictEqual(
+            expected_carbon_credits_demand_price, actual_carbon_credits_demand_price
+        )
 
         # Param: allow_carbon_credits_infinite_supply
         expected_allow_carbon_credits_infinite_supply = {
@@ -147,7 +154,10 @@ class TestSellAndBuyCredits(unittest.TestCase):
             for z in instance.CARBON_CREDITS_ZONES
             for prd in instance.PERIODS
         }
-        self.assertDictEqual(expected_allow_carbon_credits_infinite_supply, actual_allow_carbon_credits_infinite_supply)
+        self.assertDictEqual(
+            expected_allow_carbon_credits_infinite_supply,
+            actual_allow_carbon_credits_infinite_supply,
+        )
 
         # Param: carbon_credits_supply_tco2
         expected_carbon_credits_supply_tco2 = {
@@ -161,7 +171,9 @@ class TestSellAndBuyCredits(unittest.TestCase):
             for z in instance.CARBON_CREDITS_ZONES
             for prd in instance.PERIODS
         }
-        self.assertDictEqual(expected_carbon_credits_supply_tco2, actual_carbon_credits_supply_tco2)
+        self.assertDictEqual(
+            expected_carbon_credits_supply_tco2, actual_carbon_credits_supply_tco2
+        )
 
         # Param: carbon_credits_supply_price
         expected_carbon_credits_supply_price = {
@@ -175,7 +187,9 @@ class TestSellAndBuyCredits(unittest.TestCase):
             for z in instance.CARBON_CREDITS_ZONES
             for prd in instance.PERIODS
         }
-        self.assertDictEqual(expected_carbon_credits_supply_price, actual_carbon_credits_supply_price)
+        self.assertDictEqual(
+            expected_carbon_credits_supply_price, actual_carbon_credits_supply_price
+        )
 
 
 if __name__ == "__main__":

@@ -21,11 +21,15 @@ import os.path
 from pyomo.environ import Param, Var, NonNegativeReals, value, Boolean, Constraint
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
-from gridpath.auxiliary.validations import write_validation_to_database, validate_row_monotonicity, \
-    validate_column_monotonicity
+from gridpath.auxiliary.validations import (
+    write_validation_to_database,
+    validate_row_monotonicity,
+    validate_column_monotonicity,
+)
 from gridpath.common_functions import create_results_df
 from gridpath.auxiliary.dynamic_components import (
-    carbon_credits_balance_purchase_components, carbon_credits_balance_generation_components,
+    carbon_credits_balance_purchase_components,
+    carbon_credits_balance_generation_components,
 )
 from gridpath.system.policy.carbon_credits import CARBON_CREDITS_ZONE_PRD_DF
 
@@ -88,8 +92,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             return Constraint.Skip
         else:
             return (
-                mod.Buy_Carbon_Credits[z, prd]
-                <= mod.carbon_credits_supply_tco2[z, prd]
+                mod.Buy_Carbon_Credits[z, prd] <= mod.carbon_credits_supply_tco2[z, prd]
             )
 
     m.Max_Buy_Carbon_Credits_Constraint = Constraint(
@@ -193,8 +196,8 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
 
     # Filter only for carbon_credit_zone-period combinations that infinite supply and demand is allowed
     carbon_credits_params_df = carbon_credits_params_df[
-        (carbon_credits_params_df['allow_carbon_credits_infinite_demand'] == 1)
-        & (carbon_credits_params_df['allow_carbon_credits_infinite_supply'] == 1)
+        (carbon_credits_params_df["allow_carbon_credits_infinite_demand"] == 1)
+        & (carbon_credits_params_df["allow_carbon_credits_infinite_supply"] == 1)
     ]
 
     cols = [
@@ -213,7 +216,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
             db_table="inputs_system_carbon_credits_params",
             severity="High",
             errors=validate_column_monotonicity(
-                df=carbon_credits_params_df, cols=cols, idx_col=["carbon_credits_zone", "period"]
+                df=carbon_credits_params_df,
+                cols=cols,
+                idx_col=["carbon_credits_zone", "period"],
             ),
         )
 
@@ -263,12 +268,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         "sell_credits",
     ]
     data = [
-        [
-            z,
-            p,
-            value(m.Buy_Carbon_Credits[z, p]),
-            value(m.Sell_Carbon_Credits[z, p])
-        ]
+        [z, p, value(m.Buy_Carbon_Credits[z, p]), value(m.Sell_Carbon_Credits[z, p])]
         for z in m.CARBON_CREDITS_ZONES
         for p in m.PERIODS
     ]

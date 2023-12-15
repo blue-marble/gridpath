@@ -34,7 +34,9 @@ PREREQUISITE_MODULE_NAMES = [
     "geography.carbon_credits_zones",
     "system.policy.carbon_credits.sell_and_buy_credits",
 ]
-NAME_OF_MODULE_BEING_TESTED = "objective.system.policy.aggregate_carbon_credit_sales_and_purchases"
+NAME_OF_MODULE_BEING_TESTED = (
+    "objective.system.policy.aggregate_carbon_credit_sales_and_purchases"
+)
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:

@@ -1274,9 +1274,7 @@ class TestExamples(unittest.TestCase):
         Check validation and objective function value of "test_new_solar_carbon_credits_w_buy" example
         :return:
         """
-        scenario_name = (
-            "test_new_solar_carbon_credits_w_buy"
-        )
+        scenario_name = "test_new_solar_carbon_credits_w_buy"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_test_new_solar_carbon_credits_w_buy_and_sell(self):
@@ -1284,9 +1282,7 @@ class TestExamples(unittest.TestCase):
         Check validation and objective function value of "test_new_solar_carbon_credits_w_buy_and_sell" example
         :return:
         """
-        scenario_name = (
-            "test_new_solar_carbon_credits_w_buy_and_sell"
-        )
+        scenario_name = "test_new_solar_carbon_credits_w_buy_and_sell"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_single_stage_prod_cost_w_spinup_lookahead(self):

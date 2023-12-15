@@ -65,6 +65,4 @@ def record_dynamic_components(dynamic_components):
         "Total_Carbon_Credit_Revenue"
     )
 
-    getattr(dynamic_components, cost_components).append(
-        "Total_Carbon_Credit_Costs"
-    )
+    getattr(dynamic_components, cost_components).append("Total_Carbon_Credit_Costs")
