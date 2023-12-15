@@ -32,7 +32,7 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.investment.periods",
     "geography.carbon_credits_zones",
 ]
-NAME_OF_MODULE_BEING_TESTED = "system.policy.carbon_credits.sell_credits"
+NAME_OF_MODULE_BEING_TESTED = "system.policy.carbon_credits.sell_and_buy_credits"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -50,7 +50,7 @@ except ImportError:
     print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED + " to test.")
 
 
-class TestCarbonCap(unittest.TestCase):
+class TestSellAndBuyCredits(unittest.TestCase):
     """ """
 
     def test_add_model_components(self):
@@ -92,6 +92,17 @@ class TestCarbonCap(unittest.TestCase):
             stage="",
         )
         instance = m.create_instance(data)
+
+        # # Param: allow_carbon_credits_infinite_demand
+        # expected_allow_carbon_credits_infinite_demand = {
+        #     ("Carbon_Credits_Zone1", 2020): 0,
+        #     ("Carbon_Credits_Zone1", 2030): 1,
+        # }
+        # actual_allow_carbon_credits_infinite_demand = {
+        #     (z, prd): instance.allow_carbon_credits_infinite_demand[z, prd]
+        #     for (z, prd) in instance.CARBON_CREDITS_PRJ_OPR_PRDS
+        # }
+        # self.assertDictEqual(expected_allow_carbon_credits_infinite_demand, actual_allow_carbon_credits_infinite_demand)
 
 
 if __name__ == "__main__":

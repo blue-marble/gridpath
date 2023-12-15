@@ -67,9 +67,9 @@ test_new_solar_carbon_cap_2zones_tx,-58248087935073.625,-58248087935073.625
 test_new_solar_carbon_cap_2zones_tx_low_carbon_fuel_blend,-3504399050661.217,-3504399050661.217
 test_new_solar_carbon_cap_dac,-3504434601570.9893,-3504434601570.9893
 test_new_solar_carbon_credits,-43813022116134.56,-43813022116134.56
-test_new_solar_carbon_credits_w_sell,141702024856827.6,141702024856827.6
+test_new_solar_carbon_credits_w_sell,978964234435709.4,978964234435709.4
 test_new_solar_carbon_tax,-3796369926691.2686,-3796369926691.2686
-test_new_solar_carbon_tax_w_carbon_credits,-30923116472346.984,-30923116472346.984
+test_new_solar_carbon_tax_w_carbon_credits,-30923115421750.984,-30923115421750.984
 test_new_solar_fuel_burn_limit,-58282515304521.79,-58282515304521.79
 test_new_solar_fuel_burn_limit_relative,-58282515304521.79,-58282515304521.79
 test_new_solar_itc,-3796301348804.993,-3796301348804.993
@@ -101,5 +101,7 @@ test_new_solar_carbon_cap_2zones_tx_hydrogen_prod_new,-186998077.6,-186998077.6
 test_w_solver_options,-3796309121478.12,-3796309121478.1226
 test_tx_flow,-59124336744013.484,-59124336744013.484
 test_variable_om_curves,-3796309193923.3223,-3796309193923.3223
-test_startup_shutdown_rates,-560795927282.98,-560795927282.5082
+test_startup_shutdown_rates,-560795927282.98,-560795927282.9794
 test_performance_standard_carbon_credits_w_cap_no_credits_mapping,-3592027292134.9355,-3592027292134.9355
+test_new_solar_carbon_credits_w_buy,-747356933159854.4,-747356933159854.4
+test_new_solar_carbon_credits_w_buy_and_sell,2834120497056552.0,2834120497056552.0

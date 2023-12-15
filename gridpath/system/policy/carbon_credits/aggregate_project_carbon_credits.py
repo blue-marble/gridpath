@@ -108,8 +108,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         [
             z,
             p,
-            value(m.Total_Carbon_Credits_Generated[z, p]),
-            value(m.Total_Carbon_Credits_Purchased[z, p]),
+            value(m.Total_Project_Carbon_Credits_Generated[z, p]),
+            value(m.Total_Project_Carbon_Credits_Purchased[z, p]),
         ]
         for z in m.CARBON_CREDITS_ZONES
         for p in m.PERIODS

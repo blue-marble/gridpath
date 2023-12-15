@@ -25,7 +25,7 @@ Zone1     2020   Coal                       0.00           0.00
                  Wind                 250,000.00          68.70
 
 ### PERIOD ENERGY TARGET RESULTS ###
-                           delivered_energy_target_energy_mwh  curtailed_energy_target_energy_mwh  energy_target_mwh  percent_curtailed           dual  energy_target_marginal_cost_per_mwh
-energy_target_zone period                                                                                                                                                                  
-RPSZone1           2020                            250,000.00                           17,991.12         250,000.00               6.71 999,999,990.00                        99,999,999.00
-                   2030                            250,000.00                          175,152.00         250,000.00              41.20 999,999,990.00                        99,999,999.00
+                           delivered_energy_target_energy_mwh  curtailed_energy_target_energy_mwh  energy_target_mwh  percent_curtailed            dual  energy_target_marginal_cost_per_mwh
+energy_target_zone period                                                                                                                                                                   
+RPSZone1           2020                            250,000.00                           17,991.12         250,000.00               6.71 -999,999,990.00                       -99,999,999.00
+                   2030                            250,000.00                          175,152.00         250,000.00              41.20 -999,999,990.00                       -99,999,999.00

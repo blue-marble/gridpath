@@ -767,24 +767,29 @@ CREATE TABLE inputs_system_carbon_tax_zones_carbon_credits_zones
 );
 
 -- Carbon credit prices (price at which can sell to other sectors)
-DROP TABLE IF EXISTS subscenarios_system_carbon_credits_prices;
-CREATE TABLE subscenarios_system_carbon_credits_prices
+DROP TABLE IF EXISTS subscenarios_system_carbon_credits_params;
+CREATE TABLE subscenarios_system_carbon_credits_params
 (
-    carbon_credits_price_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    carbon_credits_params_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
     name                             VARCHAR(32),
     description                      VARCHAR(128)
 );
 
-DROP TABLE IF EXISTS inputs_system_carbon_credits_prices;
-CREATE TABLE inputs_system_carbon_credits_prices
+DROP TABLE IF EXISTS inputs_system_carbon_credits_params;
+CREATE TABLE inputs_system_carbon_credits_params
 (
-    carbon_credits_price_scenario_id INTEGER,
-    carbon_credits_zone              VARCHAR(32),
-    period                           INTEGER,
-    carbon_credit_price              FLOAT,
-    PRIMARY KEY (carbon_credits_price_scenario_id, carbon_credits_zone, period),
-    FOREIGN KEY (carbon_credits_price_scenario_id) REFERENCES
-        subscenarios_system_carbon_credits_prices (carbon_credits_price_scenario_id)
+    carbon_credits_params_scenario_id INTEGER,
+    carbon_credits_zone                     VARCHAR(32),
+    period                                  INTEGER,
+    allow_carbon_credits_infinite_demand    INTEGER DEFAULT 0, -- constraint is hard by default
+    carbon_credits_demand_tco2              FLOAT,
+    carbon_credits_demand_price             FLOAT,
+    allow_carbon_credits_infinite_supply    INTEGER DEFAULT 0, -- constraint is hard by default
+    carbon_credits_supply_tco2              FLOAT,
+    carbon_credits_supply_price             FLOAT,
+    PRIMARY KEY (carbon_credits_params_scenario_id, carbon_credits_zone, period),
+    FOREIGN KEY (carbon_credits_params_scenario_id) REFERENCES
+        subscenarios_system_carbon_credits_params (carbon_credits_params_scenario_id)
 );
 
 -- PRM
@@ -3730,7 +3735,7 @@ CREATE TABLE scenarios
     carbon_cap_zones_carbon_credits_zones_scenario_id           INTEGER,
     performance_standard_zones_carbon_credits_zones_scenario_id INTEGER,
     carbon_tax_zones_carbon_credits_zones_scenario_id           INTEGER,
-    carbon_credits_price_scenario_id                            INTEGER,
+    carbon_credits_params_scenario_id                            INTEGER,
     fuel_burn_limit_ba_scenario_id                              INTEGER,
     prm_zone_scenario_id                                        INTEGER,
     local_capacity_zone_scenario_id                             INTEGER,
@@ -3853,9 +3858,9 @@ CREATE TABLE scenarios
     FOREIGN KEY (carbon_tax_zones_carbon_credits_zones_scenario_id) REFERENCES
         subscenarios_system_carbon_tax_zones_carbon_credits_zones
             (carbon_tax_zones_carbon_credits_zones_scenario_id),
-    FOREIGN KEY (carbon_credits_price_scenario_id) REFERENCES
-        subscenarios_system_carbon_credits_prices
-            (carbon_credits_price_scenario_id),
+    FOREIGN KEY (carbon_credits_params_scenario_id) REFERENCES
+        subscenarios_system_carbon_credits_params
+            (carbon_credits_params_scenario_id),
     FOREIGN KEY (fuel_burn_limit_ba_scenario_id) REFERENCES
         subscenarios_geography_fuel_burn_limit_balancing_areas
             (fuel_burn_limit_ba_scenario_id),
@@ -4972,6 +4977,7 @@ CREATE TABLE results_system_carbon_credits
     total_generated_carbon_credits FLOAT,
     total_purchased_carbon_credits FLOAT,
     sell_credits                   FLOAT,
+    buy_credits                    FLOAT,
     PRIMARY KEY (scenario_id, carbon_credits_zone, subproblem_id, stage_id,
                  period)
 );
@@ -5198,6 +5204,7 @@ CREATE TABLE results_system_costs
     Total_Subsidies                                        FLOAT,
     Total_Capacity_Transfer_Costs                          FLOAT,
     Total_Carbon_Credit_Revenue                            FLOAT,
+    Total_Carbon_Credit_Costs                              FLOAT,
     PRIMARY KEY (scenario_id, subproblem_id, stage_id)
 );
 
