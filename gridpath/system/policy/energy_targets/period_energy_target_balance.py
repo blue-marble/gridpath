@@ -23,7 +23,11 @@ import pandas as pd
 
 from pyomo.environ import Var, Constraint, NonNegativeReals, Expression, value
 
-from gridpath.common_functions import create_results_df
+from gridpath.common_functions import (
+    create_results_df,
+    duals_wrapper,
+    none_dual_type_error_wrapper,
+)
 from gridpath.system.policy.energy_targets import ENERGY_TARGET_ZONE_PRD_DF
 
 
@@ -111,12 +115,16 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 + value(m.Total_Curtailed_Period_Energy_Target_Energy_MWh[z, p])
             ),
             value(m.Period_Energy_Target_Shortage_MWh_Expression[z, p]),
-            m.dual[getattr(m, "Period_Energy_Target_Constraint")[z, p]]
+            duals_wrapper(m, getattr(m, "Period_Energy_Target_Constraint")[z, p])
             if (z, p) in [idx for idx in getattr(m, "Period_Energy_Target_Constraint")]
             else None,
             (
-                m.dual[getattr(m, "Period_Energy_Target_Constraint")[z, p]]
-                / m.period_objective_coefficient[p]
+                none_dual_type_error_wrapper(
+                    duals_wrapper(
+                        m, getattr(m, "Period_Energy_Target_Constraint")[z, p]
+                    ),
+                    m.period_objective_coefficient[p],
+                )
                 if (z, p)
                 in [idx for idx in getattr(m, "Period_Energy_Target_Constraint")]
                 else None
