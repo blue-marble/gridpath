@@ -2025,29 +2025,55 @@ CREATE TABLE inputs_project_performance_standard_zones
         subscenarios_project_performance_standard_zones (project_performance_standard_zone_scenario_id)
 );
 
--- Project carbon credits zones
--- Which projects can trade in which carbon credits zone
+-- Project carbon credits generation zones
+-- Which projects can generate credits in which carbon credits zone
 -- Can only do so in one zone for now
 -- This table can include all project with NULLs for projects not
 -- contributing or just the contributing projects
-DROP TABLE IF EXISTS subscenarios_project_carbon_credits_zones;
-CREATE TABLE subscenarios_project_carbon_credits_zones
+DROP TABLE IF EXISTS subscenarios_project_carbon_credits_generation_zones;
+CREATE TABLE subscenarios_project_carbon_credits_generation_zones
 (
-    project_carbon_credits_zone_scenario_id INTEGER PRIMARY KEY,
+    project_carbon_credits_generation_zone_scenario_id INTEGER PRIMARY KEY,
     name                                    VARCHAR(32),
     description                             VARCHAR(128)
 );
 
-DROP TABLE IF EXISTS inputs_project_carbon_credits_zones;
-CREATE TABLE inputs_project_carbon_credits_zones
+DROP TABLE IF EXISTS inputs_project_carbon_credits_generation_zones;
+CREATE TABLE inputs_project_carbon_credits_generation_zones
 (
-    project_carbon_credits_zone_scenario_id INTEGER,
+    project_carbon_credits_generation_zone_scenario_id INTEGER,
     project                                 VARCHAR(64),
     carbon_credits_zone                     VARCHAR(32),
-    PRIMARY KEY (project_carbon_credits_zone_scenario_id, project,
+    PRIMARY KEY (project_carbon_credits_generation_zone_scenario_id, project,
                  carbon_credits_zone),
-    FOREIGN KEY (project_carbon_credits_zone_scenario_id) REFERENCES
-        subscenarios_project_carbon_credits_zones (project_carbon_credits_zone_scenario_id)
+    FOREIGN KEY (project_carbon_credits_generation_zone_scenario_id) REFERENCES
+        subscenarios_project_carbon_credits_generation_zones (project_carbon_credits_generation_zone_scenario_id)
+);
+
+-- Project carbon credits purchase zones
+-- Which projects can purchase credits in which carbon credits zone
+-- Can only do so in one zone for now
+-- This table can include all project with NULLs for projects not
+-- contributing or just the contributing projects
+-- Projects can purchase from multiple carbon credits zones
+DROP TABLE IF EXISTS subscenarios_project_carbon_credits_purchase_zones;
+CREATE TABLE subscenarios_project_carbon_credits_purchase_zones
+(
+    project_carbon_credits_purchase_zone_scenario_id INTEGER PRIMARY KEY,
+    name                                    VARCHAR(32),
+    description                             VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_project_carbon_credits_purchase_zones;
+CREATE TABLE inputs_project_carbon_credits_purchase_zones
+(
+    project_carbon_credits_purchase_zone_scenario_id INTEGER,
+    project                                 VARCHAR(64),
+    carbon_credits_zone                     VARCHAR(32),
+    PRIMARY KEY (project_carbon_credits_purchase_zone_scenario_id, project,
+                 carbon_credits_zone),
+    FOREIGN KEY (project_carbon_credits_purchase_zone_scenario_id) REFERENCES
+        subscenarios_project_carbon_credits_purchase_zones (project_carbon_credits_purchase_zone_scenario_id)
 );
 
 -- Project fuel burn limit balancing areas
@@ -3759,7 +3785,8 @@ CREATE TABLE scenarios
     project_carbon_tax_zone_scenario_id                         INTEGER,
     project_carbon_tax_allowance_scenario_id                    INTEGER,
     project_performance_standard_zone_scenario_id               INTEGER,
-    project_carbon_credits_zone_scenario_id                     INTEGER,
+    project_carbon_credits_generation_zone_scenario_id          INTEGER,
+    project_carbon_credits_purchase_zone_scenario_id            INTEGER,
     project_carbon_credits_scenario_id                          INTEGER,
     project_fuel_burn_limit_ba_scenario_id                      INTEGER,
     project_prm_zone_scenario_id                                INTEGER,
@@ -3920,9 +3947,12 @@ CREATE TABLE scenarios
     FOREIGN KEY (project_performance_standard_zone_scenario_id) REFERENCES
         subscenarios_project_performance_standard_zones
             (project_performance_standard_zone_scenario_id),
-    FOREIGN KEY (project_carbon_credits_zone_scenario_id) REFERENCES
-        subscenarios_project_carbon_credits_zones
-            (project_carbon_credits_zone_scenario_id),
+    FOREIGN KEY (project_carbon_credits_generation_zone_scenario_id) REFERENCES
+        subscenarios_project_carbon_credits_generation_zones
+            (project_carbon_credits_generation_zone_scenario_id),
+    FOREIGN KEY (project_carbon_credits_purchase_zone_scenario_id) REFERENCES
+        subscenarios_project_carbon_credits_purchase_zones
+            (project_carbon_credits_purchase_zone_scenario_id),
     FOREIGN KEY (project_carbon_credits_scenario_id) REFERENCES
         subscenarios_project_carbon_credits
             (project_carbon_credits_scenario_id),
