@@ -50,10 +50,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             # Projects in this carbon cap zone
             for prj in mod.PERFORMANCE_STANDARD_PRJS_BY_PERFORMANCE_STANDARD_ZONE[cap_z]
             for z in mod.CARBON_CREDITS_ZONES
-            if (prj, z, prd) in mod.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES_OPR_PRDS
+            if (prj, z, prd)
+            in mod.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES_OPR_PRDS
             # Limit to projects in a credit zone mapped to this performance_standard zone
-            and (cap_z, z)
-            in mod.PERFORMANCE_STANDARD_ZONES_CARBON_CREDITS_ZONES
+            and (cap_z, z) in mod.PERFORMANCE_STANDARD_ZONES_CARBON_CREDITS_ZONES
         )
 
     m.Total_Performance_Standard_Emissions_Credits = Expression(

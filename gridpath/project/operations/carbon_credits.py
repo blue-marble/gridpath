@@ -146,7 +146,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Input Params
     ###########################################################################
 
-    m.carbon_credits_generation_zone = Param(m.CARBON_CREDITS_GENERATION_PRJS, within=m.CARBON_CREDITS_ZONES)
+    m.carbon_credits_generation_zone = Param(
+        m.CARBON_CREDITS_GENERATION_PRJS, within=m.CARBON_CREDITS_ZONES
+    )
 
     m.intensity_threshold_emissions_toCO2_per_MWh = Param(
         m.CARBON_CREDITS_GENERATION_PRJ_OPR_PRDS,
@@ -177,7 +179,15 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.CARBON_CREDITS_PURCHASE_PRJS = Set(
         within=m.PROJECTS,
         initialize=lambda mod: list(
-            set([prj for (prj, z) in mod.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES])
+            set(
+                [
+                    prj
+                    for (
+                        prj,
+                        z
+                    ) in mod.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES
+                ]
+            )
         ),
     )
 
@@ -185,7 +195,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.CARBON_CREDITS_ZONES,
         within=m.PROJECTS,
         initialize=lambda mod, cc_z: [
-            prj for (prj, z) in mod.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES if cc_z == z
+            prj
+            for (prj, z) in mod.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES
+            if cc_z == z
         ],
     )
 
@@ -226,7 +238,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
     m.Project_Purchase_Carbon_Credits = Var(
-        m.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES_OPR_PRDS, within=NonNegativeReals
+        m.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES_OPR_PRDS,
+        within=NonNegativeReals
     )
 
     # Constraints
@@ -435,9 +448,11 @@ def write_model_inputs(
     :param conn: database connection
     :return:
     """
-    project_generation_zones, project_carbon_credits, project_purchase_zones = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
-    )
+    (
+        project_generation_zones,
+        project_carbon_credits,
+        project_purchase_zones
+    ) = get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
     # projects.tab
     # Make a dict for easy access
@@ -506,6 +521,7 @@ def write_model_inputs(
             "project_carbon_credits_purchase_zones.tab",
         )
         prj_cc_purchase_df.to_csv(fpath, index=False, sep="\t")
+
 
 def export_results(scenario_directory, subproblem, stage, m, d):
     """

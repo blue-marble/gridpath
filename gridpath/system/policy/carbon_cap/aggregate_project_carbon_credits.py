@@ -49,10 +49,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             # Projects in this carbon cap zone
             for prj in mod.CRBN_PRJS_BY_CARBON_CAP_ZONE[cap_z]
             for z in mod.CARBON_CREDITS_ZONES
-            if (prj, z, prd) in mod.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES_OPR_PRDS
+            if (prj, z, prd)
+            in mod.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES_OPR_PRDS
             # Limit to projects in a credit zone mapped to this carbon_cap zone
-            and (cap_z, z)
-            in mod.CARBON_CAP_ZONES_CARBON_CREDITS_ZONES
+            and (cap_z, z) in mod.CARBON_CAP_ZONES_CARBON_CREDITS_ZONES
         )
 
     m.Total_Carbon_Cap_Emissions_Credits = Expression(

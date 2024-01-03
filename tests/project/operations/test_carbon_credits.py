@@ -123,7 +123,10 @@ class TestCarbonCredits(unittest.TestCase):
         )
 
         actual_carb_prj_op_tmp = sorted(
-            [(prj, tmp) for (prj, tmp) in instance.CARBON_CREDITS_GENERATION_PRJ_OPR_TMPS]
+            [
+                (prj, tmp)
+                for (prj, tmp) in instance.CARBON_CREDITS_GENERATION_PRJ_OPR_TMPS
+            ]
         )
         self.assertListEqual(expected_carb_prj_op_tmp, actual_carb_prj_op_tmp)
 
@@ -132,14 +135,16 @@ class TestCarbonCredits(unittest.TestCase):
             get_project_operational_periods(expected_projects)
         )
         actual_carb_prj_op_prd = sorted(
-            [(prj, prd) for (prj, prd) in instance.CARBON_CREDITS_GENERATION_PRJ_OPR_PRDS]
+            [
+                (prj, prd)
+                for (prj, prd) in instance.CARBON_CREDITS_GENERATION_PRJ_OPR_PRDS
+            ]
         )
         self.assertListEqual(expected_carb_prj_op_prd, actual_carb_prj_op_prd)
 
         # Set: CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES
         expected_prj_zones = sorted(
             [
-
                 ("Coal", "Carbon_Credits_Zone1"),
                 ("Gas_CCGT", "Carbon_Credits_Zone1"),
                 ("Gas_CT", "Carbon_Credits_Zone2"),
@@ -147,7 +152,13 @@ class TestCarbonCredits(unittest.TestCase):
         )
 
         actual_prj_zones = sorted(
-            [(prj, z) for (prj, z) in instance.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES]
+            [
+                (prj, z)
+                for (
+                    prj,
+                    z
+                ) in instance.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES
+            ]
         )
 
         self.assertListEqual(expected_prj_zones, actual_prj_zones)

@@ -67,8 +67,14 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         """
         return sum(
             mod.Project_Purchase_Carbon_Credits[prj, z, prd]
-            for (prj, cc_z, period) in mod.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES_OPR_PRDS
-            if prj in mod.CARBON_CREDITS_PURCHASE_PRJS_BY_CARBON_CREDITS_ZONE[cc_z] and prd == period and cc_z == z
+            for (
+                prj,
+                cc_z,
+                period
+            ) in mod.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES_OPR_PRDS
+            if prj in mod.CARBON_CREDITS_PURCHASE_PRJS_BY_CARBON_CREDITS_ZONE[cc_z]
+            and prd == period
+            and cc_z == z
         )
 
     m.Total_Project_Carbon_Credits_Purchased = Expression(
