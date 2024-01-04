@@ -70,7 +70,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             for (
                 prj,
                 cc_z,
-                period
+                period,
             ) in mod.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES_OPR_PRDS
             if prj in mod.CARBON_CREDITS_PURCHASE_PRJS_BY_CARBON_CREDITS_ZONE[cc_z]
             and prd == period

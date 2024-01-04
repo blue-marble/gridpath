@@ -184,7 +184,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
                     prj
                     for (
                         prj,
-                        z
+                        z,
                     ) in mod.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES
                 ]
             )
@@ -220,6 +220,16 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         ],
     )
 
+    m.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES_OPR_TMPS = Set(
+        dimen=3,
+        initialize=lambda mod: set(
+            (prj, z, tmp)
+            for (prj, tmp) in mod.CARBON_CREDITS_PURCHASE_PRJS_OPR_TMPS
+            for (_prj, z) in mod.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES
+            if prj == _prj
+        ),
+    )
+
     m.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES_OPR_PRDS = Set(
         dimen=3,
         initialize=lambda mod: set(
@@ -239,7 +249,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.Project_Purchase_Carbon_Credits = Var(
         m.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES_OPR_PRDS,
-        within=NonNegativeReals
+        within=NonNegativeReals,
     )
 
     # Constraints
@@ -278,6 +288,24 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.Project_Carbon_Credits_Generated_Constraint = Constraint(
         m.CARBON_CREDITS_GENERATION_PRJ_OPR_PRDS, rule=generated_credits_rule
+    )
+
+    def purchased_credits_rule(mod, prj, z, prd):
+        """
+        The credits purchased by each project.
+        """
+        return mod.Project_Purchase_Carbon_Credits[prj, z, prd] <= (
+            sum(
+                mod.Project_Carbon_Emissions[p, tmp]
+                * mod.hrs_in_tmp[tmp]
+                * mod.tmp_weight[tmp]
+                for (p, z_, tmp) in mod.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES_OPR_TMPS
+                if mod.period[tmp] == prd and p == prj and z == z_
+            )
+        )
+
+    m.Project_Carbon_Credits_Purchased_Constraint = Constraint(
+        m.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES_OPR_PRDS, rule=purchased_credits_rule
     )
 
 
@@ -451,7 +479,7 @@ def write_model_inputs(
     (
         project_generation_zones,
         project_carbon_credits,
-        project_purchase_zones
+        project_purchase_zones,
     ) = get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
     # projects.tab

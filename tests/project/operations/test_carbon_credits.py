@@ -156,7 +156,7 @@ class TestCarbonCredits(unittest.TestCase):
                 (prj, z)
                 for (
                     prj,
-                    z
+                    z,
                 ) in instance.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES
             ]
         )
