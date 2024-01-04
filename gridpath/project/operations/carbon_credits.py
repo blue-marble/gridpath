@@ -299,13 +299,18 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
                 mod.Project_Carbon_Emissions[p, tmp]
                 * mod.hrs_in_tmp[tmp]
                 * mod.tmp_weight[tmp]
-                for (p, z_, tmp) in mod.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES_OPR_TMPS
+                for (
+                    p,
+                    z_,
+                    tmp,
+                ) in mod.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES_OPR_TMPS
                 if mod.period[tmp] == prd and p == prj and z == z_
             )
         )
 
     m.Project_Carbon_Credits_Purchased_Constraint = Constraint(
-        m.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES_OPR_PRDS, rule=purchased_credits_rule
+        m.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES_OPR_PRDS,
+        rule=purchased_credits_rule,
     )
 
 
