@@ -58,7 +58,7 @@ setup(
         "pscript==0.7.5",  # Python to JavaScript compiler (for viz)
         "networkx==3.1",  # network package for DC OPF
         "PyUtilib==6.0.0",  # used for solver temp file management
-        "Jinja2==3.0.3",  # bokeh dependency; see #904
+        "Jinja2==3.1.3",  # bokeh dependency; see #904
         "dill==0.3.7",  # pickling
     ]
     + extras_ui,
