@@ -62,6 +62,9 @@ except ImportError:
     print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED + " to test.")
 
 
+Infinity = float("inf")
+
+
 class TestCarbonCredits(unittest.TestCase):
     """ """
 
@@ -166,13 +169,13 @@ class TestCarbonCredits(unittest.TestCase):
         # Param: intensity_threshold_emissions_toCO2_per_MWh
         expected_intensity_threshold = {
             ("Nuclear", 2020): 100,
-            ("Gas_CCGT", 2020): 0,
+            ("Gas_CCGT", 2020): Infinity,
             ("Coal", 2020): 200,
-            ("DAC", 2020): 0,
-            ("Nuclear", 2030): 0,
-            ("Gas_CCGT", 2030): 0,
-            ("Coal", 2030): 0,
-            ("DAC", 2030): 0,
+            ("DAC", 2020): Infinity,
+            ("Nuclear", 2030): Infinity,
+            ("Gas_CCGT", 2030): Infinity,
+            ("Coal", 2030): Infinity,
+            ("DAC", 2030): Infinity,
         }
         actual_intensity_threshold = {
             (prj, prd): instance.intensity_threshold_emissions_toCO2_per_MWh[prj, prd]
@@ -182,13 +185,13 @@ class TestCarbonCredits(unittest.TestCase):
 
         # Param: absolute_threshold_emissions_toCO2_per_MWh
         expected_absolute_threshold = {
-            ("Nuclear", 2020): 0,
+            ("Nuclear", 2020): Infinity,
             ("Gas_CCGT", 2020): 100,
-            ("Coal", 2020): 0,
-            ("DAC", 2020): 0,
-            ("Nuclear", 2030): 0,
-            ("Gas_CCGT", 2030): 0,
-            ("Coal", 2030): 0,
+            ("Coal", 2020): Infinity,
+            ("DAC", 2020): Infinity,
+            ("Nuclear", 2030): Infinity,
+            ("Gas_CCGT", 2030): Infinity,
+            ("Coal", 2030): Infinity,
             ("DAC", 2030): 100,
         }
         actual_absolute_threshold = {

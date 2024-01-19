@@ -31,6 +31,8 @@ from gridpath.project import PROJECT_PERIOD_DF
 from gridpath.project.operations.common_functions import load_operational_type_modules
 import gridpath.project.operations.operational_types as op_type_init
 
+Infinity = float("inf")
+
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
@@ -153,16 +155,16 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.intensity_threshold_emissions_toCO2_per_MWh = Param(
         m.CARBON_CREDITS_GENERATION_PRJ_OPR_PRDS,
         within=NonNegativeReals,
-        default=0,
+        default=Infinity,
     )
 
     m.absolute_threshold_emissions_toCO2 = Param(
         m.CARBON_CREDITS_GENERATION_PRJ_OPR_PRDS,
         within=NonNegativeReals,
-        default=0,
-        validate=lambda mod, value, prj, prd: value == 0
-        if mod.intensity_threshold_emissions_toCO2_per_MWh[prj, prd] > 0
-        else value >= 0,  # pick one of intensity-based and absolute thresholds
+        default=Infinity,
+        validate=lambda mod, value, prj, prd: value == Infinity
+        if mod.intensity_threshold_emissions_toCO2_per_MWh[prj, prd] < Infinity
+        else value <= Infinity,  # pick one of intensity-based and absolute thresholds
     )
 
     # Derived Sets
@@ -273,18 +275,47 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             for (p, tmp) in mod.CARBON_CREDITS_GENERATION_PRJ_OPR_TMPS
             if mod.period[tmp] == prd and p == prj
         )
-        return mod.Project_Carbon_Credits_Generated[prj, prd] <= (
-            total_power_provision_in_prd
-            * mod.intensity_threshold_emissions_toCO2_per_MWh[prj, prd]
-            + mod.absolute_threshold_emissions_toCO2[prj, prd]
-            - sum(
-                mod.Project_Carbon_Emissions[p, tmp]
-                * mod.hrs_in_tmp[tmp]
-                * mod.tmp_weight[tmp]
-                for (p, tmp) in mod.CARBON_CREDITS_GENERATION_PRJ_OPR_TMPS
-                if mod.period[tmp] == prd and p == prj
+
+        var1 = mod.intensity_threshold_emissions_toCO2_per_MWh[prj, prd]
+        var2 = mod.absolute_threshold_emissions_toCO2[prj, prd]
+        if (var1 == Infinity) and (var2 == Infinity):
+            return mod.Project_Carbon_Credits_Generated[prj, prd] == 0
+        elif var1 == Infinity:
+            return mod.Project_Carbon_Credits_Generated[prj, prd] <= (
+                mod.absolute_threshold_emissions_toCO2[prj, prd]
+                - sum(
+                    mod.Project_Carbon_Emissions[p, tmp]
+                    * mod.hrs_in_tmp[tmp]
+                    * mod.tmp_weight[tmp]
+                    for (p, tmp) in mod.CARBON_CREDITS_GENERATION_PRJ_OPR_TMPS
+                    if mod.period[tmp] == prd and p == prj
+                )
             )
-        )
+        elif var2 == Infinity:
+            return mod.Project_Carbon_Credits_Generated[prj, prd] <= (
+                total_power_provision_in_prd
+                * mod.intensity_threshold_emissions_toCO2_per_MWh[prj, prd]
+                - sum(
+                    mod.Project_Carbon_Emissions[p, tmp]
+                    * mod.hrs_in_tmp[tmp]
+                    * mod.tmp_weight[tmp]
+                    for (p, tmp) in mod.CARBON_CREDITS_GENERATION_PRJ_OPR_TMPS
+                    if mod.period[tmp] == prd and p == prj
+                )
+            )
+        else:
+            return mod.Project_Carbon_Credits_Generated[prj, prd] <= (
+                total_power_provision_in_prd
+                * mod.intensity_threshold_emissions_toCO2_per_MWh[prj, prd]
+                + mod.absolute_threshold_emissions_toCO2[prj, prd]
+                - sum(
+                    mod.Project_Carbon_Emissions[p, tmp]
+                    * mod.hrs_in_tmp[tmp]
+                    * mod.tmp_weight[tmp]
+                    for (p, tmp) in mod.CARBON_CREDITS_GENERATION_PRJ_OPR_TMPS
+                    if mod.period[tmp] == prd and p == prj
+                )
+            )
 
     m.Project_Carbon_Credits_Generated_Constraint = Constraint(
         m.CARBON_CREDITS_GENERATION_PRJ_OPR_PRDS, rule=generated_credits_rule
