@@ -36,7 +36,7 @@ numpy==1.26.2
 packaging==23.2
 pandas==2.1.1
 pathspec==0.12.1
-Pillow==10.1.0
+Pillow==10.2.0
 platformdirs==4.1.0
 ply==3.11
 pscript==0.7.5
