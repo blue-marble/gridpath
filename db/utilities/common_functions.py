@@ -625,18 +625,21 @@ def confirm_and_temp_update_affected_tables(
 
     c = conn.cursor()
 
+    # Project-level params default to None
+    base_subscenario_ids_str, base_subscenario_ids_data = None, None
+
     # For project-level data, we first check whether this
     # project-subscenario_id is used in the base table
     if project_flag:
         if project_is_tx:
-            project = "transmission_line"
+            project_type = "transmission_line"
         else:
-            project = "project"
+            project_type = "project"
         # Check if this project-subscenario ID exists in the base table
         base_subscenario_ids_sql = """
             SELECT {} FROM {} WHERE {} = ? and {} = ?
             """.format(
-            base_subscenario, base_table, project, subscenario
+            base_subscenario, base_table, project_type, subscenario
         )
         base_subscenario_ids_tuples = c.execute(
             base_subscenario_ids_sql, (project, subscenario_id)
@@ -680,9 +683,6 @@ def confirm_and_temp_update_affected_tables(
     # For non-project-level data, we only need to check if any scenarios
     # have this subscenario ID
     else:
-        # Project-level params to pass downstream set to None
-        base_subscenario_ids_str, base_subscenario_ids_data = None, None
-
         # Figure out if there are scenarios using this subscenario_id;
         # if there are, we need to NULLify that subscenario for these
         # scenarios in order to avoid a FOREIGN KEY error when deleting the
@@ -741,7 +741,7 @@ def confirm_and_temp_update_affected_tables(
             base_table_update_sql = """
                 UPDATE {} SET {} = NULL WHERE {} = ? and {} = ?
             """.format(
-                base_table, subscenario, base_subscenario, project
+                base_table, subscenario, base_subscenario, project_type
             )
             spin_on_database_lock(
                 conn=conn,
@@ -800,13 +800,13 @@ def repopulate_tables(
     # Update the base table if project-level if there's any update data
     if project_flag and base_subscenario_ids_data:
         if project_is_tx:
-            project = "transmission_line"
+            project_type = "transmission_line"
         else:
-            project = "project"
+            project_type = "project"
         base_subscenario_reupdate_sql = """
             UPDATE {} SET {} = ? WHERE {} in ({}) AND {} = ?
             """.format(
-            base_table, subscenario, base_subscenario, base_subscenario_ids_str, project
+            base_table, subscenario, base_subscenario, base_subscenario_ids_str, project_type
         )
         base_subscenario_update_tuple = (
             (int(subscenario_id),) + tuple(base_subscenario_ids_data) + (project,)
@@ -885,9 +885,9 @@ def generic_delete_subscenario(
         )
     else:
         if project_is_tx:
-            project = "transmission_line"
+            project_type = "transmission_line"
         else:
-            project = "project"
+            project_type = "project"
         delete_data = (
             project,
             subscenario_id,
@@ -898,7 +898,7 @@ def generic_delete_subscenario(
             WHERE {} = ?
             AND {} = ?;
             """.format(
-                table, project, subscenario
+                table, project_type, subscenario
             )
             for table in input_tables
         ]
@@ -907,7 +907,7 @@ def generic_delete_subscenario(
                     WHERE {} = ?
                     AND {} = ?;
                     """.format(
-            subscenario_table, project, subscenario
+            subscenario_table, project_type, subscenario
         )
 
     # Delete the inputs and subscenario info
@@ -950,15 +950,15 @@ def generic_insert_subscenario_info(
         )
     else:
         if project_is_tx:
-            project = "transmission_line"
+            project_type = "transmission_line"
         else:
-            project = "project"
+            project_type = "project"
         subs_sql = """
             INSERT INTO subscenarios_{table}
             ({project}, {subscenario_id}, name, description)
             VALUES (?, ?, ?, ?);
             """.format(
-            table=table, project=project, subscenario_id=subscenario
+            table=table, project=project_type, subscenario_id=subscenario
         )
 
     spin_on_database_lock(conn=conn, cursor=c, sql=subs_sql, data=subscenario_data)
