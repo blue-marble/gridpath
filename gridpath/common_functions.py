@@ -14,6 +14,7 @@
 
 import os.path
 import sys
+import warnings
 
 from argparse import ArgumentParser
 
@@ -277,6 +278,12 @@ def get_run_scenario_parser():
         help="The name of the rule to use to decide whether to export results.",
     )
 
+    parser.add_argument(
+        "--results_export_summary_rule",
+        help="The name of the rule to use to decide whether to export "
+        "summary results.",
+    )
+
     return parser
 
 
@@ -417,3 +424,25 @@ def create_results_df(index_columns, results_columns, data):
     ).set_index(index_columns)
 
     return df
+
+
+def duals_wrapper(m, component, verbose=False):
+    try:
+        return m.dual[component]
+    except KeyError:
+        if verbose:
+            warnings.warn(
+                f"""
+                KeyError caught when saving duals for {component}. Duals were 
+                not exported. This is expected if solving a MIP with CPLEX (and 
+                possibly other solvers), not otherwise.
+                """
+            )
+        return None
+
+
+def none_dual_type_error_wrapper(component, coefficient):
+    try:
+        return component / coefficient
+    except TypeError:
+        return None

@@ -1,6 +1,0 @@
-load_zone,allow_overgeneration,overgeneration_penalty_per_mw,allow_unserved_energy,unserved_energy_penalty_per_mwh,unserved_energy_limit_mwh,max_unserved_load_penalty_per_mw,max_unserved_load_limit_mw,export_penalty_cost_per_mwh
-NW,1,100,1,20000,,20000,,1
-CA,1,100,1,20000,,20000,,1
-BS,1,100,1,20000,,20000,,1
-SW,1,100,1,20000,,20000,,1
-RM,1,100,1,20000,,20000,,1

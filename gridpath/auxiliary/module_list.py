@@ -128,6 +128,7 @@ def all_modules_list():
         "project.reliability.local_capacity",
         "project.reliability.local_capacity.local_capacity_contribution",
         "project.consolidate_results",
+        "project.summary_results",
         "transmission",
         "transmission.capacity",
         "transmission.capacity.capacity_types",

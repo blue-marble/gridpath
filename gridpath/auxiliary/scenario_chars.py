@@ -166,7 +166,27 @@ def determine_iteration_directories_from_iteration_structure(scenario_structure)
         # Check the hydro iteration level
         iteration_directory_strings_dict[weather_iteration_str] = {}
         # Determine whether we will have hydro iterations
+        # Make the hydro directories if 1) there are multiple
+        # hydro iterations within a weather iteration or 2) there are
+        # multiple hydro iterations across weather iterations
+        # Case 2) captures case 1), but keeping separate for clarity
         if len(scenario_structure.ITERATION_STRUCTURE[weather_iteration].keys()) > 1:
+            make_hydro_iteration_dirs = True
+        elif (
+            len(
+                set(
+                    [
+                        i
+                        for sublist in [
+                            scenario_structure.ITERATION_STRUCTURE[w]
+                            for w in scenario_structure.ITERATION_STRUCTURE.keys()
+                        ]
+                        for i in sublist
+                    ]
+                )
+            )
+            > 1
+        ):
             make_hydro_iteration_dirs = True
         else:
             make_hydro_iteration_dirs = False
@@ -184,6 +204,10 @@ def determine_iteration_directories_from_iteration_structure(scenario_structure)
             ] = []
 
             # Check the availability level
+            # Make the availability directories if 1) there are multiple
+            # availability iterations within a hydro iteration or 2) there are
+            # multiple availability iterations across hydro iterations
+            # Case 2) captures case 1), but keeping separate for clarity
             if (
                 len(
                     scenario_structure.ITERATION_STRUCTURE[weather_iteration][
@@ -193,7 +217,6 @@ def determine_iteration_directories_from_iteration_structure(scenario_structure)
                 > 1
             ):
                 make_availability_iteration_dirs = True
-            # TODO: need this for hydro years also
             elif (
                 len(
                     set(

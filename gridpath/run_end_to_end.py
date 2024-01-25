@@ -40,6 +40,7 @@ from gridpath.common_functions import (
     create_logs_directory_if_not_exists,
     Logging,
     determine_scenario_directory,
+    get_import_results_parser,
 )
 from gridpath import (
     get_scenario_inputs,
@@ -68,6 +69,7 @@ def parse_arguments(args):
             get_required_e2e_arguments_parser(),
             get_run_scenario_parser(),
             get_get_inputs_parser(),
+            get_import_results_parser(),
         ],
     )
 

@@ -71,14 +71,23 @@ def add_model_components(
     +-------------------------------------------------------------------------+
     | Optional Input Params                                                   |
     +=========================================================================+
-    | | :code:`avl_exog_cap_derate`                                           |
+    | | :code:`avl_exog_cap_derate_independent`                               |
     | | *Defined over*: :code:`AVL_EXOG_OPR_TMPS`                             |
     | | *Within*: :code:`NonNegativeReals`                                    |
     | | *Default*: :code:`1`                                                  |
     |                                                                         |
     | The pre-specified availability derate (e.g. for maintenance/planned     |
-    | outages). Defaults to 1 if not specified. Availaibility can also be     |
-    | more than 1.                                                            |
+    | outages) that does not depend on weather. Defaults to 1 if not          |
+    | specified. Availaibility can also be more than 1.                       |
+    +-------------------------------------------------------------------------+
+    | | :code:`avl_exog_cap_derate_weather`                                   |
+    | | *Defined over*: :code:`AVL_EXOG_OPR_TMPS`                             |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`1`                                                  |
+    |                                                                         |
+    | The pre-specified availability derate (e.g. for maintenance/planned     |
+    | outages) that depends on weather. Defaults to 1 if not specified.       |
+    | Availaibility can also be more than 1.                                  |
     +-------------------------------------------------------------------------+
 
     """
@@ -99,7 +108,11 @@ def add_model_components(
     # Required Params
     ###########################################################################
 
-    m.avl_exog_cap_derate = Param(
+    m.avl_exog_cap_derate_independent = Param(
+        m.AVL_EXOG_OPR_TMPS, within=NonNegativeReals, default=1
+    )
+
+    m.avl_exog_cap_derate_weather = Param(
         m.AVL_EXOG_OPR_TMPS, within=NonNegativeReals, default=1
     )
 
@@ -118,7 +131,10 @@ def add_model_components(
 
 def availability_derate_cap_rule(mod, g, tmp):
     """ """
-    return mod.avl_exog_cap_derate[g, tmp]
+    return (
+        mod.avl_exog_cap_derate_independent[g, tmp]
+        * mod.avl_exog_cap_derate_weather[g, tmp]
+    )
 
 
 def availability_derate_hyb_stor_cap_rule(mod, g, tmp):
@@ -166,23 +182,37 @@ def load_model_data(
 
     # Availability derates
     # Get any derates from the project_availability.tab file if it exists;
-    # if it does not exist, all projects will get 1 as a derate; if it does
+    # if it does not exist, all projects will get 1 as derate; if it does
     # exist but projects are not specified in it, they will also get 1
     # assigned as their derate
     # The test examples do not currently have a
-    # project_availability_exogenous.tab, but use the default instead
-    availability_file = os.path.join(
+    # project_availability_exogenous_x.tab, but use the default instead
+    availability_independent_file = os.path.join(
         scenario_directory,
         subproblem,
         stage,
         "inputs",
-        "project_availability_exogenous.tab",
+        "project_availability_exogenous_independent.tab",
     )
 
-    if os.path.exists(availability_file):
+    if os.path.exists(availability_independent_file):
         data_portal.load(
-            filename=availability_file,
-            param=(m.avl_exog_cap_derate, m.avl_exog_hyb_stor_cap_derate),
+            filename=availability_independent_file,
+            param=(m.avl_exog_cap_derate_independent, m.avl_exog_hyb_stor_cap_derate),
+        )
+
+    availability_weather_file = os.path.join(
+        scenario_directory,
+        subproblem,
+        stage,
+        "inputs",
+        "project_availability_exogenous_weather.tab",
+    )
+
+    if os.path.exists(availability_weather_file):
+        data_portal.load(
+            filename=availability_weather_file,
+            param=m.avl_exog_cap_derate_weather,
         )
 
 
@@ -208,8 +238,8 @@ def get_inputs_from_database(
     :return:
     """
 
-    sql = f"""
-        SELECT project, timepoint, availability_derate, 
+    ind_sql = f"""
+        SELECT project, timepoint, availability_derate_independent, 
         hyb_stor_cap_availability_derate
         -- Select only projects, periods, timepoints from the relevant 
         -- portfolio, relevant opchar scenario id, operational type, 
@@ -232,28 +262,72 @@ def get_inputs_from_database(
         -- timepoint-level availability inputs in the 
         -- inputs_project_availability_exogenous table
         INNER JOIN (
-            SELECT project, exogenous_availability_scenario_id
+            SELECT project, exogenous_availability_independent_scenario_id
             FROM inputs_project_availability
             WHERE project_availability_scenario_id = {subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID}
             AND availability_type = 'exogenous'
-            AND exogenous_availability_scenario_id IS NOT NULL
+            AND exogenous_availability_independent_scenario_id IS NOT NULL
             ) AS avail_char
         USING (project)
         -- Now that we have the relevant projects and timepoints, get the 
         -- respective availability_derate (and no others) from 
         -- inputs_project_availability_exogenous
         LEFT OUTER JOIN
-            inputs_project_availability_exogenous
-        USING (exogenous_availability_scenario_id, project, stage_id, 
-        timepoint)
+            inputs_project_availability_exogenous_independent
+        USING (exogenous_availability_independent_scenario_id, project, 
+                stage_id, timepoint)
         WHERE availability_iteration = {availability_iteration}
         ;
     """
 
     c = conn.cursor()
-    availabilities = c.execute(sql)
+    independent_availabilities = c.execute(ind_sql)
 
-    return availabilities
+    weather_sql = f"""
+        SELECT project, timepoint, availability_derate_weather
+        -- Select only projects, periods, timepoints from the relevant 
+        -- portfolio, relevant opchar scenario id, operational type, 
+        -- and temporal scenario id
+        FROM 
+            (SELECT project, stage_id, timepoint
+            FROM project_operational_timepoints
+            WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
+            AND project_operational_chars_scenario_id = {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
+            AND temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+            AND (project_specified_capacity_scenario_id = {subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID}
+                 OR project_new_cost_scenario_id = {subscenarios.PROJECT_NEW_COST_SCENARIO_ID})
+            AND subproblem_id = {subproblem}
+            AND stage_id = {stage}
+            ) as projects_periods_timepoints_tbl
+        -- Of the projects in the portfolio, select only those that are in 
+        -- this project_availability_scenario_id and have 'exogenous' as 
+        -- their availability type and a non-null 
+        -- exogenous_availability_scenario_id, i.e. they have 
+        -- timepoint-level availability inputs in the 
+        -- inputs_project_availability_exogenous table
+        INNER JOIN (
+            SELECT project, exogenous_availability_weather_scenario_id
+            FROM inputs_project_availability
+            WHERE project_availability_scenario_id = {subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID}
+            AND availability_type = 'exogenous'
+            AND exogenous_availability_weather_scenario_id IS NOT NULL
+            ) AS avail_char
+        USING (project)
+        -- Now that we have the relevant projects and timepoints, get the 
+        -- respective availability_derate (and no others) from 
+        -- inputs_project_availability_exogenous
+        LEFT OUTER JOIN
+            inputs_project_availability_exogenous_weather
+        USING (exogenous_availability_weather_scenario_id, project, stage_id, 
+        timepoint)
+        WHERE weather_iteration = {weather_iteration}
+        ;
+    """
+
+    c2 = conn.cursor()
+    weather_availabilities = c2.execute(weather_sql)
+
+    return independent_availabilities, weather_availabilities
 
 
 def write_model_inputs(
@@ -286,7 +360,7 @@ def write_model_inputs(
         weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
     )
 
-    availabilities = get_inputs_from_database(
+    independent_availabilities, weather_availabilities = get_inputs_from_database(
         scenario_id,
         subscenarios,
         db_weather_iteration,
@@ -295,9 +369,10 @@ def write_model_inputs(
         db_subproblem,
         db_stage,
         conn,
-    ).fetchall()
+    )
 
-    if availabilities:
+    if independent_availabilities.fetchall():
+        print("Found independent availabilities")
         with open(
             os.path.join(
                 scenario_directory,
@@ -307,7 +382,7 @@ def write_model_inputs(
                 subproblem,
                 stage,
                 "inputs",
-                "project_availability_exogenous.tab",
+                "project_availability_exogenous_independent.tab",
             ),
             "w",
             newline="",
@@ -320,12 +395,38 @@ def write_model_inputs(
                 [
                     "project",
                     "timepoint",
-                    "availability_derate",
+                    "availability_derate_independent",
                     "hyb_stor_cap_availability_derate",
                 ]
             )
 
-            for row in availabilities:
+            for row in independent_availabilities:
+                row = ["." if i is None else i for i in row]
+                writer.writerow(row)
+
+    if weather_availabilities.fetchall():
+        print("Found weather availabilities")
+        with open(
+            os.path.join(
+                scenario_directory,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
+                "inputs",
+                "project_availability_exogenous_weather.tab",
+            ),
+            "w",
+            newline="",
+        ) as availability_tab_file:
+            writer = csv.writer(
+                availability_tab_file, delimiter="\t", lineterminator="\n"
+            )
+
+            writer.writerow(["project", "timepoint", "availability_derate_weather"])
+
+            for row in weather_availabilities:
                 row = ["." if i is None else i for i in row]
                 writer.writerow(row)
 
@@ -351,7 +452,7 @@ def validate_inputs(
     :param conn:
     :return:
     """
-    availabilities = get_inputs_from_database(
+    independent_availabilities, weather_availabilities = get_inputs_from_database(
         scenario_id,
         subscenarios,
         weather_iteration,
@@ -362,9 +463,9 @@ def validate_inputs(
         conn,
     )
 
-    df = cursor_to_df(availabilities)
+    df = cursor_to_df(independent_availabilities)
     idx_cols = ["project", "timepoint"]
-    value_cols = ["availability_derate"]
+    value_cols = ["availability_derate_independent"]
 
     # Check data types availability
     expected_dtypes = get_expected_dtypes(

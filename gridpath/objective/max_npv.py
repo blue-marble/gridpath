@@ -106,7 +106,7 @@ def add_model_components(
 ###############################################################################
 
 
-def export_results(
+def export_summary_results(
     scenario_directory,
     weather_iteration,
     hydro_iteration,

@@ -834,7 +834,7 @@ def save_results(
             ](instance=instance, quiet=parsed_arguments.quiet)
 
         if not parsed_arguments.quiet:
-            print("...exporting CSV results")
+            print("...exporting detailed CSV results")
         export_results(
             scenario_directory=scenario_directory,
             weather_iteration=weather_iteration,
@@ -846,6 +846,31 @@ def save_results(
             instance=instance,
             dynamic_components=dynamic_components,
             export_rule=export_rule,
+            verbose=parsed_arguments.verbose,
+        )
+
+        if parsed_arguments.results_export_summary_rule is None:
+            export_summary_rule = _export_summary_results_rule(
+                instance=instance, quiet=parsed_arguments.quiet
+            )
+        else:
+            export_summary_rule = import_export_rules[
+                parsed_arguments.results_export_summary_rule
+            ]["export_summary"](instance=instance, quiet=parsed_arguments.quiet)
+
+        if not parsed_arguments.quiet:
+            print("...exporting summary CSV results")
+        export_summary_results(
+            scenario_directory=scenario_directory,
+            weather_iteration=weather_iteration,
+            hydro_iteration=hydro_iteration,
+            availability_iteration=availability_iteration,
+            subproblem=subproblem,
+            stage=stage,
+            multi_stage=multi_stage,
+            instance=instance,
+            dynamic_components=dynamic_components,
+            export_summary_results_rule=export_summary_rule,
             verbose=parsed_arguments.verbose,
         )
 
@@ -1232,6 +1257,57 @@ def export_results(
             n += 1
 
 
+def export_summary_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    multi_stage,
+    instance,
+    dynamic_components,
+    export_summary_results_rule,
+    verbose,
+):
+    """
+    :param scenario_directory:
+    :param hydro_iteration:
+    :param subproblem:
+    :param stage:
+    :param instance:
+    :param dynamic_components:
+    :param export_rule:
+    :param verbose:
+    :return:
+
+    Export results for each loaded module (if applicable)
+    """
+    if export_summary_results_rule:
+        # Determine/load modules and dynamic components
+        modules_to_use, loaded_modules = set_up_gridpath_modules(
+            scenario_directory=scenario_directory, multi_stage=multi_stage
+        )
+
+        n = 0
+        for m in loaded_modules:
+            if hasattr(m, "export_summary_results"):
+                if verbose:
+                    print(f"... {modules_to_use[n]}")
+                m.export_summary_results(
+                    scenario_directory,
+                    weather_iteration,
+                    hydro_iteration,
+                    availability_iteration,
+                    subproblem,
+                    stage,
+                    instance,
+                    dynamic_components,
+                )
+
+            n += 1
+
+
 def export_pass_through_inputs(
     scenario_directory,
     weather_iteration,
@@ -1361,23 +1437,6 @@ def save_duals(
                 dynamic_components,
             )
         n += 1
-
-    # for index in constraint_object:
-    # try:
-    #     duals_writer.writerow(
-    #         list(index) + [instance.dual[constraint_object[index]]]
-    #     )
-    # # We get an error when trying to export duals with CPLEX
-    # # when solving MIPs, so catch it here and ignore to avoid
-    # # breaking the script, but throw a warning
-    # except KeyError:
-    #     warnings.warn(
-    #         """
-    #     KeyError caught when saving duals. Duals were not exported.
-    #     This is expected if solving a MIP with CPLEX,
-    #     not otherwise.
-    #     """
-    #     )
 
 
 def summarize_results(
@@ -1592,6 +1651,18 @@ def _export_rule(instance, quiet):
     export_results = True
 
     return export_results
+
+
+def _export_summary_results_rule(instance, quiet):
+    """
+    :return: boolean
+
+    Rule for whether to export summary results for the current problem. Write
+    your custom rule here to use this functionality. Must return True or False.
+    """
+    export_summary_results_results = True
+
+    return export_summary_results_results
 
 
 def _summarize_rule(

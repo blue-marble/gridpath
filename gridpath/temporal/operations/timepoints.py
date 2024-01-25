@@ -180,6 +180,10 @@ def add_model_components(
 
     m.month = Param(m.TMPS, within=m.MONTHS)
 
+    m.day_of_month = Param(m.TMPS, within=NonNegativeIntegers, default=0)
+
+    m.hour_of_day = Param(m.TMPS, within=NonNegativeIntegers, default=0)
+
     # Optional Params
     ###########################################################################
 
@@ -225,13 +229,22 @@ def load_model_data(
             "timepoints.tab",
         ),
         index=m.TMPS,
-        param=(m.tmp_weight, m.hrs_in_tmp, m.prev_stage_tmp_map, m.month),
+        param=(
+            m.tmp_weight,
+            m.hrs_in_tmp,
+            m.prev_stage_tmp_map,
+            m.month,
+            m.day_of_month,
+            m.hour_of_day,
+        ),
         select=(
             "timepoint",
             "timepoint_weight",
             "number_of_hours_in_timepoint",
             "previous_stage_timepoint_map",
             "month",
+            "day_of_month",
+            "hour_of_day",
         ),
     )
 
@@ -289,7 +302,8 @@ def get_inputs_from_database(
     c = conn.cursor()
     timepoints = c.execute(
         """SELECT timepoint, period, timepoint_weight,
-           number_of_hours_in_timepoint, previous_stage_timepoint_map, month
+           number_of_hours_in_timepoint, previous_stage_timepoint_map, month, 
+           day_of_month, hour_of_day
            FROM inputs_temporal
            WHERE temporal_scenario_id = {}
            AND subproblem_id = {}
@@ -369,6 +383,8 @@ def write_model_inputs(
                 "number_of_hours_in_timepoint",
                 "previous_stage_timepoint_map",
                 "month",
+                "day_of_month",
+                "hour_of_day",
             ]
         )
 
@@ -388,16 +404,17 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
     :return:
     """
     # Check if there are any spinup or lookahead timepoints
-    spinup_or_lookahead_sql = """
+    spinup_or_lookahead_sql = f"""
     SELECT spinup_or_lookahead
     FROM inputs_temporal
     WHERE spinup_or_lookahead = 1
     AND temporal_scenario_id = (
         SELECT temporal_scenario_id
         FROM scenarios
-        WHERE scenario_id = ?)
+        WHERE scenario_id = {scenario_id})
     """
-    spinup_or_lookahead = c.execute(spinup_or_lookahead_sql, (scenario_id,)).fetchall()
+
+    spinup_or_lookahead = c.execute(spinup_or_lookahead_sql).fetchall()
     if spinup_or_lookahead:
         if not quiet:
             print("add spinup_or_lookahead flag")
@@ -410,28 +427,27 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
         for tbl in tables_to_update:
             if not quiet:
                 print("... {}".format(tbl))
-            sql = """
-                UPDATE {}
+            sql = f"""
+                UPDATE {tbl}
                 SET spinup_or_lookahead = (
                 SELECT spinup_or_lookahead
                 FROM inputs_temporal
                 WHERE temporal_scenario_id = (
                     SELECT temporal_scenario_id 
                     FROM scenarios 
-                    WHERE scenario_id = ?
+                    WHERE scenario_id = {scenario_id}
                     )
-                AND {}.subproblem_id = 
+                AND {tbl}.subproblem_id = 
                 inputs_temporal.subproblem_id
-                AND {}.stage_id = inputs_temporal.stage_id
-                AND {}.timepoint = inputs_temporal.timepoint
-                );
+                AND {tbl}.stage_id = inputs_temporal.stage_id
+                AND {tbl}.timepoint = inputs_temporal.timepoint
+                )
+                WHERE scenario_id = {scenario_id};
                 """.format(
                 tbl, tbl, tbl, tbl
             )
 
-            spin_on_database_lock(
-                conn=db, cursor=c, sql=sql, data=(scenario_id,), many=False
-            )
+            spin_on_database_lock(conn=db, cursor=c, sql=sql, data=(), many=False)
 
 
 # Validation

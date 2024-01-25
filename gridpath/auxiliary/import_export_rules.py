@@ -82,7 +82,14 @@ def import_rule_use(results_directory, quiet):
 import_export_rules = {
     "USE": {
         "export": export_rule_use,
+        "export_summary": True,
         "summarize": summarize_results_use,
         "import": import_rule_use,
-    }
+    },
+    "USE_import_only": {
+        "export": True,
+        "export_summary": True,
+        "summarize": True,
+        "import": import_rule_use,
+    },
 }

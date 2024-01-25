@@ -154,10 +154,12 @@ class TestExogenousAvailabilityType(unittest.TestCase):
             actual_operational_timepoints_by_project,
         )
 
-        # Param: availability_derate
+        # Param: availability_derate_independent
         availability_df = pd.read_csv(
             os.path.join(
-                TEST_DATA_DIRECTORY, "inputs", "project_availability_exogenous.tab"
+                TEST_DATA_DIRECTORY,
+                "inputs",
+                "project_availability_exogenous_independent.tab",
             ),
             sep="\t",
         )
@@ -167,7 +169,7 @@ class TestExogenousAvailabilityType(unittest.TestCase):
             for p, tmp, avail in zip(
                 availability_df.project,
                 availability_df.timepoint,
-                availability_df.availability_derate,
+                availability_df.availability_derate_independent,
             )
         }
         expected_availability_derate = dict()
@@ -177,7 +179,7 @@ class TestExogenousAvailabilityType(unittest.TestCase):
             else:
                 expected_availability_derate[p, tmp] = defaults[p, tmp]
         actual_availability_derate = {
-            (prj, tmp): instance.avl_exog_cap_derate[prj, tmp]
+            (prj, tmp): instance.avl_exog_cap_derate_independent[prj, tmp]
             for (prj, tmp) in instance.AVL_EXOG_OPR_TMPS
         }
 

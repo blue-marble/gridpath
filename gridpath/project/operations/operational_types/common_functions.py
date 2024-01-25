@@ -1,4 +1,4 @@
-# Copyright 2016-2023 Blue Marble Analytics LLC.
+# Copyright 2016-2024 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -794,44 +794,46 @@ def get_hydro_inputs_from_database(
     """
 
     c = conn.cursor()
+
+    # TODO: figure out if this still works after hydro update in ra toolkit
     sql = f"""
-    SELECT project, horizon, average_power_fraction, min_power_fraction, 
+    SELECT project, prj_tbl.horizon, average_power_fraction, min_power_fraction,
     max_power_fraction
-    --limit to portfolio projects
     FROM (
-        SELECT project from inputs_project_portfolios
-        WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
-    ) as portfolio_projects
-    --limit to optype and get balancing type and hydro opchar id
-    JOIN (
-        SELECT project, 
-        balancing_type_project, hydro_operational_chars_scenario_id
-        FROM inputs_project_operational_chars
-        WHERE project_operational_chars_scenario_id = {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
-        AND operational_type = '{op_type}'
-    ) as op_type_projects_with_btype_and_opchar_id
-    USING (project)
-    -- get the power fractions for the projects for this project, 
-    -- balancing type, and hydro opchar id; get only the inputs for 
-    -- this hydro iteration, subproblem, and stage
-    JOIN (
-        SELECT project, hydro_operational_chars_scenario_id, 
-        balancing_type_project, horizon, average_power_fraction, 
+        SELECT project, balancing_type_project, horizon, average_power_fraction, 
         min_power_fraction, max_power_fraction
-        FROM inputs_project_hydro_operational_chars 
-        WHERE hydro_iteration = {hydro_iteration}
-        AND subproblem_id = {subproblem}
+        FROM inputs_project_hydro_operational_chars
+        -- Portfolio projects only
+        WHERE project in (
+            SELECT project
+            FROM inputs_project_portfolios
+            WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
+            )
+        -- Get the right opchar
+        AND (project, hydro_operational_chars_scenario_id) in (
+            SELECT project, hydro_operational_chars_scenario_id
+            FROM inputs_project_operational_chars
+            WHERE project_operational_chars_scenario_id
+             = {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
+        )
+        -- Get the relevant stage
         AND stage_id = {stage}
-    )
-    USING (project, balancing_type_project, hydro_operational_chars_scenario_id)
-    --limit to balancing type / horizons in the current temporal 
-    -- scenario ID
-    WHERE (balancing_type_project, horizon) IN (
-        SELECT balancing_type_horizon, horizon
-        FROM inputs_temporal_horizons
+        -- Get the right iteration
+        AND hydro_iteration = {hydro_iteration}
+    ) as prj_tbl
+    -- Limit to bt-horizons from this temporal scenario ID
+    JOIN (
+        SELECT DISTINCT balancing_type_horizon, horizon
+        FROM inputs_temporal_horizon_timepoints
         WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
         AND subproblem_id = {subproblem}
-    );
+        AND stage_id = {stage}
+    ) as hrz_tbl
+    ON (
+        balancing_type_project = balancing_type_horizon
+        AND prj_tbl.horizon = hrz_tbl.horizon
+    )
+    ;    
     """
 
     hydro_chars = c.execute(sql)

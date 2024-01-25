@@ -1,6 +1,6 @@
 -- noinspection SqlNoDataSourceInspectionForFile
 
--- Copyright 2016-2023 Blue Marble Analytics LLC.
+-- Copyright 2016-2024 Blue Marble Analytics LLC.
 --
 -- Licensed under the Apache License, Version 2.0 (the "License");
 -- you may not use this file except in compliance with the License.
@@ -203,7 +203,8 @@ CREATE TABLE results_scenario
     stage_id                     INTEGER,
     objective_function_value     FLOAT,
     solver_termination_condition VARCHAR(128),
-    PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration, availability_iteration,  subproblem_id,
+    PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
+                 availability_iteration, subproblem_id,
                  stage_id),
     FOREIGN KEY (scenario_id) REFERENCES scenarios (scenario_id)
 );
@@ -226,6 +227,7 @@ CREATE TABLE subscenarios_temporal
     description          VARCHAR(128)
 );
 
+
 -- Weather, hydro, and availability iterations
 DROP TABLE IF EXISTS inputs_temporal_iterations;
 CREATE TABLE inputs_temporal_iterations
@@ -234,7 +236,8 @@ CREATE TABLE inputs_temporal_iterations
     weather_iteration      INTEGER NOT NULL,
     hydro_iteration        INTEGER NOT NULL,
     availability_iteration INTEGER NOT NULL,
-    PRIMARY KEY (temporal_scenario_id, weather_iteration, hydro_iteration, availability_iteration, 
+    PRIMARY KEY (temporal_scenario_id, weather_iteration, hydro_iteration,
+                 availability_iteration,
                  availability_iteration),
     FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
         (temporal_scenario_id)
@@ -293,28 +296,33 @@ CREATE TABLE inputs_temporal_superperiods
         (temporal_scenario_id)
 );
 
--- Bins
--- Year, month, day_of_month, weekend index -- maybe can be made more flexible
-DROP TABLE IF EXISTS inputs_temporal_day_bins;
-CREATE TABLE inputs_temporal_day_bins
+
+-- TODO: are these used, where should they go
+DROP TABLE IF EXISTS inputs_aux_weather_draws_info;
+CREATE TABLE inputs_aux_weather_draws_info
 (
-    temporal_scenario_id INTEGER,
-    year                 INTEGER,
-    month                INTEGER,
-    day_of_month         INTEGER,
-    weekend              INTEGER,
-    weather_bin          INTEGER,
-    PRIMARY KEY (temporal_scenario_id, year, month, day_of_month, weekend)
+    weather_bins_id  INTEGER,
+    weather_draws_id INTEGER,
+    seed             INTEGER,
+    n_iterations     INTEGER,
+    iterations_seed  INTEGER,
+    PRIMARY KEY (weather_bins_id, weather_draws_id)
 );
 
-DROP TABLE IF EXISTS inputs_temporal_month_bins;
-CREATE TABLE inputs_temporal_month_bins
+DROP TABLE IF EXISTS inputs_aux_weather_iterations;
+CREATE TABLE inputs_aux_weather_iterations
 (
-    temporal_scenario_id INTEGER,
-    year                 INTEGER,
-    month                INTEGER,
-    hydro_bin            INTEGER,
-    PRIMARY KEY (temporal_scenario_id, year, month)
+    weather_bins_id   INTEGER,
+    weather_draws_id  INTEGER,
+    weather_iteration INTEGER,
+    draw_number       INTEGER,
+    study_date        DATE,
+    month             INTEGER,
+    day_type          INTEGER,
+    weather_day_bin   INTEGER,
+    PRIMARY KEY (weather_bins_id, weather_draws_id,
+                 weather_iteration, draw_number,
+                 month, day_type, weather_day_bin)
 );
 
 -- Timepoints
@@ -333,6 +341,9 @@ CREATE TABLE inputs_temporal_month_bins
 -- (subproblem_id + 1) BUT ONLY IF the first horizon of the next subproblem has
 -- a 'linked' boundary
 -- The spinup_or_lookahead is not NULL, as we rely on 0s downstream
+-- There is a unique key on timepoint/spinup_or_lookahead, as some functionality
+--  requires unique timepoint IDs, but we want to allow for the same
+--  timepoint IDs to be duplicated if they are spinup/lookahead timepoints
 DROP TABLE IF EXISTS inputs_temporal;
 CREATE TABLE inputs_temporal
 (
@@ -352,6 +363,7 @@ CREATE TABLE inputs_temporal
     hour_of_day                  FLOAT,   -- FLOAT to accommodate subhourly timepoints
     timestamp                    DATETIME,
     PRIMARY KEY (temporal_scenario_id, subproblem_id, stage_id, timepoint),
+    UNIQUE (temporal_scenario_id, stage_id, timepoint, spinup_or_lookahead),
     FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
         (temporal_scenario_id),
     -- Make sure period exists in this temporal_scenario_id
@@ -370,16 +382,15 @@ CREATE TABLE inputs_temporal
 -- subproblem can be a week and have days as horizons and another one
 -- can be a week and have the week as horizon), but will have to be same for
 -- each stage of a subproblem
+-- Balancing_type-horizons within
 DROP TABLE IF EXISTS inputs_temporal_horizons;
 CREATE TABLE inputs_temporal_horizons
 (
     temporal_scenario_id   INTEGER     NOT NULL,
-    subproblem_id          INTEGER     NOT NULL,
     balancing_type_horizon VARCHAR(32) NOT NULL,
     horizon                INTEGER     NOT NULL,
     boundary               VARCHAR(16) NOT NULL,
-    PRIMARY KEY (temporal_scenario_id, subproblem_id, balancing_type_horizon,
-                 horizon),
+    PRIMARY KEY (temporal_scenario_id, balancing_type_horizon, horizon),
     FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
         (temporal_scenario_id),
     -- Make sure boundary type is correct
@@ -394,26 +405,32 @@ CREATE TABLE inputs_temporal_horizons
 DROP TABLE IF EXISTS inputs_temporal_horizon_timepoints_start_end;
 CREATE TABLE inputs_temporal_horizon_timepoints_start_end
 (
-    temporal_scenario_id   INTEGER     NOT NULL,
-    subproblem_id          INTEGER     NOT NULL,
-    stage_id               INTEGER     NOT NULL,
-    balancing_type_horizon VARCHAR(32) NOT NULL,
-    horizon                INTEGER     NOT NULL,
-    tmp_start              INTEGER     NOT NULL,
-    tmp_end                INTEGER     NOT NULL,
-    PRIMARY KEY (temporal_scenario_id, subproblem_id, stage_id,
-                 balancing_type_horizon, horizon, tmp_start, tmp_end),
+    temporal_scenario_id          INTEGER     NOT NULL,
+    stage_id                      INTEGER     NOT NULL,
+    balancing_type_horizon        VARCHAR(32) NOT NULL,
+    horizon                       INTEGER     NOT NULL,
+    tmp_start                     INTEGER     NOT NULL,
+    tmp_start_spinup_or_lookahead INTEGER     NOT NULL DEFAULT 0,
+    tmp_end                       INTEGER     NOT NULL,
+    tmp_end_spinup_or_lookahead   INTEGER     NOT NULL DEFAULT 0,
+    PRIMARY KEY (temporal_scenario_id, stage_id, balancing_type_horizon,
+                 horizon, tmp_start, tmp_start_spinup_or_lookahead,
+                 tmp_end, tmp_end_spinup_or_lookahead),
     FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
         (temporal_scenario_id),
+    -- Make sure we have the right balancing_type-horizons
+    FOREIGN KEY (temporal_scenario_id, balancing_type_horizon, horizon)
+        REFERENCES inputs_temporal_horizons (temporal_scenario_id,
+                                             balancing_type_horizon, horizon),
     -- Make sure the start and end timepoints exist in the main timepoints table
-    FOREIGN KEY (temporal_scenario_id, subproblem_id, stage_id, tmp_start)
-        REFERENCES inputs_temporal (temporal_scenario_id, subproblem_id,
-                                    stage_id,
-                                    timepoint),
-    FOREIGN KEY (temporal_scenario_id, subproblem_id, stage_id, tmp_end)
-        REFERENCES inputs_temporal (temporal_scenario_id, subproblem_id,
-                                    stage_id,
-                                    timepoint)
+    FOREIGN KEY (temporal_scenario_id, stage_id, tmp_start,
+                 tmp_start_spinup_or_lookahead)
+        REFERENCES inputs_temporal (temporal_scenario_id, stage_id, timepoint,
+                                    spinup_or_lookahead),
+    FOREIGN KEY (temporal_scenario_id, stage_id, tmp_end,
+                 tmp_end_spinup_or_lookahead)
+        REFERENCES inputs_temporal (temporal_scenario_id, stage_id, timepoint,
+                                    spinup_or_lookahead)
 );
 
 -- This table is what GridPath uses to get inputs
@@ -435,10 +452,8 @@ CREATE TABLE inputs_temporal_horizon_timepoints
         REFERENCES inputs_temporal (temporal_scenario_id,
                                     subproblem_id, stage_id, timepoint),
     -- Make sure horizons exist in this temporal_scenario_id and subproblem_id
-    FOREIGN KEY (temporal_scenario_id, subproblem_id, balancing_type_horizon,
-                 horizon)
+    FOREIGN KEY (temporal_scenario_id, balancing_type_horizon, horizon)
         REFERENCES inputs_temporal_horizons (temporal_scenario_id,
-                                             subproblem_id,
                                              balancing_type_horizon, horizon)
 );
 
@@ -1608,7 +1623,6 @@ CREATE TABLE inputs_project_hydro_operational_chars
     project                             VARCHAR(64),
     hydro_operational_chars_scenario_id INTEGER,
     hydro_iteration                     INTEGER DEFAULT 0 NOT NULL,
-    subproblem_id                       INTEGER,
     stage_id                            INTEGER,
     balancing_type_project              VARCHAR(64),
     horizon                             INTEGER,
@@ -1616,25 +1630,12 @@ CREATE TABLE inputs_project_hydro_operational_chars
     min_power_fraction                  FLOAT,
     max_power_fraction                  FLOAT,
     PRIMARY KEY (project, hydro_operational_chars_scenario_id,
-                 hydro_iteration, subproblem_id, stage_id,
+                 hydro_iteration, stage_id,
                  balancing_type_project, horizon),
     FOREIGN KEY (project, hydro_operational_chars_scenario_id) REFERENCES
         subscenarios_project_hydro_operational_chars
             (project, hydro_operational_chars_scenario_id)
 );
-
-DROP TABLE IF EXISTS raw_inputs_project_hydro_operational_chars_by_year_month;
-CREATE TABLE raw_inputs_project_hydro_operational_chars_by_year_month
-(
-    project                VARCHAR(64),
-    hydro_year             INTEGER,
-    month                  INTEGER,
-    average_power_fraction FLOAT,
-    min_power_fraction     FLOAT,
-    max_power_fraction     FLOAT,
-    PRIMARY KEY (project, hydro_year, month)
-);
-
 
 -- Storage exogenously specified state of charge
 DROP TABLE IF EXISTS subscenarios_project_stor_exog_state_of_charge;
@@ -1707,39 +1708,66 @@ CREATE TABLE subscenarios_project_availability
 DROP TABLE IF EXISTS inputs_project_availability;
 CREATE TABLE inputs_project_availability
 (
-    project_availability_scenario_id    INTEGER,
-    project                             VARCHAR(64),
-    availability_type                   VARCHAR(32),
-    exogenous_availability_scenario_id  INTEGER,
-    endogenous_availability_scenario_id INTEGER,
+    project_availability_scenario_id               INTEGER,
+    project                                        VARCHAR(64),
+    availability_type                              VARCHAR(32),
+    exogenous_availability_independent_scenario_id INTEGER,
+    exogenous_availability_weather_scenario_id     INTEGER,
+    endogenous_availability_scenario_id            INTEGER,
     PRIMARY KEY (project_availability_scenario_id, project, availability_type)
 );
 
-DROP TABLE IF EXISTS subscenarios_project_availability_exogenous;
-CREATE TABLE subscenarios_project_availability_exogenous
+DROP TABLE IF EXISTS subscenarios_project_availability_exogenous_independent;
+CREATE TABLE subscenarios_project_availability_exogenous_independent
 (
-    project                            VARCHAR(64),
-    exogenous_availability_scenario_id INTEGER,
-    name                               VARCHAR(32),
-    description                        VARCHAR(128),
-    PRIMARY KEY (project, exogenous_availability_scenario_id)
+    project                                        VARCHAR(64),
+    exogenous_availability_independent_scenario_id INTEGER,
+    name                                           VARCHAR(32),
+    description                                    VARCHAR(128),
+    PRIMARY KEY (project, exogenous_availability_independent_scenario_id)
 );
 
-DROP TABLE IF EXISTS inputs_project_availability_exogenous;
-CREATE TABLE inputs_project_availability_exogenous
+DROP TABLE IF EXISTS inputs_project_availability_exogenous_independent;
+CREATE TABLE inputs_project_availability_exogenous_independent
 (
-    project                            VARCHAR(64),
-    exogenous_availability_scenario_id INTEGER,
-    availability_iteration             INTEGER,
-    stage_id                           INTEGER,
-    timepoint                          INTEGER,
-    availability_derate                FLOAT,
-    hyb_stor_cap_availability_derate   FLOAT,
-    PRIMARY KEY (project, exogenous_availability_scenario_id,
+    project                                        VARCHAR(64),
+    exogenous_availability_independent_scenario_id INTEGER,
+    availability_iteration                         INTEGER,
+    stage_id                                       INTEGER,
+    timepoint                                      INTEGER,
+    availability_derate_independent                FLOAT,
+    hyb_stor_cap_availability_derate               FLOAT,
+    PRIMARY KEY (project, exogenous_availability_independent_scenario_id,
                  availability_iteration, stage_id, timepoint),
-    FOREIGN KEY (project, exogenous_availability_scenario_id)
-        REFERENCES subscenarios_project_availability_exogenous
-            (project, exogenous_availability_scenario_id)
+    FOREIGN KEY (project, exogenous_availability_independent_scenario_id)
+        REFERENCES subscenarios_project_availability_exogenous_independent
+            (project, exogenous_availability_independent_scenario_id)
+);
+
+DROP TABLE IF EXISTS subscenarios_project_availability_exogenous_weather;
+CREATE TABLE subscenarios_project_availability_exogenous_weather
+(
+    project                                    VARCHAR(64),
+    exogenous_availability_weather_scenario_id INTEGER,
+    name                                       VARCHAR(32),
+    description                                VARCHAR(128),
+    PRIMARY KEY (project, exogenous_availability_weather_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_availability_exogenous_weather;
+CREATE TABLE inputs_project_availability_exogenous_weather
+(
+    project                                    VARCHAR(64),
+    exogenous_availability_weather_scenario_id INTEGER,
+    weather_iteration                          INTEGER,
+    stage_id                                   INTEGER,
+    timepoint                                  INTEGER,
+    availability_derate_weather                FLOAT,
+    PRIMARY KEY (project, exogenous_availability_weather_scenario_id,
+                 weather_iteration, stage_id, timepoint),
+    FOREIGN KEY (project, exogenous_availability_weather_scenario_id)
+        REFERENCES subscenarios_project_availability_exogenous_weather
+            (project, exogenous_availability_weather_scenario_id)
 );
 
 DROP TABLE IF EXISTS subscenarios_project_availability_endogenous;
@@ -4132,6 +4160,141 @@ CREATE TABLE scenarios
 );
 
 --------------------------
+-------- RAW DATA --------
+--------------------------
+-- TODO: add timestamps?
+-- TODO: change name to load_zone_unit
+DROP TABLE IF EXISTS raw_data_system_load;
+CREATE TABLE raw_data_system_load
+(
+    year           INTEGER,
+    month          INTEGER,
+    day_of_month   INTEGER,
+    day_type       INTEGER,
+    hour_of_day    INTEGER,
+    load_zone_unit VARCHAR(64),
+    load_mw        FLOAT,
+    PRIMARY KEY (year, month, day_of_month, hour_of_day, load_zone_unit)
+);
+
+DROP TABLE IF EXISTS raw_data_load_zone_units;
+CREATE TABLE raw_data_load_zone_units
+(
+    load_zone_unit TEXT,
+    load_zone      TEXT,
+    unit_weight    DECIMAL,
+    PRIMARY KEY (load_zone_unit, load_zone)
+);
+
+DROP TABLE IF EXISTS raw_data_project_variable_profiles;
+CREATE TABLE raw_data_project_variable_profiles
+(
+    year         INTEGER,
+    month        INTEGER,
+    day_of_month INTEGER,
+    day_type     INTEGER,
+    hour_of_day  INTEGER,
+    unit         VARCHAR(64),
+    cap_factor   FLOAT,
+    PRIMARY KEY (year, month, day_of_month, hour_of_day, unit)
+);
+
+DROP TABLE IF EXISTS raw_data_weather_bins;
+CREATE TABLE raw_data_weather_bins
+(
+    weather_bins_id INTEGER,
+    year            INTEGER,
+    month           INTEGER,
+    day_of_month    INTEGER,
+    day_type        INTEGER,
+    weather_bin     INTEGER,
+    PRIMARY KEY (weather_bins_id, year, month, day_of_month, day_type)
+);
+
+DROP TABLE IF EXISTS raw_data_availability;
+CREATE TABLE raw_data_availability
+(
+    timeseries_name VARCHAR(32),
+    year            INTEGER,
+    PRIMARY KEY (timeseries_name, year)
+);
+
+DROP TABLE IF EXISTS raw_data_monte_carlo_timeseries;
+CREATE TABLE raw_data_monte_carlo_timeseries
+(
+    timeseries_name    VARCHAR(32),
+    consider_day_types INTEGER,
+    PRIMARY KEY (timeseries_name)
+);
+
+DROP TABLE IF EXISTS raw_data_project_hydro_opchars_by_year_month;
+CREATE TABLE raw_data_project_hydro_opchars_by_year_month
+(
+    project                VARCHAR(64),
+    hydro_year             INTEGER,
+    month                  INTEGER,
+    average_power_fraction FLOAT,
+    min_power_fraction     FLOAT,
+    max_power_fraction     FLOAT,
+    PRIMARY KEY (project, hydro_year, month)
+);
+
+DROP TABLE IF EXISTS raw_data_var_project_units;
+CREATE TABLE raw_data_var_project_units
+(
+    unit            VARCHAR(32),
+    project         VARCHAR(32),
+    unit_weight     FLOAT,
+    timeseries_name VARCHAR(32),
+    PRIMARY KEY (unit, project)
+);
+
+DROP TABLE IF EXISTS raw_data_hydro_bins;
+CREATE TABLE raw_data_hydro_bins
+(
+    year      INTEGER,
+    month     INTEGER,
+    hydro_bin INTEGER,
+    PRIMARY KEY (year, month)
+);
+
+DROP TABLE IF EXISTS raw_data_balancing_type_horizons;
+CREATE TABLE raw_data_balancing_type_horizons
+(
+    balancing_type            VARCHAR(32),
+    horizon                   INTEGER,
+    hour_ending_of_year_start INTEGER,
+    hour_ending_of_year_end   INTEGER,
+    PRIMARY KEY (balancing_type, horizon)
+);
+
+DROP TABLE IF EXISTS raw_data_unit_availability_params;
+CREATE TABLE raw_data_unit_availability_params
+(
+    unit            TEXT PRIMARY KEY,
+    project         TEXT,
+    unit_weight     DECIMAL,
+    n_units         INTEGER,
+    unit_fo_model   TEXT,
+    unit_for        DECIMAL,
+    unit_mttr       DECIMAL,
+    timeseries_name VARCHAR(32)
+);
+
+DROP TABLE IF EXISTS raw_data_unit_availability_weather_derates;
+CREATE TABLE raw_data_unit_availability_weather_derates
+(
+    year                        INTEGER,
+    month                       INTEGER,
+    day_of_month                INTEGER,
+    day_type                    INTEGER,
+    hour_of_day                 INTEGER,
+    unit                        VARCHAR(64),
+    availability_derate_weather FLOAT,
+    PRIMARY KEY (year, month, day_of_month, hour_of_day, unit)
+);
+
+--------------------------
 -- -- DATA INTEGRITY -- --
 --------------------------
 
@@ -4233,7 +4396,7 @@ CREATE TABLE results_project_group_capacity
     capacity_group_total_max_marginal_cost FLOAT,
     capacity_group_total_min_marginal_cost FLOAT,
     PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
-                 availability_iteration, subproblem_id, stage_id, 
+                 availability_iteration, subproblem_id, stage_id,
                  capacity_group, period)
 );
 
@@ -4347,7 +4510,7 @@ CREATE TABLE results_project_curtailment_variable_periodagg
     load_zone                    VARCHAR(32),
     scheduled_curtailment_mw     FLOAT,
     PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
-                 availability_iteration, subproblem_id, stage_id, timepoint, 
+                 availability_iteration, subproblem_id, stage_id, timepoint,
                  load_zone)
 );
 
@@ -4370,7 +4533,7 @@ CREATE TABLE results_project_curtailment_hydro_periodagg
     load_zone                    VARCHAR(32),
     scheduled_curtailment_mw     FLOAT,
     PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
-                 availability_iteration,  subproblem_id, stage_id, timepoint,
+                 availability_iteration, subproblem_id, stage_id, timepoint,
                  load_zone)
 );
 
@@ -4391,7 +4554,7 @@ CREATE TABLE results_project_cap_factor_limits
     actual_power_provision_mwh,
     possible_power_provision_mwh,
     PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
-                 availability_iteration,  subproblem_id, stage_id, project,
+                 availability_iteration, subproblem_id, stage_id, project,
                  balancing_type_horizon, horizon)
 );
 
@@ -4417,7 +4580,7 @@ CREATE TABLE results_project_carbon_tax_allowance
     opr_fuel_burn_by_fuel_group_mmbtu                    FLOAT,
     carbon_tax_allowance_tons                            FLOAT,
     PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
-                 availability_iteration,  subproblem_id, stage_id, project,
+                 availability_iteration, subproblem_id, stage_id, project,
                  fuel_group, timepoint)
 );
 
@@ -4439,7 +4602,7 @@ CREATE TABLE results_project_dispatch_by_technology
     technology                   VARCHAR(32),
     power_mw                     FLOAT,
     PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
-                 availability_iteration,  subproblem_id, stage_id, timepoint,
+                 availability_iteration, subproblem_id, stage_id, timepoint,
                  load_zone, technology)
 );
 
@@ -4458,7 +4621,7 @@ CREATE TABLE results_project_dispatch_by_technology_period
     spinup_or_lookahead    INTEGER,
     energy_mwh             FLOAT,
     PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
-                 availability_iteration,  subproblem_id, stage_id, period,
+                 availability_iteration, subproblem_id, stage_id, period,
                  load_zone, technology, spinup_or_lookahead)
 );
 
@@ -4501,7 +4664,7 @@ CREATE TABLE results_project_deliverability_groups
     cumulative_added_deliverable_capacity_mw FLOAT,
     deliverability_annual_cost_in_period     FLOAT,
     PRIMARY KEY (scenario_id, deliverability_group, period,
-                 weather_iteration, hydro_iteration, availability_iteration, 
+                 weather_iteration, hydro_iteration, availability_iteration,
                  subproblem_id, stage_id)
 );
 
@@ -4698,6 +4861,27 @@ CREATE TABLE results_project_carbon_emissions_by_technology_period
 );
 
 
+DROP TABLE IF EXISTS results_project_summary;
+CREATE TABLE results_project_summary
+(
+    scenario_id            INTEGER,
+    project                VARCHAR(64),
+    weather_iteration      INTEGER,
+    hydro_iteration        INTEGER,
+    availability_iteration INTEGER,
+    subproblem_id          INTEGER,
+    stage_id               INTEGER,
+    capacity_type          VARCHAR(64),
+    availability_type      VARCHAR(64),
+    operational_type       VARCHAR(64),
+    technology             VARCHAR(32),
+    load_zone              VARCHAR(32),
+    total_delivered_power  FLOAT,
+    PRIMARY KEY (scenario_id, project, weather_iteration, hydro_iteration,
+                 availability_iteration, subproblem_id, stage_id)
+);
+
+
 DROP TABLE IF EXISTS results_transmission_period;
 CREATE TABLE results_transmission_period
 (
@@ -4742,7 +4926,7 @@ CREATE TABLE results_transmission_group_capacity
     transmission_capacity_group_new_capacity_min FLOAT,
     transmission_capacity_group_new_capacity_max FLOAT,
     PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
-                 availability_iteration,  subproblem_id, stage_id,
+                 availability_iteration, subproblem_id, stage_id,
                  transmission_capacity_group, period)
 );
 
@@ -4799,7 +4983,7 @@ CREATE TABLE results_transmission_timepoint
     carbon_emission_imports_tons                     FLOAT,
     carbon_emission_imports_tons_degen               FLOAT,
     PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
-                 availability_iteration,  subproblem_id, stage_id,
+                 availability_iteration, subproblem_id, stage_id,
                  transmission_line, timepoint)
 );
 
@@ -4818,7 +5002,7 @@ CREATE TABLE results_transmission_imports_exports_agg
     imports                FLOAT,
     exports                FLOAT,
     PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
-                 availability_iteration,  subproblem_id, stage_id, period,
+                 availability_iteration, subproblem_id, stage_id, period,
                  load_zone, spinup_or_lookahead)
 );
 
@@ -4888,8 +5072,111 @@ CREATE TABLE results_system_load_zone_timepoint
     load_balance_dual                 FLOAT,
     load_balance_marginal_cost_per_mw FLOAT,
     PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
-                 availability_iteration,  subproblem_id, stage_id, load_zone,
+                 availability_iteration, subproblem_id, stage_id, load_zone,
                  timepoint)
+);
+
+DROP TABLE IF EXISTS results_system_load_zone_timepoint_loss_of_load_summary;
+CREATE TABLE results_system_load_zone_timepoint_loss_of_load_summary
+(
+    scenario_id                  INTEGER,
+    weather_iteration            INTEGER,
+    hydro_iteration              INTEGER,
+    availability_iteration       INTEGER,
+    subproblem_id                INTEGER,
+    stage_id                     INTEGER,
+    load_zone                    VARCHAR(32),
+    timepoint                    INTEGER,
+    period                       INTEGER,
+    month                        INTEGER,
+    day_of_month                 INTEGER,
+    hour_of_day                  INTEGER,
+    timepoint_weight             FLOAT,
+    number_of_hours_in_timepoint FLOAT,
+    spinup_or_lookahead          INTEGER,
+    static_load_mw               FLOAT,
+    unserved_energy_mw           FLOAT,
+    PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
+                 availability_iteration, subproblem_id, stage_id, load_zone,
+                 timepoint)
+);
+
+DROP TABLE IF EXISTS results_system_timepoint_loss_of_load_summary;
+CREATE TABLE results_system_timepoint_loss_of_load_summary
+(
+    scenario_id                  INTEGER,
+    weather_iteration            INTEGER,
+    hydro_iteration              INTEGER,
+    availability_iteration       INTEGER,
+    subproblem_id                INTEGER,
+    stage_id                     INTEGER,
+    timepoint                    INTEGER,
+    period                       INTEGER,
+    month                        INTEGER,
+    day_of_month                 INTEGER,
+    hour_of_day                  INTEGER,
+    timepoint_weight             FLOAT,
+    number_of_hours_in_timepoint FLOAT,
+    spinup_or_lookahead          INTEGER,
+    static_load_mw               FLOAT,
+    unserved_energy_mw           FLOAT,
+    PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
+                 availability_iteration, subproblem_id, stage_id,
+                 timepoint)
+);
+
+DROP TABLE IF EXISTS
+    results_system_days_loss_of_load_summary;
+CREATE TABLE results_system_days_loss_of_load_summary
+(
+    scenario_id              INTEGER,
+    weather_iteration        INTEGER,
+    hydro_iteration          INTEGER,
+    availability_iteration   INTEGER,
+    subproblem_id            INTEGER,
+    stage_id                 INTEGER,
+    period                   INTEGER,
+    month                    INTEGER,
+    day_of_month             INTEGER,
+    max_unserved_energy_mw   FLOAT,
+    total_unserved_energy_mw FLOAT,
+    duration_hours           FLOAT,
+    PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
+                 availability_iteration, subproblem_id, stage_id, period,
+                 month, day_of_month)
+);
+
+DROP TABLE IF EXISTS results_system_loss_of_load_metrics_summary;
+CREATE TABLE results_system_loss_of_load_metrics_summary
+(
+    scenario_id                 INTEGER PRIMARY KEY,
+    LOLH_hrs_per_year           FLOAT,
+    EUE_MWh_per_year            FLOAT,
+    LOLE_days_per_year          FLOAT,
+    LOLP_year_fraction_of_years FLOAT
+);
+
+DROP TABLE IF EXISTS results_system_loss_of_load_month_hour_metrics_summary;
+CREATE TABLE results_system_loss_of_load_month_hour_metrics_summary
+(
+    scenario_id INTEGER,
+    month       INTEGER,
+    hour_of_day INTEGER,
+    LOLH        FLOAT,
+    EUE         FLOAT,
+    PRIMARY KEY (scenario_id, month, hour_of_day)
+);
+
+DROP TABLE IF EXISTS results_system_loss_of_load_metrics_convergence_summary;
+CREATE TABLE results_system_loss_of_load_metrics_convergence_summary
+(
+    scenario_id                 INTEGER,
+    n_years                     INTEGER,
+    LOLH_hrs_per_year           FLOAT,
+    EUE_MWh_per_year            FLOAT,
+    LOLE_days_per_year          FLOAT,
+    LOLP_year_fraction_of_years FLOAT,
+    PRIMARY KEY (scenario_id, n_years)
 );
 
 DROP TABLE IF EXISTS results_system_market_participation;
@@ -5401,6 +5688,9 @@ CREATE TABLE results_system_local_capacity
                  subproblem_id, stage_id)
 );
 
+-- RA
+DROP TABLE IF EXISTS results_system_ra;
+
 
 -- Total Costs
 DROP TABLE IF EXISTS results_system_costs;
@@ -5853,7 +6143,6 @@ FROM (
 DROP VIEW IF EXISTS periods_horizons;
 CREATE VIEW periods_horizons AS
 SELECT DISTINCT temporal_scenario_id,
-                subproblem_id,
                 stage_id,
                 balancing_type_horizon,
                 period,
@@ -5861,7 +6150,7 @@ SELECT DISTINCT temporal_scenario_id,
 FROM inputs_temporal
          INNER JOIN
      inputs_temporal_horizon_timepoints
-     USING (temporal_scenario_id, subproblem_id, stage_id, timepoint)
+     USING (temporal_scenario_id, stage_id, timepoint)
 ;
 
 
@@ -5882,7 +6171,6 @@ SELECT project_portfolio_scenario_id,
        operational_type,
        balancing_type_project as balancing_type,
        hydro_operational_chars_scenario_id,
-       subproblem_id,
        stage_id,
        project,
        horizon

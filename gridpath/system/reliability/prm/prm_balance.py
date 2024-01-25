@@ -24,7 +24,11 @@ from pyomo.environ import Var, Constraint, Expression, NonNegativeReals, value
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.dynamic_components import prm_balance_provision_components
-from gridpath.common_functions import create_results_df
+from gridpath.common_functions import (
+    create_results_df,
+    duals_wrapper,
+    none_dual_type_error_wrapper,
+)
 from gridpath.system.reliability.prm import PRM_ZONE_PRD_DF
 
 
@@ -118,12 +122,14 @@ def export_results(
             p,
             value(m.Total_PRM_from_All_Sources_Expression[z, p]),
             value(m.PRM_Shortage_MW_Expression[z, p]),
-            m.dual[getattr(m, "PRM_Constraint")[z, p]]
+            duals_wrapper(m, getattr(m, "PRM_Constraint")[z, p])
             if (z, p) in [idx for idx in getattr(m, "PRM_Constraint")]
             else None,
             (
-                m.dual[getattr(m, "PRM_Constraint")[z, p]]
-                / m.period_objective_coefficient[p]
+                none_dual_type_error_wrapper(
+                    duals_wrapper(m, getattr(m, "PRM_Constraint")[z, p]),
+                    m.period_objective_coefficient[p],
+                )
                 if (z, p) in [idx for idx in getattr(m, "PRM_Constraint")]
                 else None
             ),

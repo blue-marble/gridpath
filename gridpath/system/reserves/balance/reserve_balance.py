@@ -18,6 +18,7 @@ import os.path
 from pyomo.environ import Var, Constraint, NonNegativeReals, Expression, value
 
 from gridpath.auxiliary.db_interface import import_csv
+from gridpath.common_functions import duals_wrapper, none_dual_type_error_wrapper
 
 
 def generic_add_model_components(
@@ -165,12 +166,16 @@ def generic_export_results(
                     m.tmp_weight[tmp],
                     m.hrs_in_tmp[tmp],
                     value(getattr(m, reserve_violation_expression)[ba, tmp]),
-                    m.dual[getattr(m, duals_map[reserve_type])[ba, tmp]]
+                    duals_wrapper(m, getattr(m, duals_map[reserve_type])[ba, tmp])
                     if (ba, tmp) in [idx for idx in getattr(m, duals_map[reserve_type])]
                     else None,
                     (
-                        m.dual[getattr(m, duals_map[reserve_type])[ba, tmp]]
-                        / m.tmp_objective_coefficient[tmp]
+                        none_dual_type_error_wrapper(
+                            duals_wrapper(
+                                m, getattr(m, duals_map[reserve_type])[ba, tmp]
+                            ),
+                            m.tmp_objective_coefficient[tmp],
+                        )
                         if (ba, tmp)
                         in [idx for idx in getattr(m, duals_map[reserve_type])]
                         else None

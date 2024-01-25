@@ -402,7 +402,7 @@ def main(args=None):
 
     # Import appropriate results into database
     import_scenario_results_into_database(
-        import_rule=parsed_arguments.results_import_rule,
+        import_rule=import_rule,
         loaded_modules=loaded_modules,
         scenario_id=scenario_id,
         scenario_structure=scenario_structure,

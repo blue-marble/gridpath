@@ -34,7 +34,7 @@ def export_results(
     # Other modules will update these dataframe with actual results
     # The results dataframes are by index
 
-    # Zone-period DF
+    # Zone-tmp DF
     lz_tmp_df = pd.DataFrame(
         columns=[
             "load_zone",
@@ -99,4 +99,18 @@ def import_results_into_database(
         quiet=quiet,
         results_directory=results_directory,
         which_results="system_load_zone_timepoint",
+    )
+
+    import_csv(
+        conn=db,
+        cursor=c,
+        scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        quiet=quiet,
+        results_directory=results_directory,
+        which_results="system_load_zone_timepoint_loss_of_load_summary",
     )

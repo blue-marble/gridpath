@@ -30,7 +30,6 @@ def connect_to_database(db_path="../db/io.db", timeout=5, detect_types=0):
 
     Connect to a database and return the connection object.
     """
-
     if not os.path.isfile(db_path):
         raise OSError(
             "The database file {} was not found. Did you mean to "

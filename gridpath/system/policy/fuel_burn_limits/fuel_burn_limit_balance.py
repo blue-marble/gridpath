@@ -25,7 +25,11 @@ from pyomo.environ import Var, Constraint, NonNegativeReals, Expression, value
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.auxiliary.dynamic_components import fuel_burn_balance_components
-from gridpath.common_functions import create_results_df
+from gridpath.common_functions import (
+    create_results_df,
+    duals_wrapper,
+    none_dual_type_error_wrapper,
+)
 from gridpath.system.policy.fuel_burn_limits import FUEL_BURN_LIMITS_DF
 
 
@@ -249,35 +253,53 @@ def export_results(
             if (f, z, bt, h)
             in m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MAX_REL_LIMIT
             else None,
-            m.dual[getattr(m, "Meet_Fuel_Burn_Min_Abs_Constraint")[f, z, bt, h]]
+            duals_wrapper(
+                m, getattr(m, "Meet_Fuel_Burn_Min_Abs_Constraint")[f, z, bt, h]
+            )
             if (f, z, bt, h)
             in [idx for idx in getattr(m, "Meet_Fuel_Burn_Min_Abs_Constraint")]
             else None,
             (
-                m.dual[getattr(m, "Meet_Fuel_Burn_Min_Abs_Constraint")[f, z, bt, h]]
-                / m.hrz_objective_coefficient[bt, h]
+                none_dual_type_error_wrapper(
+                    duals_wrapper(
+                        m, getattr(m, "Meet_Fuel_Burn_Min_Abs_Constraint")[f, z, bt, h]
+                    ),
+                    m.hrz_objective_coefficient[bt, h],
+                )
                 if (f, z, bt, h)
                 in [idx for idx in getattr(m, "Meet_Fuel_Burn_Min_Abs_Constraint")]
                 else None
             ),
-            m.dual[getattr(m, "Meet_Fuel_Burn_Max_Abs_Constraint")[f, z, bt, h]]
+            duals_wrapper(
+                m, getattr(m, "Meet_Fuel_Burn_Max_Abs_Constraint")[f, z, bt, h]
+            )
             if (f, z, bt, h)
             in [idx for idx in getattr(m, "Meet_Fuel_Burn_Max_Abs_Constraint")]
             else None,
             (
-                m.dual[getattr(m, "Meet_Fuel_Burn_Max_Abs_Constraint")[f, z, bt, h]]
-                / m.hrz_objective_coefficient[bt, h]
+                none_dual_type_error_wrapper(
+                    duals_wrapper(
+                        m, getattr(m, "Meet_Fuel_Burn_Max_Abs_Constraint")[f, z, bt, h]
+                    ),
+                    m.hrz_objective_coefficient[bt, h],
+                )
                 if (f, z, bt, h)
                 in [idx for idx in getattr(m, "Meet_Fuel_Burn_Max_Abs_Constraint")]
                 else None
             ),
-            m.dual[getattr(m, "Meet_Fuel_Burn_Max_Rel_Constraint")[f, z, bt, h]]
+            duals_wrapper(
+                m, getattr(m, "Meet_Fuel_Burn_Max_Rel_Constraint")[f, z, bt, h]
+            )
             if (f, z, bt, h)
             in [idx for idx in getattr(m, "Meet_Fuel_Burn_Max_Rel_Constraint")]
             else None,
             (
-                m.dual[getattr(m, "Meet_Fuel_Burn_Max_Rel_Constraint")[f, z, bt, h]]
-                / m.hrz_objective_coefficient[bt, h]
+                none_dual_type_error_wrapper(
+                    duals_wrapper(
+                        m, getattr(m, "Meet_Fuel_Burn_Max_Rel_Constraint")[f, z, bt, h]
+                    ),
+                    m.hrz_objective_coefficient[bt, h],
+                )
                 if (f, z, bt, h)
                 in [idx for idx in getattr(m, "Meet_Fuel_Burn_Max_Rel_Constraint")]
                 else None
