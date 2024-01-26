@@ -372,7 +372,6 @@ def write_model_inputs(
     )
 
     if independent_availabilities.fetchall():
-        print("Found independent availabilities")
         with open(
             os.path.join(
                 scenario_directory,
@@ -405,7 +404,6 @@ def write_model_inputs(
                 writer.writerow(row)
 
     if weather_availabilities.fetchall():
-        print("Found weather availabilities")
         with open(
             os.path.join(
                 scenario_directory,

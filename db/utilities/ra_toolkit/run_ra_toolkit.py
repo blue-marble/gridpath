@@ -13,6 +13,8 @@
 # limitations under the License.
 
 import os.path
+from argparse import ArgumentParser
+
 import pandas as pd
 import sys
 
@@ -37,10 +39,22 @@ from db.utilities.ra_toolkit.weather import (
 # TODO: add checks if files exists, tell user to delete before running
 
 
-def read_settings():
-    df = pd.read_csv(os.path.join(os.getcwd(), "wrapper_settings.csv"))
+def parse_arguments(args):
+    """
+    :param args: the script arguments specified by the user
+    :return: the parsed known argument values (<class 'argparse.Namespace'>
+    Python object)
 
-    return df
+    Parse the known arguments.
+    """
+    parser = ArgumentParser(add_help=True)
+
+    parser.add_argument("-s", "--settings_csv",
+                        default="./ra_toolkit_settings.csv")
+
+    parsed_arguments = parser.parse_known_args(args=args)[0]
+
+    return parsed_arguments
 
 
 def get_setting(settings_df, script, setting):
@@ -53,7 +67,10 @@ def main(args=None):
     if args is None:
         args = sys.argv[1:]
 
-    settings_df = read_settings()
+    parsed_args = parse_arguments(args=args)
+
+    # Get the settings
+    settings_df = pd.read_csv(parsed_args.settings_csv)
     settings_df.set_index(["script", "setting"])
 
     # Arguments used by multiple scripts
