@@ -167,9 +167,11 @@ def add_model_components(
         m.CARBON_CREDITS_PRJ_OPR_PRDS,
         within=NonNegativeReals,
         default=0,
-        validate=lambda mod, value, prj, prd: value == 0
-        if mod.intensity_threshold_emissions_toCO2_per_MWh[prj, prd] > 0
-        else value >= 0,  # pick one of intensity-based and absolute thresholds
+        validate=lambda mod, value, prj, prd: (
+            value == 0
+            if mod.intensity_threshold_emissions_toCO2_per_MWh[prj, prd] > 0
+            else value >= 0
+        ),  # pick one of intensity-based and absolute thresholds
     )
 
     # Derived Sets

@@ -332,8 +332,10 @@ def write_model_inputs(
         # Append correct values
         for row in reader:
             if row[0] in list(prj_zone_dur_dict.keys()):
-                row.append(".") if prj_zone_dur_dict[row[0]] is None else row.append(
-                    prj_zone_dur_dict[row[0]]
+                (
+                    row.append(".")
+                    if prj_zone_dur_dict[row[0]] is None
+                    else row.append(prj_zone_dur_dict[row[0]])
                 )
                 new_rows.append(row)
             # If project not specified

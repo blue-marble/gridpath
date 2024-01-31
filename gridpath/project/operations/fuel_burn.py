@@ -657,9 +657,11 @@ def export_results(
                     m.technology[p],
                     f,
                     value(m.Project_Opr_Fuel_Burn_by_Fuel[p, f, tmp]),
-                    value(m.Project_Startup_Fuel_Burn_by_Fuel[p, f, tmp])
-                    if p in m.STARTUP_FUEL_PRJS
-                    else None,
+                    (
+                        value(m.Project_Startup_Fuel_Burn_by_Fuel[p, f, tmp])
+                        if p in m.STARTUP_FUEL_PRJS
+                        else None
+                    ),
                     value(m.Total_Fuel_Burn_by_Fuel_MMBtu[p, f, tmp]),
                     value(m.Project_Fuel_Contribution_by_Fuel[p, f, tmp]),
                     (

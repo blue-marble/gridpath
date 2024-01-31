@@ -122,7 +122,7 @@ def simulate_project_availability(
         "stage_id",
         "timepoint",
         "availability_derate_independent",
-        "hyb_stor_cap_availability_derate",
+        "hyb_stor_cap_availability_derate_independent",
     ]
 
     filepath = os.path.join(

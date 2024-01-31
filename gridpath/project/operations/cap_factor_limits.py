@@ -252,12 +252,16 @@ def export_results(
                         prj,
                         bt,
                         h,
-                        None
-                        if m.min_cap_factor[prj, bt, h] == Negative_Infinity
-                        else m.min_cap_factor[prj, bt, h],
-                        None
-                        if m.max_cap_factor[prj, bt, h] == Infinity
-                        else m.max_cap_factor[prj, bt, h],
+                        (
+                            None
+                            if m.min_cap_factor[prj, bt, h] == Negative_Infinity
+                            else m.min_cap_factor[prj, bt, h]
+                        ),
+                        (
+                            None
+                            if m.max_cap_factor[prj, bt, h] == Infinity
+                            else m.max_cap_factor[prj, bt, h]
+                        ),
                         value(
                             m.Actual_Power_Provision_in_Horizon_Expression[prj, bt, h]
                         ),

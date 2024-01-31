@@ -166,9 +166,12 @@ def generic_export_results(
                     m.tmp_weight[tmp],
                     m.hrs_in_tmp[tmp],
                     value(getattr(m, reserve_violation_expression)[ba, tmp]),
-                    duals_wrapper(m, getattr(m, duals_map[reserve_type])[ba, tmp])
-                    if (ba, tmp) in [idx for idx in getattr(m, duals_map[reserve_type])]
-                    else None,
+                    (
+                        duals_wrapper(m, getattr(m, duals_map[reserve_type])[ba, tmp])
+                        if (ba, tmp)
+                        in [idx for idx in getattr(m, duals_map[reserve_type])]
+                        else None
+                    ),
                     (
                         none_dual_type_error_wrapper(
                             duals_wrapper(

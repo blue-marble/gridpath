@@ -76,9 +76,12 @@ def add_model_components(
 
     m.no_market_participation_in_stage = Param(
         m.LZ_MARKETS,
-        rule=lambda mod, lz, hub: True
-        if mod.final_participation_stage[lz, hub] < (1 if stage == "" else int(stage))
-        else False,
+        rule=lambda mod, lz, hub: (
+            True
+            if mod.final_participation_stage[lz, hub]
+            < (1 if stage == "" else int(stage))
+            else False
+        ),
     )
 
     m.LZ_MARKETS_PREV_STAGE_TMPS = Set(dimen=3)
@@ -160,10 +163,10 @@ def load_model_data(
                 dtype={"stage": str},
             )
 
-            starting_market_positions_df[
-                "stage_index"
-            ] = starting_market_positions_df.apply(
-                lambda row: stages.index(row["stage"]), axis=1
+            starting_market_positions_df["stage_index"] = (
+                starting_market_positions_df.apply(
+                    lambda row: stages.index(row["stage"]), axis=1
+                )
             )
             prev_stage_net_market_purchased_powers_df = starting_market_positions_df[
                 starting_market_positions_df["stage_index"] == stages.index(stage) - 1
@@ -383,19 +386,29 @@ def export_results(
                         m.number_years_represented[m.period[tmp]],
                         m.tmp_weight[tmp],
                         m.hrs_in_tmp[tmp],
-                        -value(m.Net_Market_Purchased_Power[z, mrkt, tmp])
-                        if value(m.Net_Market_Purchased_Power[z, mrkt, tmp]) < 0
-                        else 0,
-                        value(m.Net_Market_Purchased_Power[z, mrkt, tmp])
-                        if value(m.Net_Market_Purchased_Power[z, mrkt, tmp]) >= 0
-                        else 0,
+                        (
+                            -value(m.Net_Market_Purchased_Power[z, mrkt, tmp])
+                            if value(m.Net_Market_Purchased_Power[z, mrkt, tmp]) < 0
+                            else 0
+                        ),
+                        (
+                            value(m.Net_Market_Purchased_Power[z, mrkt, tmp])
+                            if value(m.Net_Market_Purchased_Power[z, mrkt, tmp]) >= 0
+                            else 0
+                        ),
                         value(m.Net_Market_Purchased_Power[z, mrkt, tmp]),
-                        -value(m.Final_Net_Market_Purchased_Power[z, mrkt, tmp])
-                        if value(m.Final_Net_Market_Purchased_Power[z, mrkt, tmp]) < 0
-                        else 0,
-                        value(m.Final_Net_Market_Purchased_Power[z, mrkt, tmp])
-                        if value(m.Final_Net_Market_Purchased_Power[z, mrkt, tmp]) >= 0
-                        else 0,
+                        (
+                            -value(m.Final_Net_Market_Purchased_Power[z, mrkt, tmp])
+                            if value(m.Final_Net_Market_Purchased_Power[z, mrkt, tmp])
+                            < 0
+                            else 0
+                        ),
+                        (
+                            value(m.Final_Net_Market_Purchased_Power[z, mrkt, tmp])
+                            if value(m.Final_Net_Market_Purchased_Power[z, mrkt, tmp])
+                            >= 0
+                            else 0
+                        ),
                         value(m.Final_Net_Market_Purchased_Power[z, mrkt, tmp]),
                     ]
                 )

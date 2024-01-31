@@ -108,6 +108,7 @@ def add_model_components(
     # Required Params
     ###########################################################################
 
+    # For hybrids, this is the derate applied to the generator component
     m.avl_exog_cap_derate_independent = Param(
         m.AVL_EXOG_OPR_TMPS, within=NonNegativeReals, default=1
     )
@@ -116,11 +117,7 @@ def add_model_components(
         m.AVL_EXOG_OPR_TMPS, within=NonNegativeReals, default=1
     )
 
-    m.avl_exog_hyb_gen_cap_derate = Param(
-        m.AVL_EXOG_OPR_TMPS, within=NonNegativeReals, default=1
-    )
-
-    m.avl_exog_hyb_stor_cap_derate = Param(
+    m.avl_exog_hyb_stor_cap_derate_independent = Param(
         m.AVL_EXOG_OPR_TMPS, within=NonNegativeReals, default=1
     )
 
@@ -139,7 +136,7 @@ def availability_derate_cap_rule(mod, g, tmp):
 
 def availability_derate_hyb_stor_cap_rule(mod, g, tmp):
     """ """
-    return mod.avl_exog_hyb_stor_cap_derate[g, tmp]
+    return mod.avl_exog_hyb_stor_cap_derate_independent[g, tmp]
 
 
 # Input-Output
@@ -198,7 +195,10 @@ def load_model_data(
     if os.path.exists(availability_independent_file):
         data_portal.load(
             filename=availability_independent_file,
-            param=(m.avl_exog_cap_derate_independent, m.avl_exog_hyb_stor_cap_derate),
+            param=(
+                m.avl_exog_cap_derate_independent,
+                m.avl_exog_hyb_stor_cap_derate_independent,
+            ),
         )
 
     availability_weather_file = os.path.join(
@@ -240,7 +240,7 @@ def get_inputs_from_database(
 
     ind_sql = f"""
         SELECT project, timepoint, availability_derate_independent, 
-        hyb_stor_cap_availability_derate
+        hyb_stor_cap_availability_derate_independent
         -- Select only projects, periods, timepoints from the relevant 
         -- portfolio, relevant opchar scenario id, operational type, 
         -- and temporal scenario id
@@ -395,7 +395,7 @@ def write_model_inputs(
                     "project",
                     "timepoint",
                     "availability_derate_independent",
-                    "hyb_stor_cap_availability_derate",
+                    "hyb_stor_cap_availability_derate_independent",
                 ]
             )
 

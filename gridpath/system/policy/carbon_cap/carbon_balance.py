@@ -129,9 +129,11 @@ def export_results(
             p,
             value(m.Total_Carbon_Emissions_from_All_Sources_Expression[z, p]),
             value(m.Total_Carbon_Credits_from_All_Sources_Expression[z, p]),
-            duals_wrapper(m, getattr(m, "Carbon_Cap_Constraint")[z, p])
-            if (z, p) in [idx for idx in getattr(m, "Carbon_Cap_Constraint")]
-            else None,
+            (
+                duals_wrapper(m, getattr(m, "Carbon_Cap_Constraint")[z, p])
+                if (z, p) in [idx for idx in getattr(m, "Carbon_Cap_Constraint")]
+                else None
+            ),
             (
                 none_dual_type_error_wrapper(
                     duals_wrapper(m, getattr(m, "Carbon_Cap_Constraint")[z, p]),

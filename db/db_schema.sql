@@ -1735,8 +1735,8 @@ CREATE TABLE inputs_project_availability_exogenous_independent
     availability_iteration                         INTEGER,
     stage_id                                       INTEGER,
     timepoint                                      INTEGER,
-    availability_derate_independent                FLOAT,
-    hyb_stor_cap_availability_derate               FLOAT,
+    availability_derate_independent                FLOAT, -- for hybrids, this is the gen av
+    hyb_stor_cap_availability_derate_independent               FLOAT,
     PRIMARY KEY (project, exogenous_availability_independent_scenario_id,
                  availability_iteration, stage_id, timepoint),
     FOREIGN KEY (project, exogenous_availability_independent_scenario_id)

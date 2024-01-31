@@ -49,8 +49,7 @@ def parse_arguments(args):
     """
     parser = ArgumentParser(add_help=True)
 
-    parser.add_argument("-s", "--settings_csv",
-                        default="./ra_toolkit_settings.csv")
+    parser.add_argument("-s", "--settings_csv", default="./ra_toolkit_settings.csv")
 
     parsed_arguments = parser.parse_known_args(args=args)[0]
 

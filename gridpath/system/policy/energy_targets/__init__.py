@@ -48,19 +48,21 @@ def export_results(
                 "discount_factor",
                 "number_years_represented",
             ],
-            "data": [
+            "data": (
                 [
-                    z,
-                    p,
-                    m.discount_factor[p],
-                    m.number_years_represented[p],
+                    [
+                        z,
+                        p,
+                        m.discount_factor[p],
+                        m.number_years_represented[p],
+                    ]
+                    for (z, p) in getattr(
+                        m, "ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET"
+                    )
                 ]
-                for (z, p) in getattr(
-                    m, "ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET"
-                )
-            ]
-            if hasattr(m, "ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET")
-            else [],
+                if hasattr(m, "ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET")
+                else []
+            ),
             "index": ["energy_target_zone", "period"],
         },
         "horizon": {
@@ -72,18 +74,20 @@ def export_results(
                 "balancing_type",
                 "horizon",
             ],
-            "data": [
+            "data": (
                 [
-                    z,
-                    bt,
-                    h,
+                    [
+                        z,
+                        bt,
+                        h,
+                    ]
+                    for (z, bt, h) in getattr(
+                        m, "ENERGY_TARGET_ZONE_BLN_TYPE_HRZS_WITH_ENERGY_TARGET"
+                    )
                 ]
-                for (z, bt, h) in getattr(
-                    m, "ENERGY_TARGET_ZONE_BLN_TYPE_HRZS_WITH_ENERGY_TARGET"
-                )
-            ]
-            if hasattr(m, "ENERGY_TARGET_ZONE_BLN_TYPE_HRZS_WITH_ENERGY_TARGET")
-            else [],
+                if hasattr(m, "ENERGY_TARGET_ZONE_BLN_TYPE_HRZS_WITH_ENERGY_TARGET")
+                else []
+            ),
             "index": ["energy_target_zone", "balancing_type", "horizon"],
         },
     }

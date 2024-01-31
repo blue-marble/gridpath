@@ -300,12 +300,16 @@ def export_results(
         [
             tx,
             tmp,
-            value(m.Transmission_Target_Energy_MW_Pos_Dir[tx, tmp])
-            if float(m.contributes_net_flow_to_tx_target[tx]) == 0
-            else value(m.Transmission_Target_Net_Energy_MW_Pos_Dir[tx, tmp]),
-            value(m.Transmission_Target_Energy_MW_Neg_Dir[tx, tmp])
-            if float(m.contributes_net_flow_to_tx_target[tx]) == 0
-            else value(m.Transmission_Target_Net_Energy_MW_Neg_Dir[tx, tmp]),
+            (
+                value(m.Transmission_Target_Energy_MW_Pos_Dir[tx, tmp])
+                if float(m.contributes_net_flow_to_tx_target[tx]) == 0
+                else value(m.Transmission_Target_Net_Energy_MW_Pos_Dir[tx, tmp])
+            ),
+            (
+                value(m.Transmission_Target_Energy_MW_Neg_Dir[tx, tmp])
+                if float(m.contributes_net_flow_to_tx_target[tx]) == 0
+                else value(m.Transmission_Target_Net_Energy_MW_Neg_Dir[tx, tmp])
+            ),
         ]
         for (tx, tmp) in m.TRANSMISSION_TARGET_TX_OPR_TMPS
     ]

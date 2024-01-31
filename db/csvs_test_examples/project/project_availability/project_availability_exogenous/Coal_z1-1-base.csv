@@ -1,4 +1,4 @@
-availability_iteration,stage_id,timepoint,availability_derate_independent,hyb_stor_cap_availability_derate
+availability_iteration,stage_id,timepoint,availability_derate_independent,hyb_stor_cap_availability_derate_independent
 0,1,20200101,0.95,
 0,1,20200102,0.95,
 0,1,20200103,0.95,

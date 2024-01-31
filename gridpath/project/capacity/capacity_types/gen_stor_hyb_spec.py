@@ -295,13 +295,13 @@ def load_model_data(
         "fixed_cost_per_mw_yr"
     ]
 
-    data_portal.data()[
-        "gen_stor_hyb_spec_hyb_gen_fixed_cost_per_mw_yr"
-    ] = spec_params_dict["hyb_gen_fixed_cost_per_mw_yr"]
+    data_portal.data()["gen_stor_hyb_spec_hyb_gen_fixed_cost_per_mw_yr"] = (
+        spec_params_dict["hyb_gen_fixed_cost_per_mw_yr"]
+    )
 
-    data_portal.data()[
-        "gen_stor_hyb_spec_hyb_stor_fixed_cost_per_mw_yr"
-    ] = spec_params_dict["hyb_stor_fixed_cost_per_mw_yr"]
+    data_portal.data()["gen_stor_hyb_spec_hyb_stor_fixed_cost_per_mw_yr"] = (
+        spec_params_dict["hyb_stor_fixed_cost_per_mw_yr"]
+    )
 
     data_portal.data()["gen_stor_hyb_spec_fixed_cost_per_mwh_yr"] = spec_params_dict[
         "fixed_cost_per_mwh_yr"

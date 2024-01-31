@@ -412,15 +412,15 @@ def spec_determine_inputs(
     main_dict["hyb_gen_fixed_cost_per_mw_yr"] = hyb_gen_spec_fixed_cost_per_mw_yr_dict
     main_dict["hyb_stor_fixed_cost_per_mw_yr"] = hyb_stor_spec_fixed_cost_per_mw_yr_dict
     main_dict["fixed_cost_per_mwh_yr"] = spec_fixed_cost_per_mwh_yr_dict
-    main_dict[
-        "fuel_production_capacity_fixed_cost_per_fuelunitperhour_yr"
-    ] = spec_fuel_prod_fixed_cost_dict
-    main_dict[
-        "fuel_release_capacity_fixed_cost_per_fuelunitperhour_yr"
-    ] = spec_fuel_rel_fixed_cost_dict
-    main_dict[
-        "fuel_storage_capacity_fixed_cost_per_fuelunit_yr"
-    ] = spec_fuel_stor_fixed_cost_dict
+    main_dict["fuel_production_capacity_fixed_cost_per_fuelunitperhour_yr"] = (
+        spec_fuel_prod_fixed_cost_dict
+    )
+    main_dict["fuel_release_capacity_fixed_cost_per_fuelunitperhour_yr"] = (
+        spec_fuel_rel_fixed_cost_dict
+    )
+    main_dict["fuel_storage_capacity_fixed_cost_per_fuelunit_yr"] = (
+        spec_fuel_stor_fixed_cost_dict
+    )
 
     return project_period_list, main_dict
 
