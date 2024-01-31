@@ -371,39 +371,119 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                         m.capacity_group_new_capacity_max[grp, prd],
                         m.capacity_group_total_capacity_min[grp, prd],
                         m.capacity_group_total_capacity_max[grp, prd],
-                        duals_wrapper(
-                            m,
-                            getattr(m, "Max_Group_Build_in_Period_Constraint")[
-                                grp, prd
-                            ],
-                        )
-                        if (grp, prd)
-                        in [
-                            idx
-                            for idx in getattr(
-                                m, "Max_Group_Build_in_Period_Constraint"
+                        (
+                            duals_wrapper(
+                                m,
+                                getattr(m, "Max_Group_Build_in_Period_Constraint")[
+                                    grp, prd
+                                ],
                             )
-                        ]
-                        else None,
-                        duals_wrapper(
-                            m,
-                            getattr(m, "Min_Group_Build_in_Period_Constraint")[
-                                grp, prd
-                            ],
-                        )
-                        if (grp, prd)
-                        in [
-                            idx
-                            for idx in getattr(
-                                m, "Min_Group_Build_in_Period_Constraint"
-                            )
-                        ]
-                        else None,
-                        duals_wrapper(
-                            m,
-                            getattr(m, "Max_Group_Total_Cap_in_Period_Constraint")[
-                                grp, prd
+                            if (grp, prd)
+                            in [
+                                idx
+                                for idx in getattr(
+                                    m, "Max_Group_Build_in_Period_Constraint"
+                                )
                             ]
+                            else None
+                        ),
+                        (
+                            duals_wrapper(
+                                m,
+                                getattr(m, "Min_Group_Build_in_Period_Constraint")[
+                                    grp, prd
+                                ],
+                            )
+                            if (grp, prd)
+                            in [
+                                idx
+                                for idx in getattr(
+                                    m, "Min_Group_Build_in_Period_Constraint"
+                                )
+                            ]
+                            else None
+                        ),
+                        (
+                            duals_wrapper(
+                                m,
+                                (
+                                    getattr(
+                                        m, "Max_Group_Total_Cap_in_Period_Constraint"
+                                    )[grp, prd]
+                                    if (grp, prd)
+                                    in [
+                                        idx
+                                        for idx in getattr(
+                                            m,
+                                            "Max_Group_Total_Cap_in_Period_Constraint",
+                                        )
+                                    ]
+                                    else None
+                                ),
+                                duals_wrapper(
+                                    m,
+                                    getattr(
+                                        m, "Min_Group_Total_Cap_in_Period_Constraint"
+                                    )[grp, prd],
+                                ),
+                            )
+                            if (grp, prd)
+                            in [
+                                idx
+                                for idx in getattr(
+                                    m, "Min_Group_Total_Cap_in_Period_Constraint"
+                                )
+                            ]
+                            else None
+                        ),
+                        (
+                            none_dual_type_error_wrapper(
+                                duals_wrapper(
+                                    m,
+                                    getattr(m, "Max_Group_Build_in_Period_Constraint")[
+                                        grp, prd
+                                    ],
+                                ),
+                                m.period_objective_coefficient[prd],
+                            )
+                            if (grp, prd)
+                            in [
+                                idx
+                                for idx in getattr(
+                                    m, "Max_Group_Build_in_Period_Constraint"
+                                )
+                            ]
+                            else None
+                        ),
+                        (
+                            none_dual_type_error_wrapper(
+                                duals_wrapper(
+                                    m,
+                                    getattr(m, "Min_Group_Build_in_Period_Constraint")[
+                                        grp, prd
+                                    ],
+                                ),
+                                m.period_objective_coefficient[prd],
+                            )
+                            if (grp, prd)
+                            in [
+                                idx
+                                for idx in getattr(
+                                    m, "Min_Group_Build_in_Period_Constraint"
+                                )
+                            ]
+                            else None
+                        ),
+                        (
+                            none_dual_type_error_wrapper(
+                                duals_wrapper(
+                                    m,
+                                    getattr(
+                                        m, "Max_Group_Total_Cap_in_Period_Constraint"
+                                    )[grp, prd],
+                                ),
+                                m.period_objective_coefficient[prd],
+                            )
                             if (grp, prd)
                             in [
                                 idx
@@ -411,90 +491,27 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                                     m, "Max_Group_Total_Cap_in_Period_Constraint"
                                 )
                             ]
-                            else None,
-                            duals_wrapper(
-                                m,
-                                getattr(m, "Min_Group_Total_Cap_in_Period_Constraint")[
-                                    grp, prd
-                                ],
-                            ),
-                        )
-                        if (grp, prd)
-                        in [
-                            idx
-                            for idx in getattr(
-                                m, "Min_Group_Total_Cap_in_Period_Constraint"
+                            else None
+                        ),
+                        (
+                            none_dual_type_error_wrapper(
+                                duals_wrapper(
+                                    m,
+                                    getattr(
+                                        m, "Min_Group_Total_Cap_in_Period_Constraint"
+                                    )[grp, prd],
+                                ),
+                                m.period_objective_coefficient[prd],
                             )
-                        ]
-                        else None,
-                        none_dual_type_error_wrapper(
-                            duals_wrapper(
-                                m,
-                                getattr(m, "Max_Group_Build_in_Period_Constraint")[
-                                    grp, prd
-                                ],
-                            ),
-                            m.period_objective_coefficient[prd],
-                        )
-                        if (grp, prd)
-                        in [
-                            idx
-                            for idx in getattr(
-                                m, "Max_Group_Build_in_Period_Constraint"
-                            )
-                        ]
-                        else None,
-                        none_dual_type_error_wrapper(
-                            duals_wrapper(
-                                m,
-                                getattr(m, "Min_Group_Build_in_Period_Constraint")[
-                                    grp, prd
-                                ],
-                            ),
-                            m.period_objective_coefficient[prd],
-                        )
-                        if (grp, prd)
-                        in [
-                            idx
-                            for idx in getattr(
-                                m, "Min_Group_Build_in_Period_Constraint"
-                            )
-                        ]
-                        else None,
-                        none_dual_type_error_wrapper(
-                            duals_wrapper(
-                                m,
-                                getattr(m, "Max_Group_Total_Cap_in_Period_Constraint")[
-                                    grp, prd
-                                ],
-                            ),
-                            m.period_objective_coefficient[prd],
-                        )
-                        if (grp, prd)
-                        in [
-                            idx
-                            for idx in getattr(
-                                m, "Max_Group_Total_Cap_in_Period_Constraint"
-                            )
-                        ]
-                        else None,
-                        none_dual_type_error_wrapper(
-                            duals_wrapper(
-                                m,
-                                getattr(m, "Min_Group_Total_Cap_in_Period_Constraint")[
-                                    grp, prd
-                                ],
-                            ),
-                            m.period_objective_coefficient[prd],
-                        )
-                        if (grp, prd)
-                        in [
-                            idx
-                            for idx in getattr(
-                                m, "Min_Group_Total_Cap_in_Period_Constraint"
-                            )
-                        ]
-                        else None,
+                            if (grp, prd)
+                            in [
+                                idx
+                                for idx in getattr(
+                                    m, "Min_Group_Total_Cap_in_Period_Constraint"
+                                )
+                            ]
+                            else None
+                        ),
                     ]
                 )
 

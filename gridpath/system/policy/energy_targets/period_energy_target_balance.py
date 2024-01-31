@@ -99,25 +99,32 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             value(m.Period_Energy_Target[z, p]),
             value(m.Total_Delivered_Period_Energy_Target_Energy_MWh[z, p])
             + value(m.Total_Curtailed_Period_Energy_Target_Energy_MWh[z, p]),
-            1
-            if float(m.period_energy_target_mwh[z, p]) == 0
-            else value(m.Total_Delivered_Period_Energy_Target_Energy_MWh[z, p])
-            / float(m.period_energy_target_mwh[z, p]),
-            0
-            if (
-                value(m.Total_Delivered_Period_Energy_Target_Energy_MWh[z, p])
-                + value(m.Total_Curtailed_Period_Energy_Target_Energy_MWh[z, p])
-            )
-            == 0
-            else value(m.Total_Curtailed_Period_Energy_Target_Energy_MWh[z, p])
-            / (
-                value(m.Total_Delivered_Period_Energy_Target_Energy_MWh[z, p])
-                + value(m.Total_Curtailed_Period_Energy_Target_Energy_MWh[z, p])
+            (
+                1
+                if float(m.period_energy_target_mwh[z, p]) == 0
+                else value(m.Total_Delivered_Period_Energy_Target_Energy_MWh[z, p])
+                / float(m.period_energy_target_mwh[z, p])
+            ),
+            (
+                0
+                if (
+                    value(m.Total_Delivered_Period_Energy_Target_Energy_MWh[z, p])
+                    + value(m.Total_Curtailed_Period_Energy_Target_Energy_MWh[z, p])
+                )
+                == 0
+                else value(m.Total_Curtailed_Period_Energy_Target_Energy_MWh[z, p])
+                / (
+                    value(m.Total_Delivered_Period_Energy_Target_Energy_MWh[z, p])
+                    + value(m.Total_Curtailed_Period_Energy_Target_Energy_MWh[z, p])
+                )
             ),
             value(m.Period_Energy_Target_Shortage_MWh_Expression[z, p]),
-            duals_wrapper(m, getattr(m, "Period_Energy_Target_Constraint")[z, p])
-            if (z, p) in [idx for idx in getattr(m, "Period_Energy_Target_Constraint")]
-            else None,
+            (
+                duals_wrapper(m, getattr(m, "Period_Energy_Target_Constraint")[z, p])
+                if (z, p)
+                in [idx for idx in getattr(m, "Period_Energy_Target_Constraint")]
+                else None
+            ),
             (
                 none_dual_type_error_wrapper(
                     duals_wrapper(

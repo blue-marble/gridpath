@@ -135,15 +135,19 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         [
             z,
             p,
-            1
-            if float(m.period_transmission_target_pos_dir_mwh[z, p]) == 0
-            else value(m.Total_Period_Transmission_Target_Energy_Pos_Dir_MWh[z, p])
-            / float(m.period_transmission_target_pos_dir_mwh[z, p]),
+            (
+                1
+                if float(m.period_transmission_target_pos_dir_mwh[z, p]) == 0
+                else value(m.Total_Period_Transmission_Target_Energy_Pos_Dir_MWh[z, p])
+                / float(m.period_transmission_target_pos_dir_mwh[z, p])
+            ),
             value(m.Period_Transmission_Target_Shortage_Pos_Dir_MWh_Expression[z, p]),
-            1
-            if float(m.period_transmission_target_neg_dir_mwh[z, p]) == 0
-            else value(m.Total_Period_Transmission_Target_Energy_Neg_Dir_MWh[z, p])
-            / float(m.period_transmission_target_neg_dir_mwh[z, p]),
+            (
+                1
+                if float(m.period_transmission_target_neg_dir_mwh[z, p]) == 0
+                else value(m.Total_Period_Transmission_Target_Energy_Neg_Dir_MWh[z, p])
+                / float(m.period_transmission_target_neg_dir_mwh[z, p])
+            ),
             value(m.Period_Transmission_Target_Shortage_Neg_Dir_MWh_Expression[z, p]),
         ]
         for (z, p) in m.TRANSMISSION_TARGET_ZONE_PERIODS_WITH_TRANSMISSION_TARGET

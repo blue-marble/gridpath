@@ -559,24 +559,34 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         [
             prj,
             tmp,
-            value(m.Variable_OM_Cost[prj, tmp])
-            if prj in m.VAR_OM_COST_ALL_PRJS
-            else None,
+            (
+                value(m.Variable_OM_Cost[prj, tmp])
+                if prj in m.VAR_OM_COST_ALL_PRJS
+                else None
+            ),
             value(m.Fuel_Cost[prj, tmp]) if prj in m.FUEL_PRJS else None,
             value(m.Startup_Cost[prj, tmp]) if prj in m.STARTUP_COST_PRJS else None,
             value(m.Shutdown_Cost[prj, tmp]) if prj in m.SHUTDOWN_COST_PRJS else None,
-            value(m.Operational_Violation_Cost[prj, tmp])
-            if prj in m.VIOL_ALL_PRJ_OPR_TMPS
-            else None,
-            value(m.Curtailment_Cost[prj, tmp])
-            if prj in m.CURTAILMENT_COST_PRJS
-            else None,
-            value(m.SOC_Penalty_Cost[prj, tmp])
-            if prj in m.SOC_PENALTY_COST_PRJS
-            else None,
-            value(m.SOC_Penalty_Last_Tmp_Cost[prj, tmp])
-            if prj in m.SOC_LAST_TMP_PENALTY_COST_PRJS
-            else None,
+            (
+                value(m.Operational_Violation_Cost[prj, tmp])
+                if prj in m.VIOL_ALL_PRJ_OPR_TMPS
+                else None
+            ),
+            (
+                value(m.Curtailment_Cost[prj, tmp])
+                if prj in m.CURTAILMENT_COST_PRJS
+                else None
+            ),
+            (
+                value(m.SOC_Penalty_Cost[prj, tmp])
+                if prj in m.SOC_PENALTY_COST_PRJS
+                else None
+            ),
+            (
+                value(m.SOC_Penalty_Last_Tmp_Cost[prj, tmp])
+                if prj in m.SOC_LAST_TMP_PENALTY_COST_PRJS
+                else None
+            ),
         ]
         for (prj, tmp) in m.PRJ_OPR_TMPS
     ]
