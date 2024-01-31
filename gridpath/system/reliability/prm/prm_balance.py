@@ -104,9 +104,11 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             p,
             value(m.Total_PRM_from_All_Sources_Expression[z, p]),
             value(m.PRM_Shortage_MW_Expression[z, p]),
-            duals_wrapper(m, getattr(m, "PRM_Constraint")[z, p])
-            if (z, p) in [idx for idx in getattr(m, "PRM_Constraint")]
-            else None,
+            (
+                duals_wrapper(m, getattr(m, "PRM_Constraint")[z, p])
+                if (z, p) in [idx for idx in getattr(m, "PRM_Constraint")]
+                else None
+            ),
             (
                 none_dual_type_error_wrapper(
                     duals_wrapper(m, getattr(m, "PRM_Constraint")[z, p]),
