@@ -4278,7 +4278,8 @@ CREATE TABLE raw_data_unit_availability_params
     unit_fo_model   TEXT,
     unit_for        DECIMAL,
     unit_mttr       DECIMAL,
-    timeseries_name VARCHAR(32)
+    timeseries_name VARCHAR(32),
+    hybrid_stor     INTEGER
 );
 
 DROP TABLE IF EXISTS raw_data_unit_availability_weather_derates;

@@ -27,11 +27,8 @@ import sys
 from db.common_functions import connect_to_database
 
 
-# TODO: hybrid storage capacity availability derate
 # TODO: change the names of the outage models
-# TODO: add weather-dependent thermal derates before outages
 # TODO: Add check that unit weights sum up to 1 for project
-# TODO: add for transmission
 
 
 def parse_arguments(args):
@@ -81,6 +78,7 @@ def get_temporal_structure():
 
 def get_weighted_availability_adjustment(df, tmps):
     project_outage_adjustment = []
+    project_hyb_stor_outage_adjustment = []
 
     for index, row in df.iterrows():
         unit = row["unit"]
@@ -90,6 +88,7 @@ def get_weighted_availability_adjustment(df, tmps):
         outage_model = row["unit_fo_model"]
         unit_for = row["unit_for"]
         unit_mttr = row["unit_mttr"]
+        hybrid_stor = row["hybrid_stor"]
 
         unit_for_array = np.full((len(tmps), 1), unit_for, dtype=float)
 
@@ -100,11 +99,20 @@ def get_weighted_availability_adjustment(df, tmps):
             n_units=n_units,
         )
 
-        project_outage_adjustment.append(unit_outage_adjustment * unit_weight)
+        if not hybrid_stor:
+            project_outage_adjustment.append(unit_outage_adjustment * unit_weight)
+        else:
+            project_hyb_stor_outage_adjustment.append(
+                unit_outage_adjustment * unit_weight
+            )
+    # Only sum the unit outages if there were units, otherwise, pass None
+    if project_outage_adjustment:
+        adjustment = sum(project_outage_adjustment)
+    else:
+        adjustment = None
+    hyb_stor_adjustment = sum(project_hyb_stor_outage_adjustment)
 
-    adjustment = sum(project_outage_adjustment)
-
-    return adjustment
+    return adjustment, hyb_stor_adjustment
 
 
 def simulate_project_availability(
@@ -141,7 +149,7 @@ def simulate_project_availability(
     tmps = stage_tmp_dict[1]
 
     for iter in range(1, n_iterations + 1):
-        availability_derate = get_weighted_availability_adjustment(
+        availability_derate, hyb_stor_derate = get_weighted_availability_adjustment(
             df=project_df, tmps=tmps
         )
 
@@ -150,7 +158,8 @@ def simulate_project_availability(
                 "availability_iteration": [iter] * len(tmps),
                 "stage_id": [stage_id] * len(tmps),
                 "timepoint": tmps,
-                "availability_derate": availability_derate,
+                "availability_derate_independent": availability_derate,
+                "hyb_stor_cap_availability_derate": hyb_stor_derate,
             }
         )
 
