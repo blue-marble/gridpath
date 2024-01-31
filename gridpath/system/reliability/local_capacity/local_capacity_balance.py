@@ -109,9 +109,11 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             p,
             value(m.Total_Local_Capacity_from_All_Sources_Expression_MW[z, p]),
             value(m.Local_Capacity_Shortage_MW_Expression[z, p]),
-            duals_wrapper(m, getattr(m, "Local_Capacity_Constraint")[z, p])
-            if (z, p) in [idx for idx in getattr(m, "Local_Capacity_Constraint")]
-            else None,
+            (
+                duals_wrapper(m, getattr(m, "Local_Capacity_Constraint")[z, p])
+                if (z, p) in [idx for idx in getattr(m, "Local_Capacity_Constraint")]
+                else None
+            ),
             (
                 none_dual_type_error_wrapper(
                     duals_wrapper(m, getattr(m, "Local_Capacity_Constraint")[z, p]),
