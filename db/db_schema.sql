@@ -1565,13 +1565,13 @@ CREATE TABLE inputs_project_hydro_operational_chars
 (
     project                             VARCHAR(64),
     hydro_operational_chars_scenario_id INTEGER,
+    stage_id                            INTEGER,
     balancing_type_project              VARCHAR(64),
     horizon                             INTEGER,
-    period                              INTEGER,
     average_power_fraction              FLOAT,
     min_power_fraction                  FLOAT,
     max_power_fraction                  FLOAT,
-    PRIMARY KEY (project, hydro_operational_chars_scenario_id,
+    PRIMARY KEY (project, hydro_operational_chars_scenario_id, stage_id,
                  balancing_type_project, horizon),
     FOREIGN KEY (project, hydro_operational_chars_scenario_id) REFERENCES
         subscenarios_project_hydro_operational_chars

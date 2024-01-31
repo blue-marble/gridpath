@@ -706,6 +706,8 @@ def get_hydro_inputs_from_database(
             WHERE project_operational_chars_scenario_id
              = {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
         )
+        -- Get the relevant stage
+        AND stage_id = {stage}
     ) as prj_tbl
     JOIN (
         SELECT DISTINCT balancing_type_horizon, horizon
