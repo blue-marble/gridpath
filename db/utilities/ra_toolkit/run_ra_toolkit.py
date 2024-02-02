@@ -330,6 +330,9 @@ def main(args=None):
     output_directory = get_setting(
         settings_df, "create_availability_iteration_inputs", "output_directory"
     )
+    ind_av_overwrite = get_setting(
+        settings_df, "create_availability_iteration_inputs", "overwrite"
+    )
     n_parallel_projects_av = get_setting(
         settings_df, "create_availability_iteration_inputs", "n_parallel_projects"
     )
@@ -348,6 +351,7 @@ def main(args=None):
             project_availability_scenario_name,
             "--output_directory",
             output_directory,
+            "--overwrite" if int(ind_av_overwrite) else "",
             "--n_parallel_projects",
             n_parallel_projects_av,
         ]
