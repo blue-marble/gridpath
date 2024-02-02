@@ -440,6 +440,11 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
             """
         ).fetchone()
 
+        total_loss_of_load_hours = (
+            0 if total_loss_of_load_hours is None else total_loss_of_load_hours
+        )
+        total_use = 0 if total_use is None else total_use
+
         LOLH = total_loss_of_load_hours / n_years
         EUE = total_use / n_years
 
@@ -450,6 +455,10 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
             WHERE scenario_id = {scenario_id}
             """
         ).fetchone()[0]
+
+        total_loss_of_load_days = (
+            0 if total_loss_of_load_days is None else total_loss_of_load_days
+        )
 
         LOLE = total_loss_of_load_days / n_years
 
@@ -464,6 +473,10 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
             );
             """
         ).fetchone()[0]
+
+        years_with_lost_load = (
+            0 if years_with_lost_load is None else years_with_lost_load
+        )
 
         LOLP = years_with_lost_load / n_years
 

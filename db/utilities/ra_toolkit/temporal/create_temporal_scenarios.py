@@ -59,7 +59,9 @@ def main(args=None):
 
         print(f"...{temporal_scenario_id}_{temporal_scenario_name}...")
         subscenario_directory = os.path.join(
-            output_directory, f"{str(temporal_scenario_id)}_{temporal_scenario_name}"
+            os.getcwd(),
+            output_directory,
+            f"{str(temporal_scenario_id)}" f"_{temporal_scenario_name}",
         )
 
         create_temporal_iteration_csv.main(

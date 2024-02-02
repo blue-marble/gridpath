@@ -1,0 +1,3 @@
+﻿output_directory,temporal_scenario_id,temporal_scenario_name,n_passes,iterations_csv
+./csvs_test_examples/temporal,16,ra_toolkit_monte_carlo,1,./csvs_test_examples/raw_data_ra_toolkit/temporal/iterations/iterations_monte_carlo_all.csv
+./csvs_test_examples/temporal,17,ra_toolkit_sync,1,./csvs_test_examples/raw_data_ra_toolkit/temporal/iterations/iterations_sync_all.csv

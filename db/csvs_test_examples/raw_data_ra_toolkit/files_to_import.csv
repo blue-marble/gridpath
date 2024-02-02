@@ -1,0 +1,14 @@
+import,filename,table
+1,hydro/hydro_bins.csv,raw_data_hydro_bins
+1,hydro/hydro.csv,raw_data_project_hydro_opchars_by_year_month
+1,temporal/bt_horizons.csv,raw_data_balancing_type_horizons
+1,availability/unit_availability_params.csv,raw_data_unit_availability_params
+1,availability/weather_derates.csv,raw_data_unit_availability_weather_derates
+1,weather/data_availability.csv,raw_data_availability
+1,weather/load_zone_units.csv,raw_data_load_zone_units
+1,weather/load.csv,raw_data_system_load
+1,weather/monte_carlo_timeseries.csv,raw_data_monte_carlo_timeseries
+1,weather/monte_carlo_weather_bins.csv,raw_data_weather_bins
+1,weather/solar.csv,raw_data_project_variable_profiles
+1,weather/var_project_units.csv,raw_data_var_project_units
+1,weather/wind.csv,raw_data_project_variable_profiles

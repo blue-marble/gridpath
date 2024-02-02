@@ -1,0 +1,7 @@
+unit,project,unit_weight,n_units,unit_fo_model,unit_for,unit_mttr,timeseries_name,hybrid_stor
+GasCC1,Gas,0.3,1,MC_sequential,0.038,24,thermal,
+GasCC2,Gas,0.3,1,MC_sequential,0.038,24,thermal,
+GasCC3,Gas,0.3,1,MC_sequential,0.038,24,thermal,
+GasCT1,Gas,0.1,1,MC_sequential,0.0229,50,thermal,
+Batteries,Batteries,1,1,Derate,0.035,36,thermal,1
+Hybrid_Solar,Hybrid,1,1,Derate,0.035,36,thermal,1
