@@ -294,6 +294,7 @@ def validate_dtypes(df, expected_dtypes):
     """
     result = []
     columns = []
+
     for column in df.columns:
         column_df = pd.DataFrame(df[column])
         # Only check if not all values are null

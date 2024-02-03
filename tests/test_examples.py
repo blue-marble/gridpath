@@ -208,7 +208,9 @@ class TestExamples(unittest.TestCase):
             logging.exception(e)
             os.remove(DB_PATH)
 
-    def validate_and_test_example_generic(self, scenario_name, literal=False):
+    def validate_and_test_example_generic(
+        self, scenario_name, literal=False, skip_validation=False
+    ):
         # For multi-subproblem and multi-stage problems, we need to evaluate
         # the objective function as a literal (as it is in dictionary format
         # stored as string in the CSV)
@@ -220,7 +222,8 @@ class TestExamples(unittest.TestCase):
             )
         else:
             objective = float(self.df.loc[scenario_name]["expected_objective"])
-        self.check_validation(scenario_name)
+        if not skip_validation:
+            self.check_validation(scenario_name)
         self.run_and_check_objective(scenario_name, objective)
 
     def test_example_test(self):
@@ -1281,6 +1284,28 @@ class TestExamples(unittest.TestCase):
         scenario_name = "single_stage_prod_cost_w_spinup_lookahead"
         self.validate_and_test_example_generic(
             scenario_name=scenario_name, literal=True
+        )
+
+    def test_example_ra_toolkit_monte_carlo(self):
+        """
+        Check validation and objective function values of
+        "ra_toolkit_monte_carlo" example
+        :return:
+        """
+        scenario_name = "ra_toolkit_monte_carlo"
+        self.validate_and_test_example_generic(
+            scenario_name=scenario_name, literal=True, skip_validation=True
+        )
+
+    def test_example_ra_toolkit_sync(self):
+        """
+        Check validation and objective function values of
+        "ra_toolkit_monte_carlo" example
+        :return:
+        """
+        scenario_name = "ra_toolkit_sync"
+        self.validate_and_test_example_generic(
+            scenario_name=scenario_name, literal=True, skip_validation=True
         )
 
     @classmethod

@@ -515,6 +515,9 @@ def validate_inputs(
             write_validation_to_database(
                 conn=conn,
                 scenario_id=scenario_id,
+                weather_iteration=weather_iteration,
+                hydro_iteration=hydro_iteration,
+                availability_iteration=availability_iteration,
                 subproblem_id=subproblem,
                 stage_id=stage,
                 gridpath_module=__name__,

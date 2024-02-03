@@ -17,7 +17,6 @@ import unittest
 
 from db.utilities.ra_toolkit import run_ra_toolkit
 
-os.chdir(os.path.join(os.path.dirname(__file__), "..", "db"))
 SETTINGS_CSV = "../tests/test_data/ra_toolkit_settings.csv"
 
 
@@ -33,19 +32,23 @@ class TestRAToolkit(unittest.TestCase):
         :return:
         """
         # TODO: get from the settings file
+        os.chdir(os.path.join(os.path.dirname(__file__), "..", "db"))
+        print(os.getcwd())
         temp_db_path = os.path.join(os.getcwd(), "ra_toolkit_test.db")
 
         if os.path.exists(temp_db_path):
             os.remove(temp_db_path)
 
     def test_ra_toolkit(self):
+        # TODO: get from the settings file
+        os.chdir(os.path.join(os.path.dirname(__file__), "..", "db"))
+        print(os.getcwd())
         run_ra_toolkit.main(["--settings_csv", SETTINGS_CSV])
 
     @classmethod
     def tearDownClass(cls):
         # TODO: get from the settings file
         temp_db_path = os.path.join(os.getcwd(), "ra_toolkit_test_temp.db")
-        print(temp_db_path)
         os.remove(temp_db_path)
         for temp_file_ext in ["-shm", "-wal"]:
             temp_file = "{}{}".format(temp_db_path, temp_file_ext)

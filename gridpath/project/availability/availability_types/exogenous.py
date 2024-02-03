@@ -467,7 +467,11 @@ def validate_inputs(
 
     # Check data types availability
     expected_dtypes = get_expected_dtypes(
-        conn, ["inputs_project_availability", "inputs_project_availability_exogenous"]
+        conn,
+        [
+            "inputs_project_availability",
+            "inputs_project_availability_exogenous_independent",
+        ],
     )
     dtype_errors, error_columns = validate_dtypes(df, expected_dtypes)
     write_validation_to_database(
@@ -479,7 +483,7 @@ def validate_inputs(
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
-        db_table="inputs_project_availability_exogenous",
+        db_table="inputs_project_availability_exogenous_independent",
         severity="High",
         errors=dtype_errors,
     )
@@ -500,7 +504,7 @@ def validate_inputs(
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
-        db_table="inputs_project_availability_exogenous",
+        db_table="inputs_project_availability_exogenous_independent",
         severity="Low",
         errors=validate_missing_inputs(df, value_cols, idx_cols, msg),
     )
@@ -516,7 +520,7 @@ def validate_inputs(
             subproblem_id=subproblem,
             stage_id=stage,
             gridpath_module=__name__,
-            db_table="inputs_project_availability_exogenous",
+            db_table="inputs_project_availability_exogenous_independent",
             severity="High",
             errors=validate_values(df, value_cols, min=0, max=1),
         )
