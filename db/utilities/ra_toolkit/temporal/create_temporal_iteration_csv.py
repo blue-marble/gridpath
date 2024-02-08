@@ -21,7 +21,7 @@ from argparse import ArgumentParser
 import csv
 import os.path
 import pandas as pd
-from random import randrange
+import random
 
 N_PASSES_DEFAULT = 1
 
@@ -152,7 +152,8 @@ def create_temporal_scenario_iterations_csv(n_passes, filepath, output_directory
 
 
 def random_remove(starting_list):
-    i = randrange(len(starting_list))
+    random.seed(0)
+    i = random.randrange(len(starting_list))
     starting_list[i], starting_list[-1] = starting_list[-1], starting_list[i]
     iteration = starting_list.pop()
 
@@ -160,7 +161,8 @@ def random_remove(starting_list):
 
 
 def random_keep(starting_list):
-    i = randrange(len(starting_list))
+    random.seed(0)
+    i = random.randrange(len(starting_list))
     iteration = starting_list[i]
 
     return iteration

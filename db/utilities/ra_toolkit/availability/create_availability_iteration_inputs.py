@@ -55,8 +55,11 @@ def parse_arguments(args):
     )
     parser.add_argument("-out_dir", "--output_directory")
     parser.add_argument(
-        "-o", "--overwrite", default=False, action="store_true",
-        help="Overwrite existing files."
+        "-o",
+        "--overwrite",
+        default=False,
+        action="store_true",
+        help="Overwrite existing files.",
     )
 
     parser.add_argument(
