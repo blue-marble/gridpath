@@ -11,6 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
+# create_weather_draws() function
+# Copyright 2023 Moment Energy Insights LLC. Licensed under the Apache
+# License, Version 2.0.
+# Modifications Copyright 2024 Blue Marble Analytics LLC. Licensed under the
+# Apache License, Version 2.0.
 
 
 import sys
