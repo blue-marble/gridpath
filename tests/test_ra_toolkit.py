@@ -33,7 +33,6 @@ class TestRAToolkit(unittest.TestCase):
         """
         # TODO: get from the settings file
         os.chdir(os.path.join(os.path.dirname(__file__), "..", "db"))
-        print(os.getcwd())
         temp_db_path = os.path.join(os.getcwd(), "ra_toolkit_test.db")
 
         if os.path.exists(temp_db_path):
@@ -42,8 +41,7 @@ class TestRAToolkit(unittest.TestCase):
     def test_ra_toolkit(self):
         # TODO: get from the settings file
         os.chdir(os.path.join(os.path.dirname(__file__), "..", "db"))
-        print(os.getcwd())
-        run_ra_toolkit.main(["--settings_csv", SETTINGS_CSV])
+        run_ra_toolkit.main(["--settings_csv", SETTINGS_CSV, "--quiet"])
 
     @classmethod
     def tearDownClass(cls):

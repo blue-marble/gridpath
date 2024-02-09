@@ -56,6 +56,7 @@ def parse_arguments(args):
     parser.add_argument(
         "-it_seed", "--iterations_seed", default=0, help="Defaults to 0."
     )
+    parser.add_argument("-q", "--quiet", default=False, action="store_true")
 
     parsed_arguments = parser.parse_known_args(args=args)[0]
 
@@ -71,8 +72,10 @@ def create_weather_draws(
     n_iterations,
     weather_draws_id,
     study_year,
+    quiet,
 ):
-    print("...drawing weather...")
+    if not quiet:
+        print("...drawing weather...")
     # Get the weather bins
     weather_bins_sql = f"""
         SELECT year, month, day_of_month, day_type, weather_bin
@@ -230,9 +233,11 @@ def make_synthetic_iterations(
     weather_draws_id,
     timeseries,
     iterations_seed,
+    quiet,
 ):
     """ """
-    print("   ...creating synthetic iterations...")
+    if not quiet:
+        print("   ...creating synthetic iterations...")
     # Get the weather draws
     weather_draws = get_weather_draws(
         conn=conn, weather_bins_id=weather_bins_id, weather_draws_id=weather_draws_id
@@ -246,7 +251,8 @@ def make_synthetic_iterations(
             and prev_weather_iteration != weather_iteration
             and weather_iteration % 10 == 0
         ):
-            print(f"      ...weather iteration {weather_iteration}")
+            if not quiet:
+                print(f"      ...weather iteration {weather_iteration}")
         prev_weather_iteration = weather_iteration
 
         c = conn.cursor()
@@ -315,11 +321,13 @@ def make_synthetic_iterations(
 
 
 def main(args=None):
-    print("Creating Monte Carlo weather draws...")
     if args is None:
         args = sys.argv[1:]
 
     parsed_args = parse_arguments(args=args)
+
+    if not parsed_args.quiet:
+        print("Creating Monte Carlo weather draws...")
 
     conn = connect_to_database(db_path=parsed_args.database)
 
@@ -331,6 +339,7 @@ def main(args=None):
         n_iterations=int(parsed_args.n_iterations),
         weather_draws_id=int(parsed_args.weather_draws_id),
         study_year=int(parsed_args.study_year),
+        quiet=parsed_args.quiet,
     )
 
     # ### Draw from each timeseries to create synthetic weather iterations # ###
@@ -357,7 +366,8 @@ def main(args=None):
 
     # Get the needed timeseries, draw the conditions, and load into the database
     for timeseries_name, consider_day_types in timeseries:
-        print(f"...processing timeseries: {timeseries_name}")
+        if not parsed_args.quiet:
+            print(f"...processing timeseries: {timeseries_name}")
 
         # Add the necessary columns
         columns_to_add = [
@@ -382,6 +392,7 @@ def main(args=None):
         weather_draws_id=int(parsed_args.weather_draws_id),
         timeseries=timeseries,
         iterations_seed=int(parsed_args.iterations_seed),
+        quiet=parsed_args.quiet,
     )
 
 

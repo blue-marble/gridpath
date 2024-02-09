@@ -27,8 +27,6 @@ VAR_NAME_DEFAULT = "ra_toolkit"
 STAGE_ID_DEFAULT = 1
 
 
-# TODO: parallelize
-# TODO: make sure hybrids are properly incorporated
 def parse_arguments(args):
     """
     :param args: the script arguments specified by the user
@@ -76,6 +74,8 @@ def parse_arguments(args):
         help="The number of projects to simulate in parallel. Defaults to 1.",
     )
 
+    parser.add_argument("-q", "--quiet", default=False, action="store_true")
+
     parsed_arguments = parser.parse_known_args(args=args)[0]
 
     return parsed_arguments
@@ -107,11 +107,13 @@ def create_variable_profile_csvs_pool(pool_datum):
 
 
 def main(args=None):
-    print("Creating sync variable gen CSVs...")
     if args is None:
         args = sys.argv[1:]
 
     parsed_args = parse_arguments(args=args)
+
+    if not parsed_args.quiet:
+        print("Creating sync variable gen CSVs...")
 
     conn = connect_to_database(db_path=parsed_args.database)
 

@@ -50,6 +50,7 @@ def parse_arguments(args):
     parser = ArgumentParser(add_help=True)
 
     parser.add_argument("-s", "--settings_csv", default="./ra_toolkit_settings.csv")
+    parser.add_argument("-q", "--quiet", default=False, action="store_true")
 
     parsed_arguments = parser.parse_known_args(args=args)[0]
 
@@ -91,7 +92,15 @@ def main(args=None):
     load_raw_data_csv = os.path.join(
         os.getcwd(), get_setting(settings_df, "load_raw_data", "csv_location")
     )
-    load_raw_data.main(["--database", db_path, "--csv_location", load_raw_data_csv])
+    load_raw_data.main(
+        [
+            "--database",
+            db_path,
+            "--csv_location",
+            load_raw_data_csv,
+            "--quiet" if parsed_args.quiet else "",
+        ]
+    )
 
     # ### Create weather iterations ### #
     # Sync load
@@ -122,6 +131,7 @@ def main(args=None):
             "--output_directory",
             sync_load_output_directory,
             "--overwrite" if int(sync_load_csv_overwrite) else "",
+            "--quiet" if parsed_args.quiet else "",
         ]
     )
 
@@ -163,6 +173,7 @@ def main(args=None):
             "--overwrite" if int(sync_var_gen_csv_overwrite) else "",
             "--n_parallel_projects",
             n_parallel_projects_sync_var_gen,
+            "--quiet" if parsed_args.quiet else "",
         ]
     )
 
@@ -191,6 +202,7 @@ def main(args=None):
             study_year,
             "--iterations_seed",
             iterations_seed,
+            "--quiet" if parsed_args.quiet else "",
         ]
     )
 
@@ -224,6 +236,7 @@ def main(args=None):
             "--output_directory",
             mc_load_output_directory,
             "--overwrite" if int(mc_load_csv_overwrite) else "",
+            "--quiet" if parsed_args.quiet else "",
         ]
     )
 
@@ -269,6 +282,7 @@ def main(args=None):
             "--overwrite" if int(mc_var_gen_csv_overwrite) else "",
             "--n_parallel_projects",
             n_parallel_projects_mc_var_gen,
+            "--quiet" if parsed_args.quiet else "",
         ]
     )
 
@@ -309,6 +323,7 @@ def main(args=None):
             "--overwrite" if int(hy_overwrite) else "",
             "--n_parallel_projects",
             n_parallel_projects_hy,
+            "--quiet" if parsed_args.quiet else "",
         ]
     )
 
@@ -354,6 +369,7 @@ def main(args=None):
             "--overwrite" if int(ind_av_overwrite) else "",
             "--n_parallel_projects",
             n_parallel_projects_av,
+            "--quiet" if parsed_args.quiet else "",
         ]
     )
 
@@ -395,6 +411,7 @@ def main(args=None):
             "--overwrite" if int(sync_exogenous_availability_weather_overwrite) else "",
             "--n_parallel_projects",
             n_parallel_projects_sync_exogenous_availability_weather,
+            "--quiet" if parsed_args.quiet else "",
         ]
     )
 
@@ -444,6 +461,7 @@ def main(args=None):
             "--overwrite" if int(mc_weather_derates_csv_overwrite) else "",
             "--n_parallel_projects",
             n_parallel_projects_mc_weather_derates,
+            "--quiet" if parsed_args.quiet else "",
         ]
     )
 
@@ -452,7 +470,13 @@ def main(args=None):
     temporal_scenarios_csv = get_setting(
         settings_df, "create_temporal_scenarios", "csv_path"
     )
-    create_temporal_scenarios.main(["--csv_path", temporal_scenarios_csv])
+    create_temporal_scenarios.main(
+        [
+            "--csv_path",
+            temporal_scenarios_csv,
+            "--quiet" if parsed_args.quiet else "",
+        ]
+    )
 
 
 if __name__ == "__main__":

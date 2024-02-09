@@ -66,6 +66,8 @@ def parse_arguments(args):
         help="Overwrite existing CSV files.",
     )
 
+    parser.add_argument("-q", "--quiet", default=False, action="store_true")
+
     parsed_arguments = parser.parse_known_args(args=args)[0]
 
     return parsed_arguments
@@ -131,11 +133,13 @@ def create_load_profile_csv(
 
 
 def main(args=None):
-    print("Creating sync load profile CSVs...")
     if args is None:
         args = sys.argv[1:]
 
     parsed_args = parse_arguments(args=args)
+
+    if not parsed_args.quiet:
+        print("Creating sync load profile CSVs...")
 
     conn = connect_to_database(db_path=parsed_args.database)
 

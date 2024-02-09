@@ -75,6 +75,8 @@ def parse_arguments(args):
         help="The number of projects to simulate in parallel. Defaults to 1.",
     )
 
+    parser.add_argument("-q", "--quiet", default=False, action="store_true")
+
     parsed_arguments = parser.parse_known_args(args=args)[0]
 
     return parsed_arguments
@@ -283,12 +285,14 @@ def simulate_project_availability_pool(pool_datum):
 
 
 def main(args=None):
-    print("Creating availability iteration CSVs...")
 
     if args is None:
         args = sys.argv[1:]
 
     parsed_args = parse_arguments(args=args)
+
+    if not parsed_args.quiet:
+        print("Creating availability iteration CSVs...")
 
     db = connect_to_database(parsed_args.database)
 

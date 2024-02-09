@@ -68,6 +68,8 @@ def parse_arguments(args):
         help="The number of projects to simulate in parallel. Defaults to 1.",
     )
 
+    parser.add_argument("-q", "--quiet", default=False, action="store_true")
+
     parsed_arguments = parser.parse_known_args(args=args)[0]
 
     return parsed_arguments
@@ -242,11 +244,14 @@ def get_filename(
 
 
 def main(args=None):
-    print("Creating hydro CSVs...")
     if args is None:
         args = sys.argv[1:]
 
     parsed_args = parse_arguments(args=args)
+
+    if not parsed_args.quiet:
+        print("Creating hydro CSVs...")
+
     db = connect_to_database(parsed_args.database)
 
     c = db.cursor()

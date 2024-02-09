@@ -32,6 +32,7 @@ def parse_arguments(args):
 
     parser.add_argument("-db", "--database")
     parser.add_argument("-csv", "--csv_location")
+    parser.add_argument("-q", "--quiet", default=False, action="store_true")
 
     parsed_arguments = parser.parse_known_args(args=args)[0]
 
@@ -39,11 +40,14 @@ def parse_arguments(args):
 
 
 def main(args=None):
-    print("Importing raw data...")
     if args is None:
         args = sys.argv[1:]
 
     parsed_args = parse_arguments(args=args)
+
+    if not parsed_args.quiet:
+        print("Importing raw data...")
+
     conn = connect_to_database(db_path=parsed_args.database)
 
     files_to_import_df = pd.read_csv(
@@ -53,7 +57,8 @@ def main(args=None):
         import_bool, f, table = row
 
         if import_bool:
-            print(f"... {f}...")
+            if not parsed_args.quiet:
+                print(f"... {f}...")
             f_path = os.path.join(parsed_args.csv_location, f)
             df = pd.read_csv(f_path, delimiter=",")
 

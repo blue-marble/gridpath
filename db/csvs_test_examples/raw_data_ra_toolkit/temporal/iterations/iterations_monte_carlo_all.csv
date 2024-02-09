@@ -1,4 +1,4 @@
 ﻿weather,hydro,availability
-loop,random_keep,random_remove
+loop,ordered,random_remove
 1,2010,1
 2,2011,2

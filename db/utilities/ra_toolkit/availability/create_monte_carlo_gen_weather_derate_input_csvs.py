@@ -88,16 +88,20 @@ def parse_arguments(args):
         help="The number of projects to simulate in parallel. Defaults to 1.",
     )
 
+    parser.add_argument("-q", "--quiet", default=False, action="store_true")
+
     parsed_arguments = parser.parse_known_args(args=args)[0]
 
     return parsed_arguments
 
 
 def main(args=None):
-    print("Creating Monte Carlo gen weather-dependent derates CSVs...")
     if args is None:
         args = sys.argv[1:]
     parsed_args = parse_arguments(args=args)
+
+    if not parsed_args.quiet:
+        print("Creating Monte Carlo gen weather-dependent derates CSVs...")
 
     create_variable_profile_csvs(
         db_path=parsed_args.database,

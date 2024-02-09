@@ -35,17 +35,6 @@ def parse_arguments(args):
     Parse the known arguments.
     """
 
-    N_PASSES = 1
-    FILEPATH = (
-        "/Users/ana/dev/gridpath_v0.16+dev/db/ra_toolkit_csvs"
-        "/raw_data_ra_toolkit/iterations_csvs"
-        "/iterations_mc_weather_hydro_and_availability"
-        ".csv"
-    )
-    OUTPUT_DIRECTORY = (
-        "/Users/ana/dev/gridpath_v0.16+dev/db/ra_toolkit_csvs"
-        "/temporal/4_monte_carlo_weather_hydro_availability_iterations"
-    )
     parser = ArgumentParser(add_help=True)
 
     parser.add_argument(
@@ -57,6 +46,8 @@ def parse_arguments(args):
     parser.add_argument("-csv", "--csv_path")
 
     parser.add_argument("-out_dir", "--output_directory")
+
+    parser.add_argument("-q", "--quiet", default=False, action="store_true")
 
     parsed_arguments = parser.parse_known_args(args=args)[0]
 
