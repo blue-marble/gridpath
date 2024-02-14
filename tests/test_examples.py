@@ -1130,13 +1130,13 @@ class TestExamples(unittest.TestCase):
         )
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
-    def test_example_test_period_tx_targets(self):
+    def test_example_test_tx_targets(self):
         """
-        Check validation and objective function value of "test_example_test_period_tx_targets"
+        Check validation and objective function value of "test_example_test_tx_targets"
         example
         :return:
         """
-        scenario_name = "test_period_tx_targets"
+        scenario_name = "test_tx_targets"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_test_w_flex_load(self):
@@ -1266,6 +1266,27 @@ class TestExamples(unittest.TestCase):
         scenario_name = (
             "test_performance_standard_carbon_credits_w_cap_no_credits_mapping"
         )
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_single_stage_prod_cost_w_spinup_lookahead(self):
+        """
+        Check validation and objective function values of
+        "single_stage_prod_cost_w_spinup_lookahead" example
+        :return:
+        """
+        scenario_name = "single_stage_prod_cost_w_spinup_lookahead"
+        self.validate_and_test_example_generic(
+            scenario_name=scenario_name, literal=True
+        )
+
+    def test_example_test_tx_targets_max(self):
+        """
+        Check validation and objective function value of
+        "test_example_test_tx_targets_max"
+        example
+        :return:
+        """
+        scenario_name = "test_tx_targets_max"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     @classmethod

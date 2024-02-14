@@ -1,6 +1,6 @@
 -- noinspection SqlNoDataSourceInspectionForFile
 
--- Copyright 2016-2023 Blue Marble Analytics LLC.
+-- Copyright 2016-2024 Blue Marble Analytics LLC.
 --
 -- Licensed under the Apache License, Version 2.0 (the "License");
 -- you may not use this file except in compliance with the License.
@@ -222,7 +222,7 @@ CREATE TABLE subscenarios_temporal
     description          VARCHAR(128)
 );
 
--- Subproblems (for production cost modeling)
+-- Subproblems
 DROP TABLE IF EXISTS inputs_temporal_subproblems;
 CREATE TABLE inputs_temporal_subproblems
 (
@@ -233,7 +233,7 @@ CREATE TABLE inputs_temporal_subproblems
         (temporal_scenario_id)
 );
 
--- Stages (within subproblems; for production cost modeling)
+-- Stages (within subproblems)
 DROP TABLE IF EXISTS inputs_temporal_subproblems_stages;
 CREATE TABLE inputs_temporal_subproblems_stages
 (
@@ -291,6 +291,9 @@ CREATE TABLE inputs_temporal_superperiods
 -- (subproblem_id + 1) BUT ONLY IF the first horizon of the next subproblem has
 -- a 'linked' boundary
 -- The spinup_or_lookahead is not NULL, as we rely on 0s downstream
+-- There is a unique key on timepoint/spinup_or_lookahead, as some functionality
+--  requires unique timepoint IDs, but we want to allow for the same
+--  timepoint IDs to be duplicated if they are spinup/lookahead timepoints
 DROP TABLE IF EXISTS inputs_temporal;
 CREATE TABLE inputs_temporal
 (
@@ -308,6 +311,7 @@ CREATE TABLE inputs_temporal
     hour_of_day                  FLOAT,   -- FLOAT to accommodate subhourly timepoints
     timestamp                    DATETIME,
     PRIMARY KEY (temporal_scenario_id, subproblem_id, stage_id, timepoint),
+    UNIQUE (temporal_scenario_id, stage_id, timepoint, spinup_or_lookahead),
     FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
         (temporal_scenario_id),
     -- Make sure period exists in this temporal_scenario_id
@@ -326,16 +330,15 @@ CREATE TABLE inputs_temporal
 -- subproblem can be a week and have days as horizons and another one
 -- can be a week and have the week as horizon), but will have to be same for
 -- each stage of a subproblem
+-- Balancing_type-horizons within
 DROP TABLE IF EXISTS inputs_temporal_horizons;
 CREATE TABLE inputs_temporal_horizons
 (
     temporal_scenario_id   INTEGER,
-    subproblem_id          INTEGER,
     balancing_type_horizon VARCHAR(32),
     horizon                INTEGER,
     boundary               VARCHAR(16),
-    PRIMARY KEY (temporal_scenario_id, subproblem_id, balancing_type_horizon,
-                 horizon),
+    PRIMARY KEY (temporal_scenario_id, balancing_type_horizon, horizon),
     FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
         (temporal_scenario_id),
     -- Make sure boundary type is correct
@@ -350,26 +353,32 @@ CREATE TABLE inputs_temporal_horizons
 DROP TABLE IF EXISTS inputs_temporal_horizon_timepoints_start_end;
 CREATE TABLE inputs_temporal_horizon_timepoints_start_end
 (
-    temporal_scenario_id   INTEGER,
-    subproblem_id          INTEGER,
-    stage_id               INTEGER,
-    balancing_type_horizon VARCHAR(32),
-    horizon                INTEGER,
-    tmp_start              INTEGER,
-    tmp_end                INTEGER,
-    PRIMARY KEY (temporal_scenario_id, subproblem_id, stage_id,
-                 balancing_type_horizon, horizon, tmp_start, tmp_end),
+    temporal_scenario_id          INTEGER,
+    stage_id                      INTEGER,
+    balancing_type_horizon        VARCHAR(32),
+    horizon                       INTEGER,
+    tmp_start                     INTEGER,
+    tmp_start_spinup_or_lookahead INTEGER NOT NULL DEFAULT 0,
+    tmp_end                       INTEGER,
+    tmp_end_spinup_or_lookahead   INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (temporal_scenario_id, stage_id, balancing_type_horizon,
+                 horizon, tmp_start, tmp_start_spinup_or_lookahead,
+                 tmp_end, tmp_end_spinup_or_lookahead),
     FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
         (temporal_scenario_id),
+    -- Make sure we have the right balancing_type-horizons
+    FOREIGN KEY (temporal_scenario_id, balancing_type_horizon, horizon)
+        REFERENCES inputs_temporal_horizons (temporal_scenario_id,
+                                             balancing_type_horizon, horizon),
     -- Make sure the start and end timepoints exist in the main timepoints table
-    FOREIGN KEY (temporal_scenario_id, subproblem_id, stage_id, tmp_start)
-        REFERENCES inputs_temporal (temporal_scenario_id, subproblem_id,
-                                    stage_id,
-                                    timepoint),
-    FOREIGN KEY (temporal_scenario_id, subproblem_id, stage_id, tmp_end)
-        REFERENCES inputs_temporal (temporal_scenario_id, subproblem_id,
-                                    stage_id,
-                                    timepoint)
+    FOREIGN KEY (temporal_scenario_id, stage_id, tmp_start,
+                 tmp_start_spinup_or_lookahead)
+        REFERENCES inputs_temporal (temporal_scenario_id, stage_id, timepoint,
+                                    spinup_or_lookahead),
+    FOREIGN KEY (temporal_scenario_id, stage_id, tmp_end,
+                 tmp_end_spinup_or_lookahead)
+        REFERENCES inputs_temporal (temporal_scenario_id, stage_id, timepoint,
+                                    spinup_or_lookahead)
 );
 
 -- This table is what GridPath uses to get inputs
@@ -391,10 +400,8 @@ CREATE TABLE inputs_temporal_horizon_timepoints
         REFERENCES inputs_temporal (temporal_scenario_id,
                                     subproblem_id, stage_id, timepoint),
     -- Make sure horizons exist in this temporal_scenario_id and subproblem_id
-    FOREIGN KEY (temporal_scenario_id, subproblem_id, balancing_type_horizon,
-                 horizon)
+    FOREIGN KEY (temporal_scenario_id, balancing_type_horizon, horizon)
         REFERENCES inputs_temporal_horizons (temporal_scenario_id,
-                                             subproblem_id,
                                              balancing_type_horizon, horizon)
 );
 
@@ -1558,13 +1565,13 @@ CREATE TABLE inputs_project_hydro_operational_chars
 (
     project                             VARCHAR(64),
     hydro_operational_chars_scenario_id INTEGER,
+    stage_id                            INTEGER,
     balancing_type_project              VARCHAR(64),
     horizon                             INTEGER,
-    period                              INTEGER,
     average_power_fraction              FLOAT,
     min_power_fraction                  FLOAT,
     max_power_fraction                  FLOAT,
-    PRIMARY KEY (project, hydro_operational_chars_scenario_id,
+    PRIMARY KEY (project, hydro_operational_chars_scenario_id, stage_id,
                  balancing_type_project, horizon),
     FOREIGN KEY (project, hydro_operational_chars_scenario_id) REFERENCES
         subscenarios_project_hydro_operational_chars
@@ -3419,30 +3426,32 @@ CREATE TABLE inputs_system_horizon_energy_target_load_zone_map
 
 -- Transmission target requirements
 -- By period
-DROP TABLE IF EXISTS subscenarios_system_period_transmission_targets;
-CREATE TABLE subscenarios_system_period_transmission_targets
+DROP TABLE IF EXISTS subscenarios_system_transmission_targets;
+CREATE TABLE subscenarios_system_transmission_targets
 (
-    period_transmission_target_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name                                   VARCHAR(32),
-    description                            VARCHAR(128)
+    transmission_target_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name                            VARCHAR(32),
+    description                     VARCHAR(128)
 );
 
--- Can include periods and zones other than the ones in a scenario, as correct
--- periods and zones will be pulled depending on temporal_scenario_id and
--- transmission_target_zone_scenario_id
-DROP TABLE IF EXISTS inputs_system_period_transmission_targets;
-CREATE TABLE inputs_system_period_transmission_targets
+-- Can include bt-horizons and zones other than the ones in a scenario, as
+-- correct bt-horizons and zones will be pulled depending on the
+-- temporal_scenario_id and transmission_target_zone_scenario_id
+DROP TABLE IF EXISTS inputs_system_transmission_targets;
+CREATE TABLE inputs_system_transmission_targets
 (
-    period_transmission_target_scenario_id     INTEGER,
-    transmission_target_zone                   VARCHAR(32),
-    subproblem_id                              INTEGER,
-    stage_id                                   INTEGER,
-    period                                     INTEGER,
-    transmission_target_positive_direction_mwh FLOAT,
-    transmission_target_negative_direction_mwh FLOAT,
-    PRIMARY KEY (period_transmission_target_scenario_id,
-                 transmission_target_zone,
-                 subproblem_id, stage_id, period)
+    transmission_target_scenario_id     INTEGER,
+    transmission_target_zone            VARCHAR(32),
+    subproblem_id                       INTEGER,
+    stage_id                            INTEGER,
+    balancing_type                      VARCHAR(32),
+    horizon                             INTEGER,
+    transmission_target_pos_dir_min_mwh FLOAT,
+    transmission_target_pos_dir_max_mwh FLOAT,
+    transmission_target_neg_dir_min_mwh FLOAT,
+    transmission_target_neg_dir_max_mwh FLOAT,
+    PRIMARY KEY (transmission_target_scenario_id, transmission_target_zone,
+                 subproblem_id, stage_id, balancing_type, horizon)
 );
 
 -- Carbon cap
@@ -3698,7 +3707,7 @@ CREATE TABLE scenarios
     of_spinning_reserves                                        INTEGER,
     of_period_energy_target                                     INTEGER,
     of_horizon_energy_target                                    INTEGER,
-    of_period_transmission_target                               INTEGER,
+    of_transmission_target                                      INTEGER,
     of_carbon_cap                                               INTEGER,
     of_track_carbon_imports                                     INTEGER,
     of_carbon_tax                                               INTEGER,
@@ -3799,7 +3808,7 @@ CREATE TABLE scenarios
     spinning_reserves_scenario_id                               INTEGER,
     period_energy_target_scenario_id                            INTEGER,
     horizon_energy_target_scenario_id                           INTEGER,
-    period_transmission_target_scenario_id                      INTEGER,
+    transmission_target_scenario_id                             INTEGER,
     carbon_cap_target_scenario_id                               INTEGER,
     carbon_tax_scenario_id                                      INTEGER,
     performance_standard_scenario_id                            INTEGER,
@@ -4028,9 +4037,9 @@ CREATE TABLE scenarios
     FOREIGN KEY (horizon_energy_target_scenario_id) REFERENCES
         subscenarios_system_horizon_energy_targets
             (horizon_energy_target_scenario_id),
-    FOREIGN KEY (period_transmission_target_scenario_id) REFERENCES
-        subscenarios_system_period_transmission_targets
-            (period_transmission_target_scenario_id),
+    FOREIGN KEY (transmission_target_scenario_id) REFERENCES
+        subscenarios_system_transmission_targets
+            (transmission_target_scenario_id),
     FOREIGN KEY (carbon_cap_target_scenario_id) REFERENCES
         subscenarios_system_carbon_cap_targets (carbon_cap_target_scenario_id),
     FOREIGN KEY (carbon_tax_scenario_id) REFERENCES
@@ -5025,23 +5034,29 @@ CREATE TABLE results_system_horizon_energy_target
 DROP TABLE IF EXISTS results_system_transmission_targets;
 CREATE TABLE results_system_transmission_targets
 (
-    scenario_id                                             INTEGER,
-    transmission_target_zone                                VARCHAR(64),
-    subproblem_id                                           INTEGER,
-    stage_id                                                INTEGER,
-    period                                                  INTEGER,
-    discount_factor                                         FLOAT,
-    number_years_represented                                FLOAT,
-    period_transmission_target_pos_dir_mwh                  FLOAT,
-    total_transmission_target_energy_positive_direction_mwh FLOAT,
-    fraction_of_transmission_target_positive_direction_met  FLOAT,
-    transmission_target_shortage_positive_direction_mwh     FLOAT,
-    period_transmission_target_neg_dir_mwh                  FLOAT,
-    total_transmission_target_energy_negative_direction_mwh FLOAT,
-    fraction_of_transmission_target_negative_direction_met  FLOAT,
-    transmission_target_shortage_negative_direction_mwh     FLOAT,
-    PRIMARY KEY (scenario_id, transmission_target_zone, period, subproblem_id,
-                 stage_id)
+    scenario_id                                     INTEGER,
+    transmission_target_zone                        VARCHAR(64),
+    subproblem_id                                   INTEGER,
+    stage_id                                        INTEGER,
+    balancing_type                                  VARCHAR(32),
+    horizon                                         INTEGER,
+    hrz_objective_coefficient                       FLOAT,
+    total_transmission_target_energy_pos_dir_mwh    FLOAT,
+    transmission_target_pos_dir_min_mwh             FLOAT,
+    fraction_of_transmission_target_pos_dir_min_met FLOAT,
+    transmission_target_shortage_pos_dir_min_mwh    FLOAT,
+    transmission_target_pos_dir_max_mwh             FLOAT,
+    fraction_of_transmission_target_pos_dir_max_met FLOAT,
+    transmission_target_overage_pos_dir_max_mwh     FLOAT,
+    total_transmission_target_energy_neg_dir_mwh    FLOAT,
+    transmission_target_neg_dir_min_mwh             FLOAT,
+    fraction_of_transmission_target_neg_dir_min_met FLOAT,
+    transmission_target_shortage_neg_dir_min_mwh    FLOAT,
+    transmission_target_neg_dir_max_mwh             FLOAT,
+    fraction_of_transmission_target_neg_dir_max_met FLOAT,
+    transmission_target_overage_neg_dir_min_mwh     FLOAT,
+    PRIMARY KEY (scenario_id, transmission_target_zone,
+                 subproblem_id, stage_id, balancing_type, horizon)
 );
 
 -- Fuel burn limits
@@ -5154,50 +5169,50 @@ CREATE TABLE results_system_local_capacity
 DROP TABLE IF EXISTS results_system_costs;
 CREATE TABLE results_system_costs
 (
-    scenario_id                                            INTEGER,
+    scenario_id                                       INTEGER,
 --period INTEGER,
-    subproblem_id                                          INTEGER,
-    stage_id                                               INTEGER,
-    Total_Capacity_Costs                                   Float,
-    Total_Fixed_Costs                                      FLOAT,
-    Total_Tx_Capacity_Costs                                Float,
-    Total_Tx_Fixed_Costs                                   FLOAT,
-    Total_PRM_Deliverability_Group_Costs                   FLOAT,
-    Total_Variable_OM_Cost                                 Float,
-    Total_Fuel_Cost                                        Float,
-    Total_Startup_Cost                                     Float,
-    Total_Shutdown_Cost                                    Float,
-    Total_Operational_Violation_Cost                       FLOAT,
-    Total_Curtailment_Cost                                 FLOAT,
-    Total_Hurdle_Cost                                      Float,
-    Total_Load_Balance_Penalty_Costs                       Float,
-    Frequency_Response_Penalty_Costs                       Float,
-    Frequency_Response_Partial_Penalty_Costs               FLOAT,
-    LF_Reserves_Down_Penalty_Costs                         Float,
-    LF_Reserves_Up_Penalty_Costs                           Float,
-    Regulation_Down_Penalty_Costs                          Float,
-    Regulation_Up_Penalty_Costs                            Float,
-    Spinning_Reserves_Penalty_Costs                        Float,
-    Total_PRM_Shortage_Penalty_Costs                       Float,
-    Total_Local_Capacity_Shortage_Penalty_Costs            Float,
-    Total_Carbon_Cap_Balance_Penalty_Costs                 Float,
-    Total_Carbon_Tax_Cost                                  FLOAT,
-    Total_Performance_Standard_Balance_Penalty_Costs       Float,
-    Total_Period_Energy_Target_Balance_Penalty_Costs       FLOAT,
-    Total_Horizon_Energy_Target_Balance_Penalty_Costs      FLOAT,
-    Total_Period_Transmission_Target_Balance_Penalty_Costs FLOAT,
-    Total_Dynamic_ELCC_Tuning_Cost                         Float,
-    Total_Import_Carbon_Tuning_Cost                        Float,
-    Total_Market_Net_Cost                                  FLOAT,
-    Total_Export_Penalty_Cost                              FLOAT,
-    Total_Horizon_Fuel_Burn_Min_Abs_Penalty_Costs          FLOAT,
-    Total_Horizon_Fuel_Burn_Max_Abs_Penalty_Costs          FLOAT,
-    Total_Horizon_Fuel_Burn_Max_Rel_Penalty_Costs          FLOAT,
-    Total_SOC_Penalty_Cost                                 FLOAT,
-    Total_SOC_Penalty_Last_Tmp_Cost                        FLOAT,
-    Total_Subsidies                                        FLOAT,
-    Total_Capacity_Transfer_Costs                          FLOAT,
-    Total_Carbon_Credit_Revenue                            FLOAT,
+    subproblem_id                                     INTEGER,
+    stage_id                                          INTEGER,
+    Total_Capacity_Costs                              Float,
+    Total_Fixed_Costs                                 FLOAT,
+    Total_Tx_Capacity_Costs                           Float,
+    Total_Tx_Fixed_Costs                              FLOAT,
+    Total_PRM_Deliverability_Group_Costs              FLOAT,
+    Total_Variable_OM_Cost                            Float,
+    Total_Fuel_Cost                                   Float,
+    Total_Startup_Cost                                Float,
+    Total_Shutdown_Cost                               Float,
+    Total_Operational_Violation_Cost                  FLOAT,
+    Total_Curtailment_Cost                            FLOAT,
+    Total_Hurdle_Cost                                 Float,
+    Total_Load_Balance_Penalty_Costs                  Float,
+    Frequency_Response_Penalty_Costs                  Float,
+    Frequency_Response_Partial_Penalty_Costs          FLOAT,
+    LF_Reserves_Down_Penalty_Costs                    Float,
+    LF_Reserves_Up_Penalty_Costs                      Float,
+    Regulation_Down_Penalty_Costs                     Float,
+    Regulation_Up_Penalty_Costs                       Float,
+    Spinning_Reserves_Penalty_Costs                   Float,
+    Total_PRM_Shortage_Penalty_Costs                  Float,
+    Total_Local_Capacity_Shortage_Penalty_Costs       Float,
+    Total_Carbon_Cap_Balance_Penalty_Costs            Float,
+    Total_Carbon_Tax_Cost                             FLOAT,
+    Total_Performance_Standard_Balance_Penalty_Costs  Float,
+    Total_Period_Energy_Target_Balance_Penalty_Costs  FLOAT,
+    Total_Horizon_Energy_Target_Balance_Penalty_Costs FLOAT,
+    Total_Transmission_Target_Balance_Penalty_Costs   FLOAT,
+    Total_Dynamic_ELCC_Tuning_Cost                    Float,
+    Total_Import_Carbon_Tuning_Cost                   Float,
+    Total_Market_Net_Cost                             FLOAT,
+    Total_Export_Penalty_Cost                         FLOAT,
+    Total_Horizon_Fuel_Burn_Min_Abs_Penalty_Costs     FLOAT,
+    Total_Horizon_Fuel_Burn_Max_Abs_Penalty_Costs     FLOAT,
+    Total_Horizon_Fuel_Burn_Max_Rel_Penalty_Costs     FLOAT,
+    Total_SOC_Penalty_Cost                            FLOAT,
+    Total_SOC_Penalty_Last_Tmp_Cost                   FLOAT,
+    Total_Subsidies                                   FLOAT,
+    Total_Capacity_Transfer_Costs                     FLOAT,
+    Total_Carbon_Credit_Revenue                       FLOAT,
     PRIMARY KEY (scenario_id, subproblem_id, stage_id)
 );
 
@@ -5597,7 +5612,6 @@ FROM (
 DROP VIEW IF EXISTS periods_horizons;
 CREATE VIEW periods_horizons AS
 SELECT DISTINCT temporal_scenario_id,
-                subproblem_id,
                 stage_id,
                 balancing_type_horizon,
                 period,
@@ -5605,41 +5619,7 @@ SELECT DISTINCT temporal_scenario_id,
 FROM inputs_temporal
          INNER JOIN
      inputs_temporal_horizon_timepoints
-     USING (temporal_scenario_id, subproblem_id, stage_id, timepoint)
-;
-
-
--- This view shows the possible operational horizons for each project based
--- based on its operational periods (see project_operational_periods), its
--- balancing type, and the periods-horizons mapping for that balancing type
--- (see periods_horizons). It also includes the operational type and the
--- hydro_operational_chars_scenario_id, since these are useful to slice out
--- operational types of interest (namely hydro) and join the hydro inputs,
--- which are indexed by project-horizon.
-DROP VIEW IF EXISTS project_operational_horizons;
-CREATE VIEW project_operational_horizons AS
-SELECT project_portfolio_scenario_id,
-       project_operational_chars_scenario_id,
-       project_specified_capacity_scenario_id,
-       project_new_cost_scenario_id,
-       temporal_scenario_id,
-       operational_type,
-       hydro_operational_chars_scenario_id,
-       subproblem_id,
-       stage_id,
-       project,
-       horizon
--- Get all projects in the portfolio (with their opchars)
-FROM project_portfolio_opchars
--- Add all the periods horizons for the matching balancing type
-         LEFT OUTER JOIN
-     periods_horizons
-     ON (project_portfolio_opchars.balancing_type_project
-         = periods_horizons.balancing_type_horizon)
--- Only select horizons from the actual operational periods
-         INNER JOIN
-     project_operational_periods
-     USING (temporal_scenario_id, project, period)
+     USING (temporal_scenario_id, stage_id, timepoint)
 ;
 
 

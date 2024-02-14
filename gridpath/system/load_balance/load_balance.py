@@ -47,7 +47,11 @@ from gridpath.auxiliary.dynamic_components import (
     load_balance_consumption_components,
     load_balance_production_components,
 )
-from gridpath.common_functions import create_results_df
+from gridpath.common_functions import (
+    create_results_df,
+    duals_wrapper,
+    none_dual_type_error_wrapper,
+)
 from gridpath.system.load_balance import LOAD_ZONE_TMP_DF
 
 
@@ -198,9 +202,11 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             tmp,
             value(m.Overgeneration_MW_Expression[lz, tmp]),
             value(m.Unserved_Energy_MW_Expression[lz, tmp]),
-            m.dual[getattr(m, "Meet_Load_Constraint")[lz, tmp]],
-            m.dual[getattr(m, "Meet_Load_Constraint")[lz, tmp]]
-            / m.tmp_objective_coefficient[tmp],
+            duals_wrapper(m, getattr(m, "Meet_Load_Constraint")[lz, tmp]),
+            none_dual_type_error_wrapper(
+                duals_wrapper(m, getattr(m, "Meet_Load_Constraint")[lz, tmp]),
+                m.tmp_objective_coefficient[tmp],
+            ),
         ]
         for lz in getattr(m, "LOAD_ZONES")
         for tmp in getattr(m, "TMPS")

@@ -11,7 +11,7 @@ of_frequency_response,
 of_spinning_reserves,
 of_period_energy_target,
 of_horizon_energy_target,
-of_period_transmission_target,
+of_transmission_target,
 of_carbon_cap,1
 of_track_carbon_imports,
 of_carbon_tax,
@@ -112,7 +112,7 @@ frequency_response_scenario_id,NULL
 spinning_reserves_scenario_id,NULL
 period_energy_target_scenario_id,NULL
 horizon_energy_target_scenario_id,NULL
-period_transmission_target_scenario_id,NULL
+transmission_target_scenario_id,NULL
 carbon_cap_target_scenario_id,1
 carbon_tax_scenario_id,NULL
 performance_standard_scenario_id,NULL

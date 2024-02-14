@@ -74,9 +74,7 @@ is `supported by Pyomo <https://pyomo.readthedocs
 e.g. GLPK, CPLEX, Gurobi, etc.
 
 You can find the latest instructions for installing Cbc `here
-<https://github.com/coin-or/Cbc#download>`__. On Windows, you can also
-download the Cbc executable from the `AMPL website <https://ampl
-.com/products/solvers/open-source/#cbc>`_. GridPath allows you to specify
+<https://github.com/coin-or/Cbc#download>`__. GridPath allows you to specify
 the location of the solver executable; to get it to be recognized,
 automatically, you can also add it to your PATH system variables (see
 instructions for Windows `here <https://www.java.com/en/download/help/path
