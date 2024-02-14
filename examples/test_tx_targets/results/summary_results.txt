@@ -1,4 +1,4 @@
-##### SUMMARY RESULTS FOR SCENARIO *test_period_tx_targets* #####
+##### SUMMARY RESULTS FOR SCENARIO *test_tx_targets* #####
 
 ### CAPACITY RESULTS ###
 

@@ -3426,30 +3426,30 @@ CREATE TABLE inputs_system_horizon_energy_target_load_zone_map
 
 -- Transmission target requirements
 -- By period
-DROP TABLE IF EXISTS subscenarios_system_period_transmission_targets;
-CREATE TABLE subscenarios_system_period_transmission_targets
+DROP TABLE IF EXISTS subscenarios_system_transmission_targets;
+CREATE TABLE subscenarios_system_transmission_targets
 (
-    period_transmission_target_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name                                   VARCHAR(32),
-    description                            VARCHAR(128)
+    transmission_target_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name                            VARCHAR(32),
+    description                     VARCHAR(128)
 );
 
--- Can include periods and zones other than the ones in a scenario, as correct
--- periods and zones will be pulled depending on temporal_scenario_id and
--- transmission_target_zone_scenario_id
-DROP TABLE IF EXISTS inputs_system_period_transmission_targets;
-CREATE TABLE inputs_system_period_transmission_targets
+-- Can include bt-horizons and zones other than the ones in a scenario, as
+-- correct bt-horizons and zones will be pulled depending on the
+-- temporal_scenario_id and transmission_target_zone_scenario_id
+DROP TABLE IF EXISTS inputs_system_transmission_targets;
+CREATE TABLE inputs_system_transmission_targets
 (
-    period_transmission_target_scenario_id     INTEGER,
+    transmission_target_scenario_id            INTEGER,
     transmission_target_zone                   VARCHAR(32),
     subproblem_id                              INTEGER,
     stage_id                                   INTEGER,
-    period                                     INTEGER,
+    balancing_type                             VARCHAR(32),
+    horizon                                    INTEGER,
     transmission_target_positive_direction_mwh FLOAT,
     transmission_target_negative_direction_mwh FLOAT,
-    PRIMARY KEY (period_transmission_target_scenario_id,
-                 transmission_target_zone,
-                 subproblem_id, stage_id, period)
+    PRIMARY KEY (transmission_target_scenario_id, transmission_target_zone,
+                 subproblem_id, stage_id, balancing_type, horizon)
 );
 
 -- Carbon cap
@@ -3705,7 +3705,7 @@ CREATE TABLE scenarios
     of_spinning_reserves                                        INTEGER,
     of_period_energy_target                                     INTEGER,
     of_horizon_energy_target                                    INTEGER,
-    of_period_transmission_target                               INTEGER,
+    of_transmission_target                                      INTEGER,
     of_carbon_cap                                               INTEGER,
     of_track_carbon_imports                                     INTEGER,
     of_carbon_tax                                               INTEGER,
@@ -3806,7 +3806,7 @@ CREATE TABLE scenarios
     spinning_reserves_scenario_id                               INTEGER,
     period_energy_target_scenario_id                            INTEGER,
     horizon_energy_target_scenario_id                           INTEGER,
-    period_transmission_target_scenario_id                      INTEGER,
+    transmission_target_scenario_id                             INTEGER,
     carbon_cap_target_scenario_id                               INTEGER,
     carbon_tax_scenario_id                                      INTEGER,
     performance_standard_scenario_id                            INTEGER,
@@ -4035,9 +4035,9 @@ CREATE TABLE scenarios
     FOREIGN KEY (horizon_energy_target_scenario_id) REFERENCES
         subscenarios_system_horizon_energy_targets
             (horizon_energy_target_scenario_id),
-    FOREIGN KEY (period_transmission_target_scenario_id) REFERENCES
-        subscenarios_system_period_transmission_targets
-            (period_transmission_target_scenario_id),
+    FOREIGN KEY (transmission_target_scenario_id) REFERENCES
+        subscenarios_system_transmission_targets
+            (transmission_target_scenario_id),
     FOREIGN KEY (carbon_cap_target_scenario_id) REFERENCES
         subscenarios_system_carbon_cap_targets (carbon_cap_target_scenario_id),
     FOREIGN KEY (carbon_tax_scenario_id) REFERENCES
@@ -5035,19 +5035,19 @@ CREATE TABLE results_system_transmission_targets
     transmission_target_zone                                VARCHAR(64),
     subproblem_id                                           INTEGER,
     stage_id                                                INTEGER,
-    period                                                  INTEGER,
-    discount_factor                                         FLOAT,
-    number_years_represented                                FLOAT,
-    period_transmission_target_pos_dir_mwh                  FLOAT,
+    balancing_type                                          VARCHAR(32),
+    horizon                                                 INTEGER,
+    hrz_objective_coefficient                               FLOAT,
+    transmission_target_pos_dir_mwh                         FLOAT,
     total_transmission_target_energy_positive_direction_mwh FLOAT,
     fraction_of_transmission_target_positive_direction_met  FLOAT,
     transmission_target_shortage_positive_direction_mwh     FLOAT,
-    period_transmission_target_neg_dir_mwh                  FLOAT,
+    transmission_target_neg_dir_mwh                         FLOAT,
     total_transmission_target_energy_negative_direction_mwh FLOAT,
     fraction_of_transmission_target_negative_direction_met  FLOAT,
     transmission_target_shortage_negative_direction_mwh     FLOAT,
-    PRIMARY KEY (scenario_id, transmission_target_zone, period, subproblem_id,
-                 stage_id)
+    PRIMARY KEY (scenario_id, transmission_target_zone,
+                 subproblem_id, stage_id, balancing_type, horizon)
 );
 
 -- Fuel burn limits
@@ -5191,7 +5191,7 @@ CREATE TABLE results_system_costs
     Total_Performance_Standard_Balance_Penalty_Costs       Float,
     Total_Period_Energy_Target_Balance_Penalty_Costs       FLOAT,
     Total_Horizon_Energy_Target_Balance_Penalty_Costs      FLOAT,
-    Total_Period_Transmission_Target_Balance_Penalty_Costs FLOAT,
+    Total_Transmission_Target_Balance_Penalty_Costs FLOAT,
     Total_Dynamic_ELCC_Tuning_Cost                         Float,
     Total_Import_Carbon_Tuning_Cost                        Float,
     Total_Market_Net_Cost                                  FLOAT,

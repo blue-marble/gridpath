@@ -13,8 +13,9 @@
 # limitations under the License.
 
 """
-Aggregate delivered transmission-target-eligible transmission flow from the tx_line-timepoint level to
-the transmission-target zone - period level.
+Aggregate delivered transmission-target-eligible transmission flow from the
+tx_line-timepoint level to the transmission-target zone - balancing_type -
+horizon level.
 """
 
 from pyomo.environ import Expression, value
@@ -31,7 +32,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     :return:
     """
 
-    def transmission_target_pos_dir_contribution_rule(mod, z, p):
+    def transmission_target_pos_dir_contribution_rule(mod, z, bt, hz):
         """
         Calculate the delivered energy in the positive direction for each transmission-target zone and period
         :param mod:
@@ -49,15 +50,15 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             * mod.tmp_weight[tmp]
             for (tx, tmp) in mod.TRANSMISSION_TARGET_TX_OPR_TMPS
             if tx in mod.TRANSMISSION_TARGET_TX_LINES_BY_TRANSMISSION_TARGET_ZONE[z]
-            and tmp in mod.TMPS_IN_PRD[p]
+            and tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hz]
         )
 
-    m.Total_Period_Transmission_Target_Energy_Pos_Dir_MWh = Expression(
-        m.TRANSMISSION_TARGET_ZONE_PERIODS_WITH_TRANSMISSION_TARGET,
+    m.Total_Transmission_Target_Energy_Pos_Dir_MWh = Expression(
+        m.TRANSMISSION_TARGET_ZONE_BLN_TYPE_HRZS_WITH_TRANSMISSION_TARGET,
         rule=transmission_target_pos_dir_contribution_rule,
     )
 
-    def transmission_target_neg_dir_contribution_rule(mod, z, p):
+    def transmission_target_neg_dir_contribution_rule(mod, z, bt, hz):
         """
         Calculate the delivered energy in the negative direction for each transmission-target zone and period
         :param mod:
@@ -75,11 +76,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             * mod.tmp_weight[tmp]
             for (tx, tmp) in mod.TRANSMISSION_TARGET_TX_OPR_TMPS
             if tx in mod.TRANSMISSION_TARGET_TX_LINES_BY_TRANSMISSION_TARGET_ZONE[z]
-            and tmp in mod.TMPS_IN_PRD[p]
+            and tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hz]
         )
 
-    m.Total_Period_Transmission_Target_Energy_Neg_Dir_MWh = Expression(
-        m.TRANSMISSION_TARGET_ZONE_PERIODS_WITH_TRANSMISSION_TARGET,
+    m.Total_Transmission_Target_Energy_Neg_Dir_MWh = Expression(
+        m.TRANSMISSION_TARGET_ZONE_BLN_TYPE_HRZS_WITH_TRANSMISSION_TARGET,
         rule=transmission_target_neg_dir_contribution_rule,
     )
 
@@ -102,14 +103,19 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     data = [
         [
             z,
-            p,
-            value(m.Total_Period_Transmission_Target_Energy_Pos_Dir_MWh[z, p]),
-            value(m.Total_Period_Transmission_Target_Energy_Neg_Dir_MWh[z, p]),
+            bt,
+            hz,
+            value(m.Total_Transmission_Target_Energy_Pos_Dir_MWh[z, bt, hz]),
+            value(m.Total_Transmission_Target_Energy_Neg_Dir_MWh[z, bt, hz]),
         ]
-        for (z, p) in m.TRANSMISSION_TARGET_ZONE_PERIODS_WITH_TRANSMISSION_TARGET
+        for (
+            z,
+            bt,
+            hz,
+        ) in m.TRANSMISSION_TARGET_ZONE_BLN_TYPE_HRZS_WITH_TRANSMISSION_TARGET
     ]
     results_df = create_results_df(
-        index_columns=["transmission_target_zone", "period"],
+        index_columns=["transmission_target_zone", "balancing_type", "horizon"],
         results_columns=results_columns,
         data=data,
     )

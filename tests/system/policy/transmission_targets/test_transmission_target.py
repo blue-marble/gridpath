@@ -32,9 +32,7 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.investment.periods",
     "geography.transmission_target_zones",
 ]
-NAME_OF_MODULE_BEING_TESTED = (
-    "system.policy.transmission_targets.period_transmission_target"
-)
+NAME_OF_MODULE_BEING_TESTED = "system.policy.transmission_targets.transmission_target"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -98,19 +96,20 @@ class TestPeriodTxTarget(unittest.TestCase):
         # Set: Tx_Target_Zone1
         expected_tx_target_zone_periods = sorted(
             [
-                ("Tx_Target_Zone1", 2020),
-                ("Tx_Target_Zone1", 2030),
-                ("Tx_Target_Zone2", 2020),
-                ("Tx_Target_Zone2", 2030),
+                ("Tx_Target_Zone1", "year", 2020),
+                ("Tx_Target_Zone1", "year", 2030),
+                ("Tx_Target_Zone2", "year", 2020),
+                ("Tx_Target_Zone2", "year", 2030),
             ]
         )
         actual_tx_target_zone_periods = sorted(
             [
-                (z, p)
+                (z, bt, hz)
                 for (
                     z,
-                    p,
-                ) in instance.TRANSMISSION_TARGET_ZONE_PERIODS_WITH_TRANSMISSION_TARGET
+                    bt,
+                    hz,
+                ) in instance.TRANSMISSION_TARGET_ZONE_BLN_TYPE_HRZS_WITH_TRANSMISSION_TARGET
             ]
         )
         self.assertListEqual(
@@ -121,45 +120,47 @@ class TestPeriodTxTarget(unittest.TestCase):
         expected_tx_target_pos = OrderedDict(
             sorted(
                 {
-                    ("Tx_Target_Zone1", 2020): 50,
-                    ("Tx_Target_Zone1", 2030): 50,
-                    ("Tx_Target_Zone2", 2020): 10,
-                    ("Tx_Target_Zone2", 2030): 10,
+                    ("Tx_Target_Zone1", "year", 2020): 50,
+                    ("Tx_Target_Zone1", "year", 2030): 50,
+                    ("Tx_Target_Zone2", "year", 2020): 10,
+                    ("Tx_Target_Zone2", "year", 2030): 10,
                 }.items()
             )
         )
         actual_tx_target_pos = OrderedDict(
             sorted(
                 {
-                    (z, p): instance.period_transmission_target_pos_dir_mwh[z, p]
+                    (z, bt, hz): instance.transmission_target_pos_dir_mwh[z, bt, hz]
                     for (
                         z,
-                        p,
-                    ) in instance.TRANSMISSION_TARGET_ZONE_PERIODS_WITH_TRANSMISSION_TARGET
+                        bt,
+                        hz,
+                    ) in instance.TRANSMISSION_TARGET_ZONE_BLN_TYPE_HRZS_WITH_TRANSMISSION_TARGET
                 }.items()
             )
         )
         self.assertDictEqual(expected_tx_target_pos, actual_tx_target_pos)
 
-        # Param: period_transmission_target_neg_dir_mwh
+        # Param: transmission_target_neg_dir_mwh
         expected_tx_target_neg = OrderedDict(
             sorted(
                 {
-                    ("Tx_Target_Zone1", 2020): 0.2,
-                    ("Tx_Target_Zone1", 2030): 0.33,
-                    ("Tx_Target_Zone2", 2020): 0,
-                    ("Tx_Target_Zone2", 2030): 0,
+                    ("Tx_Target_Zone1", "year", 2020): 0.2,
+                    ("Tx_Target_Zone1", "year", 2030): 0.33,
+                    ("Tx_Target_Zone2", "year", 2020): 0,
+                    ("Tx_Target_Zone2", "year", 2030): 0,
                 }.items()
             )
         )
         actual_tx_target_neg = OrderedDict(
             sorted(
                 {
-                    (z, p): instance.period_transmission_target_neg_dir_mwh[z, p]
+                    (z, bt, hz): instance.transmission_target_neg_dir_mwh[z, bt, hz]
                     for (
                         z,
-                        p,
-                    ) in instance.TRANSMISSION_TARGET_ZONE_PERIODS_WITH_TRANSMISSION_TARGET
+                        bt,
+                        hz,
+                    ) in instance.TRANSMISSION_TARGET_ZONE_BLN_TYPE_HRZS_WITH_TRANSMISSION_TARGET
                 }.items()
             )
         )

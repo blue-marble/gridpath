@@ -1130,13 +1130,13 @@ class TestExamples(unittest.TestCase):
         )
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
-    def test_example_test_period_tx_targets(self):
+    def test_example_test_tx_targets(self):
         """
-        Check validation and objective function value of "test_example_test_period_tx_targets"
+        Check validation and objective function value of "test_example_test_tx_targets"
         example
         :return:
         """
-        scenario_name = "test_period_tx_targets"
+        scenario_name = "test_tx_targets"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_test_w_flex_load(self):

@@ -33,16 +33,19 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     def total_penalty_costs_rule(mod):
         return sum(
             (
-                mod.Period_Transmission_Target_Shortage_Pos_Dir_MWh_Expression[z, p]
-                + mod.Period_Transmission_Target_Shortage_Neg_Dir_MWh_Expression[z, p]
+                mod.Transmission_Target_Shortage_Pos_Dir_MWh_Expression[z, bt, hz]
+                + mod.Transmission_Target_Shortage_Neg_Dir_MWh_Expression[z, bt, hz]
             )
             * mod.transmission_target_violation_penalty_per_mwh[z]
-            * mod.number_years_represented[p]
-            * mod.discount_factor[p]
-            for (z, p) in mod.TRANSMISSION_TARGET_ZONE_PERIODS_WITH_TRANSMISSION_TARGET
+            * mod.hrz_objective_coefficient[bt, hz]
+            for (
+                z,
+                bt,
+                hz,
+            ) in mod.TRANSMISSION_TARGET_ZONE_BLN_TYPE_HRZS_WITH_TRANSMISSION_TARGET
         )
 
-    m.Total_Period_Transmission_Target_Balance_Penalty_Costs = Expression(
+    m.Total_Transmission_Target_Balance_Penalty_Costs = Expression(
         rule=total_penalty_costs_rule
     )
 
@@ -57,5 +60,5 @@ def record_dynamic_components(dynamic_components):
     """
 
     getattr(dynamic_components, cost_components).append(
-        "Total_Period_Transmission_Target_Balance_Penalty_Costs"
+        "Total_Transmission_Target_Balance_Penalty_Costs"
     )

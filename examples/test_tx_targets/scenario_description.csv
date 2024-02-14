@@ -1,5 +1,5 @@
 scenario_id,92
-scenario_name,test_period_tx_targets
+scenario_name,test_tx_targets
 of_transmission,1
 of_transmission_hurdle_rates,
 of_simultaneous_flow_limits,
@@ -11,7 +11,7 @@ of_frequency_response,
 of_spinning_reserves,
 of_period_energy_target,
 of_horizon_energy_target,
-of_period_transmission_target,1
+of_transmission_target,1
 of_carbon_cap,1
 of_track_carbon_imports,1
 of_carbon_tax,
@@ -26,7 +26,7 @@ of_elcc_surface,
 of_local_capacity,
 of_markets,
 of_tuning,
-temporal_scenario_id,1
+temporal_scenario_id,15
 load_zone_scenario_id,4
 lf_reserves_up_ba_scenario_id,1
 lf_reserves_down_ba_scenario_id,1
@@ -112,7 +112,7 @@ frequency_response_scenario_id,NULL
 spinning_reserves_scenario_id,NULL
 period_energy_target_scenario_id,NULL
 horizon_energy_target_scenario_id,NULL
-period_transmission_target_scenario_id,1
+transmission_target_scenario_id,1
 carbon_cap_target_scenario_id,1
 carbon_tax_scenario_id,NULL
 performance_standard_scenario_id,NULL
