@@ -29,11 +29,25 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.operations.timepoints",
     "temporal.operations.horizons",
     "temporal.investment.periods",
-    "geography.carbon_tax_zones",
+    "geography.load_zones",
+    "geography.performance_standard_zones",
     "geography.carbon_credits_zones",
-    "system.policy.carbon_tax.carbon_tax",
+    "project",
+    "project.capacity.capacity",
+    "project.availability.availability",
+    "project.fuels",
+    "project.operations",
+    "project.operations.operational_types",
+    "project.operations.power",
+    "project.operations.fuel_burn",
+    "project.operations.carbon_emissions",
+    "project.operations.performance_standard",
+    "project.operations.carbon_credits",
+    "system.policy.performance_standard.performance_standard",
 ]
-NAME_OF_MODULE_BEING_TESTED = "system.policy.carbon_tax.purchase_credits"
+NAME_OF_MODULE_BEING_TESTED = (
+    "system.policy.performance_standard.aggregate_project_carbon_credits"
+)
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -51,7 +65,7 @@ except ImportError:
     print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED + " to test.")
 
 
-class TestCarbonTaxPurchaseCredits(unittest.TestCase):
+class TestCarbonCapPurchaseCredits(unittest.TestCase):
     """ """
 
     def test_add_model_components(self):
@@ -94,18 +108,21 @@ class TestCarbonTaxPurchaseCredits(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: CARBON_TAX_ZONES_CARBON_CREDITS_ZONES
+        # Set: PERFORMANCE_STANDARD_ZONES_CARBON_CREDITS_ZONES
         expected_zone_mapping = sorted(
             [
-                ("Carbon_Tax_Zone1", "Carbon_Credits_Zone1"),
-                ("Carbon_Tax_Zone1", "Carbon_Credits_Zone2"),
-                ("Carbon_Tax_Zone2", "Carbon_Credits_Zone1"),
+                ("PS_Zone1", "Carbon_Credits_Zone1"),
+                ("PS_Zone1", "Carbon_Credits_Zone2"),
+                ("PS_Zone2", "Carbon_Credits_Zone1"),
             ]
         )
         actual_zone_mapping = sorted(
             [
-                (tax_z, credit_z)
-                for (tax_z, credit_z) in instance.CARBON_TAX_ZONES_CARBON_CREDITS_ZONES
+                (perf_s_z, credit_z)
+                for (
+                    perf_s_z,
+                    credit_z,
+                ) in instance.PERFORMANCE_STANDARD_ZONES_CARBON_CREDITS_ZONES
             ]
         )
         self.assertListEqual(expected_zone_mapping, actual_zone_mapping)

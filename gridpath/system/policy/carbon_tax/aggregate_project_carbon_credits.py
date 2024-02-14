@@ -1,4 +1,4 @@
-# Copyright 2016-2023 Blue Marble Analytics LLC
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,11 +13,12 @@
 # limitations under the License.
 
 """
-
+Aggregate carbon credits from the project-period level to the
+carbon tax zone - period level.
 """
 
 import os.path
-from pyomo.environ import Set, Var, NonNegativeReals, Expression, value
+from pyomo.environ import Set, Expression, value
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.dynamic_components import carbon_tax_cost_components
@@ -26,30 +27,41 @@ from gridpath.system.policy.carbon_tax import CARBON_TAX_ZONE_PRD_DF
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
-    """ """
+    """
+
+    :param m:
+    :param d:
+    :return:
+    """
     m.CARBON_TAX_ZONES_CARBON_CREDITS_ZONES = Set(
         within=m.CARBON_TAX_ZONES * m.CARBON_CREDITS_ZONES
     )
 
-    m.Carbon_Tax_Purchase_Credits = Var(
-        m.CARBON_TAX_ZONE_PERIODS_WITH_CARBON_TAX, within=NonNegativeReals
-    )
-
-    def aggregate_purchases_rule(mod, z, prd):
+    def total_carbon_emissions_credits_rule(mod, tax_z, prd):
+        """
+        Purchased credits for projects in this carbon tax zone.
+        We also need to check that we only count credits projects can
+        purchase from credits zone that this carbon_tax zone maps to.
+        """
         return sum(
-            mod.Carbon_Tax_Purchase_Credits[z, prd]
-            for (tax_zone, credit_zone) in mod.CARBON_TAX_ZONES_CARBON_CREDITS_ZONES
-            if z == tax_zone
+            mod.Project_Purchase_Carbon_Credits[prj, prd]
+            # Projects in this carbon tax zone
+            for prj in mod.CARBON_TAX_PRJS_BY_CARBON_TAX_ZONE[tax_z]
+            if (prj, prd) in mod.CARBON_CREDITS_PRJ_OPR_PRDS
+            # Limit to projects in a credit zone mapped to this carbon_tax zone
+            if (tax_z, mod.carbon_credits_zone[prj])
+            in mod.CARBON_TAX_ZONES_CARBON_CREDITS_ZONES
         )
 
-    m.Carbon_Tax_Total_Credit_Purchases = Expression(
-        m.CARBON_TAX_ZONE_PERIODS_WITH_CARBON_TAX, rule=aggregate_purchases_rule
+    m.Total_Carbon_Tax_Emissions_Credits = Expression(
+        m.CARBON_TAX_ZONE_PERIODS_WITH_CARBON_TAX,
+        rule=total_carbon_emissions_credits_rule,
     )
 
     def credit_cost_reduction(mod, z, prd):
-        return -mod.Carbon_Tax_Total_Credit_Purchases[z, prd] * mod.carbon_tax[z, prd]
+        return -mod.Total_Carbon_Tax_Emissions_Credits[z, prd] * mod.carbon_tax[z, prd]
 
-    m.Carbon_Tax_Total_Credit_Cost_Reduction = Expression(
+    m.Total_Carbon_Tax_Credit_Cost_Reduction = Expression(
         m.CARBON_TAX_ZONE_PERIODS_WITH_CARBON_TAX, rule=credit_cost_reduction
     )
 
@@ -60,11 +72,11 @@ def record_dynamic_components(dynamic_components):
     """
     :param dynamic_components:
 
-    This method adds project emissions to carbon balance
+    This method adds project credits to carbon balance
     """
 
     getattr(dynamic_components, carbon_tax_cost_components).append(
-        "Carbon_Tax_Total_Credit_Cost_Reduction"
+        "Total_Carbon_Tax_Credit_Cost_Reduction"
     )
 
 
@@ -161,14 +173,10 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     """
 
     results_columns = [
-        "credit_purchases",
+        "project_credits",
     ]
     data = [
-        [
-            z,
-            p,
-            value(m.Carbon_Tax_Total_Credit_Purchases[z, p]),
-        ]
+        [z, p, value(m.Total_Carbon_Tax_Emissions_Credits[z, p])]
         for (z, p) in m.CARBON_TAX_ZONE_PERIODS_WITH_CARBON_TAX
     ]
     results_df = create_results_df(

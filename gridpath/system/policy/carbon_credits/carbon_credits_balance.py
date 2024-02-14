@@ -30,10 +30,6 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     :return:
     """
 
-    m.Available_Carbon_Credits = Var(
-        m.CARBON_CREDITS_ZONES, m.PERIODS, within=NonNegativeReals, initialize=0
-    )
-
     def total_credits_generated_rule(mod, z, p):
         return sum(
             getattr(mod, c)[z, p]
@@ -57,9 +53,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     def track_available_credits(mod, z, prd):
         return (
-            mod.Available_Carbon_Credits[z, prd]
+            mod.Total_Carbon_Credits_Purchased[z, prd]
             <= mod.Total_Carbon_Credits_Generated[z, prd]
-            - mod.Total_Carbon_Credits_Purchased[z, prd]
         )
 
     m.Track_Carbon_Credits_Constraint = Constraint(
@@ -78,13 +73,15 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return:
     """
     results_columns = [
-        "available_carbon_credits",
+        "total_generated_carbon_credits",
+        "total_purchased_carbon_credits",
     ]
     data = [
         [
             z,
             p,
-            value(m.Available_Carbon_Credits[z, p]),
+            value(m.Total_Carbon_Credits_Generated[z, p]),
+            value(m.Total_Carbon_Credits_Purchased[z, p]),
         ]
         for z in m.CARBON_CREDITS_ZONES
         for p in m.PERIODS

@@ -4139,6 +4139,7 @@ CREATE TABLE results_project_period
     max_total_energy_dual                  FLOAT,
     carbon_credits_zone                    VARCHAR(32),
     carbon_credits_generated_tCO2          FLOAT,
+    carbon_credits_purchased_tCO2          FLOAT,
     PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
 );
 
@@ -4910,6 +4911,7 @@ CREATE TABLE results_system_carbon_cap
     number_years_represented              FLOAT,
     carbon_cap_target                     FLOAT,
     project_emissions                     FLOAT,
+    project_credits                       FLOAT,
     import_emissions                      FLOAT,
     credit_purchases                      FLOAT,
     total_emissions                       FLOAT,
@@ -4934,10 +4936,10 @@ CREATE TABLE results_system_carbon_tax
     discount_factor                 FLOAT,
     number_years_represented        FLOAT,
     project_emissions               FLOAT,
+    project_credits                 FLOAT,
     carbon_tax_per_ton              FLOAT,
     total_carbon_emissions_tons     FLOAT,
     total_carbon_tax_allowance_tons FLOAT,
-    credit_purchases                FLOAT,
     total_carbon_tax_cost           FLOAT,
     dual                            FLOAT,
     PRIMARY KEY (scenario_id, carbon_tax_zone, subproblem_id, stage_id, period)
@@ -4956,8 +4958,8 @@ CREATE TABLE results_system_performance_standard
     number_years_represented                    FLOAT,
     performance_standard_tco2_per_mwh           FLOAT,
     performance_standard_project_emissions_tco2 FLOAT,
+    project_credits                             FLOAT,
     performance_standard_project_energy_mwh     FLOAT,
-    credit_purchases                            FLOAT,
     performance_standard_overage_tco2           FLOAT,
     PRIMARY KEY (scenario_id, performance_standard_zone, subproblem_id,
                  stage_id, period)
@@ -4967,19 +4969,18 @@ CREATE TABLE results_system_performance_standard
 DROP TABLE IF EXISTS results_system_carbon_credits;
 CREATE TABLE results_system_carbon_credits
 (
-    scenario_id                         INTEGER,
-    carbon_credits_zone                 VARCHAR(64),
-    period                              INTEGER,
-    subproblem_id                       INTEGER,
-    stage_id                            INTEGER,
-    discount_factor                     FLOAT,
-    number_years_represented            FLOAT,
-    project_generated_credits           FLOAT,
-    carbon_cap_zone_purchases           FLOAT,
-    carbon_tax_zone_purchases           FLOAT,
-    performance_standard_zone_purchases FLOAT,
-    sell_credits                        FLOAT,
-    available_carbon_credits            FLOAT,
+    scenario_id                    INTEGER,
+    carbon_credits_zone            VARCHAR(64),
+    period                         INTEGER,
+    subproblem_id                  INTEGER,
+    stage_id                       INTEGER,
+    discount_factor                FLOAT,
+    number_years_represented       FLOAT,
+    project_generated_credits      FLOAT,
+    project_purchased_credits      FLOAT,
+    total_generated_carbon_credits FLOAT,
+    total_purchased_carbon_credits FLOAT,
+    sell_credits                   FLOAT,
     PRIMARY KEY (scenario_id, carbon_credits_zone, subproblem_id, stage_id,
                  period)
 );

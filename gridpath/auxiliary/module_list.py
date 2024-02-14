@@ -182,24 +182,21 @@ def all_modules_list():
         "system.policy.transmission_targets.transmission_target_balance",
         "system.policy.transmission_targets.consolidate_results",
         "system.policy.carbon_cap.aggregate_project_carbon_emissions",
+        "system.policy.carbon_cap.aggregate_project_carbon_credits",
         "system.policy.carbon_cap.aggregate_transmission_carbon_emissions",
-        "system.policy.carbon_cap.purchase_credits",
         "system.policy.carbon_cap.carbon_balance",
         "system.policy.carbon_cap.consolidate_results",
         "system.policy.carbon_tax.aggregate_project_carbon_emissions",
-        "system.policy.carbon_tax.purchase_credits",
+        "system.policy.carbon_tax.aggregate_project_carbon_credits",
         "system.policy.carbon_tax.carbon_tax_costs",
         "system.policy.carbon_tax.consolidate_results",
         "system.policy.subsidies",
         "system.policy.performance_standard.aggregate_project_performance_standard",
-        "system.policy.performance_standard.purchase_credits",
+        "system.policy.performance_standard.aggregate_project_carbon_credits",
         "system.policy.performance_standard.performance_standard_balance",
         "system.policy.performance_standard.consolidate_results",
         "system.policy.carbon_credits",
         "system.policy.carbon_credits.aggregate_project_carbon_credits",
-        "system.policy.carbon_credits.aggregate_carbon_cap_zone_purchases",
-        "system.policy.carbon_credits.aggregate_performance_standard_zone_purchases",
-        "system.policy.carbon_credits.aggregate_carbon_tax_zone_purchases",
         "system.policy.carbon_credits.sell_credits",
         "system.policy.carbon_credits.carbon_credits_balance",
         "system.policy.carbon_credits.consolidate_results",
@@ -494,17 +491,13 @@ def cross_feature_modules_list():
             "objective.system.reliability.prm.dynamic_elcc_tuning_penalties"
         ],
         ("carbon_cap", "carbon_credits"): [
-            "system.policy.carbon_cap.purchase_credits",
-            "system.policy.carbon_credits.aggregate_carbon_cap_zone_purchases",
+            "system.policy.carbon_cap.aggregate_project_carbon_credits",
         ],
         ("performance_standard", "carbon_credits"): [
-            "system.policy.performance_standard.purchase_credits",
-            "system.policy.carbon_credits"
-            ".aggregate_performance_standard_zone_purchases",
+            "system.policy.performance_standard.aggregate_project_carbon_credits",
         ],
         ("carbon_tax", "carbon_credits"): [
-            "system.policy.carbon_tax.purchase_credits",
-            "system.policy.carbon_credits.aggregate_carbon_tax_zone_purchases",
+            "system.policy.carbon_tax.aggregate_project_carbon_credits",
         ],
     }
     return cross_modules
