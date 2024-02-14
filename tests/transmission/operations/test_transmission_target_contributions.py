@@ -37,7 +37,7 @@ PREREQUISITE_MODULE_NAMES = [
     "transmission.operations.operational_types",
     "transmission.operations.operations",
     "geography.transmission_target_zones",
-    "system.policy.transmission_targets.period_transmission_target",
+    "system.policy.transmission_targets.transmission_target",
 ]
 NAME_OF_MODULE_BEING_TESTED = (
     "transmission.operations.transmission_target_contributions"

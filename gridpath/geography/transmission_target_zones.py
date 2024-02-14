@@ -1,4 +1,5 @@
 # Copyright 2022 (c) Crown Copyright, GC.
+# Modifications Copyright Blue Marble Analytics LLC 2023.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,8 +14,8 @@
 # limitations under the License.
 
 """
-Zones where transmission target will be enforced; these can be different from the load zones
-and reserve balancing areas.
+Zones where transmission target will be enforced; these can be different from
+the load zones and reserve balancing areas.
 """
 
 import csv
@@ -43,6 +44,8 @@ def add_model_components(
 
     m.TRANSMISSION_TARGET_ZONES = Set()
 
+    # Note that these parameters control all target constraints (min, max,
+    # direction)
     m.transmission_target_allow_violation = Param(
         m.TRANSMISSION_TARGET_ZONES, within=Boolean, default=0
     )
