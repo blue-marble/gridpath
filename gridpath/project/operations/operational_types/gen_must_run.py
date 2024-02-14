@@ -326,7 +326,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     c = conn.cursor()
     heat_rates = c.execute(
         """
-        SELECT project, load_point_fraction
+        SELECT project, period, load_point_fraction
         FROM inputs_project_portfolios
         INNER JOIN
         (SELECT project, operational_type, heat_rate_curves_scenario_id
@@ -335,7 +335,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         AND operational_type = '{}') AS op_char
         USING(project)
         INNER JOIN
-        (SELECT project, heat_rate_curves_scenario_id, load_point_fraction
+        (SELECT project, period, heat_rate_curves_scenario_id, load_point_fraction
         FROM inputs_project_heat_rate_curves) as heat_rates
         USING(project, heat_rate_curves_scenario_id)
         WHERE project_portfolio_scenario_id = {}
@@ -360,6 +360,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         severity="Mid",
         errors=validate_single_input(
             df=hr_df,
+            idx_col=["project", "period"],
             msg="gen_must_run can only have one load " "point (constant heat rate).",
         ),
     )
