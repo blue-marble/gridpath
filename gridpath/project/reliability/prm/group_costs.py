@@ -519,9 +519,11 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                     [
                         g,
                         p,
-                        value(m.Deliverability_Group_Build_MW[g, p])
-                        if (g, p) in m.DELIVERABILITY_GROUP_VINTAGES
-                        else None,
+                        (
+                            value(m.Deliverability_Group_Build_MW[g, p])
+                            if (g, p) in m.DELIVERABILITY_GROUP_VINTAGES
+                            else None
+                        ),
                         value(m.Cumulative_Added_Deliverability_Capacity_MW[g, p]),
                         value(m.Deliverability_Group_Deliverable_Capacity_Cost[g, p]),
                     ]

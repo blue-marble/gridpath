@@ -1,6 +1,6 @@
 -- noinspection SqlNoDataSourceInspectionForFile
 
--- Copyright 2016-2023 Blue Marble Analytics LLC.
+-- Copyright 2016-2024 Blue Marble Analytics LLC.
 --
 -- Licensed under the Apache License, Version 2.0 (the "License");
 -- you may not use this file except in compliance with the License.
@@ -222,7 +222,7 @@ CREATE TABLE subscenarios_temporal
     description          VARCHAR(128)
 );
 
--- Subproblems (for production cost modeling)
+-- Subproblems
 DROP TABLE IF EXISTS inputs_temporal_subproblems;
 CREATE TABLE inputs_temporal_subproblems
 (
@@ -233,7 +233,7 @@ CREATE TABLE inputs_temporal_subproblems
         (temporal_scenario_id)
 );
 
--- Stages (within subproblems; for production cost modeling)
+-- Stages (within subproblems)
 DROP TABLE IF EXISTS inputs_temporal_subproblems_stages;
 CREATE TABLE inputs_temporal_subproblems_stages
 (
@@ -291,6 +291,9 @@ CREATE TABLE inputs_temporal_superperiods
 -- (subproblem_id + 1) BUT ONLY IF the first horizon of the next subproblem has
 -- a 'linked' boundary
 -- The spinup_or_lookahead is not NULL, as we rely on 0s downstream
+-- There is a unique key on timepoint/spinup_or_lookahead, as some functionality
+--  requires unique timepoint IDs, but we want to allow for the same
+--  timepoint IDs to be duplicated if they are spinup/lookahead timepoints
 DROP TABLE IF EXISTS inputs_temporal;
 CREATE TABLE inputs_temporal
 (
@@ -308,6 +311,7 @@ CREATE TABLE inputs_temporal
     hour_of_day                  FLOAT,   -- FLOAT to accommodate subhourly timepoints
     timestamp                    DATETIME,
     PRIMARY KEY (temporal_scenario_id, subproblem_id, stage_id, timepoint),
+    UNIQUE (temporal_scenario_id, stage_id, timepoint, spinup_or_lookahead),
     FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
         (temporal_scenario_id),
     -- Make sure period exists in this temporal_scenario_id
@@ -326,16 +330,15 @@ CREATE TABLE inputs_temporal
 -- subproblem can be a week and have days as horizons and another one
 -- can be a week and have the week as horizon), but will have to be same for
 -- each stage of a subproblem
+-- Balancing_type-horizons within
 DROP TABLE IF EXISTS inputs_temporal_horizons;
 CREATE TABLE inputs_temporal_horizons
 (
     temporal_scenario_id   INTEGER,
-    subproblem_id          INTEGER,
     balancing_type_horizon VARCHAR(32),
     horizon                INTEGER,
     boundary               VARCHAR(16),
-    PRIMARY KEY (temporal_scenario_id, subproblem_id, balancing_type_horizon,
-                 horizon),
+    PRIMARY KEY (temporal_scenario_id, balancing_type_horizon, horizon),
     FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
         (temporal_scenario_id),
     -- Make sure boundary type is correct
@@ -350,26 +353,32 @@ CREATE TABLE inputs_temporal_horizons
 DROP TABLE IF EXISTS inputs_temporal_horizon_timepoints_start_end;
 CREATE TABLE inputs_temporal_horizon_timepoints_start_end
 (
-    temporal_scenario_id   INTEGER,
-    subproblem_id          INTEGER,
-    stage_id               INTEGER,
-    balancing_type_horizon VARCHAR(32),
-    horizon                INTEGER,
-    tmp_start              INTEGER,
-    tmp_end                INTEGER,
-    PRIMARY KEY (temporal_scenario_id, subproblem_id, stage_id,
-                 balancing_type_horizon, horizon, tmp_start, tmp_end),
+    temporal_scenario_id          INTEGER,
+    stage_id                      INTEGER,
+    balancing_type_horizon        VARCHAR(32),
+    horizon                       INTEGER,
+    tmp_start                     INTEGER,
+    tmp_start_spinup_or_lookahead INTEGER NOT NULL DEFAULT 0,
+    tmp_end                       INTEGER,
+    tmp_end_spinup_or_lookahead   INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (temporal_scenario_id, stage_id, balancing_type_horizon,
+                 horizon, tmp_start, tmp_start_spinup_or_lookahead,
+                 tmp_end, tmp_end_spinup_or_lookahead),
     FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
         (temporal_scenario_id),
+    -- Make sure we have the right balancing_type-horizons
+    FOREIGN KEY (temporal_scenario_id, balancing_type_horizon, horizon)
+        REFERENCES inputs_temporal_horizons (temporal_scenario_id,
+                                             balancing_type_horizon, horizon),
     -- Make sure the start and end timepoints exist in the main timepoints table
-    FOREIGN KEY (temporal_scenario_id, subproblem_id, stage_id, tmp_start)
-        REFERENCES inputs_temporal (temporal_scenario_id, subproblem_id,
-                                    stage_id,
-                                    timepoint),
-    FOREIGN KEY (temporal_scenario_id, subproblem_id, stage_id, tmp_end)
-        REFERENCES inputs_temporal (temporal_scenario_id, subproblem_id,
-                                    stage_id,
-                                    timepoint)
+    FOREIGN KEY (temporal_scenario_id, stage_id, tmp_start,
+                 tmp_start_spinup_or_lookahead)
+        REFERENCES inputs_temporal (temporal_scenario_id, stage_id, timepoint,
+                                    spinup_or_lookahead),
+    FOREIGN KEY (temporal_scenario_id, stage_id, tmp_end,
+                 tmp_end_spinup_or_lookahead)
+        REFERENCES inputs_temporal (temporal_scenario_id, stage_id, timepoint,
+                                    spinup_or_lookahead)
 );
 
 -- This table is what GridPath uses to get inputs
@@ -391,10 +400,8 @@ CREATE TABLE inputs_temporal_horizon_timepoints
         REFERENCES inputs_temporal (temporal_scenario_id,
                                     subproblem_id, stage_id, timepoint),
     -- Make sure horizons exist in this temporal_scenario_id and subproblem_id
-    FOREIGN KEY (temporal_scenario_id, subproblem_id, balancing_type_horizon,
-                 horizon)
+    FOREIGN KEY (temporal_scenario_id, balancing_type_horizon, horizon)
         REFERENCES inputs_temporal_horizons (temporal_scenario_id,
-                                             subproblem_id,
                                              balancing_type_horizon, horizon)
 );
 
@@ -1558,13 +1565,13 @@ CREATE TABLE inputs_project_hydro_operational_chars
 (
     project                             VARCHAR(64),
     hydro_operational_chars_scenario_id INTEGER,
+    stage_id                            INTEGER,
     balancing_type_project              VARCHAR(64),
     horizon                             INTEGER,
-    period                              INTEGER,
     average_power_fraction              FLOAT,
     min_power_fraction                  FLOAT,
     max_power_fraction                  FLOAT,
-    PRIMARY KEY (project, hydro_operational_chars_scenario_id,
+    PRIMARY KEY (project, hydro_operational_chars_scenario_id, stage_id,
                  balancing_type_project, horizon),
     FOREIGN KEY (project, hydro_operational_chars_scenario_id) REFERENCES
         subscenarios_project_hydro_operational_chars
@@ -5604,7 +5611,6 @@ FROM (
 DROP VIEW IF EXISTS periods_horizons;
 CREATE VIEW periods_horizons AS
 SELECT DISTINCT temporal_scenario_id,
-                subproblem_id,
                 stage_id,
                 balancing_type_horizon,
                 period,
@@ -5612,41 +5618,7 @@ SELECT DISTINCT temporal_scenario_id,
 FROM inputs_temporal
          INNER JOIN
      inputs_temporal_horizon_timepoints
-     USING (temporal_scenario_id, subproblem_id, stage_id, timepoint)
-;
-
-
--- This view shows the possible operational horizons for each project based
--- based on its operational periods (see project_operational_periods), its
--- balancing type, and the periods-horizons mapping for that balancing type
--- (see periods_horizons). It also includes the operational type and the
--- hydro_operational_chars_scenario_id, since these are useful to slice out
--- operational types of interest (namely hydro) and join the hydro inputs,
--- which are indexed by project-horizon.
-DROP VIEW IF EXISTS project_operational_horizons;
-CREATE VIEW project_operational_horizons AS
-SELECT project_portfolio_scenario_id,
-       project_operational_chars_scenario_id,
-       project_specified_capacity_scenario_id,
-       project_new_cost_scenario_id,
-       temporal_scenario_id,
-       operational_type,
-       hydro_operational_chars_scenario_id,
-       subproblem_id,
-       stage_id,
-       project,
-       horizon
--- Get all projects in the portfolio (with their opchars)
-FROM project_portfolio_opchars
--- Add all the periods horizons for the matching balancing type
-         LEFT OUTER JOIN
-     periods_horizons
-     ON (project_portfolio_opchars.balancing_type_project
-         = periods_horizons.balancing_type_horizon)
--- Only select horizons from the actual operational periods
-         INNER JOIN
-     project_operational_periods
-     USING (temporal_scenario_id, project, period)
+     USING (temporal_scenario_id, stage_id, timepoint)
 ;
 
 

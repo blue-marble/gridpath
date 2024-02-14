@@ -251,9 +251,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
                     * getattr(
                         mod,
                         "{capacity_type}_financial_lifetime_yrs_by_vintage".format(
-                            capacity_type=mod.capacity_type[prj_or_tx_line]
-                            if not mod.is_tx[prg, prj_or_tx_line, v]
-                            else mod.tx_capacity_type[prj_or_tx_line]
+                            capacity_type=(
+                                mod.capacity_type[prj_or_tx_line]
+                                if not mod.is_tx[prg, prj_or_tx_line, v]
+                                else mod.tx_capacity_type[prj_or_tx_line]
+                            )
                         ),
                     )[prj_or_tx_line, v]
                     for (prj_or_tx_line, v) in mod.PROJECT_OR_TX_VINTAGES_BY_PROGRAM[
