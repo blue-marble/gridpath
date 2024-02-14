@@ -1,4 +1,5 @@
 # Copyright 2022 (c) Crown Copyright, GC.
+# Modifications Copyright Blue Marble Analytics LLC 2023.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,18 +14,11 @@
 # limitations under the License.
 
 """
-Simplest implementation with a MWh target by period.
+Transmission targets by balancing type, horizon, and line direction
 """
-
-
-import csv
-import os.path
-import pandas as pd
 
 from pyomo.environ import Var, Constraint, NonNegativeReals, Expression, value
 
-from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.common_functions import create_results_df
 from gridpath.system.policy.transmission_targets import TX_TARGETS_DF
 
@@ -37,39 +31,71 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     :return:
     """
 
-    m.Transmission_Target_Shortage_Pos_Dir_MWh = Var(
+    m.Transmission_Target_Shortage_Pos_Dir_Min_MWh = Var(
         m.TRANSMISSION_TARGET_ZONE_BLN_TYPE_HRZS_WITH_TRANSMISSION_TARGET,
         within=NonNegativeReals,
     )
 
-    m.Transmission_Target_Shortage_Neg_Dir_MWh = Var(
+    m.Transmission_Target_Overage_Pos_Dir_Max_MWh = Var(
         m.TRANSMISSION_TARGET_ZONE_BLN_TYPE_HRZS_WITH_TRANSMISSION_TARGET,
         within=NonNegativeReals,
     )
 
-    def violation_pos_dir_expression_rule(mod, z, bt, hz):
+    m.Transmission_Target_Shortage_Neg_Dir_Min_MWh = Var(
+        m.TRANSMISSION_TARGET_ZONE_BLN_TYPE_HRZS_WITH_TRANSMISSION_TARGET,
+        within=NonNegativeReals,
+    )
+
+    m.Transmission_Target_Overage_Neg_Dir_Max_MWh = Var(
+        m.TRANSMISSION_TARGET_ZONE_BLN_TYPE_HRZS_WITH_TRANSMISSION_TARGET,
+        within=NonNegativeReals,
+    )
+
+    def violation_pos_dir_min_expression_rule(mod, z, bt, hz):
         if mod.transmission_target_allow_violation[z]:
-            return mod.Transmission_Target_Shortage_Pos_Dir_MWh[z, bt, hz]
+            return mod.Transmission_Target_Shortage_Pos_Dir_Min_MWh[z, bt, hz]
         else:
             return 0
 
-    m.Transmission_Target_Shortage_Pos_Dir_MWh_Expression = Expression(
+    m.Transmission_Target_Shortage_Pos_Dir_Min_MWh_Expression = Expression(
         m.TRANSMISSION_TARGET_ZONE_BLN_TYPE_HRZS_WITH_TRANSMISSION_TARGET,
-        rule=violation_pos_dir_expression_rule,
+        rule=violation_pos_dir_min_expression_rule,
     )
 
-    def violation_neg_dir_expression_rule(mod, z, bt, hz):
+    def violation_pos_dir_max_expression_rule(mod, z, bt, hz):
         if mod.transmission_target_allow_violation[z]:
-            return mod.Transmission_Target_Shortage_Neg_Dir_MWh[z, bt, hz]
+            return mod.Transmission_Target_Overage_Pos_Dir_Max_MWh[z, bt, hz]
         else:
             return 0
 
-    m.Transmission_Target_Shortage_Neg_Dir_MWh_Expression = Expression(
+    m.Transmission_Target_Overage_Pos_Dir_Max_MWh_Expression = Expression(
         m.TRANSMISSION_TARGET_ZONE_BLN_TYPE_HRZS_WITH_TRANSMISSION_TARGET,
-        rule=violation_neg_dir_expression_rule,
+        rule=violation_pos_dir_max_expression_rule,
     )
 
-    def transmission_target_pos_dir_rule(mod, z, bt, hz):
+    def violation_neg_dir_min_expression_rule(mod, z, bt, hz):
+        if mod.transmission_target_allow_violation[z]:
+            return mod.Transmission_Target_Shortage_Neg_Dir_Min_MWh[z, bt, hz]
+        else:
+            return 0
+
+    m.Transmission_Target_Shortage_Neg_Dir_Min_MWh_Expression = Expression(
+        m.TRANSMISSION_TARGET_ZONE_BLN_TYPE_HRZS_WITH_TRANSMISSION_TARGET,
+        rule=violation_neg_dir_min_expression_rule,
+    )
+
+    def violation_neg_dir_max_expression_rule(mod, z, bt, hz):
+        if mod.transmission_target_allow_violation[z]:
+            return mod.Transmission_Target_Overage_Neg_Dir_Max_MWh[z, bt, hz]
+        else:
+            return 0
+
+    m.Transmission_Target_Overage_Neg_Dir_Max_MWh_Expression = Expression(
+        m.TRANSMISSION_TARGET_ZONE_BLN_TYPE_HRZS_WITH_TRANSMISSION_TARGET,
+        rule=violation_neg_dir_max_expression_rule,
+    )
+
+    def transmission_target_pos_dir_min_rule(mod, z, bt, hz):
         """
         Total delivered transmission-target-eligible energy in positive
         direction must exceed target
@@ -78,21 +104,44 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         :param p:
         :return:
         """
-        if mod.transmission_target_pos_dir_mwh[z, bt, hz] == 0:
+        if mod.transmission_target_pos_dir_min_mwh[z, bt, hz] == 0:
             return Constraint.Skip
         else:
             return (
                 mod.Total_Transmission_Target_Energy_Pos_Dir_MWh[z, bt, hz]
-                + mod.Transmission_Target_Shortage_Pos_Dir_MWh_Expression[z, bt, hz]
-                >= mod.transmission_target_pos_dir_mwh[z, bt, hz]
+                + mod.Transmission_Target_Shortage_Pos_Dir_Min_MWh_Expression[z, bt, hz]
+                >= mod.transmission_target_pos_dir_min_mwh[z, bt, hz]
             )
 
-    m.Transmission_Target_Pos_Dir_Constraint = Constraint(
+    m.Transmission_Target_Pos_Dir_Min_Constraint = Constraint(
         m.TRANSMISSION_TARGET_ZONE_BLN_TYPE_HRZS_WITH_TRANSMISSION_TARGET,
-        rule=transmission_target_pos_dir_rule,
+        rule=transmission_target_pos_dir_min_rule,
     )
 
-    def transmission_target_neg_dir_rule(mod, z, bt, hz):
+    def transmission_target_pos_dir_max_rule(mod, z, bt, hz):
+        """
+        Total delivered transmission-target-eligible energy in positive
+        direction must be below target
+        :param mod:
+        :param z:
+        :param p:
+        :return:
+        """
+        if mod.transmission_target_pos_dir_max_mwh[z, bt, hz] == float("inf"):
+            return Constraint.Skip
+        else:
+            return (
+                mod.Total_Transmission_Target_Energy_Pos_Dir_MWh[z, bt, hz]
+                - mod.Transmission_Target_Overage_Pos_Dir_Max_MWh_Expression[z, bt, hz]
+                <= mod.transmission_target_pos_dir_max_mwh[z, bt, hz]
+            )
+
+    m.Transmission_Target_Pos_Dir_Max_Constraint = Constraint(
+        m.TRANSMISSION_TARGET_ZONE_BLN_TYPE_HRZS_WITH_TRANSMISSION_TARGET,
+        rule=transmission_target_pos_dir_max_rule,
+    )
+
+    def transmission_target_neg_dir_min_rule(mod, z, bt, hz):
         """
         Total delivered transmission-target-eligible energy in negative
         direction must exceed target
@@ -101,18 +150,41 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         :param p:
         :return:
         """
-        if mod.transmission_target_neg_dir_mwh[z, bt, hz] == 0:
+        if mod.transmission_target_neg_dir_min_mwh[z, bt, hz] == 0:
             return Constraint.Skip
         else:
             return (
                 mod.Total_Transmission_Target_Energy_Neg_Dir_MWh[z, bt, hz]
-                + mod.Transmission_Target_Shortage_Neg_Dir_MWh_Expression[z, bt, hz]
-                >= mod.transmission_target_neg_dir_mwh[z, bt, hz]
+                + mod.Transmission_Target_Shortage_Neg_Dir_Min_MWh_Expression[z, bt, hz]
+                >= mod.transmission_target_neg_dir_min_mwh[z, bt, hz]
             )
 
-    m.Transmission_Target_Neg_Dir_Constraint = Constraint(
+    m.Transmission_Target_Neg_Dir_Min_Constraint = Constraint(
         m.TRANSMISSION_TARGET_ZONE_BLN_TYPE_HRZS_WITH_TRANSMISSION_TARGET,
-        rule=transmission_target_neg_dir_rule,
+        rule=transmission_target_neg_dir_min_rule,
+    )
+
+    def transmission_target_neg_dir_max_rule(mod, z, bt, hz):
+        """
+        Total delivered transmission-target-eligible energy in negative
+        direction must be below target
+        :param mod:
+        :param z:
+        :param p:
+        :return:
+        """
+        if mod.transmission_target_neg_dir_max_mwh[z, bt, hz] == float("inf"):
+            return Constraint.Skip
+        else:
+            return (
+                mod.Total_Transmission_Target_Energy_Neg_Dir_MWh[z, bt, hz]
+                - mod.Transmission_Target_Overage_Neg_Dir_Max_MWh_Expression[z, bt, hz]
+                <= mod.transmission_target_neg_dir_max_mwh[z, bt, hz]
+            )
+
+    m.Transmission_Target_Neg_Dir_Max_Constraint = Constraint(
+        m.TRANSMISSION_TARGET_ZONE_BLN_TYPE_HRZS_WITH_TRANSMISSION_TARGET,
+        rule=transmission_target_neg_dir_max_rule,
     )
 
 
@@ -128,10 +200,14 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     """
 
     results_columns = [
-        "fraction_of_transmission_target_positive_direction_met",
-        "transmission_target_shortage_positive_direction_mwh",
-        "fraction_of_transmission_target_negative_direction_met",
-        "transmission_target_shortage_negative_direction_mwh",
+        "fraction_of_transmission_target_pos_dir_min_met",
+        "transmission_target_shortage_pos_dir_min_mwh",
+        "fraction_of_transmission_target_pos_dir_max_met",
+        "transmission_target_overage_pos_dir_max_mwh",
+        "fraction_of_transmission_target_neg_dir_min_met",
+        "transmission_target_shortage_neg_dir_min_mwh",
+        "fraction_of_transmission_target_neg_dir_max_met",
+        "transmission_target_overage_neg_dir_min_mwh",
     ]
     data = [
         [
@@ -139,19 +215,35 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             bt,
             hz,
             (
-                1
-                if float(m.transmission_target_pos_dir_mwh[z, bt, hz]) == 0
+                None
+                if float(m.transmission_target_pos_dir_min_mwh[z, bt, hz]) == 0
                 else value(m.Total_Transmission_Target_Energy_Pos_Dir_MWh[z, bt, hz])
-                / float(m.transmission_target_pos_dir_mwh[z, bt, hz])
+                / float(m.transmission_target_pos_dir_min_mwh[z, bt, hz])
             ),
-            value(m.Transmission_Target_Shortage_Pos_Dir_MWh_Expression[z, bt, hz]),
+            value(m.Transmission_Target_Shortage_Pos_Dir_Min_MWh_Expression[z, bt, hz]),
             (
-                1
-                if float(m.transmission_target_neg_dir_mwh[z, bt, hz]) == 0
-                else value(m.Total_Transmission_Target_Energy_Neg_Dir_MWh[z, bt, hz])
-                / float(m.transmission_target_neg_dir_mwh[z, bt, hz])
+                None
+                if float(m.transmission_target_pos_dir_max_mwh[z, bt, hz])
+                == float("inf")
+                else value(m.Total_Transmission_Target_Energy_Pos_Dir_MWh[z, bt, hz])
+                / float(m.transmission_target_pos_dir_max_mwh[z, bt, hz])
             ),
-            value(m.Transmission_Target_Shortage_Neg_Dir_MWh_Expression[z, bt, hz]),
+            value(m.Transmission_Target_Overage_Pos_Dir_Max_MWh_Expression[z, bt, hz]),
+            (
+                None
+                if float(m.transmission_target_neg_dir_min_mwh[z, bt, hz]) == 0
+                else value(m.Total_Transmission_Target_Energy_Neg_Dir_MWh[z, bt, hz])
+                / float(m.transmission_target_neg_dir_min_mwh[z, bt, hz])
+            ),
+            value(m.Transmission_Target_Shortage_Neg_Dir_Min_MWh_Expression[z, bt, hz]),
+            (
+                None
+                if float(m.transmission_target_neg_dir_max_mwh[z, bt, hz])
+                == float("inf")
+                else value(m.Total_Transmission_Target_Energy_Neg_Dir_MWh[z, bt, hz])
+                / float(m.transmission_target_neg_dir_max_mwh[z, bt, hz])
+            ),
+            value(m.Transmission_Target_Overage_Neg_Dir_Max_MWh_Expression[z, bt, hz]),
         ]
         for (
             z,

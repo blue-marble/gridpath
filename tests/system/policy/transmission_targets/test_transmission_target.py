@@ -94,7 +94,7 @@ class TestPeriodTxTarget(unittest.TestCase):
         instance = m.create_instance(data)
 
         # Set: Tx_Target_Zone1
-        expected_tx_target_zone_periods = sorted(
+        expected_tx_target_zone_periods_min = sorted(
             [
                 ("Tx_Target_Zone1", "year", 2020),
                 ("Tx_Target_Zone1", "year", 2030),
@@ -102,7 +102,7 @@ class TestPeriodTxTarget(unittest.TestCase):
                 ("Tx_Target_Zone2", "year", 2030),
             ]
         )
-        actual_tx_target_zone_periods = sorted(
+        actual_tx_target_zone_bt_hrz_min = sorted(
             [
                 (z, bt, hz)
                 for (
@@ -113,15 +113,15 @@ class TestPeriodTxTarget(unittest.TestCase):
             ]
         )
         self.assertListEqual(
-            expected_tx_target_zone_periods, actual_tx_target_zone_periods
+            expected_tx_target_zone_periods_min, actual_tx_target_zone_bt_hrz_min
         )
 
-        # Param: period_tx_target_mwh
+        # Param: transmission_target_pos_dir_min_mwh
         expected_tx_target_pos = OrderedDict(
             sorted(
                 {
                     ("Tx_Target_Zone1", "year", 2020): 50,
-                    ("Tx_Target_Zone1", "year", 2030): 50,
+                    ("Tx_Target_Zone1", "year", 2030): 0,
                     ("Tx_Target_Zone2", "year", 2020): 10,
                     ("Tx_Target_Zone2", "year", 2030): 10,
                 }.items()
@@ -130,7 +130,7 @@ class TestPeriodTxTarget(unittest.TestCase):
         actual_tx_target_pos = OrderedDict(
             sorted(
                 {
-                    (z, bt, hz): instance.transmission_target_pos_dir_mwh[z, bt, hz]
+                    (z, bt, hz): instance.transmission_target_pos_dir_min_mwh[z, bt, hz]
                     for (
                         z,
                         bt,
@@ -141,8 +141,33 @@ class TestPeriodTxTarget(unittest.TestCase):
         )
         self.assertDictEqual(expected_tx_target_pos, actual_tx_target_pos)
 
-        # Param: transmission_target_neg_dir_mwh
-        expected_tx_target_neg = OrderedDict(
+        # Param: transmission_target_pos_dir_max_mwh
+        expected_tx_target_pos_max = OrderedDict(
+            sorted(
+                {
+                    ("Tx_Target_Zone1", "year", 2020): float("inf"),
+                    ("Tx_Target_Zone1", "year", 2030): 100,
+                    ("Tx_Target_Zone2", "year", 2020): float("inf"),
+                    ("Tx_Target_Zone2", "year", 2030): 20,
+                }.items()
+            )
+        )
+        actual_tx_target_pos_max = OrderedDict(
+            sorted(
+                {
+                    (z, bt, hz): instance.transmission_target_pos_dir_max_mwh[z, bt, hz]
+                    for (
+                        z,
+                        bt,
+                        hz,
+                    ) in instance.TRANSMISSION_TARGET_ZONE_BLN_TYPE_HRZS_WITH_TRANSMISSION_TARGET
+                }.items()
+            )
+        )
+        self.assertDictEqual(expected_tx_target_pos_max, actual_tx_target_pos_max)
+
+        # Param: transmission_target_neg_dir_min_mwh
+        expected_tx_target_neg_min = OrderedDict(
             sorted(
                 {
                     ("Tx_Target_Zone1", "year", 2020): 0.2,
@@ -152,10 +177,10 @@ class TestPeriodTxTarget(unittest.TestCase):
                 }.items()
             )
         )
-        actual_tx_target_neg = OrderedDict(
+        actual_tx_target_neg_min = OrderedDict(
             sorted(
                 {
-                    (z, bt, hz): instance.transmission_target_neg_dir_mwh[z, bt, hz]
+                    (z, bt, hz): instance.transmission_target_neg_dir_min_mwh[z, bt, hz]
                     for (
                         z,
                         bt,
@@ -164,7 +189,32 @@ class TestPeriodTxTarget(unittest.TestCase):
                 }.items()
             )
         )
-        self.assertDictEqual(expected_tx_target_neg, actual_tx_target_neg)
+        self.assertDictEqual(expected_tx_target_neg_min, actual_tx_target_neg_min)
+
+        # Param: transmission_target_neg_dir_max_mwh
+        expected_tx_target_neg_max = OrderedDict(
+            sorted(
+                {
+                    ("Tx_Target_Zone1", "year", 2020): 1,
+                    ("Tx_Target_Zone1", "year", 2030): float("inf"),
+                    ("Tx_Target_Zone2", "year", 2020): 10,
+                    ("Tx_Target_Zone2", "year", 2030): float("inf"),
+                }.items()
+            )
+        )
+        actual_tx_target_neg_max = OrderedDict(
+            sorted(
+                {
+                    (z, bt, hz): instance.transmission_target_neg_dir_max_mwh[z, bt, hz]
+                    for (
+                        z,
+                        bt,
+                        hz,
+                    ) in instance.TRANSMISSION_TARGET_ZONE_BLN_TYPE_HRZS_WITH_TRANSMISSION_TARGET
+                }.items()
+            )
+        )
+        self.assertDictEqual(expected_tx_target_neg_max, actual_tx_target_neg_max)
 
 
 if __name__ == "__main__":

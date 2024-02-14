@@ -1,4 +1,5 @@
 # Copyright 2022 (c) Crown Copyright, GC.
+# Modifications Copyright Blue Marble Analytics LLC 2023.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -95,10 +96,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-
     results_columns = [
-        "total_transmission_target_energy_positive_direction_mwh",
-        "total_transmission_target_energy_negative_direction_mwh",
+        "total_transmission_target_energy_pos_dir_mwh",
+        "total_transmission_target_energy_neg_dir_mwh",
     ]
     data = [
         [

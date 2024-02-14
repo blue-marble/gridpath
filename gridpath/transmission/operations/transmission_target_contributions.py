@@ -151,7 +151,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         else:
             return (
                 mod.Transmission_Target_Energy_MW_Pos_Dir[tx, tmp]
-                <= mod.TxSimpleBinary_Transmit_Power_Positive_Direction_MW[tx, tmp]
+                == mod.TxSimpleBinary_Transmit_Power_Positive_Direction_MW[tx, tmp]
             )
 
     m.Transmission_Target_Energy_MW_Pos_Dir_Constraint = Constraint(
@@ -165,7 +165,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         else:
             return (
                 mod.Transmission_Target_Energy_MW_Neg_Dir[tx, tmp]
-                <= mod.TxSimpleBinary_Transmit_Power_Negative_Direction_MW[tx, tmp]
+                == mod.TxSimpleBinary_Transmit_Power_Negative_Direction_MW[tx, tmp]
             )
 
     m.Transmission_Target_Energy_MW_Neg_Dir_Constraint = Constraint(
@@ -179,7 +179,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         else:
             return (
                 mod.Transmission_Target_Net_Energy_MW_Pos_Dir[tx, tmp]
-                <= mod.Transmit_Power_MW[tx, tmp]
+                == mod.Transmit_Power_MW[tx, tmp]
             )
 
     m.Transmission_Target_Net_Energy_MW_Pos_Dir_Constraint = Constraint(
@@ -193,7 +193,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         else:
             return (
                 mod.Transmission_Target_Net_Energy_MW_Neg_Dir[tx, tmp]
-                <= -mod.Transmit_Power_MW[tx, tmp]
+                == mod.Transmit_Power_MW[tx, tmp]
             )
 
     m.Transmission_Target_Net_Energy_MW_Neg_Dir_Constraint = Constraint(
@@ -261,13 +261,17 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     """
 
     results_columns = [
-        "hurdle_cost_positive_direction",
-        "hurdle_cost_negative_direction",
+        "actual_flow_positive_direction",
+        "actual_flow_negative_direction",
+        "tx_flow_positive_direction",
+        "tx_flow_negative_direction",
     ]
     data = [
         [
             tx,
             tmp,
+            value(m.TxSimpleBinary_Transmit_Power_Positive_Direction_MW[tx, tmp]),
+            value(m.TxSimpleBinary_Transmit_Power_Negative_Direction_MW[tx, tmp]),
             (
                 value(m.Transmission_Target_Energy_MW_Pos_Dir[tx, tmp])
                 if float(m.contributes_net_flow_to_tx_target[tx]) == 0

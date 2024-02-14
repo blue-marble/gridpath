@@ -1,4 +1,5 @@
 # Copyright 2022 (c) Crown Copyright, GC.
+# Modifications Copyright Blue Marble Analytics LLC 2023.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,7 +14,7 @@
 # limitations under the License.
 
 """
-Simplest implementation with a MWh target
+Min and max transmission targets by balancing type, horizon, and direction.
 """
 
 import csv
@@ -40,20 +41,32 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         dimen=3, within=m.TRANSMISSION_TARGET_ZONES * m.BLN_TYPE_HRZS
     )
 
-    # Transmission target specified in energy terms for the positive direction of the
-    # tx line
-    m.transmission_target_pos_dir_mwh = Param(
+    # Transmission targets specified in energy terms for the positive
+    # direction of the tx line
+    m.transmission_target_pos_dir_min_mwh = Param(
         m.TRANSMISSION_TARGET_ZONE_BLN_TYPE_HRZS_WITH_TRANSMISSION_TARGET,
         within=NonNegativeReals,
         default=0,
     )
 
-    # Transmission target specified in energy terms for the negative direction of the
-    # tx line
-    m.transmission_target_neg_dir_mwh = Param(
+    m.transmission_target_pos_dir_max_mwh = Param(
+        m.TRANSMISSION_TARGET_ZONE_BLN_TYPE_HRZS_WITH_TRANSMISSION_TARGET,
+        within=NonNegativeReals,
+        default=float("inf"),
+    )
+
+    # Transmission targets specified in energy terms for the negative
+    # direction of the tx line
+    m.transmission_target_neg_dir_min_mwh = Param(
         m.TRANSMISSION_TARGET_ZONE_BLN_TYPE_HRZS_WITH_TRANSMISSION_TARGET,
         within=NonNegativeReals,
         default=0,
+    )
+
+    m.transmission_target_neg_dir_max_mwh = Param(
+        m.TRANSMISSION_TARGET_ZONE_BLN_TYPE_HRZS_WITH_TRANSMISSION_TARGET,
+        within=NonNegativeReals,
+        default=float("inf"),
     )
 
 
@@ -79,8 +92,10 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         ),
         index=m.TRANSMISSION_TARGET_ZONE_BLN_TYPE_HRZS_WITH_TRANSMISSION_TARGET,
         param=(
-            m.transmission_target_pos_dir_mwh,
-            m.transmission_target_neg_dir_mwh,
+            m.transmission_target_pos_dir_min_mwh,
+            m.transmission_target_pos_dir_max_mwh,
+            m.transmission_target_neg_dir_min_mwh,
+            m.transmission_target_neg_dir_max_mwh,
         ),
     )
 
@@ -102,8 +117,10 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     transmission_targets = c.execute(
         f"""SELECT transmission_target_zone, balancing_type, 
         inputs_system_transmission_targets.horizon, 
-        transmission_target_positive_direction_mwh, 
-        transmission_target_negative_direction_mwh
+        transmission_target_pos_dir_min_mwh,
+        transmission_target_pos_dir_max_mwh, 
+        transmission_target_neg_dir_min_mwh,
+        transmission_target_neg_dir_max_mwh
         FROM inputs_system_transmission_targets
         JOIN
         (SELECT balancing_type_horizon, horizon
@@ -179,8 +196,10 @@ def write_model_inputs(
                 "transmission_target_zone",
                 "balancing_type",
                 "horizon",
-                "transmission_target_positive_direction_mwh",
-                "transmission_target_negative_direction_mwh",
+                "transmission_target_pos_dir_min_mwh",
+                "transmission_target_pos_dir_max_mwh",
+                "transmission_target_neg_dir_min_mwh",
+                "transmission_target_neg_dir_max_mwh",
             ]
         )
 
@@ -201,16 +220,20 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return:
     """
     results_columns = [
-        "transmission_target_pos_dir_mwh",
-        "transmission_target_neg_dir_mwh",
+        "transmission_target_pos_dir_min_mwh",
+        "transmission_target_pos_dir_max_mwh",
+        "transmission_target_neg_dir_min_mwh",
+        "transmission_target_neg_dir_max_mwh",
     ]
     data = [
         [
             z,
             bt,
             hz,
-            m.transmission_target_pos_dir_mwh[z, bt, hz],
-            m.transmission_target_neg_dir_mwh[z, bt, hz],
+            m.transmission_target_pos_dir_min_mwh[z, bt, hz],
+            m.transmission_target_pos_dir_max_mwh[z, bt, hz],
+            m.transmission_target_neg_dir_min_mwh[z, bt, hz],
+            m.transmission_target_neg_dir_max_mwh[z, bt, hz],
         ]
         for (
             z,

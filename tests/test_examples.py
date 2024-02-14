@@ -1283,6 +1283,16 @@ class TestExamples(unittest.TestCase):
             scenario_name=scenario_name, literal=True
         )
 
+    def test_example_test_tx_targets_max(self):
+        """
+        Check validation and objective function value of
+        "test_example_test_tx_targets_max"
+        example
+        :return:
+        """
+        scenario_name = "test_tx_targets_max"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
     @classmethod
     def tearDownClass(cls):
         os.remove(DB_PATH)

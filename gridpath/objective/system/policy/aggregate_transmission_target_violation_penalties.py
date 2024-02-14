@@ -1,4 +1,5 @@
 # Copyright 2022 (c) Crown Copyright, GC.
+# Modifications Copyright Blue Marble Analytics LLC 2023.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -33,8 +34,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     def total_penalty_costs_rule(mod):
         return sum(
             (
-                mod.Transmission_Target_Shortage_Pos_Dir_MWh_Expression[z, bt, hz]
-                + mod.Transmission_Target_Shortage_Neg_Dir_MWh_Expression[z, bt, hz]
+                mod.Transmission_Target_Shortage_Pos_Dir_Min_MWh_Expression[z, bt, hz]
+                + mod.Transmission_Target_Overage_Pos_Dir_Max_MWh_Expression[z, bt, hz]
+                + mod.Transmission_Target_Shortage_Neg_Dir_Min_MWh_Expression[z, bt, hz]
+                + mod.Transmission_Target_Overage_Neg_Dir_Max_MWh_Expression[z, bt, hz]
             )
             * mod.transmission_target_violation_penalty_per_mwh[z]
             * mod.hrz_objective_coefficient[bt, hz]
