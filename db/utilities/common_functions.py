@@ -806,7 +806,11 @@ def repopulate_tables(
         base_subscenario_reupdate_sql = """
             UPDATE {} SET {} = ? WHERE {} in ({}) AND {} = ?
             """.format(
-            base_table, subscenario, base_subscenario, base_subscenario_ids_str, project_type
+            base_table,
+            subscenario,
+            base_subscenario,
+            base_subscenario_ids_str,
+            project_type,
         )
         base_subscenario_update_tuple = (
             (int(subscenario_id),) + tuple(base_subscenario_ids_data) + (project,)
