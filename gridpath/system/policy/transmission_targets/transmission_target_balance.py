@@ -138,15 +138,19 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             z,
             bt,
             hz,
-            1
-            if float(m.transmission_target_pos_dir_mwh[z, bt, hz]) == 0
-            else value(m.Total_Transmission_Target_Energy_Pos_Dir_MWh[z, bt, hz])
-            / float(m.transmission_target_pos_dir_mwh[z, bt, hz]),
+            (
+                1
+                if float(m.transmission_target_pos_dir_mwh[z, bt, hz]) == 0
+                else value(m.Total_Transmission_Target_Energy_Pos_Dir_MWh[z, bt, hz])
+                / float(m.transmission_target_pos_dir_mwh[z, bt, hz])
+            ),
             value(m.Transmission_Target_Shortage_Pos_Dir_MWh_Expression[z, bt, hz]),
-            1
-            if float(m.transmission_target_neg_dir_mwh[z, bt, hz]) == 0
-            else value(m.Total_Transmission_Target_Energy_Neg_Dir_MWh[z, bt, hz])
-            / float(m.transmission_target_neg_dir_mwh[z, bt, hz]),
+            (
+                1
+                if float(m.transmission_target_neg_dir_mwh[z, bt, hz]) == 0
+                else value(m.Total_Transmission_Target_Energy_Neg_Dir_MWh[z, bt, hz])
+                / float(m.transmission_target_neg_dir_mwh[z, bt, hz])
+            ),
             value(m.Transmission_Target_Shortage_Neg_Dir_MWh_Expression[z, bt, hz]),
         ]
         for (

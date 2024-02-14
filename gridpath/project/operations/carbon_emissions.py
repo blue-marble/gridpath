@@ -64,13 +64,15 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
                 for f in mod.FUELS_BY_PRJ[prj]
             )
             if prj in mod.FUEL_PRJS
-            else 0
-            + (
-                mod.Power_Provision_MW[prj, tmp]
-                * mod.nonfuel_carbon_emissions_per_mwh[prj]
+            else (
+                0
+                + (
+                    mod.Power_Provision_MW[prj, tmp]
+                    * mod.nonfuel_carbon_emissions_per_mwh[prj]
+                )
+                if prj in mod.NONFUEL_CARBON_EMISSIONS_PRJS
+                else 0
             )
-            if prj in mod.NONFUEL_CARBON_EMISSIONS_PRJS
-            else 0
         )
 
     m.Project_Carbon_Emissions = Expression(m.PRJ_OPR_TMPS, rule=carbon_emissions_rule)

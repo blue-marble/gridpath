@@ -133,9 +133,9 @@ class ScenarioDetailAPI(Resource):
         # Add only columns requested by the UI to the final scenario-edit API
         for column in relevant_scenarios_view_columns:
             if column in scenario_edit_api_all.keys():
-                scenario_edit_api[
-                    ui_table_row_by_view_column[column]
-                ] = scenario_edit_api_all[column]
+                scenario_edit_api[ui_table_row_by_view_column[column]] = (
+                    scenario_edit_api_all[column]
+                )
 
         # Add the edit API to the general scenario-detail API
         scenario_detail_api["editScenarioValues"] = scenario_edit_api
