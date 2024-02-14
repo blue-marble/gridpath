@@ -102,26 +102,38 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             value(m.Horizon_Energy_Target[z, bt, h]),
             value(m.Total_Delivered_Horizon_Energy_Target_Energy_MWh[z, bt, h])
             + value(m.Total_Curtailed_Horizon_Energy_Target_Energy_MWh[z, bt, h]),
-            1
-            if float(m.horizon_energy_target_mwh[z, bt, h]) == 0
-            else value(m.Total_Delivered_Horizon_Energy_Target_Energy_MWh[z, bt, h])
-            / float(m.horizon_energy_target_mwh[z, bt, h]),
-            0
-            if (
-                value(m.Total_Delivered_Horizon_Energy_Target_Energy_MWh[z, bt, h])
-                + value(m.Total_Curtailed_Horizon_Energy_Target_Energy_MWh[z, bt, h])
-            )
-            == 0
-            else value(m.Total_Curtailed_Horizon_Energy_Target_Energy_MWh[z, bt, h])
-            / (
-                value(m.Total_Delivered_Horizon_Energy_Target_Energy_MWh[z, bt, h])
-                + value(m.Total_Curtailed_Horizon_Energy_Target_Energy_MWh[z, bt, h])
+            (
+                1
+                if float(m.horizon_energy_target_mwh[z, bt, h]) == 0
+                else value(m.Total_Delivered_Horizon_Energy_Target_Energy_MWh[z, bt, h])
+                / float(m.horizon_energy_target_mwh[z, bt, h])
+            ),
+            (
+                0
+                if (
+                    value(m.Total_Delivered_Horizon_Energy_Target_Energy_MWh[z, bt, h])
+                    + value(
+                        m.Total_Curtailed_Horizon_Energy_Target_Energy_MWh[z, bt, h]
+                    )
+                )
+                == 0
+                else value(m.Total_Curtailed_Horizon_Energy_Target_Energy_MWh[z, bt, h])
+                / (
+                    value(m.Total_Delivered_Horizon_Energy_Target_Energy_MWh[z, bt, h])
+                    + value(
+                        m.Total_Curtailed_Horizon_Energy_Target_Energy_MWh[z, bt, h]
+                    )
+                )
             ),
             value(m.Horizon_Energy_Target_Shortage_MWh_Expression[z, bt, h]),
-            duals_wrapper(m, getattr(m, "Horizon_Energy_Target_Constraint")[z, bt, h])
-            if (z, bt, h)
-            in [idx for idx in getattr(m, "Horizon_Energy_Target_Constraint")]
-            else None,
+            (
+                duals_wrapper(
+                    m, getattr(m, "Horizon_Energy_Target_Constraint")[z, bt, h]
+                )
+                if (z, bt, h)
+                in [idx for idx in getattr(m, "Horizon_Energy_Target_Constraint")]
+                else None
+            ),
             (
                 none_dual_type_error_wrapper(
                     duals_wrapper(

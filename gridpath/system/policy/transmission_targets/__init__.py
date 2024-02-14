@@ -16,7 +16,7 @@ import pandas as pd
 
 from gridpath.auxiliary.db_interface import import_csv
 
-TX_TARGETS_DF = "transmission_target_z_prd_df"
+TX_TARGETS_DF = "transmission_target_z_bt_hz_df"
 
 
 def export_results(scenario_directory, subproblem, stage, m, d):
@@ -29,20 +29,24 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     df = pd.DataFrame(
         columns=[
             "transmission_target_zone",
-            "period",
-            "discount_factor",
-            "number_years_represented",
+            "balancing_type",
+            "horizon",
+            "hrz_objective_coefficient",
         ],
         data=[
             [
                 z,
-                p,
-                m.discount_factor[p],
-                m.number_years_represented[p],
+                bt,
+                hz,
+                m.hrz_objective_coefficient[bt, hz],
             ]
-            for (z, p) in m.TRANSMISSION_TARGET_ZONE_PERIODS_WITH_TRANSMISSION_TARGET
+            for (
+                z,
+                bt,
+                hz,
+            ) in m.TRANSMISSION_TARGET_ZONE_BLN_TYPE_HRZS_WITH_TRANSMISSION_TARGET
         ],
-    ).set_index(["transmission_target_zone", "period"])
+    ).set_index(["transmission_target_zone", "balancing_type", "horizon"])
 
     df.sort_index(inplace=True)
 

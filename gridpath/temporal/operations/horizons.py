@@ -391,26 +391,28 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     stage = 1 if stage == "" else stage
     c1 = conn.cursor()
     horizons = c1.execute(
-        """SELECT horizon, balancing_type_horizon, boundary
+        f"""SELECT horizon, balancing_type_horizon, boundary
         FROM inputs_temporal_horizons
-        WHERE temporal_scenario_id = {}
-        AND subproblem_id = {}
-        ORDER BY balancing_type_horizon, horizon;
-        """.format(
-            subscenarios.TEMPORAL_SCENARIO_ID, subproblem, stage
+        WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+        AND (balancing_type_horizon, horizon) in (
+            SELECT DISTINCT balancing_type_horizon, horizon
+            FROM inputs_temporal_horizon_timepoints
+            WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+            AND subproblem_id = {subproblem}
+            AND stage_id = {stage}
         )
+        ORDER BY balancing_type_horizon, horizon;
+        """
     )
 
     c2 = conn.cursor()
     horizon_timepoints = c2.execute(
-        """SELECT horizon, balancing_type_horizon, timepoint
+        f"""SELECT horizon, balancing_type_horizon, timepoint
         FROM inputs_temporal_horizon_timepoints
-        WHERE temporal_scenario_id = {}
-       AND subproblem_id = {}
-       AND stage_id = {}
-       ORDER BY balancing_type_horizon, timepoint;""".format(
-            subscenarios.TEMPORAL_SCENARIO_ID, subproblem, stage
-        )
+        WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+       AND subproblem_id = {subproblem}
+       AND stage_id = {stage}
+       ORDER BY balancing_type_horizon, timepoint;"""
     )
 
     return horizons, horizon_timepoints
@@ -495,7 +497,6 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         SELECT balancing_type_horizon, period, horizon
         FROM periods_horizons
         WHERE temporal_scenario_id = {}
-        AND subproblem_id = {}
         and stage_id = {}
         """.format(
             subscenarios.TEMPORAL_SCENARIO_ID, subproblem, stage

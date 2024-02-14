@@ -68,7 +68,7 @@ def all_modules_list():
         "system.policy.energy_targets.period_energy_target",
         "system.policy.energy_targets.horizon_energy_target",
         "system.policy.transmission_targets",
-        "system.policy.transmission_targets.period_transmission_target",
+        "system.policy.transmission_targets.transmission_target",
         "system.policy.carbon_cap",
         "system.policy.carbon_cap.carbon_cap",
         "system.policy.carbon_tax",
@@ -178,8 +178,8 @@ def all_modules_list():
         "system.policy.energy_targets.horizon_energy_target_balance",
         "system.policy.energy_targets.consolidate_results",
         "system.policy.transmission_targets"
-        ".aggregate_period_transmission_target_contributions",
-        "system.policy.transmission_targets.period_transmission_target_balance",
+        ".aggregate_transmission_target_contributions",
+        "system.policy.transmission_targets.transmission_target_balance",
         "system.policy.transmission_targets.consolidate_results",
         "system.policy.carbon_cap.aggregate_project_carbon_emissions",
         "system.policy.carbon_cap.aggregate_project_carbon_credits",
@@ -230,7 +230,7 @@ def all_modules_list():
         "objective.system.policy.aggregate_period_energy_target_violation_penalties",
         "objective.system.policy"
         ".aggregate_horizon_energy_target_violation_penalties",
-        "objective.system.policy.aggregate_period_transmission_target_violation_penalties",
+        "objective.system.policy.aggregate_transmission_target_violation_penalties",
         "objective.system.policy.aggregate_carbon_cap_violation_penalties",
         "objective.system.policy.aggregate_carbon_tax_costs",
         "objective.system.policy.aggregate_performance_standard_violation_penalties",
@@ -346,15 +346,15 @@ def optional_modules_list():
             "objective.system.policy"
             ".aggregate_horizon_energy_target_violation_penalties",
         ],
-        "period_transmission_target": [
-            "system.policy.transmission_targets.period_transmission_target",
+        "transmission_target": [
+            "system.policy.transmission_targets.transmission_target",
             "system.policy.transmission_targets",
             "system.policy.transmission_targets"
-            ".aggregate_period_transmission_target_contributions",
-            "system.policy.transmission_targets.period_transmission_target_balance",
+            ".aggregate_transmission_target_contributions",
+            "system.policy.transmission_targets.transmission_target_balance",
             "system.policy.transmission_targets.consolidate_results",
             "objective.system.policy"
-            ".aggregate_period_transmission_target_violation_penalties",
+            ".aggregate_transmission_target_violation_penalties",
         ],
         "carbon_cap": [
             "geography.carbon_cap_zones",
@@ -526,7 +526,7 @@ def feature_shared_modules_list():
             "system.policy.energy_targets",
             "system.policy.energy_targets.consolidate_results",
         ],
-        ("period_transmission_target", "horizon_transmission_target"): [
+        ("transmission_target", "horizon_transmission_target"): [
             "geography.transmission_target_zones",
             "transmission.operations.transmission_target_contributions",
         ],

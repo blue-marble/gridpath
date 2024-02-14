@@ -96,7 +96,7 @@ policy/energy_targets/horizon_targets,energy_target,horizon_energy_target_scenar
 policy/energy_targets/horizon_targets,energy_target,horizon_energy_target_scenario_id,system_horizon_energy_target_load_zone_map,dir_aux,,0,0,load_zone_mapping.csv,,,
 policy/transmission_targets/zones,transmission_target,transmission_target_zone_scenario_id,geography_transmission_target_zones,simple,,0,0,,,,
 policy/transmission_targets/tx_line_zones,transmission_target,tx_line_transmission_target_zone_scenario_id,tx_line_transmission_target_zones,simple,,0,0,,,,
-policy/transmission_targets/period_targets,transmission_target,period_transmission_target_scenario_id,system_period_transmission_targets,simple,,0,0,,,,
+policy/transmission_targets/targets,transmission_target,transmission_target_scenario_id,system_transmission_targets,simple,,0,0,,,,
 policy/carbon_cap/geography_carbon_cap_zones,carbon_cap,carbon_cap_zone_scenario_id,geography_carbon_cap_zones,simple,,0,0,,,,
 policy/carbon_cap/project_carbon_cap_zones,carbon_cap,project_carbon_cap_zone_scenario_id,project_carbon_cap_zones,simple,,0,0,,,,
 policy/carbon_cap/system_carbon_cap_targets,carbon_cap,carbon_cap_target_scenario_id,system_carbon_cap_targets,simple,,0,0,,,,

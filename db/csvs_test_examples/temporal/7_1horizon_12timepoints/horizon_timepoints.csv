@@ -1,8 +1,8 @@
-subproblem_id,stage_id,balancing_type_horizon,horizon,tmp_start,tmp_end
-1,1,day,202001,20200101,20200112
-1,1,evn_tmp_test,1,20200102,20200102
-1,1,evn_tmp_test,1,20200104,20200104
-1,1,evn_tmp_test,1,20200106,20200106
-1,1,evn_tmp_test,1,20200108,20200108
-1,1,evn_tmp_test,1,20200110,20200110
-1,1,evn_tmp_test,1,20200112,20200112
+stage_id,balancing_type_horizon,horizon,tmp_start,tmp_start_spinup_or_lookahead,tmp_end,tmp_end_spinup_or_lookahead
+1,day,202001,20200101,0,20200112,0
+1,evn_tmp_test,1,20200102,0,20200102,0
+1,evn_tmp_test,1,20200104,0,20200104,0
+1,evn_tmp_test,1,20200106,0,20200106,0
+1,evn_tmp_test,1,20200108,0,20200108,0
+1,evn_tmp_test,1,20200110,0,20200110,0
+1,evn_tmp_test,1,20200112,0,20200112,0

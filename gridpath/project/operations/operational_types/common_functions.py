@@ -1,4 +1,4 @@
-# Copyright 2016-2023 Blue Marble Analytics LLC.
+# Copyright 2016-2024 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -687,44 +687,41 @@ def get_hydro_inputs_from_database(
 
     c = conn.cursor()
 
-    # NOTE: There can be cases where a resource is both in specified capacity
-    # table and in new build table, but depending on capacity type you'd only
-    # use one of them, so filtering with OR is not 100% correct.
-
-    sql = """
-    SELECT project, horizon, average_power_fraction, min_power_fraction,
+    sql = f"""
+    SELECT project, prj_tbl.horizon, average_power_fraction, min_power_fraction,
     max_power_fraction
-    -- Select only projects, horizons from the relevant portfolio, 
-    -- relevant opchar scenario id, operational type, and temporal scenario id
-    FROM 
-        (SELECT project, horizon, hydro_operational_chars_scenario_id
-        FROM project_operational_horizons
-        WHERE project_portfolio_scenario_id = {}
-        AND project_operational_chars_scenario_id = {}
-        AND operational_type = '{}'
-        AND temporal_scenario_id = {}
-        AND (project_specified_capacity_scenario_id = {}
-             OR project_new_cost_scenario_id = {})
-        AND subproblem_id = {}
-        AND stage_id = {}
-        ) as projects_periods_horizon_tbl
-    -- Now that we have the relevant projects and horizons, get the 
-    -- respective hydro opchars (and no others) from 
-    -- inputs_project_hydro_operational_chars
-    LEFT OUTER JOIN
-        inputs_project_hydro_operational_chars
-    USING (hydro_operational_chars_scenario_id, project, horizon)
-    ;
-    """.format(
-        subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-        subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
-        op_type,
-        subscenarios.TEMPORAL_SCENARIO_ID,
-        subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID,
-        subscenarios.PROJECT_NEW_COST_SCENARIO_ID,
-        subproblem,
-        stage,
+    FROM (
+        SELECT project, balancing_type_project, horizon, average_power_fraction, 
+        min_power_fraction, max_power_fraction
+        FROM inputs_project_hydro_operational_chars
+        WHERE project in (
+            SELECT project
+            FROM inputs_project_portfolios
+            WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
+            )
+        -- Get the right opchar
+        AND (project, hydro_operational_chars_scenario_id) in (
+            SELECT project, hydro_operational_chars_scenario_id
+            FROM inputs_project_operational_chars
+            WHERE project_operational_chars_scenario_id
+             = {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
+        )
+        -- Get the relevant stage
+        AND stage_id = {stage}
+    ) as prj_tbl
+    JOIN (
+        SELECT DISTINCT balancing_type_horizon, horizon
+        FROM inputs_temporal_horizon_timepoints
+        WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+        AND subproblem_id = {subproblem}
+        AND stage_id = {stage}
+    ) as hrz_tbl
+    ON (
+        balancing_type_project = balancing_type_horizon
+        AND prj_tbl.horizon = hrz_tbl.horizon
     )
+    ;    
+    """
 
     hydro_chars = c.execute(sql)
 

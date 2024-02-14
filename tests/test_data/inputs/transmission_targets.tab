@@ -1,0 +1,5 @@
+energy_target_zone	balancing_type	horizon	transmission_target_pos_dir_min_mwh	transmission_target_pos_dir_max_mwh	transmission_target_neg_dir_min_mwh	transmission_target_neg_dir_max_mwh
+Tx_Target_Zone1	year	2020	50	.	0.2	1
+Tx_Target_Zone1	year	2030	.	100	0.33	.
+Tx_Target_Zone2	year	2020	10	.	.	10
+Tx_Target_Zone2	year	2030	10	20	0	.

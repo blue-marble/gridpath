@@ -586,30 +586,50 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         [
             prj,
             prd,
-            duals_wrapper(m, getattr(m, "Min_Build_Power_Constraint")[prj, prd])
-            if (prj, prd) in [idx for idx in getattr(m, "Min_Build_Power_Constraint")]
-            else None,
-            duals_wrapper(m, getattr(m, "Max_Build_Power_Constraint")[prj, prd])
-            if (prj, prd) in [idx for idx in getattr(m, "Max_Build_Power_Constraint")]
-            else None,
-            duals_wrapper(m, getattr(m, "Min_Power_Constraint")[prj, prd])
-            if (prj, prd) in [idx for idx in getattr(m, "Min_Power_Constraint")]
-            else None,
-            duals_wrapper(m, getattr(m, "Max_Power_Constraint")[prj, prd])
-            if (prj, prd) in [idx for idx in getattr(m, "Max_Power_Constraint")]
-            else None,
-            duals_wrapper(m, getattr(m, "Min_Build_Energy_Constraint")[prj, prd])
-            if (prj, prd) in [idx for idx in getattr(m, "Min_Build_Energy_Constraint")]
-            else None,
-            duals_wrapper(m, getattr(m, "Max_Build_Energy_Constraint")[prj, prd])
-            if (prj, prd) in [idx for idx in getattr(m, "Max_Build_Energy_Constraint")]
-            else None,
-            duals_wrapper(m, getattr(m, "Min_Energy_Constraint")[prj, prd])
-            if (prj, prd) in [idx for idx in getattr(m, "Min_Energy_Constraint")]
-            else None,
-            duals_wrapper(m, getattr(m, "Max_Energy_Constraint")[prj, prd])
-            if (prj, prd) in [idx for idx in getattr(m, "Max_Energy_Constraint")]
-            else None,
+            (
+                duals_wrapper(m, getattr(m, "Min_Build_Power_Constraint")[prj, prd])
+                if (prj, prd)
+                in [idx for idx in getattr(m, "Min_Build_Power_Constraint")]
+                else None
+            ),
+            (
+                duals_wrapper(m, getattr(m, "Max_Build_Power_Constraint")[prj, prd])
+                if (prj, prd)
+                in [idx for idx in getattr(m, "Max_Build_Power_Constraint")]
+                else None
+            ),
+            (
+                duals_wrapper(m, getattr(m, "Min_Power_Constraint")[prj, prd])
+                if (prj, prd) in [idx for idx in getattr(m, "Min_Power_Constraint")]
+                else None
+            ),
+            (
+                duals_wrapper(m, getattr(m, "Max_Power_Constraint")[prj, prd])
+                if (prj, prd) in [idx for idx in getattr(m, "Max_Power_Constraint")]
+                else None
+            ),
+            (
+                duals_wrapper(m, getattr(m, "Min_Build_Energy_Constraint")[prj, prd])
+                if (prj, prd)
+                in [idx for idx in getattr(m, "Min_Build_Energy_Constraint")]
+                else None
+            ),
+            (
+                duals_wrapper(m, getattr(m, "Max_Build_Energy_Constraint")[prj, prd])
+                if (prj, prd)
+                in [idx for idx in getattr(m, "Max_Build_Energy_Constraint")]
+                else None
+            ),
+            (
+                duals_wrapper(m, getattr(m, "Min_Energy_Constraint")[prj, prd])
+                if (prj, prd) in [idx for idx in getattr(m, "Min_Energy_Constraint")]
+                else None
+            ),
+            (
+                duals_wrapper(m, getattr(m, "Max_Energy_Constraint")[prj, prd])
+                if (prj, prd) in [idx for idx in getattr(m, "Max_Energy_Constraint")]
+                else None
+            ),
         ]
         for (prj, prd) in m.PRJ_OPR_PRDS
     ]

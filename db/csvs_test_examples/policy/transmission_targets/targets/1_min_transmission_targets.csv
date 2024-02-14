@@ -1,0 +1,5 @@
+transmission_target_zone,subproblem_id,stage_id,balancing_type,horizon,transmission_target_pos_dir_min_mwh,transmission_target_pos_dir_max_mwh,transmission_target_neg_dir_min_mwh,transmission_target_neg_dir_max_mwh
+TxTargetZone1,1,1,period,2020,,,2,
+TxTargetZone1,1,1,period,2030,,,2,
+TxTargetZone2,1,1,period,2020,2,,,
+TxTargetZone2,1,1,period,2030,2,,,

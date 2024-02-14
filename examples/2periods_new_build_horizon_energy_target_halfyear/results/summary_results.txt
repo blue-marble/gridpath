@@ -24,9 +24,9 @@ Zone1     2020   Coal                       0.00           0.00
                  Wind                 250,560.00          64.13
 
 ### HORIZON ENERGY TARGET RESULTS ###
-                                           delivered_energy_target_energy_mwh  curtailed_energy_target_energy_mwh  energy_target_mwh              dual  energy_target_marginal_cost_per_mwh  percent_curtailed
-energy_target_zone balancing_type horizon                                                                                                                                                                     
-RPSZone1           halfyear       20201                            172,280.00                           52,720.00         125,000.00              0.00                                 0.00              23.43
-                                  20202                            125,000.00                                0.00         125,000.00 -1,000,004,600.00                      -100,000,460.00               0.00
-                                  20301                            125,000.00                          101,008.00         125,000.00   -999,999,990.00                       -99,999,999.00              44.69
-                                  20302                            125,560.00                               -0.00         125,000.00              0.00                                 0.00              -0.00
+                                           delivered_energy_target_energy_mwh  curtailed_energy_target_energy_mwh  energy_target_mwh             dual  energy_target_marginal_cost_per_mwh  percent_curtailed
+energy_target_zone balancing_type horizon                                                                                                                                                                    
+RPSZone1           halfyear       20201                            172,280.00                           52,720.00         125,000.00            -0.00                                -0.00              23.43
+                                  20202                            125,000.00                                0.00         125,000.00 1,000,004,600.00                       100,000,460.00               0.00
+                                  20301                            125,000.00                          101,008.00         125,000.00   999,999,990.00                        99,999,999.00              44.69
+                                  20302                            125,560.00                               -0.00         125,000.00            -0.00                                -0.00              -0.00

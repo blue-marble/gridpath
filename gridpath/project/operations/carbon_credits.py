@@ -162,9 +162,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.CARBON_CREDITS_GENERATION_PRJ_OPR_PRDS,
         within=NonNegativeReals,
         default=Infinity,
-        validate=lambda mod, value, prj, prd: value == Infinity
-        if mod.intensity_threshold_emissions_toCO2_per_MWh[prj, prd] < Infinity
-        else value <= Infinity,  # pick one of intensity-based and absolute thresholds
+        validate=lambda mod, value, prj, prd: (
+            value == Infinity
+            if mod.intensity_threshold_emissions_toCO2_per_MWh[prj, prd] < Infinity
+            else value <= Infinity
+        ),  # pick one of intensity-based and absolute thresholds
     )
 
     # Derived Sets
