@@ -13,12 +13,12 @@
 # limitations under the License.
 
 """
-This module aggregates revenues from carbon credit sales.
+This module aggregates revenues from carbon credit sales and costs from carbon credit purchases.
 """
 
 from pyomo.environ import Expression
 
-from gridpath.auxiliary.dynamic_components import revenue_components
+from gridpath.auxiliary.dynamic_components import revenue_components, cost_components
 
 
 def add_model_components(
@@ -34,15 +34,13 @@ def add_model_components(
     """
     :param m: the Pyomo abstract model object we are adding components to
     :param d: the DynamicComponents class object we will get components from
-
-    Here, we sum up all carbon tax costs.
     """
 
     def total_carbon_credit_sale_revenue_rule(mod):
         return sum(
             mod.Sell_Carbon_Credits[z, p]
             * mod.period_objective_coefficient[p]
-            * mod.carbon_credit_price[z, p]
+            * mod.carbon_credits_demand_price[z, p]
             for z in mod.CARBON_CREDITS_ZONES
             for p in mod.PERIODS
         )
@@ -51,17 +49,29 @@ def add_model_components(
         rule=total_carbon_credit_sale_revenue_rule
     )
 
+    def total_carbon_credit_purchase_cost_rule(mod):
+        return sum(
+            mod.Buy_Carbon_Credits[z, p]
+            * mod.period_objective_coefficient[p]
+            * mod.carbon_credits_supply_price[z, p]
+            for z in mod.CARBON_CREDITS_ZONES
+            for p in mod.PERIODS
+        )
+
+    m.Total_Carbon_Credit_Costs = Expression(
+        rule=total_carbon_credit_purchase_cost_rule
+    )
+
     record_dynamic_components(dynamic_components=d)
 
 
 def record_dynamic_components(dynamic_components):
     """
     :param dynamic_components:
-
-    Add total carbon tax costs to cost components
-
     """
 
     getattr(dynamic_components, revenue_components).append(
         "Total_Carbon_Credit_Revenue"
     )
+
+    getattr(dynamic_components, cost_components).append("Total_Carbon_Credit_Costs")

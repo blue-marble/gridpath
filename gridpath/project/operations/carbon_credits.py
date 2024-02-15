@@ -32,6 +32,8 @@ from gridpath.project import PROJECT_PERIOD_DF
 from gridpath.project.operations.common_functions import load_operational_type_modules
 import gridpath.project.operations.operational_types as op_type_init
 
+Infinity = float("inf")
+
 
 def add_model_components(
     m,
@@ -130,58 +132,128 @@ def add_model_components(
     # Sets
     ###########################################################################
 
-    m.CARBON_CREDITS_PRJS = Set(within=m.PROJECTS)
+    m.CARBON_CREDITS_GENERATION_PRJS = Set(within=m.PROJECTS)
 
-    m.CARBON_CREDITS_PRJ_OPR_TMPS = Set(
+    m.CARBON_CREDITS_GENERATION_PRJ_OPR_TMPS = Set(
         within=m.PRJ_OPR_TMPS,
         initialize=lambda mod: subset_init_by_set_membership(
             mod=mod,
             superset="PRJ_OPR_TMPS",
             index=0,
-            membership_set=mod.CARBON_CREDITS_PRJS,
+            membership_set=mod.CARBON_CREDITS_GENERATION_PRJS,
         ),
     )
 
-    m.CARBON_CREDITS_PRJ_OPR_PRDS = Set(
+    m.CARBON_CREDITS_GENERATION_PRJ_OPR_PRDS = Set(
         within=m.PRJ_OPR_PRDS,
         initialize=lambda mod: subset_init_by_set_membership(
             mod=mod,
             superset="PRJ_OPR_PRDS",
             index=0,
-            membership_set=mod.CARBON_CREDITS_PRJS,
+            membership_set=mod.CARBON_CREDITS_GENERATION_PRJS,
         ),
+    )
+
+    m.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES = Set(
+        dimen=2, within=m.PROJECTS * m.CARBON_CREDITS_ZONES
     )
 
     # Input Params
     ###########################################################################
 
-    m.carbon_credits_zone = Param(m.CARBON_CREDITS_PRJS, within=m.CARBON_CREDITS_ZONES)
+    m.carbon_credits_generation_zone = Param(
+        m.CARBON_CREDITS_GENERATION_PRJS, within=m.CARBON_CREDITS_ZONES
+    )
 
     m.intensity_threshold_emissions_toCO2_per_MWh = Param(
-        m.CARBON_CREDITS_PRJ_OPR_PRDS,
+        m.CARBON_CREDITS_GENERATION_PRJ_OPR_PRDS,
         within=NonNegativeReals,
-        default=0,
+        default=Infinity,
     )
 
     m.absolute_threshold_emissions_toCO2 = Param(
-        m.CARBON_CREDITS_PRJ_OPR_PRDS,
+        m.CARBON_CREDITS_GENERATION_PRJ_OPR_PRDS,
         within=NonNegativeReals,
-        default=0,
+        default=Infinity,
         validate=lambda mod, value, prj, prd: (
-            value == 0
-            if mod.intensity_threshold_emissions_toCO2_per_MWh[prj, prd] > 0
-            else value >= 0
+            value == Infinity
+            if mod.intensity_threshold_emissions_toCO2_per_MWh[prj, prd] < Infinity
+            else value <= Infinity
         ),  # pick one of intensity-based and absolute thresholds
     )
 
     # Derived Sets
     ###########################################################################
 
-    m.CARBON_CREDITS_PRJS_BY_CARBON_CREDITS_ZONE = Set(
+    m.CARBON_CREDITS_GENERATION_PRJS_BY_CARBON_CREDITS_ZONE = Set(
         m.CARBON_CREDITS_ZONES,
-        within=m.CARBON_CREDITS_PRJS,
+        within=m.CARBON_CREDITS_GENERATION_PRJS,
         initialize=lambda mod, z: subset_init_by_param_value(
-            mod, "CARBON_CREDITS_PRJS", "carbon_credits_zone", z
+            mod, "CARBON_CREDITS_GENERATION_PRJS", "carbon_credits_generation_zone", z
+        ),
+    )
+
+    m.CARBON_CREDITS_PURCHASE_PRJS = Set(
+        within=m.PROJECTS,
+        initialize=lambda mod: list(
+            set(
+                [
+                    prj
+                    for (
+                        prj,
+                        z,
+                    ) in mod.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES
+                ]
+            )
+        ),
+    )
+
+    m.CARBON_CREDITS_PURCHASE_PRJS_BY_CARBON_CREDITS_ZONE = Set(
+        m.CARBON_CREDITS_ZONES,
+        within=m.PROJECTS,
+        initialize=lambda mod, cc_z: [
+            prj
+            for (prj, z) in mod.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES
+            if cc_z == z
+        ],
+    )
+
+    m.CARBON_CREDITS_PURCHASE_PRJS_OPR_TMPS = Set(
+        within=m.PRJ_OPR_TMPS,
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod,
+            superset="PRJ_OPR_TMPS",
+            index=0,
+            membership_set=mod.CARBON_CREDITS_PURCHASE_PRJS,
+        ),
+    )
+
+    m.CARBON_CREDITS_PURCHASE_PRJS_OPR_PRDS = Set(
+        within=m.PRJ_OPR_PRDS,
+        initialize=lambda mod: [
+            (prj, prd)
+            for (prj, prd) in mod.PRJ_OPR_PRDS
+            if prj in mod.CARBON_CREDITS_PURCHASE_PRJS
+        ],
+    )
+
+    m.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES_OPR_TMPS = Set(
+        dimen=3,
+        initialize=lambda mod: set(
+            (prj, z, tmp)
+            for (prj, tmp) in mod.CARBON_CREDITS_PURCHASE_PRJS_OPR_TMPS
+            for (_prj, z) in mod.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES
+            if prj == _prj
+        ),
+    )
+
+    m.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES_OPR_PRDS = Set(
+        dimen=3,
+        initialize=lambda mod: set(
+            (prj, z, prd)
+            for (prj, prd) in mod.CARBON_CREDITS_PURCHASE_PRJS_OPR_PRDS
+            for (_prj, z) in mod.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES
+            if prj == _prj
         ),
     )
 
@@ -189,11 +261,12 @@ def add_model_components(
     ###########################################################################
 
     m.Project_Carbon_Credits_Generated = Var(
-        m.CARBON_CREDITS_PRJ_OPR_PRDS, within=NonNegativeReals
+        m.CARBON_CREDITS_GENERATION_PRJ_OPR_PRDS, within=NonNegativeReals
     )
 
     m.Project_Purchase_Carbon_Credits = Var(
-        m.CARBON_CREDITS_PRJ_OPR_PRDS, within=NonNegativeReals
+        m.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES_OPR_PRDS,
+        within=NonNegativeReals,
     )
 
     # Constraints
@@ -214,24 +287,76 @@ def add_model_components(
             )
             * mod.hrs_in_tmp[tmp]
             * mod.tmp_weight[tmp]
-            for (p, tmp) in mod.CARBON_CREDITS_PRJ_OPR_TMPS
+            for (p, tmp) in mod.CARBON_CREDITS_GENERATION_PRJ_OPR_TMPS
             if mod.period[tmp] == prd and p == prj
         )
-        return mod.Project_Carbon_Credits_Generated[prj, prd] <= (
-            total_power_provision_in_prd
-            * mod.intensity_threshold_emissions_toCO2_per_MWh[prj, prd]
-            + mod.absolute_threshold_emissions_toCO2[prj, prd]
-            - sum(
+
+        var1 = mod.intensity_threshold_emissions_toCO2_per_MWh[prj, prd]
+        var2 = mod.absolute_threshold_emissions_toCO2[prj, prd]
+        if (var1 == Infinity) and (var2 == Infinity):
+            return mod.Project_Carbon_Credits_Generated[prj, prd] == 0
+        elif var1 == Infinity:
+            return mod.Project_Carbon_Credits_Generated[prj, prd] <= (
+                mod.absolute_threshold_emissions_toCO2[prj, prd]
+                - sum(
+                    mod.Project_Carbon_Emissions[p, tmp]
+                    * mod.hrs_in_tmp[tmp]
+                    * mod.tmp_weight[tmp]
+                    for (p, tmp) in mod.CARBON_CREDITS_GENERATION_PRJ_OPR_TMPS
+                    if mod.period[tmp] == prd and p == prj
+                )
+            )
+        elif var2 == Infinity:
+            return mod.Project_Carbon_Credits_Generated[prj, prd] <= (
+                total_power_provision_in_prd
+                * mod.intensity_threshold_emissions_toCO2_per_MWh[prj, prd]
+                - sum(
+                    mod.Project_Carbon_Emissions[p, tmp]
+                    * mod.hrs_in_tmp[tmp]
+                    * mod.tmp_weight[tmp]
+                    for (p, tmp) in mod.CARBON_CREDITS_GENERATION_PRJ_OPR_TMPS
+                    if mod.period[tmp] == prd and p == prj
+                )
+            )
+        else:
+            return mod.Project_Carbon_Credits_Generated[prj, prd] <= (
+                total_power_provision_in_prd
+                * mod.intensity_threshold_emissions_toCO2_per_MWh[prj, prd]
+                + mod.absolute_threshold_emissions_toCO2[prj, prd]
+                - sum(
+                    mod.Project_Carbon_Emissions[p, tmp]
+                    * mod.hrs_in_tmp[tmp]
+                    * mod.tmp_weight[tmp]
+                    for (p, tmp) in mod.CARBON_CREDITS_GENERATION_PRJ_OPR_TMPS
+                    if mod.period[tmp] == prd and p == prj
+                )
+            )
+
+    m.Project_Carbon_Credits_Generated_Constraint = Constraint(
+        m.CARBON_CREDITS_GENERATION_PRJ_OPR_PRDS, rule=generated_credits_rule
+    )
+
+    def purchased_credits_rule(mod, prj, z, prd):
+        """
+        The credits purchased by each project.
+        """
+        return mod.Project_Purchase_Carbon_Credits[prj, z, prd] <= (
+            sum(
                 mod.Project_Carbon_Emissions[p, tmp]
                 * mod.hrs_in_tmp[tmp]
                 * mod.tmp_weight[tmp]
-                for (p, tmp) in mod.CARBON_CREDITS_PRJ_OPR_TMPS
-                if mod.period[tmp] == prd and p == prj
+                for (
+                    p,
+                    z_,
+                    tmp,
+                ) in mod.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES_OPR_TMPS
+                if mod.period[tmp] == prd and p == prj and z == z_
             )
         )
 
-    m.Project_Carbon_Credits_Generated_Constraint = Constraint(
-        m.CARBON_CREDITS_PRJ_OPR_PRDS, rule=generated_credits_rule
+    m.Project_Carbon_Credits_Purchased_Constraint = Constraint(
+        m.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES_OPR_PRDS,
+        rule=purchased_credits_rule,
     )
 
 
@@ -271,12 +396,12 @@ def load_model_data(
             "inputs",
             "projects.tab",
         ),
-        select=("project", "carbon_credits_zone"),
-        param=(m.carbon_credits_zone,),
+        select=("project", "carbon_credits_generation_zone"),
+        param=(m.carbon_credits_generation_zone,),
     )
 
-    data_portal.data()["CARBON_CREDITS_PRJS"] = {
-        None: list(data_portal.data()["carbon_credits_zone"].keys())
+    data_portal.data()["CARBON_CREDITS_GENERATION_PRJS"] = {
+        None: list(data_portal.data()["carbon_credits_generation_zone"].keys())
     }
 
     data_portal.load(
@@ -294,6 +419,17 @@ def load_model_data(
             m.intensity_threshold_emissions_toCO2_per_MWh,
             m.absolute_threshold_emissions_toCO2,
         ),
+    )
+
+    data_portal.load(
+        filename=os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "project_carbon_credits_purchase_zones.tab",
+        ),
+        set=m.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES,
     )
 
 
@@ -320,7 +456,7 @@ def get_inputs_from_database(
     """
 
     c1 = conn.cursor()
-    project_zones = c1.execute(
+    project_generation_zones = c1.execute(
         f"""SELECT project, carbon_credits_zone
         FROM
         -- Get projects from portfolio only
@@ -331,9 +467,9 @@ def get_inputs_from_database(
         LEFT OUTER JOIN 
         -- Get carbon credits zones for those projects
         (SELECT project, carbon_credits_zone
-            FROM inputs_project_carbon_credits_zones
-            WHERE project_carbon_credits_zone_scenario_id = {subscenarios.PROJECT_CARBON_CREDITS_ZONE_SCENARIO_ID}
-        ) as prj_ct_zone_tbl
+            FROM inputs_project_carbon_credits_generation_zones
+            WHERE project_carbon_credits_generation_zone_scenario_id = {subscenarios.PROJECT_CARBON_CREDITS_GENERATION_ZONE_SCENARIO_ID}
+        ) as prj_cc_gen_zone_tbl
         USING (project)
         -- Filter out projects whose carbon credits zone is not one included in 
         -- our carbon_credits_zone_scenario_id
@@ -371,13 +507,39 @@ def get_inputs_from_database(
         USING (project, period)
         WHERE project in (
                 SELECT project
-                    FROM inputs_project_carbon_credits_zones
-                    WHERE project_carbon_credits_zone_scenario_id = {subscenarios.PROJECT_CARBON_CREDITS_ZONE_SCENARIO_ID}
+                    FROM inputs_project_carbon_credits_generation_zones
+                    WHERE project_carbon_credits_generation_zone_scenario_id = {subscenarios.PROJECT_CARBON_CREDITS_GENERATION_ZONE_SCENARIO_ID}
         );
         """
     )
 
-    return project_zones, project_carbon_credits
+    c3 = conn.cursor()
+    project_purchase_zones = c3.execute(
+        f"""SELECT project, carbon_credits_zone
+            FROM
+            -- Get projects from portfolio only
+            (SELECT project
+                FROM inputs_project_portfolios
+                WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
+            ) as prj_tbl
+            LEFT OUTER JOIN 
+            -- Get carbon credits zones for those projects
+            (SELECT project, carbon_credits_zone
+                FROM inputs_project_carbon_credits_purchase_zones
+                WHERE project_carbon_credits_purchase_zone_scenario_id = {subscenarios.PROJECT_CARBON_CREDITS_PURCHASE_ZONE_SCENARIO_ID}
+            ) as prj_cc_gen_zone_tbl
+            USING (project)
+            -- Filter out projects whose carbon credits zone is not one included in 
+            -- our carbon_credits_zone_scenario_id
+            WHERE carbon_credits_zone in (
+                    SELECT carbon_credits_zone
+                        FROM inputs_geography_carbon_credits_zones
+                        WHERE carbon_credits_zone_scenario_id = {subscenarios.CARBON_CREDITS_ZONE_SCENARIO_ID}
+            );
+            """
+    )
+
+    return project_generation_zones, project_carbon_credits, project_purchase_zones
 
 
 def write_model_inputs(
@@ -412,7 +574,11 @@ def write_model_inputs(
         weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
     )
 
-    project_zones, project_carbon_credits = get_inputs_from_database(
+    (
+        project_generation_zones,
+        project_carbon_credits,
+        project_purchase_zones,
+    ) = get_inputs_from_database(
         scenario_id,
         subscenarios,
         db_weather_iteration,
@@ -426,7 +592,7 @@ def write_model_inputs(
     # projects.tab
     # Make a dict for easy access
     prj_zone_dict = dict()
-    for prj, zone in project_zones:
+    for prj, zone in project_generation_zones:
         prj_zone_dict[str(prj)] = "." if zone is None else str(zone)
 
     with open(
@@ -448,7 +614,7 @@ def write_model_inputs(
 
         # Append column header
         header = next(reader)
-        header.append("carbon_credits_zone")
+        header.append("carbon_credits_generation_zone")
         new_rows.append(header)
 
         # Append correct values
@@ -495,6 +661,19 @@ def write_model_inputs(
         )
         ct_df.to_csv(fpath, index=False, sep="\t")
 
+    # project_carbon_credits_purchase_zones.tab
+    prj_cc_purchase_df = cursor_to_df(project_purchase_zones)
+    if not prj_cc_purchase_df.empty:
+        prj_cc_purchase_df = prj_cc_purchase_df.fillna(".")
+        fpath = os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "project_carbon_credits_purchase_zones.tab",
+        )
+        prj_cc_purchase_df.to_csv(fpath, index=False, sep="\t")
+
 
 def export_results(
     scenario_directory,
@@ -516,20 +695,19 @@ def export_results(
     :return:
     """
 
+    # Carbon credits generated
     results_columns = [
         "carbon_credits_zone",
         "carbon_credits_generated_tCO2",
-        "carbon_credits_purchased_tCO2",
     ]
     data = [
         [
             prj,
             prd,
-            m.carbon_credits_zone[prj],
+            m.carbon_credits_generation_zone[prj],
             value(m.Project_Carbon_Credits_Generated[prj, prd]),
-            value(m.Project_Purchase_Carbon_Credits[prj, prd]),
         ]
-        for (prj, prd) in m.CARBON_CREDITS_PRJ_OPR_PRDS
+        for (prj, prd) in m.CARBON_CREDITS_GENERATION_PRJ_OPR_PRDS
     ]
 
     results_df = create_results_df(
@@ -541,6 +719,41 @@ def export_results(
     for c in results_columns:
         getattr(d, PROJECT_PERIOD_DF)[c] = None
     getattr(d, PROJECT_PERIOD_DF).update(results_df)
+
+    # Carbon credits purchase
+    with open(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "results",
+            "project_carbon_credits_purchase.csv",
+        ),
+        "w",
+        newline="",
+    ) as project_carbon_credits_purchase_results_file:
+        writer = csv.writer(project_carbon_credits_purchase_results_file)
+        writer.writerow(
+            [
+                "project",
+                "period",
+                "discount_factor",
+                "number_years_represented",
+                "carbon_credit_zone",
+                "carbon_credits_purchased_tCO2",
+            ]
+        )
+        for prj, z, prd in m.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES_OPR_PRDS:
+            writer.writerow(
+                [
+                    prj,
+                    prd,
+                    m.discount_factor[prd],
+                    m.number_years_represented[prd],
+                    z,
+                    value(m.Project_Purchase_Carbon_Credits[prj, z, prd]),
+                ]
+            )
 
 
 # Validation

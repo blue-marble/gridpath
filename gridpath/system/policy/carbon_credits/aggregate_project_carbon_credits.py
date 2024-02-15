@@ -56,8 +56,8 @@ def add_model_components(
         """
         return sum(
             mod.Project_Carbon_Credits_Generated[prj, prd]
-            for (prj, period) in mod.CARBON_CREDITS_PRJ_OPR_PRDS
-            if prj in mod.CARBON_CREDITS_PRJS_BY_CARBON_CREDITS_ZONE[z]
+            for (prj, period) in mod.CARBON_CREDITS_GENERATION_PRJ_OPR_PRDS
+            if prj in mod.CARBON_CREDITS_GENERATION_PRJS_BY_CARBON_CREDITS_ZONE[z]
             and prd == period
         )
 
@@ -75,9 +75,15 @@ def add_model_components(
         :return:
         """
         return sum(
-            mod.Project_Purchase_Carbon_Credits[prj, prd]
-            for (prj, period) in mod.CARBON_CREDITS_PRJ_OPR_PRDS
-            if mod.carbon_credits_zone[prj] == z and prd == period
+            mod.Project_Purchase_Carbon_Credits[prj, z, prd]
+            for (
+                prj,
+                cc_z,
+                period,
+            ) in mod.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES_OPR_PRDS
+            if prj in mod.CARBON_CREDITS_PURCHASE_PRJS_BY_CARBON_CREDITS_ZONE[cc_z]
+            and prd == period
+            and cc_z == z
         )
 
     m.Total_Project_Carbon_Credits_Purchased = Expression(
@@ -126,8 +132,8 @@ def export_results(
         [
             z,
             p,
-            value(m.Total_Carbon_Credits_Generated[z, p]),
-            value(m.Total_Carbon_Credits_Purchased[z, p]),
+            value(m.Total_Project_Carbon_Credits_Generated[z, p]),
+            value(m.Total_Project_Carbon_Credits_Purchased[z, p]),
         ]
         for z in m.CARBON_CREDITS_ZONES
         for p in m.PERIODS
