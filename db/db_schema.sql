@@ -296,35 +296,6 @@ CREATE TABLE inputs_temporal_superperiods
         (temporal_scenario_id)
 );
 
-
--- TODO: are these used, where should they go
-DROP TABLE IF EXISTS inputs_aux_weather_draws_info;
-CREATE TABLE inputs_aux_weather_draws_info
-(
-    weather_bins_id  INTEGER,
-    weather_draws_id INTEGER,
-    seed             INTEGER,
-    n_iterations     INTEGER,
-    iterations_seed  INTEGER,
-    PRIMARY KEY (weather_bins_id, weather_draws_id)
-);
-
-DROP TABLE IF EXISTS inputs_aux_weather_iterations;
-CREATE TABLE inputs_aux_weather_iterations
-(
-    weather_bins_id   INTEGER,
-    weather_draws_id  INTEGER,
-    weather_iteration INTEGER,
-    draw_number       INTEGER,
-    study_date        DATE,
-    month             INTEGER,
-    day_type          INTEGER,
-    weather_day_bin   INTEGER,
-    PRIMARY KEY (weather_bins_id, weather_draws_id,
-                 weather_iteration, draw_number,
-                 month, day_type, weather_day_bin)
-);
-
 -- Timepoints
 -- Note on linked timepoints: the user can designate timepoints from the last
 -- horizon of the subproblem to be linked to the first horizon of the next
@@ -797,8 +768,8 @@ CREATE TABLE inputs_system_performance_standard_zones_carbon_credits_zones
     performance_standard_zones_carbon_credits_zones_scenario_id INTEGER,
     performance_standard_zone                                   VARCHAR(32),
     carbon_credits_zone                                         VARCHAR(32),
-     PRIMARY KEY (performance_standard_zones_carbon_credits_zones_scenario_id,
-                  performance_standard_zone, carbon_credits_zone),
+    PRIMARY KEY (performance_standard_zones_carbon_credits_zones_scenario_id,
+                 performance_standard_zone, carbon_credits_zone),
     FOREIGN KEY (performance_standard_zones_carbon_credits_zones_scenario_id) REFERENCES
         subscenarios_system_performance_standard_zones_carbon_credits_zones
             (performance_standard_zones_carbon_credits_zones_scenario_id)
@@ -832,23 +803,24 @@ DROP TABLE IF EXISTS subscenarios_system_carbon_credits_params;
 CREATE TABLE subscenarios_system_carbon_credits_params
 (
     carbon_credits_params_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name                             VARCHAR(32),
-    description                      VARCHAR(128)
+    name                              VARCHAR(32),
+    description                       VARCHAR(128)
 );
 
 DROP TABLE IF EXISTS inputs_system_carbon_credits_params;
 CREATE TABLE inputs_system_carbon_credits_params
 (
-    carbon_credits_params_scenario_id INTEGER,
-    carbon_credits_zone                     VARCHAR(32),
-    period                                  INTEGER,
-    allow_carbon_credits_infinite_demand    INTEGER DEFAULT 0, -- constraint is hard by default
-    carbon_credits_demand_tco2              FLOAT,
-    carbon_credits_demand_price             FLOAT,
-    allow_carbon_credits_infinite_supply    INTEGER DEFAULT 0, -- constraint is hard by default
-    carbon_credits_supply_tco2              FLOAT,
-    carbon_credits_supply_price             FLOAT,
-    PRIMARY KEY (carbon_credits_params_scenario_id, carbon_credits_zone, period),
+    carbon_credits_params_scenario_id    INTEGER,
+    carbon_credits_zone                  VARCHAR(32),
+    period                               INTEGER,
+    allow_carbon_credits_infinite_demand INTEGER DEFAULT 0, -- constraint is hard by default
+    carbon_credits_demand_tco2           FLOAT,
+    carbon_credits_demand_price          FLOAT,
+    allow_carbon_credits_infinite_supply INTEGER DEFAULT 0, -- constraint is hard by default
+    carbon_credits_supply_tco2           FLOAT,
+    carbon_credits_supply_price          FLOAT,
+    PRIMARY KEY (carbon_credits_params_scenario_id, carbon_credits_zone,
+                 period),
     FOREIGN KEY (carbon_credits_params_scenario_id) REFERENCES
         subscenarios_system_carbon_credits_params (carbon_credits_params_scenario_id)
 );
@@ -1743,7 +1715,7 @@ CREATE TABLE inputs_project_availability_exogenous_independent
     stage_id                                       INTEGER,
     timepoint                                      INTEGER,
     availability_derate_independent                FLOAT, -- for hybrids, this is the gen av
-    hyb_stor_cap_availability_derate_independent               FLOAT,
+    hyb_stor_cap_availability_derate_independent   FLOAT,
     PRIMARY KEY (project, exogenous_availability_independent_scenario_id,
                  availability_iteration, stage_id, timepoint),
     FOREIGN KEY (project, exogenous_availability_independent_scenario_id)
@@ -2130,16 +2102,16 @@ DROP TABLE IF EXISTS subscenarios_project_carbon_credits_generation_zones;
 CREATE TABLE subscenarios_project_carbon_credits_generation_zones
 (
     project_carbon_credits_generation_zone_scenario_id INTEGER PRIMARY KEY,
-    name                                    VARCHAR(32),
-    description                             VARCHAR(128)
+    name                                               VARCHAR(32),
+    description                                        VARCHAR(128)
 );
 
 DROP TABLE IF EXISTS inputs_project_carbon_credits_generation_zones;
 CREATE TABLE inputs_project_carbon_credits_generation_zones
 (
     project_carbon_credits_generation_zone_scenario_id INTEGER,
-    project                                 VARCHAR(64),
-    carbon_credits_zone                     VARCHAR(32),
+    project                                            VARCHAR(64),
+    carbon_credits_zone                                VARCHAR(32),
     PRIMARY KEY (project_carbon_credits_generation_zone_scenario_id, project,
                  carbon_credits_zone),
     FOREIGN KEY (project_carbon_credits_generation_zone_scenario_id) REFERENCES
@@ -2156,16 +2128,16 @@ DROP TABLE IF EXISTS subscenarios_project_carbon_credits_purchase_zones;
 CREATE TABLE subscenarios_project_carbon_credits_purchase_zones
 (
     project_carbon_credits_purchase_zone_scenario_id INTEGER PRIMARY KEY,
-    name                                    VARCHAR(32),
-    description                             VARCHAR(128)
+    name                                             VARCHAR(32),
+    description                                      VARCHAR(128)
 );
 
 DROP TABLE IF EXISTS inputs_project_carbon_credits_purchase_zones;
 CREATE TABLE inputs_project_carbon_credits_purchase_zones
 (
     project_carbon_credits_purchase_zone_scenario_id INTEGER,
-    project                                 VARCHAR(64),
-    carbon_credits_zone                     VARCHAR(32),
+    project                                          VARCHAR(64),
+    carbon_credits_zone                              VARCHAR(32),
     PRIMARY KEY (project_carbon_credits_purchase_zone_scenario_id, project,
                  carbon_credits_zone),
     FOREIGN KEY (project_carbon_credits_purchase_zone_scenario_id) REFERENCES
@@ -3863,7 +3835,7 @@ CREATE TABLE scenarios
     carbon_cap_zones_carbon_credits_zones_scenario_id           INTEGER,
     performance_standard_zones_carbon_credits_zones_scenario_id INTEGER,
     carbon_tax_zones_carbon_credits_zones_scenario_id           INTEGER,
-    carbon_credits_params_scenario_id                            INTEGER,
+    carbon_credits_params_scenario_id                           INTEGER,
     fuel_burn_limit_ba_scenario_id                              INTEGER,
     prm_zone_scenario_id                                        INTEGER,
     local_capacity_zone_scenario_id                             INTEGER,
@@ -4333,6 +4305,34 @@ CREATE TABLE raw_data_unit_availability_weather_derates
     availability_derate_weather FLOAT,
     PRIMARY KEY (year, month, day_of_month, hour_of_day, unit)
 );
+
+DROP TABLE IF EXISTS inputs_aux_weather_draws_info;
+CREATE TABLE inputs_aux_weather_draws_info
+(
+    weather_bins_id  INTEGER,
+    weather_draws_id INTEGER,
+    seed             INTEGER,
+    n_iterations     INTEGER,
+    iterations_seed  INTEGER,
+    PRIMARY KEY (weather_bins_id, weather_draws_id)
+);
+
+DROP TABLE IF EXISTS inputs_aux_weather_iterations;
+CREATE TABLE inputs_aux_weather_iterations
+(
+    weather_bins_id   INTEGER,
+    weather_draws_id  INTEGER,
+    weather_iteration INTEGER,
+    draw_number       INTEGER,
+    study_date        DATE,
+    month             INTEGER,
+    day_type          INTEGER,
+    weather_day_bin   INTEGER,
+    PRIMARY KEY (weather_bins_id, weather_draws_id,
+                 weather_iteration, draw_number,
+                 month, day_type, weather_day_bin)
+);
+
 
 --------------------------
 -- -- DATA INTEGRITY -- --
@@ -5502,22 +5502,22 @@ CREATE TABLE results_system_performance_standard
 DROP TABLE IF EXISTS results_system_carbon_credits;
 CREATE TABLE results_system_carbon_credits
 (
-    scenario_id                         INTEGER,
-    carbon_credits_zone                 VARCHAR(64),
-    period                              INTEGER,
-    weather_iteration                   INTEGER,
-    hydro_iteration                     INTEGER,
-    availability_iteration              INTEGER,
-    subproblem_id                       INTEGER,
-    stage_id                            INTEGER,
-    discount_factor                     FLOAT,
-    number_years_represented            FLOAT,
-    project_generated_credits           FLOAT,
-    project_purchased_credits           FLOAT,
-    total_generated_carbon_credits      FLOAT,
-    total_purchased_carbon_credits      FLOAT,
-    sell_credits                        FLOAT,
-    buy_credits                         FLOAT,
+    scenario_id                    INTEGER,
+    carbon_credits_zone            VARCHAR(64),
+    period                         INTEGER,
+    weather_iteration              INTEGER,
+    hydro_iteration                INTEGER,
+    availability_iteration         INTEGER,
+    subproblem_id                  INTEGER,
+    stage_id                       INTEGER,
+    discount_factor                FLOAT,
+    number_years_represented       FLOAT,
+    project_generated_credits      FLOAT,
+    project_purchased_credits      FLOAT,
+    total_generated_carbon_credits FLOAT,
+    total_purchased_carbon_credits FLOAT,
+    sell_credits                   FLOAT,
+    buy_credits                    FLOAT,
     PRIMARY KEY (scenario_id, carbon_credits_zone, weather_iteration,
                  hydro_iteration,
                  subproblem_id, stage_id, period)
@@ -5580,13 +5580,13 @@ CREATE TABLE results_system_horizon_energy_target
 DROP TABLE IF EXISTS results_system_transmission_targets;
 CREATE TABLE results_system_transmission_targets
 (
-    scenario_id                                             INTEGER,
-    transmission_target_zone                                VARCHAR(64),
-    weather_iteration                                       INTEGER,
-    hydro_iteration                                         INTEGER,
-    availability_iteration                                  INTEGER,
-    subproblem_id                                           INTEGER,
-    stage_id                                                INTEGER,
+    scenario_id                                     INTEGER,
+    transmission_target_zone                        VARCHAR(64),
+    weather_iteration                               INTEGER,
+    hydro_iteration                                 INTEGER,
+    availability_iteration                          INTEGER,
+    subproblem_id                                   INTEGER,
+    stage_id                                        INTEGER,
     balancing_type                                  VARCHAR(32),
     horizon                                         INTEGER,
     hrz_objective_coefficient                       FLOAT,
@@ -5746,52 +5746,52 @@ CREATE TABLE results_system_costs
 (
     scenario_id                                       INTEGER,
 --period INTEGER,
-    weather_iteration                                      INTEGER,
-    hydro_iteration                                        INTEGER,
-    availability_iteration                                 INTEGER,
-    subproblem_id                                          INTEGER,
-    stage_id                                               INTEGER,
-    Total_Capacity_Costs                                   Float,
-    Total_Fixed_Costs                                      FLOAT,
-    Total_Tx_Capacity_Costs                                Float,
-    Total_Tx_Fixed_Costs                                   FLOAT,
-    Total_PRM_Deliverability_Group_Costs                   FLOAT,
-    Total_Variable_OM_Cost                                 Float,
-    Total_Fuel_Cost                                        Float,
-    Total_Startup_Cost                                     Float,
-    Total_Shutdown_Cost                                    Float,
-    Total_Operational_Violation_Cost                       FLOAT,
-    Total_Curtailment_Cost                                 FLOAT,
-    Total_Hurdle_Cost                                      Float,
-    Total_Load_Balance_Penalty_Costs                       Float,
-    Frequency_Response_Penalty_Costs                       Float,
-    Frequency_Response_Partial_Penalty_Costs               FLOAT,
-    LF_Reserves_Down_Penalty_Costs                         Float,
-    LF_Reserves_Up_Penalty_Costs                           Float,
-    Regulation_Down_Penalty_Costs                          Float,
-    Regulation_Up_Penalty_Costs                            Float,
-    Spinning_Reserves_Penalty_Costs                        Float,
-    Total_PRM_Shortage_Penalty_Costs                       Float,
-    Total_Local_Capacity_Shortage_Penalty_Costs            Float,
-    Total_Carbon_Cap_Balance_Penalty_Costs                 Float,
-    Total_Carbon_Tax_Cost                                  FLOAT,
-    Total_Performance_Standard_Balance_Penalty_Costs       Float,
-    Total_Period_Energy_Target_Balance_Penalty_Costs       FLOAT,
-    Total_Horizon_Energy_Target_Balance_Penalty_Costs      FLOAT,
-    Total_Transmission_Target_Balance_Penalty_Costs FLOAT,
-    Total_Dynamic_ELCC_Tuning_Cost                         Float,
-    Total_Import_Carbon_Tuning_Cost                        Float,
-    Total_Market_Net_Cost                                  FLOAT,
-    Total_Export_Penalty_Cost                              FLOAT,
-    Total_Horizon_Fuel_Burn_Min_Abs_Penalty_Costs          FLOAT,
-    Total_Horizon_Fuel_Burn_Max_Abs_Penalty_Costs          FLOAT,
-    Total_Horizon_Fuel_Burn_Max_Rel_Penalty_Costs          FLOAT,
-    Total_SOC_Penalty_Cost                                 FLOAT,
-    Total_SOC_Penalty_Last_Tmp_Cost                        FLOAT,
-    Total_Subsidies                                        FLOAT,
-    Total_Capacity_Transfer_Costs                          FLOAT,
-    Total_Carbon_Credit_Revenue                            FLOAT,
-    Total_Carbon_Credit_Costs                              FLOAT,
+    weather_iteration                                 INTEGER,
+    hydro_iteration                                   INTEGER,
+    availability_iteration                            INTEGER,
+    subproblem_id                                     INTEGER,
+    stage_id                                          INTEGER,
+    Total_Capacity_Costs                              Float,
+    Total_Fixed_Costs                                 FLOAT,
+    Total_Tx_Capacity_Costs                           Float,
+    Total_Tx_Fixed_Costs                              FLOAT,
+    Total_PRM_Deliverability_Group_Costs              FLOAT,
+    Total_Variable_OM_Cost                            Float,
+    Total_Fuel_Cost                                   Float,
+    Total_Startup_Cost                                Float,
+    Total_Shutdown_Cost                               Float,
+    Total_Operational_Violation_Cost                  FLOAT,
+    Total_Curtailment_Cost                            FLOAT,
+    Total_Hurdle_Cost                                 Float,
+    Total_Load_Balance_Penalty_Costs                  Float,
+    Frequency_Response_Penalty_Costs                  Float,
+    Frequency_Response_Partial_Penalty_Costs          FLOAT,
+    LF_Reserves_Down_Penalty_Costs                    Float,
+    LF_Reserves_Up_Penalty_Costs                      Float,
+    Regulation_Down_Penalty_Costs                     Float,
+    Regulation_Up_Penalty_Costs                       Float,
+    Spinning_Reserves_Penalty_Costs                   Float,
+    Total_PRM_Shortage_Penalty_Costs                  Float,
+    Total_Local_Capacity_Shortage_Penalty_Costs       Float,
+    Total_Carbon_Cap_Balance_Penalty_Costs            Float,
+    Total_Carbon_Tax_Cost                             FLOAT,
+    Total_Performance_Standard_Balance_Penalty_Costs  Float,
+    Total_Period_Energy_Target_Balance_Penalty_Costs  FLOAT,
+    Total_Horizon_Energy_Target_Balance_Penalty_Costs FLOAT,
+    Total_Transmission_Target_Balance_Penalty_Costs   FLOAT,
+    Total_Dynamic_ELCC_Tuning_Cost                    Float,
+    Total_Import_Carbon_Tuning_Cost                   Float,
+    Total_Market_Net_Cost                             FLOAT,
+    Total_Export_Penalty_Cost                         FLOAT,
+    Total_Horizon_Fuel_Burn_Min_Abs_Penalty_Costs     FLOAT,
+    Total_Horizon_Fuel_Burn_Max_Abs_Penalty_Costs     FLOAT,
+    Total_Horizon_Fuel_Burn_Max_Rel_Penalty_Costs     FLOAT,
+    Total_SOC_Penalty_Cost                            FLOAT,
+    Total_SOC_Penalty_Last_Tmp_Cost                   FLOAT,
+    Total_Subsidies                                   FLOAT,
+    Total_Capacity_Transfer_Costs                     FLOAT,
+    Total_Carbon_Credit_Revenue                       FLOAT,
+    Total_Carbon_Credit_Costs                         FLOAT,
     PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
                  availability_iteration, subproblem_id, stage_id)
 );
