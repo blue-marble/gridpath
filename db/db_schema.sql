@@ -4288,8 +4288,8 @@ CREATE TABLE raw_data_var_project_units
     PRIMARY KEY (unit, project)
 );
 
-DROP TABLE IF EXISTS raw_data_hydro_bins;
-CREATE TABLE raw_data_hydro_bins
+DROP TABLE IF EXISTS raw_data_hydro_years;
+CREATE TABLE raw_data_hydro_years
 (
     year      INTEGER,
     month     INTEGER,

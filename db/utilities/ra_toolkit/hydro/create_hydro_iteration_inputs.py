@@ -91,12 +91,11 @@ def calculate_from_project_year_month_data(
     conn = connect_to_database(db_path=db_path)
     c = conn.cursor()
 
-    # Not using the bins here; just creating inputs for calendar years
     hydro_years = [
         y[0]
         for y in c.execute(
             """
-            SELECT DISTINCT year FROM raw_data_hydro_bins;
+            SELECT DISTINCT year FROM raw_data_hydro_years;
     """
         ).fetchall()
     ]
