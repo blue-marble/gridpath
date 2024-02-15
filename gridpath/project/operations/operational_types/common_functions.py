@@ -17,6 +17,7 @@ import os.path
 import pandas as pd
 import warnings
 
+from gridpath.auxiliary.db_interface import directories_to_db_values
 from gridpath.project.common_functions import (
     check_if_boundary_type_and_first_timepoint,
     check_boundary_type,
@@ -196,7 +197,15 @@ def determine_relevant_timepoints(mod, g, tmp, min_time):
 
 
 def get_optype_inputs_as_df(
-    scenario_directory, subproblem, stage, op_type, required_columns, optional_columns
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    op_type,
+    required_columns,
+    optional_columns,
 ):
     """
     :param scenario_directory:
@@ -215,7 +224,16 @@ def get_optype_inputs_as_df(
 
     # Figure out which headers we have
     header = pd.read_csv(
-        os.path.join(scenario_directory, subproblem, stage, "inputs", "projects.tab"),
+        os.path.join(
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "projects.tab",
+        ),
         sep="\t",
         header=None,
         nrows=1,
@@ -228,7 +246,14 @@ def get_optype_inputs_as_df(
     # projects.tab
     df = pd.read_csv(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "projects.tab",
         ),
         sep="\t",
         usecols=["project", "operational_type"] + required_columns + used_columns,
@@ -306,7 +331,15 @@ def get_types_dict():
 
 
 def load_optype_model_data(
-    mod, data_portal, scenario_directory, subproblem, stage, op_type
+    mod,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    op_type,
 ):
     """
 
@@ -329,6 +362,9 @@ def load_optype_model_data(
     # Load in the inputs dataframe for the op type module
     op_type_df = get_optype_inputs_as_df(
         scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         op_type=op_type,
@@ -368,7 +404,15 @@ def load_optype_model_data(
 
 
 def write_tab_file_model_inputs(
-    scenario_directory, subproblem, stage, fname, data, replace_nulls=False
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    fname,
+    data,
+    replace_nulls=False,
 ):
     """
     Write inputs to tab-delimited file in appropriate directory
@@ -387,7 +431,14 @@ def write_tab_file_model_inputs(
     """
 
     out_file = os.path.join(
-        scenario_directory, str(subproblem), str(stage), "inputs", fname
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+        fname,
     )
     f_exists = os.path.isfile(out_file)
     append_mode = "a" if f_exists else "w"
@@ -410,7 +461,14 @@ def write_tab_file_model_inputs(
 
 
 def load_var_profile_inputs(
-    data_portal, scenario_directory, subproblem, stage, op_type
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    op_type,
 ):
     """
     Capacity factors vary by horizon and stage, so get inputs from appropriate
@@ -431,7 +489,16 @@ def load_var_profile_inputs(
     # Determine projects of this op_type and other var op_types
     # TODO: re-factor getting projects of certain op-type?
     prj_df = pd.read_csv(
-        os.path.join(scenario_directory, subproblem, stage, "inputs", "projects.tab"),
+        os.path.join(
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "projects.tab",
+        ),
         sep="\t",
         usecols=["project", "operational_type"],
     )
@@ -446,6 +513,9 @@ def load_var_profile_inputs(
     cf_df = pd.read_csv(
         os.path.join(
             scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
             subproblem,
             stage,
             "inputs",
@@ -481,6 +551,9 @@ def load_var_profile_inputs(
 
 def get_prj_tmp_opr_inputs_from_db(
     subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
     conn,
@@ -505,9 +578,6 @@ def get_prj_tmp_opr_inputs_from_db(
     :param op_type:
     :return: cursor object with query results
     """
-    subproblem = 1 if subproblem == "" else subproblem
-    stage = 1 if stage == "" else stage
-
     c = conn.cursor()
 
     # TODO: see note below; can produce this problem by having two scenarios
@@ -518,30 +588,34 @@ def get_prj_tmp_opr_inputs_from_db(
 
     sql = f"""
         SELECT project, timepoint, {data_column}
-        -- Select only projects, periods, horizons from the relevant portfolio, 
-        -- relevant opchar scenario id, operational type, 
-        -- and temporal scenario id
-        FROM 
-            (SELECT project, stage_id, timepoint, 
-            {subscenario_id_column}
-            FROM project_operational_timepoints
+        --limit to portfolio projects
+        FROM (
+            SELECT project from inputs_project_portfolios
             WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
-            AND project_operational_chars_scenario_id = {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
+        ) as portfolio_projects
+        --limit to optype and get var profile opchar id
+        JOIN (
+            SELECT project, {subscenario_id_column}
+            FROM inputs_project_operational_chars
+            WHERE project_operational_chars_scenario_id = {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
             AND operational_type = '{op_type}'
-            AND temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
-            AND (project_specified_capacity_scenario_id = {subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID}
-                 OR project_new_cost_scenario_id = {subscenarios.PROJECT_NEW_COST_SCENARIO_ID})
-            AND subproblem_id = {subproblem}
+        ) as op_type_projects_with_btype_and_opchar_id
+        USING (project)
+        -- Get the data
+        JOIN (
+            SELECT project, {subscenario_id_column}, timepoint, {data_column}
+            FROM {table}
+            WHERE weather_iteration = {weather_iteration}
             AND stage_id = {stage}
-            AND {subscenario_id_column} IS NOT NULL
-            ) as projects_periods_timepoints_tbl
-        -- Now that we have the relevant projects and timepoints, get the 
-        -- respective cap factors (and no others) from the inputs table
-        LEFT OUTER JOIN
-            {table}
-        USING ({subscenario_id_column}, project, stage_id, timepoint)
-        WHERE {data_column} IS NOT NULL
-        ;
+        )
+        USING (project, {subscenario_id_column})
+        -- Limit to the current temporal scenario ID
+        WHERE (timepoint) IN (
+        SELECT timepoint
+        FROM inputs_temporal
+        WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+        AND subproblem_id = {subproblem}
+    );
         """
 
     prj_tmp_data = c.execute(sql)
@@ -549,7 +623,17 @@ def get_prj_tmp_opr_inputs_from_db(
     return prj_tmp_data
 
 
-def validate_var_profiles(scenario_id, subscenarios, subproblem, stage, conn, op_type):
+def validate_var_profiles(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+    op_type,
+):
     """
 
     :param subscenarios:
@@ -561,6 +645,9 @@ def validate_var_profiles(scenario_id, subscenarios, subproblem, stage, conn, op
     """
     var_profiles = get_prj_tmp_opr_inputs_from_db(
         subscenarios=subscenarios,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         conn=conn,
@@ -579,6 +666,9 @@ def validate_var_profiles(scenario_id, subscenarios, subproblem, stage, conn, op
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -591,6 +681,9 @@ def validate_var_profiles(scenario_id, subscenarios, subproblem, stage, conn, op
     cap_factor_validation_error = write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -603,7 +696,15 @@ def validate_var_profiles(scenario_id, subscenarios, subproblem, stage, conn, op
 
 
 def load_hydro_opchars(
-    data_portal, scenario_directory, subproblem, stage, op_type, projects
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    op_type,
+    projects,
 ):
     """
     Load hydro operational data from hydro-specific input files
@@ -626,8 +727,11 @@ def load_hydro_opchars(
     prj_hor_opchar_df = pd.read_csv(
         os.path.join(
             scenario_directory,
-            str(subproblem),
-            str(stage),
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
             "inputs",
             "hydro_conventional_horizon_params.tab",
         ),
@@ -661,7 +765,13 @@ def load_hydro_opchars(
 
 
 def get_hydro_inputs_from_database(
-    scenario_id, subscenarios, subproblem, stage, conn, op_type
+    subscenarios,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+    op_type,
 ):
     """
     Get the hydro-specific operational characteristics from the
@@ -682,11 +792,10 @@ def get_hydro_inputs_from_database(
     :param op_type:
     :return: cursor object with query results
     """
-    subproblem = 1 if subproblem == "" else subproblem
-    stage = 1 if stage == "" else stage
 
     c = conn.cursor()
 
+    # TODO: figure out if this still works after hydro update in ra toolkit
     sql = f"""
     SELECT project, prj_tbl.horizon, average_power_fraction, min_power_fraction,
     max_power_fraction
@@ -694,6 +803,7 @@ def get_hydro_inputs_from_database(
         SELECT project, balancing_type_project, horizon, average_power_fraction, 
         min_power_fraction, max_power_fraction
         FROM inputs_project_hydro_operational_chars
+        -- Portfolio projects only
         WHERE project in (
             SELECT project
             FROM inputs_project_portfolios
@@ -708,7 +818,10 @@ def get_hydro_inputs_from_database(
         )
         -- Get the relevant stage
         AND stage_id = {stage}
+        -- Get the right iteration
+        AND hydro_iteration = {hydro_iteration}
     ) as prj_tbl
+    -- Limit to bt-horizons from this temporal scenario ID
     JOIN (
         SELECT DISTINCT balancing_type_horizon, horizon
         FROM inputs_temporal_horizon_timepoints
@@ -728,7 +841,17 @@ def get_hydro_inputs_from_database(
     return hydro_chars
 
 
-def validate_hydro_opchars(scenario_id, subscenarios, subproblem, stage, conn, op_type):
+def validate_hydro_opchars(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+    op_type,
+):
     """
 
     :param subscenarios:
@@ -739,7 +862,13 @@ def validate_hydro_opchars(scenario_id, subscenarios, subproblem, stage, conn, o
     :return:
     """
     hydro_chars = get_hydro_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn, op_type
+        subscenarios,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        conn,
+        op_type,
     )
 
     # Convert input data into pandas DataFrame
@@ -750,6 +879,9 @@ def validate_hydro_opchars(scenario_id, subscenarios, subproblem, stage, conn, o
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -762,6 +894,9 @@ def validate_hydro_opchars(scenario_id, subscenarios, subproblem, stage, conn, o
     hydro_opchar_fraction_error = write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -774,6 +909,9 @@ def validate_hydro_opchars(scenario_id, subscenarios, subproblem, stage, conn, o
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -788,7 +926,15 @@ def validate_hydro_opchars(scenario_id, subscenarios, subproblem, stage, conn, o
 
 
 def load_startup_chars(
-    data_portal, scenario_directory, subproblem, stage, op_type, projects
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    op_type,
+    projects,
 ):
     """
 
@@ -802,7 +948,13 @@ def load_startup_chars(
     """
 
     startup_chars_file = os.path.join(
-        scenario_directory, str(subproblem), str(stage), "inputs", "startup_chars.tab"
+        scenario_directory,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+        "startup_chars.tab",
     )
 
     if os.path.exists(startup_chars_file):
@@ -942,7 +1094,17 @@ def get_optype_inputs_from_db(scenario_id, subscenarios, conn, op_type):
     return df
 
 
-def validate_opchars(scenario_id, subscenarios, subproblem, stage, conn, op_type):
+def validate_opchars(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+    op_type,
+):
     """
 
     :param subscenarios:
@@ -972,6 +1134,9 @@ def validate_opchars(scenario_id, subscenarios, subproblem, stage, conn, op_type
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -984,6 +1149,9 @@ def validate_opchars(scenario_id, subscenarios, subproblem, stage, conn, op_type
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,

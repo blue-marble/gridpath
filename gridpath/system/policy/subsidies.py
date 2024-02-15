@@ -29,6 +29,7 @@ from pyomo.environ import (
 )
 
 from gridpath.auxiliary.auxiliary import get_required_subtype_modules
+from gridpath.auxiliary.db_interface import directories_to_db_values
 from gridpath.project.capacity.common_functions import (
     load_project_capacity_type_modules,
 )
@@ -36,7 +37,16 @@ import gridpath.project.capacity.capacity_types as cap_type_init
 import gridpath.transmission.capacity.capacity_types as tx_cap_type_init
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
 
     :param m:
@@ -50,6 +60,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # We'll need the project vintages financial in each period
     required_capacity_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         which_type="capacity_type",
@@ -59,6 +72,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     required_tx_capacity_modules = (
         get_required_subtype_modules(
             scenario_directory=scenario_directory,
+            weather_iteration=weather_iteration,
+            hydro_iteration=hydro_iteration,
+            availability_iteration=availability_iteration,
             subproblem=subproblem,
             stage=stage,
             which_type="tx_capacity_type",
@@ -274,13 +290,26 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
 
 # ### Input-Output ### #
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """ """
     # Only load data if the input files were written; otehrwise, we won't
     # initialize the components in this module
 
     budgets_file = os.path.join(
         scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
         subproblem,
         stage,
         "inputs",
@@ -293,7 +322,14 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     )
 
     prj_file = os.path.join(
-        scenario_directory, subproblem, stage, "inputs", "subsidies_projects.tab"
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+        "subsidies_projects.tab",
     )
     data_portal.load(
         filename=prj_file,
@@ -305,13 +341,25 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     )
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
+):
     """ """
     with open(
         os.path.join(
             scenario_directory,
-            str(subproblem),
-            str(stage),
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
             "results",
             "subsidies.csv",
         ),
@@ -341,7 +389,16 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 
 
 # ### Database ### #
-def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -393,18 +450,47 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """ """
+
+    (
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+    ) = directories_to_db_values(
+        weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
+    )
+
     program_budgets, project_subsidies = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+        conn,
     )
 
     with open(
         os.path.join(
             scenario_directory,
-            str(subproblem),
-            str(stage),
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
             "inputs",
             "subsidies_program_budgets.tab",
         ),
@@ -429,8 +515,11 @@ def write_model_inputs(
     with open(
         os.path.join(
             scenario_directory,
-            str(subproblem),
-            str(stage),
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
             "inputs",
             "subsidies_projects.tab",
         ),

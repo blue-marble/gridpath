@@ -2,6 +2,7 @@ path,feature,subscenario,table,subscenario_type,custom_method,project_input,proj
 solver,core,solver_options_id,options_solver,simple,,0,0,,,,
 temporal,core,temporal_scenario_id,temporal,dir_subsc_only,,0,0,,"ignore
 ",,
+temporal,core,temporal_scenario_id,temporal_iterations,dir_aux,,0,0,iterations.csv,,,
 temporal,core,temporal_scenario_id,temporal_periods,dir_aux,,0,0,period_params.csv,,,
 temporal,core,temporal_scenario_id,temporal_superperiods,dir_aux,,0,0,superperiods.csv,,,
 temporal,core,temporal_scenario_id,temporal_horizons,dir_aux,,0,0,horizon_params.csv,,,
@@ -35,7 +36,8 @@ project/project_operational_chars,core,project_operational_chars_scenario_id,pro
 ,data_dependent,supply_curve_scenario_id,project_shiftable_load_supply_curve,simple,,0,0,,,,
 project/project_availability/project_availability_types,data_dependent,project_availability_scenario_id,project_availability,simple,,0,0,,,,
 project/project_availability/project_availability_endogenous,data_dependent,endogenous_availability_scenario_id,project_availability_endogenous,simple,,1,0,,,inputs_project_availability,project_availability_scenario_id
-project/project_availability/project_availability_exogenous,data_dependent,exogenous_availability_scenario_id,project_availability_exogenous,simple,,1,0,,,inputs_project_availability,project_availability_scenario_id
+project/project_availability/project_availability_exogenous,data_dependent,exogenous_availability_independent_scenario_id,project_availability_exogenous_independent,simple,,1,0,,,inputs_project_availability,project_availability_scenario_id
+project/project_availability/weather,data_dependent,exogenous_availability_weather_scenario_id,project_availability_exogenous_weather,simple,,1,0,,,inputs_project_availability,project_availability_scenario_id
 fuels/fuel_chars,fuels,fuel_scenario_id,fuels,simple,,0,0,,,,
 fuels/fuel_prices,fuels,fuel_price_scenario_id,fuel_prices,simple,,0,0,,,,
 transmission/transmission_portfolios,transmission,transmission_portfolio_scenario_id,transmission_portfolios,simple,,0,0,,,,

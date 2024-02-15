@@ -1,4 +1,4 @@
-timepoint	period	timepoint_weight	number_of_hours_in_timepoint	previous_stage_timepoint_map	month
-20200101	2020	1460.0	1	.	1
-20200102	2020	1460.0	1	.	1
-20200201	2020	1460.0	1	.	1
+timepoint	period	timepoint_weight	number_of_hours_in_timepoint	previous_stage_timepoint_map	month	day_of_month	hour_of_day
+20200101	2020	1460.0	1	.	1	1	1.0
+20200102	2020	1460.0	1	.	1	1	2.0
+20200201	2020	1460.0	1	.	1	2	1.0

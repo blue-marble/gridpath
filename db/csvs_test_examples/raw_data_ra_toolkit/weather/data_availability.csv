@@ -1,0 +1,9 @@
+timeseries_name,year
+load,2010
+load,2011
+solar,2010
+solar,2011
+wind,2010
+wind,2011
+thermal,2010
+thermal,2011

@@ -21,6 +21,7 @@ import os.path
 from pyomo.environ import Set, Expression, value
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
+from gridpath.auxiliary.db_interface import directories_to_db_values
 from gridpath.auxiliary.dynamic_components import (
     performance_standard_balance_credit_components,
 )
@@ -28,13 +29,17 @@ from gridpath.common_functions import create_results_df
 from gridpath.system.policy.performance_standard import PERFORMANCE_STANDARD_Z_PRD_DF
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
-    """
-
-    :param m:
-    :param d:
-    :return:
-    """
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
+    """ """
     m.PERFORMANCE_STANDARD_ZONES_CARBON_CREDITS_ZONES = Set(
         dimen=2, within=m.PERFORMANCE_STANDARD_ZONES * m.CARBON_CREDITS_ZONES
     )
@@ -76,7 +81,16 @@ def record_dynamic_components(dynamic_components):
     )
 
 
-def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -84,8 +98,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     :param conn: database connection
     :return:
     """
-    subproblem = 1 if subproblem == "" else subproblem
-    stage = 1 if stage == "" else stage
+
     c = conn.cursor()
     mapping = c.execute(
         f"""SELECT performance_standard_zone, carbon_credits_zone
@@ -110,18 +123,43 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
+    (
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+    ) = directories_to_db_values(
+        weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
+    )
+
     query_results = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+        conn,
     )
     # performance_standard_zones_carbon_credits_zone_mapping.tab
     df = cursor_to_df(query_results)
     df = df.fillna(".")
     fpath = os.path.join(
         scenario_directory,
-        str(subproblem),
-        str(stage),
+        subproblem,
+        stage,
         "inputs",
         "performance_standard_zones_carbon_credits_zone_mapping.tab",
     )
@@ -129,7 +167,17 @@ def write_model_inputs(
         df.to_csv(fpath, index=False, sep="\t")
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
 
     :param m:
@@ -142,8 +190,11 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
     map_file = os.path.join(
         scenario_directory,
-        str(subproblem),
-        str(stage),
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
         "inputs",
         "performance_standard_zones_carbon_credits_zone_mapping.tab",
     )
@@ -154,7 +205,16 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         )
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
+):
     """
 
     :param scenario_directory:

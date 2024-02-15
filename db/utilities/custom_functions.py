@@ -78,7 +78,7 @@ def temporal(conn, subscenario_id):
                 AND subproblem_id = {subproblem}
                 AND stage_id = {stage}
                 )
-            AND (tmp_end, tmp_end_spinup_or_lookahead) in  (
+            AND (tmp_end, tmp_end_spinup_or_lookahead) in (
                 SELECT timepoint, spinup_or_lookahead
                 FROM inputs_temporal
                 WHERE temporal_scenario_id = {subscenario_id}

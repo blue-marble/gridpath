@@ -21,7 +21,16 @@ from gridpath.system.policy.energy_targets import (
 )
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
+):
     """
     Export all results from the CARBON_CAP_ZONE_PRD_DF that various modules
     have added to
@@ -31,8 +40,11 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         getattr(d, ENERGY_TARGET_ZONE_PRD_DF).to_csv(
             os.path.join(
                 scenario_directory,
-                str(subproblem),
-                str(stage),
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
                 "results",
                 "system_period_energy_target.csv",
             ),
@@ -44,8 +56,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         getattr(d, ENERGY_TARGET_ZONE_HRZ_DF).to_csv(
             os.path.join(
                 scenario_directory,
-                str(subproblem),
-                str(stage),
+                subproblem,
+                stage,
                 "results",
                 "system_horizon_energy_target.csv",
             ),

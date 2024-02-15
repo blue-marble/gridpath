@@ -21,6 +21,7 @@ import pandas as pd
 from pyomo.environ import Set, Param, Var, NonNegativeReals, PercentFraction, value
 
 from db.common_functions import spin_on_database_lock
+from gridpath.auxiliary.db_interface import directories_to_db_values
 from gridpath.auxiliary.validations import write_validation_to_database, validate_idxs
 from gridpath.auxiliary.auxiliary import (
     check_list_items_are_unique,
@@ -39,6 +40,9 @@ from gridpath.project import PROJECT_TIMEPOINT_DF
 def generic_record_dynamic_components(
     d,
     scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
     headroom_or_footroom_dict,
@@ -130,7 +134,14 @@ def generic_record_dynamic_components(
     # project
     with open(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "projects.tab",
         ),
         "r",
     ) as projects_file:
@@ -275,6 +286,9 @@ def generic_load_model_data(
     d,
     data_portal,
     scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
     ba_column_name,
@@ -310,7 +324,14 @@ def generic_load_model_data(
     params_to_import = (getattr(m, reserve_balancing_area_param),)
     projects_file_header = pd.read_csv(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "projects.tab",
         ),
         sep="\t",
         header=None,
@@ -327,7 +348,14 @@ def generic_load_model_data(
     # Load the needed data
     data_portal.load(
         filename=os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "projects.tab",
         ),
         select=columns_to_import,
         param=params_to_import,
@@ -343,8 +371,11 @@ def generic_load_model_data(
     ba_file_header = pd.read_csv(
         os.path.join(
             scenario_directory,
-            str(subproblem),
-            str(stage),
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
             "inputs",
             reserve_balancing_areas_input_file,
         ),
@@ -357,8 +388,11 @@ def generic_load_model_data(
         data_portal.load(
             filename=os.path.join(
                 scenario_directory,
-                str(subproblem),
-                str(stage),
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
                 "inputs",
                 reserve_balancing_areas_input_file,
             ),
@@ -371,6 +405,9 @@ def generic_export_results(
     m,
     d,
     scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
     module_name,
@@ -421,6 +458,9 @@ def generic_export_results(
 def generic_get_inputs_from_database(
     scenario_id,
     subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
     conn,
@@ -511,6 +551,9 @@ def generic_get_inputs_from_database(
 def generic_validate_project_bas(
     scenario_id,
     subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
     conn,
@@ -529,13 +572,13 @@ def generic_validate_project_bas(
     :param ba_subscenario_id:
     :return:
     """
-    # TODO: is this actually needed?
-    subproblem = 1 if subproblem == "" else subproblem
-    stage = 1 if stage == "" else stage
 
     project_bas, prj_derates = generic_get_inputs_from_database(
         scenario_id=scenario_id,
         subscenarios=subscenarios,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         conn=conn,
@@ -569,6 +612,9 @@ def generic_validate_project_bas(
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -587,6 +633,9 @@ def generic_validate_project_bas(
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,

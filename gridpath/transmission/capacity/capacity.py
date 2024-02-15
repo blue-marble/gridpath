@@ -42,7 +42,16 @@ from gridpath.auxiliary.dynamic_components import (
 )
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     Before adding any components, this module will go through each relevant
     capacity type and add the module components for that capacity type.
@@ -107,6 +116,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     ###########################################################################
     required_tx_capacity_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         which_type="tx_capacity_type",
@@ -185,7 +197,16 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 ###############################################################################
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
+):
     """
 
     :param scenario_directory:
@@ -226,6 +247,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     # Module-specific capacity results
     required_capacity_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         which_type="tx_capacity_type",
@@ -239,21 +263,42 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         if hasattr(imported_capacity_modules[op_m], "add_to_tx_period_results"):
             results_columns, optype_df = imported_capacity_modules[
                 op_m
-            ].add_to_tx_period_results(scenario_directory, subproblem, stage, m, d)
+            ].add_to_tx_period_results(
+                scenario_directory,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
+                m,
+                d,
+            )
             for column in results_columns:
                 if column not in getattr(d, TX_PERIOD_DF):
                     getattr(d, TX_PERIOD_DF)[column] = None
             getattr(d, TX_PERIOD_DF).update(optype_df)
 
 
-def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
+def save_duals(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    instance,
+    dynamic_components,
+):
     # Save module-specific duals
     # Capacity type modules
     df = pd.read_csv(
         os.path.join(
             scenario_directory,
-            str(subproblem),
-            str(stage),
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
             "inputs",
             "transmission_lines.tab",
         ),
@@ -275,6 +320,9 @@ def save_duals(scenario_directory, subproblem, stage, instance, dynamic_componen
         if hasattr(imported_tx_capacity_modules[op_m], "save_duals"):
             imported_tx_capacity_modules[op_m].save_duals(
                 scenario_directory,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
                 subproblem,
                 stage,
                 instance,
