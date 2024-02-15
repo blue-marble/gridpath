@@ -81,18 +81,6 @@ def create_parser():
     parser.add_argument(
         "--stage", default=1, type=int, help="The stage ID. Defaults to 1."
     )
-    parser.add_argument(
-        "--weather_iteration",
-        default=0,
-        type=int,
-        help="The weather iteration. Defaults to 0.",
-    )
-    parser.add_argument(
-        "--hydro_iteration",
-        default=0,
-        type=int,
-        help="The hydro iteration. Defaults to 0.",
-    )
 
     return parser
 
@@ -302,9 +290,7 @@ def get_market_participation_results(c, scenario_id, load_zone, stage, timepoint
     return sales, purchases
 
 
-def get_load(
-    c, scenario_id, load_zone, weather_iteration, hydro_iteration, stage, timepoints
-):
+def get_load(c, scenario_id, load_zone, stage, timepoints):
     """
 
     :param c:
@@ -319,14 +305,10 @@ def get_load(
         FROM results_system_load_zone_timepoint
         WHERE scenario_id = {}
         AND load_zone = '{}'
-        AND weather_iteration = {}
-        AND hydro_iteration = {}
         AND stage_id = {}
         AND timepoint IN ({});""".format(
         scenario_id,
         load_zone,
-        weather_iteration,
-        hydro_iteration,
         stage,
         ",".join(["?"] * len(timepoints)),
     )
@@ -340,15 +322,7 @@ def get_load(
 
 
 def get_plotting_data(
-    conn,
-    scenario_id,
-    load_zone,
-    starting_tmp,
-    ending_tmp,
-    weather_iteration,
-    hydro_iteration,
-    stage,
-    **kwargs
+    conn, scenario_id, load_zone, starting_tmp, ending_tmp, stage, **kwargs
 ):
     """
     Get the dispatch data by timepoint and technology for a given
@@ -362,8 +336,6 @@ def get_plotting_data(
     :param load_zone:
     :param starting_tmp:
     :param ending_tmp:
-    :param weather_iteration:
-    :param hydro_iteration:
     :param stage:
     :return:
     """
@@ -449,8 +421,6 @@ def get_plotting_data(
         c=c,
         scenario_id=scenario_id,
         load_zone=load_zone,
-        weather_iteration=weather_iteration,
-        hydro_iteration=hydro_iteration,
         stage=stage,
         timepoints=timepoints,
     )
@@ -742,8 +712,6 @@ def main(args=None):
         load_zone=parsed_args.load_zone,
         starting_tmp=parsed_args.starting_tmp,
         ending_tmp=parsed_args.ending_tmp,
-        weather_iteration=parsed_args.weather_iteration,
-        hydro_iteration=parsed_args.hydro_iteration,
         stage=parsed_args.stage,
     )
 
