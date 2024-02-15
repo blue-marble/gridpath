@@ -60,6 +60,7 @@ def create_profile_csvs(
             WHERE project = '{project}'
             )
         GROUP BY year, hour_of_year
+        ORDER BY year, hour_of_year
     """
 
     # Put into a dataframe and add to file

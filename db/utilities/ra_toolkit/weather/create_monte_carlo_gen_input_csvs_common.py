@@ -12,11 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from argparse import ArgumentParser
 from multiprocessing import get_context
 import os.path
 import pandas as pd
-import sys
 
 from db.common_functions import connect_to_database
 
@@ -25,9 +23,6 @@ DRAWS_ID_DEFAULT = 1
 VAR_ID_DEFAULT = 1
 VAR_NAME_DEFAULT = "ra_toolkit"
 STAGE_ID_DEFAULT = 1
-
-
-# TODO: make sure hybrids are properly incorporated
 
 
 def create_variable_profile_csvs(
@@ -45,7 +40,6 @@ def create_variable_profile_csvs(
     raw_data_table,
 ):
     conn = connect_to_database(db_path=db_path)
-    c = conn.cursor()
 
     # Get project units and their weights and timeseries
     df = pd.read_sql(f"""SELECT * FROM {units_table};""", conn)
@@ -88,7 +82,8 @@ def create_variable_profile_csvs(
         [
             [
                 db_path,
-                d,
+                weather_bins_id,
+                weather_draws_id,
                 timeseries_project_unit_dict,
                 timeseries_name,
                 project,
@@ -100,17 +95,6 @@ def create_variable_profile_csvs(
                 raw_data_table,
             ]
             for timeseries_name in timeseries_project_unit_dict.keys()
-            for d in c.execute(
-                f"""
-                SELECT weather_iteration, draw_number,
-                {timeseries_name}_year, {timeseries_name}_month,
-                {timeseries_name}_day_of_month
-                FROM inputs_aux_weather_iterations
-                WHERE weather_bins_id = {weather_bins_id}
-                AND weather_draws_id = {weather_draws_id}
-                ;
-                """
-            ).fetchall()
             for project in timeseries_project_unit_dict[timeseries_name].keys()
         ]
     )
@@ -124,7 +108,8 @@ def create_variable_profile_csvs(
 
 def create_project_csv(
     db_path,
-    draw,
+    weather_bins_id,
+    weather_draws_id,
     timeseries_project_unit_dict,
     timeseries_name,
     project,
@@ -135,74 +120,92 @@ def create_project_csv(
     param_name,
     raw_data_table,
 ):
-    (weather_iteration, draw_number, year, month, day_of_month) = draw
     # Connect to database
     conn = connect_to_database(db_path=db_path)
-    # For each project, get the weighted cap factor for each of its
-    # constituent units, get the UNION of these tables, and then find
-    # the project cap factor with SUM and GROUP BY
-    unit_queries = [
+    c = conn.cursor()
+
+    # Get all the draws
+    draws = c.execute(
         f"""
-        SELECT year, month, day_of_month, hour_of_day, unit, 
-        {param_name} * {weight} as weighted_{param_name}
-        FROM {raw_data_table}
-        WHERE year = {year}
-        AND month = {month}
-        AND day_of_month = {day_of_month}
-        AND unit = '{unit}'
-        """
-        for (unit, weight) in timeseries_project_unit_dict[timeseries_name][project]
-    ]
+                SELECT weather_iteration, draw_number,
+                {timeseries_name}_year, {timeseries_name}_month,
+                {timeseries_name}_day_of_month
+                FROM inputs_aux_weather_iterations
+                WHERE weather_bins_id = {weather_bins_id}
+                AND weather_draws_id = {weather_draws_id}
+                ORDER BY weather_iteration, draw_number
+                ;
+                """
+    ).fetchall()
 
-    union_query = " UNION ".join(unit_queries)
+    for weather_iteration, draw_number, year, month, day_of_month in draws:
+        # For each project, get the weighted cap factor for each of its
+        # constituent units, get the UNION of these tables, and then find
+        # the project cap factor with SUM and GROUP BY
+        unit_queries = [
+            f"""
+            SELECT year, month, day_of_month, hour_of_day, unit, 
+            {param_name} * {weight} as weighted_{param_name}
+            FROM {raw_data_table}
+            WHERE year = {year}
+            AND month = {month}
+            AND day_of_month = {day_of_month}
+            AND unit = '{unit}'
+            """
+            for (unit, weight) in timeseries_project_unit_dict[timeseries_name][project]
+        ]
 
-    # Get the project cap factor
-    # TODO: start draw numbers at 0 and remove -1 here
-    # We're assuming draws are days, so multiplying the draw
-    # number by 24 here, then adding hour of day to get the
-    # timepoint ID
-    project_query = (
-        f"""
-            SELECT {weather_iteration} AS weather_iteration, 
-            {stage_id} AS stage_id,
-            ({draw_number}-1)*24+hour_of_day AS timepoint, 
-            sum(weighted_{param_name}) as {param_name}
-            FROM (
-        """
-        + union_query
-        + f""")
-        GROUP BY year, month, day_of_month, hour_of_day
-        ;
-        """
-    )
+        union_query = " UNION ".join(unit_queries)
 
-    # Put into a dataframe and add to file
-    df = pd.read_sql(project_query, con=conn)
+        # Get the project cap factor
+        # TODO: start draw numbers at 0 and remove -1 here
+        # We're assuming draws are days, so multiplying the draw
+        # number by 24 here, then adding hour of day to get the
+        # timepoint ID
+        project_query = (
+            f"""
+                SELECT {weather_iteration} AS weather_iteration, 
+                {stage_id} AS stage_id,
+                ({draw_number}-1)*24+hour_of_day AS timepoint, 
+                sum(weighted_{param_name}) as {param_name}
+                FROM (
+            """
+            + union_query
+            + f""")
+            GROUP BY year, month, day_of_month, hour_of_day
+            ORDER BY year, month, day_of_month, hour_of_day
+            ;
+            """
+        )
 
-    filename = os.path.join(
-        output_directory,
-        f"{project}-{profile_scenario_id}-" f"{profile_scenario_name}.csv",
-    )
+        # Put into a dataframe and add to file
+        df = pd.read_sql(project_query, con=conn)
 
-    if not os.path.exists(filename):
-        mode = "w"
-        write_header = True
-    else:
-        mode = "a"
-        write_header = False
+        filename = os.path.join(
+            output_directory,
+            f"{project}-{profile_scenario_id}-" f"{profile_scenario_name}.csv",
+        )
 
-    df.to_csv(
-        filename,
-        mode=mode,
-        header=write_header,
-        index=False,
-    )
+        if not os.path.exists(filename):
+            mode = "w"
+            write_header = True
+        else:
+            mode = "a"
+            write_header = False
+
+        df.to_csv(
+            filename,
+            mode=mode,
+            header=write_header,
+            index=False,
+        )
 
 
 def create_project_csv_pool(pool_datum):
     [
         db_path,
-        draw,
+        weather_bins_id,
+        weather_draws_id,
         timeseries_project_unit_dict,
         timeseries_name,
         project,
@@ -216,7 +219,8 @@ def create_project_csv_pool(pool_datum):
 
     create_project_csv(
         db_path=db_path,
-        draw=draw,
+        weather_bins_id=weather_bins_id,
+        weather_draws_id=weather_draws_id,
         timeseries_project_unit_dict=timeseries_project_unit_dict,
         timeseries_name=timeseries_name,
         project=project,

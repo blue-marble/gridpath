@@ -24,17 +24,12 @@
 from argparse import ArgumentParser
 import csv
 from multiprocessing import get_context
-
 import numpy as np
 import os.path
 import pandas as pd
 import sys
 
 from db.common_functions import connect_to_database
-
-
-# TODO: change the names of the outage models
-# TODO: Add check that unit weights sum up to 1 for project
 
 
 def parse_arguments(args):
@@ -88,11 +83,11 @@ def get_temporal_structure():
     return stage_tmp_dict
 
 
-def get_weighted_availability_adjustment(df, tmps):
+def get_weighted_availability_adjustment(project_df, tmps, seed):
     project_outage_adjustment = []
     project_hyb_stor_outage_adjustment = []
 
-    for index, row in df.iterrows():
+    for index, row in project_df.iterrows():
         unit = row["unit"]
         project = row["project"]
         n_units = row["n_units"]
@@ -109,6 +104,7 @@ def get_weighted_availability_adjustment(df, tmps):
             for_array=unit_for_array,
             mttr=unit_mttr,
             n_units=n_units,
+            seed=seed,
         )
 
         if not hybrid_stor:
@@ -130,6 +126,7 @@ def get_weighted_availability_adjustment(df, tmps):
 def simulate_project_availability(
     project_df,
     project,
+    seed,
     n_iterations,
     stage_id,
     project_availability_scenario_id,
@@ -162,7 +159,7 @@ def simulate_project_availability(
 
     for iter in range(1, n_iterations + 1):
         availability_derate, hyb_stor_derate = get_weighted_availability_adjustment(
-            df=project_df, tmps=tmps
+            project_df=project_df, tmps=tmps, seed=seed
         )
 
         export_df = pd.DataFrame(
@@ -183,9 +180,14 @@ def simulate_project_availability(
         )
 
 
-# TODO: change outage model names
 def simulate_unit_outages(
-    outage_model, for_array, mttr, n_units, dt=1, starting_outage_states=None
+    outage_model,
+    for_array,
+    mttr,
+    n_units,
+    seed,
+    dt=1,
+    starting_outage_states=None,
 ):
     """
     outage_model: ["Derate", "MC_independent", "MC_sequential"]
@@ -194,9 +196,11 @@ def simulate_unit_outages(
     N_units: integer, number of units modeled
     starting_outage_states: array with the starting outage state (1/0) for
         each of the N units
-    dt: outage timestep length (?); not sure about this, ask elaine; set to
-    default 1 for now
+    dt: outage timestep length
     """
+    # Seed the simulation
+    np.random.seed(seed)
+
     if starting_outage_states is None:
         starting_outage_states = []
 
@@ -264,6 +268,7 @@ def simulate_project_availability_pool(pool_datum):
     [
         project_df,
         project,
+        seed,
         n_iterations,
         stage_id,
         project_availability_scenario_id,
@@ -275,6 +280,7 @@ def simulate_project_availability_pool(pool_datum):
     simulate_project_availability(
         project_df=project_df,
         project=project,
+        seed=seed,
         n_iterations=n_iterations,
         stage_id=stage_id,
         project_availability_scenario_id=project_availability_scenario_id,
@@ -306,6 +312,7 @@ def main(args=None):
     ]
 
     pool_data = []
+    seed = 0
     for project in projects:
         project_df = pd.read_sql(
             f"""
@@ -319,6 +326,7 @@ def main(args=None):
             [
                 project_df,
                 project,
+                seed,
                 int(parsed_args.n_iterations),
                 parsed_args.stage_id,
                 parsed_args.project_availability_scenario_id,
@@ -327,6 +335,8 @@ def main(args=None):
                 parsed_args.overwrite,
             ]
         )
+
+        seed += 1
 
     pool_data = tuple(pool_data)
 
