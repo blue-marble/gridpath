@@ -280,8 +280,8 @@ def get_inputs_from_database(
         ;
     """
 
-    c = conn.cursor()
-    independent_availabilities = c.execute(ind_sql)
+    c1 = conn.cursor()
+    independent_availabilities = c1.execute(ind_sql)
 
     weather_sql = f"""
         SELECT project, timepoint, availability_derate_weather
@@ -371,7 +371,10 @@ def write_model_inputs(
         conn,
     )
 
-    if independent_availabilities.fetchall():
+    independent_availabilities = independent_availabilities.fetchall()
+    weather_availabilities = weather_availabilities.fetchall()
+
+    if independent_availabilities:
         with open(
             os.path.join(
                 scenario_directory,
@@ -403,7 +406,7 @@ def write_model_inputs(
                 row = ["." if i is None else i for i in row]
                 writer.writerow(row)
 
-    if weather_availabilities.fetchall():
+    if weather_availabilities:
         with open(
             os.path.join(
                 scenario_directory,
