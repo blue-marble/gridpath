@@ -1260,12 +1260,29 @@ class TestExamples(unittest.TestCase):
 
     def test_test_performance_standard_carbon_credits_w_cap_no_credits_mapping(self):
         """
-        Check validation and objective function value of "test_performance_standard" example
+        Check validation and objective function value of
+        "test_performance_standard_carbon_credits_w_cap_no_credits_mapping" example
         :return:
         """
         scenario_name = (
             "test_performance_standard_carbon_credits_w_cap_no_credits_mapping"
         )
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_test_new_solar_carbon_credits_w_buy(self):
+        """
+        Check validation and objective function value of "test_new_solar_carbon_credits_w_buy" example
+        :return:
+        """
+        scenario_name = "test_new_solar_carbon_credits_w_buy"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_test_new_solar_carbon_credits_w_buy_and_sell(self):
+        """
+        Check validation and objective function value of "test_new_solar_carbon_credits_w_buy_and_sell" example
+        :return:
+        """
+        scenario_name = "test_new_solar_carbon_credits_w_buy_and_sell"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_single_stage_prod_cost_w_spinup_lookahead(self):

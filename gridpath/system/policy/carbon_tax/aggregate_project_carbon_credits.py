@@ -44,13 +44,14 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         purchase from credits zone that this carbon_tax zone maps to.
         """
         return sum(
-            mod.Project_Purchase_Carbon_Credits[prj, prd]
+            mod.Project_Purchase_Carbon_Credits[prj, z, prd]
             # Projects in this carbon tax zone
             for prj in mod.CARBON_TAX_PRJS_BY_CARBON_TAX_ZONE[tax_z]
-            if (prj, prd) in mod.CARBON_CREDITS_PRJ_OPR_PRDS
+            for z in mod.CARBON_CREDITS_ZONES
+            if (prj, z, prd)
+            in mod.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES_OPR_PRDS
             # Limit to projects in a credit zone mapped to this carbon_tax zone
-            if (tax_z, mod.carbon_credits_zone[prj])
-            in mod.CARBON_TAX_ZONES_CARBON_CREDITS_ZONES
+            if (tax_z, z) in mod.CARBON_TAX_ZONES_CARBON_CREDITS_ZONES
         )
 
     m.Total_Carbon_Tax_Emissions_Credits = Expression(

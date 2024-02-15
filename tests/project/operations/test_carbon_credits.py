@@ -62,6 +62,9 @@ except ImportError:
     print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED + " to test.")
 
 
+Infinity = float("inf")
+
+
 class TestCarbonCredits(unittest.TestCase):
     """ """
 
@@ -105,7 +108,7 @@ class TestCarbonCredits(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: CARBON_CREDITS_PRJS
+        # Set: CARBON_CREDITS_GENERATION_PRJS
         expected_projects = sorted(
             [
                 "Nuclear",
@@ -114,59 +117,86 @@ class TestCarbonCredits(unittest.TestCase):
                 "DAC",
             ]
         )
-        actual_projects = sorted([p for p in instance.CARBON_CREDITS_PRJS])
+        actual_projects = sorted([p for p in instance.CARBON_CREDITS_GENERATION_PRJS])
         self.assertListEqual(expected_projects, actual_projects)
 
-        # Set: CARBON_CREDITS_PRJ_OPR_TMPS
+        # Set: CARBON_CREDITS_GENERATION_PRJ_OPR_TMPS
         expected_carb_prj_op_tmp = sorted(
             get_project_operational_timepoints(expected_projects)
         )
 
         actual_carb_prj_op_tmp = sorted(
-            [(prj, tmp) for (prj, tmp) in instance.CARBON_CREDITS_PRJ_OPR_TMPS]
+            [
+                (prj, tmp)
+                for (prj, tmp) in instance.CARBON_CREDITS_GENERATION_PRJ_OPR_TMPS
+            ]
         )
         self.assertListEqual(expected_carb_prj_op_tmp, actual_carb_prj_op_tmp)
 
-        # CARBON_CREDITS_PRJ_OPR_PRDS
+        # CARBON_CREDITS_GENERATION_PRJ_OPR_PRDS
         expected_carb_prj_op_prd = sorted(
             get_project_operational_periods(expected_projects)
         )
         actual_carb_prj_op_prd = sorted(
-            [(prj, prd) for (prj, prd) in instance.CARBON_CREDITS_PRJ_OPR_PRDS]
+            [
+                (prj, prd)
+                for (prj, prd) in instance.CARBON_CREDITS_GENERATION_PRJ_OPR_PRDS
+            ]
         )
         self.assertListEqual(expected_carb_prj_op_prd, actual_carb_prj_op_prd)
+
+        # Set: CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES
+        expected_prj_zones = sorted(
+            [
+                ("Coal", "Carbon_Credits_Zone1"),
+                ("Gas_CCGT", "Carbon_Credits_Zone1"),
+                ("Gas_CT", "Carbon_Credits_Zone2"),
+            ]
+        )
+
+        actual_prj_zones = sorted(
+            [
+                (prj, z)
+                for (
+                    prj,
+                    z,
+                ) in instance.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES
+            ]
+        )
+
+        self.assertListEqual(expected_prj_zones, actual_prj_zones)
 
         # Param: intensity_threshold_emissions_toCO2_per_MWh
         expected_intensity_threshold = {
             ("Nuclear", 2020): 100,
-            ("Gas_CCGT", 2020): 0,
+            ("Gas_CCGT", 2020): Infinity,
             ("Coal", 2020): 200,
-            ("DAC", 2020): 0,
-            ("Nuclear", 2030): 0,
-            ("Gas_CCGT", 2030): 0,
-            ("Coal", 2030): 0,
-            ("DAC", 2030): 0,
+            ("DAC", 2020): Infinity,
+            ("Nuclear", 2030): Infinity,
+            ("Gas_CCGT", 2030): Infinity,
+            ("Coal", 2030): Infinity,
+            ("DAC", 2030): Infinity,
         }
         actual_intensity_threshold = {
             (prj, prd): instance.intensity_threshold_emissions_toCO2_per_MWh[prj, prd]
-            for (prj, prd) in instance.CARBON_CREDITS_PRJ_OPR_PRDS
+            for (prj, prd) in instance.CARBON_CREDITS_GENERATION_PRJ_OPR_PRDS
         }
         self.assertDictEqual(expected_intensity_threshold, actual_intensity_threshold)
 
         # Param: absolute_threshold_emissions_toCO2_per_MWh
         expected_absolute_threshold = {
-            ("Nuclear", 2020): 0,
+            ("Nuclear", 2020): Infinity,
             ("Gas_CCGT", 2020): 100,
-            ("Coal", 2020): 0,
-            ("DAC", 2020): 0,
-            ("Nuclear", 2030): 0,
-            ("Gas_CCGT", 2030): 0,
-            ("Coal", 2030): 0,
+            ("Coal", 2020): Infinity,
+            ("DAC", 2020): Infinity,
+            ("Nuclear", 2030): Infinity,
+            ("Gas_CCGT", 2030): Infinity,
+            ("Coal", 2030): Infinity,
             ("DAC", 2030): 100,
         }
         actual_absolute_threshold = {
             (prj, prd): instance.absolute_threshold_emissions_toCO2[prj, prd]
-            for (prj, prd) in instance.CARBON_CREDITS_PRJ_OPR_PRDS
+            for (prj, prd) in instance.CARBON_CREDITS_GENERATION_PRJ_OPR_PRDS
         }
         self.assertDictEqual(expected_absolute_threshold, actual_absolute_threshold)
 
