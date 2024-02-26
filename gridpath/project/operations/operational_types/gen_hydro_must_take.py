@@ -39,6 +39,7 @@ from gridpath.auxiliary.auxiliary import (
     subset_init_by_param_value,
     subset_init_by_set_membership,
 )
+from gridpath.auxiliary.db_interface import directories_to_db_values
 from gridpath.auxiliary.dynamic_components import headroom_variables, footroom_variables
 from gridpath.project.common_functions import (
     check_if_boundary_type_and_first_timepoint,
@@ -57,7 +58,16 @@ from gridpath.project.operations.operational_types.common_functions import (
 from gridpath.common_functions import create_results_df
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     The following Pyomo model components are defined in this module:
 
@@ -655,7 +665,17 @@ def power_delta_rule(mod, g, tmp):
 ###############################################################################
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
 
     :param m:
@@ -672,6 +692,9 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         mod=m,
         data_portal=data_portal,
         scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         op_type="gen_hydro_must_take",
@@ -681,6 +704,9 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     load_hydro_opchars(
         data_portal=data_portal,
         scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         op_type="gen_hydro_must_take",
@@ -690,8 +716,8 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     # Linked timepoint params
     linked_inputs_filename = os.path.join(
         scenario_directory,
-        str(subproblem),
-        str(stage),
+        subproblem,
+        stage,
         "inputs",
         "gen_hydro_must_take_linked_timepoint_params.tab",
     )
@@ -731,7 +757,16 @@ def add_to_prj_tmp_results(mod):
     return results_columns, optype_dispatch_df
 
 
-def export_results(mod, d, scenario_directory, subproblem, stage):
+def export_results(
+    mod,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
 
     :param scenario_directory:
@@ -761,6 +796,9 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
         with open(
             os.path.join(
                 scenario_directory,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
                 next_subproblem,
                 stage,
                 "inputs",
@@ -804,7 +842,16 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
 ###############################################################################
 
 
-def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_model_inputs_from_database(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -812,18 +859,38 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
     :param conn: database connection
     :return: cursor object with query results
     """
+
+    (
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+    ) = directories_to_db_values(
+        weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
+    )
+
     return get_hydro_inputs_from_database(
-        scenario_id,
         subscenarios,
-        subproblem,
-        stage,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
         conn,
         op_type="gen_hydro_must_take",
     )
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     Get inputs from database and write out the model input
@@ -837,18 +904,43 @@ def write_model_inputs(
     """
 
     data = get_model_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        conn,
     )
     fname = "hydro_conventional_horizon_params.tab"
 
-    write_tab_file_model_inputs(scenario_directory, subproblem, stage, fname, data)
+    write_tab_file_model_inputs(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        fname,
+        data,
+    )
 
 
 # Validation
 ###############################################################################
 
 
-def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -860,12 +952,28 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
 
     # Validate operational chars table inputs
     validate_opchars(
-        scenario_id, subscenarios, subproblem, stage, conn, "gen_hydro_must_take"
+        scenario_id,
+        subscenarios,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        conn,
+        "gen_hydro_must_take",
     )
 
     # Validate hydro opchars input table
     hydro_opchar_fraction_error = validate_hydro_opchars(
-        scenario_id, subscenarios, subproblem, stage, conn, "gen_hydro_must_take"
+        scenario_id,
+        subscenarios,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        conn,
+        "gen_hydro_must_take",
     )
 
     if hydro_opchar_fraction_error:

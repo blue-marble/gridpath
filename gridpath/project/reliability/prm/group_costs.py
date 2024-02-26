@@ -41,7 +41,16 @@ from gridpath.project.capacity.capacity_types.common_methods import (
 )
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
 
     :param m:
@@ -397,7 +406,17 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     Optionally load data for costs incurred only when a capacity threshold
     is reached; if file is not found, sets in this modules will be empty and
@@ -479,7 +498,16 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     )
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
+):
     """
 
     :param m:
@@ -494,8 +522,10 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     with open(
         os.path.join(
             scenario_directory,
-            str(subproblem),
-            str(stage),
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
             "results",
             "project_deliverability_groups.csv",
         ),
@@ -530,7 +560,16 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 )
 
 
-def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_model_inputs_from_database(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -635,7 +674,16 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
     return group_costs, existing, group_potential, group_projects, project_multipliers
 
 
-def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -652,7 +700,15 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     Get inputs from database and write out the model input
@@ -673,12 +729,21 @@ def write_model_inputs(
         group_projects,
         project_multipliers,
     ) = get_model_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        conn,
     )
 
     with open(
         os.path.join(
             scenario_directory,
+            hydro_iteration,
+            availability_iteration,
             subproblem,
             stage,
             "inputs",
@@ -765,6 +830,8 @@ def write_model_inputs(
     with open(
         os.path.join(
             scenario_directory,
+            hydro_iteration,
+            availability_iteration,
             subproblem,
             stage,
             "inputs",
@@ -784,6 +851,8 @@ def write_model_inputs(
     with open(
         os.path.join(
             scenario_directory,
+            hydro_iteration,
+            availability_iteration,
             subproblem,
             stage,
             "inputs",
@@ -804,7 +873,16 @@ def write_model_inputs(
 
 
 def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    c,
+    db,
+    results_directory,
+    quiet,
 ):
     """
 
@@ -822,6 +900,9 @@ def import_results_into_database(
         conn=db,
         cursor=c,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         quiet=quiet,

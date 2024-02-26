@@ -34,7 +34,16 @@ from gridpath.auxiliary.dynamic_components import tx_capacity_type_financial_per
 import gridpath.transmission.capacity.capacity_types as tx_cap_type_init
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     Before adding any components, this module will go through each relevant
     capacity type and add the module components for that capacity type.
@@ -94,8 +103,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     df = pd.read_csv(
         os.path.join(
             scenario_directory,
-            str(subproblem),
-            str(stage),
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
             "inputs",
             "transmission_lines.tab",
         ),
@@ -176,7 +188,17 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 ###############################################################################
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
 
     :param m:
@@ -190,8 +212,11 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     df = pd.read_csv(
         os.path.join(
             scenario_directory,
-            str(subproblem),
-            str(stage),
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
             "inputs",
             "transmission_lines.tab",
         ),
@@ -212,11 +237,28 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     for op_m in required_tx_capacity_modules:
         if hasattr(imported_tx_capacity_modules[op_m], "load_model_data"):
             imported_tx_capacity_modules[op_m].load_model_data(
-                m, d, data_portal, scenario_directory, subproblem, stage
+                m,
+                d,
+                data_portal,
+                scenario_directory,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
             )
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
+):
     """
 
     :param scenario_directory:
@@ -276,14 +318,26 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     getattr(d, TX_PERIOD_DF).update(cost_df2)
 
 
-def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
+def save_duals(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    instance,
+    dynamic_components,
+):
     # Save module-specific duals
     # Capacity type modules
     df = pd.read_csv(
         os.path.join(
             scenario_directory,
-            str(subproblem),
-            str(stage),
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
             "inputs",
             "transmission_lines.tab",
         ),
@@ -305,6 +359,9 @@ def save_duals(scenario_directory, subproblem, stage, instance, dynamic_componen
         if hasattr(imported_tx_capacity_modules[op_m], "save_duals"):
             imported_tx_capacity_modules[op_m].save_duals(
                 scenario_directory,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
                 subproblem,
                 stage,
                 instance,

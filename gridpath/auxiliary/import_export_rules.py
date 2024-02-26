@@ -36,10 +36,21 @@ def export_rule_use(instance, quiet):
     return unserved_energy_found
 
 
-def summarize_results_use(scenario_directory, subproblem, stage, quiet):
+def summarize_results_use(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    quiet,
+):
     if os.path.exists(
         os.path.join(
             scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
             subproblem,
             stage,
             "results",
@@ -71,7 +82,14 @@ def import_rule_use(results_directory, quiet):
 import_export_rules = {
     "USE": {
         "export": export_rule_use,
+        "export_summary": True,
         "summarize": summarize_results_use,
         "import": import_rule_use,
-    }
+    },
+    "USE_import_only": {
+        "export": True,
+        "export_summary": True,
+        "summarize": True,
+        "import": import_rule_use,
+    },
 }

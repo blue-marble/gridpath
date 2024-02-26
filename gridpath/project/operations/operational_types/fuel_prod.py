@@ -54,7 +54,16 @@ from gridpath.project.operations.operational_types.common_functions import (
 from gridpath.common_functions import create_results_df
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     The following Pyomo model components are defined in this module:
 
@@ -413,7 +422,17 @@ def power_delta_rule(mod, prj, tmp):
 ###############################################################################
 
 
-def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    mod,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
 
     :param mod:
@@ -427,6 +446,9 @@ def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
         mod=mod,
         data_portal=data_portal,
         scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         op_type="fuel_prod",
@@ -435,8 +457,8 @@ def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
     # # Linked timepoint params
     # linked_inputs_filename = os.path.join(
     #     scenario_directory,
-    #     str(subproblem),
-    #     str(stage),
+    #     subproblem,
+    #     stage,
     #     "inputs",
     #     "stor_linked_timepoint_params.tab",
     # )
@@ -482,7 +504,16 @@ def add_to_prj_tmp_results(mod):
     return results_columns, optype_dispatch_df
 
 
-def export_results(mod, d, scenario_directory, subproblem, stage):
+def export_results(
+    mod,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
 
     :param scenario_directory:
@@ -546,7 +577,16 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
     #                 )
 
 
-def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -557,7 +597,17 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
 
     # Validate operational chars table inputs
-    validate_opchars(scenario_id, subscenarios, subproblem, stage, conn, "fuel_prod")
+    validate_opchars(
+        scenario_id,
+        subscenarios,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        conn,
+        "fuel_prod",
+    )
 
 
 # TODO: validate that these projects have only a single fuel specified

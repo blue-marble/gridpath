@@ -26,3 +26,6 @@ Hydrogen_Prod,Zone1
 Hydrogen_Plant,Zone1
 DAC,Zone1
 Flex_Load,Zone1
+Batteries,Zone1
+Gas,Zone1
+Hybrid,Zone1

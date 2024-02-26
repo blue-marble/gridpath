@@ -37,9 +37,13 @@ def _get_idx_col(df):
         )
 
 
+# TODO: add iterations to validation?
 def write_validation_to_database(
     conn,
     scenario_id,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
     subproblem_id,
     stage_id,
     gridpath_module,
@@ -290,6 +294,7 @@ def validate_dtypes(df, expected_dtypes):
     """
     result = []
     columns = []
+
     for column in df.columns:
         column_df = pd.DataFrame(df[column])
         # Only check if not all values are null

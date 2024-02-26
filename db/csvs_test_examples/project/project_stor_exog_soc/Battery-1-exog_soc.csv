@@ -1,2 +1,2 @@
-stage_id,timepoint,exog_state_of_charge_mwh
-1,20200101,1
+weather_iteration,stage_id,timepoint,exog_state_of_charge_mwh
+0,1,20200101,1

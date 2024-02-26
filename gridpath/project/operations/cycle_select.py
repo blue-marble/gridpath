@@ -26,7 +26,16 @@ import os.path
 from pyomo.environ import Set, Constraint
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     The tables below list the Pyomo model components defined in the
     'gen_commit_bin' module followed below by the respective components
@@ -131,7 +140,17 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
 
-def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    mod,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     :param mod:
     :param data_portal:
@@ -142,7 +161,14 @@ def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
     """
     # Load any projects for cycle selection
     cycle_selection_tab_file = os.path.join(
-        scenario_directory, str(subproblem), str(stage), "inputs", "cycle_selection.tab"
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+        "cycle_selection.tab",
     )
 
     cycle_selection_by_project = {}

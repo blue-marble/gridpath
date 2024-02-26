@@ -22,17 +22,22 @@ from gridpath.common_functions import create_results_df
 from gridpath.system.policy.carbon_credits import CARBON_CREDITS_ZONE_PRD_DF
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
 
     :param m:
     :param d:
     :return:
     """
-
-    m.Available_Carbon_Credits = Var(
-        m.CARBON_CREDITS_ZONES, m.PERIODS, within=NonNegativeReals, initialize=0
-    )
 
     def total_credits_generated_rule(mod, z, p):
         return sum(
@@ -57,9 +62,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     def track_available_credits(mod, z, prd):
         return (
-            mod.Available_Carbon_Credits[z, prd]
+            mod.Total_Carbon_Credits_Purchased[z, prd]
             <= mod.Total_Carbon_Credits_Generated[z, prd]
-            - mod.Total_Carbon_Credits_Purchased[z, prd]
         )
 
     m.Track_Carbon_Credits_Constraint = Constraint(
@@ -67,7 +71,16 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
+):
     """
 
     :param scenario_directory:
@@ -78,13 +91,15 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return:
     """
     results_columns = [
-        "available_carbon_credits",
+        "total_generated_carbon_credits",
+        "total_purchased_carbon_credits",
     ]
     data = [
         [
             z,
             p,
-            value(m.Available_Carbon_Credits[z, p]),
+            value(m.Total_Carbon_Credits_Generated[z, p]),
+            value(m.Total_Carbon_Credits_Purchased[z, p]),
         ]
         for z in m.CARBON_CREDITS_ZONES
         for p in m.PERIODS

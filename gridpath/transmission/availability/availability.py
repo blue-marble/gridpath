@@ -20,7 +20,16 @@ from gridpath.auxiliary.auxiliary import (
 )
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
 
     :param m:
@@ -30,6 +39,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Import needed availability type modules
     required_availability_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         prj_or_tx="transmission_line",
@@ -43,7 +55,16 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     for op_m in required_availability_modules:
         imp_op_m = imported_availability_modules[op_m]
         if hasattr(imp_op_m, "add_model_components"):
-            imp_op_m.add_model_components(m, d, scenario_directory, subproblem, stage)
+            imp_op_m.add_model_components(
+                m,
+                d,
+                scenario_directory,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
+            )
 
     def availability_derate_rule(mod, tx, tmp):
         """
@@ -65,7 +86,17 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 ###############################################################################
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
 
     :param m:
@@ -78,6 +109,9 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
     required_availability_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         prj_or_tx="transmission_line",
@@ -89,11 +123,28 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     for avl_m in required_availability_modules:
         if hasattr(imported_availability_modules[avl_m], "load_model_data"):
             imported_availability_modules[avl_m].load_model_data(
-                m, d, data_portal, scenario_directory, subproblem, stage
+                m,
+                d,
+                data_portal,
+                scenario_directory,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
             )
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
+):
     """
     :param scenario_directory:
     :param subproblem:
@@ -108,6 +159,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     # Module-specific capacity results
     required_availability_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         which_type="tx_availability_type",
@@ -119,7 +173,14 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     for op_m in required_availability_modules:
         if hasattr(imported_availability_modules[op_m], "export_results"):
             imported_availability_modules[op_m].export_results(
-                scenario_directory, subproblem, stage, m, d
+                scenario_directory,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
+                m,
+                d,
             )
 
 
@@ -128,7 +189,15 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     :param scenario_directory: string, the scenario directory
@@ -155,12 +224,29 @@ def write_model_inputs(
     for op_m in required_availability_type_modules:
         if hasattr(imported_availability_type_modules[op_m], "write_model_inputs"):
             imported_availability_type_modules[op_m].write_model_inputs(
-                scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+                scenario_directory,
+                scenario_id,
+                subscenarios,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
+                conn,
             )
 
 
 def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    c,
+    db,
+    results_directory,
+    quiet,
 ):
     """
 

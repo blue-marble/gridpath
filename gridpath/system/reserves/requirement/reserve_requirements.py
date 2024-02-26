@@ -16,6 +16,8 @@ import csv
 import os.path
 from pyomo.environ import Param, Set, NonNegativeReals, PercentFraction, Expression
 
+from gridpath.auxiliary.db_interface import directories_to_db_values
+
 
 def generic_add_model_components(
     m,
@@ -158,6 +160,9 @@ def generic_load_model_data(
     d,
     data_portal,
     scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
     reserve_requirement_param,
@@ -185,7 +190,15 @@ def generic_load_model_data(
     :param reserve_type:
     :return:
     """
-    input_dir = os.path.join(scenario_directory, str(subproblem), str(stage), "inputs")
+    input_dir = os.path.join(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+    )
 
     # Load by-tmp requriement if input file was written
     by_tmp_req_filename = os.path.join(
@@ -236,6 +249,9 @@ def generic_load_model_data(
 def generic_get_inputs_from_database(
     scenario_id,
     subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
     conn,
@@ -253,8 +269,7 @@ def generic_get_inputs_from_database(
     :param reserve_type_req_subscenario_id:
     :return:
     """
-    subproblem = 1 if subproblem == "" else subproblem
-    stage = 1 if stage == "" else stage
+
     c = conn.cursor()
 
     partial_freq_resp_extra_column = (
@@ -370,6 +385,9 @@ def generic_get_inputs_from_database(
 
 def generic_write_model_inputs(
     scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
     timepoint_req,
@@ -391,7 +409,26 @@ def generic_write_model_inputs(
     :param reserve_type:
     :return:
     """
-    inputs_dir = os.path.join(scenario_directory, str(subproblem), str(stage), "inputs")
+
+    (
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+    ) = directories_to_db_values(
+        weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
+    )
+
+    inputs_dir = os.path.join(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+    )
 
     # Write the by-timepoint requirement file if by-tmp requirement specified
     timepoint_req = timepoint_req.fetchall()

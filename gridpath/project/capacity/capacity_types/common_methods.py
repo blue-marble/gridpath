@@ -190,11 +190,22 @@ def spec_get_inputs_from_database(conn, subscenarios, capacity_type):
     return spec_project_params
 
 
-def spec_write_tab_file(scenario_directory, subproblem, stage, spec_project_params):
+def spec_write_tab_file(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    spec_project_params,
+):
     spec_params_filepath = os.path.join(
         scenario_directory,
-        str(subproblem),
-        str(stage),
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
         "inputs",
         "spec_capacity_period_params.tab",
     )
@@ -281,13 +292,28 @@ def write_from_query(spec_project_params, writer):
         )
 
 
-def spec_determine_inputs(scenario_directory, subproblem, stage, capacity_type):
+def spec_determine_inputs(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    capacity_type,
+):
     # Determine the relevant projects
     project_list = list()
 
     df = pd.read_csv(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "projects.tab",
         ),
         sep="\t",
         usecols=["project", "capacity_type"],
@@ -317,8 +343,11 @@ def spec_determine_inputs(scenario_directory, subproblem, stage, capacity_type):
     df = pd.read_csv(
         os.path.join(
             scenario_directory,
-            str(subproblem),
-            str(stage),
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
             "inputs",
             "spec_capacity_period_params.tab",
         ),
@@ -396,7 +425,15 @@ def spec_determine_inputs(scenario_directory, subproblem, stage, capacity_type):
     return project_period_list, main_dict
 
 
-def read_results_file_generic(scenario_directory, subproblem, stage, capacity_type):
+def read_results_file_generic(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    capacity_type,
+):
     """
     :param scenario_directory:
     :param subproblem:
@@ -409,8 +446,10 @@ def read_results_file_generic(scenario_directory, subproblem, stage, capacity_ty
     df = pd.read_csv(
         os.path.join(
             scenario_directory,
-            str(subproblem),
-            str(stage),
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
             "results",
             "project_period.csv",
         )

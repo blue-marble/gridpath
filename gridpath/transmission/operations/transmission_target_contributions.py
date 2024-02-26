@@ -35,6 +35,7 @@ from gridpath.auxiliary.auxiliary import (
 from gridpath.auxiliary.db_interface import (
     update_prj_zone_column,
     determine_table_subset_by_start_and_column,
+    directories_to_db_values,
 )
 from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.auxiliary.validations import write_validation_to_database, validate_idxs
@@ -42,7 +43,16 @@ from gridpath.common_functions import create_results_df
 from gridpath.transmission import TX_TIMEPOINT_DF
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     The following Pyomo model components are defined in this module:
 
@@ -151,7 +161,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         else:
             return (
                 mod.Transmission_Target_Energy_MW_Pos_Dir[tx, tmp]
-                <= mod.TxSimpleBinary_Transmit_Power_Positive_Direction_MW[tx, tmp]
+                == mod.TxSimpleBinary_Transmit_Power_Positive_Direction_MW[tx, tmp]
             )
 
     m.Transmission_Target_Energy_MW_Pos_Dir_Constraint = Constraint(
@@ -165,7 +175,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         else:
             return (
                 mod.Transmission_Target_Energy_MW_Neg_Dir[tx, tmp]
-                <= mod.TxSimpleBinary_Transmit_Power_Negative_Direction_MW[tx, tmp]
+                == mod.TxSimpleBinary_Transmit_Power_Negative_Direction_MW[tx, tmp]
             )
 
     m.Transmission_Target_Energy_MW_Neg_Dir_Constraint = Constraint(
@@ -179,7 +189,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         else:
             return (
                 mod.Transmission_Target_Net_Energy_MW_Pos_Dir[tx, tmp]
-                <= mod.Transmit_Power_MW[tx, tmp]
+                == mod.Transmit_Power_MW[tx, tmp]
             )
 
     m.Transmission_Target_Net_Energy_MW_Pos_Dir_Constraint = Constraint(
@@ -193,7 +203,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         else:
             return (
                 mod.Transmission_Target_Net_Energy_MW_Neg_Dir[tx, tmp]
-                <= -mod.Transmit_Power_MW[tx, tmp]
+                == mod.Transmit_Power_MW[tx, tmp]
             )
 
     m.Transmission_Target_Net_Energy_MW_Neg_Dir_Constraint = Constraint(
@@ -217,7 +227,17 @@ def determine_tx_target_tx_lines_by_tx_target_zone(mod, transmission_target_z):
 ###############################################################################
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
 
     :param m:
@@ -231,8 +251,11 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     data_portal.load(
         filename=os.path.join(
             scenario_directory,
-            str(subproblem),
-            str(stage),
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
             "inputs",
             "transmission_lines.tab",
         ),
@@ -249,7 +272,16 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     }
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
+):
     """
 
     :param scenario_directory:
@@ -261,13 +293,17 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     """
 
     results_columns = [
-        "hurdle_cost_positive_direction",
-        "hurdle_cost_negative_direction",
+        "actual_flow_positive_direction",
+        "actual_flow_negative_direction",
+        "tx_flow_positive_direction",
+        "tx_flow_negative_direction",
     ]
     data = [
         [
             tx,
             tmp,
+            value(m.TxSimpleBinary_Transmit_Power_Positive_Direction_MW[tx, tmp]),
+            value(m.TxSimpleBinary_Transmit_Power_Negative_Direction_MW[tx, tmp]),
             (
                 value(m.Transmission_Target_Energy_MW_Pos_Dir[tx, tmp])
                 if float(m.contributes_net_flow_to_tx_target[tx]) == 0
@@ -296,7 +332,16 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 ###############################################################################
 
 
-def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -304,8 +349,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     :param conn: database connection
     :return:
     """
-    subproblem = 1 if subproblem == "" else subproblem
-    stage = 1 if stage == "" else stage
+
     c = conn.cursor()
 
     # Get the transmission-target zones for transmission lines in our portfolio and with zones in our
@@ -339,7 +383,15 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     Get inputs from database and write out the model input
@@ -351,8 +403,26 @@ def write_model_inputs(
     :param conn: database connection
     :return:
     """
+
+    (
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+    ) = directories_to_db_values(
+        weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
+    )
+
     tx_lines_zones = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+        conn,
     )
 
     # Make a dict for easy access
@@ -367,8 +437,11 @@ def write_model_inputs(
     with open(
         os.path.join(
             scenario_directory,
-            str(subproblem),
-            str(stage),
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
             "inputs",
             "transmission_lines.tab",
         ),
@@ -397,8 +470,11 @@ def write_model_inputs(
     with open(
         os.path.join(
             scenario_directory,
-            str(subproblem),
-            str(stage),
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
             "inputs",
             "transmission_lines.tab",
         ),
@@ -413,7 +489,16 @@ def write_model_inputs(
 ###############################################################################
 
 
-def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -425,7 +510,14 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
 
     # Get the transmission lines and transmission-target zones
     tx_lines_zones = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        conn,
     )
 
     # Convert input data into pandas DataFrame
@@ -447,6 +539,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
