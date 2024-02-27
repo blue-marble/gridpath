@@ -272,7 +272,7 @@ def summarize_results(
                 )
                 * 100
             )
-        results_df.percent_curtailed[indx] = pct
+        results_df.loc[indx, "percent_curtailed"] = pct
 
     # Drop unnecessary columns before exporting
     results_df.drop("total_energy_target_energy_mwh", axis=1, inplace=True)

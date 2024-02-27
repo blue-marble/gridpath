@@ -17,7 +17,7 @@ Flask==2.0.1
 Flask-RESTful==0.3.9
 Flask-SocketIO==4.3.2
 greenlet==3.0.3
--e git+https://github.com/blue-marble/gridpath.git@ad4ffd1d066dc76797fc2f2d755feff671e392e8#egg=GridPath
+-e git+https://github.com/blue-marble/gridpath.git@30fee3513b65cdea380e3cc3feb108afb93f9f2e#egg=GridPath
 gurobipy==11.0.0
 idna==3.6
 imagesize==1.4.1
@@ -29,7 +29,7 @@ networkx==3.1
 nose==1.3.7
 numpy==1.26.4
 packaging==23.2
-pandas==2.1.1
+pandas==2.2.1
 pathspec==0.12.1
 pillow==10.2.0
 platformdirs==4.2.0

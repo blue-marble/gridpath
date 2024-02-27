@@ -272,7 +272,7 @@ def summarize_results(
                 / lz_period_power_df.weighted_power_mwh[indx[0], indx[1]]
                 * 100.0
             )
-        operational_results_agg_df.percent_total_power[indx] = pct
+        operational_results_agg_df.loc[indx, "percent_total_power"] = pct
 
     # Get the energy units from the units.csv file
     units_df = pd.read_csv(
