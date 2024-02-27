@@ -37,17 +37,10 @@ CSV_PATH = "../db//csvs_test_examples"
 SCENARIOS_CSV = os.path.join(CSV_PATH, "scenarios.csv")
 TEST_SCENARIOS_CSV = "../tests/test_data/test_scenario_objective_function_values.csv"
 
-# Travis CI VM machines run on Ubuntu 16.04.7 LTS, which has an older
-# version of Cbc only (2.8.12) and gives slightly different results for some
-# tests
-UBUNTU_16 = (
-    True
-    if (platform.system() == "Linux" and platform.release() == "4.15.0-1098-gcp")
-    else False
-)
-
-# Windows check
-WINDOWS = True if os.name == "nt" else False
+# Platform check
+LINUX = True if platform.system() == "Linux" else False
+MACOS = True if platform.system() == "Darwin" else False
+WINDOWS = True if platform.system() == "Windows" else False
 
 
 class TestExamples(unittest.TestCase):
@@ -211,17 +204,26 @@ class TestExamples(unittest.TestCase):
     def validate_and_test_example_generic(
         self, scenario_name, literal=False, skip_validation=False
     ):
+        # Use the expected objective column by default
+        column_to_use = "expected_objective"
+        if MACOS and not pd.isnull(
+            self.df.loc[scenario_name]["expected_objective_darwin"]
+        ):
+            column_to_use = "expected_objective_darwin"
+        if WINDOWS and not pd.isnull(
+            self.df.loc[scenario_name]["expected_objective_windows"]
+        ):
+            column_to_use = "expected_objective_windows"
+
         # For multi-subproblem and multi-stage problems, we need to evaluate
         # the objective function as a literal (as it is in dictionary format
         # stored as string in the CSV)
         # For the rest of the problems, convert the objective function value
         # from string to floating point data type
         if literal:
-            objective = ast.literal_eval(
-                self.df.loc[scenario_name]["expected_objective"]
-            )
+            objective = ast.literal_eval(self.df.loc[scenario_name][column_to_use])
         else:
-            objective = float(self.df.loc[scenario_name]["expected_objective"])
+            objective = float(self.df.loc[scenario_name][column_to_use])
         if not skip_validation:
             self.check_validation(scenario_name)
         self.run_and_check_objective(scenario_name, objective)
