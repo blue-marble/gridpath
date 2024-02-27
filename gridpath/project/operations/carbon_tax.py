@@ -137,11 +137,15 @@ def add_model_components(
 
     m.CARBON_TAX_PRJ_FUEL_GROUP_OPR_TMPS = Set(
         dimen=3,
-        initialize=lambda mod: set(
-            (g, fg, tmp)
-            for (g, tmp) in mod.CARBON_TAX_PRJ_OPR_TMPS
-            for _g, fg, f in mod.FUEL_PRJ_FUELS_FUEL_GROUP
-            if g == _g
+        initialize=lambda mod: sorted(
+            list(
+                set(
+                    (g, fg, tmp)
+                    for (g, tmp) in mod.CARBON_TAX_PRJ_OPR_TMPS
+                    for _g, fg, f in mod.FUEL_PRJ_FUELS_FUEL_GROUP
+                    if g == _g
+                ),
+            )
         ),
     )
 
@@ -157,11 +161,15 @@ def add_model_components(
 
     m.CARBON_TAX_PRJ_FUEL_GROUP_OPR_PRDS = Set(
         dimen=3,
-        initialize=lambda mod: set(
-            (g, fg, p)
-            for (g, p) in mod.CARBON_TAX_PRJ_OPR_PRDS
-            for _g, fg, f in mod.FUEL_PRJ_FUELS_FUEL_GROUP
-            if g == _g
+        initialize=lambda mod: sorted(
+            list(
+                set(
+                    (g, fg, p)
+                    for (g, p) in mod.CARBON_TAX_PRJ_OPR_PRDS
+                    for _g, fg, f in mod.FUEL_PRJ_FUELS_FUEL_GROUP
+                    if g == _g
+                ),
+            )
         ),
     )
 

@@ -144,15 +144,15 @@ def add_model_components(
 
     m.TX_LINES_OPR_IN_PRD = Set(
         m.PERIODS,
-        initialize=lambda mod, period: list(
-            set(tx for (tx, p) in mod.TX_OPR_PRDS if p == period)
+        initialize=lambda mod, period: sorted(
+            list(set(tx for (tx, p) in mod.TX_OPR_PRDS if p == period)),
         ),
     )
 
     m.OPR_PRDS_BY_TX_LINE = Set(
         m.TX_LINES,
-        initialize=lambda mod, tx: list(
-            set(p for (l, p) in mod.TX_OPR_PRDS if l == tx)
+        initialize=lambda mod, tx: sorted(
+            list(set(p for (l, p) in mod.TX_OPR_PRDS if l == tx)),
         ),
     )
 
@@ -168,8 +168,8 @@ def add_model_components(
 
     m.TX_LINES_OPR_IN_TMP = Set(
         m.TMPS,
-        initialize=lambda mod, tmp: list(
-            set(tx for (tx, t) in mod.TX_OPR_TMPS if t == tmp)
+        initialize=lambda mod, tmp: sorted(
+            list(set(tx for (tx, t) in mod.TX_OPR_TMPS if t == tmp)),
         ),
     )
 

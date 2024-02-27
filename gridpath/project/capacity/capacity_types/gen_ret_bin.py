@@ -136,17 +136,21 @@ def add_model_components(
     m.GEN_RET_BIN_OPR_PRDS = Set(dimen=2)
 
     m.GEN_RET_BIN = Set(
-        initialize=lambda mod: list(set(g for (g, p) in mod.GEN_RET_BIN_OPR_PRDS))
+        initialize=lambda mod: sorted(
+            list(set(g for (g, p) in mod.GEN_RET_BIN_OPR_PRDS))
+        )
     )
 
     m.OPR_PRDS_BY_GEN_RET_BIN = Set(
         m.GEN_RET_BIN,
-        initialize=lambda mod, prj: list(
-            set(
-                period
-                for (project, period) in mod.GEN_RET_BIN_OPR_PRDS
-                if project == prj
-            )
+        initialize=lambda mod, prj: sorted(
+            list(
+                set(
+                    period
+                    for (project, period) in mod.GEN_RET_BIN_OPR_PRDS
+                    if project == prj
+                )
+            ),
         ),
     )
 

@@ -46,8 +46,10 @@ def add_model_components(
     m.PRJ_FUELS_WITH_LIMITS = Set(
         dimen=2,
         within=m.PROJECTS * m.FUELS,
-        initialize=lambda mod: set(
-            [(prj, f) for (prj, f, ba) in mod.PRJ_FUEL_BURN_LIMIT_BAS]
+        initialize=lambda mod: sorted(
+            list(
+                set([(prj, f) for (prj, f, ba) in mod.PRJ_FUEL_BURN_LIMIT_BAS]),
+            )
         ),
     )
 

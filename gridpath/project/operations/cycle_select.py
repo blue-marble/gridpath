@@ -183,8 +183,8 @@ def load_model_data(
                 else:
                     cycle_selection_by_project[g] = [cycle_select_g]
 
-        data_portal.data()["GEN_W_CYCLE_SELECT"] = list(
-            set(cycle_selection_by_project.keys())
+        data_portal.data()["GEN_W_CYCLE_SELECT"] = sorted(
+            list(set(cycle_selection_by_project.keys()))
         )
 
         data_portal.data()["GEN_CYCLE_SELECT_BY_GEN"] = cycle_selection_by_project

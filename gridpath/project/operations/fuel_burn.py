@@ -192,39 +192,53 @@ def add_model_components(
 
     m.FUEL_PRJS_FUEL_OPR_TMPS = Set(
         dimen=3,
-        initialize=lambda mod: set(
-            (g, f, tmp)
-            for (g, tmp) in mod.FUEL_PRJ_OPR_TMPS
-            for _g, f in mod.FUEL_PRJ_FUELS
-            if g == _g
+        initialize=lambda mod: sorted(
+            list(
+                set(
+                    (g, f, tmp)
+                    for (g, tmp) in mod.FUEL_PRJ_OPR_TMPS
+                    for _g, f in mod.FUEL_PRJ_FUELS
+                    if g == _g
+                ),
+            )
         ),
     )
 
     m.FUEL_PRJS_FUEL_GROUP_OPR_TMPS = Set(
         dimen=3,
-        initialize=lambda mod: set(
-            (g, fg, tmp)
-            for (g, tmp) in mod.FUEL_PRJ_OPR_TMPS
-            for _g, fg, f in mod.FUEL_PRJ_FUELS_FUEL_GROUP
-            if g == _g
+        initialize=lambda mod: sorted(
+            list(
+                set(
+                    (g, fg, tmp)
+                    for (g, tmp) in mod.FUEL_PRJ_OPR_TMPS
+                    for _g, fg, f in mod.FUEL_PRJ_FUELS_FUEL_GROUP
+                    if g == _g
+                ),
+            )
         ),
     )
 
     m.HR_CURVE_PRJS_OPR_TMPS_SGMS = Set(
         dimen=3,
-        initialize=lambda mod: set(
-            (g, tmp, s)
-            for (g, tmp) in mod.PRJ_OPR_TMPS
-            for _g, p, s in mod.HR_CURVE_PRJS_PRDS_SGMS
-            if g == _g and mod.period[tmp] == p
+        initialize=lambda mod: sorted(
+            list(
+                set(
+                    (g, tmp, s)
+                    for (g, tmp) in mod.PRJ_OPR_TMPS
+                    for _g, p, s in mod.HR_CURVE_PRJS_PRDS_SGMS
+                    if g == _g and mod.period[tmp] == p
+                ),
+            )
         ),
     )
 
     m.HR_CURVE_PRJS_OPR_TMPS = Set(
         dimen=2,
         within=m.FUEL_PRJ_OPR_TMPS,
-        initialize=lambda mod: set(
-            (g, tmp) for (g, tmp, s) in mod.HR_CURVE_PRJS_OPR_TMPS_SGMS
+        initialize=lambda mod: sorted(
+            list(
+                set((g, tmp) for (g, tmp, s) in mod.HR_CURVE_PRJS_OPR_TMPS_SGMS),
+            )
         ),
     )
 
@@ -241,11 +255,15 @@ def add_model_components(
 
     m.STARTUP_FUEL_PRJS_FUEL_OPR_TMPS = Set(
         dimen=3,
-        initialize=lambda mod: set(
-            (g, f, tmp)
-            for (g, tmp) in mod.STARTUP_FUEL_PRJ_OPR_TMPS
-            for _g, f in mod.FUEL_PRJ_FUELS
-            if g == _g
+        initialize=lambda mod: sorted(
+            list(
+                set(
+                    (g, f, tmp)
+                    for (g, tmp) in mod.STARTUP_FUEL_PRJ_OPR_TMPS
+                    for _g, f in mod.FUEL_PRJ_FUELS
+                    if g == _g
+                ),
+            )
         ),
     )
 

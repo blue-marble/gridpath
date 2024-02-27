@@ -145,7 +145,9 @@ def add_model_components(
     m.CAPACITY_GROUP_PERIODS = Set(dimen=2)
 
     m.CAPACITY_GROUPS = Set(
-        initialize=lambda mod: list(set([g for (g, p) in mod.CAPACITY_GROUP_PERIODS]))
+        initialize=lambda mod: sorted(
+            list(set([g for (g, p) in mod.CAPACITY_GROUP_PERIODS]))
+        )
     )
 
     m.PROJECTS_IN_CAPACITY_GROUP = Set(m.CAPACITY_GROUPS, within=m.PROJECTS)

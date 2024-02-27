@@ -115,8 +115,8 @@ def add_model_components(
     m.TX_CAPACITY_GROUP_PERIODS = Set(dimen=2)
 
     m.TX_CAPACITY_GROUPS = Set(
-        initialize=lambda mod: list(
-            set([g for (g, p) in mod.TX_CAPACITY_GROUP_PERIODS])
+        initialize=lambda mod: sorted(
+            list(set([g for (g, p) in mod.TX_CAPACITY_GROUP_PERIODS]))
         )
     )
 

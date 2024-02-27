@@ -54,7 +54,9 @@ def add_model_components(
 
     m.MARKET_LZS = Set(
         within=m.LOAD_ZONES,
-        initialize=lambda mod: list(set([lz for (lz, hub) in mod.LZ_MARKETS])),
+        initialize=lambda mod: sorted(
+            list(set([lz for (lz, hub) in mod.LZ_MARKETS])),
+        ),
     )
 
     m.MARKETS_BY_LZ = Set(

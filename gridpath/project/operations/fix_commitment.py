@@ -296,7 +296,7 @@ def load_model_data(
     data_portal.data()["FNL_COMMIT_PRJS"] = {None: get_fnl_commit_prjs()}
 
     # FXD_COMMIT_PRJS
-    fxd_commit_prjs = list(set(fixed_commitment_df["project"].tolist()))
+    fxd_commit_prjs = sorted(list(set(fixed_commitment_df["project"].tolist())))
     # Load data only if we have projects that have already been committed
     # Otherwise, leave uninitialized
     if len(fxd_commit_prjs) > 0:

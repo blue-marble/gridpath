@@ -218,8 +218,8 @@ def add_model_components(
 
     m.TMPS_IN_PRD = Set(
         m.PERIODS,
-        initialize=lambda mod, p: list(
-            set(tmp for tmp in mod.TMPS if mod.period[tmp] == p)
+        initialize=lambda mod, p: sorted(
+            list(set(tmp for tmp in mod.TMPS if mod.period[tmp] == p)),
         ),
     )
 

@@ -147,7 +147,9 @@ def add_model_components(
     m.program_budget = Param(m.PROGRAM_SUPERPERIODS, within=NonNegativeReals)
 
     m.PROGRAMS = Set(
-        initialize=lambda mod: list(set(prg for (prg, prd) in mod.PROGRAM_SUPERPERIODS))
+        initialize=lambda mod: sorted(
+            list(set(prg for (prg, prd) in mod.PROGRAM_SUPERPERIODS))
+        )
     )
 
     m.PROGRAM_PROJECT_OR_TX_VINTAGES = Set(
@@ -156,27 +158,31 @@ def add_model_components(
 
     m.PROGRAM_VINTAGES_BY_PROJECT_OR_TX_LINE = Set(
         m.PROJECTS_TX_LINES,
-        initialize=lambda mod, project: list(
-            set(
-                [
-                    (prg, v)
-                    for (prg, prj, v) in mod.PROGRAM_PROJECT_OR_TX_VINTAGES
-                    if prj == project
-                ]
-            )
+        initialize=lambda mod, project: sorted(
+            list(
+                set(
+                    [
+                        (prg, v)
+                        for (prg, prj, v) in mod.PROGRAM_PROJECT_OR_TX_VINTAGES
+                        if prj == project
+                    ]
+                )
+            ),
         ),
     )
 
     m.PROJECT_OR_TX_VINTAGES_BY_PROGRAM = Set(
         m.PROGRAMS,
-        initialize=lambda mod, program: list(
-            set(
-                [
-                    (prj, v)
-                    for (prg, prj, v) in mod.PROGRAM_PROJECT_OR_TX_VINTAGES
-                    if prg == program
-                ]
-            )
+        initialize=lambda mod, program: sorted(
+            list(
+                set(
+                    [
+                        (prj, v)
+                        for (prg, prj, v) in mod.PROGRAM_PROJECT_OR_TX_VINTAGES
+                        if prg == program
+                    ]
+                )
+            ),
         ),
     )
 

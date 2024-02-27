@@ -62,7 +62,9 @@ def add_model_components(
 
     m.SUPERPERIODS = Set(
         within=PositiveIntegers,
-        initialize=lambda mod: list(set([s_p for (s_p, p) in mod.SUPERPERIOD_PERIODS])),
+        initialize=lambda mod: sorted(
+            list(set([s_p for (s_p, p) in mod.SUPERPERIOD_PERIODS])),
+        ),
     )
 
 

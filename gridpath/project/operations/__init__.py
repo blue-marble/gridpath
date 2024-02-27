@@ -326,15 +326,15 @@ def add_model_components(
     m.VAR_OM_COST_CURVE_PRJS_PRDS_SGMS = Set(dimen=3, ordered=True)
     m.VAR_OM_COST_CURVE_PRJS = Set(
         within=m.PROJECTS,
-        initialize=lambda mod: list(
-            set([prj for (prj, p, s) in mod.VAR_OM_COST_CURVE_PRJS_PRDS_SGMS])
+        initialize=lambda mod: sorted(
+            list(set([prj for (prj, p, s) in mod.VAR_OM_COST_CURVE_PRJS_PRDS_SGMS])),
         ),
     )
 
     m.VAR_OM_COST_ALL_PRJS = Set(
         within=m.PROJECTS,
-        initialize=lambda mod: list(
-            set(mod.VAR_OM_COST_SIMPLE_PRJS | mod.VAR_OM_COST_CURVE_PRJS)
+        initialize=lambda mod: sorted(
+            list(set(mod.VAR_OM_COST_SIMPLE_PRJS | mod.VAR_OM_COST_CURVE_PRJS)),
         ),
     )
 
@@ -344,17 +344,21 @@ def add_model_components(
     # Startup cost by startup type projects
     m.STARTUP_BY_ST_PRJS_TYPES = Set(dimen=2, ordered=True)
     m.STARTUP_BY_ST_PRJS = Set(
-        initialize=lambda mod: list(set([p for (p, t) in mod.STARTUP_BY_ST_PRJS_TYPES]))
+        initialize=lambda mod: sorted(
+            list(set([p for (p, t) in mod.STARTUP_BY_ST_PRJS_TYPES]))
+        )
     )
 
     # All startup cost projects
     m.STARTUP_COST_PRJS = Set(
         within=m.PROJECTS,
-        initialize=lambda mod: list(
-            set(
-                [p for p in mod.STARTUP_COST_SIMPLE_PRJS]
-                + [p for p in mod.STARTUP_BY_ST_PRJS]
-            )
+        initialize=lambda mod: sorted(
+            list(
+                set(
+                    [p for p in mod.STARTUP_COST_SIMPLE_PRJS]
+                    + [p for p in mod.STARTUP_BY_ST_PRJS]
+                )
+            ),
         ),
     )
 
@@ -365,7 +369,9 @@ def add_model_components(
     m.FUEL_PRJ_FUELS = Set(within=m.PROJECTS * m.FUELS)
     m.FUEL_PRJS = Set(
         within=m.PROJECTS,
-        initialize=lambda mod: list(set([prj for (prj, f) in mod.FUEL_PRJ_FUELS])),
+        initialize=lambda mod: sorted(
+            list(set([prj for (prj, f) in mod.FUEL_PRJ_FUELS])),
+        ),
     )
     m.FUELS_BY_PRJ = Set(
         m.FUEL_PRJS,
@@ -376,11 +382,15 @@ def add_model_components(
     m.FUEL_PRJ_FUELS_FUEL_GROUP = Set(
         dimen=3,
         within=m.FUEL_PRJS * m.FUEL_GROUPS_FUELS,
-        initialize=lambda mod: set(
-            (g, fg, f)
-            for (fg, f) in mod.FUEL_GROUPS_FUELS
-            for (g, _f) in mod.FUEL_PRJ_FUELS
-            if f == _f
+        initialize=lambda mod: sorted(
+            list(
+                set(
+                    (g, fg, f)
+                    for (fg, f) in mod.FUEL_GROUPS_FUELS
+                    for (g, _f) in mod.FUEL_PRJ_FUELS
+                    if f == _f
+                ),
+            )
         ),
     )
 
@@ -389,8 +399,8 @@ def add_model_components(
 
     m.HR_CURVE_PRJS = Set(
         within=m.FUEL_PRJS,
-        initialize=lambda mod: list(
-            set([prj for (prj, p, s) in mod.HR_CURVE_PRJS_PRDS_SGMS])
+        initialize=lambda mod: sorted(
+            list(set([prj for (prj, p, s) in mod.HR_CURVE_PRJS_PRDS_SGMS])),
         ),
     )
 
@@ -405,13 +415,15 @@ def add_model_components(
 
     m.VIOL_ALL_PRJS = Set(
         within=m.PROJECTS,
-        initialize=lambda mod: list(
-            set(
-                mod.RAMP_UP_VIOL_PRJS
-                | mod.RAMP_DOWN_VIOL_PRJS
-                | mod.MIN_UP_TIME_VIOL_PRJS
-                | mod.MIN_DOWN_TIME_VIOL_PRJS
-            )
+        initialize=lambda mod: sorted(
+            list(
+                set(
+                    mod.RAMP_UP_VIOL_PRJS
+                    | mod.RAMP_DOWN_VIOL_PRJS
+                    | mod.MIN_UP_TIME_VIOL_PRJS
+                    | mod.MIN_DOWN_TIME_VIOL_PRJS
+                )
+            ),
         ),
     )
 

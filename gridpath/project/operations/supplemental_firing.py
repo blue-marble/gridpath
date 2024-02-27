@@ -188,8 +188,8 @@ def load_model_data(
                 else:
                     supplemental_firing_by_project[g] = [supplemental_firing_g]
 
-        data_portal.data()["GEN_W_SUPPLEMENTAL_FIRING"] = list(
-            set(supplemental_firing_by_project.keys())
+        data_portal.data()["GEN_W_SUPPLEMENTAL_FIRING"] = sorted(
+            list(set(supplemental_firing_by_project.keys()))
         )
 
         data_portal.data()[

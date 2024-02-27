@@ -191,12 +191,16 @@ def add_model_components(
     m.TMPS_BLN_TYPES = Set(
         dimen=2,
         within=m.TMPS * m.BLN_TYPES,
-        initialize=lambda mod: set(
-            [
-                (tmp, bt)
-                for (bt, h) in mod.BLN_TYPE_HRZS
-                for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, h]
-            ]
+        initialize=lambda mod: sorted(
+            list(
+                set(
+                    [
+                        (tmp, bt)
+                        for (bt, h) in mod.BLN_TYPE_HRZS
+                        for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, h]
+                    ]
+                ),
+            )
         ),
     )
 

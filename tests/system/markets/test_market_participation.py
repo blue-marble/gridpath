@@ -143,7 +143,7 @@ class TestMarketParticipation(unittest.TestCase):
         )
 
         # Param: first_stage_flag
-        self.assertEqual(True, instance.first_stage_flag)
+        self.assertEqual(True, instance.first_stage_flag.value)
 
         # Param: no_market_participation_in_stage
         expected_no_market_participation_in_stage = {

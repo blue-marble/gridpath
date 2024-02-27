@@ -91,10 +91,14 @@ def project_relevant_periods(
     capital costs) given all project-vintages and relevant periods by
     project-vintage (the lifetime is allowed to differ by vintage).
     """
-    return set(
-        (g, p)
-        for (g, v) in project_vintages_set
-        for p in relevant_periods_by_project_vintage_set[g, v]
+    return sorted(
+        list(
+            set(
+                (g, p)
+                for (g, v) in project_vintages_set
+                for p in relevant_periods_by_project_vintage_set[g, v]
+            )
+        )
     )
 
 

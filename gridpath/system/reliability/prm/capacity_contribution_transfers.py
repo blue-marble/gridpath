@@ -202,8 +202,8 @@ def add_model_components(
     # surface)
     m.PRM_FROM_ZONES = Set(
         within=m.PRM_ZONES,
-        initialize=lambda mod: list(
-            set([z for (z, z_to) in mod.PRM_ZONES_CAPACITY_TRANSFER_ZONES])
+        initialize=lambda mod: sorted(
+            list(set([z for (z, z_to) in mod.PRM_ZONES_CAPACITY_TRANSFER_ZONES])),
         ),
     )
 

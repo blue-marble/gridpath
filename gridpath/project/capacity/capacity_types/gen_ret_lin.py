@@ -154,7 +154,9 @@ def add_model_components(
     m.GEN_RET_LIN_OPR_PRDS = Set(dimen=2)
 
     m.GEN_RET_LIN = Set(
-        initialize=lambda mod: list(set(g for (g, p) in mod.GEN_RET_LIN_OPR_PRDS))
+        initialize=lambda mod: sorted(
+            list(set(g for (g, p) in mod.GEN_RET_LIN_OPR_PRDS))
+        )
     )
 
     m.OPR_PRDS_BY_GEN_RET_LIN = Set(

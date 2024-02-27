@@ -133,18 +133,20 @@ def add_model_components(
 
     m.SIM_FLOW_LMT_TMPS = Set(
         dimen=2,
-        initialize=lambda mod: list(
-            set(
-                (g, tmp)
-                for (g, p) in mod.SIM_FLOW_LMT_PRDS
-                for tmp in mod.TMPS_IN_PRD[p]
-            )
+        initialize=lambda mod: sorted(
+            list(
+                set(
+                    (g, tmp)
+                    for (g, p) in mod.SIM_FLOW_LMT_PRDS
+                    for tmp in mod.TMPS_IN_PRD[p]
+                )
+            ),
         ),
     )
 
     m.SIM_FLOW_LMTS = Set(
-        initialize=lambda mod: list(
-            set(limit for (limit, period) in mod.SIM_FLOW_LMT_PRDS)
+        initialize=lambda mod: sorted(
+            list(set(limit for (limit, period) in mod.SIM_FLOW_LMT_PRDS))
         )
     )
 
@@ -152,12 +154,14 @@ def add_model_components(
 
     m.TX_LINES_BY_SIM_FLOW_LMT = Set(
         m.SIM_FLOW_LMTS,
-        initialize=lambda mod, limit: list(
-            set(
-                tx_line
-                for (group, tx_line) in mod.SIM_FLOW_LMT_TX_LINES
-                if group == limit
-            )
+        initialize=lambda mod, limit: sorted(
+            list(
+                set(
+                    tx_line
+                    for (group, tx_line) in mod.SIM_FLOW_LMT_TX_LINES
+                    if group == limit
+                )
+            ),
         ),
     )
 

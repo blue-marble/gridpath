@@ -92,8 +92,8 @@ def add_model_components(
 
     m.CRBN_PRJS = Set(
         within=m.PROJECTS,
-        initialize=lambda mod: list(
-            set([prj for (prj, z) in mod.CRBN_PRJS_CRBN_CAP_ZONES])
+        initialize=lambda mod: sorted(
+            list(set([prj for (prj, z) in mod.CRBN_PRJS_CRBN_CAP_ZONES])),
         ),
     )
     m.CRBN_PRJS_BY_CARBON_CAP_ZONE = Set(

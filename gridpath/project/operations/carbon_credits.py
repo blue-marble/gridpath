@@ -195,16 +195,18 @@ def add_model_components(
 
     m.CARBON_CREDITS_PURCHASE_PRJS = Set(
         within=m.PROJECTS,
-        initialize=lambda mod: list(
-            set(
-                [
-                    prj
-                    for (
-                        prj,
-                        z,
-                    ) in mod.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES
-                ]
-            )
+        initialize=lambda mod: sorted(
+            list(
+                set(
+                    [
+                        prj
+                        for (
+                            prj,
+                            z,
+                        ) in mod.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES
+                    ]
+                )
+            ),
         ),
     )
 
@@ -239,21 +241,35 @@ def add_model_components(
 
     m.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES_OPR_TMPS = Set(
         dimen=3,
-        initialize=lambda mod: set(
-            (prj, z, tmp)
-            for (prj, tmp) in mod.CARBON_CREDITS_PURCHASE_PRJS_OPR_TMPS
-            for (_prj, z) in mod.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES
-            if prj == _prj
+        initialize=lambda mod: sorted(
+            list(
+                set(
+                    (prj, z, tmp)
+                    for (prj, tmp) in mod.CARBON_CREDITS_PURCHASE_PRJS_OPR_TMPS
+                    for (
+                        _prj,
+                        z,
+                    ) in mod.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES
+                    if prj == _prj
+                ),
+            )
         ),
     )
 
     m.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES_OPR_PRDS = Set(
         dimen=3,
-        initialize=lambda mod: set(
-            (prj, z, prd)
-            for (prj, prd) in mod.CARBON_CREDITS_PURCHASE_PRJS_OPR_PRDS
-            for (_prj, z) in mod.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES
-            if prj == _prj
+        initialize=lambda mod: sorted(
+            list(
+                set(
+                    (prj, z, prd)
+                    for (prj, prd) in mod.CARBON_CREDITS_PURCHASE_PRJS_OPR_PRDS
+                    for (
+                        _prj,
+                        z,
+                    ) in mod.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES
+                    if prj == _prj
+                ),
+            )
         ),
     )
 

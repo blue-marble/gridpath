@@ -218,32 +218,40 @@ def add_model_components(
 
     m.VAR_OM_COST_CURVE_PRJS_OPR_TMPS_SGMS = Set(
         dimen=3,
-        initialize=lambda mod: list(
-            set(
-                (g, tmp, s)
-                for (g, tmp) in mod.PRJ_OPR_TMPS
-                for _g, p, s in mod.VAR_OM_COST_CURVE_PRJS_PRDS_SGMS
-                if g == _g and mod.period[tmp] == p
-            )
+        initialize=lambda mod: sorted(
+            list(
+                set(
+                    (g, tmp, s)
+                    for (g, tmp) in mod.PRJ_OPR_TMPS
+                    for _g, p, s in mod.VAR_OM_COST_CURVE_PRJS_PRDS_SGMS
+                    if g == _g and mod.period[tmp] == p
+                )
+            ),
         ),
     )
 
     m.VAR_OM_COST_CURVE_PRJS_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: list(
-            set((g, tmp) for (g, tmp, s) in mod.VAR_OM_COST_CURVE_PRJS_OPR_TMPS_SGMS)
+        initialize=lambda mod: sorted(
+            list(
+                set(
+                    (g, tmp) for (g, tmp, s) in mod.VAR_OM_COST_CURVE_PRJS_OPR_TMPS_SGMS
+                )
+            ),
         ),
     )
 
     # All VOM projects
     m.VAR_OM_COST_ALL_PRJS_OPR_TMPS = Set(
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: list(
-            set(
-                mod.VAR_OM_COST_SIMPLE_PRJ_OPR_TMPS
-                | mod.VAR_OM_COST_CURVE_PRJS_OPR_TMPS
-            )
+        initialize=lambda mod: sorted(
+            list(
+                set(
+                    mod.VAR_OM_COST_SIMPLE_PRJ_OPR_TMPS
+                    | mod.VAR_OM_COST_CURVE_PRJS_OPR_TMPS
+                )
+            ),
         ),
     )
 
