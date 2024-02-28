@@ -138,6 +138,23 @@ class TestBinaryAvailabilityType(unittest.TestCase):
             expected_unavailable_hours_per_period, actual_unavailable_hours_per_period
         )
 
+        # Param: avl_bin_unavl_hrs_per_prd_req_exact
+        expected_unavailable_hours_per_period_req_exact = get_endogenous_params(
+            test_data_directory=TEST_DATA_DIRECTORY,
+            param="unavailable_hours_per_period_require_exact",
+            project_subset=actual_project_subset,
+        )
+
+        actual_unavailable_hours_per_period_req_exact = {
+            prj: instance.avl_bin_unavl_hrs_per_prd_req_exact[prj]
+            for prj in instance.AVL_BIN
+        }
+
+        self.assertDictEqual(
+            expected_unavailable_hours_per_period_req_exact,
+            actual_unavailable_hours_per_period_req_exact,
+        )
+
         # Param: avl_bin_min_unavl_hrs_per_event
         expected_unavailable_hours_per_event = get_endogenous_params(
             test_data_directory=TEST_DATA_DIRECTORY,
