@@ -31,7 +31,16 @@ from gridpath.common_functions import (
 from gridpath.system.policy.energy_targets import ENERGY_TARGET_ZONE_HRZ_DF
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
 
     :param m:
@@ -74,7 +83,16 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
+):
     """
 
     :param scenario_directory:
@@ -102,26 +120,38 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             value(m.Horizon_Energy_Target[z, bt, h]),
             value(m.Total_Delivered_Horizon_Energy_Target_Energy_MWh[z, bt, h])
             + value(m.Total_Curtailed_Horizon_Energy_Target_Energy_MWh[z, bt, h]),
-            1
-            if float(m.horizon_energy_target_mwh[z, bt, h]) == 0
-            else value(m.Total_Delivered_Horizon_Energy_Target_Energy_MWh[z, bt, h])
-            / float(m.horizon_energy_target_mwh[z, bt, h]),
-            0
-            if (
-                value(m.Total_Delivered_Horizon_Energy_Target_Energy_MWh[z, bt, h])
-                + value(m.Total_Curtailed_Horizon_Energy_Target_Energy_MWh[z, bt, h])
-            )
-            == 0
-            else value(m.Total_Curtailed_Horizon_Energy_Target_Energy_MWh[z, bt, h])
-            / (
-                value(m.Total_Delivered_Horizon_Energy_Target_Energy_MWh[z, bt, h])
-                + value(m.Total_Curtailed_Horizon_Energy_Target_Energy_MWh[z, bt, h])
+            (
+                1
+                if float(m.horizon_energy_target_mwh[z, bt, h]) == 0
+                else value(m.Total_Delivered_Horizon_Energy_Target_Energy_MWh[z, bt, h])
+                / float(m.horizon_energy_target_mwh[z, bt, h])
+            ),
+            (
+                0
+                if (
+                    value(m.Total_Delivered_Horizon_Energy_Target_Energy_MWh[z, bt, h])
+                    + value(
+                        m.Total_Curtailed_Horizon_Energy_Target_Energy_MWh[z, bt, h]
+                    )
+                )
+                == 0
+                else value(m.Total_Curtailed_Horizon_Energy_Target_Energy_MWh[z, bt, h])
+                / (
+                    value(m.Total_Delivered_Horizon_Energy_Target_Energy_MWh[z, bt, h])
+                    + value(
+                        m.Total_Curtailed_Horizon_Energy_Target_Energy_MWh[z, bt, h]
+                    )
+                )
             ),
             value(m.Horizon_Energy_Target_Shortage_MWh_Expression[z, bt, h]),
-            duals_wrapper(m, getattr(m, "Horizon_Energy_Target_Constraint")[z, bt, h])
-            if (z, bt, h)
-            in [idx for idx in getattr(m, "Horizon_Energy_Target_Constraint")]
-            else None,
+            (
+                duals_wrapper(
+                    m, getattr(m, "Horizon_Energy_Target_Constraint")[z, bt, h]
+                )
+                if (z, bt, h)
+                in [idx for idx in getattr(m, "Horizon_Energy_Target_Constraint")]
+                else None
+            ),
             (
                 none_dual_type_error_wrapper(
                     duals_wrapper(
@@ -147,7 +177,16 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     getattr(d, ENERGY_TARGET_ZONE_HRZ_DF).update(results_df)
 
 
-def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
+def save_duals(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    instance,
+    dynamic_components,
+):
     instance.constraint_indices["Horizon_Energy_Target_Constraint"] = [
         "energy_target_zone",
         "balancing_type",
@@ -156,7 +195,14 @@ def save_duals(scenario_directory, subproblem, stage, instance, dynamic_componen
     ]
 
 
-def summarize_results(scenario_directory, subproblem, stage):
+def summarize_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     :param scenario_directory:
     :param subproblem:
@@ -167,7 +213,14 @@ def summarize_results(scenario_directory, subproblem, stage):
     """
 
     summary_results_file = os.path.join(
-        scenario_directory, subproblem, stage, "results", "summary_results.txt"
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "results",
+        "summary_results.txt",
     )
 
     # Open in 'append' mode, so that results already written by other
@@ -181,8 +234,10 @@ def summarize_results(scenario_directory, subproblem, stage):
     results_df = pd.read_csv(
         os.path.join(
             scenario_directory,
-            str(subproblem),
-            str(stage),
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
             "results",
             "system_horizon_energy_target.csv",
         )
@@ -217,7 +272,7 @@ def summarize_results(scenario_directory, subproblem, stage):
                 )
                 * 100
             )
-        results_df.percent_curtailed[indx] = pct
+        results_df.loc[indx, "percent_curtailed"] = pct
 
     # Drop unnecessary columns before exporting
     results_df.drop("total_energy_target_energy_mwh", axis=1, inplace=True)

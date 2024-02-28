@@ -278,6 +278,12 @@ def get_run_scenario_parser():
         help="The name of the rule to use to decide whether to export results.",
     )
 
+    parser.add_argument(
+        "--results_export_summary_rule",
+        help="The name of the rule to use to decide whether to export "
+        "summary results.",
+    )
+
     return parser
 
 
@@ -291,7 +297,20 @@ def get_import_results_parser():
     return parser
 
 
-def create_logs_directory_if_not_exists(scenario_directory, subproblem, stage):
+def ensure_empty_string(string):
+    empty_string_ensured = "" if string == "empty_string" else string
+
+    return empty_string_ensured
+
+
+def create_logs_directory_if_not_exists(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     Create a logs directory if it doesn't exist already
     :param scenario_directory:
@@ -300,7 +319,13 @@ def create_logs_directory_if_not_exists(scenario_directory, subproblem, stage):
     :return:
     """
     logs_directory = os.path.join(
-        scenario_directory, str(subproblem), str(stage), "logs"
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "logs",
     )
     if not os.path.exists(logs_directory):
         os.makedirs(logs_directory)

@@ -37,9 +37,13 @@ def _get_idx_col(df):
         )
 
 
+# TODO: add iterations to validation?
 def write_validation_to_database(
     conn,
     scenario_id,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
     subproblem_id,
     stage_id,
     gridpath_module,
@@ -290,6 +294,7 @@ def validate_dtypes(df, expected_dtypes):
     """
     result = []
     columns = []
+
     for column in df.columns:
         column_df = pd.DataFrame(df[column])
         # Only check if not all values are null
@@ -749,7 +754,7 @@ def validate_startup_shutdown_rate_inputs(prj_df, su_df, hrs_in_tmp):
 
     # Split su_df in df with hottest starts and df with coldest starts
     su_df_hot = (
-        su_df.groupby("project", group_keys=False)
+        su_df.groupby("project", group_keys=False)[su_df.columns]
         .apply(lambda grp: grp.nsmallest(1, columns=["down_time_cutoff_hours"]))
         .reset_index(drop=True)
         .rename(
@@ -760,7 +765,7 @@ def validate_startup_shutdown_rate_inputs(prj_df, su_df, hrs_in_tmp):
         )
     )
     su_df_cold = (
-        su_df.groupby("project", group_keys=False)
+        su_df.groupby("project", group_keys=False)[su_df.columns]
         .apply(lambda grp: grp.nlargest(1, columns=["down_time_cutoff_hours"]))
         .reset_index(drop=True)
         .rename(
@@ -806,6 +811,17 @@ def validate_startup_shutdown_rate_inputs(prj_df, su_df, hrs_in_tmp):
         prj_df["startup_fuel_mmbtu_per_mw"] = 0
 
     # Replace any NA/None with defaults
+    def downcast_column(column):
+        if column.dtype == "object":
+            try:
+                return column.astype(float)
+            except ValueError:
+                return column.astype("category")
+        return column
+
+    for col in prj_df.columns:
+        prj_df[col] = downcast_column(prj_df[col])
+
     prj_df.fillna(
         value={
             "min_down_time_hours": 0,

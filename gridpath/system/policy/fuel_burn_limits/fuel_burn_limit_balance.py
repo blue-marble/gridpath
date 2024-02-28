@@ -33,7 +33,16 @@ from gridpath.common_functions import (
 from gridpath.system.policy.fuel_burn_limits import FUEL_BURN_LIMITS_DF
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
 
     :param m:
@@ -179,7 +188,16 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
+):
     """
 
     :param scenario_directory:
@@ -223,24 +241,32 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                     f, z, bt, h
                 ]
             ),
-            value(m.Fuel_Burn_Min_Shortage_Abs_Unit_Expression[f, z, bt, h])
-            if (f, z, bt, h)
-            in m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MIN_ABS_LIMIT
-            else None,
-            value(m.Fuel_Burn_Max_Overage_Abs_Unit_Expression[f, z, bt, h])
-            if (f, z, bt, h)
-            in m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MAX_ABS_LIMIT
-            else None,
-            value(m.Fuel_Burn_Max_Overage_Rel_Unit_Expression[f, z, bt, h])
-            if (f, z, bt, h)
-            in m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MAX_REL_LIMIT
-            else None,
-            duals_wrapper(
-                m, getattr(m, "Meet_Fuel_Burn_Min_Abs_Constraint")[f, z, bt, h]
-            )
-            if (f, z, bt, h)
-            in [idx for idx in getattr(m, "Meet_Fuel_Burn_Min_Abs_Constraint")]
-            else None,
+            (
+                value(m.Fuel_Burn_Min_Shortage_Abs_Unit_Expression[f, z, bt, h])
+                if (f, z, bt, h)
+                in m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MIN_ABS_LIMIT
+                else None
+            ),
+            (
+                value(m.Fuel_Burn_Max_Overage_Abs_Unit_Expression[f, z, bt, h])
+                if (f, z, bt, h)
+                in m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MAX_ABS_LIMIT
+                else None
+            ),
+            (
+                value(m.Fuel_Burn_Max_Overage_Rel_Unit_Expression[f, z, bt, h])
+                if (f, z, bt, h)
+                in m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MAX_REL_LIMIT
+                else None
+            ),
+            (
+                duals_wrapper(
+                    m, getattr(m, "Meet_Fuel_Burn_Min_Abs_Constraint")[f, z, bt, h]
+                )
+                if (f, z, bt, h)
+                in [idx for idx in getattr(m, "Meet_Fuel_Burn_Min_Abs_Constraint")]
+                else None
+            ),
             (
                 none_dual_type_error_wrapper(
                     duals_wrapper(
@@ -252,12 +278,14 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 in [idx for idx in getattr(m, "Meet_Fuel_Burn_Min_Abs_Constraint")]
                 else None
             ),
-            duals_wrapper(
-                m, getattr(m, "Meet_Fuel_Burn_Max_Abs_Constraint")[f, z, bt, h]
-            )
-            if (f, z, bt, h)
-            in [idx for idx in getattr(m, "Meet_Fuel_Burn_Max_Abs_Constraint")]
-            else None,
+            (
+                duals_wrapper(
+                    m, getattr(m, "Meet_Fuel_Burn_Max_Abs_Constraint")[f, z, bt, h]
+                )
+                if (f, z, bt, h)
+                in [idx for idx in getattr(m, "Meet_Fuel_Burn_Max_Abs_Constraint")]
+                else None
+            ),
             (
                 none_dual_type_error_wrapper(
                     duals_wrapper(
@@ -269,12 +297,14 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 in [idx for idx in getattr(m, "Meet_Fuel_Burn_Max_Abs_Constraint")]
                 else None
             ),
-            duals_wrapper(
-                m, getattr(m, "Meet_Fuel_Burn_Max_Rel_Constraint")[f, z, bt, h]
-            )
-            if (f, z, bt, h)
-            in [idx for idx in getattr(m, "Meet_Fuel_Burn_Max_Rel_Constraint")]
-            else None,
+            (
+                duals_wrapper(
+                    m, getattr(m, "Meet_Fuel_Burn_Max_Rel_Constraint")[f, z, bt, h]
+                )
+                if (f, z, bt, h)
+                in [idx for idx in getattr(m, "Meet_Fuel_Burn_Max_Rel_Constraint")]
+                else None
+            ),
             (
                 none_dual_type_error_wrapper(
                     duals_wrapper(
@@ -305,7 +335,16 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     getattr(d, FUEL_BURN_LIMITS_DF).update(results_df)
 
 
-def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
+def save_duals(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    instance,
+    dynamic_components,
+):
     instance.constraint_indices["Meet_Fuel_Burn_Min_Abs_Constraint"] = [
         "fuel",
         "fuel_burn_limit_ba",

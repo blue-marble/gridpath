@@ -83,7 +83,15 @@ from gridpath.project.common_functions import (
 
 
 def add_model_components(
-    m, d, scenario_directory, subproblem, stage, bin_or_lin_optype
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    bin_or_lin_optype,
 ):
     """
     The tables below list the Pyomo model components defined in the
@@ -1888,7 +1896,9 @@ def add_model_components(
             )
             or (
                 mod.availability_type[g] == "exogenous"
-                and mod.avl_exog_cap_derate[g, tmp] == 0
+                and mod.avl_exog_cap_derate_independent[g, tmp]
+                * mod.avl_exog_cap_derate_weather[g, tmp]
+                == 0
             )
             or getattr(
                 mod, "gen_commit_{}_min_stable_level_fraction".format(bin_or_lin)
@@ -3251,9 +3261,9 @@ def power_delta_rule(mod, g, tmp, Bin_or_Lin):
 
 def fix_commitment(mod, g, tmp, Bin_or_Lin):
     """ """
-    getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[
-        g, tmp
-    ] = mod.fixed_commitment[g, mod.prev_stage_tmp_map[tmp]]
+    getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[g, tmp] = (
+        mod.fixed_commitment[g, mod.prev_stage_tmp_map[tmp]]
+    )
     getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[g, tmp].fixed = True
 
 
@@ -3323,6 +3333,9 @@ def load_model_data(
     d,
     data_portal,
     scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
     bin_or_lin_optype,
@@ -3343,6 +3356,9 @@ def load_model_data(
         mod=mod,
         data_portal=data_portal,
         scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         op_type=bin_or_lin_optype,
@@ -3352,6 +3368,9 @@ def load_model_data(
     load_startup_chars(
         data_portal=data_portal,
         scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         op_type=bin_or_lin_optype,
@@ -3361,8 +3380,11 @@ def load_model_data(
     # Linked timepoint params
     linked_inputs_filename = os.path.join(
         scenario_directory,
-        str(subproblem),
-        str(stage),
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
         "inputs",
         "gen_commit_{}_linked_timepoint_params.tab".format(bin_or_lin),
     )
@@ -3408,8 +3430,11 @@ def load_model_data(
     # Linked timepoint params (by startup type)
     linked_startup_inputs_filename = os.path.join(
         scenario_directory,
-        str(subproblem),
-        str(stage),
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
         "inputs",
         "gen_commit_{}_linked_timepoint_str_type_params.tab".format(bin_or_lin),
     )
@@ -3523,7 +3548,17 @@ def add_to_prj_tmp_results(
 
 
 def export_linked_subproblem_inputs(
-    mod, d, scenario_directory, subproblem, stage, Bin_or_Lin, BIN_OR_LIN, bin_or_lin
+    mod,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    Bin_or_Lin,
+    BIN_OR_LIN,
+    bin_or_lin,
 ):
     # If there's a linked_subproblems_map CSV file, check which of the
     # current subproblem TMPS we should export results for to link to the
@@ -3542,6 +3577,9 @@ def export_linked_subproblem_inputs(
         with open(
             os.path.join(
                 scenario_directory,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
                 next_subproblem,
                 stage,
                 "inputs",

@@ -18,7 +18,6 @@ calls their *validate_inputs()* method, which performs various validations
 of the input data and scenario setup.
 """
 
-import pandas as pd
 import sqlite3
 import sys
 from argparse import ArgumentParser
@@ -28,20 +27,26 @@ from gridpath.auxiliary.db_interface import (
     get_required_capacity_types_from_database,
     get_scenario_id_and_name,
 )
-from gridpath.auxiliary.validations import (
-    write_validation_to_database,
-    validate_cols_equal,
-)
+from gridpath.auxiliary.validations import write_validation_to_database
 from gridpath.common_functions import get_db_parser
 from gridpath.auxiliary.module_list import determine_modules, load_modules
 from gridpath.auxiliary.scenario_chars import (
     OptionalFeatures,
     SubScenarios,
-    get_subproblem_structure_from_db,
+    get_scenario_structure_from_db,
 )
 
 
-def validate_inputs(subproblems, loaded_modules, scenario_id, subscenarios, conn):
+def validate_inputs(
+    subproblems,
+    loaded_modules,
+    scenario_id,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subscenarios,
+    conn,
+):
     """ "
     For each module, load the inputs from the database and validate them
 
@@ -72,6 +77,9 @@ def validate_inputs(subproblems, loaded_modules, scenario_id, subscenarios, conn
                     m.validate_inputs(
                         scenario_id=scenario_id,
                         subscenarios=subscenarios,
+                        weather_iteration=weather_iteration,
+                        hydro_iteration=hydro_iteration,
+                        availability_iteration=availability_iteration,
                         subproblem=subproblem,
                         stage=stage,
                         conn=conn,
@@ -155,6 +163,9 @@ def validate_feature_subscenario_ids(
         write_validation_to_database(
             conn=conn,
             scenario_id=scenario_id,
+            weather_iteration="N/A",
+            hydro_iteration="N/A",
+            availability_iteration="N/A",
             subproblem_id="N/A",
             stage_id="N/A",
             gridpath_module="N/A",
@@ -187,6 +198,9 @@ def validate_required_subscenario_ids(scenario_id, subscenarios, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration="N/A",
+        hydro_iteration="N/A",
+        availability_iteration="N/A",
         subproblem_id="N/A",
         stage_id="N/A",
         gridpath_module="N/A",
@@ -248,6 +262,9 @@ def validate_data_dependent_subscenario_ids(scenario_id, subscenarios, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration="N/A",
+        hydro_iteration="N/A",
+        availability_iteration="N/A",
         subproblem_id="N/A",
         stage_id="N/A",
         gridpath_module="N/A",
@@ -397,7 +414,7 @@ def main(args=None):
     # Get scenario characteristics (features, scenario_id, subscenarios, subproblems)
     optional_features = OptionalFeatures(conn=conn, scenario_id=scenario_id)
     subscenarios = SubScenarios(conn=conn, scenario_id=scenario_id)
-    subproblem_structure = get_subproblem_structure_from_db(
+    scenario_structure = get_scenario_structure_from_db(
         conn=conn, scenario_id=scenario_id
     )
 
@@ -417,8 +434,8 @@ def main(args=None):
         # stages-related modules
         stages_flag = any(
             [
-                len(subproblem_structure.SUBPROBLEM_STAGES[subp]) > 1
-                for subp in list(subproblem_structure.SUBPROBLEM_STAGES.keys())
+                len(scenario_structure.SUBPROBLEM_STAGES[subp]) > 1
+                for subp in list(scenario_structure.SUBPROBLEM_STAGES.keys())
             ]
         )
         modules_to_use = determine_modules(
@@ -427,9 +444,24 @@ def main(args=None):
         loaded_modules = load_modules(modules_to_use=modules_to_use)
 
         # Read in inputs from db and validate inputs for loaded modules
-        validate_inputs(
-            subproblem_structure, loaded_modules, scenario_id, subscenarios, conn
-        )
+        for weather_iteration in scenario_structure.ITERATION_STRUCTURE.keys():
+            for hydro_iteration in scenario_structure.ITERATION_STRUCTURE[
+                weather_iteration
+            ].keys():
+                for availability_iteration in scenario_structure.ITERATION_STRUCTURE[
+                    weather_iteration
+                ][hydro_iteration]:
+                    validate_inputs(
+                        scenario_structure,
+                        loaded_modules,
+                        scenario_id,
+                        weather_iteration,
+                        hydro_iteration,
+                        availability_iteration,
+                        subscenarios,
+                        conn,
+                    )
+
     else:
         if not parsed_arguments.quiet:
             print("Invalid subscenario ID(s). Skipped detailed input validation.")

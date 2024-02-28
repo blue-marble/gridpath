@@ -307,7 +307,10 @@ def get_load(c, scenario_id, load_zone, stage, timepoints):
         AND load_zone = '{}'
         AND stage_id = {}
         AND timepoint IN ({});""".format(
-        scenario_id, load_zone, stage, ",".join(["?"] * len(timepoints))
+        scenario_id,
+        load_zone,
+        stage,
+        ",".join(["?"] * len(timepoints)),
     )
 
     load_balance = c.execute(query, timepoints).fetchall()
@@ -421,6 +424,7 @@ def get_plotting_data(
         stage=stage,
         timepoints=timepoints,
     )
+
     df["Load"] = load_balance[0]
     df["Unserved_Energy"] = load_balance[1]
 

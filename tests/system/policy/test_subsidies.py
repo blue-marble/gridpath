@@ -71,6 +71,9 @@ class TestSubsidies(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
+            weather_iteration="",
+            hydro_iteration="",
+            availability_iteration="",
             subproblem="",
             stage="",
         )
@@ -84,6 +87,9 @@ class TestSubsidies(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
+            weather_iteration="",
+            hydro_iteration="",
+            availability_iteration="",
             subproblem="",
             stage="",
         )
@@ -97,6 +103,9 @@ class TestSubsidies(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
+            weather_iteration="",
+            hydro_iteration="",
+            availability_iteration="",
             subproblem="",
             stage="",
         )
@@ -171,9 +180,9 @@ class TestSubsidies(unittest.TestCase):
         actual_prg_v_by_prj = {}
         for prj in instance.PROJECTS_TX_LINES:
             if instance.PROGRAM_VINTAGES_BY_PROJECT_OR_TX_LINE[prj].data() != ():
-                actual_prg_v_by_prj[
-                    prj
-                ] = instance.PROGRAM_VINTAGES_BY_PROJECT_OR_TX_LINE[prj].data()[0]
+                actual_prg_v_by_prj[prj] = (
+                    instance.PROGRAM_VINTAGES_BY_PROJECT_OR_TX_LINE[prj].data()[0]
+                )
 
         self.assertDictEqual(expected_prg_v_by_prj, actual_prg_v_by_prj)
 

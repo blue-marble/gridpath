@@ -34,11 +34,22 @@ from pyomo.environ import (
     PercentFraction,
 )
 
+from gridpath.auxiliary.db_interface import directories_to_db_values
+
 Negative_Infinity = float("-inf")
 Infinity = float("inf")
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     The following Pyomo model components are defined in this module:
 
@@ -169,7 +180,17 @@ def max_flow_rule(mod, l, tmp):
 ###############################################################################
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
 
     :param m:
@@ -182,8 +203,8 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 
     transmission_flow_limits_file = os.path.join(
         scenario_directory,
-        str(subproblem),
-        str(stage),
+        subproblem,
+        stage,
         "inputs",
         "transmission_flow_limits.tab",
     )
@@ -274,7 +295,16 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         data_portal.data()["tx_simple_max_flow_mw"] = max_flow_mw
 
 
-def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_model_inputs_from_database(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -282,8 +312,6 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
     :param conn: database connection
     :return:
     """
-    subproblem = 1 if subproblem == "" else subproblem
-    stage = 1 if stage == "" else stage
 
     c = conn.cursor()
     tx_flow = c.execute(
@@ -313,7 +341,15 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     Get inputs from database and write out the model input
@@ -325,9 +361,25 @@ def write_model_inputs(
     :param conn: database connection
     :return:
     """
+    (
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+    ) = directories_to_db_values(
+        weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
+    )
 
     tx_flow = get_model_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+        conn,
     ).fetchall()
 
     # Only write tab file if we have data to limit flows
@@ -335,8 +387,11 @@ def write_model_inputs(
         with open(
             os.path.join(
                 scenario_directory,
-                str(subproblem),
-                str(stage),
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
                 "inputs",
                 "transmission_flow_limits.tab",
             ),

@@ -25,7 +25,16 @@ from gridpath.project.capacity.common_functions import (
 from gridpath.auxiliary.db_interface import get_required_capacity_types_from_database
 
 
-def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -48,12 +57,27 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     for op_m in required_capacity_type_modules:
         if hasattr(imported_capacity_type_modules[op_m], "validate_inputs"):
             imported_capacity_type_modules[op_m].validate_inputs(
-                scenario_id, subscenarios, subproblem, stage, conn
+                scenario_id,
+                subscenarios,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
+                conn,
             )
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     Get inputs from database and write out the model input .tab files
@@ -78,7 +102,15 @@ def write_model_inputs(
     for op_m in required_capacity_type_modules:
         if hasattr(imported_capacity_type_modules[op_m], "write_model_inputs"):
             imported_capacity_type_modules[op_m].write_model_inputs(
-                scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+                scenario_directory,
+                scenario_id,
+                subscenarios,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
+                conn,
             )
 
 

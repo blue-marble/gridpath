@@ -52,8 +52,8 @@ setup(
     keywords=["energy", "electricity", "power", "renewables", "planning", "operations"],
     packages=find_packages(),
     install_requires=[
-        "Pyomo==6.5.0",  # Optimization modeling language
-        "pandas==2.1.1",  # Data-processing
+        "Pyomo==6.7.1",  # Optimization modeling language
+        "pandas==2.2.1",  # Data-processing
         "bokeh==2.2.3",  # Visualization library (required - see #779)
         "pscript==0.7.5",  # Python to JavaScript compiler (for viz)
         "networkx==3.1",  # network package for DC OPF
@@ -83,6 +83,7 @@ setup(
             "gridpath_create_database = db.create_database:main",
             "gridpath_load_csvs = db.utilities.port_csvs_to_db:main",
             "gridpath_load_scenarios = db.utilities.scenario:main",
+            "gridpath_run_ra_toolkit = db.utilities.ra_toolkit.run_ra_toolkit:main",
         ]
     },
 )

@@ -48,7 +48,16 @@ from gridpath.project.capacity.capacity_types.common_methods import (
 )
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     The following Pyomo model components are defined in this module:
 
@@ -127,17 +136,21 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.GEN_RET_BIN_OPR_PRDS = Set(dimen=2)
 
     m.GEN_RET_BIN = Set(
-        initialize=lambda mod: list(set(g for (g, p) in mod.GEN_RET_BIN_OPR_PRDS))
+        initialize=lambda mod: sorted(
+            list(set(g for (g, p) in mod.GEN_RET_BIN_OPR_PRDS))
+        )
     )
 
     m.OPR_PRDS_BY_GEN_RET_BIN = Set(
         m.GEN_RET_BIN,
-        initialize=lambda mod, prj: list(
-            set(
-                period
-                for (project, period) in mod.GEN_RET_BIN_OPR_PRDS
-                if project == prj
-            )
+        initialize=lambda mod, prj: sorted(
+            list(
+                set(
+                    period
+                    for (project, period) in mod.GEN_RET_BIN_OPR_PRDS
+                    if project == prj
+                )
+            ),
         ),
     )
 
@@ -233,7 +246,17 @@ def fixed_cost_rule(mod, g, p):
 ###############################################################################
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     :param m:
     :param data_portal:
@@ -245,6 +268,9 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 
     project_period_list, spec_params_dict = spec_determine_inputs(
         scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         capacity_type="gen_ret_bin",
@@ -261,7 +287,16 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     ]
 
 
-def add_to_project_period_results(scenario_directory, subproblem, stage, m, d):
+def add_to_project_period_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
+):
     """
     Export gen_ret_bin retirement results.
     :param scenario_directory:
@@ -293,7 +328,15 @@ def add_to_project_period_results(scenario_directory, subproblem, stage, m, d):
     return results_columns, captype_df
 
 
-def summarize_results(scenario_directory, subproblem, stage, summary_results_file):
+def summarize_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    summary_results_file,
+):
     """
     Summarize gen_ret_bin capacity results.
     :param scenario_directory:
@@ -306,6 +349,9 @@ def summarize_results(scenario_directory, subproblem, stage, summary_results_fil
     # Get the results CSV as dataframe
     capacity_results_agg_df = read_results_file_generic(
         scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         capacity_type=Path(__file__).stem,
@@ -335,7 +381,16 @@ def summarize_results(scenario_directory, subproblem, stage, summary_results_fil
 ###############################################################################
 
 
-def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_model_inputs_from_database(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -350,7 +405,15 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     Get inputs from database and write out the model input
@@ -364,13 +427,23 @@ def write_model_inputs(
     """
 
     spec_project_params = get_model_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        conn,
     )
 
     # If spec_capacity_period_params.tab file already exists, append
     # rows to it
     spec_write_tab_file(
         scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         spec_project_params=spec_project_params,
@@ -381,7 +454,16 @@ def write_model_inputs(
 ###############################################################################
 
 
-def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -392,7 +474,14 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
 
     gen_ret_bin_params = get_model_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        conn,
     )
 
     projects = get_projects(
@@ -417,6 +506,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -432,6 +524,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -446,6 +541,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -462,6 +560,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,

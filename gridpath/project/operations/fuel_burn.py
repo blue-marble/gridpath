@@ -40,7 +40,16 @@ from gridpath.project.operations.common_functions import load_operational_type_m
 import gridpath.project.operations.operational_types as op_type_init
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     The following Pyomo model components are defined in this module:
 
@@ -158,6 +167,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     required_operational_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         which_type="operational_type",
@@ -180,39 +192,53 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.FUEL_PRJS_FUEL_OPR_TMPS = Set(
         dimen=3,
-        initialize=lambda mod: set(
-            (g, f, tmp)
-            for (g, tmp) in mod.FUEL_PRJ_OPR_TMPS
-            for _g, f in mod.FUEL_PRJ_FUELS
-            if g == _g
+        initialize=lambda mod: sorted(
+            list(
+                set(
+                    (g, f, tmp)
+                    for (g, tmp) in mod.FUEL_PRJ_OPR_TMPS
+                    for _g, f in mod.FUEL_PRJ_FUELS
+                    if g == _g
+                ),
+            )
         ),
     )
 
     m.FUEL_PRJS_FUEL_GROUP_OPR_TMPS = Set(
         dimen=3,
-        initialize=lambda mod: set(
-            (g, fg, tmp)
-            for (g, tmp) in mod.FUEL_PRJ_OPR_TMPS
-            for _g, fg, f in mod.FUEL_PRJ_FUELS_FUEL_GROUP
-            if g == _g
+        initialize=lambda mod: sorted(
+            list(
+                set(
+                    (g, fg, tmp)
+                    for (g, tmp) in mod.FUEL_PRJ_OPR_TMPS
+                    for _g, fg, f in mod.FUEL_PRJ_FUELS_FUEL_GROUP
+                    if g == _g
+                ),
+            )
         ),
     )
 
     m.HR_CURVE_PRJS_OPR_TMPS_SGMS = Set(
         dimen=3,
-        initialize=lambda mod: set(
-            (g, tmp, s)
-            for (g, tmp) in mod.PRJ_OPR_TMPS
-            for _g, p, s in mod.HR_CURVE_PRJS_PRDS_SGMS
-            if g == _g and mod.period[tmp] == p
+        initialize=lambda mod: sorted(
+            list(
+                set(
+                    (g, tmp, s)
+                    for (g, tmp) in mod.PRJ_OPR_TMPS
+                    for _g, p, s in mod.HR_CURVE_PRJS_PRDS_SGMS
+                    if g == _g and mod.period[tmp] == p
+                ),
+            )
         ),
     )
 
     m.HR_CURVE_PRJS_OPR_TMPS = Set(
         dimen=2,
         within=m.FUEL_PRJ_OPR_TMPS,
-        initialize=lambda mod: set(
-            (g, tmp) for (g, tmp, s) in mod.HR_CURVE_PRJS_OPR_TMPS_SGMS
+        initialize=lambda mod: sorted(
+            list(
+                set((g, tmp) for (g, tmp, s) in mod.HR_CURVE_PRJS_OPR_TMPS_SGMS),
+            )
         ),
     )
 
@@ -229,11 +255,15 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.STARTUP_FUEL_PRJS_FUEL_OPR_TMPS = Set(
         dimen=3,
-        initialize=lambda mod: set(
-            (g, f, tmp)
-            for (g, tmp) in mod.STARTUP_FUEL_PRJ_OPR_TMPS
-            for _g, f in mod.FUEL_PRJ_FUELS
-            if g == _g
+        initialize=lambda mod: sorted(
+            list(
+                set(
+                    (g, f, tmp)
+                    for (g, tmp) in mod.STARTUP_FUEL_PRJ_OPR_TMPS
+                    for _g, f in mod.FUEL_PRJ_FUELS
+                    if g == _g
+                ),
+            )
         ),
     )
 
@@ -535,7 +565,17 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 ###############################################################################
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
 
     :param m:
@@ -547,7 +587,14 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :return:
     """
     project_fuels_file = os.path.join(
-        scenario_directory, str(subproblem), str(stage), "inputs", "project_fuels.tab"
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+        "project_fuels.tab",
     )
     if os.path.exists(project_fuels_file):
         data_portal.load(
@@ -560,7 +607,16 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         )
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
+):
     """
     Export fuel burn results.
     :param scenario_directory:
@@ -576,8 +632,11 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     with open(
         os.path.join(
             scenario_directory,
-            str(subproblem),
-            str(stage),
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
             "results",
             "project_fuel_burn.csv",
         ),
@@ -616,9 +675,11 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                     m.technology[p],
                     f,
                     value(m.Project_Opr_Fuel_Burn_by_Fuel[p, f, tmp]),
-                    value(m.Project_Startup_Fuel_Burn_by_Fuel[p, f, tmp])
-                    if p in m.STARTUP_FUEL_PRJS
-                    else None,
+                    (
+                        value(m.Project_Startup_Fuel_Burn_by_Fuel[p, f, tmp])
+                        if p in m.STARTUP_FUEL_PRJS
+                        else None
+                    ),
                     value(m.Total_Fuel_Burn_by_Fuel_MMBtu[p, f, tmp]),
                     value(m.Project_Fuel_Contribution_by_Fuel[p, f, tmp]),
                     (
@@ -634,7 +695,16 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 
 
 def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    c,
+    db,
+    results_directory,
+    quiet,
 ):
     """
 
@@ -649,6 +719,9 @@ def import_results_into_database(
         conn=db,
         cursor=c,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         quiet=quiet,

@@ -91,10 +91,14 @@ def project_relevant_periods(
     capital costs) given all project-vintages and relevant periods by
     project-vintage (the lifetime is allowed to differ by vintage).
     """
-    return set(
-        (g, p)
-        for (g, v) in project_vintages_set
-        for p in relevant_periods_by_project_vintage_set[g, v]
+    return sorted(
+        list(
+            set(
+                (g, p)
+                for (g, v) in project_vintages_set
+                for p in relevant_periods_by_project_vintage_set[g, v]
+            )
+        )
     )
 
 
@@ -190,11 +194,22 @@ def spec_get_inputs_from_database(conn, subscenarios, capacity_type):
     return spec_project_params
 
 
-def spec_write_tab_file(scenario_directory, subproblem, stage, spec_project_params):
+def spec_write_tab_file(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    spec_project_params,
+):
     spec_params_filepath = os.path.join(
         scenario_directory,
-        str(subproblem),
-        str(stage),
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
         "inputs",
         "spec_capacity_period_params.tab",
     )
@@ -281,13 +296,28 @@ def write_from_query(spec_project_params, writer):
         )
 
 
-def spec_determine_inputs(scenario_directory, subproblem, stage, capacity_type):
+def spec_determine_inputs(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    capacity_type,
+):
     # Determine the relevant projects
     project_list = list()
 
     df = pd.read_csv(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "projects.tab",
         ),
         sep="\t",
         usecols=["project", "capacity_type"],
@@ -317,8 +347,11 @@ def spec_determine_inputs(scenario_directory, subproblem, stage, capacity_type):
     df = pd.read_csv(
         os.path.join(
             scenario_directory,
-            str(subproblem),
-            str(stage),
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
             "inputs",
             "spec_capacity_period_params.tab",
         ),
@@ -383,20 +416,28 @@ def spec_determine_inputs(scenario_directory, subproblem, stage, capacity_type):
     main_dict["hyb_gen_fixed_cost_per_mw_yr"] = hyb_gen_spec_fixed_cost_per_mw_yr_dict
     main_dict["hyb_stor_fixed_cost_per_mw_yr"] = hyb_stor_spec_fixed_cost_per_mw_yr_dict
     main_dict["fixed_cost_per_mwh_yr"] = spec_fixed_cost_per_mwh_yr_dict
-    main_dict[
-        "fuel_production_capacity_fixed_cost_per_fuelunitperhour_yr"
-    ] = spec_fuel_prod_fixed_cost_dict
-    main_dict[
-        "fuel_release_capacity_fixed_cost_per_fuelunitperhour_yr"
-    ] = spec_fuel_rel_fixed_cost_dict
-    main_dict[
-        "fuel_storage_capacity_fixed_cost_per_fuelunit_yr"
-    ] = spec_fuel_stor_fixed_cost_dict
+    main_dict["fuel_production_capacity_fixed_cost_per_fuelunitperhour_yr"] = (
+        spec_fuel_prod_fixed_cost_dict
+    )
+    main_dict["fuel_release_capacity_fixed_cost_per_fuelunitperhour_yr"] = (
+        spec_fuel_rel_fixed_cost_dict
+    )
+    main_dict["fuel_storage_capacity_fixed_cost_per_fuelunit_yr"] = (
+        spec_fuel_stor_fixed_cost_dict
+    )
 
     return project_period_list, main_dict
 
 
-def read_results_file_generic(scenario_directory, subproblem, stage, capacity_type):
+def read_results_file_generic(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    capacity_type,
+):
     """
     :param scenario_directory:
     :param subproblem:
@@ -409,8 +450,10 @@ def read_results_file_generic(scenario_directory, subproblem, stage, capacity_ty
     df = pd.read_csv(
         os.path.join(
             scenario_directory,
-            str(subproblem),
-            str(stage),
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
             "results",
             "project_period.csv",
         )

@@ -37,7 +37,16 @@ import gridpath.project.operations.operational_types as op_type_init
 from gridpath.project import PROJECT_TIMEPOINT_DF
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     The following Pyomo model components are defined in this module:
 
@@ -181,6 +190,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     required_operational_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         which_type="operational_type",
@@ -206,32 +218,40 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.VAR_OM_COST_CURVE_PRJS_OPR_TMPS_SGMS = Set(
         dimen=3,
-        initialize=lambda mod: list(
-            set(
-                (g, tmp, s)
-                for (g, tmp) in mod.PRJ_OPR_TMPS
-                for _g, p, s in mod.VAR_OM_COST_CURVE_PRJS_PRDS_SGMS
-                if g == _g and mod.period[tmp] == p
-            )
+        initialize=lambda mod: sorted(
+            list(
+                set(
+                    (g, tmp, s)
+                    for (g, tmp) in mod.PRJ_OPR_TMPS
+                    for _g, p, s in mod.VAR_OM_COST_CURVE_PRJS_PRDS_SGMS
+                    if g == _g and mod.period[tmp] == p
+                )
+            ),
         ),
     )
 
     m.VAR_OM_COST_CURVE_PRJS_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: list(
-            set((g, tmp) for (g, tmp, s) in mod.VAR_OM_COST_CURVE_PRJS_OPR_TMPS_SGMS)
+        initialize=lambda mod: sorted(
+            list(
+                set(
+                    (g, tmp) for (g, tmp, s) in mod.VAR_OM_COST_CURVE_PRJS_OPR_TMPS_SGMS
+                )
+            ),
         ),
     )
 
     # All VOM projects
     m.VAR_OM_COST_ALL_PRJS_OPR_TMPS = Set(
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: list(
-            set(
-                mod.VAR_OM_COST_SIMPLE_PRJ_OPR_TMPS
-                | mod.VAR_OM_COST_CURVE_PRJS_OPR_TMPS
-            )
+        initialize=lambda mod: sorted(
+            list(
+                set(
+                    mod.VAR_OM_COST_SIMPLE_PRJ_OPR_TMPS
+                    | mod.VAR_OM_COST_CURVE_PRJS_OPR_TMPS
+                )
+            ),
         ),
     )
 
@@ -529,7 +549,16 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 ###############################################################################
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
+):
     """
     Export operations results. Note: fuel cost includes startup fuel as well
     if applicable, in which case this is startup fuel cost is additional to
@@ -559,24 +588,34 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         [
             prj,
             tmp,
-            value(m.Variable_OM_Cost[prj, tmp])
-            if prj in m.VAR_OM_COST_ALL_PRJS
-            else None,
+            (
+                value(m.Variable_OM_Cost[prj, tmp])
+                if prj in m.VAR_OM_COST_ALL_PRJS
+                else None
+            ),
             value(m.Fuel_Cost[prj, tmp]) if prj in m.FUEL_PRJS else None,
             value(m.Startup_Cost[prj, tmp]) if prj in m.STARTUP_COST_PRJS else None,
             value(m.Shutdown_Cost[prj, tmp]) if prj in m.SHUTDOWN_COST_PRJS else None,
-            value(m.Operational_Violation_Cost[prj, tmp])
-            if prj in m.VIOL_ALL_PRJ_OPR_TMPS
-            else None,
-            value(m.Curtailment_Cost[prj, tmp])
-            if prj in m.CURTAILMENT_COST_PRJS
-            else None,
-            value(m.SOC_Penalty_Cost[prj, tmp])
-            if prj in m.SOC_PENALTY_COST_PRJS
-            else None,
-            value(m.SOC_Penalty_Last_Tmp_Cost[prj, tmp])
-            if prj in m.SOC_LAST_TMP_PENALTY_COST_PRJS
-            else None,
+            (
+                value(m.Operational_Violation_Cost[prj, tmp])
+                if prj in m.VIOL_ALL_PRJ_OPR_TMPS
+                else None
+            ),
+            (
+                value(m.Curtailment_Cost[prj, tmp])
+                if prj in m.CURTAILMENT_COST_PRJS
+                else None
+            ),
+            (
+                value(m.SOC_Penalty_Cost[prj, tmp])
+                if prj in m.SOC_PENALTY_COST_PRJS
+                else None
+            ),
+            (
+                value(m.SOC_Penalty_Last_Tmp_Cost[prj, tmp])
+                if prj in m.SOC_LAST_TMP_PENALTY_COST_PRJS
+                else None
+            ),
         ]
         for (prj, tmp) in m.PRJ_OPR_TMPS
     ]

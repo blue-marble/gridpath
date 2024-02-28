@@ -19,13 +19,22 @@ from gridpath.auxiliary.db_interface import import_csv
 LOAD_ZONE_TMP_DF = "load_zone_timepoint_df"
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
+):
     """ """
     # First create the results dataframes
     # Other modules will update these dataframe with actual results
     # The results dataframes are by index
 
-    # Zone-period DF
+    # Zone-tmp DF
     lz_tmp_df = pd.DataFrame(
         columns=[
             "load_zone",
@@ -58,7 +67,16 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 
 
 def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    c,
+    db,
+    results_directory,
+    quiet,
 ):
     """
 
@@ -73,9 +91,26 @@ def import_results_into_database(
         conn=db,
         cursor=c,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         quiet=quiet,
         results_directory=results_directory,
         which_results="system_load_zone_timepoint",
+    )
+
+    import_csv(
+        conn=db,
+        cursor=c,
+        scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        quiet=quiet,
+        results_directory=results_directory,
+        which_results="system_load_zone_timepoint_loss_of_load_summary",
     )

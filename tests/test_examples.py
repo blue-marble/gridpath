@@ -37,17 +37,10 @@ CSV_PATH = "../db//csvs_test_examples"
 SCENARIOS_CSV = os.path.join(CSV_PATH, "scenarios.csv")
 TEST_SCENARIOS_CSV = "../tests/test_data/test_scenario_objective_function_values.csv"
 
-# Travis CI VM machines run on Ubuntu 16.04.7 LTS, which has an older
-# version of Cbc only (2.8.12) and gives slightly different results for some
-# tests
-UBUNTU_16 = (
-    True
-    if (platform.system() == "Linux" and platform.release() == "4.15.0-1098-gcp")
-    else False
-)
-
-# Windows check
-WINDOWS = True if os.name == "nt" else False
+# Platform check
+LINUX = True if platform.system() == "Linux" else False
+MACOS = True if platform.system() == "Darwin" else False
+WINDOWS = True if platform.system() == "Windows" else False
 
 
 class TestExamples(unittest.TestCase):
@@ -208,19 +201,31 @@ class TestExamples(unittest.TestCase):
             logging.exception(e)
             os.remove(DB_PATH)
 
-    def validate_and_test_example_generic(self, scenario_name, literal=False):
+    def validate_and_test_example_generic(
+        self, scenario_name, literal=False, skip_validation=False
+    ):
+        # Use the expected objective column by default
+        column_to_use = "expected_objective"
+        if MACOS and not pd.isnull(
+            self.df.loc[scenario_name]["expected_objective_darwin"]
+        ):
+            column_to_use = "expected_objective_darwin"
+        if WINDOWS and not pd.isnull(
+            self.df.loc[scenario_name]["expected_objective_windows"]
+        ):
+            column_to_use = "expected_objective_windows"
+
         # For multi-subproblem and multi-stage problems, we need to evaluate
         # the objective function as a literal (as it is in dictionary format
         # stored as string in the CSV)
         # For the rest of the problems, convert the objective function value
         # from string to floating point data type
         if literal:
-            objective = ast.literal_eval(
-                self.df.loc[scenario_name]["expected_objective"]
-            )
+            objective = ast.literal_eval(self.df.loc[scenario_name][column_to_use])
         else:
-            objective = float(self.df.loc[scenario_name]["expected_objective"])
-        self.check_validation(scenario_name)
+            objective = float(self.df.loc[scenario_name][column_to_use])
+        if not skip_validation:
+            self.check_validation(scenario_name)
         self.run_and_check_objective(scenario_name, objective)
 
     def test_example_test(self):
@@ -1130,15 +1135,6 @@ class TestExamples(unittest.TestCase):
         )
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
-    def test_example_test_period_tx_targets(self):
-        """
-        Check validation and objective function value of "test_example_test_period_tx_targets"
-        example
-        :return:
-        """
-        scenario_name = "test_period_tx_targets"
-        self.validate_and_test_example_generic(scenario_name=scenario_name)
-
     def test_example_test_w_flex_load(self):
         """
         Check validation and objective function value of "test_w_storage" example
@@ -1260,17 +1256,30 @@ class TestExamples(unittest.TestCase):
 
     def test_test_performance_standard_carbon_credits_w_cap_no_credits_mapping(self):
         """
-        Check validation and objective function value of "test_performance_standard" example
+        Check validation and objective function value of
+        "test_performance_standard_carbon_credits_w_cap_no_credits_mapping" example
         :return:
         """
-
-        self.check_validation(
+        scenario_name = (
             "test_performance_standard_carbon_credits_w_cap_no_credits_mapping"
         )
-        self.run_and_check_objective(
-            "test_performance_standard_carbon_credits_w_cap_no_credits_mapping",
-            -3592014778836.2856,
-        )
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_test_new_solar_carbon_credits_w_buy(self):
+        """
+        Check validation and objective function value of "test_new_solar_carbon_credits_w_buy" example
+        :return:
+        """
+        scenario_name = "test_new_solar_carbon_credits_w_buy"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_test_new_solar_carbon_credits_w_buy_and_sell(self):
+        """
+        Check validation and objective function value of "test_new_solar_carbon_credits_w_buy_and_sell" example
+        :return:
+        """
+        scenario_name = "test_new_solar_carbon_credits_w_buy_and_sell"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_single_stage_prod_cost_w_spinup_lookahead(self):
         """
@@ -1281,6 +1290,38 @@ class TestExamples(unittest.TestCase):
         scenario_name = "single_stage_prod_cost_w_spinup_lookahead"
         self.validate_and_test_example_generic(
             scenario_name=scenario_name, literal=True
+        )
+
+    def test_example_test_tx_targets_max(self):
+        """
+        Check validation and objective function value of
+        "test_example_test_tx_targets_max"
+        example
+        :return:
+        """
+        scenario_name = "test_tx_targets_max"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_ra_toolkit_monte_carlo(self):
+        """
+        Check validation and objective function values of
+        "ra_toolkit_monte_carlo" example
+        :return:
+        """
+        scenario_name = "ra_toolkit_monte_carlo"
+        self.validate_and_test_example_generic(
+            scenario_name=scenario_name, literal=True, skip_validation=True
+        )
+
+    def test_example_ra_toolkit_sync(self):
+        """
+        Check validation and objective function values of
+        "ra_toolkit_monte_carlo" example
+        :return:
+        """
+        scenario_name = "ra_toolkit_sync"
+        self.validate_and_test_example_generic(
+            scenario_name=scenario_name, literal=True, skip_validation=True
         )
 
     @classmethod

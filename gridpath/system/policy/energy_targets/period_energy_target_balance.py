@@ -31,7 +31,16 @@ from gridpath.common_functions import (
 from gridpath.system.policy.energy_targets import ENERGY_TARGET_ZONE_PRD_DF
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
 
     :param m:
@@ -72,7 +81,16 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
+):
     """
 
     :param scenario_directory:
@@ -99,25 +117,32 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             value(m.Period_Energy_Target[z, p]),
             value(m.Total_Delivered_Period_Energy_Target_Energy_MWh[z, p])
             + value(m.Total_Curtailed_Period_Energy_Target_Energy_MWh[z, p]),
-            1
-            if float(m.period_energy_target_mwh[z, p]) == 0
-            else value(m.Total_Delivered_Period_Energy_Target_Energy_MWh[z, p])
-            / float(m.period_energy_target_mwh[z, p]),
-            0
-            if (
-                value(m.Total_Delivered_Period_Energy_Target_Energy_MWh[z, p])
-                + value(m.Total_Curtailed_Period_Energy_Target_Energy_MWh[z, p])
-            )
-            == 0
-            else value(m.Total_Curtailed_Period_Energy_Target_Energy_MWh[z, p])
-            / (
-                value(m.Total_Delivered_Period_Energy_Target_Energy_MWh[z, p])
-                + value(m.Total_Curtailed_Period_Energy_Target_Energy_MWh[z, p])
+            (
+                1
+                if float(m.period_energy_target_mwh[z, p]) == 0
+                else value(m.Total_Delivered_Period_Energy_Target_Energy_MWh[z, p])
+                / float(m.period_energy_target_mwh[z, p])
+            ),
+            (
+                0
+                if (
+                    value(m.Total_Delivered_Period_Energy_Target_Energy_MWh[z, p])
+                    + value(m.Total_Curtailed_Period_Energy_Target_Energy_MWh[z, p])
+                )
+                == 0
+                else value(m.Total_Curtailed_Period_Energy_Target_Energy_MWh[z, p])
+                / (
+                    value(m.Total_Delivered_Period_Energy_Target_Energy_MWh[z, p])
+                    + value(m.Total_Curtailed_Period_Energy_Target_Energy_MWh[z, p])
+                )
             ),
             value(m.Period_Energy_Target_Shortage_MWh_Expression[z, p]),
-            duals_wrapper(m, getattr(m, "Period_Energy_Target_Constraint")[z, p])
-            if (z, p) in [idx for idx in getattr(m, "Period_Energy_Target_Constraint")]
-            else None,
+            (
+                duals_wrapper(m, getattr(m, "Period_Energy_Target_Constraint")[z, p])
+                if (z, p)
+                in [idx for idx in getattr(m, "Period_Energy_Target_Constraint")]
+                else None
+            ),
             (
                 none_dual_type_error_wrapper(
                     duals_wrapper(
@@ -143,7 +168,16 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     getattr(d, ENERGY_TARGET_ZONE_PRD_DF).update(results_df)
 
 
-def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
+def save_duals(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    instance,
+    dynamic_components,
+):
     instance.constraint_indices["Period_Energy_Target_Constraint"] = [
         "energy_target_zone",
         "period",
@@ -151,7 +185,14 @@ def save_duals(scenario_directory, subproblem, stage, instance, dynamic_componen
     ]
 
 
-def summarize_results(scenario_directory, subproblem, stage):
+def summarize_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     :param scenario_directory:
     :param subproblem:
@@ -162,7 +203,13 @@ def summarize_results(scenario_directory, subproblem, stage):
     """
 
     summary_results_file = os.path.join(
-        scenario_directory, subproblem, stage, "results", "summary_results.txt"
+        scenario_directory,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "results",
+        "summary_results.txt",
     )
 
     # Open in 'append' mode, so that results already written by other
@@ -176,8 +223,10 @@ def summarize_results(scenario_directory, subproblem, stage):
     results_df = pd.read_csv(
         os.path.join(
             scenario_directory,
-            str(subproblem),
-            str(stage),
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
             "results",
             "system_period_energy_target.csv",
         )
@@ -210,7 +259,7 @@ def summarize_results(scenario_directory, subproblem, stage):
                 )
                 * 100
             )
-        results_df.percent_curtailed[indx] = pct
+        results_df.loc[indx, "percent_curtailed"] = pct
 
     # Drop unnecessary columns before exporting
     results_df.drop("discount_factor", axis=1, inplace=True)

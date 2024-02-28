@@ -68,7 +68,7 @@ def all_modules_list():
         "system.policy.energy_targets.period_energy_target",
         "system.policy.energy_targets.horizon_energy_target",
         "system.policy.transmission_targets",
-        "system.policy.transmission_targets.period_transmission_target",
+        "system.policy.transmission_targets.transmission_target",
         "system.policy.carbon_cap",
         "system.policy.carbon_cap.carbon_cap",
         "system.policy.carbon_tax",
@@ -128,6 +128,7 @@ def all_modules_list():
         "project.reliability.local_capacity",
         "project.reliability.local_capacity.local_capacity_contribution",
         "project.consolidate_results",
+        "project.summary_results",
         "transmission",
         "transmission.capacity",
         "transmission.capacity.capacity_types",
@@ -178,29 +179,26 @@ def all_modules_list():
         "system.policy.energy_targets.horizon_energy_target_balance",
         "system.policy.energy_targets.consolidate_results",
         "system.policy.transmission_targets"
-        ".aggregate_period_transmission_target_contributions",
-        "system.policy.transmission_targets.period_transmission_target_balance",
+        ".aggregate_transmission_target_contributions",
+        "system.policy.transmission_targets.transmission_target_balance",
         "system.policy.transmission_targets.consolidate_results",
         "system.policy.carbon_cap.aggregate_project_carbon_emissions",
+        "system.policy.carbon_cap.aggregate_project_carbon_credits",
         "system.policy.carbon_cap.aggregate_transmission_carbon_emissions",
-        "system.policy.carbon_cap.purchase_credits",
         "system.policy.carbon_cap.carbon_balance",
         "system.policy.carbon_cap.consolidate_results",
         "system.policy.carbon_tax.aggregate_project_carbon_emissions",
-        "system.policy.carbon_tax.purchase_credits",
+        "system.policy.carbon_tax.aggregate_project_carbon_credits",
         "system.policy.carbon_tax.carbon_tax_costs",
         "system.policy.carbon_tax.consolidate_results",
         "system.policy.subsidies",
         "system.policy.performance_standard.aggregate_project_performance_standard",
-        "system.policy.performance_standard.purchase_credits",
+        "system.policy.performance_standard.aggregate_project_carbon_credits",
         "system.policy.performance_standard.performance_standard_balance",
         "system.policy.performance_standard.consolidate_results",
         "system.policy.carbon_credits",
         "system.policy.carbon_credits.aggregate_project_carbon_credits",
-        "system.policy.carbon_credits.aggregate_carbon_cap_zone_purchases",
-        "system.policy.carbon_credits.aggregate_performance_standard_zone_purchases",
-        "system.policy.carbon_credits.aggregate_carbon_tax_zone_purchases",
-        "system.policy.carbon_credits.sell_credits",
+        "system.policy.carbon_credits.sell_and_buy_credits",
         "system.policy.carbon_credits.carbon_credits_balance",
         "system.policy.carbon_credits.consolidate_results",
         "system.policy.fuel_burn_limits.aggregate_project_fuel_burn",
@@ -233,13 +231,13 @@ def all_modules_list():
         "objective.system.policy.aggregate_period_energy_target_violation_penalties",
         "objective.system.policy"
         ".aggregate_horizon_energy_target_violation_penalties",
-        "objective.system.policy.aggregate_period_transmission_target_violation_penalties",
+        "objective.system.policy.aggregate_transmission_target_violation_penalties",
         "objective.system.policy.aggregate_carbon_cap_violation_penalties",
         "objective.system.policy.aggregate_carbon_tax_costs",
         "objective.system.policy.aggregate_performance_standard_violation_penalties",
         "objective.system.policy.aggregate_fuel_burn_limit_violation_penalties",
         "objective.system.policy.aggregate_subsidies",
-        "objective.system.policy.aggregate_carbon_credit_sales",
+        "objective.system.policy.aggregate_carbon_credit_sales_and_purchases",
         "objective.system.reliability.prm.aggregate_capacity_transfer_costs",
         "objective.system.reliability.prm.dynamic_elcc_tuning_penalties",
         "objective.system.reliability.prm.aggregate_prm_violation_penalties",
@@ -349,15 +347,15 @@ def optional_modules_list():
             "objective.system.policy"
             ".aggregate_horizon_energy_target_violation_penalties",
         ],
-        "period_transmission_target": [
-            "system.policy.transmission_targets.period_transmission_target",
+        "transmission_target": [
+            "system.policy.transmission_targets.transmission_target",
             "system.policy.transmission_targets",
             "system.policy.transmission_targets"
-            ".aggregate_period_transmission_target_contributions",
-            "system.policy.transmission_targets.period_transmission_target_balance",
+            ".aggregate_transmission_target_contributions",
+            "system.policy.transmission_targets.transmission_target_balance",
             "system.policy.transmission_targets.consolidate_results",
             "objective.system.policy"
-            ".aggregate_period_transmission_target_violation_penalties",
+            ".aggregate_transmission_target_violation_penalties",
         ],
         "carbon_cap": [
             "geography.carbon_cap_zones",
@@ -394,10 +392,10 @@ def optional_modules_list():
             "project.operations.carbon_credits",
             "system.policy.carbon_credits",
             "system.policy.carbon_credits.aggregate_project_carbon_credits",
-            "system.policy.carbon_credits.sell_credits",
+            "system.policy.carbon_credits.sell_and_buy_credits",
             "system.policy.carbon_credits.carbon_credits_balance",
             "system.policy.carbon_credits.consolidate_results",
-            "objective.system.policy.aggregate_carbon_credit_sales",
+            "objective.system.policy.aggregate_carbon_credit_sales_and_purchases",
         ],
         "fuel_burn_limit": [
             "geography.fuel_burn_limit_balancing_areas",
@@ -494,17 +492,13 @@ def cross_feature_modules_list():
             "objective.system.reliability.prm.dynamic_elcc_tuning_penalties"
         ],
         ("carbon_cap", "carbon_credits"): [
-            "system.policy.carbon_cap.purchase_credits",
-            "system.policy.carbon_credits.aggregate_carbon_cap_zone_purchases",
+            "system.policy.carbon_cap.aggregate_project_carbon_credits",
         ],
         ("performance_standard", "carbon_credits"): [
-            "system.policy.performance_standard.purchase_credits",
-            "system.policy.carbon_credits"
-            ".aggregate_performance_standard_zone_purchases",
+            "system.policy.performance_standard.aggregate_project_carbon_credits",
         ],
         ("carbon_tax", "carbon_credits"): [
-            "system.policy.carbon_tax.purchase_credits",
-            "system.policy.carbon_credits.aggregate_carbon_tax_zone_purchases",
+            "system.policy.carbon_tax.aggregate_project_carbon_credits",
         ],
     }
     return cross_modules
@@ -533,7 +527,7 @@ def feature_shared_modules_list():
             "system.policy.energy_targets",
             "system.policy.energy_targets.consolidate_results",
         ],
-        ("period_transmission_target", "horizon_transmission_target"): [
+        ("transmission_target", "horizon_transmission_target"): [
             "geography.transmission_target_zones",
             "transmission.operations.transmission_target_contributions",
         ],

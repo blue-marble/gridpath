@@ -2,6 +2,7 @@ path,feature,subscenario,table,subscenario_type,custom_method,project_input,proj
 solver,core,solver_options_id,options_solver,simple,,0,0,,,,
 temporal,core,temporal_scenario_id,temporal,dir_subsc_only,,0,0,,"ignore
 ",,
+temporal,core,temporal_scenario_id,temporal_iterations,dir_aux,,0,0,iterations.csv,,,
 temporal,core,temporal_scenario_id,temporal_periods,dir_aux,,0,0,period_params.csv,,,
 temporal,core,temporal_scenario_id,temporal_superperiods,dir_aux,,0,0,superperiods.csv,,,
 temporal,core,temporal_scenario_id,temporal_horizons,dir_aux,,0,0,horizon_params.csv,,,
@@ -35,7 +36,8 @@ project/project_operational_chars,core,project_operational_chars_scenario_id,pro
 ,data_dependent,supply_curve_scenario_id,project_shiftable_load_supply_curve,simple,,0,0,,,,
 project/project_availability/project_availability_types,data_dependent,project_availability_scenario_id,project_availability,simple,,0,0,,,,
 project/project_availability/project_availability_endogenous,data_dependent,endogenous_availability_scenario_id,project_availability_endogenous,simple,,1,0,,,inputs_project_availability,project_availability_scenario_id
-project/project_availability/project_availability_exogenous,data_dependent,exogenous_availability_scenario_id,project_availability_exogenous,simple,,1,0,,,inputs_project_availability,project_availability_scenario_id
+project/project_availability/project_availability_exogenous,data_dependent,exogenous_availability_independent_scenario_id,project_availability_exogenous_independent,simple,,1,0,,,inputs_project_availability,project_availability_scenario_id
+project/project_availability/weather,data_dependent,exogenous_availability_weather_scenario_id,project_availability_exogenous_weather,simple,,1,0,,,inputs_project_availability,project_availability_scenario_id
 fuels/fuel_chars,fuels,fuel_scenario_id,fuels,simple,,0,0,,,,
 fuels/fuel_prices,fuels,fuel_price_scenario_id,fuel_prices,simple,,0,0,,,,
 transmission/transmission_portfolios,transmission,transmission_portfolio_scenario_id,transmission_portfolios,simple,,0,0,,,,
@@ -96,7 +98,7 @@ policy/energy_targets/horizon_targets,energy_target,horizon_energy_target_scenar
 policy/energy_targets/horizon_targets,energy_target,horizon_energy_target_scenario_id,system_horizon_energy_target_load_zone_map,dir_aux,,0,0,load_zone_mapping.csv,,,
 policy/transmission_targets/zones,transmission_target,transmission_target_zone_scenario_id,geography_transmission_target_zones,simple,,0,0,,,,
 policy/transmission_targets/tx_line_zones,transmission_target,tx_line_transmission_target_zone_scenario_id,tx_line_transmission_target_zones,simple,,0,0,,,,
-policy/transmission_targets/period_targets,transmission_target,period_transmission_target_scenario_id,system_period_transmission_targets,simple,,0,0,,,,
+policy/transmission_targets/targets,transmission_target,transmission_target_scenario_id,system_transmission_targets,simple,,0,0,,,,
 policy/carbon_cap/geography_carbon_cap_zones,carbon_cap,carbon_cap_zone_scenario_id,geography_carbon_cap_zones,simple,,0,0,,,,
 policy/carbon_cap/project_carbon_cap_zones,carbon_cap,project_carbon_cap_zone_scenario_id,project_carbon_cap_zones,simple,,0,0,,,,
 policy/carbon_cap/system_carbon_cap_targets,carbon_cap,carbon_cap_target_scenario_id,system_carbon_cap_targets,simple,,0,0,,,,
@@ -112,9 +114,10 @@ policy/performance_standard/project_performance_standard_zones,performance_stand
 policy/performance_standard/system_performance_standard,performance_standard,performance_standard_scenario_id,system_performance_standard,simple,,0,0,,,,
 policy/performance_standard/carbon_credits,carbon_credits,performance_standard_zones_carbon_credits_zones_scenario_id,system_performance_standard_zones_carbon_credits_zones,simple,,0,0,,,,
 policy/carbon_credits/zones,carbon_credits,carbon_credits_zone_scenario_id,geography_carbon_credits_zones,simple,,0,0,,,,
-policy/carbon_credits/project_zones,carbon_credits,project_carbon_credits_zone_scenario_id,project_carbon_credits_zones,simple,,0,0,,,,
+policy/carbon_credits/project_generation_zones,carbon_credits,project_carbon_credits_generation_zone_scenario_id,project_carbon_credits_generation_zones,simple,,0,0,,,,
+policy/carbon_credits/project_purchase_zones,carbon_credits,project_carbon_credits_purchase_zone_scenario_id,project_carbon_credits_purchase_zones,simple,,0,0,,,,
 policy/carbon_credits/project_credits,carbon_credits,project_carbon_credits_scenario_id,project_carbon_credits,simple,,0,0,,,,
-policy/carbon_credits/prices,carbon_credits,carbon_credits_price_scenario_id,system_carbon_credits_prices,simple,,0,0,,,,
+policy/carbon_credits/params,carbon_credits,carbon_credits_params_scenario_id,system_carbon_credits_params,simple,,0,0,,,,
 policy/fuel_burn_limits/bas,fuel_burn_limit,fuel_burn_limit_ba_scenario_id,geography_fuel_burn_limit_balancing_areas,simple,,0,0,,,,
 policy/fuel_burn_limits/project_bas,fuel_burn_limit,project_fuel_burn_limit_ba_scenario_id,project_fuel_burn_limit_balancing_areas,simple,,0,0,,,,
 policy/fuel_burn_limits/limits,fuel_burn_limit,fuel_burn_limit_scenario_id,system_fuel_burn_limits,simple,,0,0,,,,

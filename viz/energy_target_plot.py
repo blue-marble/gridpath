@@ -171,7 +171,7 @@ def create_plot(df, title, energy_unit, cost_unit, ylimit=None):
         plot_height=500,
         tools=["pan", "reset", "zoom_in", "zoom_out", "save", "help"],
         title=title,
-        x_range=df[x_col]
+        x_range=df[x_col],
         # sizing_mode="scale_both"
     )
 

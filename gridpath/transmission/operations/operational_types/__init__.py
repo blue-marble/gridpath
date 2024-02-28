@@ -29,7 +29,16 @@ from gridpath.transmission.operations.common_functions import (
 # TODO: missing test for this module
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     Go through each relevant operational type and add the module components
     for that operational type.
@@ -38,8 +47,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     df = pd.read_csv(
         os.path.join(
             scenario_directory,
-            str(subproblem),
-            str(stage),
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
             "inputs",
             "transmission_lines.tab",
         ),
@@ -57,14 +69,33 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     for op_m in required_tx_operational_modules:
         imp_op_m = imported_tx_operational_modules[op_m]
         if hasattr(imp_op_m, "add_model_components"):
-            imp_op_m.add_model_components(m, d, scenario_directory, subproblem, stage)
+            imp_op_m.add_model_components(
+                m,
+                d,
+                scenario_directory,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
+            )
 
 
 # Input-Output
 ###############################################################################
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     Go through each relevant operational type and add load the model data
     for that operational type.
@@ -81,8 +112,11 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     df = pd.read_csv(
         os.path.join(
             scenario_directory,
-            str(subproblem),
-            str(stage),
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
             "inputs",
             "transmission_lines.tab",
         ),
@@ -99,7 +133,15 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     for op_m in required_tx_operational_modules:
         if hasattr(imported_tx_operational_modules[op_m], "load_model_data"):
             imported_tx_operational_modules[op_m].load_model_data(
-                m, d, data_portal, scenario_directory, subproblem, stage
+                m,
+                d,
+                data_portal,
+                scenario_directory,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
             )
 
 
@@ -165,7 +207,15 @@ def get_required_tx_opchar_modules(scenario_id, c):
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     Go through each relevant operational type and write the model inputs
@@ -191,13 +241,30 @@ def write_model_inputs(
     for op_m in required_tx_opchar_modules:
         if hasattr(imported_tx_operational_modules[op_m], "write_model_inputs"):
             imported_tx_operational_modules[op_m].write_model_inputs(
-                scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+                scenario_directory,
+                scenario_id,
+                subscenarios,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
+                conn,
             )
 
 
 # TODO: move this into operations.py?
 def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    c,
+    db,
+    results_directory,
+    quiet,
 ):
     """
     Go through each relevant operational type and import the results into the
@@ -258,7 +325,16 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
 ###############################################################################
 
 
-def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     Go through each relevant operational type and validate the database inputs
     for that operational type.

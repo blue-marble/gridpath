@@ -91,6 +91,9 @@ def generic_add_model_components(
 
 def generic_export_results(
     scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
     m,
@@ -126,8 +129,11 @@ def generic_export_results(
     with open(
         os.path.join(
             scenario_directory,
-            str(subproblem),
-            str(stage),
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
             "results",
             f"system_{reserve_type}.csv",
         ),
@@ -160,9 +166,12 @@ def generic_export_results(
                     m.tmp_weight[tmp],
                     m.hrs_in_tmp[tmp],
                     value(getattr(m, reserve_violation_expression)[ba, tmp]),
-                    duals_wrapper(m, getattr(m, duals_map[reserve_type])[ba, tmp])
-                    if (ba, tmp) in [idx for idx in getattr(m, duals_map[reserve_type])]
-                    else None,
+                    (
+                        duals_wrapper(m, getattr(m, duals_map[reserve_type])[ba, tmp])
+                        if (ba, tmp)
+                        in [idx for idx in getattr(m, duals_map[reserve_type])]
+                        else None
+                    ),
                     (
                         none_dual_type_error_wrapper(
                             duals_wrapper(
@@ -189,7 +198,17 @@ def generic_save_duals(m, reserve_constraint_name):
 
 
 def generic_import_results_to_database(
-    scenario_id, subproblem, stage, c, db, results_directory, reserve_type, quiet
+    scenario_id,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    c,
+    db,
+    results_directory,
+    reserve_type,
+    quiet,
 ):
     """
 
@@ -207,6 +226,9 @@ def generic_import_results_to_database(
         conn=db,
         cursor=c,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         quiet=quiet,

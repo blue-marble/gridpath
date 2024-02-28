@@ -36,7 +36,16 @@ from gridpath.project.capacity.common_functions import (
 import gridpath.project.capacity.capacity_types as cap_type_init
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     +-------------------------------------------------------------------------+
     | Optional Input Params                                                   |
@@ -161,6 +170,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Import needed capacity type modules
     required_capacity_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         which_type="capacity_type",
@@ -379,7 +391,17 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 ###############################################################################
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
 
     :param m:
@@ -391,8 +413,11 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
     potentials_file = os.path.join(
         scenario_directory,
-        str(subproblem),
-        str(stage),
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
         "inputs",
         "new_build_potentials.tab",
     )
@@ -416,7 +441,16 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 ###############################################################################
 
 
-def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_model_inputs_from_database(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -456,7 +490,15 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     Get inputs from database and write out the model input
@@ -472,7 +514,14 @@ def write_model_inputs(
     potentials = [
         row
         for row in get_model_inputs_from_database(
-            scenario_id, subscenarios, subproblem, stage, conn
+            scenario_id,
+            subscenarios,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            conn,
         ).fetchall()
     ]
 
@@ -480,8 +529,11 @@ def write_model_inputs(
         with open(
             os.path.join(
                 scenario_directory,
-                str(subproblem),
-                str(stage),
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
                 "inputs",
                 "new_build_potentials.tab",
             ),
@@ -511,7 +563,16 @@ def write_model_inputs(
                 writer.writerow(replace_nulls)
 
 
-def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
+def save_duals(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    instance,
+    dynamic_components,
+):
     instance.constraint_indices["Min_Build_Power_Constraint"] = [
         "project",
         "period",
@@ -561,7 +622,16 @@ def save_duals(scenario_directory, subproblem, stage, instance, dynamic_componen
     ]
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
+):
     """
     Export capacity results.
     :param scenario_directory:
@@ -586,30 +656,50 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         [
             prj,
             prd,
-            duals_wrapper(m, getattr(m, "Min_Build_Power_Constraint")[prj, prd])
-            if (prj, prd) in [idx for idx in getattr(m, "Min_Build_Power_Constraint")]
-            else None,
-            duals_wrapper(m, getattr(m, "Max_Build_Power_Constraint")[prj, prd])
-            if (prj, prd) in [idx for idx in getattr(m, "Max_Build_Power_Constraint")]
-            else None,
-            duals_wrapper(m, getattr(m, "Min_Power_Constraint")[prj, prd])
-            if (prj, prd) in [idx for idx in getattr(m, "Min_Power_Constraint")]
-            else None,
-            duals_wrapper(m, getattr(m, "Max_Power_Constraint")[prj, prd])
-            if (prj, prd) in [idx for idx in getattr(m, "Max_Power_Constraint")]
-            else None,
-            duals_wrapper(m, getattr(m, "Min_Build_Energy_Constraint")[prj, prd])
-            if (prj, prd) in [idx for idx in getattr(m, "Min_Build_Energy_Constraint")]
-            else None,
-            duals_wrapper(m, getattr(m, "Max_Build_Energy_Constraint")[prj, prd])
-            if (prj, prd) in [idx for idx in getattr(m, "Max_Build_Energy_Constraint")]
-            else None,
-            duals_wrapper(m, getattr(m, "Min_Energy_Constraint")[prj, prd])
-            if (prj, prd) in [idx for idx in getattr(m, "Min_Energy_Constraint")]
-            else None,
-            duals_wrapper(m, getattr(m, "Max_Energy_Constraint")[prj, prd])
-            if (prj, prd) in [idx for idx in getattr(m, "Max_Energy_Constraint")]
-            else None,
+            (
+                duals_wrapper(m, getattr(m, "Min_Build_Power_Constraint")[prj, prd])
+                if (prj, prd)
+                in [idx for idx in getattr(m, "Min_Build_Power_Constraint")]
+                else None
+            ),
+            (
+                duals_wrapper(m, getattr(m, "Max_Build_Power_Constraint")[prj, prd])
+                if (prj, prd)
+                in [idx for idx in getattr(m, "Max_Build_Power_Constraint")]
+                else None
+            ),
+            (
+                duals_wrapper(m, getattr(m, "Min_Power_Constraint")[prj, prd])
+                if (prj, prd) in [idx for idx in getattr(m, "Min_Power_Constraint")]
+                else None
+            ),
+            (
+                duals_wrapper(m, getattr(m, "Max_Power_Constraint")[prj, prd])
+                if (prj, prd) in [idx for idx in getattr(m, "Max_Power_Constraint")]
+                else None
+            ),
+            (
+                duals_wrapper(m, getattr(m, "Min_Build_Energy_Constraint")[prj, prd])
+                if (prj, prd)
+                in [idx for idx in getattr(m, "Min_Build_Energy_Constraint")]
+                else None
+            ),
+            (
+                duals_wrapper(m, getattr(m, "Max_Build_Energy_Constraint")[prj, prd])
+                if (prj, prd)
+                in [idx for idx in getattr(m, "Max_Build_Energy_Constraint")]
+                else None
+            ),
+            (
+                duals_wrapper(m, getattr(m, "Min_Energy_Constraint")[prj, prd])
+                if (prj, prd) in [idx for idx in getattr(m, "Min_Energy_Constraint")]
+                else None
+            ),
+            (
+                duals_wrapper(m, getattr(m, "Max_Energy_Constraint")[prj, prd])
+                if (prj, prd) in [idx for idx in getattr(m, "Max_Energy_Constraint")]
+                else None
+            ),
         ]
         for (prj, prd) in m.PRJ_OPR_PRDS
     ]
@@ -628,7 +718,16 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 ###############################################################################
 
 
-def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -638,7 +737,14 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     :return:
     """
     potentials = get_model_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        conn,
     )
 
     # Convert input data into pandas DataFrame
@@ -656,6 +762,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         write_validation_to_database(
             conn=conn,
             scenario_id=scenario_id,
+            weather_iteration=weather_iteration,
+            hydro_iteration=hydro_iteration,
+            availability_iteration=availability_iteration,
             subproblem_id=subproblem,
             stage_id=stage,
             gridpath_module=__name__,
@@ -671,6 +780,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         write_validation_to_database(
             conn=conn,
             scenario_id=scenario_id,
+            weather_iteration=weather_iteration,
+            hydro_iteration=hydro_iteration,
+            availability_iteration=availability_iteration,
             subproblem_id=subproblem,
             stage_id=stage,
             gridpath_module=__name__,
@@ -687,6 +799,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         write_validation_to_database(
             conn=conn,
             scenario_id=scenario_id,
+            weather_iteration=weather_iteration,
+            hydro_iteration=hydro_iteration,
+            availability_iteration=availability_iteration,
             subproblem_id=subproblem,
             stage_id=stage,
             gridpath_module=__name__,
@@ -702,6 +817,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         write_validation_to_database(
             conn=conn,
             scenario_id=scenario_id,
+            weather_iteration=weather_iteration,
+            hydro_iteration=hydro_iteration,
+            availability_iteration=availability_iteration,
             subproblem_id=subproblem,
             stage_id=stage,
             gridpath_module=__name__,

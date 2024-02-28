@@ -26,11 +26,20 @@ from gridpath.common_functions import duals_wrapper, none_dual_type_error_wrappe
 from gridpath.project.capacity.common_functions import (
     load_project_capacity_type_modules,
 )
-from gridpath.auxiliary.db_interface import import_csv
+from gridpath.auxiliary.db_interface import import_csv, directories_to_db_values
 import gridpath.project.capacity.capacity_types as cap_type_init
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     The following Pyomo model components are defined in this module:
 
@@ -136,7 +145,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.CAPACITY_GROUP_PERIODS = Set(dimen=2)
 
     m.CAPACITY_GROUPS = Set(
-        initialize=lambda mod: list(set([g for (g, p) in mod.CAPACITY_GROUP_PERIODS]))
+        initialize=lambda mod: sorted(
+            list(set([g for (g, p) in mod.CAPACITY_GROUP_PERIODS]))
+        )
     )
 
     m.PROJECTS_IN_CAPACITY_GROUP = Set(m.CAPACITY_GROUPS, within=m.PROJECTS)
@@ -158,6 +169,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Import needed capacity type modules
     required_capacity_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         which_type="capacity_type",
@@ -277,13 +291,26 @@ def total_capacity_min_rule(mod, grp, prd):
 ###############################################################################
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """ """
     # Only load data if the input files were written; otehrwise, we won't
     # initialize the components in this module
 
     req_file = os.path.join(
         scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
         subproblem,
         stage,
         "inputs",
@@ -302,7 +329,14 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         )
 
     prj_file = os.path.join(
-        scenario_directory, subproblem, stage, "inputs", "capacity_group_projects.tab"
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+        "capacity_group_projects.tab",
     )
     if os.path.exists(prj_file):
         proj_groups_df = pd.read_csv(prj_file, delimiter="\t")
@@ -313,25 +347,47 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         data_portal.data()["PROJECTS_IN_CAPACITY_GROUP"] = proj_groups_dict
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
+):
     """ """
     req_file = os.path.join(
         scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
         subproblem,
         stage,
         "inputs",
         "capacity_group_requirements.tab",
     )
     prj_file = os.path.join(
-        scenario_directory, subproblem, stage, "inputs", "capacity_group_projects.tab"
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+        "capacity_group_projects.tab",
     )
 
     if os.path.exists(req_file) and os.path.exists(prj_file):
         with open(
             os.path.join(
                 scenario_directory,
-                str(subproblem),
-                str(stage),
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
                 "results",
                 "project_group_capacity.csv",
             ),
@@ -371,39 +427,119 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                         m.capacity_group_new_capacity_max[grp, prd],
                         m.capacity_group_total_capacity_min[grp, prd],
                         m.capacity_group_total_capacity_max[grp, prd],
-                        duals_wrapper(
-                            m,
-                            getattr(m, "Max_Group_Build_in_Period_Constraint")[
-                                grp, prd
-                            ],
-                        )
-                        if (grp, prd)
-                        in [
-                            idx
-                            for idx in getattr(
-                                m, "Max_Group_Build_in_Period_Constraint"
+                        (
+                            duals_wrapper(
+                                m,
+                                getattr(m, "Max_Group_Build_in_Period_Constraint")[
+                                    grp, prd
+                                ],
                             )
-                        ]
-                        else None,
-                        duals_wrapper(
-                            m,
-                            getattr(m, "Min_Group_Build_in_Period_Constraint")[
-                                grp, prd
-                            ],
-                        )
-                        if (grp, prd)
-                        in [
-                            idx
-                            for idx in getattr(
-                                m, "Min_Group_Build_in_Period_Constraint"
-                            )
-                        ]
-                        else None,
-                        duals_wrapper(
-                            m,
-                            getattr(m, "Max_Group_Total_Cap_in_Period_Constraint")[
-                                grp, prd
+                            if (grp, prd)
+                            in [
+                                idx
+                                for idx in getattr(
+                                    m, "Max_Group_Build_in_Period_Constraint"
+                                )
                             ]
+                            else None
+                        ),
+                        (
+                            duals_wrapper(
+                                m,
+                                getattr(m, "Min_Group_Build_in_Period_Constraint")[
+                                    grp, prd
+                                ],
+                            )
+                            if (grp, prd)
+                            in [
+                                idx
+                                for idx in getattr(
+                                    m, "Min_Group_Build_in_Period_Constraint"
+                                )
+                            ]
+                            else None
+                        ),
+                        (
+                            duals_wrapper(
+                                m,
+                                (
+                                    getattr(
+                                        m, "Max_Group_Total_Cap_in_Period_Constraint"
+                                    )[grp, prd]
+                                    if (grp, prd)
+                                    in [
+                                        idx
+                                        for idx in getattr(
+                                            m,
+                                            "Max_Group_Total_Cap_in_Period_Constraint",
+                                        )
+                                    ]
+                                    else None
+                                ),
+                                duals_wrapper(
+                                    m,
+                                    getattr(
+                                        m, "Min_Group_Total_Cap_in_Period_Constraint"
+                                    )[grp, prd],
+                                ),
+                            )
+                            if (grp, prd)
+                            in [
+                                idx
+                                for idx in getattr(
+                                    m, "Min_Group_Total_Cap_in_Period_Constraint"
+                                )
+                            ]
+                            else None
+                        ),
+                        (
+                            none_dual_type_error_wrapper(
+                                duals_wrapper(
+                                    m,
+                                    getattr(m, "Max_Group_Build_in_Period_Constraint")[
+                                        grp, prd
+                                    ],
+                                ),
+                                m.period_objective_coefficient[prd],
+                            )
+                            if (grp, prd)
+                            in [
+                                idx
+                                for idx in getattr(
+                                    m, "Max_Group_Build_in_Period_Constraint"
+                                )
+                            ]
+                            else None
+                        ),
+                        (
+                            none_dual_type_error_wrapper(
+                                duals_wrapper(
+                                    m,
+                                    getattr(m, "Min_Group_Build_in_Period_Constraint")[
+                                        grp, prd
+                                    ],
+                                ),
+                                m.period_objective_coefficient[prd],
+                            )
+                            if (grp, prd)
+                            in [
+                                idx
+                                for idx in getattr(
+                                    m, "Min_Group_Build_in_Period_Constraint"
+                                )
+                            ]
+                            else None
+                        ),
+                        (
+                            none_dual_type_error_wrapper(
+                                duals_wrapper(
+                                    m,
+                                    getattr(
+                                        m, "Max_Group_Total_Cap_in_Period_Constraint"
+                                    )[grp, prd],
+                                ),
+                                m.period_objective_coefficient[prd],
+                            )
                             if (grp, prd)
                             in [
                                 idx
@@ -411,90 +547,27 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                                     m, "Max_Group_Total_Cap_in_Period_Constraint"
                                 )
                             ]
-                            else None,
-                            duals_wrapper(
-                                m,
-                                getattr(m, "Min_Group_Total_Cap_in_Period_Constraint")[
-                                    grp, prd
-                                ],
-                            ),
-                        )
-                        if (grp, prd)
-                        in [
-                            idx
-                            for idx in getattr(
-                                m, "Min_Group_Total_Cap_in_Period_Constraint"
+                            else None
+                        ),
+                        (
+                            none_dual_type_error_wrapper(
+                                duals_wrapper(
+                                    m,
+                                    getattr(
+                                        m, "Min_Group_Total_Cap_in_Period_Constraint"
+                                    )[grp, prd],
+                                ),
+                                m.period_objective_coefficient[prd],
                             )
-                        ]
-                        else None,
-                        none_dual_type_error_wrapper(
-                            duals_wrapper(
-                                m,
-                                getattr(m, "Max_Group_Build_in_Period_Constraint")[
-                                    grp, prd
-                                ],
-                            ),
-                            m.period_objective_coefficient[prd],
-                        )
-                        if (grp, prd)
-                        in [
-                            idx
-                            for idx in getattr(
-                                m, "Max_Group_Build_in_Period_Constraint"
-                            )
-                        ]
-                        else None,
-                        none_dual_type_error_wrapper(
-                            duals_wrapper(
-                                m,
-                                getattr(m, "Min_Group_Build_in_Period_Constraint")[
-                                    grp, prd
-                                ],
-                            ),
-                            m.period_objective_coefficient[prd],
-                        )
-                        if (grp, prd)
-                        in [
-                            idx
-                            for idx in getattr(
-                                m, "Min_Group_Build_in_Period_Constraint"
-                            )
-                        ]
-                        else None,
-                        none_dual_type_error_wrapper(
-                            duals_wrapper(
-                                m,
-                                getattr(m, "Max_Group_Total_Cap_in_Period_Constraint")[
-                                    grp, prd
-                                ],
-                            ),
-                            m.period_objective_coefficient[prd],
-                        )
-                        if (grp, prd)
-                        in [
-                            idx
-                            for idx in getattr(
-                                m, "Max_Group_Total_Cap_in_Period_Constraint"
-                            )
-                        ]
-                        else None,
-                        none_dual_type_error_wrapper(
-                            duals_wrapper(
-                                m,
-                                getattr(m, "Min_Group_Total_Cap_in_Period_Constraint")[
-                                    grp, prd
-                                ],
-                            ),
-                            m.period_objective_coefficient[prd],
-                        )
-                        if (grp, prd)
-                        in [
-                            idx
-                            for idx in getattr(
-                                m, "Min_Group_Total_Cap_in_Period_Constraint"
-                            )
-                        ]
-                        else None,
+                            if (grp, prd)
+                            in [
+                                idx
+                                for idx in getattr(
+                                    m, "Min_Group_Total_Cap_in_Period_Constraint"
+                                )
+                            ]
+                            else None
+                        ),
                     ]
                 )
 
@@ -503,7 +576,16 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 ###############################################################################
 
 
-def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -546,11 +628,37 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """ """
+
+    (
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+    ) = directories_to_db_values(
+        weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
+    )
+
     cap_grp_reqs, cap_grp_prj = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+        conn,
     )
 
     # Write the input files only if a subscenario is specified
@@ -558,8 +666,11 @@ def write_model_inputs(
         with open(
             os.path.join(
                 scenario_directory,
-                str(subproblem),
-                str(stage),
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
                 "inputs",
                 "capacity_group_requirements.tab",
             ),
@@ -588,8 +699,11 @@ def write_model_inputs(
         with open(
             os.path.join(
                 scenario_directory,
-                str(subproblem),
-                str(stage),
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
                 "inputs",
                 "capacity_group_projects.tab",
             ),
@@ -605,7 +719,16 @@ def write_model_inputs(
                 writer.writerow(row)
 
 
-def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
+def save_duals(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    instance,
+    dynamic_components,
+):
     instance.constraint_indices["Max_Group_Build_in_Period_Constraint"] = [
         "capacity_group",
         "period",
@@ -632,7 +755,16 @@ def save_duals(scenario_directory, subproblem, stage, instance, dynamic_componen
 
 
 def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    c,
+    db,
+    results_directory,
+    quiet,
 ):
     which_results = "project_group_capacity"
     # Import only if a results-file was exported
@@ -642,6 +774,9 @@ def import_results_into_database(
             conn=db,
             cursor=c,
             scenario_id=scenario_id,
+            weather_iteration=weather_iteration,
+            hydro_iteration=hydro_iteration,
+            availability_iteration=availability_iteration,
             subproblem=subproblem,
             stage=stage,
             quiet=quiet,

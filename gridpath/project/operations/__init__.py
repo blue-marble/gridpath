@@ -42,7 +42,7 @@ import pandas as pd
 from pyomo.environ import Set, Param, NonNegativeReals, Reals, PositiveReals
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
-from gridpath.auxiliary.db_interface import import_csv
+from gridpath.auxiliary.db_interface import import_csv, directories_to_db_values
 from gridpath.auxiliary.dynamic_components import headroom_variables, footroom_variables
 from gridpath.auxiliary.validations import (
     write_validation_to_database,
@@ -55,7 +55,16 @@ from gridpath.auxiliary.validations import (
 from gridpath.project.common_functions import append_to_input_file
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
      The following Pyomo model components are defined in this module:
 
@@ -317,15 +326,15 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.VAR_OM_COST_CURVE_PRJS_PRDS_SGMS = Set(dimen=3, ordered=True)
     m.VAR_OM_COST_CURVE_PRJS = Set(
         within=m.PROJECTS,
-        initialize=lambda mod: list(
-            set([prj for (prj, p, s) in mod.VAR_OM_COST_CURVE_PRJS_PRDS_SGMS])
+        initialize=lambda mod: sorted(
+            list(set([prj for (prj, p, s) in mod.VAR_OM_COST_CURVE_PRJS_PRDS_SGMS])),
         ),
     )
 
     m.VAR_OM_COST_ALL_PRJS = Set(
         within=m.PROJECTS,
-        initialize=lambda mod: list(
-            set(mod.VAR_OM_COST_SIMPLE_PRJS | mod.VAR_OM_COST_CURVE_PRJS)
+        initialize=lambda mod: sorted(
+            list(set(mod.VAR_OM_COST_SIMPLE_PRJS | mod.VAR_OM_COST_CURVE_PRJS)),
         ),
     )
 
@@ -335,17 +344,21 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Startup cost by startup type projects
     m.STARTUP_BY_ST_PRJS_TYPES = Set(dimen=2, ordered=True)
     m.STARTUP_BY_ST_PRJS = Set(
-        initialize=lambda mod: list(set([p for (p, t) in mod.STARTUP_BY_ST_PRJS_TYPES]))
+        initialize=lambda mod: sorted(
+            list(set([p for (p, t) in mod.STARTUP_BY_ST_PRJS_TYPES]))
+        )
     )
 
     # All startup cost projects
     m.STARTUP_COST_PRJS = Set(
         within=m.PROJECTS,
-        initialize=lambda mod: list(
-            set(
-                [p for p in mod.STARTUP_COST_SIMPLE_PRJS]
-                + [p for p in mod.STARTUP_BY_ST_PRJS]
-            )
+        initialize=lambda mod: sorted(
+            list(
+                set(
+                    [p for p in mod.STARTUP_COST_SIMPLE_PRJS]
+                    + [p for p in mod.STARTUP_BY_ST_PRJS]
+                )
+            ),
         ),
     )
 
@@ -356,7 +369,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.FUEL_PRJ_FUELS = Set(within=m.PROJECTS * m.FUELS)
     m.FUEL_PRJS = Set(
         within=m.PROJECTS,
-        initialize=lambda mod: list(set([prj for (prj, f) in mod.FUEL_PRJ_FUELS])),
+        initialize=lambda mod: sorted(
+            list(set([prj for (prj, f) in mod.FUEL_PRJ_FUELS])),
+        ),
     )
     m.FUELS_BY_PRJ = Set(
         m.FUEL_PRJS,
@@ -367,11 +382,15 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.FUEL_PRJ_FUELS_FUEL_GROUP = Set(
         dimen=3,
         within=m.FUEL_PRJS * m.FUEL_GROUPS_FUELS,
-        initialize=lambda mod: set(
-            (g, fg, f)
-            for (fg, f) in mod.FUEL_GROUPS_FUELS
-            for (g, _f) in mod.FUEL_PRJ_FUELS
-            if f == _f
+        initialize=lambda mod: sorted(
+            list(
+                set(
+                    (g, fg, f)
+                    for (fg, f) in mod.FUEL_GROUPS_FUELS
+                    for (g, _f) in mod.FUEL_PRJ_FUELS
+                    if f == _f
+                ),
+            )
         ),
     )
 
@@ -380,8 +399,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.HR_CURVE_PRJS = Set(
         within=m.FUEL_PRJS,
-        initialize=lambda mod: list(
-            set([prj for (prj, p, s) in mod.HR_CURVE_PRJS_PRDS_SGMS])
+        initialize=lambda mod: sorted(
+            list(set([prj for (prj, p, s) in mod.HR_CURVE_PRJS_PRDS_SGMS])),
         ),
     )
 
@@ -396,13 +415,15 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.VIOL_ALL_PRJS = Set(
         within=m.PROJECTS,
-        initialize=lambda mod: list(
-            set(
-                mod.RAMP_UP_VIOL_PRJS
-                | mod.RAMP_DOWN_VIOL_PRJS
-                | mod.MIN_UP_TIME_VIOL_PRJS
-                | mod.MIN_DOWN_TIME_VIOL_PRJS
-            )
+        initialize=lambda mod: sorted(
+            list(
+                set(
+                    mod.RAMP_UP_VIOL_PRJS
+                    | mod.RAMP_DOWN_VIOL_PRJS
+                    | mod.MIN_UP_TIME_VIOL_PRJS
+                    | mod.MIN_DOWN_TIME_VIOL_PRJS
+                )
+            ),
         ),
     )
 
@@ -477,10 +498,26 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
     # Start list of headroom and footroom variables by project
-    record_dynamic_components(d, scenario_directory, subproblem, stage)
+    record_dynamic_components(
+        d,
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+    )
 
 
-def record_dynamic_components(d, scenario_directory, subproblem, stage):
+def record_dynamic_components(
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     :param d: the dynamic components class object we'll be adding to
     :param scenario_directory: the base scenario directory
@@ -502,7 +539,14 @@ def record_dynamic_components(d, scenario_directory, subproblem, stage):
 
     project_df = pd.read_csv(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "projects.tab",
         ),
         sep="\t",
     )
@@ -521,7 +565,17 @@ def record_dynamic_components(d, scenario_directory, subproblem, stage):
 ###############################################################################
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
 
     :param m:
@@ -534,7 +588,14 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
     data_portal.load(
         filename=os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "projects.tab",
         ),
         select=(
             "project",
@@ -568,7 +629,14 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     )
 
     project_fuels_file = os.path.join(
-        scenario_directory, str(subproblem), str(stage), "inputs", "project_fuels.tab"
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+        "project_fuels.tab",
     )
     if os.path.exists(project_fuels_file):
         data_portal.load(
@@ -631,13 +699,23 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     # VOM curves
     vom_curves_file = os.path.join(
         scenario_directory,
-        str(subproblem),
-        str(stage),
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
         "inputs",
         "variable_om_curves.tab",
     )
     periods_file = os.path.join(
-        scenario_directory, str(subproblem), str(stage), "inputs", "periods.tab"
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+        "periods.tab",
     )
 
     if os.path.exists(vom_curves_file):
@@ -660,7 +738,14 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 
     # Startup chars
     startup_chars_file = os.path.join(
-        scenario_directory, str(subproblem), str(stage), "inputs", "startup_chars.tab"
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+        "startup_chars.tab",
     )
 
     if os.path.exists(startup_chars_file):
@@ -691,16 +776,33 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     # HR curves
     hr_curves_file = os.path.join(
         scenario_directory,
-        str(subproblem),
-        str(stage),
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
         "inputs",
         "heat_rate_curves.tab",
     )
     periods_file = os.path.join(
-        scenario_directory, str(subproblem), str(stage), "inputs", "periods.tab"
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+        "periods.tab",
     )
     project_fuels_file = os.path.join(
-        scenario_directory, str(subproblem), str(stage), "inputs", "project_fuels.tab"
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+        "project_fuels.tab",
     )
 
     # Get column names as a few columns will be optional;
@@ -731,7 +833,16 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 ###############################################################################
 
 
-def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -739,8 +850,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     :param conn: database connection
     :return:
     """
-    subproblem = 1 if subproblem == "" else subproblem
-    stage = 1 if stage == "" else stage
+
     c = conn.cursor()
     proj_opchar = c.execute(
         """
@@ -971,7 +1081,15 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     Get inputs from database and write out the model inputs
@@ -982,6 +1100,17 @@ def write_model_inputs(
     :param conn: database connection
     :return:
     """
+
+    (
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+    ) = directories_to_db_values(
+        weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
+    )
+
     (
         proj_opchar,
         fuels,
@@ -991,10 +1120,25 @@ def write_model_inputs(
         cycle_selection,
         cap_factor_limits,
         supplemental_firing,
-    ) = get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
+    ) = get_inputs_from_database(
+        scenario_id,
+        subscenarios,
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+        conn,
+    )
 
     inputs_directory = os.path.join(
-        scenario_directory, str(subproblem), str(stage), "inputs"
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
     )
 
     # Update the projects.tab file
@@ -1033,6 +1177,7 @@ def write_model_inputs(
         "partial_availability_threshold",
         "nonfuel_carbon_emissions_per_mwh",
     ]
+
     append_to_input_file(
         inputs_directory=inputs_directory,
         input_file="projects.tab",
@@ -1097,7 +1242,16 @@ def write_model_inputs(
 
 
 def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    c,
+    db,
+    results_directory,
+    quiet,
 ):
     """
 
@@ -1112,6 +1266,9 @@ def import_results_into_database(
         conn=db,
         cursor=c,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         quiet=quiet,
@@ -1124,7 +1281,16 @@ def import_results_into_database(
 ###############################################################################
 
 
-def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -1144,7 +1310,16 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         cycle_select,
         cap_factor_limits,
         supplemental_firing,
-    ) = get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
+    ) = get_inputs_from_database(
+        scenario_id,
+        subscenarios,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        conn,
+    )
 
     # Convert input data into DataFrame
     prj_df = cursor_to_df(proj_opchar)
@@ -1156,6 +1331,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -1170,6 +1348,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -1183,6 +1364,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         write_validation_to_database(
             conn=conn,
             scenario_id=scenario_id,
+            weather_iteration=weather_iteration,
+            hydro_iteration=hydro_iteration,
+            availability_iteration=availability_iteration,
             subproblem_id=subproblem,
             stage_id=stage,
             gridpath_module=__name__,
@@ -1202,6 +1386,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -1216,6 +1403,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -1254,6 +1444,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -1277,6 +1470,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -1291,6 +1487,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -1303,6 +1502,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -1381,6 +1583,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,

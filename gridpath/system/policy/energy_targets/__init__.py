@@ -21,7 +21,16 @@ ENERGY_TARGET_ZONE_PRD_DF = "energy_target_zone_period_df"
 ENERGY_TARGET_ZONE_HRZ_DF = "energy_target_zone_horizon_df"
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
+):
     """ """
     # First create the results dataframes
     # Other modules will update these dataframe with actual results
@@ -39,19 +48,21 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "discount_factor",
                 "number_years_represented",
             ],
-            "data": [
+            "data": (
                 [
-                    z,
-                    p,
-                    m.discount_factor[p],
-                    m.number_years_represented[p],
+                    [
+                        z,
+                        p,
+                        m.discount_factor[p],
+                        m.number_years_represented[p],
+                    ]
+                    for (z, p) in getattr(
+                        m, "ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET"
+                    )
                 ]
-                for (z, p) in getattr(
-                    m, "ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET"
-                )
-            ]
-            if hasattr(m, "ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET")
-            else [],
+                if hasattr(m, "ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET")
+                else []
+            ),
             "index": ["energy_target_zone", "period"],
         },
         "horizon": {
@@ -63,18 +74,20 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "balancing_type",
                 "horizon",
             ],
-            "data": [
+            "data": (
                 [
-                    z,
-                    bt,
-                    h,
+                    [
+                        z,
+                        bt,
+                        h,
+                    ]
+                    for (z, bt, h) in getattr(
+                        m, "ENERGY_TARGET_ZONE_BLN_TYPE_HRZS_WITH_ENERGY_TARGET"
+                    )
                 ]
-                for (z, bt, h) in getattr(
-                    m, "ENERGY_TARGET_ZONE_BLN_TYPE_HRZS_WITH_ENERGY_TARGET"
-                )
-            ]
-            if hasattr(m, "ENERGY_TARGET_ZONE_BLN_TYPE_HRZS_WITH_ENERGY_TARGET")
-            else [],
+                if hasattr(m, "ENERGY_TARGET_ZONE_BLN_TYPE_HRZS_WITH_ENERGY_TARGET")
+                else []
+            ),
             "index": ["energy_target_zone", "balancing_type", "horizon"],
         },
     }
@@ -92,7 +105,16 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 
 
 def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    c,
+    db,
+    results_directory,
+    quiet,
 ):
     """
 
@@ -109,8 +131,8 @@ def import_results_into_database(
         if os.path.exists(
             os.path.join(
                 results_directory,
-                str(subproblem),
-                str(stage),
+                subproblem,
+                stage,
                 "results",
                 f"{which_results}.csv",
             )
@@ -119,6 +141,8 @@ def import_results_into_database(
                 conn=db,
                 cursor=c,
                 scenario_id=scenario_id,
+                hydro_iteration=hydro_iteration,
+                availability_iteration=availability_iteration,
                 subproblem=subproblem,
                 stage=stage,
                 quiet=quiet,

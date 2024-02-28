@@ -29,19 +29,34 @@ from pyomo.environ import (
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import check_for_integer_subdirectories
 from gridpath.auxiliary.dynamic_components import load_balance_production_components
-from gridpath.auxiliary.db_interface import setup_results_import, import_csv
+from gridpath.auxiliary.db_interface import (
+    setup_results_import,
+    import_csv,
+    directories_to_db_values,
+)
 from gridpath.common_functions import create_results_df
 from gridpath.system.load_balance import LOAD_ZONE_TMP_DF
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """ """
 
     m.LZ_MARKETS = Set(dimen=2, within=m.LOAD_ZONES * m.MARKETS)
 
     m.MARKET_LZS = Set(
         within=m.LOAD_ZONES,
-        initialize=lambda mod: list(set([lz for (lz, hub) in mod.LZ_MARKETS])),
+        initialize=lambda mod: sorted(
+            list(set([lz for (lz, hub) in mod.LZ_MARKETS])),
+        ),
     )
 
     m.MARKETS_BY_LZ = Set(
@@ -63,9 +78,12 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.no_market_participation_in_stage = Param(
         m.LZ_MARKETS,
-        rule=lambda mod, lz, hub: True
-        if mod.final_participation_stage[lz, hub] < (1 if stage == "" else int(stage))
-        else False,
+        rule=lambda mod, lz, hub: (
+            True
+            if mod.final_participation_stage[lz, hub]
+            < (1 if stage == "" else int(stage))
+            else False
+        ),
     )
 
     m.LZ_MARKETS_PREV_STAGE_TMPS = Set(dimen=3)
@@ -96,12 +114,25 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     data_portal.load(
         filename=os.path.join(
             scenario_directory,
-            str(subproblem),
-            str(stage),
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
             "inputs",
             "load_zone_markets.tab",
         ),
@@ -134,10 +165,10 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                 dtype={"stage": str},
             )
 
-            starting_market_positions_df[
-                "stage_index"
-            ] = starting_market_positions_df.apply(
-                lambda row: stages.index(row["stage"]), axis=1
+            starting_market_positions_df["stage_index"] = (
+                starting_market_positions_df.apply(
+                    lambda row: stages.index(row["stage"]), axis=1
+                )
             )
             prev_stage_net_market_purchased_powers_df = starting_market_positions_df[
                 starting_market_positions_df["stage_index"] == stages.index(stage) - 1
@@ -170,7 +201,16 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     data_portal.data()["first_stage_flag"] = first_stage_flag
 
 
-def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -178,8 +218,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     :param conn: database connection
     :return:
     """
-    subproblem = 1 if subproblem == "" else subproblem
-    stage = 1 if stage == "" else stage
+
     c = conn.cursor()
 
     # Get load zones and their markets; only include load zones that are
@@ -220,7 +259,15 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     :param scenario_directory: string, the scenario directory
@@ -233,15 +280,35 @@ def write_model_inputs(
     load_zone_markets.tab file.
     """
 
+    (
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+    ) = directories_to_db_values(
+        weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
+    )
+
     load_zone_markets = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+        conn,
     )
 
     with open(
         os.path.join(
             scenario_directory,
-            str(subproblem),
-            str(stage),
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
             "inputs",
             "load_zone_markets.tab",
         ),
@@ -256,7 +323,16 @@ def write_model_inputs(
             writer.writerow(replace_nulls)
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
+):
     """
 
     :param scenario_directory:
@@ -270,8 +346,11 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     with open(
         os.path.join(
             scenario_directory,
-            str(subproblem),
-            str(stage),
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
             "results",
             "system_market_participation.csv",
         ),
@@ -309,26 +388,45 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                         m.number_years_represented[m.period[tmp]],
                         m.tmp_weight[tmp],
                         m.hrs_in_tmp[tmp],
-                        -value(m.Net_Market_Purchased_Power[z, mrkt, tmp])
-                        if value(m.Net_Market_Purchased_Power[z, mrkt, tmp]) < 0
-                        else 0,
-                        value(m.Net_Market_Purchased_Power[z, mrkt, tmp])
-                        if value(m.Net_Market_Purchased_Power[z, mrkt, tmp]) >= 0
-                        else 0,
+                        (
+                            -value(m.Net_Market_Purchased_Power[z, mrkt, tmp])
+                            if value(m.Net_Market_Purchased_Power[z, mrkt, tmp]) < 0
+                            else 0
+                        ),
+                        (
+                            value(m.Net_Market_Purchased_Power[z, mrkt, tmp])
+                            if value(m.Net_Market_Purchased_Power[z, mrkt, tmp]) >= 0
+                            else 0
+                        ),
                         value(m.Net_Market_Purchased_Power[z, mrkt, tmp]),
-                        -value(m.Final_Net_Market_Purchased_Power[z, mrkt, tmp])
-                        if value(m.Final_Net_Market_Purchased_Power[z, mrkt, tmp]) < 0
-                        else 0,
-                        value(m.Final_Net_Market_Purchased_Power[z, mrkt, tmp])
-                        if value(m.Final_Net_Market_Purchased_Power[z, mrkt, tmp]) >= 0
-                        else 0,
+                        (
+                            -value(m.Final_Net_Market_Purchased_Power[z, mrkt, tmp])
+                            if value(m.Final_Net_Market_Purchased_Power[z, mrkt, tmp])
+                            < 0
+                            else 0
+                        ),
+                        (
+                            value(m.Final_Net_Market_Purchased_Power[z, mrkt, tmp])
+                            if value(m.Final_Net_Market_Purchased_Power[z, mrkt, tmp])
+                            >= 0
+                            else 0
+                        ),
                         value(m.Final_Net_Market_Purchased_Power[z, mrkt, tmp]),
                     ]
                 )
 
 
 def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    c,
+    db,
+    results_directory,
+    quiet,
 ):
     """
 
@@ -343,6 +441,9 @@ def import_results_into_database(
         conn=db,
         cursor=c,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         quiet=quiet,

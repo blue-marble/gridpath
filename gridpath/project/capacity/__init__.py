@@ -18,10 +18,6 @@ capacity-associated costs of generation, storage, and demand-side
 infrastructure 'projects' in the optimization problem.
 """
 
-import os.path
-import pandas as pd
-
-from db.common_functions import spin_on_database_lock_generic
 from gridpath.auxiliary.db_interface import import_csv
 
 
@@ -30,7 +26,16 @@ from gridpath.auxiliary.db_interface import import_csv
 
 
 def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    c,
+    db,
+    results_directory,
+    quiet,
 ):
     """
     :param scenario_id:
@@ -44,6 +49,9 @@ def import_results_into_database(
         conn=db,
         cursor=c,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         quiet=quiet,

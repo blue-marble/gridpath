@@ -23,11 +23,21 @@ from pyomo.environ import Expression, value
 from gridpath.common_functions import create_results_df
 from gridpath.auxiliary.dynamic_components import (
     carbon_credits_balance_generation_components,
+    carbon_credits_balance_purchase_components,
 )
 from gridpath.system.policy.carbon_credits import CARBON_CREDITS_ZONE_PRD_DF
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
 
     :param m:
@@ -35,7 +45,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     :return:
     """
 
-    def total_carbon_credits_rule(mod, z, prd):
+    def total_carbon_credits_generated_rule(mod, z, prd):
         """
         Calculate total emissions from all carbon tax projects in carbon
         tax zone
@@ -46,13 +56,38 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         """
         return sum(
             mod.Project_Carbon_Credits_Generated[prj, prd]
-            for (prj, period) in mod.CARBON_CREDITS_PRJ_OPR_PRDS
-            if prj in mod.CARBON_CREDITS_PRJS_BY_CARBON_CREDITS_ZONE[z]
+            for (prj, period) in mod.CARBON_CREDITS_GENERATION_PRJ_OPR_PRDS
+            if prj in mod.CARBON_CREDITS_GENERATION_PRJS_BY_CARBON_CREDITS_ZONE[z]
             and prd == period
         )
 
     m.Total_Project_Carbon_Credits_Generated = Expression(
-        m.CARBON_CREDITS_ZONES, m.PERIODS, rule=total_carbon_credits_rule
+        m.CARBON_CREDITS_ZONES, m.PERIODS, rule=total_carbon_credits_generated_rule
+    )
+
+    def total_carbon_credits_purchased_rule(mod, z, prd):
+        """
+        Calculate total emissions from all carbon tax projects in carbon
+        tax zone
+        :param mod:
+        :param z:
+        :param prd:
+        :return:
+        """
+        return sum(
+            mod.Project_Purchase_Carbon_Credits[prj, z, prd]
+            for (
+                prj,
+                cc_z,
+                period,
+            ) in mod.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES_OPR_PRDS
+            if prj in mod.CARBON_CREDITS_PURCHASE_PRJS_BY_CARBON_CREDITS_ZONE[cc_z]
+            and prd == period
+            and cc_z == z
+        )
+
+    m.Total_Project_Carbon_Credits_Purchased = Expression(
+        m.CARBON_CREDITS_ZONES, m.PERIODS, rule=total_carbon_credits_purchased_rule
     )
 
     # Add to the carbon credits tracking balance
@@ -63,14 +98,26 @@ def record_dynamic_components(dynamic_components):
     """
     :param dynamic_components:
 
-    This method adds the static load to the load balance dynamic components.
     """
     getattr(dynamic_components, carbon_credits_balance_generation_components).append(
         "Total_Project_Carbon_Credits_Generated"
     )
 
+    getattr(dynamic_components, carbon_credits_balance_purchase_components).append(
+        "Total_Project_Carbon_Credits_Purchased"
+    )
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+
+def export_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
+):
     """
 
     :param scenario_directory:
@@ -80,14 +127,13 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    results_columns = [
-        "project_generated_credits",
-    ]
+    results_columns = ["project_generated_credits", "project_purchased_credits"]
     data = [
         [
             z,
             p,
-            value(m.Total_Carbon_Credits_Generated[z, p]),
+            value(m.Total_Project_Carbon_Credits_Generated[z, p]),
+            value(m.Total_Project_Carbon_Credits_Purchased[z, p]),
         ]
         for z in m.CARBON_CREDITS_ZONES
         for p in m.PERIODS

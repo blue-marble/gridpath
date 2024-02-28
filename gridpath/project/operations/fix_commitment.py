@@ -32,7 +32,16 @@ from gridpath.auxiliary.auxiliary import (
 from gridpath.project.operations.common_functions import load_operational_type_modules
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     The following Pyomo model components are defined in this module:
 
@@ -96,6 +105,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     required_operational_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         which_type="operational_type",
@@ -155,7 +167,16 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 ###############################################################################
 
 
-def fix_variables(m, d, scenario_directory, subproblem, stage):
+def fix_variables(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     This function fixes the commitment of all fixed commitment projects by
     running the :code:`fix_commitment` function in the appropriate operational
@@ -168,9 +189,11 @@ def fix_variables(m, d, scenario_directory, subproblem, stage):
     :param stage:
     :return:
     """
-
     required_operational_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         which_type="operational_type",
@@ -192,7 +215,17 @@ def fix_variables(m, d, scenario_directory, subproblem, stage):
 ###############################################################################
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
 
     :param m:
@@ -205,12 +238,21 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
 
     stages = check_for_integer_subdirectories(
-        os.path.join(scenario_directory, subproblem)
+        os.path.join(
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+        )
     )
 
     fixed_commitment_df = read_csv(
         os.path.join(
             scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
             subproblem,
             "pass_through_inputs",
             "fixed_commitment.tab",
@@ -230,8 +272,11 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         df = read_csv(
             os.path.join(
                 scenario_directory,
-                str(subproblem),
-                str(stage),
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
                 "inputs",
                 "projects.tab",
             ),
@@ -251,7 +296,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     data_portal.data()["FNL_COMMIT_PRJS"] = {None: get_fnl_commit_prjs()}
 
     # FXD_COMMIT_PRJS
-    fxd_commit_prjs = list(set(fixed_commitment_df["project"].tolist()))
+    fxd_commit_prjs = sorted(list(set(fixed_commitment_df["project"].tolist())))
     # Load data only if we have projects that have already been committed
     # Otherwise, leave uninitialized
     if len(fxd_commit_prjs) > 0:
@@ -275,7 +320,15 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         data_portal.data()["fixed_commitment"] = fixed_commitment_dict
 
 
-def export_pass_through_inputs(scenario_directory, subproblem, stage, m):
+def export_pass_through_inputs(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+):
     """
     This function exports the commitment for all final commitment projects,
     i.e. projects for which the current stage or any of the previous stages
@@ -287,10 +340,16 @@ def export_pass_through_inputs(scenario_directory, subproblem, stage, m):
     :param m:
     :return:
     """
-
     df = read_csv(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "projects.tab",
         ),
         sep="\t",
         usecols=["project", "last_commitment_stage"],
@@ -301,6 +360,9 @@ def export_pass_through_inputs(scenario_directory, subproblem, stage, m):
     with open(
         os.path.join(
             scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
             subproblem,
             "pass_through_inputs",
             "fixed_commitment.tab",

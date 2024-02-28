@@ -314,9 +314,9 @@ class ScenarioResultsIncludedPlots(Resource):
                 "plotType": results_plot,
                 "caption": caption,
                 "loadZone": [] if load_zone_form_control else "default",
-                "energyTargetZone": []
-                if energy_target_zone_form_control
-                else "default",
+                "energyTargetZone": (
+                    [] if energy_target_zone_form_control else "default"
+                ),
                 "carbonCapZone": [] if carbon_cap_zone_form_control else "default",
                 "period": [] if period_form_control else "default",
                 "horizon": [] if horizon_form_control else "default",

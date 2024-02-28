@@ -51,7 +51,16 @@ from gridpath.common_functions import create_results_df
 import gridpath.project.operations.operational_types.gen_commit_unit_common as gen_commit_unit_common
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     See the formulation documentation in the
     gen_commit_unit_common.add_model_components().
@@ -61,6 +70,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m=m,
         d=d,
         scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         bin_or_lin_optype="gen_commit_bin",
@@ -210,7 +222,17 @@ def operational_violation_cost_rule(mod, g, tmp):
 ###############################################################################
 
 
-def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    mod,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     :param mod:
     :param data_portal:
@@ -225,6 +247,9 @@ def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
         d=d,
         data_portal=data_portal,
         scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         bin_or_lin_optype="gen_commit_bin",
@@ -273,7 +298,16 @@ def add_to_prj_tmp_results(mod):
     return results_columns, optype_dispatch_df
 
 
-def export_results(mod, d, scenario_directory, subproblem, stage):
+def export_results(
+    mod,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     :param scenario_directory:
     :param subproblem:
@@ -286,6 +320,9 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
         mod=mod,
         d=d,
         scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         BIN_OR_LIN="BIN",
@@ -294,7 +331,16 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
     )
 
 
-def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
+def save_duals(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    instance,
+    dynamic_components,
+):
     gen_commit_unit_common.save_duals(instance, "Bin")
 
 
@@ -302,7 +348,16 @@ def save_duals(scenario_directory, subproblem, stage, instance, dynamic_componen
 ###############################################################################
 
 
-def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     Get inputs from database and validate the inputs
 
@@ -315,7 +370,15 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
 
     # Validate operational chars table inputs
     opchar_df = validate_opchars(
-        scenario_id, subscenarios, subproblem, stage, conn, "gen_commit_bin"
+        scenario_id,
+        subscenarios,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        conn,
+        "gen_commit_bin",
     )
 
     # TODO: add warning that if availabilities are partial, we treat them as
