@@ -1324,6 +1324,23 @@ class TestExamples(unittest.TestCase):
             scenario_name=scenario_name, literal=True, skip_validation=True
         )
 
+    def test_example_2periods_nuclear_var_cost_by_period_same(self):
+        """
+        Check validation and objective function value of "2periods_nuclear_var_cost_by_period_same" example
+        :return:
+        """
+        scenario_name = "2periods_nuclear_var_cost_by_period_same"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_2periods_nuclear_var_cost_by_period_diff(self):
+        """
+        Check validation and objective function value of
+        "2periods_nuclear_var_cost_by_period_diff" example
+        :return:
+        """
+        scenario_name = "2periods_nuclear_var_cost_by_period_diff"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
     @classmethod
     def tearDownClass(cls):
         os.remove(DB_PATH)

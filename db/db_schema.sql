@@ -1280,6 +1280,7 @@ CREATE TABLE inputs_project_operational_chars
     operational_type                         VARCHAR(32),
     balancing_type_project                   VARCHAR(32),
     variable_om_cost_per_mwh                 FLOAT,
+    variable_om_cost_by_period_scenario_id   INTEGER, -- determines by period simple variable O&M
     project_fuel_scenario_id                 INTEGER,
     heat_rate_curves_scenario_id             INTEGER, -- determined heat rate curve
     variable_om_curves_scenario_id           INTEGER, -- determined variable O&M curve
@@ -1339,6 +1340,9 @@ CREATE TABLE inputs_project_operational_chars
     FOREIGN KEY (project_operational_chars_scenario_id) REFERENCES
         subscenarios_project_operational_chars (project_operational_chars_scenario_id),
 -- Ensure operational characteristics for fuels, variable, hydro and heat rates exist
+    FOREIGN KEY (project, variable_om_cost_by_period_scenario_id) REFERENCES
+        subscenarios_project_variable_om_cost_by_period
+            (project, variable_om_cost_by_period_scenario_id),
     FOREIGN KEY (project, project_fuel_scenario_id) REFERENCES
         subscenarios_project_fuels
             (project, project_fuel_scenario_id),
@@ -1370,6 +1374,30 @@ CREATE TABLE inputs_project_operational_chars
         subscenarios_project_cap_factor_limits (project, cap_factor_limits_scenario_id),
     FOREIGN KEY (operational_type) REFERENCES mod_operational_types
         (operational_type)
+);
+
+-- Variable O&M by period
+DROP TABLE IF EXISTS subscenarios_project_variable_om_cost_by_period;
+CREATE TABLE subscenarios_project_variable_om_cost_by_period
+(
+    project                                VARCHAR(32),
+    variable_om_cost_by_period_scenario_id INTEGER,
+    name                                   VARCHAR(32),
+    description                            VARCHAR(128),
+    PRIMARY KEY (project, variable_om_cost_by_period_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_variable_om_cost_by_period;
+CREATE TABLE inputs_project_variable_om_cost_by_period
+(
+    project                                VARCHAR(64),
+    variable_om_cost_by_period_scenario_id INTEGER,
+    period                                 INTEGER, -- 0 means it's the same for all periods
+    variable_om_cost_by_period             FLOAT,
+    PRIMARY KEY (project, variable_om_cost_by_period_scenario_id, period),
+    FOREIGN KEY (project, variable_om_cost_by_period_scenario_id) REFERENCES
+        subscenarios_project_variable_om_cost_by_period (project,
+                                                         variable_om_cost_by_period_scenario_id)
 );
 
 -- Project fuels

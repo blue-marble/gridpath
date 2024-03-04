@@ -662,6 +662,14 @@ def variable_om_cost_rule(mod, g, tmp):
     return mod.GenHydro_Gross_Power_MW[g, tmp] * mod.variable_om_cost_per_mwh[g]
 
 
+def variable_om_by_period_cost_rule(mod, prj, tmp):
+    """ """
+    return (
+        mod.GenHydro_Gross_Power_MW[prj, tmp]
+        * mod.variable_om_cost_per_mwh_by_period[prj, mod.period[tmp]]
+    )
+
+
 def scheduled_curtailment_rule(mod, g, tmp):
     """ """
     return mod.GenHydro_Curtail_MW[g, tmp]
