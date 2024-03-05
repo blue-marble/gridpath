@@ -9,6 +9,7 @@ with open("./version.py") as fp:
 extras_doc = [
     "Sphinx==7.2.6",
     "sphinx-argparse==0.4.0",
+    "df2img",
 ]
 extras_ui = [
     "eventlet==0.33.3",  # Async mode for SocketIO
