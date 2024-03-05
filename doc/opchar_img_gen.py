@@ -2,7 +2,7 @@ import pandas as pd, numpy as np
 import df2img
 
 df = pd.read_csv(
-    "../gridpath/project/operations/operational_types/opchar_param_requirements.csv", 
+    "../gridpath/project/operations/operational_types/opchar_param_requirements.csv",
     na_filter=False,
 )
 
@@ -26,8 +26,8 @@ fig = df2img.plot_dataframe(
     show_fig=False,
     row_fill_color=("#ffffff", "#d7d8d6"),
     print_index=False,
-    fig_size=(1800,500),
-    col_width=tuple(col_width_both)
+    fig_size=(1800, 500),
+    col_width=tuple(col_width_both),
 )
 
 fig_table = fig.data[0]
