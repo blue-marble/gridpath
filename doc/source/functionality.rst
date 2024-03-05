@@ -152,10 +152,14 @@ Timepoints
 See :ref:`subproblems-sub-section-ref` and
 :ref:`stages-sub-section-ref` for more information.
 
+.. _horizons-sub-section-ref:
+
 Balancing Types and Horizons
 ----------------------------
 
 .. automodule:: gridpath.temporal.operations.horizons
+
+.. _periods-sub-section-ref:
 
 Periods
 -------
