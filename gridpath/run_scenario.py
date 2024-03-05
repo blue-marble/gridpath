@@ -102,7 +102,7 @@ def create_problem(
     method) and load the input data into its components (see
     *load_scenario_data*).
 
-    Finally, we compile the problem (see *create_problem_instance* method). 
+    Finally, we compile the problem (see *create_problem_instance* method).
     If any variables need to be fixed, this is done as the last step here
     (see the *fix_variables* method).
     """
@@ -198,7 +198,7 @@ def run_optimization_for_subproblem_stage(
 
     Log each run in the (sub)problem directory if requested by the user.
 
-    Create and solve the (sub)problem (See *create_problem* and 
+    Create and solve the (sub)problem (See *create_problem* and
     *solve_problem* methods respectively).
 
     Save results. See *save_results()* method.

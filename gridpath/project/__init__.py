@@ -171,8 +171,8 @@ def add_model_components(
     )
     m.balancing_type_project = Param(m.PROJECTS, within=m.BLN_TYPES)
     m.technology = Param(m.PROJECTS, within=Any, default="unspecified")
-    #TODO: considering technology is only used on the results side, should we
-    #keep it here?
+    # TODO: considering technology is only used on the results side, should we
+    # keep it here?
 
 
 # Input-Output
