@@ -68,7 +68,7 @@ def add_model_components(
     | | *Within*: :code:`ENERGY_TARGET_PRJS`                                  |
     |                                                                         |
     | Indexed set that describes the energy-target projects for each          |
-    |energy-target zone.                                                      |
+    | energy-target zone.                                                     |
     +-------------------------------------------------------------------------+
 
     |
