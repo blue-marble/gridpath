@@ -374,6 +374,16 @@ def variable_om_cost_rule(mod, g, tmp):
     )
 
 
+def variable_om_by_period_cost_rule(mod, prj, tmp):
+    """ """
+    return (
+        mod.Capacity_MW[g, mod.period[tmp]]
+        * mod.Availability_Derate[g, tmp]
+        * mod.gen_var_cap_factor[g, tmp]
+        * mod.variable_om_cost_per_mwh_by_period[prj, mod.period[tmp]]
+    )
+
+
 def scheduled_curtailment_rule(mod, g, tmp):
     """
     Variable generation can be dispatched down, i.e. scheduled below the

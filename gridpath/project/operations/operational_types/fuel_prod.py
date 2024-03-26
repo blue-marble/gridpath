@@ -376,6 +376,14 @@ def variable_om_cost_rule(mod, prj, tmp):
     )
 
 
+def variable_om_by_period_cost_rule(mod, prj, tmp):
+    """ """
+    return (
+        mod.Fuel_Prod_Consume_Power_PowerUnit[prj, tmp]
+        * mod.variable_om_cost_per_mwh_by_period[prj, mod.period[tmp]]
+    )
+
+
 def fuel_contribution_rule(mod, prj, tmp):
     """
     Fuel burn returned is negative (i.e. added to the fuel availability)

@@ -203,6 +203,15 @@ def add_model_components(
     | | :code:`variable_om_cost_per_mwh`                                      |
     | | *Defined over*: :code:`VAR_OM_COST_SIMPLE_PRJS`                       |
     | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | The project's variable operations and maintenance cost per MWh of       |
+    | power production.                                                       |
+    +-------------------------------------------------------------------------+
+    | | :code:`variable_om_cost_per_mwh_by_period`                            |
+    | | *Defined over*: :code:`VAR_OM_COST_SIMPLE_PRJS`                       |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`0`                                                  |
     |                                                                         |
     | The project's variable operations and maintenance cost per MWh of       |
     | power production.                                                       |
@@ -322,6 +331,15 @@ def add_model_components(
     # Variable O&M cost projects (simple)
     m.VAR_OM_COST_SIMPLE_PRJS = Set(within=m.PROJECTS)
 
+    # Variable O&M cost by project and period
+    m.VAR_OM_COST_BY_PRD_PRJ_PRDS = Set(dimen=2, within=m.PROJECTS * m.PERIODS)
+    m.VAR_OM_COST_BY_PRD_PRJS = Set(
+        within=m.PROJECTS,
+        initialize=lambda mod: sorted(
+            list(set([prj for (prj, prd) in mod.VAR_OM_COST_BY_PRD_PRJ_PRDS]))
+        ),
+    )
+
     # Variable O&M cost projects (by loading level)
     m.VAR_OM_COST_CURVE_PRJS_PRDS_SGMS = Set(dimen=3, ordered=True)
     m.VAR_OM_COST_CURVE_PRJS = Set(
@@ -440,7 +458,11 @@ def add_model_components(
     # Optional Params
     ###########################################################################
     m.variable_om_cost_per_mwh = Param(
-        m.VAR_OM_COST_SIMPLE_PRJS, within=NonNegativeReals
+        m.VAR_OM_COST_SIMPLE_PRJS, within=NonNegativeReals, default=0
+    )
+
+    m.variable_om_cost_per_mwh_by_period = Param(
+        m.VAR_OM_COST_BY_PRD_PRJ_PRDS, within=NonNegativeReals, default=0
     )
 
     m.vom_slope_cost_per_mwh = Param(
@@ -628,6 +650,59 @@ def load_model_data(
         ),
     )
 
+    # Get the periods for determining by-period params that apply to all
+    # periods
+    periods_file = os.path.join(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+        "periods.tab",
+    )
+    periods_df = pd.read_csv(periods_file, sep="\t")
+    periods_set = set(periods_df["period"])
+
+    # Variable O&M by period
+    project_period_var_om_file = os.path.join(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+        "project_variable_om_by_period.tab",
+    )
+    if os.path.exists(project_period_var_om_file):
+        var_om_by_period_df = pd.read_csv(
+            project_period_var_om_file, sep="\t"
+        ).set_index(["project", "period"])
+        var_om_by_prd_prj_prd_list = []
+        var_om_by_period_dict = {}
+
+        for idx, val in var_om_by_period_df.iterrows():
+            (prj, prd) = idx
+            if prd == 0:
+                for period in sorted(list(periods_set)):
+                    var_om_by_prd_prj_prd_list.append((prj, period))
+                    var_om_by_period_dict[prj, period] = var_om_by_period_df.loc[
+                        prj, prd
+                    ]["variable_om_cost_by_period"]
+            else:
+                var_om_by_prd_prj_prd_list.append((prj, prd))
+                var_om_by_period_dict[prj, prd] = var_om_by_period_df.loc[prj, prd][
+                    "variable_om_cost_by_period"
+                ]
+
+        data_portal.data()["VAR_OM_COST_BY_PRD_PRJ_PRDS"] = {
+            None: var_om_by_prd_prj_prd_list
+        }
+        data_portal.data()["variable_om_cost_per_mwh_by_period"] = var_om_by_period_dict
+
+    # Fuels
     project_fuels_file = os.path.join(
         scenario_directory,
         weather_iteration,
@@ -707,26 +782,13 @@ def load_model_data(
         "inputs",
         "variable_om_curves.tab",
     )
-    periods_file = os.path.join(
-        scenario_directory,
-        weather_iteration,
-        hydro_iteration,
-        availability_iteration,
-        subproblem,
-        stage,
-        "inputs",
-        "periods.tab",
-    )
 
     if os.path.exists(vom_curves_file):
-        periods = pd.read_csv(periods_file, sep="\t")
         vom_df = pd.read_csv(vom_curves_file, sep="\t")
-
-        periods = set(periods["period"])
         vom_projects = set(vom_df["project"].unique())
 
         slope_dict, intercept_dict = get_slopes_intercept_by_project_period_segment(
-            vom_df, "average_variable_om_cost_per_mwh", vom_projects, periods
+            vom_df, "average_variable_om_cost_per_mwh", vom_projects, periods_set
         )
         vom_project_segments = list(slope_dict.keys())
 
@@ -784,16 +846,6 @@ def load_model_data(
         "inputs",
         "heat_rate_curves.tab",
     )
-    periods_file = os.path.join(
-        scenario_directory,
-        weather_iteration,
-        hydro_iteration,
-        availability_iteration,
-        subproblem,
-        stage,
-        "inputs",
-        "periods.tab",
-    )
     project_fuels_file = os.path.join(
         scenario_directory,
         weather_iteration,
@@ -811,15 +863,13 @@ def load_model_data(
         hr_df = pd.read_csv(hr_curves_file, sep="\t")
         projects = set(hr_df["project"].unique())
 
-        periods_df = pd.read_csv(periods_file, sep="\t")
         pr_df = pd.read_csv(project_fuels_file, sep="\t", usecols=["project", "fuel"])
         pr_df = pr_df[(pr_df["fuel"] != ".") & (pr_df["project"].isin(projects))]
 
-        periods = set(periods_df["period"])
         fuel_projects = pr_df["project"].unique()
 
         slope_dict, intercept_dict = get_slopes_intercept_by_project_period_segment(
-            hr_df, "average_heat_rate_mmbtu_per_mwh", fuel_projects, periods
+            hr_df, "average_heat_rate_mmbtu_per_mwh", fuel_projects, periods_set
         )
 
         fuel_project_segments = list(slope_dict.keys())
@@ -893,6 +943,28 @@ def get_inputs_from_database(
             subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
             subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
         )
+    )
+
+    var_om_by_prd_c = conn.cursor()
+    var_om_by_prd = var_om_by_prd_c.execute(
+        f"""
+        SELECT project, period, variable_om_cost_by_period
+        FROM inputs_project_portfolios
+        -- select the correct operational characteristics subscenario
+        INNER JOIN
+        (SELECT project, variable_om_cost_by_period_scenario_id
+        FROM inputs_project_operational_chars
+        WHERE project_operational_chars_scenario_id = {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
+        ) AS op_char
+        USING(project)
+        -- select only heat curves of matching projects
+        INNER JOIN
+        inputs_project_variable_om_cost_by_period
+        USING(project, variable_om_cost_by_period_scenario_id)
+        -- Get only the subset of projects in the portfolio based on the 
+        -- project_portfolio_scenario_id 
+        WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
+        """
     )
 
     c5 = conn.cursor()
@@ -1070,6 +1142,7 @@ def get_inputs_from_database(
 
     return (
         proj_opchar,
+        var_om_by_prd,
         fuels,
         heat_rates,
         vom_curves,
@@ -1113,6 +1186,7 @@ def write_model_inputs(
 
     (
         proj_opchar,
+        var_om_by_prd,
         fuels,
         heat_rate_curves,
         vom_curves,
@@ -1184,6 +1258,14 @@ def write_model_inputs(
         query_results=proj_opchar,
         index_n_columns=1,
         new_column_names=new_columns,
+    )
+
+    # Write fuels file
+    var_om_by_prd_df = cursor_to_df(var_om_by_prd)
+    write_additional_opchar_file(
+        opchar_df=var_om_by_prd_df,
+        inputs_directory=inputs_directory,
+        filename="project_variable_om_by_period.tab",
     )
 
     # Write fuels file
@@ -1303,6 +1385,7 @@ def validate_inputs(
     # Get the project input data
     (
         proj_opchar,
+        var_om_by_prd,
         fuels,
         heat_rates,
         vom_curves,
@@ -1633,14 +1716,14 @@ def get_slopes_intercept_by_project_period_segment(df, input_col, projects, peri
         df_slice = df[df["project"] == project]
         slice_periods = set(df_slice["period"])
 
-        if slice_periods == set([0]):
+        if slice_periods == {0}:
             p_iterable = [0]
         elif periods.issubset(slice_periods):
             p_iterable = periods
         else:
             raise ValueError(
                 """{} for project '{}' isn't specified for all 
-                modelled periods. Set period to 0 if inputs are the 
+                modeled periods. Set period to 0 if inputs are the 
                 same for each period or make sure all modelled periods 
                 are included.""".format(
                     input_col, project
