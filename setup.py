@@ -19,7 +19,7 @@ extras_ui = [
     "psutil==5.9.6",  # Process management
     "python-socketio[client]<5,>=4.3.0",  # SocketIO Python client; see #772
     "Werkzeug==2.0.2",  # See #903
-    "dnspython==2.4.2",  # Avoids potential eventlet version mismatch
+    "dnspython==2.6.1",  # Avoids potential eventlet version mismatch
 ]
 extras_black = ["black"]
 
