@@ -12,7 +12,7 @@ dill==0.3.7
 dnspython==2.4.2
 docopt==0.6.2
 docutils==0.20.1
-eventlet==0.33.3
+eventlet==0.35.2
 Flask==2.0.1
 Flask-RESTful==0.3.9
 Flask-SocketIO==4.3.2
