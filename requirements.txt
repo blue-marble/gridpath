@@ -19,7 +19,7 @@ Flask-SocketIO==4.3.2
 greenlet==3.0.3
 GridPath==2024.1.0
 gurobipy==11.0.0
-idna==3.6
+idna==3.7
 imagesize==1.4.1
 itsdangerous==2.1.2
 Jinja2==3.0.3
