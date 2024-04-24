@@ -312,10 +312,16 @@ def generic_get_inputs_from_database(
         """
         SELECT {reserve_type}_ba, percent_load_req
         FROM inputs_system_{reserve_type}_percent
+        JOIN
+        (SELECT {reserve_type}_ba
+        FROM inputs_geography_{reserve_type}_bas
+        WHERE {reserve_type}_ba_scenario_id = {reserve_type_ba_subscenario_id}) as relevant_bas
+        USING ({reserve_type}_ba)
         WHERE {reserve_type}_scenario_id = {reserve_type_req_subscenario_id}
         AND stage_id = {stage}
         """.format(
             reserve_type=reserve_type,
+            reserve_type_ba_subscenario_id=reserve_type_ba_subscenario_id,
             reserve_type_req_subscenario_id=reserve_type_req_subscenario_id,
             stage=stage,
         )
