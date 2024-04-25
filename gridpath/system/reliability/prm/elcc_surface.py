@@ -261,13 +261,25 @@ def get_inputs_from_database(
     c = conn.cursor()
     # The intercepts for the surface
     intercepts = c.execute(
-        """SELECT elcc_surface_name, prm_zone, period, facet, elcc_surface_intercept
-        FROM inputs_system_prm_zone_elcc_surface
-        INNER JOIN inputs_temporal_periods
-        USING (period)
-        WHERE elcc_surface_scenario_id = {}
-        AND temporal_scenario_id = {}""".format(
-            subscenarios.ELCC_SURFACE_SCENARIO_ID, subscenarios.TEMPORAL_SCENARIO_ID
+        """
+        SELECT elcc_surface_name, prm_zone, period, facet, elcc_surface_intercept
+        FROM
+        (SELECT prm_zone
+        FROM inputs_geography_prm_zones
+        WHERE prm_zone_scenario_id = {prm_zone}) as prm_zone_tbl
+        CROSS JOIN
+        (SELECT period
+        FROM inputs_temporal_periods
+        WHERE temporal_scenario_id = {temporal}) as period_tbl
+        -- Join to the normalization params
+        LEFT OUTER JOIN
+        inputs_system_prm_zone_elcc_surface
+        USING (prm_zone, period)
+        WHERE elcc_surface_scenario_id = {elcc_surface}
+        """.format(
+            prm_zone=subscenarios.PRM_ZONE_SCENARIO_ID,
+            temporal=subscenarios.TEMPORAL_SCENARIO_ID,
+            elcc_surface=subscenarios.ELCC_SURFACE_SCENARIO_ID,
         )
     )
 
