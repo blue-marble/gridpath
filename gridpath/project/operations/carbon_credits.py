@@ -420,22 +420,21 @@ def load_model_data(
         None: list(data_portal.data()["carbon_credits_generation_zone"].keys())
     }
 
-    data_portal.load(
-        filename=os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "inputs",
-            "project_carbon_credits.tab",
-        ),
-        param=(
-            m.intensity_threshold_emissions_toCO2_per_MWh,
-            m.absolute_threshold_emissions_toCO2,
-        ),
+    prj_carbon_credits_file = os.path.join(
+        scenario_directory,
+        str(subproblem),
+        str(stage),
+        "inputs",
+        "project_carbon_credits.tab",
     )
+    if os.path.exists(prj_carbon_credits_file):
+        data_portal.load(
+            filename=prj_carbon_credits_file,
+            param=(
+                m.intensity_threshold_emissions_toCO2_per_MWh,
+                m.absolute_threshold_emissions_toCO2,
+            ),
+        )
 
     data_portal.load(
         filename=os.path.join(

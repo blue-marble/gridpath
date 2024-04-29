@@ -189,17 +189,23 @@ def get_inputs_from_database(
     c = conn.cursor()
     zones = c.execute(
         f"""SELECT carbon_credits_zone, period, allow_carbon_credits_infinite_demand, carbon_credits_demand_tco2,
-            carbon_credits_demand_price, allow_carbon_credits_infinite_supply, carbon_credits_supply_tco2, 
-            carbon_credits_supply_price
-        FROM inputs_system_carbon_credits_params
-        WHERE carbon_credits_params_scenario_id = 
-        {subscenarios.CARBON_CREDITS_PARAMS_SCENARIO_ID}
-        AND period IN (
-            SELECT period
-            FROM inputs_temporal_periods
-            WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
-        );
-        """
+                carbon_credits_demand_price, allow_carbon_credits_infinite_supply, carbon_credits_supply_tco2, 
+                carbon_credits_supply_price
+            FROM
+            (SELECT carbon_credits_zone
+                FROM inputs_geography_carbon_credits_zones
+                WHERE carbon_credits_zone_scenario_id = {subscenarios.CARBON_CREDITS_ZONE_SCENARIO_ID}
+            ) as cc_zone_tbl
+            CROSS JOIN
+            (SELECT period
+                FROM inputs_temporal_periods
+                WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+            ) as period_tbl
+            LEFT OUTER JOIN
+            inputs_system_carbon_credits_params
+            USING (carbon_credits_zone, period)
+            WHERE carbon_credits_params_scenario_id = {subscenarios.CARBON_CREDITS_PARAMS_SCENARIO_ID};
+            """
     )
 
     return zones
