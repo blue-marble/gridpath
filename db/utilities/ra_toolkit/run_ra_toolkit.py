@@ -20,7 +20,7 @@ import sys
 
 # GridPath modules
 from db import create_database
-from db.utilities.ra_toolkit import load_raw_data
+from db.utilities import load_raw_data
 from db.utilities.ra_toolkit.availability import (
     create_availability_iteration_inputs,
     create_sync_gen_weather_derate_input_csvs,
