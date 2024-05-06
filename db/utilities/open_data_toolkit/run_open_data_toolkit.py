@@ -1,0 +1,153 @@
+# Copyright 2016-2024 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import os.path
+from argparse import ArgumentParser
+
+import pandas as pd
+import sys
+
+# GridPath modules
+from db import create_database
+from db.utilities import load_raw_data
+from db.utilities.ra_toolkit.weather import (
+    create_sync_load_input_csvs,)
+
+def parse_arguments(args):
+    """
+    :param args: the script arguments specified by the user
+    :return: the parsed known argument values (<class 'argparse.Namespace'>
+    Python object)
+
+    Parse the known arguments.
+    """
+    parser = ArgumentParser(add_help=True)
+
+    parser.add_argument("-s", "--settings_csv",
+                        default="./open_data_toolkit_settings.csv")
+    parser.add_argument("-q", "--quiet", default=False, action="store_true")
+
+    # Run only a single RA Toolkit step
+    parser.add_argument(
+        "-step",
+        "--single_step_only",
+        choices=[
+            "create_database",
+            "load_raw_data",
+            "create_sync_load_input_csvs",
+        ],
+        help="Run only the specified step. All others will be skipped. If not "
+             "specified, the entire Toolkit will be run.",
+    )
+
+    parsed_arguments = parser.parse_known_args(args=args)[0]
+
+    return parsed_arguments
+
+
+def get_setting(settings_df, script, setting):
+    return settings_df[
+        (settings_df["script"] == script) & (settings_df["setting"] == setting)
+    ]["value"].values[0]
+
+
+def main(args=None):
+    if args is None:
+        args = sys.argv[1:]
+
+    parsed_args = parse_arguments(args=args)
+
+    # Get the settings
+    settings_df = pd.read_csv(parsed_args.settings_csv)
+    settings_df.set_index(["script", "setting"])
+
+    # Arguments used by multiple scripts
+    db_path = os.path.join(
+        os.getcwd(),
+        get_setting(settings_df, "multi", "database"),
+    )
+
+    stage_id = get_setting(settings_df, "multi", "stage_id")
+
+    # Figure out which steps, if any, we are skipping
+    skip_create_database = True
+    skip_load_raw_data = True
+    skip_create_sync_load_input_csvs = True
+
+    if parsed_args.single_step_only == "create_database":
+        skip_create_database = False
+    elif parsed_args.single_step_only == "load_raw_data":
+        skip_load_raw_data = False
+    elif parsed_args.single_step_only == "create_sync_load_input_csvs":
+        skip_create_sync_load_input_csvs = False
+    else:
+        skip_create_database = False
+        skip_load_raw_data = False
+        skip_create_sync_load_input_csvs = False
+
+    # ### Create the database ### #
+    if not skip_create_database:
+        create_database.main(["--database", db_path])
+
+    # ### Load raw data ### #
+    if not skip_load_raw_data:
+        load_raw_data_csv = os.path.join(
+            os.getcwd(), get_setting(settings_df, "load_raw_data", "csv_location")
+        )
+        load_raw_data.main(
+            [
+                "--database",
+                db_path,
+                "--csv_location",
+                load_raw_data_csv,
+                "--quiet" if parsed_args.quiet else "",
+            ]
+        )
+
+    # Sync load
+    if not skip_create_sync_load_input_csvs:
+        sync_load_scenario_id = get_setting(
+            settings_df, "create_sync_load_input_csvs", "load_scenario_id"
+        )
+        sync_load_scenario_name = get_setting(
+            settings_df, "create_sync_load_input_csvs", "load_scenario_name"
+        )
+        sync_load_output_directory = os.path.join(
+            os.getcwd(),
+            get_setting(settings_df, "create_sync_load_input_csvs", "output_directory"),
+        )
+        sync_load_csv_overwrite = get_setting(
+            settings_df, "create_sync_load_input_csvs", "overwrite"
+        )
+
+        create_sync_load_input_csvs.main(
+            [
+                "--database",
+                db_path,
+                "--load_scenario_id",
+                sync_load_scenario_id,
+                "--load_scenario_name",
+                sync_load_scenario_name,
+                "--stage_id",
+                stage_id,
+                "--output_directory",
+                sync_load_output_directory,
+                "--overwrite" if int(sync_load_csv_overwrite) else "",
+                "--quiet" if parsed_args.quiet else "",
+            ]
+        )
+
+
+if __name__ == "__main__":
+    main()

@@ -4363,6 +4363,24 @@ CREATE TABLE inputs_aux_weather_iterations
 );
 
 
+DROP TABLE IF EXISTS raw_data_eia860_generators;
+CREATE TABLE raw_data_eia860_generators
+(
+    version_num TEXT,
+    report_date DATETIME,
+    plant_id_eia INTEGER,
+    generator_id TEXT,
+    balancing_authority_code_eia TEXT,
+    capacity_mw REAL,
+    summer_capacity_mw REAL,
+    winter_capacity_mw REAL,
+    energy_storage_capacity_mwh REAL,
+    prime_mover_code TEXT,
+    current_planned_generator_operating_date DATETIME,
+    generator_retirement_date DATETIME,
+    PRIMARY KEY (version_num, report_date, plant_id_eia, generator_id)
+);
+
 --------------------------
 -- -- DATA INTEGRITY -- --
 --------------------------

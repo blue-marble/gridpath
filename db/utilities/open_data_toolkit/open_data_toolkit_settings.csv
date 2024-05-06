@@ -1,0 +1,8 @@
+﻿script,setting,value
+multi,database,../../open_data.db
+multi,stage_id,1
+load_raw_data,csv_location,../../csvs_open_data/raw_data/
+create_sync_load_input_csvs,output_directory,../../csvs_open_data/system_load/system_load
+create_sync_load_input_csvs,load_scenario_id,1
+create_sync_load_input_csvs,load_scenario_name,open_data
+create_sync_load_input_csvs,overwrite,0
