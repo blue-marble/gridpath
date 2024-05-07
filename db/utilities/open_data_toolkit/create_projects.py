@@ -35,11 +35,52 @@ def parse_arguments(args):
     parser.add_argument("-y", "--study_year", default=2026)
     parser.add_argument("-r", "--region", default="WECC")
     parser.add_argument(
-        "-csv", "--csv_location", default="../../csvs_open_data/project/portfolios"
+        "-p_csv", "--portfolio_csv_location",
+        default="../../csvs_open_data/project/portfolios"
     )
-    parser.add_argument("-id", "--project_portfolio_scenario_id", default=1)
+    parser.add_argument("-p_id", "--project_portfolio_scenario_id", default=1)
     parser.add_argument(
-        "-name", "--project_portfolio_scenario_name", default="wecc_generator_units"
+        "-p_name", "--project_portfolio_scenario_name",
+        default="wecc_generator_units"
+    )
+    parser.add_argument(
+        "-lz_csv", "--load_zone_csv_location",
+        default="../../csvs_open_data/project/load_zones"
+    )
+    parser.add_argument("-lz_id", "--project_load_zone_scenario_id", default=1)
+    parser.add_argument(
+        "-lz_name", "--project_load_zone_scenario_name",
+        default="wecc_baas"
+    )
+    parser.add_argument(
+        "-avl_csv", "--availability_csv_location",
+        default="../../csvs_open_data/project/availability"
+    )
+    parser.add_argument("-avl_id", "--project_availability_scenario_id",
+                        default=1)
+    parser.add_argument(
+        "-avl_name", "--project_availability_scenario_name",
+        default="no_derates"
+    )
+    parser.add_argument(
+        "-cap_csv", "--specified_capacity_csv_location",
+        default="../../csvs_open_data/project/capacity_specified"
+    )
+    parser.add_argument("-cap_id", "--project_specified_capacity_scenario_id",
+                        default=1)
+    parser.add_argument(
+        "-cap_name", "--project_specified_capacity_scenario_name",
+        default="base"
+    )
+    parser.add_argument(
+        "-fcost_csv", "--fixed_cost_csv_location",
+        default="../../csvs_open_data/project/fixed_cost"
+    )
+    parser.add_argument("-fcost_id", "--project_fixed_cost_scenario_id",
+                        default=1)
+    parser.add_argument(
+        "-fcost_name", "--project_fixed_cost_scenario_name",
+        default="base"
     )
 
     parsed_arguments = parser.parse_known_args(args=args)[0]
@@ -48,10 +89,10 @@ def parse_arguments(args):
 
 
 def get_disaggregated_project_portfolio_for_region(
-    conn, report_date, study_year, region, csv_location, portfolio_id, portfolio_name
+    conn, report_date, study_year, region, csv_location, subscenario_id, subscenario_name
 ):
     sql = f"""
-    SELECT plant_id_eia || '-' || generator_id as project, NULL as specified, NULL as new_build, capacity_type
+    SELECT plant_id_eia || '-' || REPLACE(generator_id, ' ', '_') as project, NULL as specified, NULL as new_build, capacity_type
     FROM raw_data_eia860_generators
     JOIN raw_data_aux_eia_prime_mover_key
     USING (prime_mover_code)
@@ -67,7 +108,147 @@ def get_disaggregated_project_portfolio_for_region(
 
     df = pd.read_sql(sql, conn)
     df.to_csv(
-        os.path.join(csv_location, f"{portfolio_id}_" f"{portfolio_name}.csv"),
+        os.path.join(csv_location, f"{subscenario_id}_" f"{subscenario_name}.csv"),
+        index=False,
+    )
+
+
+def get_project_load_zones(
+    conn,
+    report_date,
+    study_year,
+    region,
+    csv_location,
+    subscenario_id,
+    subscenario_name,
+):
+    sql = f"""
+    SELECT plant_id_eia || '-' || REPLACE(generator_id, ' ', '_') AS project, balancing_authority_code_eia AS load_zone
+    FROM raw_data_eia860_generators
+    WHERE report_date = '{report_date}' -- get latest
+    AND (unixepoch(current_planned_generator_operating_date) >= unixepoch('{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
+    AND (unixepoch(generator_retirement_date) > unixepoch('{study_year}-12-31') or generator_retirement_date IS NULL)
+    AND balancing_authority_code_eia in (
+        SELECT baa
+        FROM raw_data_aux_baa_key
+        WHERE region = '{region}'
+    )
+    """
+
+    df = pd.read_sql(sql, conn)
+    df.to_csv(
+        os.path.join(csv_location, f"{subscenario_id}_" f"{subscenario_name}.csv"),
+        index=False,
+    )
+
+
+def get_project_availability(
+    conn,
+    report_date,
+    study_year,
+    region,
+    csv_location,
+    subscenario_id,
+    subscenario_name,
+):
+    sql = f"""
+    SELECT plant_id_eia || '-' || REPLACE(generator_id, ' ', '_') AS project, 
+    'exogenous' AS availability_type,
+    NULL AS exogenous_availability_independent_scenario_id,
+    NULL AS exogenous_availability_weather_scenario_id,
+    NULL AS endogenous_availability_scenario_id
+    FROM raw_data_eia860_generators
+    WHERE report_date = '{report_date}' -- get latest
+    AND (unixepoch(current_planned_generator_operating_date) >= unixepoch('{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
+    AND (unixepoch(generator_retirement_date) > unixepoch('{study_year}-12-31') or generator_retirement_date IS NULL)
+    AND balancing_authority_code_eia in (
+        SELECT baa
+        FROM raw_data_aux_baa_key
+        WHERE region = '{region}'
+    )
+    """
+
+    df = pd.read_sql(sql, conn)
+    df.to_csv(
+        os.path.join(csv_location, f"{subscenario_id}_" f"{subscenario_name}.csv"),
+        index=False,
+    )
+
+
+def get_project_capacity(
+    conn,
+    report_date,
+    study_year,
+    region,
+    csv_location,
+    subscenario_id,
+    subscenario_name,
+):
+    sql = f"""
+    SELECT 
+        plant_id_eia || '-' || REPLACE(generator_id, ' ', '_') AS project, 
+        capacity_mw AS specified_capacity_mw,
+        NULL AS hyb_gen_specified_capacity_mw,
+        NULL AS hyb_stor_specified_capacity_mw,
+        energy_storage_capacity_mwh AS specified_capacity_mwh,
+        NULL AS fuel_production_capacity_fuelunitperhour,
+        NULL AS fuel_release_capacity_fuelunitperhour,
+        NULL AS fuel_storage_capacity_fuelunit
+    FROM raw_data_eia860_generators
+    WHERE report_date = '{report_date}' -- get latest
+    AND (unixepoch(current_planned_generator_operating_date) >= unixepoch('{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
+    AND (unixepoch(generator_retirement_date) > unixepoch('{study_year}-12-31') or generator_retirement_date IS NULL)
+    AND balancing_authority_code_eia in (
+        SELECT baa
+        FROM raw_data_aux_baa_key
+        WHERE region = '{region}'
+    )
+    """
+
+    df = pd.read_sql(sql, conn)
+    df.to_csv(
+        os.path.join(csv_location, f"{subscenario_id}_" f"{subscenario_name}.csv"),
+        index=False,
+    )
+    
+
+def get_project_fixed_cost(
+    conn,
+    report_date,
+    study_year,
+    region,
+    csv_location,
+    subscenario_id,
+    subscenario_name,
+):
+    sql = f"""
+    SELECT 
+        plant_id_eia || '-' || REPLACE(generator_id, ' ', '_') AS project, 
+        0 AS specified_fixed_cost_mw,
+        NULL AS hyb_gen_specified_fixed_cost_mw,
+        NULL AS hyb_stor_specified_fixed_cost_mw,
+        CASE
+            WHEN energy_storage_capacity_mwh IS NULL THEN NULL
+            ELSE 0
+            END 
+            AS specified_fixed_cost_mwh,
+        NULL AS fuel_production_fixed_cost_fuelunitperhour,
+        NULL AS fuel_release_fixed_cost_fuelunitperhour,
+        NULL AS fuel_storage_fixed_cost_fuelunit
+    FROM raw_data_eia860_generators
+    WHERE report_date = '{report_date}' -- get latest
+    AND (unixepoch(current_planned_generator_operating_date) >= unixepoch('{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
+    AND (unixepoch(generator_retirement_date) > unixepoch('{study_year}-12-31') or generator_retirement_date IS NULL)
+    AND balancing_authority_code_eia in (
+        SELECT baa
+        FROM raw_data_aux_baa_key
+        WHERE region = '{region}'
+    )
+    """
+
+    df = pd.read_sql(sql, conn)
+    df.to_csv(
+        os.path.join(csv_location, f"{subscenario_id}_" f"{subscenario_name}.csv"),
         index=False,
     )
 
@@ -85,9 +266,49 @@ def main(args=None):
         report_date=parsed_args.report_date,
         study_year=parsed_args.study_year,
         region=parsed_args.region,
-        csv_location=parsed_args.csv_location,
-        portfolio_id=parsed_args.project_portfolio_scenario_id,
-        portfolio_name=parsed_args.project_portfolio_scenario_name
+        csv_location=parsed_args.portfolio_csv_location,
+        subscenario_id=parsed_args.project_portfolio_scenario_id,
+        subscenario_name=parsed_args.project_portfolio_scenario_name,
+    )
+
+    get_project_load_zones(
+        conn=conn,
+        report_date=parsed_args.report_date,
+        study_year=parsed_args.study_year,
+        region=parsed_args.region,
+        csv_location=parsed_args.load_zone_csv_location,
+        subscenario_id=parsed_args.project_load_zone_scenario_id,
+        subscenario_name=parsed_args.project_load_zone_scenario_name,
+    )
+
+    get_project_availability(
+        conn=conn,
+        report_date=parsed_args.report_date,
+        study_year=parsed_args.study_year,
+        region=parsed_args.region,
+        csv_location=parsed_args.availability_csv_location,
+        subscenario_id=parsed_args.project_availability_scenario_id,
+        subscenario_name=parsed_args.project_availability_scenario_name,
+    )
+
+    get_project_capacity(
+        conn=conn,
+        report_date=parsed_args.report_date,
+        study_year=parsed_args.study_year,
+        region=parsed_args.region,
+        csv_location=parsed_args.specified_capacity_csv_location,
+        subscenario_id=parsed_args.project_specified_capacity_scenario_id,
+        subscenario_name=parsed_args.project_specified_capacity_scenario_name,
+    )
+
+    get_project_fixed_cost(
+        conn=conn,
+        report_date=parsed_args.report_date,
+        study_year=parsed_args.study_year,
+        region=parsed_args.region,
+        csv_location=parsed_args.fixed_cost_csv_location,
+        subscenario_id=parsed_args.project_fixed_cost_scenario_id,
+        subscenario_name=parsed_args.project_fixed_cost_scenario_name,
     )
 
 
