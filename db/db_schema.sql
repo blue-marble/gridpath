@@ -275,7 +275,7 @@ DROP TABLE IF EXISTS inputs_temporal_periods;
 CREATE TABLE inputs_temporal_periods
 (
     temporal_scenario_id INTEGER,
-    period INTEGER,
+    period               INTEGER,
     discount_factor      FLOAT,
     period_start_year    FLOAT,
     period_end_year      FLOAT, -- exclusive, i.e. if 2030, last day is 2029-12-31
@@ -290,7 +290,7 @@ CREATE TABLE inputs_temporal_superperiods
 (
     temporal_scenario_id INTEGER,
     superperiod          INTEGER,
-    period INTEGER,
+    period               INTEGER,
     PRIMARY KEY (temporal_scenario_id, superperiod, period),
     FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
         (temporal_scenario_id)
@@ -322,7 +322,7 @@ CREATE TABLE inputs_temporal
     subproblem_id                INTEGER NOT NULL,
     stage_id                     INTEGER NOT NULL,
     timepoint                    INTEGER NOT NULL,
-    period INTEGER NOT NULL,
+    period                       INTEGER NOT NULL,
     number_of_hours_in_timepoint INTEGER NOT NULL,
     timepoint_weight             FLOAT   NOT NULL,
     previous_stage_timepoint_map INTEGER,
@@ -812,7 +812,7 @@ CREATE TABLE inputs_system_carbon_credits_params
 (
     carbon_credits_params_scenario_id    INTEGER,
     carbon_credits_zone                  VARCHAR(32),
-    period INTEGER,
+    period                               INTEGER,
     allow_carbon_credits_infinite_demand INTEGER DEFAULT 0, -- constraint is hard by default
     carbon_credits_demand_tco2           FLOAT,
     carbon_credits_demand_price          FLOAT,
@@ -1015,7 +1015,7 @@ CREATE TABLE inputs_project_specified_capacity
 (
     project_specified_capacity_scenario_id   INTEGER,
     project                                  VARCHAR(64),
-    period INTEGER,
+    period                                   INTEGER,
     specified_capacity_mw                    FLOAT, -- grid-facing nameplate capacity
     hyb_gen_specified_capacity_mw            FLOAT, -- e.g. CAES turbine capacity
     hyb_stor_specified_capacity_mw           FLOAT, -- e.g. battery tightly-coupled with PV
@@ -1041,7 +1041,7 @@ CREATE TABLE inputs_project_specified_fixed_cost
 (
     project_specified_fixed_cost_scenario_id                   INTEGER,
     project                                                    VARCHAR(64),
-    period INTEGER,
+    period                                                     INTEGER,
     fixed_cost_per_mw_yr                                       FLOAT,
     hyb_gen_fixed_cost_per_mw_yr                               FLOAT,
     hyb_stor_fixed_cost_per_mw_yr                              FLOAT,
@@ -1143,7 +1143,7 @@ CREATE TABLE inputs_project_new_potential
 (
     project_new_potential_scenario_id INTEGER,
     project                           VARCHAR(64),
-    period INTEGER,
+    period                            INTEGER,
     min_new_build_power               FLOAT,
     max_new_build_power               FLOAT,
     min_capacity_power                FLOAT,
@@ -1174,7 +1174,7 @@ CREATE TABLE inputs_project_capacity_group_requirements
 (
     project_capacity_group_requirement_scenario_id INTEGER,
     capacity_group                                 VARCHAR(64),
-    period INTEGER,
+    period                                         INTEGER,
     capacity_group_new_capacity_min                FLOAT,
     capacity_group_new_capacity_max                FLOAT,
     capacity_group_total_capacity_min              FLOAT,
@@ -1201,7 +1201,7 @@ CREATE TABLE inputs_project_relative_capacity_requirements
 (
     project_relative_capacity_requirement_scenario_id INTEGER,
     project                                           VARCHAR(64),
-    period INTEGER,
+    period                                            INTEGER,
     prj_for_lim_map_id                                INTEGER,
     min_relative_capacity_limit_new                   FLOAT,
     max_relative_capacity_limit_new                   FLOAT,
@@ -1441,7 +1441,7 @@ CREATE TABLE inputs_project_heat_rate_curves
 (
     project                         VARCHAR(64),
     heat_rate_curves_scenario_id    INTEGER,
-    period INTEGER, -- 0 means it's the same for all periods
+    period                          INTEGER, -- 0 means it's the same for all periods
     load_point_fraction             FLOAT,
     average_heat_rate_mmbtu_per_mwh FLOAT,
     PRIMARY KEY (project, heat_rate_curves_scenario_id, period,
@@ -1467,7 +1467,7 @@ CREATE TABLE inputs_project_variable_om_curves
 (
     project                          VARCHAR(64),
     variable_om_curves_scenario_id   INTEGER,
-    period INTEGER, -- 0 means it's the same for all periods
+    period                           INTEGER, -- 0 means it's the same for all periods
     load_point_fraction              FLOAT,
     average_variable_om_cost_per_mwh FLOAT,
     PRIMARY KEY (project, variable_om_curves_scenario_id, period,
@@ -2067,7 +2067,7 @@ CREATE TABLE inputs_project_carbon_tax_allowance
 (
     project_carbon_tax_allowance_scenario_id INTEGER,
     project                                  VARCHAR(64),
-    period INTEGER,
+    period                                   INTEGER,
     fuel_group                               VARCHAR(32),
     carbon_tax_allowance_tco2_per_mwh        FLOAT,
     PRIMARY KEY (project_carbon_tax_allowance_scenario_id, project, period,
@@ -2090,7 +2090,7 @@ CREATE TABLE inputs_project_carbon_credits
 (
     project_carbon_credits_scenario_id          INTEGER,
     project                                     VARCHAR(64),
-    period INTEGER,
+    period                                      INTEGER,
     intensity_threshold_emissions_toCO2_per_MWh FLOAT,
     absolute_threshold_emissions_toCO2          FLOAT,
     PRIMARY KEY (project_carbon_credits_scenario_id, project, period),
@@ -2263,7 +2263,7 @@ CREATE TABLE inputs_transmission_prm_capacity_transfer_params
     prm_capacity_transfer_params_scenario_id INTEGER,
     prm_zone                                 VARCHAR(32), -- "from" zone
     prm_capacity_transfer_zone               VARCHAR(32), -- "to" zone,
-    period INTEGER,
+    period                                   INTEGER,
     min_transfer_powerunit                   FLOAT,
     max_transfer_powerunit                   FLOAT,
     capacity_transfer_cost_per_powerunit_yr  FLOAT,
@@ -2338,7 +2338,7 @@ CREATE TABLE inputs_project_elcc_simple
 (
     project                         VARCHAR(64),
     project_elcc_simple_scenario_id INTEGER,
-    period FLOAT,
+    period                          FLOAT,
     elcc_simple_fraction            FLOAT,
     PRIMARY KEY (project, project_elcc_simple_scenario_id, period),
     FOREIGN KEY (project, project_elcc_simple_scenario_id) REFERENCES
@@ -2386,7 +2386,7 @@ CREATE TABLE inputs_system_prm_zone_elcc_surface
     elcc_surface_scenario_id INTEGER,
     elcc_surface_name        VARCHAR(32),
     prm_zone                 VARCHAR(32),
-    period INTEGER,
+    period                   INTEGER,
     facet                    INTEGER,
     elcc_surface_intercept   FLOAT,
     PRIMARY KEY (elcc_surface_scenario_id, elcc_surface_name, prm_zone, period,
@@ -2402,7 +2402,7 @@ CREATE TABLE inputs_system_prm_zone_elcc_surface_prm_load
     elcc_surface_scenario_id INTEGER,
     elcc_surface_name        VARCHAR(32),
     prm_zone                 VARCHAR(32),
-    period INTEGER,
+    period                   INTEGER,
     prm_peak_load_mw         FLOAT,
     prm_annual_load_mwh      FLOAT,
     PRIMARY KEY (elcc_surface_scenario_id, elcc_surface_name, prm_zone, period),
@@ -2417,7 +2417,7 @@ CREATE TABLE inputs_project_elcc_surface
     elcc_surface_scenario_id INTEGER,
     elcc_surface_name        VARCHAR(32),
     project                  VARCHAR(64),
-    period INTEGER,
+    period                   INTEGER,
     facet                    INTEGER,
     elcc_surface_coefficient FLOAT,
     PRIMARY KEY (elcc_surface_scenario_id, elcc_surface_name, project, period,
@@ -2474,7 +2474,7 @@ CREATE TABLE inputs_project_prm_deliverability_existing
 (
     prm_deliverability_existing_scenario_id INTEGER,
     deliverability_group                    VARCHAR(64),
-    period FLOAT,
+    period                                  FLOAT,
     constraint_type                         VARCHAR(16) CHECK (
                 constraint_type = 'total'
             OR constraint_type = 'deliverable'
@@ -2504,7 +2504,7 @@ CREATE TABLE inputs_project_prm_deliverability_potential
 (
     prm_deliverability_potential_scenario_id INTEGER,
     deliverability_group                     VARCHAR(64),
-    period FLOAT,
+    period                                   FLOAT,
     deliverable_capacity_limit_cumulative_mw FLOAT,
     PRIMARY KEY (prm_deliverability_potential_scenario_id, deliverability_group,
                  period),
@@ -2622,7 +2622,7 @@ CREATE TABLE inputs_fuel_prices
 (
     fuel_price_scenario_id INTEGER,
     fuel                   VARCHAR(32),
-    period INTEGER,
+    period                 INTEGER,
     month                  INTEGER,
     fuel_price_per_mmbtu   FLOAT,
     PRIMARY KEY (fuel_price_scenario_id, fuel, period, month),
@@ -2719,7 +2719,7 @@ CREATE TABLE inputs_transmission_specified_capacity
 (
     transmission_specified_capacity_scenario_id INTEGER,
     transmission_line                           VARCHAR(64),
-    period INTEGER,
+    period                                      INTEGER,
     min_mw                                      FLOAT,
     max_mw                                      FLOAT,
     fixed_cost_per_mw_yr                        FLOAT, -- multiplied by the mean of the absolute
@@ -2773,7 +2773,7 @@ CREATE TABLE inputs_transmission_new_potential
 (
     transmission_new_potential_scenario_id INTEGER,
     transmission_line                      VARCHAR(64),
-    period INTEGER,
+    period                                 INTEGER,
     min_cumulative_new_build_mw            FLOAT,
     max_cumulative_new_build_mw            FLOAT,
     PRIMARY KEY (transmission_new_potential_scenario_id, transmission_line,
@@ -2904,7 +2904,7 @@ CREATE TABLE inputs_transmission_hurdle_rates
 (
     transmission_hurdle_rate_scenario_id   INTEGER,
     transmission_line                      VARCHAR(64),
-    period INTEGER,
+    period                                 INTEGER,
     hurdle_rate_positive_direction_per_mwh FLOAT,
     hurdle_rate_negative_direction_per_mwh FLOAT,
     PRIMARY KEY (transmission_hurdle_rate_scenario_id, transmission_line,
@@ -2929,7 +2929,7 @@ CREATE TABLE inputs_transmission_capacity_group_requirements
 (
     transmission_capacity_group_requirement_scenario_id INTEGER,
     transmission_capacity_group                         VARCHAR(64),
-    period INTEGER,
+    period                                              INTEGER,
     transmission_capacity_group_new_capacity_min        FLOAT,
     transmission_capacity_group_new_capacity_max        FLOAT,
     PRIMARY KEY (transmission_capacity_group_requirement_scenario_id,
@@ -2977,7 +2977,7 @@ CREATE TABLE inputs_transmission_simultaneous_flow_limits
 (
     transmission_simultaneous_flow_limit_scenario_id INTEGER,
     transmission_simultaneous_flow_limit             VARCHAR(64),
-    period INTEGER,
+    period                                           INTEGER,
     max_flow_mw                                      FLOAT,
     PRIMARY KEY (transmission_simultaneous_flow_limit_scenario_id,
                  transmission_simultaneous_flow_limit, period),
@@ -3486,7 +3486,7 @@ CREATE TABLE inputs_system_period_energy_targets
     energy_target_zone               VARCHAR(32),
     subproblem_id                    INTEGER,
     stage_id                         INTEGER,
-    period INTEGER,
+    period                           INTEGER,
     energy_target_mwh                FLOAT,
     energy_target_fraction           FLOAT,
     PRIMARY KEY (period_energy_target_scenario_id, energy_target_zone,
@@ -3596,7 +3596,7 @@ CREATE TABLE inputs_system_carbon_cap_targets
 (
     carbon_cap_target_scenario_id INTEGER,
     carbon_cap_zone               VARCHAR(32),
-    period INTEGER,
+    period                        INTEGER,
     subproblem_id                 INTEGER,
     stage_id                      INTEGER,
     carbon_cap                    FLOAT,
@@ -3623,7 +3623,7 @@ CREATE TABLE inputs_system_carbon_tax
 (
     carbon_tax_scenario_id INTEGER,
     carbon_tax_zone        VARCHAR(32),
-    period INTEGER,
+    period                 INTEGER,
     subproblem_id          INTEGER,
     stage_id               INTEGER,
     carbon_tax             FLOAT,
@@ -3650,7 +3650,7 @@ CREATE TABLE inputs_system_performance_standard
 (
     performance_standard_scenario_id  INTEGER,
     performance_standard_zone         VARCHAR(32),
-    period INTEGER,
+    period                            INTEGER,
     subproblem_id                     INTEGER,
     stage_id                          INTEGER,
     performance_standard_tco2_per_mwh FLOAT,
@@ -3678,7 +3678,7 @@ CREATE TABLE inputs_system_prm_requirement
 (
     prm_requirement_scenario_id INTEGER,
     prm_zone                    VARCHAR(32),
-    period INTEGER,
+    period                      INTEGER,
     prm_requirement_mw          FLOAT,
     prm_peak_load_mw            FLOAT, -- for ELCC surface
     prm_annual_load_mwh         FLOAT, -- for ELCC surface
@@ -3702,7 +3702,7 @@ CREATE TABLE inputs_system_local_capacity_requirement
 (
     local_capacity_requirement_scenario_id INTEGER,
     local_capacity_zone                    VARCHAR(32),
-    period INTEGER,
+    period                                 INTEGER,
     local_capacity_requirement_mw          FLOAT,
     PRIMARY KEY (local_capacity_requirement_scenario_id, local_capacity_zone,
                  period)
@@ -4366,19 +4366,36 @@ CREATE TABLE inputs_aux_weather_iterations
 DROP TABLE IF EXISTS raw_data_eia860_generators;
 CREATE TABLE raw_data_eia860_generators
 (
-    version_num TEXT,
-    report_date DATETIME,
-    plant_id_eia INTEGER,
-    generator_id TEXT,
-    balancing_authority_code_eia TEXT,
-    capacity_mw REAL,
-    summer_capacity_mw REAL,
-    winter_capacity_mw REAL,
-    energy_storage_capacity_mwh REAL,
-    prime_mover_code TEXT,
+    version_num                              TEXT,
+    report_date                              DATETIME,
+    plant_id_eia                             INTEGER,
+    generator_id                             TEXT,
+    balancing_authority_code_eia             TEXT,
+    capacity_mw                              REAL,
+    summer_capacity_mw                       REAL,
+    winter_capacity_mw                       REAL,
+    energy_storage_capacity_mwh              REAL,
+    prime_mover_code                         TEXT,
     current_planned_generator_operating_date DATETIME,
-    generator_retirement_date DATETIME,
+    generator_retirement_date                DATETIME,
     PRIMARY KEY (version_num, report_date, plant_id_eia, generator_id)
+);
+
+DROP TABLE IF EXISTS raw_data_aux_baa_key;
+CREATE TABLE raw_data_aux_baa_key
+(
+    baa    TEXT,
+    region TEXT,
+    PRIMARY KEY (baa, region)
+);
+
+DROP TABLE IF EXISTS raw_data_aux_eia_prime_mover_key;
+CREATE TABLE raw_data_aux_eia_prime_mover_key
+(
+    prime_mover      TEXT PRIMARY KEY,
+    label            TEXT,
+    capacity_type    TEXT,
+    operational_type TEXT
 );
 
 --------------------------
@@ -4410,7 +4427,7 @@ CREATE TABLE results_project_period
 (
     scenario_id                            INTEGER,
     project                                VARCHAR(64),
-    period INTEGER,
+    period                                 INTEGER,
     weather_iteration                      INTEGER,
     hydro_iteration                        INTEGER,
     availability_iteration                 INTEGER,
@@ -4468,7 +4485,7 @@ CREATE TABLE results_project_group_capacity
     subproblem_id                          INTEGER,
     stage_id                               INTEGER,
     capacity_group                         VARCHAR(64),
-    period INTEGER,
+    period                                 INTEGER,
     group_new_capacity                     FLOAT,
     group_total_capacity                   FLOAT,
     capacity_group_new_capacity_min        FLOAT,
@@ -4498,7 +4515,7 @@ CREATE TABLE results_project_timepoint
     hydro_iteration                                 INTEGER,
     availability_iteration                          INTEGER,
     timepoint                                       INTEGER,
-    period INTEGER,
+    period                                          INTEGER,
     subproblem_id                                   INTEGER,
     stage_id                                        INTEGER,
     capacity_type                                   VARCHAR(64),
@@ -4588,7 +4605,7 @@ CREATE TABLE results_project_curtailment_variable_periodagg
     availability_iteration       INTEGER,
     subproblem_id                INTEGER,
     stage_id                     INTEGER,
-    period INTEGER,
+    period                       INTEGER,
     timepoint                    INTEGER,
     timepoint_weight             FLOAT,
     number_of_hours_in_timepoint FLOAT,
@@ -4611,7 +4628,7 @@ CREATE TABLE results_project_curtailment_hydro_periodagg
     availability_iteration       INTEGER,
     subproblem_id                INTEGER,
     stage_id                     INTEGER,
-    period INTEGER,
+    period                       INTEGER,
     timepoint                    INTEGER,
     timepoint_weight             FLOAT,
     number_of_hours_in_timepoint FLOAT,
@@ -4658,7 +4675,7 @@ CREATE TABLE results_project_carbon_tax_allowance
     project                                              VARCHAR(64),
     fuel_group                                           VARCHAR(64),
     timepoint                                            INTEGER,
-    period INTEGER,
+    period                                               INTEGER,
     horizon                                              INTEGER,
     timepoint_weight                                     FLOAT,
     number_of_hours_in_timepoint                         FLOAT,
@@ -4681,7 +4698,7 @@ CREATE TABLE results_project_dispatch_by_technology
     availability_iteration       INTEGER,
     subproblem_id                INTEGER,
     stage_id                     INTEGER,
-    period INTEGER,
+    period                       INTEGER,
     timepoint                    INTEGER,
     timepoint_weight             FLOAT,
     number_of_hours_in_timepoint FLOAT,
@@ -4703,7 +4720,7 @@ CREATE TABLE results_project_dispatch_by_technology_period
     availability_iteration INTEGER,
     subproblem_id          INTEGER,
     stage_id               INTEGER,
-    period INTEGER,
+    period                 INTEGER,
     load_zone              VARCHAR(32),
     technology             VARCHAR(32),
     spinup_or_lookahead    INTEGER,
@@ -4718,7 +4735,7 @@ CREATE TABLE results_project_deliverability
 (
     scenario_id             INTEGER,
     project                 VARCHAR(64),
-    period INTEGER,
+    period                  INTEGER,
     weather_iteration       INTEGER,
     hydro_iteration         INTEGER,
     availability_iteration  INTEGER,
@@ -4747,7 +4764,7 @@ CREATE TABLE results_project_deliverability_groups
     subproblem_id                            INTEGER,
     stage_id                                 INTEGER,
     deliverability_group                     VARCHAR(64),
-    period INTEGER,
+    period                                   INTEGER,
     deliverable_capacity_built_in_period_mw  FLOAT,
     cumulative_added_deliverable_capacity_mw FLOAT,
     deliverability_annual_cost_in_period     FLOAT,
@@ -4769,7 +4786,7 @@ CREATE TABLE results_project_deliverability_groups_agg
     availability_iteration          INTEGER,
     subproblem_id                   INTEGER,
     stage_id                        INTEGER,
-    period INTEGER,
+    period                          INTEGER,
     spinup_or_lookahead             INTEGER,
     fraction_of_hours_in_subproblem FLOAT,
     deliverable_capacity_cost       FLOAT,
@@ -4783,7 +4800,7 @@ CREATE TABLE results_project_elcc_simple
 (
     scenario_id               INTEGER,
     project                   VARCHAR(64),
-    period INTEGER,
+    period                    INTEGER,
     weather_iteration         INTEGER,
     hydro_iteration           INTEGER,
     availability_iteration    INTEGER,
@@ -4808,7 +4825,7 @@ CREATE TABLE results_project_elcc_surface
 (
     scenario_id               INTEGER,
     project                   VARCHAR(64),
-    period INTEGER,
+    period                    INTEGER,
     weather_iteration         INTEGER,
     hydro_iteration           INTEGER,
     availability_iteration    INTEGER,
@@ -4836,7 +4853,7 @@ CREATE TABLE results_project_local_capacity
 (
     scenario_id                    INTEGER,
     project                        VARCHAR(64),
-    period INTEGER,
+    period                         INTEGER,
     weather_iteration              INTEGER,
     hydro_iteration                INTEGER,
     availability_iteration         INTEGER,
@@ -4862,7 +4879,7 @@ CREATE TABLE results_project_costs_capacity_agg
 (
     scenario_id                     INTEGER,
     load_zone                       VARCHAR(64),
-    period INTEGER,
+    period                          INTEGER,
     weather_iteration               INTEGER,
     hydro_iteration                 INTEGER,
     availability_iteration          INTEGER,
@@ -4882,7 +4899,7 @@ CREATE TABLE results_project_costs_operations_agg
 (
     scenario_id            INTEGER,
     load_zone              VARCHAR(64),
-    period INTEGER,
+    period                 INTEGER,
     weather_iteration      INTEGER,
     hydro_iteration        INTEGER,
     availability_iteration INTEGER,
@@ -4902,7 +4919,7 @@ CREATE TABLE results_project_fuel_burn
 (
     scenario_id                  INTEGER,
     project                      VARCHAR(64),
-    period INTEGER,
+    period                       INTEGER,
     weather_iteration            INTEGER,
     hydro_iteration              INTEGER,
     availability_iteration       INTEGER,
@@ -4933,7 +4950,7 @@ DROP TABLE IF EXISTS results_project_carbon_emissions_by_technology_period;
 CREATE TABLE results_project_carbon_emissions_by_technology_period
 (
     scenario_id            INTEGER,
-    period INTEGER,
+    period                 INTEGER,
     weather_iteration      INTEGER,
     hydro_iteration        INTEGER,
     availability_iteration INTEGER,
@@ -4975,7 +4992,7 @@ CREATE TABLE results_transmission_period
 (
     scenario_id                          INTEGER,
     transmission_line                    VARCHAR(64),
-    period INTEGER,
+    period                               INTEGER,
     weather_iteration                    INTEGER,
     hydro_iteration                      INTEGER,
     availability_iteration               INTEGER,
@@ -5009,7 +5026,7 @@ CREATE TABLE results_transmission_group_capacity
     subproblem_id                                INTEGER,
     stage_id                                     INTEGER,
     transmission_capacity_group                  VARCHAR(64),
-    period INTEGER,
+    period                                       INTEGER,
     group_new_capacity                           FLOAT,
     transmission_capacity_group_new_capacity_min FLOAT,
     transmission_capacity_group_new_capacity_max FLOAT,
@@ -5027,7 +5044,7 @@ CREATE TABLE results_transmission_costs_capacity_agg
 (
     scenario_id                     INTEGER,
     load_zone                       VARCHAR(64),
-    period INTEGER,
+    period                          INTEGER,
     weather_iteration               INTEGER,
     hydro_iteration                 INTEGER,
     availability_iteration          INTEGER,
@@ -5051,7 +5068,7 @@ CREATE TABLE results_transmission_timepoint
     stage_id                                         INTEGER,
     transmission_line                                VARCHAR(64),
     timepoint                                        INTEGER,
-    period INTEGER,
+    period                                           INTEGER,
     timepoint_weight                                 FLOAT,
     number_of_hours_in_timepoint                     FLOAT,
     spinup_or_lookahead                              INTEGER,
@@ -5080,7 +5097,7 @@ CREATE TABLE results_transmission_imports_exports_agg
 (
     scenario_id            INTEGER,
     load_zone              VARCHAR(64),
-    period INTEGER,
+    period                 INTEGER,
     weather_iteration      INTEGER,
     hydro_iteration        INTEGER,
     availability_iteration INTEGER,
@@ -5100,7 +5117,7 @@ CREATE TABLE results_transmission_hurdle_costs_agg
 (
     scenario_id            INTEGER,
     load_zone              VARCHAR(64),
-    period INTEGER,
+    period                 INTEGER,
     weather_iteration      INTEGER,
     hydro_iteration        INTEGER,
     availability_iteration INTEGER,
@@ -5126,7 +5143,7 @@ CREATE TABLE results_transmission_simultaneous_flows
     stage_id                             INTEGER,
     timepoint                            INTEGER,
     timepoint_weight                     FLOAT,
-    period FLOAT,
+    period                               FLOAT,
     flow_mw                              FLOAT,
     dual                                 FLOAT,
     PRIMARY KEY (scenario_id, transmission_simultaneous_flow_limit,
@@ -5145,7 +5162,7 @@ CREATE TABLE results_system_load_zone_timepoint
     stage_id                          INTEGER,
     load_zone                         VARCHAR(32),
     timepoint                         INTEGER,
-    period INTEGER,
+    period                            INTEGER,
     discount_factor                   FLOAT,
     number_years_represented          FLOAT,
     timepoint_weight                  FLOAT,
@@ -5175,7 +5192,7 @@ CREATE TABLE results_system_load_zone_timepoint_loss_of_load_summary
     stage_id                     INTEGER,
     load_zone                    VARCHAR(32),
     timepoint                    INTEGER,
-    period INTEGER,
+    period                       INTEGER,
     month                        INTEGER,
     day_of_month                 INTEGER,
     hour_of_day                  INTEGER,
@@ -5199,7 +5216,7 @@ CREATE TABLE results_system_timepoint_loss_of_load_summary
     subproblem_id                INTEGER,
     stage_id                     INTEGER,
     timepoint                    INTEGER,
-    period INTEGER,
+    period                       INTEGER,
     month                        INTEGER,
     day_of_month                 INTEGER,
     hour_of_day                  INTEGER,
@@ -5223,7 +5240,7 @@ CREATE TABLE results_system_days_loss_of_load_summary
     availability_iteration   INTEGER,
     subproblem_id            INTEGER,
     stage_id                 INTEGER,
-    period INTEGER,
+    period                   INTEGER,
     month                    INTEGER,
     day_of_month             INTEGER,
     max_unserved_energy_mw   FLOAT,
@@ -5279,7 +5296,7 @@ CREATE TABLE results_system_market_participation
     load_zone                    VARCHAR(32),
     market                       VARCHAR(32),
     timepoint                    INTEGER,
-    period INTEGER,
+    period                       INTEGER,
     discount_factor              FLOAT,
     number_years_represented     FLOAT,
     timepoint_weight             FLOAT,
@@ -5300,7 +5317,7 @@ CREATE TABLE results_system_lf_reserves_up
 (
     scenario_id                  INTEGER,
     lf_reserves_up_ba            VARCHAR(32),
-    period INTEGER,
+    period                       INTEGER,
     weather_iteration            INTEGER,
     hydro_iteration              INTEGER,
     availability_iteration       INTEGER,
@@ -5324,7 +5341,7 @@ CREATE TABLE results_system_lf_reserves_down
 (
     scenario_id                  INTEGER,
     lf_reserves_down_ba          VARCHAR(32),
-    period INTEGER,
+    period                       INTEGER,
     weather_iteration            INTEGER,
     hydro_iteration              INTEGER,
     availability_iteration       INTEGER,
@@ -5348,7 +5365,7 @@ CREATE TABLE results_system_regulation_up
 (
     scenario_id                  INTEGER,
     regulation_up_ba             VARCHAR(32),
-    period INTEGER,
+    period                       INTEGER,
     weather_iteration            INTEGER,
     hydro_iteration              INTEGER,
     availability_iteration       INTEGER,
@@ -5372,7 +5389,7 @@ CREATE TABLE results_system_regulation_down
 (
     scenario_id                  INTEGER,
     regulation_down_ba           VARCHAR(32),
-    period INTEGER,
+    period                       INTEGER,
     weather_iteration            INTEGER,
     hydro_iteration              INTEGER,
     availability_iteration       INTEGER,
@@ -5396,7 +5413,7 @@ CREATE TABLE results_system_frequency_response
 (
     scenario_id                  INTEGER,
     frequency_response_ba        VARCHAR(32),
-    period INTEGER,
+    period                       INTEGER,
     weather_iteration            INTEGER,
     hydro_iteration              INTEGER,
     availability_iteration       INTEGER,
@@ -5422,7 +5439,7 @@ CREATE TABLE results_system_frequency_response_partial
 (
     scenario_id                   INTEGER,
     frequency_response_partial_ba VARCHAR(32),
-    period INTEGER,
+    period                        INTEGER,
     weather_iteration             INTEGER,
     hydro_iteration               INTEGER,
     availability_iteration        INTEGER,
@@ -5447,7 +5464,7 @@ CREATE TABLE results_system_spinning_reserves
 (
     scenario_id                  INTEGER,
     spinning_reserves_ba         VARCHAR(32),
-    period INTEGER,
+    period                       INTEGER,
     weather_iteration            INTEGER,
     hydro_iteration              INTEGER,
     availability_iteration       INTEGER,
@@ -5472,7 +5489,7 @@ CREATE TABLE results_system_carbon_cap
 (
     scenario_id                           INTEGER,
     carbon_cap_zone                       VARCHAR(64),
-    period INTEGER,
+    period                                INTEGER,
     weather_iteration                     INTEGER,
     hydro_iteration                       INTEGER,
     availability_iteration                INTEGER,
@@ -5502,7 +5519,7 @@ CREATE TABLE results_system_carbon_tax
 (
     scenario_id                     INTEGER,
     carbon_tax_zone                 VARCHAR(64),
-    period INTEGER,
+    period                          INTEGER,
     weather_iteration               INTEGER,
     hydro_iteration                 INTEGER,
     availability_iteration          INTEGER,
@@ -5527,7 +5544,7 @@ CREATE TABLE results_system_performance_standard
 (
     scenario_id                                 INTEGER,
     performance_standard_zone                   VARCHAR(64),
-    period INTEGER,
+    period                                      INTEGER,
     weather_iteration                           INTEGER,
     hydro_iteration                             INTEGER,
     availability_iteration                      INTEGER,
@@ -5551,7 +5568,7 @@ CREATE TABLE results_system_carbon_credits
 (
     scenario_id                    INTEGER,
     carbon_credits_zone            VARCHAR(64),
-    period INTEGER,
+    period                         INTEGER,
     weather_iteration              INTEGER,
     hydro_iteration                INTEGER,
     availability_iteration         INTEGER,
@@ -5581,7 +5598,7 @@ CREATE TABLE results_system_period_energy_target
     availability_iteration                     INTEGER,
     subproblem_id                              INTEGER,
     stage_id                                   INTEGER,
-    period INTEGER,
+    period                                     INTEGER,
     discount_factor                            FLOAT,
     number_years_represented                   FLOAT,
     energy_target_mwh                          FLOAT,
@@ -5698,7 +5715,7 @@ CREATE TABLE results_system_prm
 (
     scenario_id                               INTEGER,
     prm_zone                                  VARCHAR(64),
-    period INTEGER,
+    period                                    INTEGER,
     weather_iteration                         INTEGER,
     hydro_iteration                           INTEGER,
     availability_iteration                    INTEGER,
@@ -5726,7 +5743,7 @@ CREATE TABLE results_system_prm_elcc_surfaces
     scenario_id            INTEGER,
     elcc_surface_name      VARCHAR(32),
     prm_zone               VARCHAR(64),
-    period INTEGER,
+    period                 INTEGER,
     weather_iteration      INTEGER,
     availability_iteration INTEGER,
     hydro_iteration        INTEGER,
@@ -5750,7 +5767,7 @@ CREATE TABLE results_system_capacity_transfers
     stage_id                                INTEGER,
     prm_zone_from                           VARCHAR(64),
     prm_zone_to                             VARCHAR(64),
-    period INTEGER,
+    period                                  INTEGER,
     capacity_transfer_mw                    FLOAT,
     capacity_transfer_cost_per_yr_in_period FLOAT,
     PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
@@ -5764,7 +5781,7 @@ CREATE TABLE results_system_local_capacity
 (
     scenario_id                         INTEGER,
     local_capacity_zone                 VARCHAR(64),
-    period INTEGER,
+    period                              INTEGER,
     weather_iteration                   INTEGER,
     hydro_iteration                     INTEGER,
     availability_iteration              INTEGER,

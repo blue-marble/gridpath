@@ -24,6 +24,7 @@ from db.utilities import load_raw_data
 from db.utilities.ra_toolkit.weather import (
     create_sync_load_input_csvs,)
 
+
 def parse_arguments(args):
     """
     :param args: the script arguments specified by the user
