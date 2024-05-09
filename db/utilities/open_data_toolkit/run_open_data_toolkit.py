@@ -22,7 +22,8 @@ import sys
 from db import create_database
 from db.utilities import load_raw_data
 from db.utilities.ra_toolkit.weather import (
-    create_sync_load_input_csvs,)
+    create_sync_load_input_csvs,
+)
 
 
 def parse_arguments(args):
@@ -35,8 +36,9 @@ def parse_arguments(args):
     """
     parser = ArgumentParser(add_help=True)
 
-    parser.add_argument("-s", "--settings_csv",
-                        default="./open_data_toolkit_settings.csv")
+    parser.add_argument(
+        "-s", "--settings_csv", default="./open_data_toolkit_settings.csv"
+    )
     parser.add_argument("-q", "--quiet", default=False, action="store_true")
 
     # Run only a single RA Toolkit step
@@ -49,7 +51,7 @@ def parse_arguments(args):
             "create_sync_load_input_csvs",
         ],
         help="Run only the specified step. All others will be skipped. If not "
-             "specified, the entire Toolkit will be run.",
+        "specified, the entire Toolkit will be run.",
     )
 
     parsed_arguments = parser.parse_known_args(args=args)[0]
@@ -148,6 +150,8 @@ def main(args=None):
                 "--quiet" if parsed_args.quiet else "",
             ]
         )
+
+    # Project inputs (create_projects.py)
 
 
 if __name__ == "__main__":

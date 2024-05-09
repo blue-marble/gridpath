@@ -4376,6 +4376,7 @@ CREATE TABLE raw_data_eia860_generators
     winter_capacity_mw                       REAL,
     energy_storage_capacity_mwh              REAL,
     prime_mover_code                         TEXT,
+    energy_source_code_1                     TEXT,
     current_planned_generator_operating_date DATETIME,
     generator_retirement_date                DATETIME,
     PRIMARY KEY (version_num, report_date, plant_id_eia, generator_id)
@@ -4396,6 +4397,14 @@ CREATE TABLE raw_data_aux_eia_prime_mover_key
     label            TEXT,
     capacity_type    TEXT,
     operational_type TEXT
+);
+
+DROP TABLE IF EXISTS raw_data_aux_eia_energy_source_key;
+CREATE TABLE raw_data_aux_eia_energy_source_key
+(
+    code  TEXT PRIMARY KEY,
+    label TEXT,
+    fuel  TEXT
 );
 
 --------------------------

@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import csv
 from argparse import ArgumentParser
 import os.path
 import pandas as pd
@@ -35,53 +35,59 @@ def parse_arguments(args):
     parser.add_argument("-y", "--study_year", default=2026)
     parser.add_argument("-r", "--region", default="WECC")
     parser.add_argument(
-        "-p_csv", "--portfolio_csv_location",
-        default="../../csvs_open_data/project/portfolios"
+        "-p_csv",
+        "--portfolio_csv_location",
+        default="../../csvs_open_data/project/portfolios",
     )
     parser.add_argument("-p_id", "--project_portfolio_scenario_id", default=1)
     parser.add_argument(
-        "-p_name", "--project_portfolio_scenario_name",
-        default="wecc_generator_units"
+        "-p_name", "--project_portfolio_scenario_name", default="wecc_generator_units"
     )
     parser.add_argument(
-        "-lz_csv", "--load_zone_csv_location",
-        default="../../csvs_open_data/project/load_zones"
+        "-lz_csv",
+        "--load_zone_csv_location",
+        default="../../csvs_open_data/project/load_zones",
     )
     parser.add_argument("-lz_id", "--project_load_zone_scenario_id", default=1)
     parser.add_argument(
-        "-lz_name", "--project_load_zone_scenario_name",
-        default="wecc_baas"
+        "-lz_name", "--project_load_zone_scenario_name", default="wecc_baas"
     )
     parser.add_argument(
-        "-avl_csv", "--availability_csv_location",
-        default="../../csvs_open_data/project/availability"
+        "-avl_csv",
+        "--availability_csv_location",
+        default="../../csvs_open_data/project/availability",
     )
-    parser.add_argument("-avl_id", "--project_availability_scenario_id",
-                        default=1)
+    parser.add_argument("-avl_id", "--project_availability_scenario_id", default=1)
     parser.add_argument(
-        "-avl_name", "--project_availability_scenario_name",
-        default="no_derates"
-    )
-    parser.add_argument(
-        "-cap_csv", "--specified_capacity_csv_location",
-        default="../../csvs_open_data/project/capacity_specified"
-    )
-    parser.add_argument("-cap_id", "--project_specified_capacity_scenario_id",
-                        default=1)
-    parser.add_argument(
-        "-cap_name", "--project_specified_capacity_scenario_name",
-        default="base"
+        "-avl_name", "--project_availability_scenario_name", default="no_derates"
     )
     parser.add_argument(
-        "-fcost_csv", "--fixed_cost_csv_location",
-        default="../../csvs_open_data/project/fixed_cost"
+        "-cap_csv",
+        "--specified_capacity_csv_location",
+        default="../../csvs_open_data/project/capacity_specified",
     )
-    parser.add_argument("-fcost_id", "--project_fixed_cost_scenario_id",
-                        default=1)
     parser.add_argument(
-        "-fcost_name", "--project_fixed_cost_scenario_name",
-        default="base"
+        "-cap_id", "--project_specified_capacity_scenario_id", default=1
     )
+    parser.add_argument(
+        "-cap_name", "--project_specified_capacity_scenario_name", default="base"
+    )
+    parser.add_argument(
+        "-fcost_csv",
+        "--fixed_cost_csv_location",
+        default="../../csvs_open_data/project/fixed_cost",
+    )
+    parser.add_argument("-fcost_id", "--project_fixed_cost_scenario_id", default=1)
+    parser.add_argument(
+        "-fcost_name", "--project_fixed_cost_scenario_name", default="base"
+    )
+    parser.add_argument(
+        "-fuels_csv",
+        "--fuels_csv_location",
+        default="../../csvs_open_data/project/fuels",
+    )
+    parser.add_argument("-fuel_id", "--project_fuel_scenario_id", default=1)
+    parser.add_argument("-fuel_name", "--project_fuel_scenario_name", default="base")
 
     parsed_arguments = parser.parse_known_args(args=args)[0]
 
@@ -89,10 +95,16 @@ def parse_arguments(args):
 
 
 def get_disaggregated_project_portfolio_for_region(
-    conn, report_date, study_year, region, csv_location, subscenario_id, subscenario_name
+    conn,
+    report_date,
+    study_year,
+    region,
+    csv_location,
+    subscenario_id,
+    subscenario_name,
 ):
     sql = f"""
-    SELECT plant_id_eia || '-' || REPLACE(generator_id, ' ', '_') as project, NULL as specified, NULL as new_build, capacity_type
+    SELECT plant_id_eia || '__' || REPLACE(generator_id, ' ', '_') as project, NULL as specified, NULL as new_build, capacity_type
     FROM raw_data_eia860_generators
     JOIN raw_data_aux_eia_prime_mover_key
     USING (prime_mover_code)
@@ -123,7 +135,8 @@ def get_project_load_zones(
     subscenario_name,
 ):
     sql = f"""
-    SELECT plant_id_eia || '-' || REPLACE(generator_id, ' ', '_') AS project, balancing_authority_code_eia AS load_zone
+    SELECT plant_id_eia || '__' || REPLACE(REPLACE(generator_id, ' ', '_'), '-', 
+        '_') AS project, balancing_authority_code_eia AS load_zone
     FROM raw_data_eia860_generators
     WHERE report_date = '{report_date}' -- get latest
     AND (unixepoch(current_planned_generator_operating_date) >= unixepoch('{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
@@ -152,7 +165,8 @@ def get_project_availability(
     subscenario_name,
 ):
     sql = f"""
-    SELECT plant_id_eia || '-' || REPLACE(generator_id, ' ', '_') AS project, 
+    SELECT plant_id_eia || '__' || REPLACE(REPLACE(generator_id, ' ', '_'), '-', 
+        '_') AS project, 
     'exogenous' AS availability_type,
     NULL AS exogenous_availability_independent_scenario_id,
     NULL AS exogenous_availability_weather_scenario_id,
@@ -186,7 +200,8 @@ def get_project_capacity(
 ):
     sql = f"""
     SELECT 
-        plant_id_eia || '-' || REPLACE(generator_id, ' ', '_') AS project, 
+        plant_id_eia || '__' || REPLACE(REPLACE(generator_id, ' ', '_'), '-', 
+        '_') AS project, 
         capacity_mw AS specified_capacity_mw,
         NULL AS hyb_gen_specified_capacity_mw,
         NULL AS hyb_stor_specified_capacity_mw,
@@ -210,7 +225,7 @@ def get_project_capacity(
         os.path.join(csv_location, f"{subscenario_id}_" f"{subscenario_name}.csv"),
         index=False,
     )
-    
+
 
 def get_project_fixed_cost(
     conn,
@@ -223,7 +238,8 @@ def get_project_fixed_cost(
 ):
     sql = f"""
     SELECT 
-        plant_id_eia || '-' || REPLACE(generator_id, ' ', '_') AS project, 
+        plant_id_eia || '__' || REPLACE(REPLACE(generator_id, ' ', '_'), '-', 
+        '_') AS project, 
         0 AS specified_fixed_cost_mw,
         NULL AS hyb_gen_specified_fixed_cost_mw,
         NULL AS hyb_stor_specified_fixed_cost_mw,
@@ -243,7 +259,7 @@ def get_project_fixed_cost(
         SELECT baa
         FROM raw_data_aux_baa_key
         WHERE region = '{region}'
-    )
+    );
     """
 
     df = pd.read_sql(sql, conn)
@@ -251,6 +267,47 @@ def get_project_fixed_cost(
         os.path.join(csv_location, f"{subscenario_id}_" f"{subscenario_name}.csv"),
         index=False,
     )
+
+
+def get_project_fuels(
+    conn,
+    report_date,
+    study_year,
+    region,
+    csv_location,
+    subscenario_id,
+    subscenario_name,
+):
+    sql = f"""
+    SELECT 
+        plant_id_eia || '__' || REPLACE(REPLACE(generator_id, ' ', '_'), '-', '_') AS project, fuel
+    FROM raw_data_eia860_generators
+    JOIN raw_data_aux_eia_energy_source_key
+    ON (energy_source_code_1 = code)
+    WHERE report_date = '{report_date}' -- get latest
+    AND (unixepoch(current_planned_generator_operating_date) >= unixepoch('{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
+    AND (unixepoch(generator_retirement_date) > unixepoch('{study_year}-12-31') or generator_retirement_date IS NULL)
+    AND balancing_authority_code_eia in (
+        SELECT baa
+        FROM raw_data_aux_baa_key
+        WHERE region = '{region}'
+    );
+    """
+
+    c = conn.cursor()
+    header = ["fuel", "min_fraction_in_fuel_blend", "max_fraction_in_fuel_blend"]
+    for project, fuel in c.execute(sql).fetchall():
+        if fuel is not None:
+            with open(
+                os.path.join(
+                    csv_location,
+                    f"{project}-{subscenario_id}" f"-{subscenario_name}.csv",
+                ),
+                "w",
+            ) as filepath:
+                writer = csv.writer(filepath, delimiter=",")
+                writer.writerow(header)
+                writer.writerow([fuel, None, None])
 
 
 def main(args=None):
@@ -309,6 +366,16 @@ def main(args=None):
         csv_location=parsed_args.fixed_cost_csv_location,
         subscenario_id=parsed_args.project_fixed_cost_scenario_id,
         subscenario_name=parsed_args.project_fixed_cost_scenario_name,
+    )
+
+    get_project_fuels(
+        conn=conn,
+        report_date=parsed_args.report_date,
+        study_year=parsed_args.study_year,
+        region=parsed_args.region,
+        csv_location=parsed_args.fuels_csv_location,
+        subscenario_id=parsed_args.project_fuel_scenario_id,
+        subscenario_name=parsed_args.project_fuel_scenario_name,
     )
 
 

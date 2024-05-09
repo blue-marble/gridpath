@@ -28,6 +28,7 @@ SELECT
     winter_capacity_mw,
     energy_storage_capacity_mwh,
     prime_mover_code,
+    energy_source_code_1,
     current_planned_generator_operating_date,
     generator_retirement_date
 FROM core_eia860__scd_generators
@@ -87,7 +88,8 @@ def get_data_from_catalyst():
             f"++++balancing_authority_code_eia%2C%0D%0A++++capacity_mw%2C%0D%0A"
             f"++++summer_capacity_mw%2C%0D%0A++++winter_capacity_mw%2C%0D%0A"
             f"++++energy_storage_capacity_mwh%2C%0D%0A++++prime_mover_code%2C%0D"
-            f"%0A++++current_planned_generator_operating_date%2C%0D%0A"
+            f"%0A++++energy_source_code_1%2C%0D%0A"
+            f"++++current_planned_generator_operating_date%2C%0D%0A"
             f"++++generator_retirement_date%0D%0AFROM+core_eia860__scd_generators"
             f"%0D%0AJOIN+core_eia860__scd_plants%0D%0AUSING+%28plant_id_eia%2C+"
             f"report_date%29%2C%0D%0Aalembic_version%0D%0AWHERE+"
