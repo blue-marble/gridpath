@@ -4407,6 +4407,8 @@ CREATE TABLE raw_data_aux_eia_energy_source_key
     fuel  TEXT
 );
 
+
+
 --------------------------
 -- -- DATA INTEGRITY -- --
 --------------------------

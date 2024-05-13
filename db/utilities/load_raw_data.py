@@ -55,6 +55,10 @@ def main(args=None):
     )
     for index, row in files_to_import_df.iterrows():
         import_bool, f, table = row
+        # if preprocess:
+        #     print("yes")
+        # else:
+        #     print("no")
 
         if import_bool:
             if not parsed_args.quiet:

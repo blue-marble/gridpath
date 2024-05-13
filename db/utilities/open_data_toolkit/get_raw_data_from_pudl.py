@@ -15,6 +15,7 @@
 from argparse import ArgumentParser
 import os.path
 import pandas as pd
+import requests
 import sys
 
 """
@@ -72,7 +73,7 @@ def parse_arguments(args):
     return parsed_arguments
 
 
-def get_data_from_catalyst():
+def get_eia_generator_data_from_pudl():
     count = pd.read_csv(
         "https://data.catalyst.coop/pudl.csv?sql=SELECT%0D%0A++++count%28*%29%0D%0AFROM+core_eia860__scd_generators%0D%0AJOIN+core_eia860__scd_plants%0D%0AUSING+%28plant_id_eia%2C+report_date%29%2C%0D%0Aalembic_version%0D%0AWHERE+report_date+%3D+%272023-01-01%27+--+get+latest%0D%0AAND+core_eia860__scd_generators.operational_status+%21%3D+%27retired%27&_size=max"
     )["count(*)"][0]
@@ -106,18 +107,32 @@ def get_data_from_catalyst():
     return data
 
 
+def get_ra_toolkit_cap_factor_data_from_pudl():
+    url = "https://s3.us-west-2.amazonaws.com/pudl.catalyst.coop/nightly/out_gridpathratoolkit__hourly_available_capacity_factor.parquet"
+    data = requests.get(url, stream=True).content
+
+    return data
+
+
 def main(args=None):
     if args is None:
         args = sys.argv[1:]
 
     parsed_args = parse_arguments(args=args)
 
-    data = get_data_from_catalyst()
+    eia_gens = get_eia_generator_data_from_pudl()
 
-    data.to_csv(
+    eia_gens.to_csv(
         os.path.join(parsed_args.raw_data_directory, "eia860_generators.csv"),
         index=False,
     )
+
+    ra_toolkit_gen_profiles = get_ra_toolkit_cap_factor_data_from_pudl()
+    with open(
+        os.path.join(parsed_args.raw_data_directory, "ra_toolkit_gen_profiles.parquet"),
+        "wb",
+    ) as f:
+        f.write(ra_toolkit_gen_profiles)
 
 
 if __name__ == "__main__":

@@ -12,6 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+Raw data
+load.csv -- currently downloaded manually from RA Toolkit Google Drive and 
+merged into a single CSV
+
+load_zone_units.csv -- manually created
+
+eia860_generators.csv -- download from PUDL
+
+Auxiliary data, manually created
+aux_baa_key.csv
+aux_eia_energy_source_key.csv
+aux_eia_prime_mover_key.csv
+"""
+
+
 import os.path
 from argparse import ArgumentParser
 
@@ -22,8 +38,9 @@ import sys
 from db import create_database
 from db.utilities import load_raw_data
 from db.utilities.ra_toolkit.weather import (
-    create_sync_load_input_csvs,
+    create_sync_load_input_csvs, create_sync_var_gen_input_csvs,
 )
+from db.utilities.open_data_toolkit import create_projects
 
 
 def parse_arguments(args):
@@ -37,7 +54,7 @@ def parse_arguments(args):
     parser = ArgumentParser(add_help=True)
 
     parser.add_argument(
-        "-s", "--settings_csv", default="./open_data_toolkit_settings.csv"
+        "-s", "--settings_csv", default="open_data_toolkit_settings.csv"
     )
     parser.add_argument("-q", "--quiet", default=False, action="store_true")
 
@@ -49,6 +66,8 @@ def parse_arguments(args):
             "create_database",
             "load_raw_data",
             "create_sync_load_input_csvs",
+            "create_project_csvs",
+            "create_sync_var_gen_input_csvs"
         ],
         help="Run only the specified step. All others will be skipped. If not "
         "specified, the entire Toolkit will be run.",
@@ -60,6 +79,7 @@ def parse_arguments(args):
 
 
 def get_setting(settings_df, script, setting):
+    print(script, setting)
     return settings_df[
         (settings_df["script"] == script) & (settings_df["setting"] == setting)
     ]["value"].values[0]
@@ -87,6 +107,8 @@ def main(args=None):
     skip_create_database = True
     skip_load_raw_data = True
     skip_create_sync_load_input_csvs = True
+    skip_create_project_input_csvs = True
+    skip_create_sync_var_gen_input_csvs = True
 
     if parsed_args.single_step_only == "create_database":
         skip_create_database = False
@@ -94,10 +116,16 @@ def main(args=None):
         skip_load_raw_data = False
     elif parsed_args.single_step_only == "create_sync_load_input_csvs":
         skip_create_sync_load_input_csvs = False
+    elif parsed_args.single_step_only == "create_project_input_csvs":
+        skip_create_project_input_csvs = False
+    elif parsed_args.single_step_only == "create_sync_var_gen_input_csvs":
+        skip_create_sync_var_gen_input_csvs = False
     else:
         skip_create_database = False
         skip_load_raw_data = False
         skip_create_sync_load_input_csvs = False
+        skip_create_project_input_csvs = False
+        skip_create_sync_var_gen_input_csvs = False
 
     # ### Create the database ### #
     if not skip_create_database:
@@ -118,7 +146,7 @@ def main(args=None):
             ]
         )
 
-    # Sync load
+    # Load
     if not skip_create_sync_load_input_csvs:
         sync_load_scenario_id = get_setting(
             settings_df, "create_sync_load_input_csvs", "load_scenario_id"
@@ -151,7 +179,54 @@ def main(args=None):
             ]
         )
 
-    # Project inputs (create_projects.py)
+    # Project inputs
+    # TODO: need to split this up
+    if not skip_create_project_input_csvs:
+        # TODO: add settings
+        create_projects.main(args=None)
+
+    # Variable generation profiles
+    if not skip_create_sync_var_gen_input_csvs:
+        sync_variable_generator_profile_scenario_id = get_setting(
+            settings_df,
+            "create_sync_var_gen_input_csvs",
+            "variable_generator_profile_scenario_id",
+        )
+
+        sync_variable_generator_profile_scenario_name = get_setting(
+            settings_df,
+            "create_sync_var_gen_input_csvs",
+            "variable_generator_profile_scenario_name",
+        )
+        sync_var_gen_output_directory = get_setting(
+            settings_df, "create_sync_var_gen_input_csvs", "output_directory"
+        )
+        sync_var_gen_csv_overwrite = get_setting(
+            settings_df, "create_sync_var_gen_input_csvs", "overwrite"
+        )
+
+        n_parallel_projects_sync_var_gen = get_setting(
+            settings_df, "create_sync_var_gen_input_csvs", "n_parallel_projects"
+        )
+
+        create_sync_var_gen_input_csvs.main(
+            [
+                "--database",
+                db_path,
+                "--variable_generator_profile_scenario_id",
+                sync_variable_generator_profile_scenario_id,
+                "--variable_generator_profile_scenario_name",
+                sync_variable_generator_profile_scenario_name,
+                "--stage_id",
+                stage_id,
+                "--output_directory",
+                sync_var_gen_output_directory,
+                "--overwrite" if int(sync_var_gen_csv_overwrite) else "",
+                "--n_parallel_projects",
+                n_parallel_projects_sync_var_gen,
+                "--quiet" if parsed_args.quiet else "",
+            ]
+        )
 
 
 if __name__ == "__main__":
