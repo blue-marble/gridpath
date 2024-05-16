@@ -215,7 +215,11 @@ def write_model_inputs(
 
             # Write header
             writer.writerow(
-                ["prm_zone", "prm_capacity_transfer_zones", "allow_elcc_surface_transfers"]
+                [
+                    "prm_zone",
+                    "prm_capacity_transfer_zones",
+                    "allow_elcc_surface_transfers"
+                ]
             )
 
             for row in prm_zone_transfers:
