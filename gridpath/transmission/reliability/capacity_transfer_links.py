@@ -218,7 +218,7 @@ def write_model_inputs(
                 [
                     "prm_zone",
                     "prm_capacity_transfer_zones",
-                    "allow_elcc_surface_transfers"
+                    "allow_elcc_surface_transfers",
                 ]
             )
 
