@@ -76,20 +76,22 @@ def load_model_data(
     :param stage:
     :return:
     """
-    data_portal.load(
-        filename=os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "inputs",
-            "prm_capacity_transfer_zone_links.tab",
-        ),
-        index=m.PRM_ZONES_CAPACITY_TRANSFER_ZONES,
-        param=m.allow_elcc_surface_transfers,
+    prm_zone_transfers_tab_file = os.path.join(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+        "prm_capacity_transfer_zone_links.tab",
     )
+    if os.path.exists(prm_zone_transfers_tab_file):
+        data_portal.load(
+            filename=prm_zone_transfers_tab_file,
+            index=m.PRM_ZONES_CAPACITY_TRANSFER_ZONES,
+            param=m.allow_elcc_surface_transfers,
+        )
 
 
 def get_inputs_from_database(
@@ -113,9 +115,14 @@ def get_inputs_from_database(
     c = conn.cursor()
     prm_zone_transfers = c.execute(
         f"""SELECT prm_zone, prm_capacity_transfer_zone, allow_elcc_surface_transfers
-        FROM inputs_transmission_prm_capacity_transfers
-        WHERE prm_capacity_transfer_scenario_id={subscenarios.PRM_CAPACITY_TRANSFER_SCENARIO_ID};
-        """
+            FROM inputs_transmission_prm_capacity_transfers
+            JOIN
+            (SELECT prm_zone
+            FROM inputs_geography_prm_zones
+            WHERE prm_zone_scenario_id = {subscenarios.PRM_ZONE_SCENARIO_ID}) as relevant_zones
+            using (prm_zone)
+            WHERE prm_capacity_transfer_scenario_id={subscenarios.PRM_CAPACITY_TRANSFER_SCENARIO_ID};
+            """
     )
 
     return prm_zone_transfers
@@ -188,27 +195,29 @@ def write_model_inputs(
         conn,
     )
 
-    with open(
-        os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "inputs",
-            "prm_capacity_transfer_zone_links.tab",
-        ),
-        "w",
-        newline="",
-    ) as f:
-        writer = csv.writer(f, delimiter="\t", lineterminator="\n")
+    prm_zone_transfers = prm_zone_transfers.fetchall()
+    if prm_zone_transfers:
+        with open(
+            os.path.join(
+                scenario_directory,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
+                "inputs",
+                "prm_capacity_transfer_zone_links.tab",
+            ),
+            "w",
+            newline="",
+        ) as f:
+            writer = csv.writer(f, delimiter="\t", lineterminator="\n")
 
-        # Write header
-        writer.writerow(
-            ["prm_zone", "prm_capacity_transfer_zones", "allow_elcc_surface_transfers"]
-        )
+            # Write header
+            writer.writerow(
+                ["prm_zone", "prm_capacity_transfer_zones", "allow_elcc_surface_transfers"]
+            )
 
-        for row in prm_zone_transfers:
-            replace_nulls = ["." if i is None else i for i in row]
-            writer.writerow(replace_nulls)
+            for row in prm_zone_transfers:
+                replace_nulls = ["." if i is None else i for i in row]
+                writer.writerow(replace_nulls)
