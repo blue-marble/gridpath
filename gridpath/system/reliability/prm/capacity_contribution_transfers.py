@@ -355,7 +355,7 @@ def get_inputs_from_database(
     """
 
     c1 = conn.cursor()
-    llimits = c1.execute(
+    limits = c1.execute(
         f"""
         SELECT prm_zone, prm_capacity_transfer_zone, period, 
         min_transfer_powerunit, max_transfer_powerunit, capacity_transfer_cost_per_powerunit_yr
