@@ -355,25 +355,25 @@ def get_inputs_from_database(
     """
 
     c1 = conn.cursor()
-    limits = c1.execute(
+    llimits = c1.execute(
         f"""
-                    SELECT prm_zone, prm_capacity_transfer_zone, period, 
-                    min_transfer_powerunit, max_transfer_powerunit, capacity_transfer_cost_per_powerunit_yr
-                    FROM inputs_transmission_prm_capacity_transfer_params
-                    JOIN
-                    (SELECT prm_zone, prm_capacity_transfer_zone
-                    FROM inputs_transmission_prm_capacity_transfers
-                    WHERE prm_capacity_transfer_scenario_id = {subscenarios.PRM_CAPACITY_TRANSFER_SCENARIO_ID}) as relevant_zones
-                    using (prm_zone, prm_capacity_transfer_zone)
-                    JOIN
-                    (SELECT prm_zone
-                    FROM inputs_geography_prm_zones
-                    WHERE prm_zone_scenario_id = {subscenarios.PRM_ZONE_SCENARIO_ID}) as relevant_zones
-                    using (prm_zone)
-                    WHERE prm_capacity_transfer_params_scenario_id = 
-                    {subscenarios.PRM_CAPACITY_TRANSFER_PARAMS_SCENARIO_ID}
-                    ;
-                    """
+        SELECT prm_zone, prm_capacity_transfer_zone, period, 
+        min_transfer_powerunit, max_transfer_powerunit, capacity_transfer_cost_per_powerunit_yr
+        FROM inputs_transmission_prm_capacity_transfer_params
+        JOIN
+        (SELECT prm_zone, prm_capacity_transfer_zone
+        FROM inputs_transmission_prm_capacity_transfers
+        WHERE prm_capacity_transfer_scenario_id = {subscenarios.PRM_CAPACITY_TRANSFER_SCENARIO_ID}) as relevant_zones
+        using (prm_zone, prm_capacity_transfer_zone)
+        WHERE prm_capacity_transfer_params_scenario_id = 
+        {subscenarios.PRM_CAPACITY_TRANSFER_PARAMS_SCENARIO_ID}
+        AND prm_zone IN
+        (SELECT prm_zone FROM inputs_geography_prm_zones
+        WHERE prm_zone_scenario_id = {subscenarios.PRM_ZONE_SCENARIO_ID})
+        AND prm_capacity_transfer_zone IN
+        (SELECT prm_zone FROM inputs_geography_prm_zones
+        WHERE prm_zone_scenario_id = {subscenarios.PRM_ZONE_SCENARIO_ID});
+        """
     )
 
     c2 = conn.cursor()

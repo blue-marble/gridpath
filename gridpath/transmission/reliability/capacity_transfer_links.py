@@ -114,15 +114,18 @@ def get_inputs_from_database(
 
     c = conn.cursor()
     prm_zone_transfers = c.execute(
-        f"""SELECT prm_zone, prm_capacity_transfer_zone, allow_elcc_surface_transfers
-            FROM inputs_transmission_prm_capacity_transfers
-            JOIN
-            (SELECT prm_zone
-            FROM inputs_geography_prm_zones
-            WHERE prm_zone_scenario_id = {subscenarios.PRM_ZONE_SCENARIO_ID}) as relevant_zones
-            using (prm_zone)
-            WHERE prm_capacity_transfer_scenario_id={subscenarios.PRM_CAPACITY_TRANSFER_SCENARIO_ID};
-            """
+        """SELECT prm_zone, prm_capacity_transfer_zone, allow_elcc_surface_transfers
+        FROM inputs_transmission_prm_capacity_transfers
+        WHERE prm_capacity_transfer_scenario_id = {prm_transfer}
+        AND prm_zone IN
+        (SELECT prm_zone FROM inputs_geography_prm_zones
+        WHERE prm_zone_scenario_id = {prm_zone})
+        AND prm_capacity_transfer_zone IN
+        (SELECT prm_zone FROM inputs_geography_prm_zones
+        WHERE prm_zone_scenario_id = {prm_zone});""".format(
+            prm_transfer=subscenarios.PRM_CAPACITY_TRANSFER_SCENARIO_ID,
+            prm_zone=subscenarios.PRM_ZONE_SCENARIO_ID,
+        )
     )
 
     return prm_zone_transfers
