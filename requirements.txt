@@ -44,7 +44,7 @@ python-socketio==4.6.1
 pytz==2024.1
 PyUtilib==6.0.0
 PyYAML==6.0.1
-requests==2.31.0
+requests==2.32.0
 six==1.16.0
 snowballstemmer==2.2.0
 Sphinx==7.2.6
