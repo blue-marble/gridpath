@@ -13,10 +13,15 @@
 # limitations under the License.
 
 from argparse import ArgumentParser
+import gzip
+import io
 import os.path
 import pandas as pd
 import requests
+import shutil
 import sys
+
+from db.common_functions import connect_to_database
 
 """
 SELECT
@@ -62,9 +67,21 @@ def parse_arguments(args):
     parser = ArgumentParser(add_help=True)
 
     parser.add_argument(
+        "-skip", "--skip_pudl_sqlite_download", default=False, action="store_true"
+    )
+    parser.add_argument(
         "-d",
         "--raw_data_directory",
         default="../../csvs_open_data/raw_data",
+    )
+
+    parser.add_argument("-rdate", "--eia860_report_date", default="2023-01-01")
+
+    # TODO: probably move this to downstream queries
+    parser.add_argument(
+        "-er",
+        "--eia860_include_retired",
+        default=False,
         action="store_true",
     )
 
@@ -73,7 +90,61 @@ def parse_arguments(args):
     return parsed_arguments
 
 
-def get_eia_generator_data_from_pudl():
+def get_pudl_sqlite(zenodo_record, pudl_sqlite_path):
+    URL = f"https://zenodo.org/records/{str(zenodo_record)}/files/pudl.sqlite.gz?download=1"
+
+    print("Downloading compressed pudl.sqlite...")
+    pudl_request_content = requests.get(URL, stream=True).content
+
+    print("Extracting database")
+    with gzip.open(io.BytesIO(pudl_request_content), "rb") as f_in:
+        with open(pudl_sqlite_path, "wb") as f_out:
+            shutil.copyfileobj(f_in, f_out)
+
+
+def get_eia_generator_data_from_local_db(
+    out_dir, pudl_sqlite_path, report_date, exclude_retired
+):
+
+    exclude_retired_str = (
+        "AND core_eia860__scd_generators.operational_status != 'retired'"
+        if exclude_retired
+        else ""
+    )
+
+    query = f"""
+        SELECT
+            version_num,
+            plant_id_eia,
+            generator_id,
+            balancing_authority_code_eia,
+            capacity_mw,
+            summer_capacity_mw,
+            winter_capacity_mw,
+            energy_storage_capacity_mwh,
+            prime_mover_code,
+            energy_source_code_1,
+            current_planned_generator_operating_date,
+            generator_retirement_date
+        FROM core_eia860__scd_generators
+        JOIN core_eia860__scd_plants
+        USING (plant_id_eia, report_date),
+        alembic_version
+        WHERE report_date = '{report_date}'
+        {exclude_retired_str}
+    """
+
+    pudl_conn = connect_to_database(db_path=pudl_sqlite_path)
+
+    eia_gens = pd.read_sql(query, pudl_conn)
+
+    eia_gens.to_csv(
+        os.path.join(out_dir, "eia860_generators.csv"),
+        index=False,
+    )
+
+
+def get_eia_generator_data_from_pudl_datasette():
     count = pd.read_csv(
         "https://data.catalyst.coop/pudl.csv?sql=SELECT%0D%0A++++count%28*%29%0D%0AFROM+core_eia860__scd_generators%0D%0AJOIN+core_eia860__scd_plants%0D%0AUSING+%28plant_id_eia%2C+report_date%29%2C%0D%0Aalembic_version%0D%0AWHERE+report_date+%3D+%272023-01-01%27+--+get+latest%0D%0AAND+core_eia860__scd_generators.operational_status+%21%3D+%27retired%27&_size=max"
     )["count(*)"][0]
@@ -107,7 +178,8 @@ def get_eia_generator_data_from_pudl():
     return data
 
 
-def get_ra_toolkit_cap_factor_data_from_pudl():
+# TODO: what will be the stable version of this?
+def get_ra_toolkit_cap_factor_data_from_pudl_nightly():
     url = "https://s3.us-west-2.amazonaws.com/pudl.catalyst.coop/nightly/out_gridpathratoolkit__hourly_available_capacity_factor.parquet"
     data = requests.get(url, stream=True).content
 
@@ -120,14 +192,21 @@ def main(args=None):
 
     parsed_args = parse_arguments(args=args)
 
-    eia_gens = get_eia_generator_data_from_pudl()
+    pudl_sqlite_path = os.path.join(parsed_args.raw_data_directory, "pudl.sqlite")
+    # Download the database
+    if not parsed_args.skip_pudl_sqlite_download:
+        get_pudl_sqlite(pudl_sqlite_path=pudl_sqlite_path, zenodo_record=10708669)
 
-    eia_gens.to_csv(
-        os.path.join(parsed_args.raw_data_directory, "eia860_generators.csv"),
-        index=False,
+    # Get the data we need from the database
+    get_eia_generator_data_from_local_db(
+        out_dir=parsed_args.raw_data_directory,
+        pudl_sqlite_path=pudl_sqlite_path,
+        report_date=parsed_args.eia860_report_date,
+        exclude_retired=not parsed_args.eia860_include_retired,
     )
 
-    ra_toolkit_gen_profiles = get_ra_toolkit_cap_factor_data_from_pudl()
+
+    ra_toolkit_gen_profiles = get_ra_toolkit_cap_factor_data_from_pudl_nightly()
     with open(
         os.path.join(parsed_args.raw_data_directory, "ra_toolkit_gen_profiles.parquet"),
         "wb",
