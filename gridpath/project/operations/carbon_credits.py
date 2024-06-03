@@ -436,16 +436,18 @@ def load_model_data(
             ),
         )
 
-    data_portal.load(
-        filename=os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "inputs",
-            "project_carbon_credits_purchase_zones.tab",
-        ),
-        set=m.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES,
+    prj_carbon_credits_purchase_file = os.path.join(
+        scenario_directory,
+        str(subproblem),
+        str(stage),
+        "inputs",
+        "project_carbon_credits_purchase_zones.tab",
     )
+    if os.path.exists(prj_carbon_credits_purchase_file):
+        data_portal.load(
+            filename=prj_carbon_credits_purchase_file,
+            set=m.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES,
+        )
 
 
 # Database
