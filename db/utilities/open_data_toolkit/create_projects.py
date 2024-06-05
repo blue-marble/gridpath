@@ -95,7 +95,9 @@ def parse_arguments(args):
     return parsed_arguments
 
 
-def get_disaggregated_project_portfolio_for_region(
+# TODO: refactor queries to their components
+
+def get_project_portfolio_for_region(
     conn,
     report_date,
     study_year,
@@ -104,7 +106,17 @@ def get_disaggregated_project_portfolio_for_region(
     subscenario_id,
     subscenario_name,
 ):
+    """
+    Unit level except for wind (onshore and offshore) and solar PV, which are
+    aggregated to the BA-level.
+    TODO: disaggregate the hybrids out of the wind/solar project and combine
+     with their battery components
+    """
+    # For disaggregated unit-level projects, use plant_id_eia__generator_id
+    # as the project name
+    # For BA-aggregated projects, use prime_mover_BA
     sql = f"""
+    -- Disaggregated units
     SELECT plant_id_eia || '__' || REPLACE(generator_id, ' ', '_') as project, NULL as specified, NULL as new_build, capacity_type
     FROM raw_data_eia860_generators
     JOIN raw_data_aux_eia_prime_mover_key
@@ -117,11 +129,44 @@ def get_disaggregated_project_portfolio_for_region(
         FROM raw_data_aux_baa_key
         WHERE region = '{region}'
     )
+    AND (plant_id_eia, generator_id) NOT IN (
+            SELECT DISTINCT plant_id_eia, generator_id
+            FROM raw_data_eia860_generators
+            WHERE prime_mover_code IN ('WT', 'WS', 'PV')
+        )
+    UNION
+    -- Aggregated units
+    SELECT DISTINCT 
+        CASE WHEN prime_mover_code = 'WT' THEN 'Wind' 
+        ELSE 
+            CASE WHEN prime_mover_code = 'WS' THEN 'Wind_Offshore' 
+            ELSE 'Solar'
+            END
+        END || '_' || balancing_authority_code_eia AS project,
+        NULL as specified,
+        NULL as new_build,
+        capacity_type
+    FROM raw_data_eia860_generators
+    JOIN raw_data_aux_eia_prime_mover_key
+    USING (prime_mover_code)
+    WHERE report_date = '{report_date}' -- get latest
+    AND (unixepoch(current_planned_generator_operating_date) >= unixepoch('{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
+    AND (unixepoch(generator_retirement_date) > unixepoch('{study_year}-12-31') or generator_retirement_date IS NULL)
+    AND balancing_authority_code_eia in (
+        SELECT baa
+        FROM raw_data_aux_baa_key
+        WHERE region = '{region}'
+    )
+    AND (plant_id_eia, generator_id) IN (
+            SELECT DISTINCT plant_id_eia, generator_id
+            FROM raw_data_eia860_generators
+            WHERE prime_mover_code IN ('WT', 'WS', 'PV')
+    )
     """
 
     df = pd.read_sql(sql, conn)
     df.to_csv(
-        os.path.join(csv_location, f"{subscenario_id}_" f"{subscenario_name}.csv"),
+        os.path.join(csv_location, f"{subscenario_id}_{subscenario_name}.csv"),
         index=False,
     )
 
@@ -147,6 +192,34 @@ def get_project_load_zones(
         FROM raw_data_aux_baa_key
         WHERE region = '{region}'
     )
+    AND (plant_id_eia, generator_id) NOT IN (
+            SELECT DISTINCT plant_id_eia, generator_id
+            FROM raw_data_eia860_generators
+            WHERE prime_mover_code IN ('WT', 'WS', 'PV')
+        )
+    UNION
+    SELECT DISTINCT 
+        CASE WHEN prime_mover_code = 'WT' THEN 'Wind' 
+        ELSE 
+            CASE WHEN prime_mover_code = 'WS' THEN 'Wind_Offshore' 
+            ELSE 'Solar'
+            END
+        END || '_' || balancing_authority_code_eia AS project,
+        balancing_authority_code_eia AS load_zone
+    FROM raw_data_eia860_generators
+    WHERE report_date = '{report_date}' -- get latest
+    AND (unixepoch(current_planned_generator_operating_date) >= unixepoch('{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
+    AND (unixepoch(generator_retirement_date) > unixepoch('{study_year}-12-31') or generator_retirement_date IS NULL)
+    AND balancing_authority_code_eia in (
+        SELECT baa
+        FROM raw_data_aux_baa_key
+        WHERE region = '{region}'
+    )
+    AND (plant_id_eia, generator_id) IN (
+            SELECT DISTINCT plant_id_eia, generator_id
+            FROM raw_data_eia860_generators
+            WHERE prime_mover_code IN ('WT', 'WS', 'PV')
+        )
     """
 
     df = pd.read_sql(sql, conn)
@@ -181,6 +254,37 @@ def get_project_availability(
         FROM raw_data_aux_baa_key
         WHERE region = '{region}'
     )
+    AND (plant_id_eia, generator_id) NOT IN (
+            SELECT DISTINCT plant_id_eia, generator_id
+            FROM raw_data_eia860_generators
+            WHERE prime_mover_code IN ('WT', 'WS', 'PV')
+        )
+    UNION
+    SELECT DISTINCT 
+        CASE WHEN prime_mover_code = 'WT' THEN 'Wind' 
+        ELSE 
+            CASE WHEN prime_mover_code = 'WS' THEN 'Wind_Offshore' 
+            ELSE 'Solar'
+            END
+        END || '_' || balancing_authority_code_eia AS project, 
+        'exogenous' AS availability_type,
+    NULL AS exogenous_availability_independent_scenario_id,
+    NULL AS exogenous_availability_weather_scenario_id,
+    NULL AS endogenous_availability_scenario_id
+    FROM raw_data_eia860_generators
+    WHERE report_date = '{report_date}' -- get latest
+    AND (unixepoch(current_planned_generator_operating_date) >= unixepoch('{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
+    AND (unixepoch(generator_retirement_date) > unixepoch('{study_year}-12-31') or generator_retirement_date IS NULL)
+    AND balancing_authority_code_eia in (
+        SELECT baa
+        FROM raw_data_aux_baa_key
+        WHERE region = '{region}'
+    )
+    AND (plant_id_eia, generator_id) IN (
+            SELECT DISTINCT plant_id_eia, generator_id
+            FROM raw_data_eia860_generators
+            WHERE prime_mover_code IN ('WT', 'WS', 'PV')
+        )
     """
 
     df = pd.read_sql(sql, conn)
@@ -219,6 +323,40 @@ def get_project_capacity(
         FROM raw_data_aux_baa_key
         WHERE region = '{region}'
     )
+    AND (plant_id_eia, generator_id) NOT IN (
+            SELECT DISTINCT plant_id_eia, generator_id
+            FROM raw_data_eia860_generators
+            WHERE prime_mover_code IN ('WT', 'WS', 'PV')
+        )
+    UNION
+    SELECT DISTINCT 
+        CASE WHEN prime_mover_code = 'WT' THEN 'Wind' 
+        ELSE 
+            CASE WHEN prime_mover_code = 'WS' THEN 'Wind_Offshore' 
+            ELSE 'Solar'
+            END
+        END || '_' || balancing_authority_code_eia AS project,
+        capacity_mw AS specified_capacity_mw,
+        NULL AS hyb_gen_specified_capacity_mw,
+        NULL AS hyb_stor_specified_capacity_mw,
+        energy_storage_capacity_mwh AS specified_capacity_mwh,
+        NULL AS fuel_production_capacity_fuelunitperhour,
+        NULL AS fuel_release_capacity_fuelunitperhour,
+        NULL AS fuel_storage_capacity_fuelunit
+    FROM raw_data_eia860_generators
+    WHERE report_date = '{report_date}' -- get latest
+    AND (unixepoch(current_planned_generator_operating_date) >= unixepoch('{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
+    AND (unixepoch(generator_retirement_date) > unixepoch('{study_year}-12-31') or generator_retirement_date IS NULL)
+    AND balancing_authority_code_eia in (
+        SELECT baa
+        FROM raw_data_aux_baa_key
+        WHERE region = '{region}'
+    )
+    AND (plant_id_eia, generator_id) IN (
+            SELECT DISTINCT plant_id_eia, generator_id
+            FROM raw_data_eia860_generators
+            WHERE prime_mover_code IN ('WT', 'WS', 'PV')
+        )
     """
 
     df = pd.read_sql(sql, conn)
@@ -240,7 +378,7 @@ def get_project_fixed_cost(
     sql = f"""
     SELECT 
         plant_id_eia || '__' || REPLACE(REPLACE(generator_id, ' ', '_'), '-', 
-        '_') AS project, 
+        '_') AS project,
         0 AS specified_fixed_cost_mw,
         NULL AS hyb_gen_specified_fixed_cost_mw,
         NULL AS hyb_stor_specified_fixed_cost_mw,
@@ -260,7 +398,46 @@ def get_project_fixed_cost(
         SELECT baa
         FROM raw_data_aux_baa_key
         WHERE region = '{region}'
-    );
+    )
+    AND (plant_id_eia, generator_id) NOT IN (
+            SELECT DISTINCT plant_id_eia, generator_id
+            FROM raw_data_eia860_generators
+            WHERE prime_mover_code IN ('WT', 'WS', 'PV')
+        )
+    UNION
+    SELECT DISTINCT 
+        CASE WHEN prime_mover_code = 'WT' THEN 'Wind' 
+        ELSE 
+            CASE WHEN prime_mover_code = 'WS' THEN 'Wind_Offshore' 
+            ELSE 'Solar'
+            END
+        END || '_' || balancing_authority_code_eia AS project, 
+        0 AS specified_fixed_cost_mw,
+        NULL AS hyb_gen_specified_fixed_cost_mw,
+        NULL AS hyb_stor_specified_fixed_cost_mw,
+        CASE
+            WHEN energy_storage_capacity_mwh IS NULL THEN NULL
+            ELSE 0
+            END 
+            AS specified_fixed_cost_mwh,
+        NULL AS fuel_production_fixed_cost_fuelunitperhour,
+        NULL AS fuel_release_fixed_cost_fuelunitperhour,
+        NULL AS fuel_storage_fixed_cost_fuelunit
+    FROM raw_data_eia860_generators
+    WHERE report_date = '{report_date}' -- get latest
+    AND (unixepoch(current_planned_generator_operating_date) >= unixepoch('{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
+    AND (unixepoch(generator_retirement_date) > unixepoch('{study_year}-12-31') or generator_retirement_date IS NULL)
+    AND balancing_authority_code_eia in (
+        SELECT baa
+        FROM raw_data_aux_baa_key
+        WHERE region = '{region}'
+    )
+    AND (plant_id_eia, generator_id) IN (
+            SELECT DISTINCT plant_id_eia, generator_id
+            FROM raw_data_eia860_generators
+            WHERE prime_mover_code IN ('WT', 'WS', 'PV')
+        )
+    ;
     """
 
     df = pd.read_sql(sql, conn)
@@ -319,7 +496,7 @@ def main(args=None):
 
     conn = connect_to_database(db_path=parsed_args.database)
 
-    get_disaggregated_project_portfolio_for_region(
+    get_project_portfolio_for_region(
         conn=conn,
         report_date=parsed_args.report_date,
         study_year=parsed_args.study_year,
