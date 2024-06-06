@@ -55,7 +55,7 @@ sphinxcontrib-htmlhelp==2.0.5
 sphinxcontrib-jsmath==1.0.1
 sphinxcontrib-qthelp==1.0.7
 sphinxcontrib-serializinghtml==1.1.10
-tornado==6.4
+tornado==6.4.1
 typing_extensions==4.10.0
 tzdata==2024.1
 urllib3==2.2.1
