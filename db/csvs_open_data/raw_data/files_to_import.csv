@@ -1,0 +1,9 @@
+import,filename,table
+1,load_zone_units.csv,raw_data_load_zone_units
+1,load.csv,raw_data_system_load
+1,eia860_generators.csv,raw_data_eia860_generators
+1,aux_baa_key.csv,raw_data_aux_baa_key
+1,aux_eia_prime_mover_key.csv,raw_data_aux_eia_prime_mover_key
+1,aux_eia_energy_source_key.csv,raw_data_aux_eia_energy_source_key
+1,var_project_units.csv,raw_data_var_project_units
+1,var_profiles.csv,raw_data_project_variable_profiles
