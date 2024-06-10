@@ -4393,10 +4393,10 @@ CREATE TABLE raw_data_aux_baa_key
 DROP TABLE IF EXISTS raw_data_aux_eia_prime_mover_key;
 CREATE TABLE raw_data_aux_eia_prime_mover_key
 (
-    prime_mover      TEXT PRIMARY KEY,
-    label            TEXT,
-    capacity_type    TEXT,
-    operational_type TEXT
+    prime_mover_code    TEXT PRIMARY KEY,
+    label               TEXT,
+    capacity_type       TEXT,
+    operational_type    TEXT
 );
 
 DROP TABLE IF EXISTS raw_data_aux_eia_energy_source_key;
