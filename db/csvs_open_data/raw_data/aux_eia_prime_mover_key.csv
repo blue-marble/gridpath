@@ -18,8 +18,8 @@ HY,hydraulic_turbine,gen_spec,gen_simple
 IC,internal_combustion,gen_spec,gen_simple
 OT,other,gen_spec,
 PS,pumped_storage,gen_spec,gen_simple
-PV,solar_pv,gen_spec,gen_simple
+PV,solar_pv,gen_spec,gen_var
 ST,steam_turbine,gen_spec,
 UNK,unknown,,
-WS,wind_offshore,gen_spec,gen_simple
-WT,wind_onshore,gen_spec,gen_simple
+WS,wind_offshore,gen_spec,gen_var
+WT,wind_onshore,gen_spec,gen_var

@@ -205,7 +205,6 @@ def main(args=None):
         exclude_retired=not parsed_args.eia860_include_retired,
     )
 
-
     ra_toolkit_gen_profiles = get_ra_toolkit_cap_factor_data_from_pudl_nightly()
     with open(
         os.path.join(parsed_args.raw_data_directory, "ra_toolkit_gen_profiles.parquet"),

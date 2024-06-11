@@ -19,6 +19,10 @@ import pandas as pd
 #  loading raw data into the database. Leaving as a task for now to figure out
 #   where this intermediary steps should fit in case there are similar ones.
 
+# TODO: NEVP, PGE, SRP, and WAUW have wind plants in EIA, but we don't have
+#  wind profiles for them in the RA toolkit; I have added those profiles
+#  manually for now
+
 def main():
     df = pd.read_parquet(
         "/Users/ana/dev/gridpath_v2024.1.0+dev/db/csvs_open_data/raw_data"
