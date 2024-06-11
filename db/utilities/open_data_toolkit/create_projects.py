@@ -125,7 +125,7 @@ def get_project_portfolio_for_region(
     JOIN raw_data_aux_eia_prime_mover_key
     USING (prime_mover_code)
     --WHERE report_date = '{report_date}' -- get latest
-    WHERE (unixepoch(current_planned_generator_operating_date) >= unixepoch('{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
+    WHERE (unixepoch(current_planned_generator_operating_date) < unixepoch('{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
     AND (unixepoch(generator_retirement_date) > unixepoch('{study_year}-12-31') or generator_retirement_date IS NULL)
     AND balancing_authority_code_eia in (
         SELECT baa
@@ -153,7 +153,7 @@ def get_project_portfolio_for_region(
     JOIN raw_data_aux_eia_prime_mover_key
     USING (prime_mover_code)
     --WHERE report_date = '{report_date}' -- get latest
-    WHERE (unixepoch(current_planned_generator_operating_date) >= unixepoch('{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
+    WHERE (unixepoch(current_planned_generator_operating_date) < unixepoch('{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
     AND (unixepoch(generator_retirement_date) > unixepoch('{study_year}-12-31') or generator_retirement_date IS NULL)
     AND balancing_authority_code_eia in (
         SELECT baa
@@ -188,7 +188,7 @@ def get_project_load_zones(
         '_') AS project, balancing_authority_code_eia AS load_zone
     FROM raw_data_eia860_generators
     --WHERE report_date = '{report_date}' -- get latest
-    WHERE (unixepoch(current_planned_generator_operating_date) >= unixepoch('{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
+    WHERE (unixepoch(current_planned_generator_operating_date) < unixepoch('{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
     AND (unixepoch(generator_retirement_date) > unixepoch('{study_year}-12-31') or generator_retirement_date IS NULL)
     AND balancing_authority_code_eia in (
         SELECT baa
@@ -211,7 +211,7 @@ def get_project_load_zones(
         balancing_authority_code_eia AS load_zone
     FROM raw_data_eia860_generators
     --WHERE report_date = '{report_date}' -- get latest
-    WHERE (unixepoch(current_planned_generator_operating_date) >= unixepoch('{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
+    WHERE (unixepoch(current_planned_generator_operating_date) < unixepoch('{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
     AND (unixepoch(generator_retirement_date) > unixepoch('{study_year}-12-31') or generator_retirement_date IS NULL)
     AND balancing_authority_code_eia in (
         SELECT baa
@@ -250,7 +250,7 @@ def get_project_availability(
     NULL AS endogenous_availability_scenario_id
     FROM raw_data_eia860_generators
     --WHERE report_date = '{report_date}' -- get latest
-    WHERE (unixepoch(current_planned_generator_operating_date) >= unixepoch('{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
+    WHERE (unixepoch(current_planned_generator_operating_date) < unixepoch('{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
     AND (unixepoch(generator_retirement_date) > unixepoch('{study_year}-12-31') or generator_retirement_date IS NULL)
     AND balancing_authority_code_eia in (
         SELECT baa
@@ -276,7 +276,7 @@ def get_project_availability(
     NULL AS endogenous_availability_scenario_id
     FROM raw_data_eia860_generators
     --WHERE report_date = '{report_date}' -- get latest
-    WHERE (unixepoch(current_planned_generator_operating_date) >= unixepoch('{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
+    WHERE (unixepoch(current_planned_generator_operating_date) < unixepoch('{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
     AND (unixepoch(generator_retirement_date) > unixepoch('{study_year}-12-31') or generator_retirement_date IS NULL)
     AND balancing_authority_code_eia in (
         SELECT baa
@@ -314,12 +314,21 @@ def get_project_capacity(
         NULL AS hyb_gen_specified_capacity_mw,
         NULL AS hyb_stor_specified_capacity_mw,
         energy_storage_capacity_mwh AS specified_capacity_mwh,
+--         CASE WHEN prime_mover_code NOT IN ('BA', 'ES', 'FW') 
+--             THEN NULL
+--             ELSE 
+--                 CASE WHEN energy_storage_capacity_mwh IS NULL
+--                 THEN capacity_mw
+--                 ELSE energy_storage_capacity_mwh
+--                 END
+--         END
+--             AS specified_capacity_mwh,
         NULL AS fuel_production_capacity_fuelunitperhour,
         NULL AS fuel_release_capacity_fuelunitperhour,
         NULL AS fuel_storage_capacity_fuelunit
     FROM raw_data_eia860_generators
     --WHERE report_date = '{report_date}' -- get latest
-    WHERE (unixepoch(current_planned_generator_operating_date) >= unixepoch('{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
+    WHERE (unixepoch(current_planned_generator_operating_date) < unixepoch('{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
     AND (unixepoch(generator_retirement_date) > unixepoch('{study_year}-12-31') or generator_retirement_date IS NULL)
     AND balancing_authority_code_eia in (
         SELECT baa
@@ -349,7 +358,7 @@ def get_project_capacity(
         NULL AS fuel_storage_capacity_fuelunit
     FROM raw_data_eia860_generators
     --WHERE report_date = '{report_date}' -- get latest
-    WHERE (unixepoch(current_planned_generator_operating_date) >= unixepoch('{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
+    WHERE (unixepoch(current_planned_generator_operating_date) < unixepoch('{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
     AND (unixepoch(generator_retirement_date) > unixepoch('{study_year}-12-31') or generator_retirement_date IS NULL)
     AND balancing_authority_code_eia in (
         SELECT baa
@@ -397,7 +406,7 @@ def get_project_fixed_cost(
         NULL AS fuel_storage_capacity_fixed_cost_per_fuelunit_yr
     FROM raw_data_eia860_generators
     --WHERE report_date = '{report_date}' -- get latest
-    WHERE (unixepoch(current_planned_generator_operating_date) >= unixepoch('{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
+    WHERE (unixepoch(current_planned_generator_operating_date) < unixepoch('{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
     AND (unixepoch(generator_retirement_date) > unixepoch('{study_year}-12-31') or generator_retirement_date IS NULL)
     AND balancing_authority_code_eia in (
         SELECT baa
@@ -431,7 +440,7 @@ def get_project_fixed_cost(
         NULL AS fuel_storage_fixed_cost_fuelunit
     FROM raw_data_eia860_generators
     --WHERE report_date = '{report_date}' -- get latest
-    WHERE (unixepoch(current_planned_generator_operating_date) >= unixepoch('{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
+    WHERE (unixepoch(current_planned_generator_operating_date) < unixepoch('{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
     AND (unixepoch(generator_retirement_date) > unixepoch('{study_year}-12-31') or generator_retirement_date IS NULL)
     AND balancing_authority_code_eia in (
         SELECT baa
@@ -470,7 +479,7 @@ def get_project_fuels(
     JOIN raw_data_aux_eia_energy_source_key
     ON (energy_source_code_1 = code)
     --WHERE report_date = '{report_date}' -- get latest
-    WHERE (unixepoch(current_planned_generator_operating_date) >= unixepoch('{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
+    WHERE (unixepoch(current_planned_generator_operating_date) < unixepoch('{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
     AND (unixepoch(generator_retirement_date) > unixepoch('{study_year}-12-31') or generator_retirement_date IS NULL)
     AND balancing_authority_code_eia in (
         SELECT baa
@@ -497,7 +506,7 @@ def get_project_fuels(
     JOIN raw_data_aux_eia_energy_source_key
     ON (energy_source_code_1 = code)
     --WHERE report_date = '{report_date}' -- get latest
-    WHERE (unixepoch(current_planned_generator_operating_date) >= unixepoch('{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
+    WHERE (unixepoch(current_planned_generator_operating_date) < unixepoch('{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
     AND (unixepoch(generator_retirement_date) > unixepoch('{study_year}-12-31') or generator_retirement_date IS NULL)
     AND balancing_authority_code_eia in (
         SELECT baa
