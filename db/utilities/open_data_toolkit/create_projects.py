@@ -42,7 +42,7 @@ def parse_arguments(args):
     )
     parser.add_argument("-p_id", "--project_portfolio_scenario_id", default=1)
     parser.add_argument(
-        "-p_name", "--project_portfolio_scenario_name", default="wecc_generator_units"
+        "-p_name", "--project_portfolio_scenario_name", default="wecc_plants_units"
     )
     parser.add_argument(
         "-lz_csv",
@@ -89,6 +89,18 @@ def parse_arguments(args):
     )
     parser.add_argument("-fuel_id", "--project_fuel_scenario_id", default=1)
     parser.add_argument("-fuel_name", "--project_fuel_scenario_name", default="base")
+    parser.add_argument(
+        "-opchar_csv",
+        "--opchar_csv_location",
+        default="../../csvs_open_data/project/opchar",
+    )
+    parser.add_argument("-opchar_id",
+                        "--project_operational_chars_scenario_id",
+                        default=1)
+    parser.add_argument(
+        "-opchar_name", "--project_operational_chars_scenario_name",
+        default="wecc_plants_opchar"
+    )
 
     parsed_arguments = parser.parse_known_args(args=args)[0]
 
@@ -96,6 +108,7 @@ def parse_arguments(args):
 
 
 # TODO: refactor queries to their components
+
 
 def get_project_portfolio_for_region(
     conn,
@@ -297,6 +310,8 @@ def get_project_availability(
     )
 
 
+# TODO: battery durations are hardcoded right now for when not provided (1h
+#  for batteries/flywheels and 12 hours for pumped hydro)
 def get_project_capacity(
     conn,
     report_date,
@@ -313,16 +328,20 @@ def get_project_capacity(
         capacity_mw AS specified_capacity_mw,
         NULL AS hyb_gen_specified_capacity_mw,
         NULL AS hyb_stor_specified_capacity_mw,
-        energy_storage_capacity_mwh AS specified_capacity_mwh,
---         CASE WHEN prime_mover_code NOT IN ('BA', 'ES', 'FW') 
---             THEN NULL
---             ELSE 
---                 CASE WHEN energy_storage_capacity_mwh IS NULL
---                 THEN capacity_mw
---                 ELSE energy_storage_capacity_mwh
---                 END
---         END
---             AS specified_capacity_mwh,
+        CASE 
+            WHEN prime_mover_code NOT IN ('BA', 'ES', 'FW', 'PS') THEN NULL
+            ELSE 
+                CASE
+                    WHEN energy_storage_capacity_mwh IS NULL
+                    THEN 
+                        CASE
+                            WHEN prime_mover_code = 'PS' THEN 12.0*capacity_mw
+                            ELSE capacity_mw
+                        END
+                    ELSE energy_storage_capacity_mwh
+                END
+        END
+            AS specified_capacity_mwh,
         NULL AS fuel_production_capacity_fuelunitperhour,
         NULL AS fuel_release_capacity_fuelunitperhour,
         NULL AS fuel_storage_capacity_fuelunit
@@ -396,10 +415,10 @@ def get_project_fixed_cost(
         0 AS fixed_cost_per_mw_yr,
         NULL AS hyb_gen_fixed_cost_per_mw_yr,
         NULL AS hyb_stor_fixed_cost_per_mw_yr,
-        CASE
-            WHEN energy_storage_capacity_mwh IS NULL THEN NULL
+        CASE WHEN prime_mover_code NOT IN ('BA', 'ES', 'FW', 'PS') 
+            THEN NULL
             ELSE 0
-            END 
+        END
             AS fixed_cost_per_mwh_year,
         NULL AS fuel_production_capacity_fixed_cost_per_fuelunitperhour_yr,
         NULL AS fuel_release_capacity_fixed_cost_per_fuelunitperhour_yr,
@@ -537,6 +556,204 @@ def get_project_fuels(
                 writer.writerow([fuel, None, None])
 
 
+# TODO: hardcoded params
+def get_project_opchar(
+    conn,
+    report_date,
+    study_year,
+    region,
+    csv_location,
+    subscenario_id,
+    subscenario_name,
+):
+    sql = f"""
+     SELECT plant_id_eia || '__' || REPLACE(REPLACE(generator_id, ' ', '_'), '-', 
+         '_') AS project,
+         'test' as technology,
+         CASE WHEN prime_mover_code NOT IN ('BA', 'ES', 'FW', 'PS') 
+             THEN 'gen_simple'
+             ELSE 'stor'
+         END
+             AS operational_type,
+         'week' AS balancing_type_project,
+         0 AS variable_om_cost_per_mwh,
+         NULL AS variable_om_cost_by_period_scenario_id,	
+         NULL AS project_fuel_scenario_id,
+         NULL AS heat_rate_curves_scenario_id,	
+         NULL AS variable_om_curves_scenario_id,
+         NULL AS startup_chars_scenario_id,	
+         NULL AS min_stable_level_fraction,
+         NULL AS unit_size_mw,
+         NULL AS startup_cost_per_mw,	
+         NULL AS shutdown_cost_per_mw,
+         NULL AS startup_fuel_mmbtu_per_mw,	
+         NULL AS startup_plus_ramp_up_rate,
+         NULL AS shutdown_plus_ramp_down_rate,	
+         NULL AS ramp_up_when_on_rate,
+         NULL AS ramp_down_when_on_rate,	
+         NULL AS ramp_up_violation_penalty,
+         NULL AS ramp_down_violation_penalty,	
+         NULL AS min_up_time_hours,
+         NULL AS min_up_time_violation_penalty,	
+         NULL AS min_down_time_hours,
+         NULL AS min_down_time_violation_penalty,	
+         NULL AS cycle_selection_scenario_id,
+         NULL AS supplemental_firing_scenario_id,	
+         NULL AS allow_startup_shutdown_power,
+         CASE WHEN prime_mover_code NOT IN ('BA', 'ES', 'FW', 'PS') 
+             THEN NULL
+             ELSE 1
+         END AS storage_efficiency,	
+         CASE WHEN prime_mover_code NOT IN ('BA', 'ES', 'FW', 'PS') 
+             THEN NULL
+             ELSE 0.9
+         END AS charging_efficiency,
+         CASE WHEN prime_mover_code NOT IN ('BA', 'ES', 'FW', 'PS') 
+             THEN NULL
+             ELSE 0.9
+         END AS discharging_efficiency,	
+         NULL AS charging_capacity_multiplier,
+         NULL AS discharging_capacity_multiplier,	
+         NULL AS soc_penalty_cost_per_energyunit,
+         NULL AS soc_last_tmp_penalty_cost_per_energyunit,
+         NULL AS flex_load_static_profile_scenario_id,
+         NULL AS minimum_duration_hours,	
+         NULL AS maximum_duration_hours,
+         NULL AS aux_consumption_frac_capacity,	
+         NULL AS aux_consumption_frac_power,
+         NULL AS last_commitment_stage,	
+         NULL AS variable_generator_profile_scenario_id,
+         NULL AS curtailment_cost_per_pwh,	
+         NULL AS hydro_operational_chars_scenario_id,
+         NULL AS lf_reserves_up_derate,	
+         NULL AS lf_reserves_down_derate,
+         NULL AS regulation_up_derate,	
+         NULL AS regulation_down_derate,
+         NULL AS frequency_response_derate,	
+         NULL AS spinning_reserves_derate,
+         NULL AS lf_reserves_up_ramp_rate,	
+         NULL AS lf_reserves_down_ramp_rate,
+         NULL AS regulation_up_ramp_rate,
+         NULL AS regulation_down_ramp_rate,
+         NULL AS frequency_response_ramp_rate,
+         NULL AS spinning_reserves_ramp_rate,
+         NULL AS powerunithour_per_fuelunit,
+         NULL AS cap_factor_limits_scenario_id,
+         NULL AS partial_availability_threshold,
+         NULL AS stor_exog_state_of_charge_scenario_id,
+         NULL AS nonfuel_carbon_emissions_per_mwh
+     FROM raw_data_eia860_generators
+     --WHERE report_date = '{report_date}' -- get latest
+     WHERE (unixepoch(current_planned_generator_operating_date) < unixepoch('{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
+     AND (unixepoch(generator_retirement_date) > unixepoch('{study_year}-12-31') or generator_retirement_date IS NULL)
+     AND balancing_authority_code_eia in (
+         SELECT baa
+         FROM raw_data_aux_baa_key
+         WHERE region = '{region}'
+     )
+     AND (plant_id_eia, generator_id) NOT IN (
+             SELECT DISTINCT plant_id_eia, generator_id
+             FROM raw_data_eia860_generators
+             WHERE prime_mover_code IN ('WT', 'WS', 'PV')
+         )
+     UNION
+     SELECT DISTINCT 
+         CASE WHEN prime_mover_code = 'WT' THEN 'Wind' 
+         ELSE 
+             CASE WHEN prime_mover_code = 'WS' THEN 'Wind_Offshore' 
+             ELSE 'Solar'
+             END
+         END || '_' || balancing_authority_code_eia AS project,
+         'test' as technology,
+         'gen_var_must_take' AS operational_type,
+         'week' AS balancing_type_project,
+         0 AS variable_om_cost_per_mwh,
+         NULL AS variable_om_cost_by_period_scenario_id,	
+         NULL AS project_fuel_scenario_id,
+         NULL AS heat_rate_curves_scenario_id,	
+         NULL AS variable_om_curves_scenario_id,
+         NULL AS startup_chars_scenario_id,	
+         NULL AS min_stable_level_fraction,
+         NULL AS unit_size_mw,
+         NULL AS startup_cost_per_mw,	
+         NULL AS shutdown_cost_per_mw,
+         NULL AS startup_fuel_mmbtu_per_mw,	
+         NULL AS startup_plus_ramp_up_rate,
+         NULL AS shutdown_plus_ramp_down_rate,	
+         NULL AS ramp_up_when_on_rate,
+         NULL AS ramp_down_when_on_rate,	
+         NULL AS ramp_up_violation_penalty,
+         NULL AS ramp_down_violation_penalty,	
+         NULL AS min_up_time_hours,
+         NULL AS min_up_time_violation_penalty,	
+         NULL AS min_down_time_hours,
+         NULL AS min_down_time_violation_penalty,	
+         NULL AS cycle_selection_scenario_id,
+         NULL AS supplemental_firing_scenario_id,	
+         NULL AS allow_startup_shutdown_power,
+         NULL AS storage_efficiency,	
+         NULL AS charging_efficiency,
+         NULL AS discharging_efficiency,	
+         NULL AS charging_capacity_multiplier,
+         NULL AS discharging_capacity_multiplier,	
+         NULL AS soc_penalty_cost_per_energyunit,
+         NULL AS soc_last_tmp_penalty_cost_per_energyunit,
+         NULL AS flex_load_static_profile_scenario_id,
+         NULL AS minimum_duration_hours,	
+         NULL AS maximum_duration_hours,
+         NULL AS aux_consumption_frac_capacity,	
+         NULL AS aux_consumption_frac_power,
+         NULL AS last_commitment_stage,	
+         1 AS variable_generator_profile_scenario_id,
+         NULL AS curtailment_cost_per_pwh,	
+         NULL AS hydro_operational_chars_scenario_id,
+         NULL AS lf_reserves_up_derate,	
+         NULL AS lf_reserves_down_derate,
+         NULL AS regulation_up_derate,	
+         NULL AS regulation_down_derate,
+         NULL AS frequency_response_derate,	
+         NULL AS spinning_reserves_derate,
+         NULL AS lf_reserves_up_ramp_rate,	
+         NULL AS lf_reserves_down_ramp_rate,
+         NULL AS regulation_up_ramp_rate,
+         NULL AS regulation_down_ramp_rate,
+         NULL AS frequency_response_ramp_rate,
+         NULL AS spinning_reserves_ramp_rate,
+         NULL AS powerunithour_per_fuelunit,
+         NULL AS cap_factor_limits_scenario_id,
+         NULL AS partial_availability_threshold,
+         NULL AS stor_exog_state_of_charge_scenario_id,
+         NULL AS nonfuel_carbon_emissions_per_mwh
+     FROM raw_data_eia860_generators
+     --WHERE report_date = '{report_date}' -- get latest
+     WHERE (unixepoch(current_planned_generator_operating_date) < unixepoch('{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
+     AND (unixepoch(generator_retirement_date) > unixepoch('{study_year}-12-31') or generator_retirement_date IS NULL)
+     AND balancing_authority_code_eia in (
+         SELECT baa
+         FROM raw_data_aux_baa_key
+         WHERE region = '{region}'
+     )
+     AND (plant_id_eia, generator_id) IN (
+             SELECT DISTINCT plant_id_eia, generator_id
+             FROM raw_data_eia860_generators
+             WHERE prime_mover_code IN ('WT', 'WS', 'PV')
+         )
+     GROUP BY project
+     """
+
+    df = pd.read_sql(sql, conn)
+
+    # Enforce integer for ID columns
+    # Can add column names to the list
+    # Note that this must be 'Int64'
+    df[["variable_generator_profile_scenario_id"]] = df[["variable_generator_profile_scenario_id"]].astype("Int64")
+
+    df.to_csv(
+        os.path.join(csv_location, f"{subscenario_id}_" f"{subscenario_name}.csv"),
+        index=False,
+    )
+
+
 def main(args=None):
     print("Creating projects")
     if args is None:
@@ -604,6 +821,16 @@ def main(args=None):
         csv_location=parsed_args.fuels_csv_location,
         subscenario_id=parsed_args.project_fuel_scenario_id,
         subscenario_name=parsed_args.project_fuel_scenario_name,
+    )
+
+    get_project_opchar(
+        conn=conn,
+        report_date=parsed_args.report_date,
+        study_year=parsed_args.study_year,
+        region=parsed_args.region,
+        csv_location=parsed_args.opchar_csv_location,
+        subscenario_id=parsed_args.project_operational_chars_scenario_id,
+        subscenario_name=parsed_args.project_operational_chars_scenario_name,
     )
 
 
