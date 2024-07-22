@@ -269,6 +269,7 @@ def export_summary_results(
             "timepoint_weight",
             "number_of_hours_in_timepoint",
             "static_load_mw",
+            "unserved_energy_stats_threshold_mw",
             "unserved_energy_mw",
         ],
         data=[
@@ -282,11 +283,13 @@ def export_summary_results(
                 m.tmp_weight[tmp],
                 m.hrs_in_tmp[tmp],
                 m.static_load_mw[z, tmp],
+                m.unserved_energy_stats_threshold_mw[z],
                 value(m.Unserved_Energy_MW_Expression[z, tmp]),
             ]
             for z in getattr(m, "LOAD_ZONES")
             for tmp in getattr(m, "TMPS")
-            if value(m.Unserved_Energy_MW_Expression[z, tmp]) > 0
+            if value(m.Unserved_Energy_MW_Expression[z, tmp])
+            > m.unserved_energy_stats_threshold_mw[z]
         ],
     ).set_index(["load_zone", "timepoint"])
 
