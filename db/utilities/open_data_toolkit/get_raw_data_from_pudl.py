@@ -20,6 +20,7 @@ import pandas as pd
 import requests
 import shutil
 import sys
+import zipfile
 
 from db.common_functions import connect_to_database
 
@@ -90,20 +91,22 @@ def parse_arguments(args):
     return parsed_arguments
 
 
-def get_pudl_sqlite(zenodo_record, pudl_sqlite_path):
-    URL = f"https://zenodo.org/records/{str(zenodo_record)}/files/pudl.sqlite.gz?download=1"
-
+def get_pudl_sqlite(zenodo_record, pudl_sqlite_directory):
+    URL = f"https://sandbox.zenodo.org/records/{str(zenodo_record)}/files/pudl.sqlite.zip?download=1"
     print("Downloading compressed pudl.sqlite...")
     pudl_request_content = requests.get(URL, stream=True).content
 
     print("Extracting database")
-    with gzip.open(io.BytesIO(pudl_request_content), "rb") as f_in:
-        with open(pudl_sqlite_path, "wb") as f_out:
-            shutil.copyfileobj(f_in, f_out)
+    # with gzip.open(io.BytesIO(pudl_request_content), "rb") as f_in:
+    #     with open(pudl_sqlite_path, "wb") as f_out:
+    #         shutil.copyfileobj(f_in, f_out)
+
+    z = zipfile.ZipFile(io.BytesIO(pudl_request_content))
+    z.extractall(pudl_sqlite_directory)
 
 
 def get_eia_generator_data_from_local_db(
-    out_dir, pudl_sqlite_path, report_date, exclude_retired
+    out_dir, pudl_sqlite_directory, report_date, exclude_retired
 ):
 
     exclude_retired_str = (
@@ -134,7 +137,9 @@ def get_eia_generator_data_from_local_db(
         {exclude_retired_str}
     """
 
-    pudl_conn = connect_to_database(db_path=pudl_sqlite_path)
+    pudl_conn = connect_to_database(
+        db_path=os.path.join(pudl_sqlite_directory, "pudl.sqlite")
+    )
 
     eia_gens = pd.read_sql(query, pudl_conn)
 
@@ -145,6 +150,9 @@ def get_eia_generator_data_from_local_db(
 
 
 def get_eia_generator_data_from_pudl_datasette():
+    """
+    DEPRECATED
+    """
     count = pd.read_csv(
         "https://data.catalyst.coop/pudl.csv?sql=SELECT%0D%0A++++count%28*%29%0D%0AFROM+core_eia860__scd_generators%0D%0AJOIN+core_eia860__scd_plants%0D%0AUSING+%28plant_id_eia%2C+report_date%29%2C%0D%0Aalembic_version%0D%0AWHERE+report_date+%3D+%272023-01-01%27+--+get+latest%0D%0AAND+core_eia860__scd_generators.operational_status+%21%3D+%27retired%27&_size=max"
     )["count(*)"][0]
@@ -178,6 +186,31 @@ def get_eia_generator_data_from_pudl_datasette():
     return data
 
 
+# TODO: change to getting from pudl.sqlite once the data are in
+def get_eiaaeo_fuel_data_from_pudl_datasette():
+    """
+    """
+    print("Getting fuel prices...")
+    count = pd.read_csv(
+        "https://data.catalyst.coop/pudl.csv?sql=SELECT%0D%0A++COUNT%28*%29%0D%0AFROM%0D%0A++core_eiaaeo__yearly_projected_fuel_cost_in_electric_sector_by_type%0D%0AWHERE%0D%0A++electricity_market_module_region_eiaaeo+like+%27%25western_electricity_coordinating_council%25%27+--ORDER+BY+report_year%2C+electricity_market_module_region_eiaaeo%2C+model_case_eiaaeo%2C+fuel_type_eiaaeo%2C+projection_year+LIMIT+1001&_size=max"
+    )["COUNT(*)"][0]
+
+    df_list = []
+
+    current_count = 0
+    while current_count < count:
+        df = pd.read_csv(
+        f"""https://data.catalyst.coop/pudl.csv?sql=SELECT+*%0D%0AFROM+core_eiaaeo__yearly_projected_fuel_cost_in_electric_sector_by_type%0D%0AWHERE+electricity_market_module_region_eiaaeo+like+%27%25western_electricity_coordinating_council%25%27%0D%0AORDER+BY+report_year%2C+electricity_market_module_region_eiaaeo%2C+model_case_eiaaeo%2C+fuel_type_eiaaeo%2C+projection_year+LIMIT+0%2C+{current_count}&_size=max
+        """
+        )
+
+        df_list.append(df)
+        current_count += 1000
+
+    df_final = pd.concat(df_list)
+
+    return df_final
+
 # TODO: what will be the stable version of this?
 def get_ra_toolkit_cap_factor_data_from_pudl_nightly():
     url = "https://s3.us-west-2.amazonaws.com/pudl.catalyst.coop/nightly/out_gridpathratoolkit__hourly_available_capacity_factor.parquet"
@@ -192,25 +225,34 @@ def main(args=None):
 
     parsed_args = parse_arguments(args=args)
 
-    pudl_sqlite_path = os.path.join(parsed_args.raw_data_directory, "pudl.sqlite")
-    # Download the database
-    if not parsed_args.skip_pudl_sqlite_download:
-        get_pudl_sqlite(pudl_sqlite_path=pudl_sqlite_path, zenodo_record=10708669)
+    pudl_sqlite_directory = os.path.join(parsed_args.raw_data_directory)
 
-    # Get the data we need from the database
-    get_eia_generator_data_from_local_db(
-        out_dir=parsed_args.raw_data_directory,
-        pudl_sqlite_path=pudl_sqlite_path,
-        report_date=parsed_args.eia860_report_date,
-        exclude_retired=not parsed_args.eia860_include_retired,
-    )
+    # # Download the database
+    # if not parsed_args.skip_pudl_sqlite_download:
+    #     get_pudl_sqlite(
+    #         pudl_sqlite_directory=pudl_sqlite_directory, zenodo_record=90548
+    #     )
+    #
+    # # Get the data we need from the database
+    # get_eia_generator_data_from_local_db(
+    #     out_dir=parsed_args.raw_data_directory,
+    #     pudl_sqlite_directory=pudl_sqlite_directory,
+    #     report_date=parsed_args.eia860_report_date,
+    #     exclude_retired=not parsed_args.eia860_include_retired,
+    # )
+    #
+    # ra_toolkit_gen_profiles = get_ra_toolkit_cap_factor_data_from_pudl_nightly()
+    # with open(
+    #     os.path.join(parsed_args.raw_data_directory, "ra_toolkit_gen_profiles.parquet"),
+    #     "wb",
+    # ) as f:
+    #     f.write(ra_toolkit_gen_profiles)
 
-    ra_toolkit_gen_profiles = get_ra_toolkit_cap_factor_data_from_pudl_nightly()
-    with open(
-        os.path.join(parsed_args.raw_data_directory, "ra_toolkit_gen_profiles.parquet"),
-        "wb",
-    ) as f:
-        f.write(ra_toolkit_gen_profiles)
+    # Get fuel prices from datasette (needs to be updated to get this from
+    # pudl.sqlite when available)
+    aeo_fuel_prices = get_eiaaeo_fuel_data_from_pudl_datasette()
+    aeo_fuel_prices.to_csv(os.path.join(parsed_args.raw_data_directory,
+                                        "eiaaeo_fuel_prices.csv"), index=False)
 
 
 if __name__ == "__main__":
