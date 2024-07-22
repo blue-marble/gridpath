@@ -457,6 +457,7 @@ CREATE TABLE inputs_geography_load_zones
     max_unserved_load_penalty_per_mw FLOAT,
     max_unserved_load_limit_mw       FLOAT, -- limit on the max unserved load
     export_penalty_cost_per_mwh      FLOAT,
+    unserved_energy_stats_threshold_mw     FLOAT, -- defaults to 0
     PRIMARY KEY (load_zone_scenario_id, load_zone),
     FOREIGN KEY (load_zone_scenario_id) REFERENCES
         subscenarios_geography_load_zones (load_zone_scenario_id)

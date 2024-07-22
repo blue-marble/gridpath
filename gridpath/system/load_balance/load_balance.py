@@ -286,7 +286,8 @@ def export_summary_results(
             ]
             for z in getattr(m, "LOAD_ZONES")
             for tmp in getattr(m, "TMPS")
-            if value(m.Unserved_Energy_MW_Expression[z, tmp]) > 0
+            if value(m.Unserved_Energy_MW_Expression[z, tmp])
+            > m.unserved_energy_stats_threshold_mw[z]
         ],
     ).set_index(["load_zone", "timepoint"])
 
