@@ -63,6 +63,12 @@ def add_model_components(
     # Can only be applied if transmission is included
     m.export_penalty_cost_per_mwh = Param(m.LOAD_ZONES, within=NonNegativeReals)
 
+    # Unserved energy threshold used in results processing (size of unserved
+    # load events that counts for the loss of load statistics)
+    m.unserved_energy_stats_threshold_mw = Param(
+        m.LOAD_ZONES, within=NonNegativeReals, default=0
+    )
+
 
 def load_model_data(
     m,

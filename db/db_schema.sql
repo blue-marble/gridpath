@@ -447,16 +447,17 @@ CREATE TABLE subscenarios_geography_load_zones
 DROP TABLE IF EXISTS inputs_geography_load_zones;
 CREATE TABLE inputs_geography_load_zones
 (
-    load_zone_scenario_id            INTEGER,
-    load_zone                        VARCHAR(32),
-    allow_overgeneration             INTEGER,
-    overgeneration_penalty_per_mw    FLOAT,
-    allow_unserved_energy            INTEGER,
-    unserved_energy_penalty_per_mwh  FLOAT,
-    unserved_energy_limit_mwh        FLOAT, -- limit on the total USE
-    max_unserved_load_penalty_per_mw FLOAT,
-    max_unserved_load_limit_mw       FLOAT, -- limit on the max unserved load
-    export_penalty_cost_per_mwh      FLOAT,
+    load_zone_scenario_id              INTEGER,
+    load_zone                          VARCHAR(32),
+    allow_overgeneration               INTEGER,
+    overgeneration_penalty_per_mw      FLOAT,
+    allow_unserved_energy              INTEGER,
+    unserved_energy_penalty_per_mwh    FLOAT,
+    unserved_energy_limit_mwh          FLOAT, -- limit on the total USE
+    max_unserved_load_penalty_per_mw   FLOAT,
+    max_unserved_load_limit_mw         FLOAT, -- limit on the max unserved load
+    export_penalty_cost_per_mwh        FLOAT,
+    unserved_energy_stats_threshold_mw FLOAT, -- defaults to 0
     PRIMARY KEY (load_zone_scenario_id, load_zone),
     FOREIGN KEY (load_zone_scenario_id) REFERENCES
         subscenarios_geography_load_zones (load_zone_scenario_id)
@@ -5195,23 +5196,24 @@ CREATE TABLE results_system_load_zone_timepoint
 DROP TABLE IF EXISTS results_system_load_zone_timepoint_loss_of_load_summary;
 CREATE TABLE results_system_load_zone_timepoint_loss_of_load_summary
 (
-    scenario_id                  INTEGER,
-    weather_iteration            INTEGER,
-    hydro_iteration              INTEGER,
-    availability_iteration       INTEGER,
-    subproblem_id                INTEGER,
-    stage_id                     INTEGER,
-    load_zone                    VARCHAR(32),
-    timepoint                    INTEGER,
-    period                       INTEGER,
-    month                        INTEGER,
-    day_of_month                 INTEGER,
-    hour_of_day                  INTEGER,
-    timepoint_weight             FLOAT,
-    number_of_hours_in_timepoint FLOAT,
-    spinup_or_lookahead          INTEGER,
-    static_load_mw               FLOAT,
-    unserved_energy_mw           FLOAT,
+    scenario_id                        INTEGER,
+    weather_iteration                  INTEGER,
+    hydro_iteration                    INTEGER,
+    availability_iteration             INTEGER,
+    subproblem_id                      INTEGER,
+    stage_id                           INTEGER,
+    load_zone                          VARCHAR(32),
+    timepoint                          INTEGER,
+    period                             INTEGER,
+    month                              INTEGER,
+    day_of_month                       INTEGER,
+    hour_of_day                        INTEGER,
+    timepoint_weight                   FLOAT,
+    number_of_hours_in_timepoint       FLOAT,
+    spinup_or_lookahead                INTEGER,
+    static_load_mw                     FLOAT,
+    unserved_energy_stats_threshold_mw FLOAT,
+    unserved_energy_mw                 FLOAT,
     PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
                  availability_iteration, subproblem_id, stage_id, load_zone,
                  timepoint)
