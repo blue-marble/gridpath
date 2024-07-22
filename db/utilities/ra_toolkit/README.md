@@ -2,11 +2,47 @@
 
 The GridPath RA Toolkit generates GridPath input CSV files for use in
 resource adequacy studies, including weather-dependent load profiles as well as 
-wind and solar profiles, generator availabilities, and hydro conditions. To run 
-the GridPath RA Toolkit, use the *run_ra_toolkit.py* script in this 
-directory. The settings for the script are provided via the 
-ra_toolkit_settings_sample.csv file. To understand what the Toolkit does or run 
-individual steps from it, continue reading below. 
+wind and solar profiles, generator availabilities, and hydro conditions.
+
+This assumes you have GridPath installed into a Python environment and the 
+environment activated. You can install with:
+
+```bash
+pip install GridPath
+```
+
+To use the RA Toolkit, follow these steps:
+
+## 1. Create working directory
+Create a directory to use and navigate to the directory. We'll use the 
+following name for our base directory: *ra_toolkit_example*
+
+## 2. Put the base CSVs in this directory
+The csvs will be in: *ra_toolkit_example/ra_toolkit_csvs*.
+
+## 3. Ensure ra_toolkit_settings file is in the base directory
+
+You can find sample settings in the 
+*db/utilities/ra_toolkit/ra_toolkit_settings_sample.csv*  file.
+
+## 4. Ensure temporal_scenarios.csv settings are correct
+
+## 5. Run RA toolkit
+
+From the base directory run:
+gridpath_run_ra_toolkit
+
+## 6. Load the CSVs into the database
+gridpath_load_csvs --database ./ra_toolkit.db --csv_location ./ra_toolkit_csvs
+
+## 7. Load the scenarios
+gridpath_load_scenarios --database ./ra_toolkit.db --csv_path ./ra_toolkit_csvs/scenarios.csv
+
+## 8. Run cases
+gridpath_run_e2e --log --database ./ra_toolkit.db --scenario_location ./Simulations --results_export_rule USE --n_parallel_get_inputs 24 --n_parallel_solve 24 --scenario monte_carlo_2
+
+gridpath_run_e2e --log --database ./ra_toolkit.db --scenario_location ./Simulations --results_export_rule USE --n_parallel_get_inputs 24 --n_parallel_solve 24 --scenario sync
+
 
 ## GridPath RA Toolkit Modules
 
