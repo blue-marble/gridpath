@@ -38,7 +38,8 @@ import sys
 from db import create_database
 from db.utilities import load_raw_data
 from db.utilities.ra_toolkit.weather import (
-    create_sync_load_input_csvs, create_sync_var_gen_input_csvs,
+    create_sync_load_input_csvs,
+    create_sync_var_gen_input_csvs,
 )
 from db.utilities.open_data_toolkit import create_projects
 
@@ -67,7 +68,7 @@ def parse_arguments(args):
             "load_raw_data",
             "create_sync_load_input_csvs",
             "create_project_csvs",
-            "create_sync_var_gen_input_csvs"
+            "create_sync_var_gen_input_csvs",
         ],
         help="Run only the specified step. All others will be skipped. If not "
         "specified, the entire Toolkit will be run.",

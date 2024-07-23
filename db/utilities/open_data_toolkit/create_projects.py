@@ -94,12 +94,13 @@ def parse_arguments(args):
         "--opchar_csv_location",
         default="../../csvs_open_data/project/opchar",
     )
-    parser.add_argument("-opchar_id",
-                        "--project_operational_chars_scenario_id",
-                        default=1)
     parser.add_argument(
-        "-opchar_name", "--project_operational_chars_scenario_name",
-        default="wecc_plants_opchar"
+        "-opchar_id", "--project_operational_chars_scenario_id", default=1
+    )
+    parser.add_argument(
+        "-opchar_name",
+        "--project_operational_chars_scenario_name",
+        default="wecc_plants_opchar",
     )
 
     parsed_arguments = parser.parse_known_args(args=args)[0]
@@ -746,7 +747,9 @@ def get_project_opchar(
     # Enforce integer for ID columns
     # Can add column names to the list
     # Note that this must be 'Int64'
-    df[["variable_generator_profile_scenario_id"]] = df[["variable_generator_profile_scenario_id"]].astype("Int64")
+    df[["variable_generator_profile_scenario_id"]] = df[
+        ["variable_generator_profile_scenario_id"]
+    ].astype("Int64")
 
     df.to_csv(
         os.path.join(csv_location, f"{subscenario_id}_" f"{subscenario_name}.csv"),

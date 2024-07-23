@@ -23,6 +23,7 @@ import pandas as pd
 #  wind profiles for them in the RA toolkit; I have added those profiles
 #  manually for now
 
+
 def main():
     df = pd.read_parquet(
         "/Users/ana/dev/gridpath_v2024.1.0+dev/db/csvs_open_data/raw_data"
@@ -37,13 +38,18 @@ def main():
     df["hour_of_day"] = pd.DatetimeIndex(df["datetime_pst"]).hour
 
     df = df.rename(
-        columns={"aggregation_group": "unit", "capacity_factor": "cap_factor"})
+        columns={"aggregation_group": "unit", "capacity_factor": "cap_factor"}
+    )
     cols = df.columns.tolist()
     cols = cols[4:8] + cols[1:3]
     df = df[cols]
 
-    df.to_csv("/Users/ana/dev/gridpath_v2024.1.0+dev/db/csvs_open_data/raw_data"
-              "/var_profiles.csv", sep=",", index=False)
+    df.to_csv(
+        "/Users/ana/dev/gridpath_v2024.1.0+dev/db/csvs_open_data/raw_data"
+        "/var_profiles.csv",
+        sep=",",
+        index=False,
+    )
 
 
 if __name__ == "__main__":

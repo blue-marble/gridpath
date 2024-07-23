@@ -4336,6 +4336,21 @@ CREATE TABLE raw_data_unit_availability_weather_derates
     PRIMARY KEY (year, month, day_of_month, hour_of_day, unit)
 );
 
+DROP TABLE IF EXISTS raw_data_fuel_prices;
+CREATE TABLE raw_data_fuel_prices
+(
+    report_year                             INTEGER,
+    electricity_market_module_region_eiaaeo TEXT,
+    model_case_eiaaeo                       TEXT,
+    projection_year                         INTEGER,
+    fuel_type_eiaaeo                        TEXT,
+    fuel_cost_per_mmbtu                     FLOAT,
+    fuel_cost_real_per_mmbtu_eiaaeo         FLOAT,
+    real_cost_basis_year                    INTEGER,
+    PRIMARY KEY (report_year, electricity_market_module_region_eiaaeo,
+                 model_case_eiaaeo, projection_year, fuel_type_eiaaeo)
+);
+
 DROP TABLE IF EXISTS inputs_aux_weather_draws_info;
 CREATE TABLE inputs_aux_weather_draws_info
 (

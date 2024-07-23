@@ -159,8 +159,9 @@ def get_eia_generator_data_from_pudl_datasette():
 
     df_list = []
 
-    current_count = 0
-    while current_count < count:
+    page_size = 1000
+    current_offset = 0
+    while current_offset < count:
         df = pd.read_csv(
             f"https://data.catalyst.coop/pudl.csv?sql=SELECT%0D%0A++++version_num"
             f"%2C%0D%0A++++report_date%2C%0D%0A++++"
@@ -175,11 +176,12 @@ def get_eia_generator_data_from_pudl_datasette():
             f"report_date%29%2C%0D%0Aalembic_version%0D%0AWHERE+"
             f"report_date+%3D+%272023-01-01%27+--+get+latest%0D%0AAND+"
             f"core_eia860__scd_generators.operational_status+%21%3D+"
-            f"%27retired%27%0D%0ALIMIT+{current_count}%2C+1000&_size=max"
+            f"%27retired%27%0D%0ALIMIT+{current_offset}%2C+"
+            f"{page_size}&_size=max"
         )
 
         df_list.append(df)
-        current_count += 1000
+        current_offset += 1000
 
     data = pd.concat(df_list)
 
@@ -188,28 +190,29 @@ def get_eia_generator_data_from_pudl_datasette():
 
 # TODO: change to getting from pudl.sqlite once the data are in
 def get_eiaaeo_fuel_data_from_pudl_datasette():
-    """
-    """
+    """ """
     print("Getting fuel prices...")
-    count = pd.read_csv(
+    total_count = pd.read_csv(
         "https://data.catalyst.coop/pudl.csv?sql=SELECT%0D%0A++COUNT%28*%29%0D%0AFROM%0D%0A++core_eiaaeo__yearly_projected_fuel_cost_in_electric_sector_by_type%0D%0AWHERE%0D%0A++electricity_market_module_region_eiaaeo+like+%27%25western_electricity_coordinating_council%25%27+--ORDER+BY+report_year%2C+electricity_market_module_region_eiaaeo%2C+model_case_eiaaeo%2C+fuel_type_eiaaeo%2C+projection_year+LIMIT+1001&_size=max"
     )["COUNT(*)"][0]
 
     df_list = []
 
-    current_count = 0
-    while current_count < count:
+    page_size = 1000
+    current_offset = 0
+    while current_offset < total_count:
         df = pd.read_csv(
-        f"""https://data.catalyst.coop/pudl.csv?sql=SELECT+*%0D%0AFROM+core_eiaaeo__yearly_projected_fuel_cost_in_electric_sector_by_type%0D%0AWHERE+electricity_market_module_region_eiaaeo+like+%27%25western_electricity_coordinating_council%25%27%0D%0AORDER+BY+report_year%2C+electricity_market_module_region_eiaaeo%2C+model_case_eiaaeo%2C+fuel_type_eiaaeo%2C+projection_year+LIMIT+0%2C+{current_count}&_size=max
+            f"""https://data.catalyst.coop/pudl.csv?sql=SELECT+*%0D%0AFROM+core_eiaaeo__yearly_projected_fuel_cost_in_electric_sector_by_type%0D%0AWHERE+electricity_market_module_region_eiaaeo+like+%27%25western_electricity_coordinating_council%25%27%0D%0AORDER+BY+report_year%2C+electricity_market_module_region_eiaaeo%2C+model_case_eiaaeo%2C+fuel_type_eiaaeo%2C+projection_year+LIMIT%0D%0A++{current_offset}%2C+{page_size}&_size=max
         """
         )
 
         df_list.append(df)
-        current_count += 1000
+        current_offset += page_size
 
     df_final = pd.concat(df_list)
 
     return df_final
+
 
 # TODO: what will be the stable version of this?
 def get_ra_toolkit_cap_factor_data_from_pudl_nightly():
@@ -251,8 +254,10 @@ def main(args=None):
     # Get fuel prices from datasette (needs to be updated to get this from
     # pudl.sqlite when available)
     aeo_fuel_prices = get_eiaaeo_fuel_data_from_pudl_datasette()
-    aeo_fuel_prices.to_csv(os.path.join(parsed_args.raw_data_directory,
-                                        "eiaaeo_fuel_prices.csv"), index=False)
+    aeo_fuel_prices.to_csv(
+        os.path.join(parsed_args.raw_data_directory, "eiaaeo_fuel_prices.csv"),
+        index=False,
+    )
 
 
 if __name__ == "__main__":
