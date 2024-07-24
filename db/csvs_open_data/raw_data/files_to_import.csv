@@ -8,3 +8,4 @@ import,filename,table
 1,var_project_units.csv,raw_data_var_project_units
 1,var_profiles.csv,raw_data_project_variable_profiles
 1,eiaaeo_fuel_prices.csv,raw_data_fuel_prices
+1,eiaaeo_region_key.csv,raw_data_aux_eiaaeo_region_key

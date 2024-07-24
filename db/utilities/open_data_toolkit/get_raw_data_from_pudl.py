@@ -230,26 +230,26 @@ def main(args=None):
 
     pudl_sqlite_directory = os.path.join(parsed_args.raw_data_directory)
 
-    # # Download the database
-    # if not parsed_args.skip_pudl_sqlite_download:
-    #     get_pudl_sqlite(
-    #         pudl_sqlite_directory=pudl_sqlite_directory, zenodo_record=90548
-    #     )
-    #
-    # # Get the data we need from the database
-    # get_eia_generator_data_from_local_db(
-    #     out_dir=parsed_args.raw_data_directory,
-    #     pudl_sqlite_directory=pudl_sqlite_directory,
-    #     report_date=parsed_args.eia860_report_date,
-    #     exclude_retired=not parsed_args.eia860_include_retired,
-    # )
-    #
-    # ra_toolkit_gen_profiles = get_ra_toolkit_cap_factor_data_from_pudl_nightly()
-    # with open(
-    #     os.path.join(parsed_args.raw_data_directory, "ra_toolkit_gen_profiles.parquet"),
-    #     "wb",
-    # ) as f:
-    #     f.write(ra_toolkit_gen_profiles)
+    # Download the database
+    if not parsed_args.skip_pudl_sqlite_download:
+        get_pudl_sqlite(
+            pudl_sqlite_directory=pudl_sqlite_directory, zenodo_record=90548
+        )
+
+    # Get the data we need from the database
+    get_eia_generator_data_from_local_db(
+        out_dir=parsed_args.raw_data_directory,
+        pudl_sqlite_directory=pudl_sqlite_directory,
+        report_date=parsed_args.eia860_report_date,
+        exclude_retired=not parsed_args.eia860_include_retired,
+    )
+
+    ra_toolkit_gen_profiles = get_ra_toolkit_cap_factor_data_from_pudl_nightly()
+    with open(
+        os.path.join(parsed_args.raw_data_directory, "ra_toolkit_gen_profiles.parquet"),
+        "wb",
+    ) as f:
+        f.write(ra_toolkit_gen_profiles)
 
     # Get fuel prices from datasette (needs to be updated to get this from
     # pudl.sqlite when available)

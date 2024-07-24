@@ -1,10 +1,10 @@
-﻿code,label,fuel
+﻿code,label,fuel,notes
 AB,agricultural_byproducts,Biomass
 ANT,anthracite,Coal
 BFG,blast_furnace_gas,Gas
 BIT,bituminous_coal,Coal
 BLQ,black_liquor,Biomass
-DFO,distillate_fuel_oil,Petroleum
+DFO,distillate_fuel_oil,Distillate_Fuel_Oil,confirmed_in_eiaaeo
 GEO,geothermal,
 JF,jet_fuel,Petroleum
 KER,kerosene,Petroleum
@@ -14,7 +14,7 @@ MSB,municipal_solid_waste_biogenic,Biomass
 MSN,municipal_solid_nonbiogenic,Petroleum
 MSW,municipal_solid_waste,Biomass
 MWH,electricity_storage,
-NG,natural_gas,Gas
+NG,natural_gas,Gas,confirmed_in_eiaaeo
 NUC,nuclear,Uranium
 OBG,other_biomass_gas,Biomass
 OBL,other_biomass_liquid,Biomass
@@ -25,7 +25,7 @@ PC,petroleum_coke,Petroleum
 PG,propane_gas,Petroleum
 PUR,purchased_steam,
 RC,refined_coal,Coal
-RFO,residual_fuel_oil,Petroleum
+RFO,residual_fuel_oil,Residual_Fuel_Oil,confirmed_in_eiaaeo
 SC,coal_synfuel,Coal
 SG,syngas_other,Gas
 SGC,syngas_coal,Coal
@@ -41,3 +41,4 @@ WDS,wood_solids,Biomass
 WH,waste_heat,
 WND,wind,
 WO,waste_oil,Petroleum
+,coal,Coal,from_eiaaeo

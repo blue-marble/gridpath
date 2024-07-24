@@ -4351,6 +4351,15 @@ CREATE TABLE raw_data_fuel_prices
                  model_case_eiaaeo, projection_year, fuel_type_eiaaeo)
 );
 
+
+DROP TABLE IF EXISTS raw_data_aux_eiaaeo_region_key;
+CREATE TABLE raw_data_aux_eiaaeo_region_key
+(
+    electricity_market_module_region_eiaaeo TEXT PRIMARY KEY,
+    region                                  TEXT,
+    subregion                               TEXT
+);
+
 DROP TABLE IF EXISTS inputs_aux_weather_draws_info;
 CREATE TABLE inputs_aux_weather_draws_info
 (
@@ -4401,18 +4410,18 @@ CREATE TABLE raw_data_eia860_generators
 DROP TABLE IF EXISTS raw_data_aux_baa_key;
 CREATE TABLE raw_data_aux_baa_key
 (
-    baa    TEXT,
-    region TEXT,
-    PRIMARY KEY (baa, region)
+    baa       TEXT PRIMARY KEY,
+    region    TEXT,
+    subregion TEXT
 );
 
 DROP TABLE IF EXISTS raw_data_aux_eia_prime_mover_key;
 CREATE TABLE raw_data_aux_eia_prime_mover_key
 (
-    prime_mover_code    TEXT PRIMARY KEY,
-    label               TEXT,
-    capacity_type       TEXT,
-    operational_type    TEXT
+    prime_mover_code TEXT PRIMARY KEY,
+    label            TEXT,
+    capacity_type    TEXT,
+    operational_type TEXT
 );
 
 DROP TABLE IF EXISTS raw_data_aux_eia_energy_source_key;
@@ -4420,7 +4429,8 @@ CREATE TABLE raw_data_aux_eia_energy_source_key
 (
     code  TEXT PRIMARY KEY,
     label TEXT,
-    fuel  TEXT
+    fuel  TEXT,
+    notes TEXT
 );
 
 
