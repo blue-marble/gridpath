@@ -4357,7 +4357,7 @@ CREATE TABLE raw_data_aux_eiaaeo_region_key
 (
     electricity_market_module_region_eiaaeo TEXT PRIMARY KEY,
     region                                  TEXT,
-    subregion                               TEXT
+    fuel_region                             TEXT
 );
 
 DROP TABLE IF EXISTS inputs_aux_weather_draws_info;
@@ -4410,9 +4410,9 @@ CREATE TABLE raw_data_eia860_generators
 DROP TABLE IF EXISTS raw_data_aux_baa_key;
 CREATE TABLE raw_data_aux_baa_key
 (
-    baa       TEXT PRIMARY KEY,
-    region    TEXT,
-    subregion TEXT
+    baa         TEXT PRIMARY KEY,
+    region      TEXT,
+    fuel_region TEXT
 );
 
 DROP TABLE IF EXISTS raw_data_aux_eia_prime_mover_key;

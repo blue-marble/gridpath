@@ -41,7 +41,7 @@ from db.utilities.ra_toolkit.weather import (
     create_sync_load_input_csvs,
     create_sync_var_gen_input_csvs,
 )
-from db.utilities.open_data_toolkit import create_projects
+from db.utilities.open_data_toolkit import create_projects, create_fuels
 
 
 def parse_arguments(args):
@@ -226,6 +226,48 @@ def main(args=None):
                 "--n_parallel_projects",
                 n_parallel_projects_sync_var_gen,
                 "--quiet" if parsed_args.quiet else "",
+            ]
+        )
+
+    # Fuels
+    # TODO: add overwrite or not option
+    if not skip_create_sync_var_gen_input_csvs:
+        fuel_price_csv_location = get_setting(
+            settings_df,
+            "create_fuels",
+            "fuel_price_csv_location",
+        )
+
+        fuel_price_scenario_id = get_setting(
+            settings_df,
+            "create_fuels",
+            "fuel_price_scenario_id",
+        )
+
+        model_case = get_setting(
+            settings_df,
+            "create_fuels",
+            "model_case",
+        )
+
+        report_year = get_setting(
+            settings_df,
+            "create_fuels",
+            "report_year",
+        )
+
+        create_fuels.main(
+            [
+                "--database",
+                db_path,
+                "--fuel_price_csv_location",
+                fuel_price_csv_location,
+                "--fuel_price_scenario_id",
+                fuel_price_scenario_id,
+                "--model_case",
+                model_case,
+                "--report_year",
+                report_year,
             ]
         )
 
