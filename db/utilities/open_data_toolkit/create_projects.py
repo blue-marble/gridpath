@@ -491,55 +491,25 @@ def get_project_fuels(
     subscenario_id,
     subscenario_name,
 ):
+
+    # Only coal, gas, and fuel oil for now (with aeo prices)
     sql = f"""
-    SELECT plant_id_eia || '__' || REPLACE(REPLACE(generator_id, ' ', '_'), '-', 
-        '_') AS project,
-        fuel
-    FROM raw_data_eia860_generators
-    JOIN raw_data_aux_eia_energy_source_key
-    ON (energy_source_code_1 = code)
-    --WHERE report_date = '{report_date}' -- get latest
-    WHERE (unixepoch(current_planned_generator_operating_date) < unixepoch('{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
-    AND (unixepoch(generator_retirement_date) > unixepoch('{study_year}-12-31') or generator_retirement_date IS NULL)
-    AND balancing_authority_code_eia in (
-        SELECT baa
-        FROM raw_data_aux_baa_key
-        WHERE region = '{region}'
+        SELECT plant_id_eia || '__' || REPLACE(REPLACE(generator_id, ' ', '_'), '-', 
+            '_') AS project, 
+            fuel || '_' || fuel_region as fuel
+        FROM raw_data_eia860_generators
+        JOIN raw_data_aux_eia_energy_source_key ON (energy_source_code_1 = code)
+        JOIN raw_data_aux_baa_key ON (balancing_authority_code_eia = baa)
+        WHERE (unixepoch(current_planned_generator_operating_date) >= unixepoch(
+        '{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
+        AND (unixepoch(generator_retirement_date) > unixepoch('{study_year}-12-31') or generator_retirement_date IS NULL)
+        AND balancing_authority_code_eia in (
+            SELECT baa
+            FROM raw_data_aux_baa_key
+            WHERE region = '{region}'
         )
-    AND (plant_id_eia, generator_id) NOT IN (
-            SELECT DISTINCT plant_id_eia, generator_id
-            FROM raw_data_eia860_generators
-            WHERE prime_mover_code IN ('WT', 'WS', 'PV')
-        )
-    -- There shouldn't be any fuel projects in these categories, but keeping 
-    -- here for consistency
-    UNION
-    SELECT DISTINCT 
-        CASE WHEN prime_mover_code = 'WT' THEN 'Wind' 
-        ELSE 
-            CASE WHEN prime_mover_code = 'WS' THEN 'Wind_Offshore' 
-            ELSE 'Solar'
-            END
-        END || '_' || balancing_authority_code_eia AS project,
-        fuel
-    FROM raw_data_eia860_generators
-    JOIN raw_data_aux_eia_energy_source_key
-    ON (energy_source_code_1 = code)
-    --WHERE report_date = '{report_date}' -- get latest
-    WHERE (unixepoch(current_planned_generator_operating_date) < unixepoch('{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
-    AND (unixepoch(generator_retirement_date) > unixepoch('{study_year}-12-31') or generator_retirement_date IS NULL)
-    AND balancing_authority_code_eia in (
-        SELECT baa
-        FROM raw_data_aux_baa_key
-        WHERE region = '{region}'
-    )
-    AND (plant_id_eia, generator_id) IN (
-            SELECT DISTINCT plant_id_eia, generator_id
-            FROM raw_data_eia860_generators
-            WHERE prime_mover_code IN ('WT', 'WS', 'PV')
-        )
-    ;
-    """
+        AND aeo_prices = 1
+        """
 
     c = conn.cursor()
     header = ["fuel", "min_fraction_in_fuel_blend", "max_fraction_in_fuel_blend"]

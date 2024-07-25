@@ -4430,6 +4430,7 @@ CREATE TABLE raw_data_aux_eia_energy_source_key
     code  TEXT PRIMARY KEY,
     label TEXT,
     fuel  TEXT,
+    aeo_prices INTEGER,
     notes TEXT
 );
 
