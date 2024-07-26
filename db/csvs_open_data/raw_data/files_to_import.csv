@@ -9,3 +9,5 @@ import,filename,table
 1,var_profiles.csv,raw_data_project_variable_profiles
 1,eiaaeo_fuel_prices.csv,raw_data_fuel_prices
 1,eiaaeo_region_key.csv,raw_data_aux_eiaaeo_region_key
+1,aux_full_load_heat_rates.csv,raw_data_aux_full_load_heat_rates
+1,aux_heat_rate_curve.csv,raw_data_aux_heat_rate_curve

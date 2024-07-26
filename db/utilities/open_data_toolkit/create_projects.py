@@ -85,10 +85,20 @@ def parse_arguments(args):
     parser.add_argument(
         "-fuels_csv",
         "--fuels_csv_location",
-        default="../../csvs_open_data/project/fuels",
+        default="../../csvs_open_data/project/opchar/fuels",
     )
     parser.add_argument("-fuel_id", "--project_fuel_scenario_id", default=1)
     parser.add_argument("-fuel_name", "--project_fuel_scenario_name", default="base")
+
+    parser.add_argument(
+        "-hr_csv",
+        "--hr_csv_location",
+        default="../../csvs_open_data/project/opchar/heat_rates",
+    )
+    parser.add_argument("-hr_id", "--project_hr_scenario_id", default=1)
+    parser.add_argument("-hr_name", "--project_hr_scenario_name",
+                        default="generic")
+
     parser.add_argument(
         "-opchar_csv",
         "--opchar_csv_location",
@@ -527,7 +537,74 @@ def get_project_fuels(
                 writer.writerow([fuel, None, None])
 
 
+def get_project_heat_rates(
+    conn,
+    report_date,
+    study_year,
+    region,
+    csv_location,
+    subscenario_id,
+    subscenario_name,
+):
+
+    # Only coal, gas, and fuel oil for now (with aeo prices)
+    sql = f"""
+        SELECT plant_id_eia || '__' || REPLACE(REPLACE(generator_id, ' ', '_'), '-', 
+            '_') AS project, 
+            prime_mover_code, fuel, heat_rate_mmbtu_per_mwh, min_load_fraction
+        FROM raw_data_eia860_generators
+        JOIN raw_data_aux_eia_energy_source_key ON (energy_source_code_1 = code)
+        JOIN raw_data_aux_full_load_heat_rates USING (prime_mover_code, fuel)
+        WHERE (unixepoch(current_planned_generator_operating_date) >= unixepoch(
+        '{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
+        AND (unixepoch(generator_retirement_date) > unixepoch('{study_year}-12-31') or generator_retirement_date IS NULL)
+        AND balancing_authority_code_eia in (
+            SELECT baa
+            FROM raw_data_aux_baa_key
+            WHERE region = '{region}'
+        )
+        AND aeo_prices = 1
+        """
+
+    c = conn.cursor()
+    header = ["period", "load_point_fraction", "average_heat_rate_mmbtu_per_mwh"]
+    for (
+        project,
+        prime_mover_code,
+        fuel,
+        heat_rate_mmbtu_per_mwh,
+        min_load_fraction,
+    ) in c.execute(sql).fetchall():
+        c2 = conn.cursor()
+        min_load_heat_rate_coefficient = c2.execute(
+            f"""
+            SELECT average_heat_rate_coefficient
+            FROM raw_data_aux_heat_rate_curve
+            WHERE load_point_fraction = {min_load_fraction}
+            ;
+            """
+        ).fetchone()[0]
+        with open(
+            os.path.join(
+                csv_location,
+                f"{project}-{subscenario_id}" f"-{subscenario_name}.csv",
+            ),
+            "w",
+        ) as filepath:
+            writer = csv.writer(filepath, delimiter=",")
+            writer.writerow(header)
+            writer.writerow(
+                [
+                    0,
+                    min_load_fraction,
+                    min_load_heat_rate_coefficient * heat_rate_mmbtu_per_mwh,
+                ]
+            )
+            writer.writerow([0, 1, heat_rate_mmbtu_per_mwh])
+
+
 # TODO: hardcoded params
+# TODO: refactor queries to ensure consistency for which projects are selected
 def get_project_opchar(
     conn,
     report_date,
@@ -794,6 +871,16 @@ def main(args=None):
         csv_location=parsed_args.fuels_csv_location,
         subscenario_id=parsed_args.project_fuel_scenario_id,
         subscenario_name=parsed_args.project_fuel_scenario_name,
+    )
+
+    get_project_heat_rates(
+        conn=conn,
+        report_date=parsed_args.report_date,
+        study_year=parsed_args.study_year,
+        region=parsed_args.region,
+        csv_location=parsed_args.hr_csv_location,
+        subscenario_id=parsed_args.project_hr_scenario_id,
+        subscenario_name=parsed_args.project_hr_scenario_name,
     )
 
     get_project_opchar(

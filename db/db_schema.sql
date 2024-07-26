@@ -4427,11 +4427,30 @@ CREATE TABLE raw_data_aux_eia_prime_mover_key
 DROP TABLE IF EXISTS raw_data_aux_eia_energy_source_key;
 CREATE TABLE raw_data_aux_eia_energy_source_key
 (
-    code  TEXT PRIMARY KEY,
-    label TEXT,
-    fuel  TEXT,
+    code       TEXT PRIMARY KEY,
+    label      TEXT,
+    fuel       TEXT,
     aeo_prices INTEGER,
-    notes TEXT
+    notes      TEXT
+);
+
+DROP TABLE IF EXISTS raw_data_aux_full_load_heat_rates;
+CREATE TABLE raw_data_aux_full_load_heat_rates
+(
+    prime_mover_code        TEXT,
+    label                   TEXT,
+    fuel                    TEXT,
+    heat_rate_mmbtu_per_mwh FLOAT,
+    min_load_fraction       FLOAT,
+    source                  TEXT,
+    PRIMARY KEY (prime_mover_code, fuel)
+);
+
+DROP TABLE IF EXISTS raw_data_aux_heat_rate_curve;
+CREATE TABLE raw_data_aux_heat_rate_curve
+(
+    load_point_fraction           FLOAT PRIMARY KEY,
+    average_heat_rate_coefficient FLOAT
 );
 
 
