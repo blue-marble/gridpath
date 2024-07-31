@@ -4415,36 +4415,23 @@ CREATE TABLE raw_data_aux_baa_key
     fuel_region TEXT
 );
 
-DROP TABLE IF EXISTS raw_data_aux_eia_prime_mover_key;
-CREATE TABLE raw_data_aux_eia_prime_mover_key
+DROP TABLE IF EXISTS raw_data_aux_eia_gridpath_key;
+CREATE TABLE raw_data_aux_eia_gridpath_key
 (
-    prime_mover_code TEXT PRIMARY KEY,
-    label            TEXT,
-    capacity_type    TEXT,
-    operational_type TEXT
+    prime_mover_code          TEXT,
+    prime_mover_label         TEXT,
+    energy_source_code        TEXT,
+    energy_source_label       TEXT,
+    gridpath_generic_fuel     TEXT,
+    aeo_prices                INTEGER,
+    gridpath_capacity_type    TEXT,
+    gridpath_operational_type TEXT,
+    heat_rate_mmbtu_per_mwh   FLOAT,
+    min_load_fraction         FLOAT,
+    heat_rate_source          TEXT,
+    PRIMARY KEY (prime_mover_code, energy_source_code)
 );
 
-DROP TABLE IF EXISTS raw_data_aux_eia_energy_source_key;
-CREATE TABLE raw_data_aux_eia_energy_source_key
-(
-    code       TEXT PRIMARY KEY,
-    label      TEXT,
-    fuel       TEXT,
-    aeo_prices INTEGER,
-    notes      TEXT
-);
-
-DROP TABLE IF EXISTS raw_data_aux_full_load_heat_rates;
-CREATE TABLE raw_data_aux_full_load_heat_rates
-(
-    prime_mover_code        TEXT,
-    label                   TEXT,
-    fuel                    TEXT,
-    heat_rate_mmbtu_per_mwh FLOAT,
-    min_load_fraction       FLOAT,
-    source                  TEXT,
-    PRIMARY KEY (prime_mover_code, fuel)
-);
 
 DROP TABLE IF EXISTS raw_data_aux_heat_rate_curve;
 CREATE TABLE raw_data_aux_heat_rate_curve

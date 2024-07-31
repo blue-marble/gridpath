@@ -57,11 +57,11 @@ def get_fuel_prices(
     """ """
 
     sql = f"""
-    SELECT fuel || '_' || fuel_region as fuel, projection_year as period, 
+    SELECT gridpath_generic_fuel || '_' || fuel_region as fuel, projection_year as period, 
     fuel_cost_real_per_mmbtu_eiaaeo as fuel_price_per_mmbtu
     FROM (
     SELECT * FROM raw_data_fuel_prices
-    join raw_data_aux_eia_energy_source_key on (fuel_type_eiaaeo = label)
+    join raw_data_aux_eia_gridpath_key on (fuel_type_eiaaeo = energy_source_label)
     join raw_data_aux_eiaaeo_region_key using (electricity_market_module_region_eiaaeo)
     )
     WHERE report_year = {report_year}

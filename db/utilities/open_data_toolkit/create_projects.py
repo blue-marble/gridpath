@@ -96,8 +96,7 @@ def parse_arguments(args):
         default="../../csvs_open_data/project/opchar/heat_rates",
     )
     parser.add_argument("-hr_id", "--project_hr_scenario_id", default=1)
-    parser.add_argument("-hr_name", "--project_hr_scenario_name",
-                        default="generic")
+    parser.add_argument("-hr_name", "--project_hr_scenario_name", default="generic")
 
     parser.add_argument(
         "-opchar_csv",
@@ -123,9 +122,7 @@ def parse_arguments(args):
 
 def get_project_portfolio_for_region(
     conn,
-    report_date,
-    study_year,
-    region,
+    eia860_sql_filter_string,
     csv_location,
     subscenario_id,
     subscenario_name,
@@ -144,18 +141,12 @@ def get_project_portfolio_for_region(
     SELECT plant_id_eia || '__' || REPLACE(REPLACE(generator_id, ' ', '_'), '-', 
         '_') AS project, 
     NULL as specified, 
-    NULL as new_build, capacity_type
+    NULL as new_build, gridpath_capacity_type
     FROM raw_data_eia860_generators
-    JOIN raw_data_aux_eia_prime_mover_key
+    JOIN raw_data_aux_eia_gridpath_key
     USING (prime_mover_code)
-    --WHERE report_date = '{report_date}' -- get latest
-    WHERE (unixepoch(current_planned_generator_operating_date) < unixepoch('{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
-    AND (unixepoch(generator_retirement_date) > unixepoch('{study_year}-12-31') or generator_retirement_date IS NULL)
-    AND balancing_authority_code_eia in (
-        SELECT baa
-        FROM raw_data_aux_baa_key
-        WHERE region = '{region}'
-    )
+    WHERE 1=1
+    {eia860_sql_filter_string}
     AND (plant_id_eia, generator_id) NOT IN (
             SELECT DISTINCT plant_id_eia, generator_id
             FROM raw_data_eia860_generators
@@ -172,18 +163,12 @@ def get_project_portfolio_for_region(
         END || '_' || balancing_authority_code_eia AS project,
         NULL as specified,
         NULL as new_build,
-        capacity_type
+        gridpath_capacity_type
     FROM raw_data_eia860_generators
-    JOIN raw_data_aux_eia_prime_mover_key
+    JOIN raw_data_aux_eia_gridpath_key
     USING (prime_mover_code)
-    --WHERE report_date = '{report_date}' -- get latest
-    WHERE (unixepoch(current_planned_generator_operating_date) < unixepoch('{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
-    AND (unixepoch(generator_retirement_date) > unixepoch('{study_year}-12-31') or generator_retirement_date IS NULL)
-    AND balancing_authority_code_eia in (
-        SELECT baa
-        FROM raw_data_aux_baa_key
-        WHERE region = '{region}'
-    )
+    WHERE 1=1
+    {eia860_sql_filter_string}
     AND (plant_id_eia, generator_id) IN (
             SELECT DISTINCT plant_id_eia, generator_id
             FROM raw_data_eia860_generators
@@ -200,9 +185,7 @@ def get_project_portfolio_for_region(
 
 def get_project_load_zones(
     conn,
-    report_date,
-    study_year,
-    region,
+    eia860_sql_filter_string,
     csv_location,
     subscenario_id,
     subscenario_name,
@@ -211,14 +194,8 @@ def get_project_load_zones(
     SELECT plant_id_eia || '__' || REPLACE(REPLACE(generator_id, ' ', '_'), '-', 
         '_') AS project, balancing_authority_code_eia AS load_zone
     FROM raw_data_eia860_generators
-    --WHERE report_date = '{report_date}' -- get latest
-    WHERE (unixepoch(current_planned_generator_operating_date) < unixepoch('{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
-    AND (unixepoch(generator_retirement_date) > unixepoch('{study_year}-12-31') or generator_retirement_date IS NULL)
-    AND balancing_authority_code_eia in (
-        SELECT baa
-        FROM raw_data_aux_baa_key
-        WHERE region = '{region}'
-    )
+    WHERE 1=1
+    {eia860_sql_filter_string}
     AND (plant_id_eia, generator_id) NOT IN (
             SELECT DISTINCT plant_id_eia, generator_id
             FROM raw_data_eia860_generators
@@ -234,14 +211,8 @@ def get_project_load_zones(
         END || '_' || balancing_authority_code_eia AS project,
         balancing_authority_code_eia AS load_zone
     FROM raw_data_eia860_generators
-    --WHERE report_date = '{report_date}' -- get latest
-    WHERE (unixepoch(current_planned_generator_operating_date) < unixepoch('{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
-    AND (unixepoch(generator_retirement_date) > unixepoch('{study_year}-12-31') or generator_retirement_date IS NULL)
-    AND balancing_authority_code_eia in (
-        SELECT baa
-        FROM raw_data_aux_baa_key
-        WHERE region = '{region}'
-    )
+    WHERE 1=1
+    {eia860_sql_filter_string}
     AND (plant_id_eia, generator_id) IN (
             SELECT DISTINCT plant_id_eia, generator_id
             FROM raw_data_eia860_generators
@@ -258,9 +229,7 @@ def get_project_load_zones(
 
 def get_project_availability(
     conn,
-    report_date,
-    study_year,
-    region,
+    eia860_sql_filter_string,
     csv_location,
     subscenario_id,
     subscenario_name,
@@ -273,14 +242,8 @@ def get_project_availability(
     NULL AS exogenous_availability_weather_scenario_id,
     NULL AS endogenous_availability_scenario_id
     FROM raw_data_eia860_generators
-    --WHERE report_date = '{report_date}' -- get latest
-    WHERE (unixepoch(current_planned_generator_operating_date) < unixepoch('{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
-    AND (unixepoch(generator_retirement_date) > unixepoch('{study_year}-12-31') or generator_retirement_date IS NULL)
-    AND balancing_authority_code_eia in (
-        SELECT baa
-        FROM raw_data_aux_baa_key
-        WHERE region = '{region}'
-    )
+    WHERE 1=1
+    {eia860_sql_filter_string}
     AND (plant_id_eia, generator_id) NOT IN (
             SELECT DISTINCT plant_id_eia, generator_id
             FROM raw_data_eia860_generators
@@ -299,14 +262,8 @@ def get_project_availability(
     NULL AS exogenous_availability_weather_scenario_id,
     NULL AS endogenous_availability_scenario_id
     FROM raw_data_eia860_generators
-    --WHERE report_date = '{report_date}' -- get latest
-    WHERE (unixepoch(current_planned_generator_operating_date) < unixepoch('{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
-    AND (unixepoch(generator_retirement_date) > unixepoch('{study_year}-12-31') or generator_retirement_date IS NULL)
-    AND balancing_authority_code_eia in (
-        SELECT baa
-        FROM raw_data_aux_baa_key
-        WHERE region = '{region}'
-    )
+    WHERE 1=1
+    {eia860_sql_filter_string}
     AND (plant_id_eia, generator_id) IN (
             SELECT DISTINCT plant_id_eia, generator_id
             FROM raw_data_eia860_generators
@@ -325,9 +282,8 @@ def get_project_availability(
 #  for batteries/flywheels and 12 hours for pumped hydro)
 def get_project_capacity(
     conn,
-    report_date,
+    eia860_sql_filter_string,
     study_year,
-    region,
     csv_location,
     subscenario_id,
     subscenario_name,
@@ -357,14 +313,8 @@ def get_project_capacity(
         NULL AS fuel_release_capacity_fuelunitperhour,
         NULL AS fuel_storage_capacity_fuelunit
     FROM raw_data_eia860_generators
-    --WHERE report_date = '{report_date}' -- get latest
-    WHERE (unixepoch(current_planned_generator_operating_date) < unixepoch('{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
-    AND (unixepoch(generator_retirement_date) > unixepoch('{study_year}-12-31') or generator_retirement_date IS NULL)
-    AND balancing_authority_code_eia in (
-        SELECT baa
-        FROM raw_data_aux_baa_key
-        WHERE region = '{region}'
-    )
+    WHERE 1=1
+    {eia860_sql_filter_string}
     AND (plant_id_eia, generator_id) NOT IN (
             SELECT DISTINCT plant_id_eia, generator_id
             FROM raw_data_eia860_generators
@@ -387,14 +337,8 @@ def get_project_capacity(
         NULL AS fuel_release_capacity_fuelunitperhour,
         NULL AS fuel_storage_capacity_fuelunit
     FROM raw_data_eia860_generators
-    --WHERE report_date = '{report_date}' -- get latest
-    WHERE (unixepoch(current_planned_generator_operating_date) < unixepoch('{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
-    AND (unixepoch(generator_retirement_date) > unixepoch('{study_year}-12-31') or generator_retirement_date IS NULL)
-    AND balancing_authority_code_eia in (
-        SELECT baa
-        FROM raw_data_aux_baa_key
-        WHERE region = '{region}'
-    )
+    WHERE 1 = 1
+    {eia860_sql_filter_string}
     AND (plant_id_eia, generator_id) IN (
             SELECT DISTINCT plant_id_eia, generator_id
             FROM raw_data_eia860_generators
@@ -412,9 +356,8 @@ def get_project_capacity(
 
 def get_project_fixed_cost(
     conn,
-    report_date,
+    eia860_sql_filter_string,
     study_year,
-    region,
     csv_location,
     subscenario_id,
     subscenario_name,
@@ -435,14 +378,8 @@ def get_project_fixed_cost(
         NULL AS fuel_release_capacity_fixed_cost_per_fuelunitperhour_yr,
         NULL AS fuel_storage_capacity_fixed_cost_per_fuelunit_yr
     FROM raw_data_eia860_generators
-    --WHERE report_date = '{report_date}' -- get latest
-    WHERE (unixepoch(current_planned_generator_operating_date) < unixepoch('{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
-    AND (unixepoch(generator_retirement_date) > unixepoch('{study_year}-12-31') or generator_retirement_date IS NULL)
-    AND balancing_authority_code_eia in (
-        SELECT baa
-        FROM raw_data_aux_baa_key
-        WHERE region = '{region}'
-    )
+    WHERE 1 = 1
+    {eia860_sql_filter_string}
     AND (plant_id_eia, generator_id) NOT IN (
             SELECT DISTINCT plant_id_eia, generator_id
             FROM raw_data_eia860_generators
@@ -469,14 +406,8 @@ def get_project_fixed_cost(
         NULL AS fuel_release_fixed_cost_fuelunitperhour,
         NULL AS fuel_storage_fixed_cost_fuelunit
     FROM raw_data_eia860_generators
-    --WHERE report_date = '{report_date}' -- get latest
-    WHERE (unixepoch(current_planned_generator_operating_date) < unixepoch('{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
-    AND (unixepoch(generator_retirement_date) > unixepoch('{study_year}-12-31') or generator_retirement_date IS NULL)
-    AND balancing_authority_code_eia in (
-        SELECT baa
-        FROM raw_data_aux_baa_key
-        WHERE region = '{region}'
-    )
+    WHERE 1 = 1
+    {eia860_sql_filter_string}
     AND (plant_id_eia, generator_id) IN (
             SELECT DISTINCT plant_id_eia, generator_id
             FROM raw_data_eia860_generators
@@ -492,11 +423,10 @@ def get_project_fixed_cost(
     )
 
 
+# Fuels and heat rates for gen_commit_bin
 def get_project_fuels(
     conn,
-    report_date,
-    study_year,
-    region,
+    eia860_sql_filter_string,
     csv_location,
     subscenario_id,
     subscenario_name,
@@ -506,20 +436,19 @@ def get_project_fuels(
     sql = f"""
         SELECT plant_id_eia || '__' || REPLACE(REPLACE(generator_id, ' ', '_'), '-', 
             '_') AS project, 
-            fuel || '_' || fuel_region as fuel
+            gridpath_generic_fuel || '_' || fuel_region as fuel
         FROM raw_data_eia860_generators
-        JOIN raw_data_aux_eia_energy_source_key ON (energy_source_code_1 = code)
+        JOIN raw_data_aux_eia_gridpath_key ON
+            raw_data_eia860_generators.prime_mover_code = 
+            raw_data_aux_eia_gridpath_key.prime_mover_code
+            AND energy_source_code_1 = energy_source_code
         JOIN raw_data_aux_baa_key ON (balancing_authority_code_eia = baa)
-        WHERE (unixepoch(current_planned_generator_operating_date) >= unixepoch(
-        '{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
-        AND (unixepoch(generator_retirement_date) > unixepoch('{study_year}-12-31') or generator_retirement_date IS NULL)
-        AND balancing_authority_code_eia in (
-            SELECT baa
-            FROM raw_data_aux_baa_key
-            WHERE region = '{region}'
-        )
-        AND aeo_prices = 1
+        WHERE 1 = 1
+        {eia860_sql_filter_string}
+        AND gridpath_operational_type = 'gen_commit_bin'
         """
+
+    print(sql)
 
     c = conn.cursor()
     header = ["fuel", "min_fraction_in_fuel_blend", "max_fraction_in_fuel_blend"]
@@ -539,9 +468,7 @@ def get_project_fuels(
 
 def get_project_heat_rates(
     conn,
-    report_date,
-    study_year,
-    region,
+    eia860_sql_filter_string,
     csv_location,
     subscenario_id,
     subscenario_name,
@@ -551,19 +478,16 @@ def get_project_heat_rates(
     sql = f"""
         SELECT plant_id_eia || '__' || REPLACE(REPLACE(generator_id, ' ', '_'), '-', 
             '_') AS project, 
-            prime_mover_code, fuel, heat_rate_mmbtu_per_mwh, min_load_fraction
+            raw_data_eia860_generators.prime_mover_code, gridpath_generic_fuel, 
+            heat_rate_mmbtu_per_mwh, min_load_fraction
         FROM raw_data_eia860_generators
-        JOIN raw_data_aux_eia_energy_source_key ON (energy_source_code_1 = code)
-        JOIN raw_data_aux_full_load_heat_rates USING (prime_mover_code, fuel)
-        WHERE (unixepoch(current_planned_generator_operating_date) >= unixepoch(
-        '{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
-        AND (unixepoch(generator_retirement_date) > unixepoch('{study_year}-12-31') or generator_retirement_date IS NULL)
-        AND balancing_authority_code_eia in (
-            SELECT baa
-            FROM raw_data_aux_baa_key
-            WHERE region = '{region}'
-        )
-        AND aeo_prices = 1
+        JOIN raw_data_aux_eia_gridpath_key ON
+            raw_data_eia860_generators.prime_mover_code = 
+            raw_data_aux_eia_gridpath_key.prime_mover_code
+            AND energy_source_code_1 = energy_source_code
+        WHERE 1=1
+        {eia860_sql_filter_string}
+        AND gridpath_operational_type = 'gen_commit_bin'
         """
 
     c = conn.cursor()
@@ -607,27 +531,50 @@ def get_project_heat_rates(
 # TODO: refactor queries to ensure consistency for which projects are selected
 def get_project_opchar(
     conn,
+    eia860_sql_filter_string,
     report_date,
-    study_year,
-    region,
     csv_location,
     subscenario_id,
     subscenario_name,
 ):
+    # Wind, offshore wind, and PV are aggregated, so treated separately
     sql = f"""
      SELECT plant_id_eia || '__' || REPLACE(REPLACE(generator_id, ' ', '_'), '-', 
          '_') AS project,
          'test' as technology,
-         CASE WHEN prime_mover_code NOT IN ('BA', 'ES', 'FW', 'PS') 
-             THEN 'gen_simple'
-             ELSE 'stor'
+         CASE WHEN raw_data_eia860_generators.prime_mover_code NOT IN ('BA', 'ES', 'FW', 'PS') THEN
+            CASE WHEN energy_source_code_1 in (SELECT energy_source_code FROM
+            raw_data_aux_eia_gridpath_key WHERE aeo_prices = 1) THEN 
+            'gen_commit_lin'
+            ELSE 'gen_simple'
+            END
+         ELSE 'stor'
          END
              AS operational_type,
          'week' AS balancing_type_project,
          0 AS variable_om_cost_per_mwh,
-         NULL AS variable_om_cost_by_period_scenario_id,	
-         NULL AS project_fuel_scenario_id,
-         NULL AS heat_rate_curves_scenario_id,	
+         NULL AS variable_om_cost_by_period_scenario_id,
+         -- TODO: there's probably a better way to get the right projects here
+         -- TODO: this shouldn't be necessary anymore
+         CASE WHEN raw_data_eia860_generators.prime_mover_code NOT IN ('BA', 'ES', 'FW', 'PS') THEN
+            CASE WHEN energy_source_code_1 in (SELECT energy_source_code FROM
+            raw_data_aux_eia_gridpath_key WHERE aeo_prices = 1) 
+            AND 
+            raw_data_eia860_generators.prime_mover_code IN (SELECT DISTINCT prime_mover_code FROM 
+            raw_data_aux_eia_gridpath_key) THEN 1
+            ELSE NULL
+            END
+         END
+            AS project_fuel_scenario_id,
+         CASE WHEN raw_data_eia860_generators.prime_mover_code NOT IN ('BA', 'ES', 'FW', 'PS') THEN
+            CASE WHEN energy_source_code_1 in (SELECT energy_source_code FROM
+            raw_data_aux_eia_gridpath_key WHERE aeo_prices = 1) AND 
+            raw_data_eia860_generators.prime_mover_code IN (SELECT DISTINCT prime_mover_code FROM 
+            raw_data_aux_eia_gridpath_key) THEN 1
+            ELSE NULL
+            END
+         END
+            AS heat_rate_curves_scenario_id,	
          NULL AS variable_om_curves_scenario_id,
          NULL AS startup_chars_scenario_id,	
          NULL AS min_stable_level_fraction,
@@ -648,15 +595,15 @@ def get_project_opchar(
          NULL AS cycle_selection_scenario_id,
          NULL AS supplemental_firing_scenario_id,	
          NULL AS allow_startup_shutdown_power,
-         CASE WHEN prime_mover_code NOT IN ('BA', 'ES', 'FW', 'PS') 
+         CASE WHEN raw_data_eia860_generators.prime_mover_code NOT IN ('BA', 'ES', 'FW', 'PS') 
              THEN NULL
              ELSE 1
          END AS storage_efficiency,	
-         CASE WHEN prime_mover_code NOT IN ('BA', 'ES', 'FW', 'PS') 
+         CASE WHEN raw_data_eia860_generators.prime_mover_code NOT IN ('BA', 'ES', 'FW', 'PS') 
              THEN NULL
              ELSE 0.9
          END AS charging_efficiency,
-         CASE WHEN prime_mover_code NOT IN ('BA', 'ES', 'FW', 'PS') 
+         CASE WHEN raw_data_eia860_generators.prime_mover_code NOT IN ('BA', 'ES', 'FW', 'PS') 
              THEN NULL
              ELSE 0.9
          END AS discharging_efficiency,	
@@ -691,24 +638,23 @@ def get_project_opchar(
          NULL AS stor_exog_state_of_charge_scenario_id,
          NULL AS nonfuel_carbon_emissions_per_mwh
      FROM raw_data_eia860_generators
+     JOIN raw_data_aux_eia_gridpath_key ON
+            raw_data_eia860_generators.prime_mover_code = 
+            raw_data_aux_eia_gridpath_key.prime_mover_code
+            AND energy_source_code_1 = energy_source_code
      --WHERE report_date = '{report_date}' -- get latest
-     WHERE (unixepoch(current_planned_generator_operating_date) < unixepoch('{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
-     AND (unixepoch(generator_retirement_date) > unixepoch('{study_year}-12-31') or generator_retirement_date IS NULL)
-     AND balancing_authority_code_eia in (
-         SELECT baa
-         FROM raw_data_aux_baa_key
-         WHERE region = '{region}'
-     )
+     WHERE 1=1
+     {eia860_sql_filter_string}
      AND (plant_id_eia, generator_id) NOT IN (
              SELECT DISTINCT plant_id_eia, generator_id
              FROM raw_data_eia860_generators
-             WHERE prime_mover_code IN ('WT', 'WS', 'PV')
+             WHERE raw_data_eia860_generators.prime_mover_code IN ('WT', 'WS', 'PV')
          )
      UNION
      SELECT DISTINCT 
-         CASE WHEN prime_mover_code = 'WT' THEN 'Wind' 
+         CASE WHEN raw_data_eia860_generators.prime_mover_code = 'WT' THEN 'Wind' 
          ELSE 
-             CASE WHEN prime_mover_code = 'WS' THEN 'Wind_Offshore' 
+             CASE WHEN raw_data_eia860_generators.prime_mover_code = 'WS' THEN 'Wind_Offshore' 
              ELSE 'Solar'
              END
          END || '_' || balancing_authority_code_eia AS project,
@@ -773,14 +719,8 @@ def get_project_opchar(
          NULL AS stor_exog_state_of_charge_scenario_id,
          NULL AS nonfuel_carbon_emissions_per_mwh
      FROM raw_data_eia860_generators
-     --WHERE report_date = '{report_date}' -- get latest
-     WHERE (unixepoch(current_planned_generator_operating_date) < unixepoch('{study_year}-01-01') or current_planned_generator_operating_date IS NULL)
-     AND (unixepoch(generator_retirement_date) > unixepoch('{study_year}-12-31') or generator_retirement_date IS NULL)
-     AND balancing_authority_code_eia in (
-         SELECT baa
-         FROM raw_data_aux_baa_key
-         WHERE region = '{region}'
-     )
+     WHERE 1 = 1
+     {eia860_sql_filter_string}
      AND (plant_id_eia, generator_id) IN (
              SELECT DISTINCT plant_id_eia, generator_id
              FROM raw_data_eia860_generators
@@ -813,11 +753,19 @@ def main(args=None):
 
     conn = connect_to_database(db_path=parsed_args.database)
 
+    eia860_sql_filter_string = f"""
+    AND (unixepoch(current_planned_generator_operating_date) < unixepoch(
+     '{parsed_args.study_year}-01-01') or current_planned_generator_operating_date IS NULL)
+     AND (unixepoch(generator_retirement_date) > unixepoch('{parsed_args.study_year}-12-31') or generator_retirement_date IS NULL)
+     AND balancing_authority_code_eia in (
+         SELECT baa
+         FROM raw_data_aux_baa_key
+         WHERE region = '{parsed_args.region}'
+     )
+    """
     get_project_portfolio_for_region(
         conn=conn,
-        report_date=parsed_args.report_date,
-        study_year=parsed_args.study_year,
-        region=parsed_args.region,
+        eia860_sql_filter_string=eia860_sql_filter_string,
         csv_location=parsed_args.portfolio_csv_location,
         subscenario_id=parsed_args.project_portfolio_scenario_id,
         subscenario_name=parsed_args.project_portfolio_scenario_name,
@@ -825,9 +773,7 @@ def main(args=None):
 
     get_project_load_zones(
         conn=conn,
-        report_date=parsed_args.report_date,
-        study_year=parsed_args.study_year,
-        region=parsed_args.region,
+        eia860_sql_filter_string=eia860_sql_filter_string,
         csv_location=parsed_args.load_zone_csv_location,
         subscenario_id=parsed_args.project_load_zone_scenario_id,
         subscenario_name=parsed_args.project_load_zone_scenario_name,
@@ -835,9 +781,7 @@ def main(args=None):
 
     get_project_availability(
         conn=conn,
-        report_date=parsed_args.report_date,
-        study_year=parsed_args.study_year,
-        region=parsed_args.region,
+        eia860_sql_filter_string=eia860_sql_filter_string,
         csv_location=parsed_args.availability_csv_location,
         subscenario_id=parsed_args.project_availability_scenario_id,
         subscenario_name=parsed_args.project_availability_scenario_name,
@@ -845,9 +789,8 @@ def main(args=None):
 
     get_project_capacity(
         conn=conn,
-        report_date=parsed_args.report_date,
+        eia860_sql_filter_string=eia860_sql_filter_string,
         study_year=parsed_args.study_year,
-        region=parsed_args.region,
         csv_location=parsed_args.specified_capacity_csv_location,
         subscenario_id=parsed_args.project_specified_capacity_scenario_id,
         subscenario_name=parsed_args.project_specified_capacity_scenario_name,
@@ -855,9 +798,8 @@ def main(args=None):
 
     get_project_fixed_cost(
         conn=conn,
-        report_date=parsed_args.report_date,
+        eia860_sql_filter_string=eia860_sql_filter_string,
         study_year=parsed_args.study_year,
-        region=parsed_args.region,
         csv_location=parsed_args.fixed_cost_csv_location,
         subscenario_id=parsed_args.project_fixed_cost_scenario_id,
         subscenario_name=parsed_args.project_fixed_cost_scenario_name,
@@ -865,9 +807,7 @@ def main(args=None):
 
     get_project_fuels(
         conn=conn,
-        report_date=parsed_args.report_date,
-        study_year=parsed_args.study_year,
-        region=parsed_args.region,
+        eia860_sql_filter_string=eia860_sql_filter_string,
         csv_location=parsed_args.fuels_csv_location,
         subscenario_id=parsed_args.project_fuel_scenario_id,
         subscenario_name=parsed_args.project_fuel_scenario_name,
@@ -875,9 +815,7 @@ def main(args=None):
 
     get_project_heat_rates(
         conn=conn,
-        report_date=parsed_args.report_date,
-        study_year=parsed_args.study_year,
-        region=parsed_args.region,
+        eia860_sql_filter_string=eia860_sql_filter_string,
         csv_location=parsed_args.hr_csv_location,
         subscenario_id=parsed_args.project_hr_scenario_id,
         subscenario_name=parsed_args.project_hr_scenario_name,
@@ -885,9 +823,8 @@ def main(args=None):
 
     get_project_opchar(
         conn=conn,
+        eia860_sql_filter_string=eia860_sql_filter_string,
         report_date=parsed_args.report_date,
-        study_year=parsed_args.study_year,
-        region=parsed_args.region,
         csv_location=parsed_args.opchar_csv_location,
         subscenario_id=parsed_args.project_operational_chars_scenario_id,
         subscenario_name=parsed_args.project_operational_chars_scenario_name,
