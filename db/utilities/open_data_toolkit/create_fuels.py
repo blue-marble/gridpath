@@ -59,15 +59,16 @@ def get_fuel_prices(
     sql = f"""
     SELECT gridpath_generic_fuel || '_' || fuel_region as fuel, projection_year as period, 
     fuel_cost_real_per_mmbtu_eiaaeo as fuel_price_per_mmbtu
-    FROM (
-    SELECT * FROM raw_data_fuel_prices
-    join raw_data_aux_eia_gridpath_key on (fuel_type_eiaaeo = energy_source_label)
-    join raw_data_aux_eiaaeo_region_key using (electricity_market_module_region_eiaaeo)
-    )
+    FROM raw_data_fuel_prices
+    JOIN (SELECT DISTINCT gridpath_generic_fuel, fuel_type_eiaaeo FROM raw_data_aux_eia_gridpath_key) USING (fuel_type_eiaaeo)
+    JOIN raw_data_aux_eiaaeo_region_key using (
+    electricity_market_module_region_eiaaeo)
     WHERE report_year = {report_year}
     AND model_case_eiaaeo = '{model_case}'
     ORDER BY fuel, period
     """
+
+    print(sql)
 
     df = pd.read_sql(sql, conn)
     month_df_list = []

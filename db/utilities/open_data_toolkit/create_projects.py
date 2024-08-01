@@ -141,12 +141,13 @@ def get_project_portfolio_for_region(
     SELECT plant_id_eia || '__' || REPLACE(REPLACE(generator_id, ' ', '_'), '-', 
         '_') AS project, 
     NULL as specified, 
-    NULL as new_build, gridpath_capacity_type
+    NULL as new_build,
+    gridpath_capacity_type AS capacity_type
     FROM raw_data_eia860_generators
     JOIN raw_data_aux_eia_gridpath_key
     USING (prime_mover_code)
-    WHERE 1=1
-    {eia860_sql_filter_string}
+    WHERE 1 = 1
+    AND {eia860_sql_filter_string}
     AND (plant_id_eia, generator_id) NOT IN (
             SELECT DISTINCT plant_id_eia, generator_id
             FROM raw_data_eia860_generators
@@ -163,12 +164,12 @@ def get_project_portfolio_for_region(
         END || '_' || balancing_authority_code_eia AS project,
         NULL as specified,
         NULL as new_build,
-        gridpath_capacity_type
+        gridpath_capacity_type AS capacity_type
     FROM raw_data_eia860_generators
     JOIN raw_data_aux_eia_gridpath_key
     USING (prime_mover_code)
-    WHERE 1=1
-    {eia860_sql_filter_string}
+    WHERE 1 = 1
+    AND {eia860_sql_filter_string}
     AND (plant_id_eia, generator_id) IN (
             SELECT DISTINCT plant_id_eia, generator_id
             FROM raw_data_eia860_generators
@@ -194,8 +195,8 @@ def get_project_load_zones(
     SELECT plant_id_eia || '__' || REPLACE(REPLACE(generator_id, ' ', '_'), '-', 
         '_') AS project, balancing_authority_code_eia AS load_zone
     FROM raw_data_eia860_generators
-    WHERE 1=1
-    {eia860_sql_filter_string}
+    WHERE 1 = 1
+    AND {eia860_sql_filter_string}
     AND (plant_id_eia, generator_id) NOT IN (
             SELECT DISTINCT plant_id_eia, generator_id
             FROM raw_data_eia860_generators
@@ -211,8 +212,8 @@ def get_project_load_zones(
         END || '_' || balancing_authority_code_eia AS project,
         balancing_authority_code_eia AS load_zone
     FROM raw_data_eia860_generators
-    WHERE 1=1
-    {eia860_sql_filter_string}
+    WHERE 1 = 1
+    AND {eia860_sql_filter_string}
     AND (plant_id_eia, generator_id) IN (
             SELECT DISTINCT plant_id_eia, generator_id
             FROM raw_data_eia860_generators
@@ -242,8 +243,8 @@ def get_project_availability(
     NULL AS exogenous_availability_weather_scenario_id,
     NULL AS endogenous_availability_scenario_id
     FROM raw_data_eia860_generators
-    WHERE 1=1
-    {eia860_sql_filter_string}
+    WHERE 1 = 1
+    AND {eia860_sql_filter_string}
     AND (plant_id_eia, generator_id) NOT IN (
             SELECT DISTINCT plant_id_eia, generator_id
             FROM raw_data_eia860_generators
@@ -262,8 +263,8 @@ def get_project_availability(
     NULL AS exogenous_availability_weather_scenario_id,
     NULL AS endogenous_availability_scenario_id
     FROM raw_data_eia860_generators
-    WHERE 1=1
-    {eia860_sql_filter_string}
+    WHERE 1 = 1
+    AND {eia860_sql_filter_string}
     AND (plant_id_eia, generator_id) IN (
             SELECT DISTINCT plant_id_eia, generator_id
             FROM raw_data_eia860_generators
@@ -313,8 +314,8 @@ def get_project_capacity(
         NULL AS fuel_release_capacity_fuelunitperhour,
         NULL AS fuel_storage_capacity_fuelunit
     FROM raw_data_eia860_generators
-    WHERE 1=1
-    {eia860_sql_filter_string}
+    WHERE 1 = 1
+    AND {eia860_sql_filter_string}
     AND (plant_id_eia, generator_id) NOT IN (
             SELECT DISTINCT plant_id_eia, generator_id
             FROM raw_data_eia860_generators
@@ -338,7 +339,7 @@ def get_project_capacity(
         NULL AS fuel_storage_capacity_fuelunit
     FROM raw_data_eia860_generators
     WHERE 1 = 1
-    {eia860_sql_filter_string}
+    AND {eia860_sql_filter_string}
     AND (plant_id_eia, generator_id) IN (
             SELECT DISTINCT plant_id_eia, generator_id
             FROM raw_data_eia860_generators
@@ -379,7 +380,7 @@ def get_project_fixed_cost(
         NULL AS fuel_storage_capacity_fixed_cost_per_fuelunit_yr
     FROM raw_data_eia860_generators
     WHERE 1 = 1
-    {eia860_sql_filter_string}
+    AND {eia860_sql_filter_string}
     AND (plant_id_eia, generator_id) NOT IN (
             SELECT DISTINCT plant_id_eia, generator_id
             FROM raw_data_eia860_generators
@@ -407,7 +408,7 @@ def get_project_fixed_cost(
         NULL AS fuel_storage_fixed_cost_fuelunit
     FROM raw_data_eia860_generators
     WHERE 1 = 1
-    {eia860_sql_filter_string}
+    AND {eia860_sql_filter_string}
     AND (plant_id_eia, generator_id) IN (
             SELECT DISTINCT plant_id_eia, generator_id
             FROM raw_data_eia860_generators
@@ -427,12 +428,14 @@ def get_project_fixed_cost(
 def get_project_fuels(
     conn,
     eia860_sql_filter_string,
+    fuel_filter_str,
     csv_location,
     subscenario_id,
     subscenario_name,
 ):
 
     # Only coal, gas, and fuel oil for now (with aeo prices)
+    # TODO: temporarily assign all to CISO to CA_North in raw_data_aux_baa_key
     sql = f"""
         SELECT plant_id_eia || '__' || REPLACE(REPLACE(generator_id, ' ', '_'), '-', 
             '_') AS project, 
@@ -444,8 +447,8 @@ def get_project_fuels(
             AND energy_source_code_1 = energy_source_code
         JOIN raw_data_aux_baa_key ON (balancing_authority_code_eia = baa)
         WHERE 1 = 1
-        {eia860_sql_filter_string}
-        AND gridpath_operational_type = 'gen_commit_bin'
+        AND {eia860_sql_filter_string}
+        AND {fuel_filter_str}
         """
 
     print(sql)
@@ -469,6 +472,7 @@ def get_project_fuels(
 def get_project_heat_rates(
     conn,
     eia860_sql_filter_string,
+    heat_rate_filter_str,
     csv_location,
     subscenario_id,
     subscenario_name,
@@ -485,9 +489,9 @@ def get_project_heat_rates(
             raw_data_eia860_generators.prime_mover_code = 
             raw_data_aux_eia_gridpath_key.prime_mover_code
             AND energy_source_code_1 = energy_source_code
-        WHERE 1=1
-        {eia860_sql_filter_string}
-        AND gridpath_operational_type = 'gen_commit_bin'
+        WHERE 1 = 1
+        AND {eia860_sql_filter_string}
+        AND {heat_rate_filter_str}
         """
 
     c = conn.cursor()
@@ -532,200 +536,63 @@ def get_project_heat_rates(
 def get_project_opchar(
     conn,
     eia860_sql_filter_string,
-    report_date,
+    fuel_filter_str,
+    heat_rate_filter_str,
+    stor_filter_str,
+    var_gen_filter_str,
     csv_location,
     subscenario_id,
     subscenario_name,
 ):
-    # Wind, offshore wind, and PV are aggregated, so treated separately
+    # Wind, offshore wind, and PV are aggregated, so treated separately since
+    # they are aggregated, so here we make a UNION between tables filtering
+    # based on var_gen_filter_str
+
+    non_var_opchars_str = make_opchar_sql_str(
+        technology="'test'",
+        operational_type="gridpath_operational_type",
+        balancing_type_project="'week'",
+        variable_om_cost_per_mwh="0",
+        project_fuel_scenario_id=f"""CASE WHEN {fuel_filter_str} THEN 1 ELSE NULL END""",
+        heat_rate_curves_scenario_id=f"""CASE WHEN {heat_rate_filter_str} 
+        THEN 1 ELSE NULL END""",
+        min_stable_level_fraction=f"""CASE WHEN {heat_rate_filter_str} THEN min_load_fraction ELSE NULL END""",
+        storage_efficiency=f"""CASE WHEN {stor_filter_str} THEN 1 ELSE NULL END""",
+        charging_efficiency=f"""CASE WHEN {stor_filter_str} THEN 0.9 ELSE NULL END""",
+        discharging_efficiency=f"""CASE WHEN {stor_filter_str} THEN 0.9 ELSE NULL END""",
+    )
+
+    var_opchars_str = make_opchar_sql_str(
+        technology="'test'",
+        operational_type="gridpath_operational_type",
+        balancing_type_project="'week'",
+        variable_om_cost_per_mwh="0",
+        variable_generator_profile_scenario_id="1"
+    )
     sql = f"""
      SELECT plant_id_eia || '__' || REPLACE(REPLACE(generator_id, ' ', '_'), '-', 
          '_') AS project,
-         'test' as technology,
-         CASE WHEN raw_data_eia860_generators.prime_mover_code NOT IN ('BA', 'ES', 'FW', 'PS') THEN
-            CASE WHEN energy_source_code_1 in (SELECT energy_source_code FROM
-            raw_data_aux_eia_gridpath_key WHERE aeo_prices = 1) THEN 
-            'gen_commit_lin'
-            ELSE 'gen_simple'
-            END
-         ELSE 'stor'
-         END
-             AS operational_type,
-         'week' AS balancing_type_project,
-         0 AS variable_om_cost_per_mwh,
-         NULL AS variable_om_cost_by_period_scenario_id,
-         -- TODO: there's probably a better way to get the right projects here
-         -- TODO: this shouldn't be necessary anymore
-         CASE WHEN raw_data_eia860_generators.prime_mover_code NOT IN ('BA', 'ES', 'FW', 'PS') THEN
-            CASE WHEN energy_source_code_1 in (SELECT energy_source_code FROM
-            raw_data_aux_eia_gridpath_key WHERE aeo_prices = 1) 
-            AND 
-            raw_data_eia860_generators.prime_mover_code IN (SELECT DISTINCT prime_mover_code FROM 
-            raw_data_aux_eia_gridpath_key) THEN 1
-            ELSE NULL
-            END
-         END
-            AS project_fuel_scenario_id,
-         CASE WHEN raw_data_eia860_generators.prime_mover_code NOT IN ('BA', 'ES', 'FW', 'PS') THEN
-            CASE WHEN energy_source_code_1 in (SELECT energy_source_code FROM
-            raw_data_aux_eia_gridpath_key WHERE aeo_prices = 1) AND 
-            raw_data_eia860_generators.prime_mover_code IN (SELECT DISTINCT prime_mover_code FROM 
-            raw_data_aux_eia_gridpath_key) THEN 1
-            ELSE NULL
-            END
-         END
-            AS heat_rate_curves_scenario_id,	
-         NULL AS variable_om_curves_scenario_id,
-         NULL AS startup_chars_scenario_id,	
-         NULL AS min_stable_level_fraction,
-         NULL AS unit_size_mw,
-         NULL AS startup_cost_per_mw,	
-         NULL AS shutdown_cost_per_mw,
-         NULL AS startup_fuel_mmbtu_per_mw,	
-         NULL AS startup_plus_ramp_up_rate,
-         NULL AS shutdown_plus_ramp_down_rate,	
-         NULL AS ramp_up_when_on_rate,
-         NULL AS ramp_down_when_on_rate,	
-         NULL AS ramp_up_violation_penalty,
-         NULL AS ramp_down_violation_penalty,	
-         NULL AS min_up_time_hours,
-         NULL AS min_up_time_violation_penalty,	
-         NULL AS min_down_time_hours,
-         NULL AS min_down_time_violation_penalty,	
-         NULL AS cycle_selection_scenario_id,
-         NULL AS supplemental_firing_scenario_id,	
-         NULL AS allow_startup_shutdown_power,
-         CASE WHEN raw_data_eia860_generators.prime_mover_code NOT IN ('BA', 'ES', 'FW', 'PS') 
-             THEN NULL
-             ELSE 1
-         END AS storage_efficiency,	
-         CASE WHEN raw_data_eia860_generators.prime_mover_code NOT IN ('BA', 'ES', 'FW', 'PS') 
-             THEN NULL
-             ELSE 0.9
-         END AS charging_efficiency,
-         CASE WHEN raw_data_eia860_generators.prime_mover_code NOT IN ('BA', 'ES', 'FW', 'PS') 
-             THEN NULL
-             ELSE 0.9
-         END AS discharging_efficiency,	
-         NULL AS charging_capacity_multiplier,
-         NULL AS discharging_capacity_multiplier,	
-         NULL AS soc_penalty_cost_per_energyunit,
-         NULL AS soc_last_tmp_penalty_cost_per_energyunit,
-         NULL AS flex_load_static_profile_scenario_id,
-         NULL AS minimum_duration_hours,	
-         NULL AS maximum_duration_hours,
-         NULL AS aux_consumption_frac_capacity,	
-         NULL AS aux_consumption_frac_power,
-         NULL AS last_commitment_stage,	
-         NULL AS variable_generator_profile_scenario_id,
-         NULL AS curtailment_cost_per_pwh,	
-         NULL AS hydro_operational_chars_scenario_id,
-         NULL AS lf_reserves_up_derate,	
-         NULL AS lf_reserves_down_derate,
-         NULL AS regulation_up_derate,	
-         NULL AS regulation_down_derate,
-         NULL AS frequency_response_derate,	
-         NULL AS spinning_reserves_derate,
-         NULL AS lf_reserves_up_ramp_rate,	
-         NULL AS lf_reserves_down_ramp_rate,
-         NULL AS regulation_up_ramp_rate,
-         NULL AS regulation_down_ramp_rate,
-         NULL AS frequency_response_ramp_rate,
-         NULL AS spinning_reserves_ramp_rate,
-         NULL AS powerunithour_per_fuelunit,
-         NULL AS cap_factor_limits_scenario_id,
-         NULL AS partial_availability_threshold,
-         NULL AS stor_exog_state_of_charge_scenario_id,
-         NULL AS nonfuel_carbon_emissions_per_mwh
+         {non_var_opchars_str}
      FROM raw_data_eia860_generators
      JOIN raw_data_aux_eia_gridpath_key ON
             raw_data_eia860_generators.prime_mover_code = 
             raw_data_aux_eia_gridpath_key.prime_mover_code
             AND energy_source_code_1 = energy_source_code
-     --WHERE report_date = '{report_date}' -- get latest
-     WHERE 1=1
-     {eia860_sql_filter_string}
-     AND (plant_id_eia, generator_id) NOT IN (
-             SELECT DISTINCT plant_id_eia, generator_id
-             FROM raw_data_eia860_generators
-             WHERE raw_data_eia860_generators.prime_mover_code IN ('WT', 'WS', 'PV')
-         )
+     WHERE 1 = 1
+     AND {eia860_sql_filter_string}
+     AND NOT {var_gen_filter_str}
      UNION
      SELECT DISTINCT 
-         CASE WHEN raw_data_eia860_generators.prime_mover_code = 'WT' THEN 'Wind' 
-         ELSE 
-             CASE WHEN raw_data_eia860_generators.prime_mover_code = 'WS' THEN 'Wind_Offshore' 
-             ELSE 'Solar'
-             END
-         END || '_' || balancing_authority_code_eia AS project,
-         'test' as technology,
-         'gen_var_must_take' AS operational_type,
-         'week' AS balancing_type_project,
-         0 AS variable_om_cost_per_mwh,
-         NULL AS variable_om_cost_by_period_scenario_id,	
-         NULL AS project_fuel_scenario_id,
-         NULL AS heat_rate_curves_scenario_id,	
-         NULL AS variable_om_curves_scenario_id,
-         NULL AS startup_chars_scenario_id,	
-         NULL AS min_stable_level_fraction,
-         NULL AS unit_size_mw,
-         NULL AS startup_cost_per_mw,	
-         NULL AS shutdown_cost_per_mw,
-         NULL AS startup_fuel_mmbtu_per_mw,	
-         NULL AS startup_plus_ramp_up_rate,
-         NULL AS shutdown_plus_ramp_down_rate,	
-         NULL AS ramp_up_when_on_rate,
-         NULL AS ramp_down_when_on_rate,	
-         NULL AS ramp_up_violation_penalty,
-         NULL AS ramp_down_violation_penalty,	
-         NULL AS min_up_time_hours,
-         NULL AS min_up_time_violation_penalty,	
-         NULL AS min_down_time_hours,
-         NULL AS min_down_time_violation_penalty,	
-         NULL AS cycle_selection_scenario_id,
-         NULL AS supplemental_firing_scenario_id,	
-         NULL AS allow_startup_shutdown_power,
-         NULL AS storage_efficiency,	
-         NULL AS charging_efficiency,
-         NULL AS discharging_efficiency,	
-         NULL AS charging_capacity_multiplier,
-         NULL AS discharging_capacity_multiplier,	
-         NULL AS soc_penalty_cost_per_energyunit,
-         NULL AS soc_last_tmp_penalty_cost_per_energyunit,
-         NULL AS flex_load_static_profile_scenario_id,
-         NULL AS minimum_duration_hours,	
-         NULL AS maximum_duration_hours,
-         NULL AS aux_consumption_frac_capacity,	
-         NULL AS aux_consumption_frac_power,
-         NULL AS last_commitment_stage,	
-         1 AS variable_generator_profile_scenario_id,
-         NULL AS curtailment_cost_per_pwh,	
-         NULL AS hydro_operational_chars_scenario_id,
-         NULL AS lf_reserves_up_derate,	
-         NULL AS lf_reserves_down_derate,
-         NULL AS regulation_up_derate,	
-         NULL AS regulation_down_derate,
-         NULL AS frequency_response_derate,	
-         NULL AS spinning_reserves_derate,
-         NULL AS lf_reserves_up_ramp_rate,	
-         NULL AS lf_reserves_down_ramp_rate,
-         NULL AS regulation_up_ramp_rate,
-         NULL AS regulation_down_ramp_rate,
-         NULL AS frequency_response_ramp_rate,
-         NULL AS spinning_reserves_ramp_rate,
-         NULL AS powerunithour_per_fuelunit,
-         NULL AS cap_factor_limits_scenario_id,
-         NULL AS partial_availability_threshold,
-         NULL AS stor_exog_state_of_charge_scenario_id,
-         NULL AS nonfuel_carbon_emissions_per_mwh
+         agg_project || '_' || balancing_authority_code_eia AS project,
+         {var_opchars_str}
      FROM raw_data_eia860_generators
+     JOIN raw_data_aux_eia_gridpath_key ON
+            raw_data_eia860_generators.prime_mover_code = 
+            raw_data_aux_eia_gridpath_key.prime_mover_code
+            AND energy_source_code_1 = energy_source_code
      WHERE 1 = 1
-     {eia860_sql_filter_string}
-     AND (plant_id_eia, generator_id) IN (
-             SELECT DISTINCT plant_id_eia, generator_id
-             FROM raw_data_eia860_generators
-             WHERE prime_mover_code IN ('WT', 'WS', 'PV')
-         )
+     AND {eia860_sql_filter_string}
+     AND {var_gen_filter_str}
      GROUP BY project
      """
 
@@ -744,6 +611,136 @@ def get_project_opchar(
     )
 
 
+def make_opchar_sql_str(
+    technology="NULL",
+    operational_type="NULL",
+    balancing_type_project="NULL",
+    variable_om_cost_per_mwh="NULL",
+    variable_om_cost_by_period_scenario_id="NULL",
+    project_fuel_scenario_id="NULL",
+    heat_rate_curves_scenario_id="NULL",
+    variable_om_curves_scenario_id="NULL",
+    startup_chars_scenario_id="NULL",
+    min_stable_level_fraction="NULL",
+    unit_size_mw="NULL",
+    startup_cost_per_mw="NULL",
+    shutdown_cost_per_mw="NULL",
+    startup_fuel_mmbtu_per_mw="NULL",
+    startup_plus_ramp_up_rate="NULL",
+    shutdown_plus_ramp_down_rate="NULL",
+    ramp_up_when_on_rate="NULL",
+    ramp_down_when_on_rate="NULL",
+    ramp_up_violation_penalty="NULL",
+    ramp_down_violation_penalty="NULL",
+    min_up_time_hours="NULL",
+    min_up_time_violation_penalty="NULL",
+    min_down_time_hours="NULL",
+    min_down_time_violation_penalty="NULL",
+    cycle_selection_scenario_id="NULL",
+    supplemental_firing_scenario_id="NULL",
+    allow_startup_shutdown_power="NULL",
+    storage_efficiency="NULL",
+    charging_efficiency="NULL",
+    discharging_efficiency="NULL",
+    charging_capacity_multiplier="NULL",
+    discharging_capacity_multiplier="NULL",
+    soc_penalty_cost_per_energyunit="NULL",
+    soc_last_tmp_penalty_cost_per_energyunit="NULL",
+    flex_load_static_profile_scenario_id="NULL",
+    minimum_duration_hours="NULL",
+    maximum_duration_hours="NULL",
+    aux_consumption_frac_capacity="NULL",
+    aux_consumption_frac_power="NULL",
+    last_commitment_stage="NULL",
+    variable_generator_profile_scenario_id="NULL",
+    curtailment_cost_per_pwh="NULL",
+    hydro_operational_chars_scenario_id="NULL",
+    lf_reserves_up_derate="NULL",
+    lf_reserves_down_derate="NULL",
+    regulation_up_derate="NULL",
+    regulation_down_derate="NULL",
+    frequency_response_derate="NULL",
+    spinning_reserves_derate="NULL",
+    lf_reserves_up_ramp_rate="NULL",
+    lf_reserves_down_ramp_rate="NULL",
+    regulation_up_ramp_rate="NULL",
+    regulation_down_ramp_rate="NULL",
+    frequency_response_ramp_rate="NULL",
+    spinning_reserves_ramp_rate="NULL",
+    powerunithour_per_fuelunit="NULL",
+    cap_factor_limits_scenario_id="NULL",
+    partial_availability_threshold="NULL",
+    stor_exog_state_of_charge_scenario_id="NULL",
+    nonfuel_carbon_emissions_per_mwh="NULL",
+):
+    """ """
+
+    opchar_sql_str = f"""
+     {technology} AS technology,
+     {operational_type} AS operational_type,
+     {balancing_type_project} AS balancing_type_project,
+     {variable_om_cost_per_mwh} AS variable_om_cost_per_mwh,
+     {variable_om_cost_by_period_scenario_id} AS variable_om_cost_by_period_scenario_id,	
+     {project_fuel_scenario_id} AS project_fuel_scenario_id,
+     {heat_rate_curves_scenario_id} AS heat_rate_curves_scenario_id,	
+     {variable_om_curves_scenario_id} AS variable_om_curves_scenario_id,
+     {startup_chars_scenario_id} AS startup_chars_scenario_id,	
+     {min_stable_level_fraction} AS min_stable_level_fraction,
+     {unit_size_mw} AS unit_size_mw,
+     {startup_cost_per_mw} AS startup_cost_per_mw,	
+     {shutdown_cost_per_mw} AS shutdown_cost_per_mw,
+     {startup_fuel_mmbtu_per_mw} AS startup_fuel_mmbtu_per_mw,	
+     {startup_plus_ramp_up_rate} AS startup_plus_ramp_up_rate,
+     {shutdown_plus_ramp_down_rate} AS shutdown_plus_ramp_down_rate,	
+     {ramp_up_when_on_rate} AS ramp_up_when_on_rate,
+     {ramp_down_when_on_rate} AS ramp_down_when_on_rate,	
+     {ramp_up_violation_penalty} AS ramp_up_violation_penalty,
+     {ramp_down_violation_penalty} AS ramp_down_violation_penalty,	
+     {min_up_time_hours} AS min_up_time_hours,
+     {min_up_time_violation_penalty} AS min_up_time_violation_penalty,	
+     {min_down_time_hours} AS min_down_time_hours,
+     {min_down_time_violation_penalty} AS min_down_time_violation_penalty,	
+     {cycle_selection_scenario_id} AS cycle_selection_scenario_id,
+     {supplemental_firing_scenario_id} AS supplemental_firing_scenario_id,	
+     {allow_startup_shutdown_power} AS allow_startup_shutdown_power,
+     {storage_efficiency} AS storage_efficiency,	
+     {charging_efficiency} AS charging_efficiency,
+     {discharging_efficiency} AS discharging_efficiency,	
+     {charging_capacity_multiplier} AS charging_capacity_multiplier,
+     {discharging_capacity_multiplier} AS discharging_capacity_multiplier,	
+     {soc_penalty_cost_per_energyunit} AS soc_penalty_cost_per_energyunit,
+     {soc_last_tmp_penalty_cost_per_energyunit} AS soc_last_tmp_penalty_cost_per_energyunit,
+     {flex_load_static_profile_scenario_id} AS flex_load_static_profile_scenario_id,
+     {minimum_duration_hours} AS minimum_duration_hours,	
+     {maximum_duration_hours} AS maximum_duration_hours,
+     {aux_consumption_frac_capacity} AS aux_consumption_frac_capacity,	
+     {aux_consumption_frac_power} AS aux_consumption_frac_power,
+     {last_commitment_stage} AS last_commitment_stage,	
+     {variable_generator_profile_scenario_id} AS variable_generator_profile_scenario_id,
+     {curtailment_cost_per_pwh} AS curtailment_cost_per_pwh,	
+     {hydro_operational_chars_scenario_id} AS hydro_operational_chars_scenario_id,
+     {lf_reserves_up_derate} AS lf_reserves_up_derate,	
+     {lf_reserves_down_derate} AS lf_reserves_down_derate,
+     {regulation_up_derate} AS regulation_up_derate,	
+     {regulation_down_derate} AS regulation_down_derate,
+     {frequency_response_derate} AS frequency_response_derate,	
+     {spinning_reserves_derate} AS spinning_reserves_derate,
+     {lf_reserves_up_ramp_rate} AS lf_reserves_up_ramp_rate,	
+     {lf_reserves_down_ramp_rate} AS lf_reserves_down_ramp_rate,
+     {regulation_up_ramp_rate} AS regulation_up_ramp_rate,
+     {regulation_down_ramp_rate} AS regulation_down_ramp_rate,
+     {frequency_response_ramp_rate} AS frequency_response_ramp_rate,
+     {spinning_reserves_ramp_rate} AS spinning_reserves_ramp_rate,
+     {powerunithour_per_fuelunit} AS powerunithour_per_fuelunit,
+     {cap_factor_limits_scenario_id} AS cap_factor_limits_scenario_id,
+     {partial_availability_threshold} AS partial_availability_threshold,
+     {stor_exog_state_of_charge_scenario_id} AS stor_exog_state_of_charge_scenario_id,
+     {nonfuel_carbon_emissions_per_mwh} AS nonfuel_carbon_emissions_per_mwh
+    """
+
+    return opchar_sql_str
+
+
 def main(args=None):
     print("Creating projects")
     if args is None:
@@ -754,7 +751,7 @@ def main(args=None):
     conn = connect_to_database(db_path=parsed_args.database)
 
     eia860_sql_filter_string = f"""
-    AND (unixepoch(current_planned_generator_operating_date) < unixepoch(
+    (unixepoch(current_planned_generator_operating_date) < unixepoch(
      '{parsed_args.study_year}-01-01') or current_planned_generator_operating_date IS NULL)
      AND (unixepoch(generator_retirement_date) > unixepoch('{parsed_args.study_year}-12-31') or generator_retirement_date IS NULL)
      AND balancing_authority_code_eia in (
@@ -763,6 +760,13 @@ def main(args=None):
          WHERE region = '{parsed_args.region}'
      )
     """
+    fuel_filter_str = """gridpath_operational_type = 'gen_commit_bin'"""
+    heat_rate_filter_str = """gridpath_operational_type = 'gen_commit_bin'"""
+    stor_filter_str = """gridpath_operational_type = 'stor'"""
+    var_gen_filter_str = (
+        """gridpath_operational_type IN ('gen_var', 'gen_var_must_take')"""
+    )
+
     get_project_portfolio_for_region(
         conn=conn,
         eia860_sql_filter_string=eia860_sql_filter_string,
@@ -808,6 +812,7 @@ def main(args=None):
     get_project_fuels(
         conn=conn,
         eia860_sql_filter_string=eia860_sql_filter_string,
+        fuel_filter_str=fuel_filter_str,
         csv_location=parsed_args.fuels_csv_location,
         subscenario_id=parsed_args.project_fuel_scenario_id,
         subscenario_name=parsed_args.project_fuel_scenario_name,
@@ -816,6 +821,7 @@ def main(args=None):
     get_project_heat_rates(
         conn=conn,
         eia860_sql_filter_string=eia860_sql_filter_string,
+        heat_rate_filter_str=heat_rate_filter_str,
         csv_location=parsed_args.hr_csv_location,
         subscenario_id=parsed_args.project_hr_scenario_id,
         subscenario_name=parsed_args.project_hr_scenario_name,
@@ -824,7 +830,10 @@ def main(args=None):
     get_project_opchar(
         conn=conn,
         eia860_sql_filter_string=eia860_sql_filter_string,
-        report_date=parsed_args.report_date,
+        fuel_filter_str=fuel_filter_str,
+        heat_rate_filter_str=heat_rate_filter_str,
+        stor_filter_str=stor_filter_str,
+        var_gen_filter_str=var_gen_filter_str,
         csv_location=parsed_args.opchar_csv_location,
         subscenario_id=parsed_args.project_operational_chars_scenario_id,
         subscenario_name=parsed_args.project_operational_chars_scenario_name,
