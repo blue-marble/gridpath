@@ -9,3 +9,6 @@ import,filename,table
 1,eiaaeo_fuel_prices.csv,raw_data_fuel_prices
 1,eiaaeo_region_key.csv,raw_data_aux_eiaaeo_region_key
 1,aux_heat_rate_curve.csv,raw_data_aux_heat_rate_curve
+1,hydro.csv,raw_data_project_hydro_opchars_by_year_month
+1,hydro_years.csv,raw_data_hydro_years
+1,bt_horizons.csv,raw_data_balancing_type_horizons

@@ -41,6 +41,7 @@ from db.utilities.ra_toolkit.weather import (
     create_sync_load_input_csvs,
     create_sync_var_gen_input_csvs,
 )
+from db.utilities.ra_toolkit.hydro import create_hydro_iteration_inputs
 from db.utilities.open_data_toolkit import create_projects, create_fuels
 
 
@@ -69,6 +70,7 @@ def parse_arguments(args):
             "create_sync_load_input_csvs",
             "create_project_csvs",
             "create_sync_var_gen_input_csvs",
+            "create_hydro_iteration_inputs",
         ],
         help="Run only the specified step. All others will be skipped. If not "
         "specified, the entire Toolkit will be run.",
@@ -110,6 +112,7 @@ def main(args=None):
     skip_create_sync_load_input_csvs = True
     skip_create_project_input_csvs = True
     skip_create_sync_var_gen_input_csvs = True
+    skip_create_hydro_iteration_inputs = True
 
     if parsed_args.single_step_only == "create_database":
         skip_create_database = False
@@ -121,12 +124,15 @@ def main(args=None):
         skip_create_project_input_csvs = False
     elif parsed_args.single_step_only == "create_sync_var_gen_input_csvs":
         skip_create_sync_var_gen_input_csvs = False
+    elif parsed_args.single_step_only == "create_hydro_iteration_inputs":
+        skip_create_hydro_iteration_inputs = False
     else:
         skip_create_database = False
         skip_load_raw_data = False
         skip_create_sync_load_input_csvs = False
         skip_create_project_input_csvs = False
         skip_create_sync_var_gen_input_csvs = False
+        skip_create_hydro_iteration_inputs = False
 
     # ### Create the database ### #
     if not skip_create_database:
@@ -268,6 +274,48 @@ def main(args=None):
                 model_case,
                 "--report_year",
                 report_year,
+            ]
+        )
+
+    # ### Hydro ### #
+    if not skip_create_hydro_iteration_inputs:
+        hydro_operational_chars_scenario_id = get_setting(
+            settings_df,
+            "create_hydro_iteration_inputs",
+            "hydro_operational_chars_scenario_id",
+        )
+        hydro_operational_chars_scenario_name = get_setting(
+            settings_df,
+            "create_hydro_iteration_inputs",
+            "hydro_operational_chars_scenario_name",
+        )
+        output_directory = get_setting(
+            settings_df, "create_hydro_iteration_inputs", "output_directory"
+        )
+        hy_overwrite = get_setting(
+            settings_df, "create_hydro_iteration_inputs", "overwrite"
+        )
+
+        n_parallel_projects_hy = get_setting(
+            settings_df, "create_hydro_iteration_inputs", "n_parallel_projects"
+        )
+
+        create_hydro_iteration_inputs.main(
+            [
+                "--database",
+                db_path,
+                "--stage_id",
+                stage_id,
+                "--hydro_operational_chars_scenario_id",
+                hydro_operational_chars_scenario_id,
+                "--hydro_operational_chars_scenario_name",
+                hydro_operational_chars_scenario_name,
+                "--output_directory",
+                output_directory,
+                "--overwrite" if int(hy_overwrite) else "",
+                "--n_parallel_projects",
+                n_parallel_projects_hy,
+                "--quiet" if parsed_args.quiet else "",
             ]
         )
 

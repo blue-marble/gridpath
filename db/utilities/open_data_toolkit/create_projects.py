@@ -123,6 +123,8 @@ def parse_arguments(args):
 def get_project_portfolio_for_region(
     conn,
     eia860_sql_filter_string,
+    var_gen_filter_str,
+    hydro_filter_str,
     csv_location,
     subscenario_id,
     subscenario_name,
@@ -144,24 +146,18 @@ def get_project_portfolio_for_region(
     NULL as new_build,
     gridpath_capacity_type AS capacity_type
     FROM raw_data_eia860_generators
-    JOIN raw_data_aux_eia_gridpath_key
-    USING (prime_mover_code)
-    WHERE 1 = 1
-    AND {eia860_sql_filter_string}
-    AND (plant_id_eia, generator_id) NOT IN (
-            SELECT DISTINCT plant_id_eia, generator_id
-            FROM raw_data_eia860_generators
-            WHERE prime_mover_code IN ('WT', 'WS', 'PV')
-        )
+    JOIN raw_data_aux_eia_gridpath_key ON
+            raw_data_eia860_generators.prime_mover_code = 
+            raw_data_aux_eia_gridpath_key.prime_mover_code
+            AND energy_source_code_1 = energy_source_code
+     WHERE 1 = 1
+     AND {eia860_sql_filter_string}
+     AND NOT {var_gen_filter_str}
+     AND NOT {hydro_filter_str}
     UNION
-    -- Aggregated units
+    -- Aggregated units include wind, offshore wind, solar, and hydro
     SELECT DISTINCT 
-        CASE WHEN prime_mover_code = 'WT' THEN 'Wind' 
-        ELSE 
-            CASE WHEN prime_mover_code = 'WS' THEN 'Wind_Offshore' 
-            ELSE 'Solar'
-            END
-        END || '_' || balancing_authority_code_eia AS project,
+        agg_project || '_' || balancing_authority_code_eia AS project,
         NULL as specified,
         NULL as new_build,
         gridpath_capacity_type AS capacity_type
@@ -170,11 +166,8 @@ def get_project_portfolio_for_region(
     USING (prime_mover_code)
     WHERE 1 = 1
     AND {eia860_sql_filter_string}
-    AND (plant_id_eia, generator_id) IN (
-            SELECT DISTINCT plant_id_eia, generator_id
-            FROM raw_data_eia860_generators
-            WHERE prime_mover_code IN ('WT', 'WS', 'PV')
-    )
+    AND ({var_gen_filter_str} OR {hydro_filter_str})
+    ;
     """
 
     df = pd.read_sql(sql, conn)
@@ -187,6 +180,8 @@ def get_project_portfolio_for_region(
 def get_project_load_zones(
     conn,
     eia860_sql_filter_string,
+    var_gen_filter_str,
+    hydro_filter_str,
     csv_location,
     subscenario_id,
     subscenario_name,
@@ -195,30 +190,26 @@ def get_project_load_zones(
     SELECT plant_id_eia || '__' || REPLACE(REPLACE(generator_id, ' ', '_'), '-', 
         '_') AS project, balancing_authority_code_eia AS load_zone
     FROM raw_data_eia860_generators
+    JOIN raw_data_aux_eia_gridpath_key ON
+            raw_data_eia860_generators.prime_mover_code = 
+            raw_data_aux_eia_gridpath_key.prime_mover_code
+            AND energy_source_code_1 = energy_source_code
     WHERE 1 = 1
     AND {eia860_sql_filter_string}
-    AND (plant_id_eia, generator_id) NOT IN (
-            SELECT DISTINCT plant_id_eia, generator_id
-            FROM raw_data_eia860_generators
-            WHERE prime_mover_code IN ('WT', 'WS', 'PV')
-        )
+    AND NOT {var_gen_filter_str}
+    AND NOT {hydro_filter_str}
+    -- Aggregated units include wind, offshore wind, solar, and hydro
     UNION
     SELECT DISTINCT 
-        CASE WHEN prime_mover_code = 'WT' THEN 'Wind' 
-        ELSE 
-            CASE WHEN prime_mover_code = 'WS' THEN 'Wind_Offshore' 
-            ELSE 'Solar'
-            END
-        END || '_' || balancing_authority_code_eia AS project,
+        agg_project || '_' || balancing_authority_code_eia AS project,
         balancing_authority_code_eia AS load_zone
     FROM raw_data_eia860_generators
+    JOIN raw_data_aux_eia_gridpath_key
+    USING (prime_mover_code)
     WHERE 1 = 1
     AND {eia860_sql_filter_string}
-    AND (plant_id_eia, generator_id) IN (
-            SELECT DISTINCT plant_id_eia, generator_id
-            FROM raw_data_eia860_generators
-            WHERE prime_mover_code IN ('WT', 'WS', 'PV')
-        )
+    AND ({var_gen_filter_str} OR {hydro_filter_str})
+    ;
     """
 
     df = pd.read_sql(sql, conn)
@@ -231,6 +222,8 @@ def get_project_load_zones(
 def get_project_availability(
     conn,
     eia860_sql_filter_string,
+    var_gen_filter_str,
+    hydro_filter_str,
     csv_location,
     subscenario_id,
     subscenario_name,
@@ -243,33 +236,28 @@ def get_project_availability(
     NULL AS exogenous_availability_weather_scenario_id,
     NULL AS endogenous_availability_scenario_id
     FROM raw_data_eia860_generators
-    WHERE 1 = 1
-    AND {eia860_sql_filter_string}
-    AND (plant_id_eia, generator_id) NOT IN (
-            SELECT DISTINCT plant_id_eia, generator_id
-            FROM raw_data_eia860_generators
-            WHERE prime_mover_code IN ('WT', 'WS', 'PV')
-        )
+    JOIN raw_data_aux_eia_gridpath_key ON
+            raw_data_eia860_generators.prime_mover_code = 
+            raw_data_aux_eia_gridpath_key.prime_mover_code
+            AND energy_source_code_1 = energy_source_code
+     WHERE 1 = 1
+     AND {eia860_sql_filter_string}
+     AND NOT {var_gen_filter_str}
+     AND NOT {hydro_filter_str}
     UNION
+    -- Aggregated units include wind, offshore wind, solar, and hydro
     SELECT DISTINCT 
-        CASE WHEN prime_mover_code = 'WT' THEN 'Wind' 
-        ELSE 
-            CASE WHEN prime_mover_code = 'WS' THEN 'Wind_Offshore' 
-            ELSE 'Solar'
-            END
-        END || '_' || balancing_authority_code_eia AS project, 
+        agg_project || '_' || balancing_authority_code_eia AS project,
         'exogenous' AS availability_type,
     NULL AS exogenous_availability_independent_scenario_id,
     NULL AS exogenous_availability_weather_scenario_id,
     NULL AS endogenous_availability_scenario_id
     FROM raw_data_eia860_generators
+    JOIN raw_data_aux_eia_gridpath_key
+    USING (prime_mover_code)
     WHERE 1 = 1
     AND {eia860_sql_filter_string}
-    AND (plant_id_eia, generator_id) IN (
-            SELECT DISTINCT plant_id_eia, generator_id
-            FROM raw_data_eia860_generators
-            WHERE prime_mover_code IN ('WT', 'WS', 'PV')
-        )
+    AND ({var_gen_filter_str} OR {hydro_filter_str})
     """
 
     df = pd.read_sql(sql, conn)
@@ -284,6 +272,8 @@ def get_project_availability(
 def get_project_capacity(
     conn,
     eia860_sql_filter_string,
+    var_gen_filter_str,
+    hydro_filter_str,
     study_year,
     csv_location,
     subscenario_id,
@@ -297,13 +287,15 @@ def get_project_capacity(
         NULL AS hyb_gen_specified_capacity_mw,
         NULL AS hyb_stor_specified_capacity_mw,
         CASE 
-            WHEN prime_mover_code NOT IN ('BA', 'ES', 'FW', 'PS') THEN NULL
+            WHEN raw_data_eia860_generators.prime_mover_code NOT IN ('BA', 
+            'ES', 'FW', 'PS') THEN NULL
             ELSE 
                 CASE
                     WHEN energy_storage_capacity_mwh IS NULL
                     THEN 
                         CASE
-                            WHEN prime_mover_code = 'PS' THEN 12.0*capacity_mw
+                            WHEN raw_data_eia860_generators.prime_mover_code 
+                            = 'PS' THEN 12.0*capacity_mw
                             ELSE capacity_mw
                         END
                     ELSE energy_storage_capacity_mwh
@@ -314,21 +306,18 @@ def get_project_capacity(
         NULL AS fuel_release_capacity_fuelunitperhour,
         NULL AS fuel_storage_capacity_fuelunit
     FROM raw_data_eia860_generators
-    WHERE 1 = 1
-    AND {eia860_sql_filter_string}
-    AND (plant_id_eia, generator_id) NOT IN (
-            SELECT DISTINCT plant_id_eia, generator_id
-            FROM raw_data_eia860_generators
-            WHERE prime_mover_code IN ('WT', 'WS', 'PV')
-        )
+    JOIN raw_data_aux_eia_gridpath_key ON
+            raw_data_eia860_generators.prime_mover_code = 
+            raw_data_aux_eia_gridpath_key.prime_mover_code
+            AND energy_source_code_1 = energy_source_code
+     WHERE 1 = 1
+     AND {eia860_sql_filter_string}
+     AND NOT {var_gen_filter_str}
+     AND NOT {hydro_filter_str}
     UNION
+    -- Aggregated units include wind, offshore wind, solar, and hydro
     SELECT DISTINCT 
-        CASE WHEN prime_mover_code = 'WT' THEN 'Wind' 
-        ELSE 
-            CASE WHEN prime_mover_code = 'WS' THEN 'Wind_Offshore' 
-            ELSE 'Solar'
-            END
-        END || '_' || balancing_authority_code_eia AS project,
+        agg_project || '_' || balancing_authority_code_eia AS project,
         {study_year} as period,
         SUM(capacity_mw) AS specified_capacity_mw,
         NULL AS hyb_gen_specified_capacity_mw,
@@ -338,14 +327,13 @@ def get_project_capacity(
         NULL AS fuel_release_capacity_fuelunitperhour,
         NULL AS fuel_storage_capacity_fuelunit
     FROM raw_data_eia860_generators
+    JOIN raw_data_aux_eia_gridpath_key
+    USING (prime_mover_code)
     WHERE 1 = 1
     AND {eia860_sql_filter_string}
-    AND (plant_id_eia, generator_id) IN (
-            SELECT DISTINCT plant_id_eia, generator_id
-            FROM raw_data_eia860_generators
-            WHERE prime_mover_code IN ('WT', 'WS', 'PV')
-        )
+    AND ({var_gen_filter_str} OR {hydro_filter_str})
     GROUP BY project
+    ;
     """
 
     df = pd.read_sql(sql, conn)
@@ -358,6 +346,8 @@ def get_project_capacity(
 def get_project_fixed_cost(
     conn,
     eia860_sql_filter_string,
+    var_gen_filter_str,
+    hydro_filter_str,
     study_year,
     csv_location,
     subscenario_id,
@@ -370,7 +360,8 @@ def get_project_fixed_cost(
         0 AS fixed_cost_per_mw_yr,
         NULL AS hyb_gen_fixed_cost_per_mw_yr,
         NULL AS hyb_stor_fixed_cost_per_mw_yr,
-        CASE WHEN prime_mover_code NOT IN ('BA', 'ES', 'FW', 'PS') 
+        CASE WHEN raw_data_eia860_generators.prime_mover_code NOT IN ('BA', 
+        'ES', 'FW', 'PS') 
             THEN NULL
             ELSE 0
         END
@@ -379,21 +370,18 @@ def get_project_fixed_cost(
         NULL AS fuel_release_capacity_fixed_cost_per_fuelunitperhour_yr,
         NULL AS fuel_storage_capacity_fixed_cost_per_fuelunit_yr
     FROM raw_data_eia860_generators
-    WHERE 1 = 1
-    AND {eia860_sql_filter_string}
-    AND (plant_id_eia, generator_id) NOT IN (
-            SELECT DISTINCT plant_id_eia, generator_id
-            FROM raw_data_eia860_generators
-            WHERE prime_mover_code IN ('WT', 'WS', 'PV')
-        )
+   JOIN raw_data_aux_eia_gridpath_key ON
+            raw_data_eia860_generators.prime_mover_code = 
+            raw_data_aux_eia_gridpath_key.prime_mover_code
+            AND energy_source_code_1 = energy_source_code
+     WHERE 1 = 1
+     AND {eia860_sql_filter_string}
+     AND NOT {var_gen_filter_str}
+     AND NOT {hydro_filter_str}
     UNION
+    -- Aggregated units include wind, offshore wind, solar, and hydro
     SELECT DISTINCT 
-        CASE WHEN prime_mover_code = 'WT' THEN 'Wind' 
-        ELSE 
-            CASE WHEN prime_mover_code = 'WS' THEN 'Wind_Offshore' 
-            ELSE 'Solar'
-            END
-        END || '_' || balancing_authority_code_eia AS project, 
+        agg_project || '_' || balancing_authority_code_eia AS project,
         {study_year} as period,
         0 AS specified_fixed_cost_mw,
         NULL AS hyb_gen_specified_fixed_cost_mw,
@@ -407,13 +395,11 @@ def get_project_fixed_cost(
         NULL AS fuel_release_fixed_cost_fuelunitperhour,
         NULL AS fuel_storage_fixed_cost_fuelunit
     FROM raw_data_eia860_generators
+    JOIN raw_data_aux_eia_gridpath_key
+    USING (prime_mover_code)
     WHERE 1 = 1
     AND {eia860_sql_filter_string}
-    AND (plant_id_eia, generator_id) IN (
-            SELECT DISTINCT plant_id_eia, generator_id
-            FROM raw_data_eia860_generators
-            WHERE prime_mover_code IN ('WT', 'WS', 'PV')
-        )
+    AND ({var_gen_filter_str} OR {hydro_filter_str})
     ;
     """
 
@@ -424,7 +410,7 @@ def get_project_fixed_cost(
     )
 
 
-# Fuels and heat rates for gen_commit_bin
+# Fuels and heat rates for gen_commit_bin/lin
 def get_project_fuels(
     conn,
     eia860_sql_filter_string,
@@ -450,8 +436,6 @@ def get_project_fuels(
         AND {eia860_sql_filter_string}
         AND {fuel_filter_str}
         """
-
-    print(sql)
 
     c = conn.cursor()
     header = ["fuel", "min_fraction_in_fuel_blend", "max_fraction_in_fuel_blend"]
@@ -540,6 +524,7 @@ def get_project_opchar(
     heat_rate_filter_str,
     stor_filter_str,
     var_gen_filter_str,
+    hydro_filter_str,
     csv_location,
     subscenario_id,
     subscenario_name,
@@ -567,8 +552,17 @@ def get_project_opchar(
         operational_type="gridpath_operational_type",
         balancing_type_project="'week'",
         variable_om_cost_per_mwh="0",
-        variable_generator_profile_scenario_id="1"
+        variable_generator_profile_scenario_id="1",
     )
+
+    hydro_opchars_str = make_opchar_sql_str(
+        technology="'test'",
+        operational_type="gridpath_operational_type",
+        balancing_type_project="'week'",
+        variable_om_cost_per_mwh="0",
+        hydro_operational_chars_scenario_id="1",
+    )
+
     sql = f"""
      SELECT plant_id_eia || '__' || REPLACE(REPLACE(generator_id, ' ', '_'), '-', 
          '_') AS project,
@@ -581,6 +575,8 @@ def get_project_opchar(
      WHERE 1 = 1
      AND {eia860_sql_filter_string}
      AND NOT {var_gen_filter_str}
+     AND NOT {hydro_filter_str}
+     -- Variable gen
      UNION
      SELECT DISTINCT 
          agg_project || '_' || balancing_authority_code_eia AS project,
@@ -594,6 +590,21 @@ def get_project_opchar(
      AND {eia860_sql_filter_string}
      AND {var_gen_filter_str}
      GROUP BY project
+     -- Hydro
+     UNION
+     SELECT DISTINCT 
+         agg_project || '_' || balancing_authority_code_eia AS project,
+         {hydro_opchars_str}
+     FROM raw_data_eia860_generators
+     JOIN raw_data_aux_eia_gridpath_key ON
+            raw_data_eia860_generators.prime_mover_code = 
+            raw_data_aux_eia_gridpath_key.prime_mover_code
+            AND energy_source_code_1 = energy_source_code
+     WHERE 1 = 1
+     AND {eia860_sql_filter_string}
+     AND {hydro_filter_str}
+     GROUP BY project
+     ;
      """
 
     df = pd.read_sql(sql, conn)
@@ -760,16 +771,25 @@ def main(args=None):
          WHERE region = '{parsed_args.region}'
      )
     """
-    fuel_filter_str = """gridpath_operational_type = 'gen_commit_bin'"""
-    heat_rate_filter_str = """gridpath_operational_type = 'gen_commit_bin'"""
+    fuel_filter_str = (
+        """gridpath_operational_type IN ('gen_commit_bin', 'gen_commit_lin')"""
+    )
+    heat_rate_filter_str = (
+        """gridpath_operational_type IN ('gen_commit_bin', 'gen_commit_lin')"""
+    )
     stor_filter_str = """gridpath_operational_type = 'stor'"""
     var_gen_filter_str = (
         """gridpath_operational_type IN ('gen_var', 'gen_var_must_take')"""
+    )
+    hydro_filter_str = (
+        """gridpath_operational_type IN ('gen_hydro', 'gen_hydro_must_take')"""
     )
 
     get_project_portfolio_for_region(
         conn=conn,
         eia860_sql_filter_string=eia860_sql_filter_string,
+        var_gen_filter_str=var_gen_filter_str,
+        hydro_filter_str=hydro_filter_str,
         csv_location=parsed_args.portfolio_csv_location,
         subscenario_id=parsed_args.project_portfolio_scenario_id,
         subscenario_name=parsed_args.project_portfolio_scenario_name,
@@ -778,6 +798,8 @@ def main(args=None):
     get_project_load_zones(
         conn=conn,
         eia860_sql_filter_string=eia860_sql_filter_string,
+        var_gen_filter_str=var_gen_filter_str,
+        hydro_filter_str=hydro_filter_str,
         csv_location=parsed_args.load_zone_csv_location,
         subscenario_id=parsed_args.project_load_zone_scenario_id,
         subscenario_name=parsed_args.project_load_zone_scenario_name,
@@ -786,6 +808,8 @@ def main(args=None):
     get_project_availability(
         conn=conn,
         eia860_sql_filter_string=eia860_sql_filter_string,
+        var_gen_filter_str=var_gen_filter_str,
+        hydro_filter_str=hydro_filter_str,
         csv_location=parsed_args.availability_csv_location,
         subscenario_id=parsed_args.project_availability_scenario_id,
         subscenario_name=parsed_args.project_availability_scenario_name,
@@ -795,6 +819,8 @@ def main(args=None):
         conn=conn,
         eia860_sql_filter_string=eia860_sql_filter_string,
         study_year=parsed_args.study_year,
+        var_gen_filter_str=var_gen_filter_str,
+        hydro_filter_str=hydro_filter_str,
         csv_location=parsed_args.specified_capacity_csv_location,
         subscenario_id=parsed_args.project_specified_capacity_scenario_id,
         subscenario_name=parsed_args.project_specified_capacity_scenario_name,
@@ -803,6 +829,8 @@ def main(args=None):
     get_project_fixed_cost(
         conn=conn,
         eia860_sql_filter_string=eia860_sql_filter_string,
+        var_gen_filter_str=var_gen_filter_str,
+        hydro_filter_str=hydro_filter_str,
         study_year=parsed_args.study_year,
         csv_location=parsed_args.fixed_cost_csv_location,
         subscenario_id=parsed_args.project_fixed_cost_scenario_id,
@@ -834,6 +862,7 @@ def main(args=None):
         heat_rate_filter_str=heat_rate_filter_str,
         stor_filter_str=stor_filter_str,
         var_gen_filter_str=var_gen_filter_str,
+        hydro_filter_str=hydro_filter_str,
         csv_location=parsed_args.opchar_csv_location,
         subscenario_id=parsed_args.project_operational_chars_scenario_id,
         subscenario_name=parsed_args.project_operational_chars_scenario_name,
