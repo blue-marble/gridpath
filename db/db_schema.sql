@@ -4443,6 +4443,23 @@ CREATE TABLE raw_data_aux_heat_rate_curve
 );
 
 
+DROP TABLE IF EXISTS raw_data_aux_eia930_hourly_interchange;
+CREATE TABLE raw_data_aux_eia930_hourly_interchange
+(
+    datetime_utc                          DATETIME,
+    balancing_authority_code_eia          TEXT,
+    balancing_authority_code_adjacent_eia TEXT,
+    interchange_reported_mwh              FLOAT,
+    datetime_pst                          DATETIME,
+    year                                  INTEGER,
+    month                                 INTEGER,
+    day_of_month                          INTEGER,
+    hour_of_day                           INTEGER,
+    PRIMARY KEY (balancing_authority_code_eia,
+                 balancing_authority_code_adjacent_eia,
+                 datetime_pst)
+);
+
 
 --------------------------
 -- -- DATA INTEGRITY -- --

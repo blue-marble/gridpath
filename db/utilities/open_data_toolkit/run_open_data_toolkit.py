@@ -42,7 +42,8 @@ from db.utilities.ra_toolkit.weather import (
     create_sync_var_gen_input_csvs,
 )
 from db.utilities.ra_toolkit.hydro import create_hydro_iteration_inputs
-from db.utilities.open_data_toolkit import create_projects, create_fuels
+from db.utilities.open_data_toolkit import create_projects, create_fuels, \
+    create_transmission
 
 
 def parse_arguments(args):
@@ -71,6 +72,7 @@ def parse_arguments(args):
             "create_project_csvs",
             "create_sync_var_gen_input_csvs",
             "create_hydro_iteration_inputs",
+            "create_transmission_csvs",
         ],
         help="Run only the specified step. All others will be skipped. If not "
         "specified, the entire Toolkit will be run.",
@@ -113,6 +115,7 @@ def main(args=None):
     skip_create_project_input_csvs = True
     skip_create_sync_var_gen_input_csvs = True
     skip_create_hydro_iteration_inputs = True
+    skip_create_transmission_input_csvs = True
 
     if parsed_args.single_step_only == "create_database":
         skip_create_database = False
@@ -126,6 +129,8 @@ def main(args=None):
         skip_create_sync_var_gen_input_csvs = False
     elif parsed_args.single_step_only == "create_hydro_iteration_inputs":
         skip_create_hydro_iteration_inputs = False
+    elif parsed_args.single_step_only == "create_transmission_input_csvs":
+        skip_create_transmission_input_csvs = False
     else:
         skip_create_database = False
         skip_load_raw_data = False
@@ -133,6 +138,7 @@ def main(args=None):
         skip_create_project_input_csvs = False
         skip_create_sync_var_gen_input_csvs = False
         skip_create_hydro_iteration_inputs = False
+        skip_create_transmission_input_csvs = False
 
     # ### Create the database ### #
     if not skip_create_database:
@@ -318,6 +324,11 @@ def main(args=None):
                 "--quiet" if parsed_args.quiet else "",
             ]
         )
+
+    # Transmission inputs
+    if not skip_create_transmission_input_csvs:
+        # TODO: add settings
+        create_transmission.main(args=None)
 
 
 if __name__ == "__main__":

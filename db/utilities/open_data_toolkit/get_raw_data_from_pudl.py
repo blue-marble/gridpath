@@ -222,6 +222,14 @@ def get_ra_toolkit_cap_factor_data_from_pudl_nightly():
     return data
 
 
+def get_eia930_hourly_interchange_from_pudl(zenodo_record):
+    url = f"https://zenodo.org/records/{zenodo_record}/files" \
+    f"/core_eia930__hourly_interchange.parquet?download=1"
+
+    data = requests.get(url, stream=True).content
+
+    return data
+
 def main(args=None):
     if args is None:
         args = sys.argv[1:]
@@ -258,6 +266,16 @@ def main(args=None):
         os.path.join(parsed_args.raw_data_directory, "eiaaeo_fuel_prices.csv"),
         index=False,
     )
+
+    # Hourly interchange from EIA930
+    # TODO: make Zenodo record consistent
+    interchange = get_eia930_hourly_interchange_from_pudl(zenodo_record=11292273)
+    with open(
+            os.path.join(parsed_args.raw_data_directory,
+                         "core_eia930__hourly_interchange.parquet"),
+            "wb",
+    ) as f:
+        f.write(interchange)
 
 
 if __name__ == "__main__":
