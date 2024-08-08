@@ -30,7 +30,7 @@ You can find sample settings in the
 ## 5. Run RA toolkit
 
 From the base directory run:
-gridpath_run_ra_toolkit
+gridpath_run_data_toolkit
 
 ## 6. Load the CSVs into the database
 gridpath_load_csvs --database ./ra_toolkit.db --csv_location ./ra_toolkit_csvs
@@ -51,11 +51,11 @@ it, continue reading below.
 
 ### Create the Database
 
-Run the *gridpath_run_ra_toolkit -step create_database* to create an empty GridPath database.
+Run the *gridpath_run_data_toolkit -step create_database* to create an empty GridPath database.
 
 ### Load Raw Data
 
-Use the *gridpath_run_ra_toolkit -step load_raw_data* to load raw 
+Use the *gridpath_run_data_toolkit -step load_raw_data* to load raw 
 data inputs including:
    * Weather: load, wind, and solar profiles, and thermal derates
    * Weather: day bins for the historical record
@@ -67,27 +67,27 @@ data inputs including:
 #### Sync Mode
 
 Create the GridPath CSVs for load and variable generator profiles with
-*gridpath_run_ra_toolkit -step create_sync_load_input_csvs* and *gridpath_run_ra_toolkit -step create_sync_var_gen_input_csvs*.
+*gridpath_run_data_toolkit -step create_sync_load_input_csvs* and *gridpath_run_data_toolkit -step create_sync_var_gen_input_csvs*.
 
 #### Monte Carlo Mode
 
-1. Run *gridpath_run_ra_toolkit -step create_monte_carlo_draws* to create the weather draws and to create the synthetic weather iteration data for those draws. 
+1. Run *gridpath_run_data_toolkit -step create_monte_carlo_draws* to create the weather draws and to create the synthetic weather iteration data for those draws. 
 2. Create input CSVs for GridPath for load and variable gen. Use 
-*gridpath_run_ra_toolkit -step create_monte_carlo_load_input_csvs* and 
-   *gridpath_run_ra_toolkit -step create_monte_carlo_var_gen_input_csvs*.
+*gridpath_run_data_toolkit -step create_monte_carlo_load_input_csvs* and 
+   *gridpath_run_data_toolkit -step create_monte_carlo_var_gen_input_csvs*.
 
 
 ### Hydro Iterations
-Run *gridpath_run_ra_toolkit -step create_hydro_iteration_inputs* to create hydro iteration inputs from year-month inputs.
+Run *gridpath_run_data_toolkit -step create_hydro_iteration_inputs* to create hydro iteration inputs from year-month inputs.
 
 ### Availability Iterations
 
-Run *gridpath_run_ra_toolkit -step create_availability_iteration_inputs* to create 
+Run *gridpath_run_data_toolkit -step create_availability_iteration_inputs* to create 
 weather-independent availability inputs from outage probability inputs. Use 
-*gridpath_run_ra_toolkit -step 
-create_monte_carlo_gen_weather_derate_input_csvs* and *gridpath_run_ra_toolkit -step create_sync_gen_weather_derate_input_csvs* to create weather-dependent 
+*gridpath_run_data_toolkit -step 
+create_monte_carlo_gen_weather_derate_input_csvs* and *gridpath_run_data_toolkit -step create_sync_gen_weather_derate_input_csvs* to create weather-dependent 
 derates.
 
 ### Temporal Scenarios
 
-Run *gridpath_run_ra_toolkit -step create_temporal_scenarios* to create GridPath temporal scenario IDs using the RA Toolkit data.
+Run *gridpath_run_data_toolkit -step create_temporal_scenarios* to create GridPath temporal scenario IDs using the RA Toolkit data.

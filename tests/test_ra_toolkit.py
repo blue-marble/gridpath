@@ -16,7 +16,7 @@ import os
 import pandas as pd
 import unittest
 
-from db.utilities.ra_toolkit import run_ra_toolkit
+from db.utilities.gridpath_data_toolkit import run_data_toolkit
 
 SETTINGS_CSV = "../tests/test_data/ra_toolkit_settings.csv"
 SETTINGS_STEPS_CSV = "../tests/test_data/ra_toolkit_settings_steps.csv"
@@ -56,7 +56,7 @@ class TestRAToolkit(unittest.TestCase):
             "create_monte_carlo_gen_weather_derate_input_csvs",
             "create_temporal_scenarios",
         ]:
-            run_ra_toolkit.main(
+            run_data_toolkit.main(
                 [
                     "--settings_csv",
                     SETTINGS_STEPS_CSV,
@@ -68,7 +68,7 @@ class TestRAToolkit(unittest.TestCase):
 
     def test_ra_toolkit(self):
         os.chdir(os.path.join(os.path.dirname(__file__), "..", "db"))
-        run_ra_toolkit.main(["--settings_csv", SETTINGS_CSV, "--quiet"])
+        run_data_toolkit.main(["--settings_csv", SETTINGS_CSV, "--quiet"])
 
     @classmethod
     def tearDownClass(cls):
@@ -87,14 +87,14 @@ def get_temp_db_paths():
     settings_df.set_index(["script", "setting"])
     settings_db_path = os.path.join(
         os.getcwd(),
-        run_ra_toolkit.get_setting(settings_df, "multi", "database"),
+        run_data_toolkit.get_setting(settings_df, "multi", "database"),
     )
 
     settings_steps_df = pd.read_csv(SETTINGS_STEPS_CSV)
     settings_steps_df.set_index(["script", "setting"])
     settings_steps_db_path = os.path.join(
         os.getcwd(),
-        run_ra_toolkit.get_setting(settings_steps_df, "multi", "database"),
+        run_data_toolkit.get_setting(settings_steps_df, "multi", "database"),
     )
 
     temp_db_paths = [

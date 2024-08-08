@@ -18,12 +18,12 @@ from multiprocessing import get_context
 import sys
 
 from db.common_functions import connect_to_database
-from db.utilities.ra_toolkit.weather.create_sync_gen_input_csvs_common import (
+from db.utilities.gridpath_data_toolkit.weather.create_sync_gen_input_csvs_common import (
     create_profile_csvs,
 )
 
-VAR_ID_DEFAULT = 1
-VAR_NAME_DEFAULT = "ra_toolkit"
+WEATHER_AV_ID_DEFAULT = 1
+WEATHER_AV_NAME_DEFAULT = "ra_toolkit"
 STAGE_ID_DEFAULT = 1
 
 
@@ -41,15 +41,15 @@ def parse_arguments(args):
     parser.add_argument("-out_dir", "--output_directory")
     parser.add_argument(
         "-id",
-        "--variable_generator_profile_scenario_id",
-        default=VAR_ID_DEFAULT,
-        help=f"Defaults to {VAR_ID_DEFAULT}.",
+        "--exogenous_availability_weather_scenario_id",
+        default=WEATHER_AV_ID_DEFAULT,
+        help=f"Defaults to {WEATHER_AV_ID_DEFAULT}.",
     )
     parser.add_argument(
         "-name",
-        "--variable_generator_profile_scenario_name",
-        default=VAR_NAME_DEFAULT,
-        help=f"Defaults to '{VAR_NAME_DEFAULT}'.",
+        "--exogenous_availability_weather_scenario_name",
+        default=WEATHER_AV_NAME_DEFAULT,
+        help=f"Defaults to '{WEATHER_AV_NAME_DEFAULT}'.",
     )
 
     parser.add_argument(
@@ -81,12 +81,12 @@ def parse_arguments(args):
     return parsed_arguments
 
 
-def create_variable_profile_csvs_pool(pool_datum):
+def create_weather_availability_profile_csvs_pool(pool_datum):
     [
         db_path,
         project,
-        variable_generator_profile_scenario_id,
-        variable_generator_profile_scenario_name,
+        exogenous_availability_weather_scenario_id,
+        exogenous_availability_weather_scenario_name,
         stage_id,
         output_directory,
         overwrite,
@@ -95,14 +95,14 @@ def create_variable_profile_csvs_pool(pool_datum):
     create_profile_csvs(
         db_path=db_path,
         project=project,
-        profile_scenario_id=variable_generator_profile_scenario_id,
-        profile_scenario_name=variable_generator_profile_scenario_name,
+        profile_scenario_id=exogenous_availability_weather_scenario_id,
+        profile_scenario_name=exogenous_availability_weather_scenario_name,
         stage_id=stage_id,
         output_directory=output_directory,
         overwrite=overwrite,
-        param_name="cap_factor",
-        raw_data_table_name="raw_data_project_variable_profiles",
-        raw_data_units_table_name="raw_data_var_project_units",
+        param_name="availability_derate_weather",
+        raw_data_table_name="raw_data_unit_availability_weather_derates",
+        raw_data_units_table_name="raw_data_unit_availability_params",
     )
 
 
@@ -111,9 +111,8 @@ def main(args=None):
         args = sys.argv[1:]
 
     parsed_args = parse_arguments(args=args)
-
     if not parsed_args.quiet:
-        print("Creating sync variable gen CSVs...")
+        print("Creating sync gen weather-dependent derates CSVs...")
 
     conn = connect_to_database(db_path=parsed_args.database)
 
@@ -121,7 +120,7 @@ def main(args=None):
     projects = [
         prj[0]
         for prj in c.execute(
-            "SELECT DISTINCT project FROM raw_data_var_project_units;"
+            "SELECT DISTINCT project FROM raw_data_unit_availability_params;"
         ).fetchall()
     ]
 
@@ -130,8 +129,8 @@ def main(args=None):
             [
                 parsed_args.database,
                 prj,
-                parsed_args.variable_generator_profile_scenario_id,
-                parsed_args.variable_generator_profile_scenario_name,
+                parsed_args.exogenous_availability_weather_scenario_id,
+                parsed_args.exogenous_availability_weather_scenario_name,
                 parsed_args.stage_id,
                 parsed_args.output_directory,
                 parsed_args.overwrite,
@@ -143,7 +142,7 @@ def main(args=None):
     # Pool must use spawn to work properly on Linux
     pool = get_context("spawn").Pool(int(parsed_args.n_parallel_projects))
 
-    pool.map(create_variable_profile_csvs_pool, pool_data)
+    pool.map(create_weather_availability_profile_csvs_pool, pool_data)
     pool.close()
 
 

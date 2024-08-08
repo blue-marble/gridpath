@@ -84,7 +84,8 @@ setup(
             "gridpath_create_database = db.create_database:main",
             "gridpath_load_csvs = db.utilities.port_csvs_to_db:main",
             "gridpath_load_scenarios = db.utilities.scenario:main",
-            "gridpath_run_ra_toolkit = db.utilities.ra_toolkit.run_ra_toolkit:main",
+            "gridpath_run_data_toolkit = "
+            "db.utilities.gridpath_data_toolkit.run_data_toolkit:main",
         ]
     },
 )

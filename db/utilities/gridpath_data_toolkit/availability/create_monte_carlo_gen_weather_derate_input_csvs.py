@@ -12,23 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from argparse import ArgumentParser
-from multiprocessing import get_context
-import os.path
-import pandas as pd
 import sys
 
-from db.common_functions import connect_to_database
-from db.utilities.ra_toolkit.weather.create_sync_gen_input_csvs_common import (
-    create_profile_csvs,
+from db.utilities.gridpath_data_toolkit.weather.create_monte_carlo_gen_input_csvs_common import (
+    create_variable_profile_csvs,
 )
 
+BINS_ID_DEFAULT = 1
+DRAWS_ID_DEFAULT = 1
 WEATHER_AV_ID_DEFAULT = 1
 WEATHER_AV_NAME_DEFAULT = "ra_toolkit"
 STAGE_ID_DEFAULT = 1
 
 
+# TODO: make sure hybrids are properly incorporated
 def parse_arguments(args):
     """
     :param args: the script arguments specified by the user
@@ -40,6 +38,20 @@ def parse_arguments(args):
     parser = ArgumentParser(add_help=True)
 
     parser.add_argument("-db", "--database")
+
+    parser.add_argument(
+        "-bins_id",
+        "--weather_bins_id",
+        default=BINS_ID_DEFAULT,
+        help=f"Defaults to {BINS_ID_DEFAULT}.",
+    )
+    parser.add_argument(
+        "-draws_id",
+        "--weather_draws_id",
+        default=DRAWS_ID_DEFAULT,
+        help=f"Defaults to {DRAWS_ID_DEFAULT}.",
+    )
+
     parser.add_argument("-out_dir", "--output_directory")
     parser.add_argument(
         "-id",
@@ -66,7 +78,7 @@ def parse_arguments(args):
         "--overwrite",
         default=False,
         action="store_true",
-        help="Overwrite existing CSV files.",
+        help="Overwrite existing CSV files. Defaults to False.",
     )
 
     parser.add_argument(
@@ -83,69 +95,28 @@ def parse_arguments(args):
     return parsed_arguments
 
 
-def create_weather_availability_profile_csvs_pool(pool_datum):
-    [
-        db_path,
-        project,
-        exogenous_availability_weather_scenario_id,
-        exogenous_availability_weather_scenario_name,
-        stage_id,
-        output_directory,
-        overwrite,
-    ] = pool_datum
-
-    create_profile_csvs(
-        db_path=db_path,
-        project=project,
-        profile_scenario_id=exogenous_availability_weather_scenario_id,
-        profile_scenario_name=exogenous_availability_weather_scenario_name,
-        stage_id=stage_id,
-        output_directory=output_directory,
-        overwrite=overwrite,
-        param_name="availability_derate_weather",
-        raw_data_table_name="raw_data_unit_availability_weather_derates",
-        raw_data_units_table_name="raw_data_unit_availability_params",
-    )
-
-
 def main(args=None):
     if args is None:
         args = sys.argv[1:]
-
     parsed_args = parse_arguments(args=args)
+
     if not parsed_args.quiet:
-        print("Creating sync gen weather-dependent derates CSVs...")
+        print("Creating Monte Carlo gen weather-dependent derates CSVs...")
 
-    conn = connect_to_database(db_path=parsed_args.database)
-
-    c = conn.cursor()
-    projects = [
-        prj[0]
-        for prj in c.execute(
-            "SELECT DISTINCT project FROM raw_data_unit_availability_params;"
-        ).fetchall()
-    ]
-
-    pool_data = tuple(
-        [
-            [
-                parsed_args.database,
-                prj,
-                parsed_args.exogenous_availability_weather_scenario_id,
-                parsed_args.exogenous_availability_weather_scenario_name,
-                parsed_args.stage_id,
-                parsed_args.output_directory,
-                parsed_args.overwrite,
-            ]
-            for prj in projects
-        ]
+    create_variable_profile_csvs(
+        db_path=parsed_args.database,
+        weather_bins_id=parsed_args.weather_bins_id,
+        weather_draws_id=parsed_args.weather_draws_id,
+        output_directory=parsed_args.output_directory,
+        profile_scenario_id=parsed_args.exogenous_availability_weather_scenario_id,
+        profile_scenario_name=parsed_args.exogenous_availability_weather_scenario_name,
+        stage_id=parsed_args.stage_id,
+        overwrite=parsed_args.overwrite,
+        n_parallel_projects=parsed_args.n_parallel_projects,
+        units_table="raw_data_unit_availability_params",
+        param_name="availability_derate_weather",
+        raw_data_table="raw_data_unit_availability_weather_derates",
     )
-
-    # Pool must use spawn to work properly on Linux
-    pool = get_context("spawn").Pool(int(parsed_args.n_parallel_projects))
-
-    pool.map(create_weather_availability_profile_csvs_pool, pool_data)
-    pool.close()
 
 
 if __name__ == "__main__":

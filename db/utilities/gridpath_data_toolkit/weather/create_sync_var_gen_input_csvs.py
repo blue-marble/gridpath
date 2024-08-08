@@ -12,21 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 from argparse import ArgumentParser
+from multiprocessing import get_context
 import sys
 
-from db.utilities.ra_toolkit.weather.create_monte_carlo_gen_input_csvs_common import (
-    create_variable_profile_csvs,
+from db.common_functions import connect_to_database
+from db.utilities.gridpath_data_toolkit.weather.create_sync_gen_input_csvs_common import (
+    create_profile_csvs,
 )
 
-BINS_ID_DEFAULT = 1
-DRAWS_ID_DEFAULT = 1
 VAR_ID_DEFAULT = 1
 VAR_NAME_DEFAULT = "ra_toolkit"
 STAGE_ID_DEFAULT = 1
 
 
-# TODO: make sure hybrids are properly incorporated
 def parse_arguments(args):
     """
     :param args: the script arguments specified by the user
@@ -38,20 +38,6 @@ def parse_arguments(args):
     parser = ArgumentParser(add_help=True)
 
     parser.add_argument("-db", "--database")
-
-    parser.add_argument(
-        "-bins_id",
-        "--weather_bins_id",
-        default=BINS_ID_DEFAULT,
-        help=f"Defaults to {BINS_ID_DEFAULT}.",
-    )
-    parser.add_argument(
-        "-draws_id",
-        "--weather_draws_id",
-        default=DRAWS_ID_DEFAULT,
-        help=f"Defaults to {DRAWS_ID_DEFAULT}.",
-    )
-
     parser.add_argument("-out_dir", "--output_directory")
     parser.add_argument(
         "-id",
@@ -78,7 +64,7 @@ def parse_arguments(args):
         "--overwrite",
         default=False,
         action="store_true",
-        help="Overwrite existing CSV files. Defaults to False.",
+        help="Overwrite existing CSV files.",
     )
 
     parser.add_argument(
@@ -95,28 +81,70 @@ def parse_arguments(args):
     return parsed_arguments
 
 
+def create_variable_profile_csvs_pool(pool_datum):
+    [
+        db_path,
+        project,
+        variable_generator_profile_scenario_id,
+        variable_generator_profile_scenario_name,
+        stage_id,
+        output_directory,
+        overwrite,
+    ] = pool_datum
+
+    create_profile_csvs(
+        db_path=db_path,
+        project=project,
+        profile_scenario_id=variable_generator_profile_scenario_id,
+        profile_scenario_name=variable_generator_profile_scenario_name,
+        stage_id=stage_id,
+        output_directory=output_directory,
+        overwrite=overwrite,
+        param_name="cap_factor",
+        raw_data_table_name="raw_data_project_variable_profiles",
+        raw_data_units_table_name="raw_data_var_project_units",
+    )
+
+
 def main(args=None):
     if args is None:
         args = sys.argv[1:]
+
     parsed_args = parse_arguments(args=args)
 
     if not parsed_args.quiet:
-        print("Creating Monte Carlo variable gen CSVs...")
+        print("Creating sync variable gen CSVs...")
 
-    create_variable_profile_csvs(
-        db_path=parsed_args.database,
-        weather_bins_id=parsed_args.weather_bins_id,
-        weather_draws_id=parsed_args.weather_draws_id,
-        output_directory=parsed_args.output_directory,
-        profile_scenario_id=parsed_args.variable_generator_profile_scenario_id,
-        profile_scenario_name=parsed_args.variable_generator_profile_scenario_name,
-        stage_id=parsed_args.stage_id,
-        overwrite=parsed_args.overwrite,
-        n_parallel_projects=parsed_args.n_parallel_projects,
-        units_table="raw_data_var_project_units",
-        param_name="cap_factor",
-        raw_data_table="raw_data_project_variable_profiles",
+    conn = connect_to_database(db_path=parsed_args.database)
+
+    c = conn.cursor()
+    projects = [
+        prj[0]
+        for prj in c.execute(
+            "SELECT DISTINCT project FROM raw_data_var_project_units;"
+        ).fetchall()
+    ]
+
+    pool_data = tuple(
+        [
+            [
+                parsed_args.database,
+                prj,
+                parsed_args.variable_generator_profile_scenario_id,
+                parsed_args.variable_generator_profile_scenario_name,
+                parsed_args.stage_id,
+                parsed_args.output_directory,
+                parsed_args.overwrite,
+            ]
+            for prj in projects
+        ]
     )
+
+    # Pool must use spawn to work properly on Linux
+    pool = get_context("spawn").Pool(int(parsed_args.n_parallel_projects))
+
+    pool.map(create_variable_profile_csvs_pool, pool_data)
+    pool.close()
 
 
 if __name__ == "__main__":
