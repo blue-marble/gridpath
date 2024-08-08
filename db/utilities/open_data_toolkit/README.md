@@ -1,3 +1,9 @@
+# Getting raw data from PUDL
+get_raw_data_from_pudl.py
+
+
+
+# Processing the data with the Open Data Toolkit
 
 python run_open_data_toolkit.py
 

@@ -68,9 +68,6 @@ def parse_arguments(args):
     parser = ArgumentParser(add_help=True)
 
     parser.add_argument(
-        "-skip", "--skip_pudl_sqlite_download", default=False, action="store_true"
-    )
-    parser.add_argument(
         "-d",
         "--raw_data_directory",
         default="../../csvs_open_data/raw_data",
@@ -78,7 +75,6 @@ def parse_arguments(args):
 
     parser.add_argument("-rdate", "--eia860_report_date", default="2023-01-01")
 
-    # TODO: probably move this to downstream queries
     parser.add_argument(
         "-er",
         "--eia860_include_retired",
@@ -91,21 +87,7 @@ def parse_arguments(args):
     return parsed_arguments
 
 
-def get_pudl_sqlite(zenodo_record, pudl_sqlite_directory):
-    URL = f"https://sandbox.zenodo.org/records/{str(zenodo_record)}/files/pudl.sqlite.zip?download=1"
-    print("Downloading compressed pudl.sqlite...")
-    pudl_request_content = requests.get(URL, stream=True).content
-
-    print("Extracting database")
-    # with gzip.open(io.BytesIO(pudl_request_content), "rb") as f_in:
-    #     with open(pudl_sqlite_path, "wb") as f_out:
-    #         shutil.copyfileobj(f_in, f_out)
-
-    z = zipfile.ZipFile(io.BytesIO(pudl_request_content))
-    z.extractall(pudl_sqlite_directory)
-
-
-def get_eia_generator_data_from_local_db(
+def get_eia_generator_data_from_pudl_sqlite(
     out_dir, pudl_sqlite_directory, report_date, exclude_retired
 ):
 
@@ -149,46 +131,7 @@ def get_eia_generator_data_from_local_db(
     )
 
 
-def get_eia_generator_data_from_pudl_datasette():
-    """
-    DEPRECATED
-    """
-    count = pd.read_csv(
-        "https://data.catalyst.coop/pudl.csv?sql=SELECT%0D%0A++++count%28*%29%0D%0AFROM+core_eia860__scd_generators%0D%0AJOIN+core_eia860__scd_plants%0D%0AUSING+%28plant_id_eia%2C+report_date%29%2C%0D%0Aalembic_version%0D%0AWHERE+report_date+%3D+%272023-01-01%27+--+get+latest%0D%0AAND+core_eia860__scd_generators.operational_status+%21%3D+%27retired%27&_size=max"
-    )["count(*)"][0]
-
-    df_list = []
-
-    page_size = 1000
-    current_offset = 0
-    while current_offset < count:
-        df = pd.read_csv(
-            f"https://data.catalyst.coop/pudl.csv?sql=SELECT%0D%0A++++version_num"
-            f"%2C%0D%0A++++report_date%2C%0D%0A++++"
-            f"plant_id_eia%2C%0D%0A++++generator_id%2C%0D%0A"
-            f"++++balancing_authority_code_eia%2C%0D%0A++++capacity_mw%2C%0D%0A"
-            f"++++summer_capacity_mw%2C%0D%0A++++winter_capacity_mw%2C%0D%0A"
-            f"++++energy_storage_capacity_mwh%2C%0D%0A++++prime_mover_code%2C%0D"
-            f"%0A++++energy_source_code_1%2C%0D%0A"
-            f"++++current_planned_generator_operating_date%2C%0D%0A"
-            f"++++generator_retirement_date%0D%0AFROM+core_eia860__scd_generators"
-            f"%0D%0AJOIN+core_eia860__scd_plants%0D%0AUSING+%28plant_id_eia%2C+"
-            f"report_date%29%2C%0D%0Aalembic_version%0D%0AWHERE+"
-            f"report_date+%3D+%272023-01-01%27+--+get+latest%0D%0AAND+"
-            f"core_eia860__scd_generators.operational_status+%21%3D+"
-            f"%27retired%27%0D%0ALIMIT+{current_offset}%2C+"
-            f"{page_size}&_size=max"
-        )
-
-        df_list.append(df)
-        current_offset += 1000
-
-    data = pd.concat(df_list)
-
-    return data
-
-
-# TODO: change to getting from pudl.sqlite once the data are in
+# TODO: change to getting from pudl.sqlite once the data are in the main
 def get_eiaaeo_fuel_data_from_pudl_datasette():
     """ """
     print("Getting fuel prices...")
@@ -214,21 +157,67 @@ def get_eiaaeo_fuel_data_from_pudl_datasette():
     return df_final
 
 
-# TODO: what will be the stable version of this?
-def get_ra_toolkit_cap_factor_data_from_pudl_nightly():
-    url = "https://s3.us-west-2.amazonaws.com/pudl.catalyst.coop/nightly/out_gridpathratoolkit__hourly_available_capacity_factor.parquet"
-    data = requests.get(url, stream=True).content
+def convert_ra_toolkit_profiles_to_csv():
+    # TODO: this needs to be run after getting the data from PUDL, but before
+    #  loading raw data into the database. Leaving as a task for now to figure out
+    #   where this intermediary steps should fit in case there are similar ones.
 
-    return data
+    # TODO: NEVP, PGE, SRP, and WAUW have wind plants in EIA, but we don't have
+    #  wind profiles for them in the RA toolkit; I have added those profiles
+    #  manually for now
+
+    df = pd.read_parquet(
+        "/db/csvs_open_data/raw_data/ra_toolkit_gen_profiles.parquet",
+        engine="fastparquet",
+    )
+
+    df["datetime_pst"] = df["datetime_utc"] - pd.Timedelta(hours=8)
+    df["year"] = pd.DatetimeIndex(df["datetime_pst"]).year
+    df["month"] = pd.DatetimeIndex(df["datetime_pst"]).month
+    df["day_of_month"] = pd.DatetimeIndex(df["datetime_pst"]).day
+    df["hour_of_day"] = pd.DatetimeIndex(df["datetime_pst"]).hour
+
+    df = df.rename(
+        columns={"aggregation_group": "unit", "capacity_factor": "cap_factor"}
+    )
+    cols = df.columns.tolist()
+    cols = cols[4:8] + cols[1:3]
+    df = df[cols]
+
+    df.to_csv(
+        "/Users/ana/dev/gridpath_v2024.1.0+dev/db/csvs_open_data/raw_data"
+        "/var_profiles.csv",
+        sep=",",
+        index=False,
+    )
 
 
-def get_eia930_hourly_interchange_from_pudl(zenodo_record):
-    url = f"https://zenodo.org/records/{zenodo_record}/files" \
-    f"/core_eia930__hourly_interchange.parquet?download=1"
+def convert_eia930_hourly_interchange_to_csv():
+    df = pd.read_parquet(
+        "/db/csvs_open_data/raw_data/core_eia930__hourly_interchange.parquet",
+        engine="fastparquet",
+    )
 
-    data = requests.get(url, stream=True).content
+    df["datetime_pst"] = df["datetime_utc"] - pd.Timedelta(hours=8)
+    df["year"] = pd.DatetimeIndex(df["datetime_pst"]).year
+    df["month"] = pd.DatetimeIndex(df["datetime_pst"]).month
+    df["day_of_month"] = pd.DatetimeIndex(df["datetime_pst"]).day
+    df["hour_of_day"] = pd.DatetimeIndex(df["datetime_pst"]).hour
 
-    return data
+    # df = df.rename(
+    #     columns={"aggregation_group": "unit", "capacity_factor": "cap_factor"}
+    # )
+    # cols = df.columns.tolist()
+    # cols = cols[4:8] + cols[1:3]
+    # df = df[cols]
+
+    df.to_csv(
+        "/Users/ana/dev/gridpath_v2024.1.0+dev/db/csvs_open_data/raw_data"
+        "/eia930_hourly_interchange.csv",
+        sep=",",
+        index=False,
+    )
+
 
 def main(args=None):
     if args is None:
@@ -238,44 +227,23 @@ def main(args=None):
 
     pudl_sqlite_directory = os.path.join(parsed_args.raw_data_directory)
 
-    # Download the database
-    if not parsed_args.skip_pudl_sqlite_download:
-        get_pudl_sqlite(
-            pudl_sqlite_directory=pudl_sqlite_directory, zenodo_record=90548
-        )
-
-    # Get the data we need from the database
-    get_eia_generator_data_from_local_db(
+    # ### Get only the data we need from pudl.sqlite ### #
+    # Generator list
+    get_eia_generator_data_from_pudl_sqlite(
         out_dir=parsed_args.raw_data_directory,
         pudl_sqlite_directory=pudl_sqlite_directory,
         report_date=parsed_args.eia860_report_date,
         exclude_retired=not parsed_args.eia860_include_retired,
     )
 
-    ra_toolkit_gen_profiles = get_ra_toolkit_cap_factor_data_from_pudl_nightly()
-    with open(
-        os.path.join(parsed_args.raw_data_directory, "ra_toolkit_gen_profiles.parquet"),
-        "wb",
-    ) as f:
-        f.write(ra_toolkit_gen_profiles)
+    # Fuel costs
+    get_eiaaeo_fuel_data_from_pudl_datasette()
 
-    # Get fuel prices from datasette (needs to be updated to get this from
-    # pudl.sqlite when available)
-    aeo_fuel_prices = get_eiaaeo_fuel_data_from_pudl_datasette()
-    aeo_fuel_prices.to_csv(
-        os.path.join(parsed_args.raw_data_directory, "eiaaeo_fuel_prices.csv"),
-        index=False,
-    )
+    # ### RA Toolkit profiles ### #
+    convert_ra_toolkit_profiles_to_csv()
 
-    # Hourly interchange from EIA930
-    # TODO: make Zenodo record consistent
-    interchange = get_eia930_hourly_interchange_from_pudl(zenodo_record=11292273)
-    with open(
-            os.path.join(parsed_args.raw_data_directory,
-                         "core_eia930__hourly_interchange.parquet"),
-            "wb",
-    ) as f:
-        f.write(interchange)
+    # EIA930 hourly interchange
+    convert_eia930_hourly_interchange_to_csv()
 
 
 if __name__ == "__main__":
