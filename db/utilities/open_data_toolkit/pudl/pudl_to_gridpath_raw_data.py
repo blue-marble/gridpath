@@ -12,49 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+Get a subset of the PUDL data and convert to GridPath raw format.
+"""
+
 from argparse import ArgumentParser
-import gzip
-import io
 import os.path
 import pandas as pd
-import requests
-import shutil
 import sys
-import zipfile
 
 from db.common_functions import connect_to_database
-
-"""
-SELECT
-    version_num,
-    plant_id_eia,
-    generator_id,
-    balancing_authority_code_eia,
-    capacity_mw,
-    summer_capacity_mw,
-    winter_capacity_mw,
-    energy_storage_capacity_mwh,
-    prime_mover_code,
-    energy_source_code_1,
-    current_planned_generator_operating_date,
-    generator_retirement_date
-FROM core_eia860__scd_generators
-JOIN core_eia860__scd_plants
-USING (plant_id_eia, report_date),
-alembic_version
-WHERE report_date = '2023-01-01' -- get latest
-AND (
-    unixepoch(core_eia860__scd_generators.current_planned_generator_operating_date) 
-    >= unixepoch('2026-01-01')
-    OR core_eia860__scd_generators.current_planned_generator_operating_date IS NULL
-    )
-AND (
-    unixepoch(core_eia860__scd_generators.generator_retirement_date) > 
-    unixepoch('2026-12-31')
-    OR core_eia860__scd_generators.generator_retirement_date IS NULL
-    )
-AND core_eia860__scd_generators.operational_status != 'retired'
-"""
 
 
 def parse_arguments(args):
@@ -68,9 +35,14 @@ def parse_arguments(args):
     parser = ArgumentParser(add_help=True)
 
     parser.add_argument(
+        "-pudl",
+        "--pudl_download_directory",
+        default="../../../csvs_open_data/pudl_download",
+    )
+    parser.add_argument(
         "-d",
         "--raw_data_directory",
-        default="../../csvs_open_data/raw_data",
+        default="../../../csvs_open_data/raw_data",
     )
 
     parser.add_argument("-rdate", "--eia860_report_date", default="2023-01-01")
@@ -88,9 +60,18 @@ def parse_arguments(args):
 
 
 def get_eia_generator_data_from_pudl_sqlite(
-    out_dir, pudl_sqlite_directory, report_date, exclude_retired
+    raw_data_directory, pudl_download_directory, report_date, exclude_retired
 ):
+    """
+    Generator list from EIA860.
+    """
+    print("Getting generator list for pudl.sqlite")
+    # Connect to pudl.sqlite
+    pudl_conn = connect_to_database(
+        db_path=os.path.join(pudl_download_directory, "pudl.sqlite")
+    )
 
+    # Build the generator query
     exclude_retired_str = (
         "AND core_eia860__scd_generators.operational_status != 'retired'"
         if exclude_retired
@@ -119,22 +100,19 @@ def get_eia_generator_data_from_pudl_sqlite(
         {exclude_retired_str}
     """
 
-    pudl_conn = connect_to_database(
-        db_path=os.path.join(pudl_sqlite_directory, "pudl.sqlite")
-    )
-
+    # Query pudl.sqlite and save to CSV
     eia_gens = pd.read_sql(query, pudl_conn)
-
     eia_gens.to_csv(
-        os.path.join(out_dir, "eia860_generators.csv"),
+        os.path.join(raw_data_directory, "eia860_generators.csv"),
         index=False,
     )
 
 
 # TODO: change to getting from pudl.sqlite once the data are in the main
-def get_eiaaeo_fuel_data_from_pudl_datasette():
+#  database
+def get_eiaaeo_fuel_data_from_pudl_datasette(raw_data_directory):
     """ """
-    print("Getting fuel prices...")
+    print("Getting fuel prices (currently from datasette)...")
     total_count = pd.read_csv(
         "https://data.catalyst.coop/pudl.csv?sql=SELECT%0D%0A++COUNT%28*%29%0D%0AFROM%0D%0A++core_eiaaeo__yearly_projected_fuel_cost_in_electric_sector_by_type%0D%0AWHERE%0D%0A++electricity_market_module_region_eiaaeo+like+%27%25western_electricity_coordinating_council%25%27+--ORDER+BY+report_year%2C+electricity_market_module_region_eiaaeo%2C+model_case_eiaaeo%2C+fuel_type_eiaaeo%2C+projection_year+LIMIT+1001&_size=max"
     )["COUNT(*)"][0]
@@ -154,20 +132,23 @@ def get_eiaaeo_fuel_data_from_pudl_datasette():
 
     df_final = pd.concat(df_list)
 
-    return df_final
+    df_final.to_csv(
+        os.path.join(raw_data_directory, "eiaaeo_fuel_prices.csv"),
+        index=False,
+    )
 
 
-def convert_ra_toolkit_profiles_to_csv():
-    # TODO: this needs to be run after getting the data from PUDL, but before
-    #  loading raw data into the database. Leaving as a task for now to figure out
-    #   where this intermediary steps should fit in case there are similar ones.
-
+def convert_ra_toolkit_profiles_to_csv(raw_data_directory, pudl_download_directory):
+    """ """
+    print("Converting RA Toolkit profiles to CSV...")
     # TODO: NEVP, PGE, SRP, and WAUW have wind plants in EIA, but we don't have
     #  wind profiles for them in the RA toolkit; I have added those profiles
     #  manually for now
-
     df = pd.read_parquet(
-        "/db/csvs_open_data/raw_data/ra_toolkit_gen_profiles.parquet",
+        os.path.join(
+            pudl_download_directory,
+            "out_gridpathratoolkit__hourly_available_capacity_factor.parquet",
+        ),
         engine="fastparquet",
     )
 
@@ -185,16 +166,19 @@ def convert_ra_toolkit_profiles_to_csv():
     df = df[cols]
 
     df.to_csv(
-        "/Users/ana/dev/gridpath_v2024.1.0+dev/db/csvs_open_data/raw_data"
-        "/var_profiles.csv",
+        os.path.join(raw_data_directory, "var_profiles.csv"),
         sep=",",
         index=False,
     )
 
 
-def convert_eia930_hourly_interchange_to_csv():
+def convert_eia930_hourly_interchange_to_csv(
+    raw_data_directory, pudl_download_directory
+):
     df = pd.read_parquet(
-        "/db/csvs_open_data/raw_data/core_eia930__hourly_interchange.parquet",
+        os.path.join(
+            pudl_download_directory, "core_eia930__hourly_interchange.parquet"
+        ),
         engine="fastparquet",
     )
 
@@ -212,8 +196,7 @@ def convert_eia930_hourly_interchange_to_csv():
     # df = df[cols]
 
     df.to_csv(
-        "/Users/ana/dev/gridpath_v2024.1.0+dev/db/csvs_open_data/raw_data"
-        "/eia930_hourly_interchange.csv",
+        os.path.join(raw_data_directory, "eia930_hourly_interchange.csv"),
         sep=",",
         index=False,
     )
@@ -225,25 +208,31 @@ def main(args=None):
 
     parsed_args = parse_arguments(args=args)
 
-    pudl_sqlite_directory = os.path.join(parsed_args.raw_data_directory)
-
     # ### Get only the data we need from pudl.sqlite ### #
     # Generator list
     get_eia_generator_data_from_pudl_sqlite(
-        out_dir=parsed_args.raw_data_directory,
-        pudl_sqlite_directory=pudl_sqlite_directory,
+        raw_data_directory=parsed_args.raw_data_directory,
+        pudl_download_directory=parsed_args.pudl_download_directory,
         report_date=parsed_args.eia860_report_date,
         exclude_retired=not parsed_args.eia860_include_retired,
     )
 
     # Fuel costs
-    get_eiaaeo_fuel_data_from_pudl_datasette()
+    get_eiaaeo_fuel_data_from_pudl_datasette(
+        raw_data_directory=parsed_args.raw_data_directory
+    )
 
     # ### RA Toolkit profiles ### #
-    convert_ra_toolkit_profiles_to_csv()
+    convert_ra_toolkit_profiles_to_csv(
+        raw_data_directory=parsed_args.raw_data_directory,
+        pudl_download_directory=parsed_args.pudl_download_directory,
+    )
 
-    # EIA930 hourly interchange
-    convert_eia930_hourly_interchange_to_csv()
+    # ### EIA930 hourly interchange ### #
+    convert_eia930_hourly_interchange_to_csv(
+        raw_data_directory=parsed_args.raw_data_directory,
+        pudl_download_directory=parsed_args.pudl_download_directory,
+    )
 
 
 if __name__ == "__main__":

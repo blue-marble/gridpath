@@ -42,8 +42,11 @@ from db.utilities.ra_toolkit.weather import (
     create_sync_var_gen_input_csvs,
 )
 from db.utilities.ra_toolkit.hydro import create_hydro_iteration_inputs
-from db.utilities.open_data_toolkit import create_projects, create_fuels, \
-    create_transmission
+from db.utilities.open_data_toolkit import (
+    create_projects,
+    create_fuels,
+    create_transmission,
+)
 
 
 def parse_arguments(args):

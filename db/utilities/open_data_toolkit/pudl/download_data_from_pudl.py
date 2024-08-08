@@ -11,6 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+
+"""
+Download data from PUDL.
+"""
+
+
 import gzip
 import shutil
 from argparse import ArgumentParser
@@ -21,6 +28,7 @@ import sys
 import zipfile
 
 
+# TODO: add file exists warnings
 def parse_arguments(args):
     """
     :param args: the script arguments specified by the user
@@ -33,7 +41,20 @@ def parse_arguments(args):
 
     parser.add_argument("-z", "--zenodo_record", default=11292273)
     parser.add_argument(
-        "-skip", "--skip_pudl_sqlite_download", default=False, action="store_true"
+        "-skip_db", "--skip_pudl_sqlite_download", default=False, action="store_true"
+    )
+    parser.add_argument(
+        "-skip_ra",
+        "--skip_ra_toolkit_profiles_download",
+        default=False,
+        action="store_true",
+    )
+
+    parser.add_argument(
+        "-skip_eia930",
+        "--skip_eia930_hourly_interchange_download",
+        default=False,
+        action="store_true",
     )
     parser.add_argument(
         "-d",
@@ -96,12 +117,18 @@ def main(args=None):
         )
 
     # RA Toolkit profiles parquet file
-    for filename in ["ra_toolkit_gen_profiles", "core_eia930__hourly_interchange"]:
-        get_parquet_file_from_pudl_zenodo(
-            zenodo_record=parsed_args.zenodo_record,
-            download_directory=parsed_args.raw_data_directory,
-            filename=filename,
-        )
+    parquet_skip_dict = {
+        "out_gridpathratoolkit__hourly_available_capacity_factor": parsed_args.skip_ra_toolkit_profiles_download,
+        "core_eia930__hourly_interchange": parsed_args.skip_eia930_hourly_interchange_download,
+    }
+    for filename in parquet_skip_dict.keys():
+        skip = parquet_skip_dict[filename]
+        if not skip:
+            get_parquet_file_from_pudl_zenodo(
+                zenodo_record=parsed_args.zenodo_record,
+                download_directory=parsed_args.raw_data_directory,
+                filename=filename,
+            )
 
 
 if __name__ == "__main__":
