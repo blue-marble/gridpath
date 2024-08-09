@@ -43,9 +43,9 @@ from db.utilities.gridpath_data_toolkit.weather import (
 )
 from db.utilities.gridpath_data_toolkit.hydro import create_hydro_iteration_inputs
 from db.utilities.gridpath_data_toolkit import (
-    create_projects,
-    create_fuels,
-    create_transmission,
+    create_project_input_csvs,
+    create_fuel_input_csvs,
+    create_transmission_input_csvs,
 )
 
 

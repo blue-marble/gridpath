@@ -22,9 +22,9 @@ import sys
 from db import create_database
 from db.utilities import load_raw_data
 from db.utilities.gridpath_data_toolkit import (
-    create_projects,
-    create_transmission,
-    create_fuels,
+    create_project_input_csvs,
+    create_transmission_input_csvs,
+    create_fuel_input_csvs,
 )
 from db.utilities.gridpath_data_toolkit.availability import (
     create_sync_gen_weather_derate_input_csvs,
@@ -76,11 +76,13 @@ def parse_arguments(args):
             "create_sync_gen_weather_derate_input_csvs",
             "create_monte_carlo_gen_weather_derate_input_csvs",
             "create_temporal_scenarios",
-            "create_project_csvs",
-            "create_transmission_csvs",
+            "create_project_input_csvs",
+            "create_transmission_input_csvs",
+            "create_fuel_input_csvs",
         ],
-        help="Run only the specified RA Toolkit step. All others will be "
-        "skipped. If not specified, the entire Toolkit will be run.",
+        help="Run only the specified GridPath Data Toolkit step. All others "
+             "will be skipped. If not specified, all steps in the settings "
+             "file will be run.",
     )
 
     parsed_arguments = parser.parse_known_args(args=args)[0]
@@ -209,6 +211,11 @@ def main(args=None):
         single_step_only=parsed_args.single_step_only,
         settings_dict=settings_dict,
         script_name="create_transmission_input_csvs",
+    )
+    skip_create_fuel_input_csvs = determine_skip(
+        single_step_only=parsed_args.single_step_only,
+        settings_dict=settings_dict,
+        script_name="skip_create_fuel_input_csvs",
     )
 
     # ### Create the database ### #
@@ -631,16 +638,15 @@ def main(args=None):
     # TODO: need to split this up
     if not skip_create_project_input_csvs:
         # TODO: add settings
-        create_projects.main(args=None)
+        create_project_input_csvs.main(args=None)
 
     # Transmission inputs
     if not skip_create_transmission_input_csvs:
         # TODO: add settings
-        create_transmission.main(args=None)
+        create_transmission_input_csvs.main(args=None)
 
     # Fuels
-    # TODO: add overwrite or not option
-    if False:
+    if not skip_create_fuel_input_csvs:
         fuel_price_csv_location = get_setting(
             settings_df,
             "create_fuels",
@@ -665,7 +671,7 @@ def main(args=None):
             "report_year",
         )
 
-        create_fuels.main(
+        create_fuel_input_csvs.main(
             [
                 "--database",
                 db_path,

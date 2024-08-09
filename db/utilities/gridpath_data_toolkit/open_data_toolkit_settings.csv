@@ -21,3 +21,6 @@ create_hydro_iteration_inputs,hydro_operational_chars_scenario_name,ra_toolkit
 create_hydro_iteration_inputs,output_directory,../../csvs_open_data/project/opchar/hydro
 create_hydro_iteration_inputs,overwrite,1
 create_hydro_iteration_inputs,n_parallel_projects,24
+create_project_input_csvs,,
+create_transmission_input_csvs,,
+create_fuel_input_csvs,,
