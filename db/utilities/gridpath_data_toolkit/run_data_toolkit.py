@@ -21,19 +21,27 @@ import sys
 # GridPath modules
 from db import create_database
 from db.utilities import load_raw_data
-from db.utilities.gridpath_data_toolkit.availability import \
-    create_sync_gen_weather_derate_input_csvs, \
-    create_monte_carlo_gen_weather_derate_input_csvs, \
-    create_availability_iteration_inputs
-from db.utilities.gridpath_data_toolkit.hydro import \
-    create_hydro_iteration_inputs
+from db.utilities.gridpath_data_toolkit import (
+    create_projects,
+    create_transmission,
+    create_fuels,
+)
+from db.utilities.gridpath_data_toolkit.availability import (
+    create_sync_gen_weather_derate_input_csvs,
+    create_monte_carlo_gen_weather_derate_input_csvs,
+    create_availability_iteration_inputs,
+)
+from db.utilities.gridpath_data_toolkit.hydro import create_hydro_iteration_inputs
 from db.utilities.gridpath_data_toolkit.temporal import create_temporal_scenarios
 from db.utilities.gridpath_data_toolkit.weather import (
     create_monte_carlo_var_gen_input_csvs,
 )
-from db.utilities.gridpath_data_toolkit.weather import \
-    create_sync_var_gen_input_csvs, create_monte_carlo_load_input_csvs, \
-    create_sync_load_input_csvs, create_monte_carlo_weather_draws
+from db.utilities.gridpath_data_toolkit.weather import (
+    create_sync_var_gen_input_csvs,
+    create_monte_carlo_load_input_csvs,
+    create_sync_load_input_csvs,
+    create_monte_carlo_weather_draws,
+)
 
 
 # TODO: add checks if files exists, tell user to delete before running
@@ -68,6 +76,8 @@ def parse_arguments(args):
             "create_sync_gen_weather_derate_input_csvs",
             "create_monte_carlo_gen_weather_derate_input_csvs",
             "create_temporal_scenarios",
+            "create_project_csvs",
+            "create_transmission_csvs",
         ],
         help="Run only the specified RA Toolkit step. All others will be "
         "skipped. If not specified, the entire Toolkit will be run.",
@@ -84,6 +94,22 @@ def get_setting(settings_df, script, setting):
     ]["value"].values[0]
 
 
+def determine_skip(single_step_only, settings_dict, script_name):
+
+    # If we are running a different step; skip
+    if single_step_only != script_name:
+        skip = True
+    # If we have specifically called for this step or we find it in the
+    # settings, don't skip
+    elif single_step_only == script_name or script_name in settings_dict.keys():
+        skip = False
+    # Otherwise, skip
+    else:
+        skip = True
+
+    return skip
+
+
 def main(args=None):
     if args is None:
         args = sys.argv[1:]
@@ -92,74 +118,98 @@ def main(args=None):
 
     # Get the settings
     settings_df = pd.read_csv(parsed_args.settings_csv)
+
+    settings_dict = {}
+    for index, row in settings_df.iterrows():
+        if row["script"] not in settings_dict.keys():
+            settings_dict[row["script"]] = [(row["setting"], row["value"])]
+        else:
+            settings_dict[row["script"]].append((row["setting"], row["value"]))
+
+    # TODO: may not need that anymore
     settings_df.set_index(["script", "setting"])
 
     # Arguments used by multiple scripts
     db_path = os.path.join(
         os.getcwd(),
-        get_setting(settings_df, "multi", "database"),
+        get_setting(settings_df, "create_database", "database"),
     )
 
     stage_id = get_setting(settings_df, "multi", "stage_id")
-
     weather_bins_id = get_setting(settings_df, "multi", "weather_bins_id")
-
     weather_draws_id = get_setting(settings_df, "multi", "weather_draws_id")
 
     # Figure out which steps, if any, we are skipping
-    skip_create_database = True
-    skip_load_raw_data = True
-    skip_create_sync_load_input_csvs = True
-    skip_create_sync_var_gen_input_csvs = True
-    skip_create_monte_carlo_weather_draws = True
-    skip_create_monte_carlo_load_input_csvs = True
-    skip_create_monte_carlo_var_gen_input_csvs = True
-    skip_create_hydro_iteration_inputs = True
-    skip_create_availability_iteration_inputs = True
-    skip_create_sync_gen_weather_derate_input_csvs = True
-    skip_create_monte_carlo_gen_weather_derate_input_csvs = True
-    skip_create_temporal_scenarios = True
-
-    if parsed_args.single_step_only == "create_database":
-        skip_create_database = False
-    elif parsed_args.single_step_only == "load_raw_data":
-        skip_load_raw_data = False
-    elif parsed_args.single_step_only == "create_sync_load_input_csvs":
-        skip_create_sync_load_input_csvs = False
-    elif parsed_args.single_step_only == "create_sync_var_gen_input_csvs":
-        skip_create_sync_var_gen_input_csvs = False
-    elif parsed_args.single_step_only == "create_monte_carlo_weather_draws":
-        skip_create_monte_carlo_weather_draws = False
-    elif parsed_args.single_step_only == "create_monte_carlo_load_input_csvs":
-        skip_create_monte_carlo_load_input_csvs = False
-    elif parsed_args.single_step_only == "create_monte_carlo_var_gen_input_csvs":
-        skip_create_monte_carlo_var_gen_input_csvs = False
-    elif parsed_args.single_step_only == "create_hydro_iteration_inputs":
-        skip_create_hydro_iteration_inputs = False
-    elif parsed_args.single_step_only == "create_availability_iteration_inputs":
-        skip_create_availability_iteration_inputs = False
-    elif parsed_args.single_step_only == "create_sync_gen_weather_derate_input_csvs":
-        skip_create_sync_gen_weather_derate_input_csvs = False
-    elif (
-        parsed_args.single_step_only
-        == "create_monte_carlo_gen_weather_derate_input_csvs"
-    ):
-        skip_create_monte_carlo_gen_weather_derate_input_csvs = False
-    elif parsed_args.single_step_only == "create_temporal_scenarios":
-        skip_create_temporal_scenarios = False
-    else:
-        skip_create_database = False
-        skip_load_raw_data = False
-        skip_create_sync_load_input_csvs = False
-        skip_create_sync_var_gen_input_csvs = False
-        skip_create_monte_carlo_weather_draws = False
-        skip_create_monte_carlo_load_input_csvs = False
-        skip_create_monte_carlo_var_gen_input_csvs = False
-        skip_create_hydro_iteration_inputs = False
-        skip_create_availability_iteration_inputs = False
-        skip_create_sync_gen_weather_derate_input_csvs = False
-        skip_create_monte_carlo_gen_weather_derate_input_csvs = False
-        skip_create_temporal_scenarios = False
+    skip_create_database = determine_skip(
+        single_step_only=parsed_args.single_step_only,
+        settings_dict=settings_dict,
+        script_name="create_database",
+    )
+    skip_load_raw_data = determine_skip(
+        single_step_only=parsed_args.single_step_only,
+        settings_dict=settings_dict,
+        script_name="load_raw_data",
+    )
+    skip_create_sync_load_input_csvs = determine_skip(
+        single_step_only=parsed_args.single_step_only,
+        settings_dict=settings_dict,
+        script_name="create_sync_load_input_csvs",
+    )
+    skip_create_sync_var_gen_input_csvs = determine_skip(
+        single_step_only=parsed_args.single_step_only,
+        settings_dict=settings_dict,
+        script_name="create_sync_var_gen_input_csvs",
+    )
+    skip_create_monte_carlo_weather_draws = determine_skip(
+        single_step_only=parsed_args.single_step_only,
+        settings_dict=settings_dict,
+        script_name="create_monte_carlo_weather_draws",
+    )
+    skip_create_monte_carlo_load_input_csvs = determine_skip(
+        single_step_only=parsed_args.single_step_only,
+        settings_dict=settings_dict,
+        script_name="create_monte_carlo_load_input_csvs",
+    )
+    skip_create_monte_carlo_var_gen_input_csvs = determine_skip(
+        single_step_only=parsed_args.single_step_only,
+        settings_dict=settings_dict,
+        script_name="create_monte_carlo_var_gen_input_csvs",
+    )
+    skip_create_hydro_iteration_inputs = determine_skip(
+        single_step_only=parsed_args.single_step_only,
+        settings_dict=settings_dict,
+        script_name="create_hydro_iteration_inputs",
+    )
+    skip_create_availability_iteration_inputs = determine_skip(
+        single_step_only=parsed_args.single_step_only,
+        settings_dict=settings_dict,
+        script_name="create_availability_iteration_inputs",
+    )
+    skip_create_sync_gen_weather_derate_input_csvs = determine_skip(
+        single_step_only=parsed_args.single_step_only,
+        settings_dict=settings_dict,
+        script_name="create_sync_gen_weather_derate_input_csvs",
+    )
+    skip_create_monte_carlo_gen_weather_derate_input_csvs = determine_skip(
+        single_step_only=parsed_args.single_step_only,
+        settings_dict=settings_dict,
+        script_name="create_monte_carlo_gen_weather_derate_input_csvs",
+    )
+    skip_create_temporal_scenarios = determine_skip(
+        single_step_only=parsed_args.single_step_only,
+        settings_dict=settings_dict,
+        script_name="create_temporal_scenarios",
+    )
+    skip_create_project_input_csvs = determine_skip(
+        single_step_only=parsed_args.single_step_only,
+        settings_dict=settings_dict,
+        script_name="create_project_input_csvs",
+    )
+    skip_create_transmission_input_csvs = determine_skip(
+        single_step_only=parsed_args.single_step_only,
+        settings_dict=settings_dict,
+        script_name="create_transmission_input_csvs",
+    )
 
     # ### Create the database ### #
     if not skip_create_database:
@@ -260,14 +310,16 @@ def main(args=None):
     # Monte Carlo draws
     if not skip_create_monte_carlo_weather_draws:
         weather_draws_seed = get_setting(
-            settings_df, "create_monte_carlo_draws", "weather_draws_seed"
+            settings_df, "create_monte_carlo_weather_draws", "weather_draws_seed"
         )
         n_iterations = get_setting(
-            settings_df, "create_monte_carlo_draws", "n_iterations"
+            settings_df, "create_monte_carlo_weather_draws", "n_iterations"
         )
-        study_year = get_setting(settings_df, "create_monte_carlo_draws", "study_year")
+        study_year = get_setting(
+            settings_df, "create_monte_carlo_weather_draws", "study_year"
+        )
         iterations_seed = get_setting(
-            settings_df, "create_monte_carlo_draws", "iterations_seed"
+            settings_df, "create_monte_carlo_weather_draws", "iterations_seed"
         )
         create_monte_carlo_weather_draws.main(
             [
@@ -571,6 +623,60 @@ def main(args=None):
                 "--csv_path",
                 temporal_scenarios_csv,
                 "--quiet" if parsed_args.quiet else "",
+            ]
+        )
+
+    # ### NEW ### #
+    # Project inputs
+    # TODO: need to split this up
+    if not skip_create_project_input_csvs:
+        # TODO: add settings
+        create_projects.main(args=None)
+
+    # Transmission inputs
+    if not skip_create_transmission_input_csvs:
+        # TODO: add settings
+        create_transmission.main(args=None)
+
+    # Fuels
+    # TODO: add overwrite or not option
+    if False:
+        fuel_price_csv_location = get_setting(
+            settings_df,
+            "create_fuels",
+            "fuel_price_csv_location",
+        )
+
+        fuel_price_scenario_id = get_setting(
+            settings_df,
+            "create_fuels",
+            "fuel_price_scenario_id",
+        )
+
+        model_case = get_setting(
+            settings_df,
+            "create_fuels",
+            "model_case",
+        )
+
+        report_year = get_setting(
+            settings_df,
+            "create_fuels",
+            "report_year",
+        )
+
+        create_fuels.main(
+            [
+                "--database",
+                db_path,
+                "--fuel_price_csv_location",
+                fuel_price_csv_location,
+                "--fuel_price_scenario_id",
+                fuel_price_scenario_id,
+                "--model_case",
+                model_case,
+                "--report_year",
+                report_year,
             ]
         )
 

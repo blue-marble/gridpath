@@ -1,5 +1,5 @@
 ﻿script,setting,value
-multi,database,./ra_toolkit_test_steps_temp.db
+create_database,database,./ra_toolkit_test_steps_temp.db
 multi,stage_id,1
 multi,weather_bins_id,1
 multi,weather_draws_id,1
@@ -13,10 +13,10 @@ create_sync_var_gen_input_csvs,variable_generator_profile_scenario_id,3
 create_sync_var_gen_input_csvs,variable_generator_profile_scenario_name,ra_toolkit
 create_sync_var_gen_input_csvs,overwrite,1
 create_sync_var_gen_input_csvs,n_parallel_projects,4
-create_monte_carlo_draws,weather_draws_seed,0
-create_monte_carlo_draws,n_iterations,2
-create_monte_carlo_draws,study_year,2026
-create_monte_carlo_draws,iterations_seed,0
+create_monte_carlo_weather_draws,weather_draws_seed,0
+create_monte_carlo_weather_draws,n_iterations,2
+create_monte_carlo_weather_draws,study_year,2026
+create_monte_carlo_weather_draws,iterations_seed,0
 create_monte_carlo_load_input_csvs,output_directory,./csvs_test_examples/system_load/system_load
 create_monte_carlo_load_input_csvs,load_scenario_id,6
 create_monte_carlo_load_input_csvs,load_scenario_name,ra_toolkit

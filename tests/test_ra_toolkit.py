@@ -75,7 +75,8 @@ class TestRAToolkit(unittest.TestCase):
         temp_db_paths = get_temp_db_paths()
 
         for p in temp_db_paths:
-            os.remove(p)
+            if os.path.exists(p):
+                os.remove(p)
             for temp_file_ext in ["-shm", "-wal"]:
                 temp_file = "{}{}".format(p, temp_file_ext)
                 if os.path.exists(temp_file):
@@ -87,14 +88,14 @@ def get_temp_db_paths():
     settings_df.set_index(["script", "setting"])
     settings_db_path = os.path.join(
         os.getcwd(),
-        run_data_toolkit.get_setting(settings_df, "multi", "database"),
+        run_data_toolkit.get_setting(settings_df, "create_database", "database"),
     )
 
     settings_steps_df = pd.read_csv(SETTINGS_STEPS_CSV)
     settings_steps_df.set_index(["script", "setting"])
     settings_steps_db_path = os.path.join(
         os.getcwd(),
-        run_data_toolkit.get_setting(settings_steps_df, "multi", "database"),
+        run_data_toolkit.get_setting(settings_steps_df, "create_database", "database"),
     )
 
     temp_db_paths = [

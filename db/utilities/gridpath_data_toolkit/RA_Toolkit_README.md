@@ -71,7 +71,7 @@ Create the GridPath CSVs for load and variable generator profiles with
 
 #### Monte Carlo Mode
 
-1. Run *gridpath_run_data_toolkit -step create_monte_carlo_draws* to create the weather draws and to create the synthetic weather iteration data for those draws. 
+1. Run *gridpath_run_data_toolkit -step create_monte_carlo_weather_draws* to create the weather draws and to create the synthetic weather iteration data for those draws. 
 2. Create input CSVs for GridPath for load and variable gen. Use 
 *gridpath_run_data_toolkit -step create_monte_carlo_load_input_csvs* and 
    *gridpath_run_data_toolkit -step create_monte_carlo_var_gen_input_csvs*.
