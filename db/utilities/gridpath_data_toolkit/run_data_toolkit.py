@@ -57,7 +57,9 @@ def parse_arguments(args):
     """
     parser = ArgumentParser(add_help=True)
 
-    parser.add_argument("-s", "--settings_csv", default="./ra_toolkit_settings.csv")
+    parser.add_argument(
+        "-s", "--settings_csv", default="./open_data_toolkit_settings.csv"
+    )
     parser.add_argument("-q", "--quiet", default=False, action="store_true")
     # Run only a single RA Toolkit step
     parser.add_argument(
@@ -81,8 +83,8 @@ def parse_arguments(args):
             "create_fuel_input_csvs",
         ],
         help="Run only the specified GridPath Data Toolkit step. All others "
-             "will be skipped. If not specified, all steps in the settings "
-             "file will be run.",
+        "will be skipped. If not specified, all steps in the settings "
+        "file will be run.",
     )
 
     parsed_arguments = parser.parse_known_args(args=args)[0]
@@ -91,15 +93,19 @@ def parse_arguments(args):
 
 
 def get_setting(settings_df, script, setting):
-    return settings_df[
-        (settings_df["script"] == script) & (settings_df["setting"] == setting)
-    ]["value"].values[0]
+    print(script, setting)
+    try:
+        return settings_df[
+            (settings_df["script"] == script) & (settings_df["setting"] == setting)
+        ]["value"].values[0]
+    except IndexError:
+        print("HERE")
+        return None
 
 
 def determine_skip(single_step_only, settings_dict, script_name):
-
     # If we are running a different step; skip
-    if single_step_only != script_name:
+    if single_step_only is not None and single_step_only != script_name:
         skip = True
     # If we have specifically called for this step or we find it in the
     # settings, don't skip
@@ -108,6 +114,8 @@ def determine_skip(single_step_only, settings_dict, script_name):
     # Otherwise, skip
     else:
         skip = True
+
+    print(script_name, skip)
 
     return skip
 
@@ -128,6 +136,7 @@ def main(args=None):
         else:
             settings_dict[row["script"]].append((row["setting"], row["value"]))
 
+    print(settings_dict)
     # TODO: may not need that anymore
     settings_df.set_index(["script", "setting"])
 
@@ -137,9 +146,12 @@ def main(args=None):
         get_setting(settings_df, "create_database", "database"),
     )
 
+    # TODO: figure out how to skip these if not in settings file
     stage_id = get_setting(settings_df, "multi", "stage_id")
     weather_bins_id = get_setting(settings_df, "multi", "weather_bins_id")
     weather_draws_id = get_setting(settings_df, "multi", "weather_draws_id")
+
+    print("Made it past")
 
     # Figure out which steps, if any, we are skipping
     skip_create_database = determine_skip(

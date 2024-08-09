@@ -1,5 +1,5 @@
 ﻿script,setting,value
-multi,database,../../open_data.db
+create_database,database,../../open_data.db
 multi,stage_id,1
 load_raw_data,csv_location,../../csvs_open_data/raw_data/
 create_sync_load_input_csvs,output_directory,../../csvs_open_data/system_load/system_load
@@ -21,6 +21,6 @@ create_hydro_iteration_inputs,hydro_operational_chars_scenario_name,ra_toolkit
 create_hydro_iteration_inputs,output_directory,../../csvs_open_data/project/opchar/hydro
 create_hydro_iteration_inputs,overwrite,1
 create_hydro_iteration_inputs,n_parallel_projects,24
-create_project_input_csvs,,
-create_transmission_input_csvs,,
-create_fuel_input_csvs,,
+create_project_input_csvs,abc,0
+create_transmission_input_csvs,abc,0
+create_fuel_input_csvs,abc,0
