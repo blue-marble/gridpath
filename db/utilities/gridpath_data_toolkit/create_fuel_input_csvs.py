@@ -68,8 +68,6 @@ def get_fuel_prices(
     ORDER BY fuel, period
     """
 
-    print(sql)
-
     df = pd.read_sql(sql, conn)
     month_df_list = []
     for month in range(1, 13):

@@ -20,7 +20,7 @@ import sys
 
 # GridPath modules
 from db import create_database
-from db.utilities import load_raw_data
+from db.utilities.gridpath_data_toolkit.raw_data import load_raw_data
 from db.utilities.gridpath_data_toolkit import (
     create_project_input_csvs,
     create_transmission_input_csvs,
@@ -32,7 +32,8 @@ from db.utilities.gridpath_data_toolkit.availability import (
     create_availability_iteration_inputs,
 )
 from db.utilities.gridpath_data_toolkit.hydro import create_hydro_iteration_inputs
-from db.utilities.gridpath_data_toolkit.temporal import create_temporal_scenarios
+from db.utilities.gridpath_data_toolkit.temporal import \
+    create_temporal_scenarios, create_monte_carlo_weather_draws
 from db.utilities.gridpath_data_toolkit.weather import (
     create_monte_carlo_var_gen_input_csvs,
 )
@@ -40,7 +41,6 @@ from db.utilities.gridpath_data_toolkit.weather import (
     create_sync_var_gen_input_csvs,
     create_monte_carlo_load_input_csvs,
     create_sync_load_input_csvs,
-    create_monte_carlo_weather_draws,
 )
 
 
@@ -93,13 +93,11 @@ def parse_arguments(args):
 
 
 def get_setting(settings_df, script, setting):
-    print(script, setting)
     try:
         return settings_df[
             (settings_df["script"] == script) & (settings_df["setting"] == setting)
         ]["value"].values[0]
     except IndexError:
-        print("HERE")
         return None
 
 
@@ -114,8 +112,6 @@ def determine_skip(single_step_only, settings_dict, script_name):
     # Otherwise, skip
     else:
         skip = True
-
-    print(script_name, skip)
 
     return skip
 
@@ -136,7 +132,6 @@ def main(args=None):
         else:
             settings_dict[row["script"]].append((row["setting"], row["value"]))
 
-    print(settings_dict)
     # TODO: may not need that anymore
     settings_df.set_index(["script", "setting"])
 
@@ -150,8 +145,6 @@ def main(args=None):
     stage_id = get_setting(settings_df, "multi", "stage_id")
     weather_bins_id = get_setting(settings_df, "multi", "weather_bins_id")
     weather_draws_id = get_setting(settings_df, "multi", "weather_draws_id")
-
-    print("Made it past")
 
     # Figure out which steps, if any, we are skipping
     skip_create_database = determine_skip(

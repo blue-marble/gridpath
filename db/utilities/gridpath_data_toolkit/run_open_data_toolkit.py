@@ -36,17 +36,12 @@ import sys
 
 # GridPath modules
 from db import create_database
-from db.utilities import load_raw_data
+from db.utilities.gridpath_data_toolkit.raw_data import load_raw_data
 from db.utilities.gridpath_data_toolkit.weather import (
     create_sync_var_gen_input_csvs,
     create_sync_load_input_csvs,
 )
 from db.utilities.gridpath_data_toolkit.hydro import create_hydro_iteration_inputs
-from db.utilities.gridpath_data_toolkit import (
-    create_project_input_csvs,
-    create_fuel_input_csvs,
-    create_transmission_input_csvs,
-)
 
 
 def parse_arguments(args):
@@ -87,7 +82,6 @@ def parse_arguments(args):
 
 
 def get_setting(settings_df, script, setting):
-    print(script, setting)
     return settings_df[
         (settings_df["script"] == script) & (settings_df["setting"] == setting)
     ]["value"].values[0]
