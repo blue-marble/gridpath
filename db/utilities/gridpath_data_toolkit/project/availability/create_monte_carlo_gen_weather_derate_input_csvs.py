@@ -15,14 +15,14 @@
 from argparse import ArgumentParser
 import sys
 
-from db.utilities.gridpath_data_toolkit.weather.create_monte_carlo_gen_input_csvs_common import (
+from db.utilities.gridpath_data_toolkit.project.create_monte_carlo_gen_input_csvs_common import (
     create_variable_profile_csvs,
 )
 
 BINS_ID_DEFAULT = 1
 DRAWS_ID_DEFAULT = 1
-VAR_ID_DEFAULT = 1
-VAR_NAME_DEFAULT = "ra_toolkit"
+WEATHER_AV_ID_DEFAULT = 1
+WEATHER_AV_NAME_DEFAULT = "ra_toolkit"
 STAGE_ID_DEFAULT = 1
 
 
@@ -55,15 +55,15 @@ def parse_arguments(args):
     parser.add_argument("-out_dir", "--output_directory")
     parser.add_argument(
         "-id",
-        "--variable_generator_profile_scenario_id",
-        default=VAR_ID_DEFAULT,
-        help=f"Defaults to {VAR_ID_DEFAULT}.",
+        "--exogenous_availability_weather_scenario_id",
+        default=WEATHER_AV_ID_DEFAULT,
+        help=f"Defaults to {WEATHER_AV_ID_DEFAULT}.",
     )
     parser.add_argument(
         "-name",
-        "--variable_generator_profile_scenario_name",
-        default=VAR_NAME_DEFAULT,
-        help=f"Defaults to '{VAR_NAME_DEFAULT}'.",
+        "--exogenous_availability_weather_scenario_name",
+        default=WEATHER_AV_NAME_DEFAULT,
+        help=f"Defaults to '{WEATHER_AV_NAME_DEFAULT}'.",
     )
 
     parser.add_argument(
@@ -101,21 +101,21 @@ def main(args=None):
     parsed_args = parse_arguments(args=args)
 
     if not parsed_args.quiet:
-        print("Creating Monte Carlo variable gen CSVs...")
+        print("Creating Monte Carlo gen weather-dependent derates CSVs...")
 
     create_variable_profile_csvs(
         db_path=parsed_args.database,
         weather_bins_id=parsed_args.weather_bins_id,
         weather_draws_id=parsed_args.weather_draws_id,
         output_directory=parsed_args.output_directory,
-        profile_scenario_id=parsed_args.variable_generator_profile_scenario_id,
-        profile_scenario_name=parsed_args.variable_generator_profile_scenario_name,
+        profile_scenario_id=parsed_args.exogenous_availability_weather_scenario_id,
+        profile_scenario_name=parsed_args.exogenous_availability_weather_scenario_name,
         stage_id=parsed_args.stage_id,
         overwrite=parsed_args.overwrite,
         n_parallel_projects=parsed_args.n_parallel_projects,
-        units_table="raw_data_var_project_units",
-        param_name="cap_factor",
-        raw_data_table="raw_data_project_variable_profiles",
+        units_table="raw_data_unit_availability_params",
+        param_name="availability_derate_weather",
+        raw_data_table="raw_data_unit_availability_weather_derates",
     )
 
 

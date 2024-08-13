@@ -38,10 +38,14 @@ import sys
 from db import create_database
 from db.utilities.gridpath_data_toolkit.raw_data import load_raw_data
 from db.utilities.gridpath_data_toolkit.weather import (
-    create_sync_var_gen_input_csvs,
     create_sync_load_input_csvs,
 )
-from db.utilities.gridpath_data_toolkit.hydro import create_hydro_iteration_inputs
+from db.utilities.gridpath_data_toolkit.project.opchar.var_profiles import (
+    create_sync_var_gen_input_csvs,
+)
+from db.utilities.gridpath_data_toolkit.project.opchar.hydro import (
+    create_hydro_iteration_inputs,
+)
 
 
 def parse_arguments(args):

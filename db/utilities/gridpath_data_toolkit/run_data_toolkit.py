@@ -18,32 +18,35 @@ import pandas as pd
 import sys
 
 # GridPath modules
+
+# GridPath modules
 from db import create_database
 from db.utilities.gridpath_data_toolkit.raw_data import load_raw_data
-from db.utilities.gridpath_data_toolkit import (
-    create_project_input_csvs,
+from db.utilities.gridpath_data_toolkit.project import create_project_input_csvs
+from db.utilities.gridpath_data_toolkit.transmission import (
     create_transmission_input_csvs,
-    create_fuel_input_csvs,
 )
-from db.utilities.gridpath_data_toolkit.availability import (
+from db.utilities.gridpath_data_toolkit.fuels import create_fuel_input_csvs
+from db.utilities.gridpath_data_toolkit.project.availability import (
     create_sync_gen_weather_derate_input_csvs,
     create_monte_carlo_gen_weather_derate_input_csvs,
     create_availability_iteration_inputs,
 )
-from db.utilities.gridpath_data_toolkit.hydro import create_hydro_iteration_inputs
+from db.utilities.gridpath_data_toolkit.project.opchar.var_profiles import (
+    create_monte_carlo_var_gen_input_csvs,
+    create_sync_var_gen_input_csvs,
+)
+from db.utilities.gridpath_data_toolkit.project.opchar.hydro import (
+    create_hydro_iteration_inputs,
+)
 from db.utilities.gridpath_data_toolkit.temporal import (
     create_temporal_scenarios,
     create_monte_carlo_weather_draws,
 )
-from db.utilities.gridpath_data_toolkit.weather import (
-    create_monte_carlo_var_gen_input_csvs,
-)
-from db.utilities.gridpath_data_toolkit.weather import (
-    create_sync_var_gen_input_csvs,
+from db.utilities.gridpath_data_toolkit.system import (
     create_monte_carlo_load_input_csvs,
     create_sync_load_input_csvs,
 )
-
 
 # TODO: add checks if files exists, tell user to delete before running
 
@@ -151,9 +154,7 @@ def main(args=None):
             settings_list.append("--quiet" if parsed_args.quiet else "")
 
             # Run the script's main function with the requested arguments
-            getattr(globals()[script_name], "main")(
-               settings_list
-            )
+            getattr(globals()[script_name], "main")(settings_list)
 
 
 if __name__ == "__main__":
