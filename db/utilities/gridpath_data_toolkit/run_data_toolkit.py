@@ -142,13 +142,15 @@ def main(args=None):
         if not skip:
             settings_list = []
             for setting in settings_dict[script_name]:
-                if setting != "overwrite":
+                if setting[0] != "overwrite":
                     settings_list.append(f"--{setting[0]}")
                     settings_list.append(setting[1])
                 else:
                     settings_list.append(f"--{setting[0]}" if int(setting[1]) else "")
 
             settings_list.append("--quiet" if parsed_args.quiet else "")
+
+            # Run the script's main function with the requested arguments
             getattr(globals()[script_name], "main")(
                settings_list
             )
