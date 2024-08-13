@@ -69,6 +69,7 @@ from pyomo.environ import (
     PositiveIntegers,
     NonPositiveIntegers,
     Any,
+    Integers,
 )
 
 from db.common_functions import spin_on_database_lock
@@ -141,6 +142,15 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | The month that each timepoint belongs to. This is used to determine     |
     | fuel costs during that timepoint, among others.                         |
     +-------------------------------------------------------------------------+
+    | | :code:`spinup_or_lookahead`                                           |
+    | | *Defined over*: :code:`TMPS`                                          |
+    | | *Within*: :code:`Integers`                                            |
+    |                                                                         |
+    | The spinup_or_lookahead value associated with each timepoint.           |
+    | A value of 1 indicates that the timepoint is a spinup_or_lookahead one. |
+    | A value of 0 indicates that the timepoint is not a spinup_or_lookahead  |
+    | one.                                                                    |
+    +-------------------------------------------------------------------------+
 
     .. TODO:: varying timepoint durations haven't been extensiveliy tested
 
@@ -167,6 +177,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.prev_stage_tmp_map = Param(m.TMPS, within=NonNegativeIntegers)
 
     m.month = Param(m.TMPS, within=m.MONTHS)
+
+    m.spinup_or_lookahead = Param(m.TMPS, within=Integers)
 
     # Optional Params
     ###########################################################################
@@ -196,13 +208,14 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             scenario_directory, str(subproblem), str(stage), "inputs", "timepoints.tab"
         ),
         index=m.TMPS,
-        param=(m.tmp_weight, m.hrs_in_tmp, m.prev_stage_tmp_map, m.month),
+        param=(m.tmp_weight, m.hrs_in_tmp, m.prev_stage_tmp_map, m.month, m.spinup_or_lookahead),
         select=(
             "timepoint",
             "timepoint_weight",
             "number_of_hours_in_timepoint",
             "previous_stage_timepoint_map",
             "month",
+            "spinup_or_lookahead",
         ),
     )
 
@@ -253,7 +266,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     c = conn.cursor()
     timepoints = c.execute(
         """SELECT timepoint, period, timepoint_weight,
-           number_of_hours_in_timepoint, previous_stage_timepoint_map, month
+           number_of_hours_in_timepoint, previous_stage_timepoint_map, month, spinup_or_lookahead
            FROM inputs_temporal
            WHERE temporal_scenario_id = {}
            AND subproblem_id = {}
@@ -301,6 +314,7 @@ def write_model_inputs(
                 "number_of_hours_in_timepoint",
                 "previous_stage_timepoint_map",
                 "month",
+                "spinup_or_lookahead",
             ]
         )
 

@@ -388,8 +388,12 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.GEN_HYDRO_OPR_TMPS, rule=min_power_rule
     )
 
-    m.GenHydro_Energy_Budget_Constraint = Constraint(
-        m.GEN_HYDRO_OPR_HRZS, rule=energy_budget_rule
+    m.GenHydro_Energy_Budget_Constraint_with_spinup_or_lookahead = Constraint(
+        m.GEN_HYDRO_OPR_HRZS, {True}, rule=energy_budget_rule
+    )
+
+    m.GenHydro_Energy_Budget_Constraint_without_spinup_or_lookahead = Constraint(
+        m.GEN_HYDRO_OPR_HRZS, {False}, rule=energy_budget_rule
     )
 
     m.GenHydro_Ramp_Up_Constraint = Constraint(m.GEN_HYDRO_OPR_TMPS, rule=ramp_up_rule)
@@ -461,9 +465,10 @@ def min_power_rule(mod, g, tmp):
     )
 
 
-def energy_budget_rule(mod, g, h):
+def energy_budget_rule(mod, g, h, include_spinup_or_lookahead):
     """
-    **Constraint Name**: GenHydro_Energy_Budget_Constraint
+    **Constraint Name**: GenHydro_Energy_Budget_Constraint_with_spinup_or_lookahead
+    **Constraint Name**: GenHydro_Energy_Budget_Constraint_without_spinup_or_lookahead
     **Enforced Over**: GEN_HYDRO_OPR_HRZS
 
     The sum of hydro energy output within a horizon must match the horizon's
@@ -486,16 +491,23 @@ def energy_budget_rule(mod, g, h):
     If the unit were unavailable for half of the timepoints in that horizon,
     the budget would be half, i.e. 42,000 MWh, even though the average power
     fraction is the same!
+
+    NOTE: This rule is used to create two constraints.
+    One of the constraints considers all the timepoints in the horizon,
+    while the other one considers only the non-spinup_or_lookahead timepoints
+    in that horizon.
     """
     return sum(
         mod.GenHydro_Gross_Power_MW[g, tmp] * mod.hrs_in_tmp[tmp]
         for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[mod.balancing_type_project[g], h]
+        if (include_spinup_or_lookahead or (mod.spinup_or_lookahead[tmp] == 0))
     ) == sum(
         mod.gen_hydro_average_power_fraction[g, h]
         * mod.Capacity_MW[g, mod.period[tmp]]
         * mod.Availability_Derate[g, tmp]
         * mod.hrs_in_tmp[tmp]
         for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[mod.balancing_type_project[g], h]
+        if (include_spinup_or_lookahead or (mod.spinup_or_lookahead[tmp] == 0))
     )
 
 
