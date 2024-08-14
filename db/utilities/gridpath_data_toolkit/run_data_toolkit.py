@@ -18,8 +18,6 @@ import pandas as pd
 import sys
 
 # GridPath modules
-
-# GridPath modules
 from db import create_database
 from db.utilities.gridpath_data_toolkit.raw_data import load_raw_data
 from db.utilities.gridpath_data_toolkit.project import create_project_input_csvs
@@ -62,7 +60,8 @@ def parse_arguments(args):
     parser = ArgumentParser(add_help=True)
 
     parser.add_argument(
-        "-s", "--settings_csv", default="./ra_toolkit_settings_sample.csv"
+        "-s", "--settings_csv",
+        default="./open_data_toolkit_settings_sample.csv"
     )
     parser.add_argument("-q", "--quiet", default=False, action="store_true")
     # Run only a single RA Toolkit step
