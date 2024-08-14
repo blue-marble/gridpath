@@ -23,6 +23,9 @@ from db.utilities.gridpath_data_toolkit.raw_data import load_raw_data
 from db.utilities.gridpath_data_toolkit.project.availability import (
     create_project_availability_input_csvs,
 )
+from db.utilities.gridpath_data_toolkit.project.opchar import (
+    create_project_opchar_input_csvs,
+)
 from db.utilities.gridpath_data_toolkit.project import create_project_input_csvs
 from db.utilities.gridpath_data_toolkit.transmission import (
     create_transmission_input_csvs,
