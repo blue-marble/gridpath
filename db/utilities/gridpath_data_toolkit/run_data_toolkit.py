@@ -20,15 +20,20 @@ import sys
 # GridPath modules
 from db import create_database
 from db.utilities.gridpath_data_toolkit.raw_data import load_raw_data
+from db.utilities.gridpath_data_toolkit.project.availability import (
+    create_project_availability_input_csvs,
+)
 from db.utilities.gridpath_data_toolkit.project import create_project_input_csvs
 from db.utilities.gridpath_data_toolkit.transmission import (
     create_transmission_input_csvs,
 )
 from db.utilities.gridpath_data_toolkit.fuels import create_fuel_input_csvs
-from db.utilities.gridpath_data_toolkit.project.availability import (
+from db.utilities.gridpath_data_toolkit.project.availability.outages import (
+    create_availability_iteration_inputs,
+)
+from db.utilities.gridpath_data_toolkit.project.availability.weather_derates import (
     create_sync_gen_weather_derate_input_csvs,
     create_monte_carlo_gen_weather_derate_input_csvs,
-    create_availability_iteration_inputs,
 )
 from db.utilities.gridpath_data_toolkit.project.opchar.var_profiles import (
     create_monte_carlo_var_gen_input_csvs,
@@ -60,8 +65,7 @@ def parse_arguments(args):
     parser = ArgumentParser(add_help=True)
 
     parser.add_argument(
-        "-s", "--settings_csv",
-        default="./open_data_toolkit_settings_sample.csv"
+        "-s", "--settings_csv", default="./open_data_toolkit_settings_sample.csv"
     )
     parser.add_argument("-q", "--quiet", default=False, action="store_true")
     # Run only a single RA Toolkit step

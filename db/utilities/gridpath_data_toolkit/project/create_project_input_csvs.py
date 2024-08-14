@@ -54,15 +54,6 @@ def parse_arguments(args):
         "-lz_name", "--project_load_zone_scenario_name", default="wecc_baas"
     )
     parser.add_argument(
-        "-avl_csv",
-        "--availability_csv_location",
-        default="../../csvs_open_data/project/availability",
-    )
-    parser.add_argument("-avl_id", "--project_availability_scenario_id", default=1)
-    parser.add_argument(
-        "-avl_name", "--project_availability_scenario_name", default="no_derates"
-    )
-    parser.add_argument(
         "-cap_csv",
         "--specified_capacity_csv_location",
         default="../../csvs_open_data/project/capacity_specified",
@@ -210,54 +201,6 @@ def get_project_load_zones(
     AND {eia860_sql_filter_string}
     AND ({var_gen_filter_str} OR {hydro_filter_str})
     ;
-    """
-
-    df = pd.read_sql(sql, conn)
-    df.to_csv(
-        os.path.join(csv_location, f"{subscenario_id}_" f"{subscenario_name}.csv"),
-        index=False,
-    )
-
-
-def get_project_availability(
-    conn,
-    eia860_sql_filter_string,
-    var_gen_filter_str,
-    hydro_filter_str,
-    csv_location,
-    subscenario_id,
-    subscenario_name,
-):
-    sql = f"""
-    SELECT plant_id_eia || '__' || REPLACE(REPLACE(generator_id, ' ', '_'), '-', 
-        '_') AS project, 
-    'exogenous' AS availability_type,
-    NULL AS exogenous_availability_independent_scenario_id,
-    NULL AS exogenous_availability_weather_scenario_id,
-    NULL AS endogenous_availability_scenario_id
-    FROM raw_data_eia860_generators
-    JOIN raw_data_aux_eia_gridpath_key ON
-            raw_data_eia860_generators.prime_mover_code = 
-            raw_data_aux_eia_gridpath_key.prime_mover_code
-            AND energy_source_code_1 = energy_source_code
-     WHERE 1 = 1
-     AND {eia860_sql_filter_string}
-     AND NOT {var_gen_filter_str}
-     AND NOT {hydro_filter_str}
-    UNION
-    -- Aggregated units include wind, offshore wind, solar, and hydro
-    SELECT DISTINCT 
-        agg_project || '_' || balancing_authority_code_eia AS project,
-        'exogenous' AS availability_type,
-    NULL AS exogenous_availability_independent_scenario_id,
-    NULL AS exogenous_availability_weather_scenario_id,
-    NULL AS endogenous_availability_scenario_id
-    FROM raw_data_eia860_generators
-    JOIN raw_data_aux_eia_gridpath_key
-    USING (prime_mover_code)
-    WHERE 1 = 1
-    AND {eia860_sql_filter_string}
-    AND ({var_gen_filter_str} OR {hydro_filter_str})
     """
 
     df = pd.read_sql(sql, conn)
@@ -803,16 +746,6 @@ def main(args=None):
         csv_location=parsed_args.load_zone_csv_location,
         subscenario_id=parsed_args.project_load_zone_scenario_id,
         subscenario_name=parsed_args.project_load_zone_scenario_name,
-    )
-
-    get_project_availability(
-        conn=conn,
-        eia860_sql_filter_string=eia860_sql_filter_string,
-        var_gen_filter_str=var_gen_filter_str,
-        hydro_filter_str=hydro_filter_str,
-        csv_location=parsed_args.availability_csv_location,
-        subscenario_id=parsed_args.project_availability_scenario_id,
-        subscenario_name=parsed_args.project_availability_scenario_name,
     )
 
     get_project_capacity(
