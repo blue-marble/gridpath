@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import csv
+
 from argparse import ArgumentParser
 import numpy as np
 import os.path
@@ -36,33 +36,7 @@ def parse_arguments(args):
     parser.add_argument("-rep", "--report_date", default="2023-01-01")
     parser.add_argument("-y", "--study_year", default=2026)
     parser.add_argument("-r", "--region", default="WECC")
-    parser.add_argument(
-        "-p_csv",
-        "--portfolio_csv_location",
-        default="../../csvs_open_data/transmission/portfolios",
-    )
-    parser.add_argument("-p_id", "--transmission_portfolio_scenario_id", default=1)
-    parser.add_argument(
-        "-p_name", "--transmission_portfolio_scenario_name", default="eia930"
-    )
-    parser.add_argument(
-        "-lz_csv",
-        "--load_zone_csv_location",
-        default="../../csvs_open_data/transmission/load_zones",
-    )
-    parser.add_argument("-lz_id", "--transmission_load_zone_scenario_id", default=1)
-    parser.add_argument(
-        "-lz_name", "--transmission_load_zone_scenario_name", default="wecc_baas"
-    )
-    parser.add_argument(
-        "-avl_csv",
-        "--availability_csv_location",
-        default="../../csvs_open_data/transmission/availability",
-    )
-    parser.add_argument("-avl_id", "--transmission_availability_scenario_id", default=1)
-    parser.add_argument(
-        "-avl_name", "--transmission_availability_scenario_name", default="no_derates"
-    )
+
     parser.add_argument(
         "-cap_csv",
         "--specified_capacity_csv_location",
@@ -74,90 +48,10 @@ def parse_arguments(args):
     parser.add_argument(
         "-cap_name", "--transmission_specified_capacity_scenario_name", default="base"
     )
-    parser.add_argument(
-        "-fcost_csv",
-        "--fixed_cost_csv_location",
-        default="../../csvs_open_data/transmission/fixed_cost",
-    )
-    parser.add_argument("-fcost_id", "--transmission_fixed_cost_scenario_id", default=1)
-    parser.add_argument(
-        "-fcost_name", "--transmission_fixed_cost_scenario_name", default="base"
-    )
-    parser.add_argument(
-        "-fuels_csv",
-        "--fuels_csv_location",
-        default="../../csvs_open_data/transmission/opchar/fuels",
-    )
-    parser.add_argument("-fuel_id", "--transmission_fuel_scenario_id", default=1)
-    parser.add_argument(
-        "-fuel_name", "--transmission_fuel_scenario_name", default="base"
-    )
-
-    parser.add_argument(
-        "-hr_csv",
-        "--hr_csv_location",
-        default="../../csvs_open_data/transmission/opchar/heat_rates",
-    )
-    parser.add_argument("-hr_id", "--transmission_hr_scenario_id", default=1)
-    parser.add_argument(
-        "-hr_name", "--transmission_hr_scenario_name", default="generic"
-    )
-
-    parser.add_argument(
-        "-opchar_csv",
-        "--opchar_csv_location",
-        default="../../csvs_open_data/transmission/opchar",
-    )
-    parser.add_argument(
-        "-opchar_id", "--transmission_operational_chars_scenario_id", default=1
-    )
-    parser.add_argument(
-        "-opchar_name",
-        "--transmission_operational_chars_scenario_name",
-        default="wecc_tx_opchar",
-    )
 
     parsed_arguments = parser.parse_known_args(args=args)[0]
 
     return parsed_arguments
-
-
-def get_tx_portfolio_for_region(
-    all_links,
-    csv_location,
-    subscenario_id,
-    subscenario_name,
-):
-    """ """
-    tx_lines = [f"{link[0]}_{link[1]}" for link in all_links]
-    df = pd.DataFrame(tx_lines, columns=["transmission_line"])
-    df["capacity_type"] = "tx_spec"
-
-    df.to_csv(
-        os.path.join(csv_location, f"{subscenario_id}_{subscenario_name}.csv"),
-        index=False,
-    )
-
-
-def get_tx_load_zones(
-    all_links,
-    csv_location,
-    subscenario_id,
-    subscenario_name,
-):
-    """ """
-    lz_dict = {
-        "transmission_line": [f"{link[0]}_{link[1]}" for link in all_links],
-        "load_zone_from": [link[0] for link in all_links],
-        "load_zone_to": [link[1] for link in all_links],
-    }
-
-    df = pd.DataFrame(lz_dict)
-
-    df.to_csv(
-        os.path.join(csv_location, f"{subscenario_id}_{subscenario_name}.csv"),
-        index=False,
-    )
 
 
 def get_tx_capacities(
@@ -246,40 +140,8 @@ def get_tx_capacities(
     )
 
 
-def get_tx_availability(
-    all_links,
-    csv_location,
-    subscenario_id,
-    subscenario_name,
-):
-    """ """
-    tx_lines = [f"{link[0]}_{link[1]}" for link in all_links]
-    df = pd.DataFrame(tx_lines, columns=["transmission_line"])
-    df["availability_type"] = "exogenous"
-    df["exogenous_availability_scenario_id"] = None
-    df["endogenous_availability_scenario_id"] = None
-
-    df.to_csv(
-        os.path.join(csv_location, f"{subscenario_id}_{subscenario_name}.csv"),
-        index=False,
-    )
-
-
-def get_tx_opchar(all_links, csv_location, subscenario_id, subscenario_name):
-    tx_lines = [f"{link[0]}_{link[1]}" for link in all_links]
-    df = pd.DataFrame(tx_lines, columns=["transmission_line"])
-    df["operational_type"] = "tx_simple"
-    df["tx_simple_loss_factor"] = 0.02
-    df["reactance_ohms"] = None
-
-    df.to_csv(
-        os.path.join(csv_location, f"{subscenario_id}_{subscenario_name}.csv"),
-        index=False,
-    )
-
-
 def main(args=None):
-    print("Creating transmission")
+    print("Creating transmission specified capacity inputs")
     if args is None:
         args = sys.argv[1:]
 
@@ -328,20 +190,6 @@ def main(args=None):
             """
     ).fetchall()
 
-    get_tx_portfolio_for_region(
-        all_links=all_links,
-        csv_location=parsed_args.portfolio_csv_location,
-        subscenario_id=parsed_args.transmission_portfolio_scenario_id,
-        subscenario_name=parsed_args.transmission_portfolio_scenario_name,
-    )
-
-    get_tx_load_zones(
-        all_links=all_links,
-        csv_location=parsed_args.load_zone_csv_location,
-        subscenario_id=parsed_args.transmission_load_zone_scenario_id,
-        subscenario_name=parsed_args.transmission_load_zone_scenario_name,
-    )
-
     get_tx_capacities(
         conn=conn,
         all_links=all_links,
@@ -351,20 +199,6 @@ def main(args=None):
         csv_location=parsed_args.specified_capacity_csv_location,
         subscenario_id=parsed_args.transmission_specified_capacity_scenario_id,
         subscenario_name=parsed_args.transmission_specified_capacity_scenario_name,
-    )
-
-    get_tx_availability(
-        all_links=all_links,
-        csv_location=parsed_args.availability_csv_location,
-        subscenario_id=parsed_args.transmission_availability_scenario_id,
-        subscenario_name=parsed_args.transmission_availability_scenario_name,
-    )
-
-    get_tx_opchar(
-        all_links=all_links,
-        csv_location=parsed_args.opchar_csv_location,
-        subscenario_id=parsed_args.transmission_operational_chars_scenario_id,
-        subscenario_name=parsed_args.transmission_operational_chars_scenario_name,
     )
 
 

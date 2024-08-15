@@ -65,8 +65,20 @@ from db.utilities.gridpath_data_toolkit.project.opchar.hydro import (
     create_hydro_iteration_inputs,
 )
 from db.utilities.gridpath_data_toolkit.fuels import create_fuel_input_csvs
-from db.utilities.gridpath_data_toolkit.transmission import (
-    create_transmission_input_csvs,
+from db.utilities.gridpath_data_toolkit.transmission.portfolios import (
+    create_transmission_portfolio_input_csvs,
+)
+from db.utilities.gridpath_data_toolkit.transmission.load_zones import (
+    create_transmission_load_zone_input_csvs,
+)
+from db.utilities.gridpath_data_toolkit.transmission.capacity_specified import (
+    create_transmission_specified_capacity_input_csvs,
+)
+from db.utilities.gridpath_data_toolkit.transmission.availability import (
+    create_transmission_availability_input_csvs,
+)
+from db.utilities.gridpath_data_toolkit.transmission.opchar import (
+    create_transmission_opchar_input_csvs,
 )
 
 # TODO: add checks if files exists, tell user to delete before running
