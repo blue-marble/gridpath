@@ -20,25 +20,42 @@ import sys
 # GridPath modules
 from db import create_database
 from db.utilities.gridpath_data_toolkit.raw_data import load_raw_data
-from db.utilities.gridpath_data_toolkit.project import \
-    create_project_portfolio_input_csvs, create_project_load_zone_input_csvs
+from db.utilities.gridpath_data_toolkit.temporal import (
+    create_temporal_scenarios,
+    create_monte_carlo_weather_draws,
+)
+from db.utilities.gridpath_data_toolkit.system import (
+    create_monte_carlo_load_input_csvs,
+    create_sync_load_input_csvs,
+)
+from db.utilities.gridpath_data_toolkit.project import (
+    create_project_portfolio_input_csvs,
+    create_project_load_zone_input_csvs,
+)
+from db.utilities.gridpath_data_toolkit.project.capacity_specified import (
+    create_project_specified_capacity_input_csvs,
+)
+from db.utilities.gridpath_data_toolkit.project.fixed_cost import (
+    create_project_fixed_cost_input_csvs,
+)
 from db.utilities.gridpath_data_toolkit.project.availability import (
     create_project_availability_input_csvs,
 )
-from db.utilities.gridpath_data_toolkit.project.opchar import (
-    create_project_opchar_input_csvs,
-)
-from db.utilities.gridpath_data_toolkit.project import create_project_input_csvs
-from db.utilities.gridpath_data_toolkit.transmission import (
-    create_transmission_input_csvs,
-)
-from db.utilities.gridpath_data_toolkit.fuels import create_fuel_input_csvs
 from db.utilities.gridpath_data_toolkit.project.availability.outages import (
     create_availability_iteration_inputs,
 )
 from db.utilities.gridpath_data_toolkit.project.availability.weather_derates import (
     create_sync_gen_weather_derate_input_csvs,
     create_monte_carlo_gen_weather_derate_input_csvs,
+)
+from db.utilities.gridpath_data_toolkit.project.opchar import (
+    create_project_opchar_input_csvs,
+)
+from db.utilities.gridpath_data_toolkit.project.opchar.fuels import (
+    create_project_fuel_input_csvs,
+)
+from db.utilities.gridpath_data_toolkit.project.opchar.heat_rates import (
+    create_project_heat_rate_input_csvs,
 )
 from db.utilities.gridpath_data_toolkit.project.opchar.var_profiles import (
     create_monte_carlo_var_gen_input_csvs,
@@ -47,13 +64,9 @@ from db.utilities.gridpath_data_toolkit.project.opchar.var_profiles import (
 from db.utilities.gridpath_data_toolkit.project.opchar.hydro import (
     create_hydro_iteration_inputs,
 )
-from db.utilities.gridpath_data_toolkit.temporal import (
-    create_temporal_scenarios,
-    create_monte_carlo_weather_draws,
-)
-from db.utilities.gridpath_data_toolkit.system import (
-    create_monte_carlo_load_input_csvs,
-    create_sync_load_input_csvs,
+from db.utilities.gridpath_data_toolkit.fuels import create_fuel_input_csvs
+from db.utilities.gridpath_data_toolkit.transmission import (
+    create_transmission_input_csvs,
 )
 
 # TODO: add checks if files exists, tell user to delete before running

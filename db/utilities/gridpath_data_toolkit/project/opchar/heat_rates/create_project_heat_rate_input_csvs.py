@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
+import csv
 from argparse import ArgumentParser
 import os.path
 import pandas as pd
@@ -35,80 +35,84 @@ def parse_arguments(args):
     parser.add_argument("-rep", "--report_date", default="2023-01-01")
     parser.add_argument("-y", "--study_year", default=2026)
     parser.add_argument("-r", "--region", default="WECC")
+
     parser.add_argument(
-        "-p_csv",
-        "--portfolio_csv_location",
-        default="../../csvs_open_data/project/portfolios",
+        "-hr_csv",
+        "--hr_csv_location",
+        default="../../csvs_open_data/project/opchar/heat_rates",
     )
-    parser.add_argument("-p_id", "--project_portfolio_scenario_id", default=1)
-    parser.add_argument(
-        "-p_name", "--project_portfolio_scenario_name", default="wecc_plants_units"
-    )
+    parser.add_argument("-hr_id", "--project_hr_scenario_id", default=1)
+    parser.add_argument("-hr_name", "--project_hr_scenario_name", default="generic")
 
     parsed_arguments = parser.parse_known_args(args=args)[0]
 
     return parsed_arguments
 
 
-def get_project_portfolio_for_region(
+def get_project_heat_rates(
     conn,
     eia860_sql_filter_string,
-    var_gen_filter_str,
-    hydro_filter_str,
+    heat_rate_filter_str,
     csv_location,
     subscenario_id,
     subscenario_name,
 ):
-    """
-    Unit level except for wind (onshore and offshore) and solar PV, which are
-    aggregated to the BA-level.
-    TODO: disaggregate the hybrids out of the wind/solar project and combine
-     with their battery components
-    """
-    # For disaggregated unit-level projects, use plant_id_eia__generator_id
-    # as the project name
-    # For BA-aggregated projects, use prime_mover_BA
+
+    # Only coal, gas, and fuel oil for now (with aeo prices)
     sql = f"""
-    -- Disaggregated units
-    SELECT plant_id_eia || '__' || REPLACE(REPLACE(generator_id, ' ', '_'), '-', 
-        '_') AS project, 
-    NULL as specified, 
-    NULL as new_build,
-    gridpath_capacity_type AS capacity_type
-    FROM raw_data_eia860_generators
-    JOIN raw_data_aux_eia_gridpath_key ON
+        SELECT plant_id_eia || '__' || REPLACE(REPLACE(generator_id, ' ', '_'), '-', 
+            '_') AS project, 
+            raw_data_eia860_generators.prime_mover_code, gridpath_generic_fuel, 
+            heat_rate_mmbtu_per_mwh, min_load_fraction
+        FROM raw_data_eia860_generators
+        JOIN raw_data_aux_eia_gridpath_key ON
             raw_data_eia860_generators.prime_mover_code = 
             raw_data_aux_eia_gridpath_key.prime_mover_code
             AND energy_source_code_1 = energy_source_code
-     WHERE 1 = 1
-     AND {eia860_sql_filter_string}
-     AND NOT {var_gen_filter_str}
-     AND NOT {hydro_filter_str}
-    UNION
-    -- Aggregated units include wind, offshore wind, solar, and hydro
-    SELECT DISTINCT 
-        agg_project || '_' || balancing_authority_code_eia AS project,
-        NULL as specified,
-        NULL as new_build,
-        gridpath_capacity_type AS capacity_type
-    FROM raw_data_eia860_generators
-    JOIN raw_data_aux_eia_gridpath_key
-    USING (prime_mover_code)
-    WHERE 1 = 1
-    AND {eia860_sql_filter_string}
-    AND ({var_gen_filter_str} OR {hydro_filter_str})
-    ;
-    """
+        WHERE 1 = 1
+        AND {eia860_sql_filter_string}
+        AND {heat_rate_filter_str}
+        """
 
-    df = pd.read_sql(sql, conn)
-    df.to_csv(
-        os.path.join(csv_location, f"{subscenario_id}_{subscenario_name}.csv"),
-        index=False,
-    )
+    c = conn.cursor()
+    header = ["period", "load_point_fraction", "average_heat_rate_mmbtu_per_mwh"]
+    for (
+        project,
+        prime_mover_code,
+        fuel,
+        heat_rate_mmbtu_per_mwh,
+        min_load_fraction,
+    ) in c.execute(sql).fetchall():
+        c2 = conn.cursor()
+        min_load_heat_rate_coefficient = c2.execute(
+            f"""
+            SELECT average_heat_rate_coefficient
+            FROM raw_data_aux_heat_rate_curve
+            WHERE load_point_fraction = {min_load_fraction}
+            ;
+            """
+        ).fetchone()[0]
+        with open(
+            os.path.join(
+                csv_location,
+                f"{project}-{subscenario_id}" f"-{subscenario_name}.csv",
+            ),
+            "w",
+        ) as filepath:
+            writer = csv.writer(filepath, delimiter=",")
+            writer.writerow(header)
+            writer.writerow(
+                [
+                    0,
+                    min_load_fraction,
+                    min_load_heat_rate_coefficient * heat_rate_mmbtu_per_mwh,
+                ]
+            )
+            writer.writerow([0, 1, heat_rate_mmbtu_per_mwh])
 
 
 def main(args=None):
-    print("Creating project portfolio inputs")
+    print("Creating project heat rate inputs")
     if args is None:
         args = sys.argv[1:]
 
@@ -140,14 +144,13 @@ def main(args=None):
         """gridpath_operational_type IN ('gen_hydro', 'gen_hydro_must_take')"""
     )
 
-    get_project_portfolio_for_region(
+    get_project_heat_rates(
         conn=conn,
         eia860_sql_filter_string=eia860_sql_filter_string,
-        var_gen_filter_str=var_gen_filter_str,
-        hydro_filter_str=hydro_filter_str,
-        csv_location=parsed_args.portfolio_csv_location,
-        subscenario_id=parsed_args.project_portfolio_scenario_id,
-        subscenario_name=parsed_args.project_portfolio_scenario_name,
+        heat_rate_filter_str=heat_rate_filter_str,
+        csv_location=parsed_args.hr_csv_location,
+        subscenario_id=parsed_args.project_hr_scenario_id,
+        subscenario_name=parsed_args.project_hr_scenario_name,
     )
 
 

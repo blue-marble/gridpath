@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
+import csv
 from argparse import ArgumentParser
 import os.path
 import pandas as pd
@@ -36,13 +36,15 @@ def parse_arguments(args):
     parser.add_argument("-y", "--study_year", default=2026)
     parser.add_argument("-r", "--region", default="WECC")
     parser.add_argument(
-        "-p_csv",
-        "--portfolio_csv_location",
-        default="../../csvs_open_data/project/portfolios",
+        "-cap_csv",
+        "--specified_capacity_csv_location",
+        default="../../csvs_open_data/project/capacity_specified",
     )
-    parser.add_argument("-p_id", "--project_portfolio_scenario_id", default=1)
     parser.add_argument(
-        "-p_name", "--project_portfolio_scenario_name", default="wecc_plants_units"
+        "-cap_id", "--project_specified_capacity_scenario_id", default=1
+    )
+    parser.add_argument(
+        "-cap_name", "--project_specified_capacity_scenario_name", default="base"
     )
 
     parsed_arguments = parser.parse_known_args(args=args)[0]
@@ -50,31 +52,44 @@ def parse_arguments(args):
     return parsed_arguments
 
 
-def get_project_portfolio_for_region(
+# TODO: battery durations are hardcoded right now for when not provided (1h
+#  for batteries/flywheels and 12 hours for pumped hydro)
+def get_project_capacity(
     conn,
     eia860_sql_filter_string,
     var_gen_filter_str,
     hydro_filter_str,
+    study_year,
     csv_location,
     subscenario_id,
     subscenario_name,
 ):
-    """
-    Unit level except for wind (onshore and offshore) and solar PV, which are
-    aggregated to the BA-level.
-    TODO: disaggregate the hybrids out of the wind/solar project and combine
-     with their battery components
-    """
-    # For disaggregated unit-level projects, use plant_id_eia__generator_id
-    # as the project name
-    # For BA-aggregated projects, use prime_mover_BA
     sql = f"""
-    -- Disaggregated units
     SELECT plant_id_eia || '__' || REPLACE(REPLACE(generator_id, ' ', '_'), '-', 
         '_') AS project, 
-    NULL as specified, 
-    NULL as new_build,
-    gridpath_capacity_type AS capacity_type
+        {study_year} as period,
+        capacity_mw AS specified_capacity_mw,
+        NULL AS hyb_gen_specified_capacity_mw,
+        NULL AS hyb_stor_specified_capacity_mw,
+        CASE 
+            WHEN raw_data_eia860_generators.prime_mover_code NOT IN ('BA', 
+            'ES', 'FW', 'PS') THEN NULL
+            ELSE 
+                CASE
+                    WHEN energy_storage_capacity_mwh IS NULL
+                    THEN 
+                        CASE
+                            WHEN raw_data_eia860_generators.prime_mover_code 
+                            = 'PS' THEN 12.0*capacity_mw
+                            ELSE capacity_mw
+                        END
+                    ELSE energy_storage_capacity_mwh
+                END
+        END
+            AS specified_capacity_mwh,
+        NULL AS fuel_production_capacity_fuelunitperhour,
+        NULL AS fuel_release_capacity_fuelunitperhour,
+        NULL AS fuel_storage_capacity_fuelunit
     FROM raw_data_eia860_generators
     JOIN raw_data_aux_eia_gridpath_key ON
             raw_data_eia860_generators.prime_mover_code = 
@@ -88,27 +103,33 @@ def get_project_portfolio_for_region(
     -- Aggregated units include wind, offshore wind, solar, and hydro
     SELECT DISTINCT 
         agg_project || '_' || balancing_authority_code_eia AS project,
-        NULL as specified,
-        NULL as new_build,
-        gridpath_capacity_type AS capacity_type
+        {study_year} as period,
+        SUM(capacity_mw) AS specified_capacity_mw,
+        NULL AS hyb_gen_specified_capacity_mw,
+        NULL AS hyb_stor_specified_capacity_mw,
+        SUM(energy_storage_capacity_mwh) AS specified_capacity_mwh,
+        NULL AS fuel_production_capacity_fuelunitperhour,
+        NULL AS fuel_release_capacity_fuelunitperhour,
+        NULL AS fuel_storage_capacity_fuelunit
     FROM raw_data_eia860_generators
     JOIN raw_data_aux_eia_gridpath_key
     USING (prime_mover_code)
     WHERE 1 = 1
     AND {eia860_sql_filter_string}
     AND ({var_gen_filter_str} OR {hydro_filter_str})
+    GROUP BY project
     ;
     """
 
     df = pd.read_sql(sql, conn)
     df.to_csv(
-        os.path.join(csv_location, f"{subscenario_id}_{subscenario_name}.csv"),
+        os.path.join(csv_location, f"{subscenario_id}_" f"{subscenario_name}.csv"),
         index=False,
     )
 
 
 def main(args=None):
-    print("Creating project portfolio inputs")
+    print("Creating project specified capacity input CSVs")
     if args is None:
         args = sys.argv[1:]
 
@@ -140,14 +161,15 @@ def main(args=None):
         """gridpath_operational_type IN ('gen_hydro', 'gen_hydro_must_take')"""
     )
 
-    get_project_portfolio_for_region(
+    get_project_capacity(
         conn=conn,
         eia860_sql_filter_string=eia860_sql_filter_string,
+        study_year=parsed_args.study_year,
         var_gen_filter_str=var_gen_filter_str,
         hydro_filter_str=hydro_filter_str,
-        csv_location=parsed_args.portfolio_csv_location,
-        subscenario_id=parsed_args.project_portfolio_scenario_id,
-        subscenario_name=parsed_args.project_portfolio_scenario_name,
+        csv_location=parsed_args.specified_capacity_csv_location,
+        subscenario_id=parsed_args.project_specified_capacity_scenario_id,
+        subscenario_name=parsed_args.project_specified_capacity_scenario_name,
     )
 
 
