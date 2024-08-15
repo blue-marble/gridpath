@@ -20,6 +20,7 @@ import sys
 # GridPath modules
 from db import create_database
 from db.utilities.gridpath_data_toolkit.raw_data import load_raw_data
+from db.utilities.gridpath_data_toolkit.project import create_project_portfolio_input_csvs
 from db.utilities.gridpath_data_toolkit.project.availability import (
     create_project_availability_input_csvs,
 )
