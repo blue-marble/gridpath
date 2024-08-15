@@ -15,10 +15,13 @@
 import csv
 from argparse import ArgumentParser
 import os.path
-import pandas as pd
 import sys
 
 from db.common_functions import connect_to_database
+from db.utilities.gridpath_data_toolkit.project.project_data_filters_common import (
+    get_eia860_sql_filter_string,
+    FUEL_FILTER_STR,
+)
 
 
 def parse_arguments(args):
@@ -100,34 +103,12 @@ def main(args=None):
 
     conn = connect_to_database(db_path=parsed_args.database)
 
-    eia860_sql_filter_string = f"""
-    (unixepoch(current_planned_generator_operating_date) < unixepoch(
-     '{parsed_args.study_year}-01-01') or current_planned_generator_operating_date IS NULL)
-     AND (unixepoch(generator_retirement_date) > unixepoch('{parsed_args.study_year}-12-31') or generator_retirement_date IS NULL)
-     AND balancing_authority_code_eia in (
-         SELECT baa
-         FROM raw_data_aux_baa_key
-         WHERE region = '{parsed_args.region}'
-     )
-    """
-    fuel_filter_str = (
-        """gridpath_operational_type IN ('gen_commit_bin', 'gen_commit_lin')"""
-    )
-    heat_rate_filter_str = (
-        """gridpath_operational_type IN ('gen_commit_bin', 'gen_commit_lin')"""
-    )
-    stor_filter_str = """gridpath_operational_type = 'stor'"""
-    var_gen_filter_str = (
-        """gridpath_operational_type IN ('gen_var', 'gen_var_must_take')"""
-    )
-    hydro_filter_str = (
-        """gridpath_operational_type IN ('gen_hydro', 'gen_hydro_must_take')"""
-    )
-
     get_project_fuels(
         conn=conn,
-        eia860_sql_filter_string=eia860_sql_filter_string,
-        fuel_filter_str=fuel_filter_str,
+        eia860_sql_filter_string=get_eia860_sql_filter_string(
+            study_year=parsed_args.study_year, region=parsed_args.region
+        ),
+        fuel_filter_str=FUEL_FILTER_STR,
         csv_location=parsed_args.fuels_csv_location,
         subscenario_id=parsed_args.project_fuel_scenario_id,
         subscenario_name=parsed_args.project_fuel_scenario_name,

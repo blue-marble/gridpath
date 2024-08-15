@@ -20,6 +20,9 @@ import pandas as pd
 import sys
 
 from db.common_functions import connect_to_database
+from db.utilities.gridpath_data_toolkit.transmission.transmission_data_filters_common import (
+    get_all_links_sql,
+)
 
 
 def parse_arguments(args):
@@ -83,44 +86,7 @@ def main(args=None):
 
     c = conn.cursor()
 
-    all_links = c.execute(
-        f"""
-            SELECT DISTINCT balancing_authority_code_eia, balancing_authority_code_adjacent_eia
-            FROM raw_data_aux_eia930_hourly_interchange
-            WHERE balancing_authority_code_eia in (
-            SELECT baa FROM (
-                SELECT DISTINCT baa from (
-                    SELECT DISTINCT balancing_authority_code_eia as baa
-                    FROM raw_data_aux_eia930_hourly_interchange
-                    UNION
-                    SELECT DISTINCT balancing_authority_code_adjacent_eia as ba
-                    FROM raw_data_aux_eia930_hourly_interchange
-                    )
-                )
-                LEFT OUTER JOIN
-                raw_data_aux_baa_key
-                USING (baa)
-            WHERE region = 'WECC'
-            )
-            AND
-            balancing_authority_code_adjacent_eia in (
-            SELECT baa FROM (
-                SELECT DISTINCT baa from (
-                    SELECT DISTINCT balancing_authority_code_eia as baa
-                    FROM raw_data_aux_eia930_hourly_interchange
-                    UNION
-                    SELECT DISTINCT balancing_authority_code_adjacent_eia as ba
-                    FROM raw_data_aux_eia930_hourly_interchange
-                    )
-                )
-                LEFT OUTER JOIN
-                raw_data_aux_baa_key
-                USING (baa)
-            WHERE region = 'WECC'
-            )
-            ;
-            """
-    ).fetchall()
+    all_links = c.execute(get_all_links_sql(region="WECC")).fetchall()
 
     get_tx_load_zones(
         all_links=all_links,
