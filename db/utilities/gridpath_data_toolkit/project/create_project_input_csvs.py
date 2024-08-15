@@ -36,15 +36,6 @@ def parse_arguments(args):
     parser.add_argument("-y", "--study_year", default=2026)
     parser.add_argument("-r", "--region", default="WECC")
     parser.add_argument(
-        "-lz_csv",
-        "--load_zone_csv_location",
-        default="../../csvs_open_data/project/load_zones",
-    )
-    parser.add_argument("-lz_id", "--project_load_zone_scenario_id", default=1)
-    parser.add_argument(
-        "-lz_name", "--project_load_zone_scenario_name", default="wecc_baas"
-    )
-    parser.add_argument(
         "-cap_csv",
         "--specified_capacity_csv_location",
         default="../../csvs_open_data/project/capacity_specified",
@@ -83,49 +74,6 @@ def parse_arguments(args):
     parsed_arguments = parser.parse_known_args(args=args)[0]
 
     return parsed_arguments
-
-
-def get_project_load_zones(
-    conn,
-    eia860_sql_filter_string,
-    var_gen_filter_str,
-    hydro_filter_str,
-    csv_location,
-    subscenario_id,
-    subscenario_name,
-):
-    sql = f"""
-    SELECT plant_id_eia || '__' || REPLACE(REPLACE(generator_id, ' ', '_'), '-', 
-        '_') AS project, balancing_authority_code_eia AS load_zone
-    FROM raw_data_eia860_generators
-    JOIN raw_data_aux_eia_gridpath_key ON
-            raw_data_eia860_generators.prime_mover_code = 
-            raw_data_aux_eia_gridpath_key.prime_mover_code
-            AND energy_source_code_1 = energy_source_code
-    WHERE 1 = 1
-    AND {eia860_sql_filter_string}
-    AND NOT {var_gen_filter_str}
-    AND NOT {hydro_filter_str}
-    -- Aggregated units include wind, offshore wind, solar, and hydro
-    UNION
-    SELECT DISTINCT 
-        agg_project || '_' || balancing_authority_code_eia AS project,
-        balancing_authority_code_eia AS load_zone
-    FROM raw_data_eia860_generators
-    JOIN raw_data_aux_eia_gridpath_key
-    USING (prime_mover_code)
-    WHERE 1 = 1
-    AND {eia860_sql_filter_string}
-    AND ({var_gen_filter_str} OR {hydro_filter_str})
-    ;
-    """
-
-    df = pd.read_sql(sql, conn)
-    df.to_csv(
-        os.path.join(csv_location, f"{subscenario_id}_" f"{subscenario_name}.csv"),
-        index=False,
-    )
-
 
 # TODO: battery durations are hardcoded right now for when not provided (1h
 #  for batteries/flywheels and 12 hours for pumped hydro)
@@ -406,16 +354,6 @@ def main(args=None):
     )
     hydro_filter_str = (
         """gridpath_operational_type IN ('gen_hydro', 'gen_hydro_must_take')"""
-    )
-
-    get_project_load_zones(
-        conn=conn,
-        eia860_sql_filter_string=eia860_sql_filter_string,
-        var_gen_filter_str=var_gen_filter_str,
-        hydro_filter_str=hydro_filter_str,
-        csv_location=parsed_args.load_zone_csv_location,
-        subscenario_id=parsed_args.project_load_zone_scenario_id,
-        subscenario_name=parsed_args.project_load_zone_scenario_name,
     )
 
     get_project_capacity(
