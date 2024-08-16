@@ -1316,7 +1316,7 @@ class TestExamples(unittest.TestCase):
     def test_example_ra_toolkit_sync(self):
         """
         Check validation and objective function values of
-        "ra_toolkit_monte_carlo" example
+        "ra_toolkit_sync" example
         :return:
         """
         scenario_name = "ra_toolkit_sync"
@@ -1340,6 +1340,17 @@ class TestExamples(unittest.TestCase):
         """
         scenario_name = "2periods_nuclear_var_cost_by_period_diff"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_ra_toolkit_sync_single_year(self):
+        """
+        Check validation and objective function values of
+        "ra_toolkit_sync_single_year" example
+        :return:
+        """
+        scenario_name = "ra_toolkit_sync_single_year"
+        self.validate_and_test_example_generic(
+            scenario_name=scenario_name, literal=True, skip_validation=True
+        )
 
     @classmethod
     def tearDownClass(cls):
