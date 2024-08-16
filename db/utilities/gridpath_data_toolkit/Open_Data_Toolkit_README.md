@@ -7,6 +7,8 @@ get_raw_data_from_pudl.py
 
 python run_open_data_toolkit.py
 
+gridpath_create_database --database ./open_data.db
+
 gridpath_load_csvs --database ./open_data.db --csv_location ./csvs_open_data
 
 gridpath_load_scenarios --database ./open_data.db --csv_path ./csvs_open_data/scenarios.csv

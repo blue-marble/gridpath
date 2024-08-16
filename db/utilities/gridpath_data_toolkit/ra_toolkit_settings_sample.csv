@@ -1,5 +1,7 @@
 ﻿script,setting,value
 create_database,database,../../ra_toolkit.db
+create_database,db_schema,raw_data_db_schema.sql
+create_database,omit_data,1
 load_raw_data,database,../../ra_toolkit.db
 load_raw_data,csv_location,../../csvs_test_examples/raw_data_ra_toolkit/
 create_sync_load_input_csvs,database,../../ra_toolkit.db
