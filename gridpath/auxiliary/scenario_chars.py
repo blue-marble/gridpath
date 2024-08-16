@@ -151,7 +151,11 @@ def determine_iteration_directories_from_iteration_structure(scenario_structure)
     if len(scenario_structure.ITERATION_STRUCTURE.keys()) == 0:
         raise ValueError("Expecting at least one weather iteration.")
 
+    # Don't make the directory for weather iterations if it's a single
+    # iteration with ID 0
     if len(scenario_structure.ITERATION_STRUCTURE.keys()) > 1:
+        make_weather_iteration_dirs = True
+    elif list(scenario_structure.ITERATION_STRUCTURE.keys())[0] != 0:
         make_weather_iteration_dirs = True
     else:
         make_weather_iteration_dirs = False
@@ -186,6 +190,11 @@ def determine_iteration_directories_from_iteration_structure(scenario_structure)
                 )
             )
             > 1
+        ):
+            make_hydro_iteration_dirs = True
+        elif (
+            list(scenario_structure.ITERATION_STRUCTURE[weather_iteration].keys())[0]
+            != 0
         ):
             make_hydro_iteration_dirs = True
         else:
@@ -234,6 +243,15 @@ def determine_iteration_directories_from_iteration_structure(scenario_structure)
                     )
                 )
                 > 1
+            ):
+                make_availability_iteration_dirs = True
+            elif (
+                list(
+                    scenario_structure.ITERATION_STRUCTURE[weather_iteration][
+                        hydro_iteration
+                    ]
+                )[0]
+                != 0
             ):
                 make_availability_iteration_dirs = True
             else:
