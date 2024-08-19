@@ -7,7 +7,7 @@
 --> Energy Production <--
                              Annual Energy (MWh)  % Total Power
 load_zone period technology                                    
-Zone1     2020   Coal                       0.00           0.00
-                 Gas                   23,360.00          55.17
-                 Nuclear               17,520.00          41.38
-                 Wind                   1,460.00           3.45
+Zone1     2020   Coal                   5,110.00          13.08
+                 Gas                   14,965.00          38.32
+                 Nuclear               17,520.00          44.86
+                 Wind                   1,460.00           3.74
