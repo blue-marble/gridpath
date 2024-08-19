@@ -2996,66 +2996,93 @@ def add_model_components(
         set the whole shutdown trajectory based on the previous constraints.
 
         When we are not in the stop timepoint, simply constrain power provision
-        by the capacity, which may not bind. To elaborate, when we are not in a
-        stop timepoint, t+1 could have:
-        1) the unit committed, meaning Pstopping[t+1]=0, resulting in
+        by the capacity, which may not bind. To elaborate, when we were not in a
+        stop timepoint in the previous timepoint, the current timepoint could
+        have:
+        1) the unit committed, meaning Pstopping[tmp]=0, resulting in
         power provision <= capacity, or
-        2) the unit not committed, meaning that we are also not committed in t
-        i.e. power provision[t]=0, resulting in -Pstopping[t+1] <= capacity
+        2) the unit not committed, meaning that we were also not committed in t-1
+        i.e. power provision[t-1]=0, resulting in -Pstopping[t] <= capacity
 
-        (Commit[t] x Pmin + P_above_Pmin[t]) - Pstopping[t+1]
+        (Commit[t-1] x Pmin + P_above_Pmin[t-1]) - Pstopping[t]
         <=
-        (1 - Stop[t+1]) x Pmax + Stop[t+1] x Shutdown_Ramp_Rate x Pmax
+        (1 - Stop[t]) x Pmax + Stop[t] x Shutdown_Ramp_Rate x Pmax
+
+        .. note:: We are using Pmin and Pmax from the current timepoint in
+        this constraint; this assumes same availability as the previous
+        timepoint.
         """
 
-        if check_if_last_timepoint(
-            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
-        ) and (
-            check_boundary_type(
-                mod=mod,
-                tmp=tmp,
-                balancing_type=mod.balancing_type_project[g],
-                boundary_type="linear",
-            )
-            or check_boundary_type(
-                mod=mod,
-                tmp=tmp,
-                balancing_type=mod.balancing_type_project[g],
-                boundary_type="linked",
-            )
+        if check_if_boundary_type_and_first_timepoint(
+            mod=mod,
+            tmp=tmp,
+            balancing_type=mod.balancing_type_project[g],
+            boundary_type="linked",
+        ):
+            prev_timepoint_commit = getattr(
+                mod, "gen_commit_{}_linked_commit".format(bin_or_lin)
+            )[g, 0]
+            prev_timepoint_power_above_pmin = getattr(
+                mod, "gen_commit_{}_linked_power_above_pmin".format(bin_or_lin)
+            )[g, 0]
+            prev_timepoint_upward_reserves = getattr(
+                mod, "gen_commit_{}_linked_upwards_reserves".format(bin_or_lin)
+            )[g, 0]
+            prev_timepoint_shutdown_ramp_rate = getattr(
+                mod,
+                "gen_commit_{}_linked_shutdown_ramp_rate_mw_per_tmp".format(bin_or_lin),
+            )[g, 0]
+        elif check_if_boundary_type_and_first_timepoint(
+            mod=mod,
+            tmp=tmp,
+            balancing_type=mod.balancing_type_project[g],
+            boundary_type="linear",
+        ):
+            prev_timepoint_commit = None
+            prev_timepoint_power_above_pmin = None
+            prev_timepoint_upward_reserves = None
+            prev_timepoint_shutdown_ramp_rate = None
+        else:
+            prev_timepoint_commit = getattr(
+                mod, "GenCommit{}_Commit".format(Bin_or_Lin)
+            )[g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
+            prev_timepoint_power_above_pmin = getattr(
+                mod, "GenCommit{}_Provide_Power_Above_Pmin_MW".format(Bin_or_Lin)
+            )[g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
+            prev_timepoint_upward_reserves = getattr(
+                mod, "GenCommit{}_Upwards_Reserves_MW".format(Bin_or_Lin)
+            )[g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
+            prev_timepoint_shutdown_ramp_rate = getattr(
+                mod, "GenCommit{}_Shutdown_Ramp_Rate_MW_Per_Tmp".format(Bin_or_Lin)
+            )[g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
+
+        if check_if_boundary_type_and_first_timepoint(
+            mod=mod,
+            tmp=tmp,
+            balancing_type=mod.balancing_type_project[g],
+            boundary_type="linear",
         ):
             return Constraint.Skip
         else:
             return (
-                getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[g, tmp]
+                prev_timepoint_commit
                 * getattr(mod, "GenCommit{}_Pmin_MW".format(Bin_or_Lin))[g, tmp]
-                + getattr(
-                    mod, "GenCommit{}_Provide_Power_Above_Pmin_MW".format(Bin_or_Lin)
-                )[g, tmp]
-            ) + getattr(mod, "GenCommit{}_Upwards_Reserves_MW".format(Bin_or_Lin))[
-                g, tmp
-            ] - getattr(
+                + prev_timepoint_power_above_pmin
+            ) + prev_timepoint_upward_reserves - getattr(
                 mod, "GenCommit{}_Provide_Power_Shutdown_MW".format(Bin_or_Lin)
             )[
-                g, mod.next_tmp[tmp, mod.balancing_type_project[g]]
+                g, tmp
             ] <= (
-                1
-                - getattr(mod, "GenCommit{}_Shutdown".format(Bin_or_Lin))[
-                    g, mod.next_tmp[tmp, mod.balancing_type_project[g]]
-                ]
+                1 - getattr(mod, "GenCommit{}_Shutdown".format(Bin_or_Lin))[g, tmp]
             ) * getattr(
                 mod, "GenCommit{}_Pmax_MW".format(Bin_or_Lin)
             )[
-                g, mod.next_tmp[tmp, mod.balancing_type_project[g]]
+                g, tmp
             ] + getattr(
                 mod, "GenCommit{}_Shutdown".format(Bin_or_Lin)
             )[
-                g, mod.next_tmp[tmp, mod.balancing_type_project[g]]
-            ] * getattr(
-                mod, "GenCommit{}_Shutdown_Ramp_Rate_MW_Per_Tmp".format(Bin_or_Lin)
-            )[
                 g, tmp
-            ]
+            ] * prev_timepoint_shutdown_ramp_rate
 
     setattr(
         m,
