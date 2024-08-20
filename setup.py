@@ -84,6 +84,9 @@ setup(
             "gridpath_create_database = db.create_database:main",
             "gridpath_load_csvs = db.utilities.port_csvs_to_db:main",
             "gridpath_load_scenarios = db.utilities.scenario:main",
+            "gridpath_get_pudl_data = "
+            "db.utilities.gridpath_data_toolkit.raw_data.pudl"
+            ".download_data_from_pudl:main",
             "gridpath_run_data_toolkit = "
             "db.utilities.gridpath_data_toolkit.run_data_toolkit:main",
         ]

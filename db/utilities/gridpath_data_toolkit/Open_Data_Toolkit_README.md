@@ -1,9 +1,16 @@
-# Getting raw data from PUDL
-get_raw_data_from_pudl.py
+## Get raw data from PUDL
+
+```bash
+gridpath_get_pudl_data
+```
+Downloads data to *./pudl_download* by default.
+This will download the *pudl.sqlite* database as well as the RA Toolkit 
+wind and solar profiles Parquet file, and the EIA930 hourly interchange 
+data Parquet file. See *--help* menu for options.
 
 
 
-# Processing the data with the Open Data Toolkit
+## Processing the data with the Open Data Toolkit
 
 python run_open_data_toolkit.py
 

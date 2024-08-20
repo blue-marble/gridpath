@@ -17,6 +17,8 @@
 Download data from PUDL.
 """
 
+ZENODO_DEFAULT = 11292273
+DOWNLOAD_DIRECTORY_DEFAULT = "./pudl_download"
 
 import gzip
 import shutil
@@ -27,8 +29,9 @@ import requests
 import sys
 import zipfile
 
+from db.utilities.common_functions import confirm
 
-# TODO: add file exists warnings
+
 def parse_arguments(args):
     """
     :param args: the script arguments specified by the user
@@ -39,7 +42,12 @@ def parse_arguments(args):
     """
     parser = ArgumentParser(add_help=True)
 
-    parser.add_argument("-z", "--zenodo_record", default=11292273)
+    parser.add_argument(
+        "-z",
+        "--zenodo_record",
+        default=ZENODO_DEFAULT,
+        help=f"Defaults to {ZENODO_DEFAULT}.",
+    )
     parser.add_argument(
         "-skip_db", "--skip_pudl_sqlite_download", default=False, action="store_true"
     )
@@ -59,7 +67,8 @@ def parse_arguments(args):
     parser.add_argument(
         "-d",
         "--raw_data_directory",
-        default="../../csvs_open_data/pudl_download",
+        default=DOWNLOAD_DIRECTORY_DEFAULT,
+        help=f"Defaults to {DOWNLOAD_DIRECTORY_DEFAULT}",
     )
 
     parsed_arguments = parser.parse_known_args(args=args)[0]
@@ -69,13 +78,20 @@ def parse_arguments(args):
 
 def get_pudl_sqlite_from_pudl_zenodo(zenodo_record, download_directory):
     """ """
+    db_filepath = os.path.join(download_directory, "pudl.sqlite")
+    if os.path.exists(db_filepath):
+        confirm(
+            f"WARNING: The file {db_filepath} already exists. Downloading "
+            f"the data again will overwrite it. Are you sure?"
+        )
+
     url = f"https://zenodo.org/records/{str(zenodo_record)}/files/pudl.sqlite.gz?download=1"
     print("Downloading compressed pudl.sqlite...")
     pudl_request_content = requests.get(url, stream=True).content
 
     print("Extracting pudl.sqlite database...")
     with gzip.open(io.BytesIO(pudl_request_content), "rb") as f_in:
-        with open(os.path.join(download_directory, "pudl.sqlite"), "wb") as f_out:
+        with open(db_filepath, "wb") as f_out:
             shutil.copyfileobj(f_in, f_out)
 
     # For zip files, use the following
@@ -85,6 +101,13 @@ def get_pudl_sqlite_from_pudl_zenodo(zenodo_record, download_directory):
 
 def get_parquet_file_from_pudl_zenodo(zenodo_record, filename, download_directory):
     """ """
+    filepath = os.path.join(download_directory, f"{filename}.parquet")
+    if os.path.exists(filepath):
+        confirm(
+            f"WARNING: The file {filepath} already exists. Downloading "
+            f"the data again will overwrite it. Are you sure?"
+        )
+
     print(f"Downloading {filename}.parquet...")
     url = (
         f"https://zenodo.org/records/{zenodo_record}/files"
@@ -94,7 +117,7 @@ def get_parquet_file_from_pudl_zenodo(zenodo_record, filename, download_director
     data = requests.get(url, stream=True).content
 
     with open(
-        os.path.join(download_directory, f"{filename}.parquet"),
+        filepath,
         "wb",
     ) as f:
         f.write(data)
