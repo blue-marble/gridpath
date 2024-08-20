@@ -17,7 +17,9 @@
 Download data from PUDL.
 """
 
-ZENODO_DEFAULT = 11292273
+ZENODO_PUDL_SQLITE_DEFAULT = 13346011
+ZENODO_RA_TOOLKIT_DEFAULT = 11292273
+ZENODO_EIA930_DEFAULT = 11292273
 DOWNLOAD_DIRECTORY_DEFAULT = "./pudl_download"
 
 import gzip
@@ -43,10 +45,22 @@ def parse_arguments(args):
     parser = ArgumentParser(add_help=True)
 
     parser.add_argument(
-        "-z",
-        "--zenodo_record",
-        default=ZENODO_DEFAULT,
-        help=f"Defaults to {ZENODO_DEFAULT}.",
+        "-z_db",
+        "--zenodo_record_pudl_sqlite",
+        default=ZENODO_PUDL_SQLITE_DEFAULT,
+        help=f"Defaults to {ZENODO_PUDL_SQLITE_DEFAULT}.",
+    )
+    parser.add_argument(
+        "-z_ra",
+        "--zenodo_record_ra_toolkit",
+        default=ZENODO_RA_TOOLKIT_DEFAULT,
+        help=f"Defaults to {ZENODO_RA_TOOLKIT_DEFAULT}.",
+    )
+    parser.add_argument(
+        "-z_eia930",
+        "--zenodo_record_eia930",
+        default=ZENODO_EIA930_DEFAULT,
+        help=f"Defaults to {ZENODO_EIA930_DEFAULT}.",
     )
     parser.add_argument(
         "-skip_db", "--skip_pudl_sqlite_download", default=False, action="store_true"
@@ -66,7 +80,7 @@ def parse_arguments(args):
     )
     parser.add_argument(
         "-d",
-        "--raw_data_directory",
+        "--pudl_download_directory",
         default=DOWNLOAD_DIRECTORY_DEFAULT,
         help=f"Defaults to {DOWNLOAD_DIRECTORY_DEFAULT}",
     )
@@ -76,51 +90,58 @@ def parse_arguments(args):
     return parsed_arguments
 
 
-def get_pudl_sqlite_from_pudl_zenodo(zenodo_record, download_directory):
+def get_pudl_sqlite_from_pudl_zenodo(zenodo_record_pudl_sqlite, download_directory):
     """ """
-    db_filepath = os.path.join(download_directory, "pudl.sqlite")
-    if os.path.exists(db_filepath):
-        confirm(
-            f"WARNING: The file {db_filepath} already exists. Downloading "
-            f"the data again will overwrite it. Are you sure?"
+    proceed = True
+    filename = "pudl.sqlite"
+    filepath = os.path.join(download_directory, filename)
+    if os.path.exists(filepath):
+        proceed = confirm(
+            f"WARNING: The file {filepath} already exists. Downloading "
+            f"the data again will overwrite the previous file. Are you sure?"
         )
 
-    url = f"https://zenodo.org/records/{str(zenodo_record)}/files/pudl.sqlite.gz?download=1"
-    print("Downloading compressed pudl.sqlite...")
-    pudl_request_content = requests.get(url, stream=True).content
+    if proceed:
+        url = f"https://zenodo.org/records/{str(zenodo_record_pudl_sqlite)}/files/{filename}.zip?download=1"
+        print("Downloading compressed pudl.sqlite...")
+        pudl_request_content = requests.get(url, stream=True).content
 
-    print("Extracting pudl.sqlite database...")
-    with gzip.open(io.BytesIO(pudl_request_content), "rb") as f_in:
-        with open(db_filepath, "wb") as f_out:
-            shutil.copyfileobj(f_in, f_out)
+        print("Extracting pudl.sqlite database...")
+        z = zipfile.ZipFile(io.BytesIO(pudl_request_content))
+        z.extractall(download_directory)
 
-    # For zip files, use the following
-    # z = zipfile.ZipFile(io.BytesIO(pudl_request_content))
-    # z.extractall(download_directory)
+        # For gzip files use the following
+        # with gzip.open(io.BytesIO(pudl_request_content), "rb") as f_in:
+        #     with open(db_filepath, "wb") as f_out:
+        #         shutil.copyfileobj(f_in, f_out)
 
 
-def get_parquet_file_from_pudl_zenodo(zenodo_record, filename, download_directory):
+def get_parquet_file_from_pudl_zenodo(
+    zenodo_record_pudl_sqlite, filename, download_directory
+):
     """ """
+    proceed = True
     filepath = os.path.join(download_directory, f"{filename}.parquet")
     if os.path.exists(filepath):
-        confirm(
+        proceed = confirm(
             f"WARNING: The file {filepath} already exists. Downloading "
-            f"the data again will overwrite it. Are you sure?"
+            f"the data again will overwrite the previous file. Are you sure?"
         )
 
-    print(f"Downloading {filename}.parquet...")
-    url = (
-        f"https://zenodo.org/records/{zenodo_record}/files"
-        f"/{filename}.parquet?download=1"
-    )
+    if proceed:
+        print(f"Downloading {filename}.parquet...")
+        url = (
+            f"https://zenodo.org/records/{zenodo_record_pudl_sqlite}/files"
+            f"/{filename}.parquet?download=1"
+        )
 
-    data = requests.get(url, stream=True).content
+        data = requests.get(url, stream=True).content
 
-    with open(
-        filepath,
-        "wb",
-    ) as f:
-        f.write(data)
+        with open(
+            filepath,
+            "wb",
+        ) as f:
+            f.write(data)
 
 
 def main(args=None):
@@ -129,27 +150,34 @@ def main(args=None):
 
     parsed_args = parse_arguments(args=args)
 
-    if not os.path.exists(parsed_args.raw_data_directory):
-        os.makedirs(parsed_args.raw_data_directory)
+    if not os.path.exists(parsed_args.pudl_download_directory):
+        os.makedirs(parsed_args.pudl_download_directory)
 
     # Download the PUDL database
     if not parsed_args.skip_pudl_sqlite_download:
         get_pudl_sqlite_from_pudl_zenodo(
-            zenodo_record=parsed_args.zenodo_record,
-            download_directory=parsed_args.raw_data_directory,
+            zenodo_record_pudl_sqlite=parsed_args.zenodo_record_pudl_sqlite,
+            download_directory=parsed_args.pudl_download_directory,
         )
 
     # RA Toolkit profiles parquet file
-    parquet_skip_dict = {
-        "out_gridpathratoolkit__hourly_available_capacity_factor": parsed_args.skip_ra_toolkit_profiles_download,
-        "core_eia930__hourly_interchange": parsed_args.skip_eia930_hourly_interchange_download,
+    parquet_dict = {
+        "out_gridpathratoolkit__hourly_available_capacity_factor": {
+            "skip": parsed_args.skip_ra_toolkit_profiles_download,
+            "zenodo": parsed_args.zenodo_record_ra_toolkit,
+        },
+        "core_eia930__hourly_interchange": {
+            "skip": parsed_args.skip_eia930_hourly_interchange_download,
+            "zenodo": parsed_args.zenodo_record_eia930,
+        },
     }
-    for filename in parquet_skip_dict.keys():
-        skip = parquet_skip_dict[filename]
+    for filename in parquet_dict.keys():
+        skip = parquet_dict[filename]["skip"]
+        zenodo_record = parquet_dict[filename]["zenodo"]
         if not skip:
             get_parquet_file_from_pudl_zenodo(
-                zenodo_record=parsed_args.zenodo_record,
-                download_directory=parsed_args.raw_data_directory,
+                zenodo_record_pudl_sqlite=zenodo_record,
+                download_directory=parsed_args.pudl_download_directory,
                 filename=filename,
             )
 
