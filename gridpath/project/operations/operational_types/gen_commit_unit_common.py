@@ -2876,7 +2876,8 @@ def add_model_components(
         **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS
 
         Shutdown power is 0 when the unit is committed and must be less than or
-        equal to the minimum stable level when not committed
+        equal to the minimum stable level when not committed. Shutdown power
+        must be explicitly allowed.
         """
 
         return (
@@ -3022,7 +3023,7 @@ def add_model_components(
         ),
     )
 
-    def power_during_shutdown_constraint_rule(mod, g, tmp):
+    def min_power_on_shutdown_constraint_rule(mod, g, tmp):
         """
         **Constraint Name**: GenCommitBin_Power_During_Shutdown_Constraint
         **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS
@@ -3100,7 +3101,7 @@ def add_model_components(
                 mod, "GenCommit{}_Shutdown_Ramp_Rate_MW_Per_Tmp".format(Bin_or_Lin)
             )[g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
             prev_timepoint_pmin = getattr(
-                mod, "GenCommit{}_Pmax_MW".format(Bin_or_Lin)
+                mod, "GenCommit{}_Pmin_MW".format(Bin_or_Lin)
             )[g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
             prev_timepoint_pmax = getattr(
                 mod, "GenCommit{}_Pmax_MW".format(Bin_or_Lin)
@@ -3134,7 +3135,7 @@ def add_model_components(
         "GenCommit{}_Power_During_Shutdown_Constraint".format(Bin_or_Lin),
         Constraint(
             getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
-            rule=power_during_shutdown_constraint_rule,
+            rule=min_power_on_shutdown_constraint_rule,
         ),
     )
 
