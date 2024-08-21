@@ -107,7 +107,7 @@ def create_load_profile_csv(
     c = conn.cursor()
 
     # Get load zone units
-    df = pd.read_sql("""SELECT * FROM raw_data_load_zone_units;""", conn)
+    df = pd.read_sql("""SELECT * FROM aux_load_zone_units;""", conn)
 
     # Create a dictionary of the form {timeseries: project: [units]}
     load_zone_unit_dict = {}
@@ -127,7 +127,7 @@ def create_load_profile_csv(
                 SELECT weather_iteration, draw_number,
                 load_year, load_month,
                 load_day_of_month
-                FROM inputs_aux_weather_iterations
+                FROM aux_weather_iterations
                 WHERE weather_bins_id = {weather_bins_id}
                 AND weather_draws_id = {weather_draws_id}
                 ;

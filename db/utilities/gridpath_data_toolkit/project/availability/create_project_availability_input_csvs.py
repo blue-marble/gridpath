@@ -72,9 +72,9 @@ def get_project_availability(
     NULL AS exogenous_availability_weather_scenario_id,
     NULL AS endogenous_availability_scenario_id
     FROM raw_data_eia860_generators
-    JOIN raw_data_aux_eia_gridpath_key ON
+    JOIN aux_eia_gridpath_key ON
             raw_data_eia860_generators.prime_mover_code = 
-            raw_data_aux_eia_gridpath_key.prime_mover_code
+            aux_eia_gridpath_key.prime_mover_code
             AND energy_source_code_1 = energy_source_code
      WHERE 1 = 1
      AND {eia860_sql_filter_string}
@@ -89,7 +89,7 @@ def get_project_availability(
     NULL AS exogenous_availability_weather_scenario_id,
     NULL AS endogenous_availability_scenario_id
     FROM raw_data_eia860_generators
-    JOIN raw_data_aux_eia_gridpath_key
+    JOIN aux_eia_gridpath_key
     USING (prime_mover_code)
     WHERE 1 = 1
     AND {eia860_sql_filter_string}

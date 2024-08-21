@@ -115,9 +115,9 @@ def get_project_opchar(
          '_') AS project,
          {non_var_opchars_str}
      FROM raw_data_eia860_generators
-     JOIN raw_data_aux_eia_gridpath_key ON
+     JOIN aux_eia_gridpath_key ON
             raw_data_eia860_generators.prime_mover_code = 
-            raw_data_aux_eia_gridpath_key.prime_mover_code
+            aux_eia_gridpath_key.prime_mover_code
             AND energy_source_code_1 = energy_source_code
      WHERE 1 = 1
      AND {eia860_sql_filter_string}
@@ -129,9 +129,9 @@ def get_project_opchar(
          agg_project || '_' || balancing_authority_code_eia AS project,
          {var_opchars_str}
      FROM raw_data_eia860_generators
-     JOIN raw_data_aux_eia_gridpath_key ON
+     JOIN aux_eia_gridpath_key ON
             raw_data_eia860_generators.prime_mover_code = 
-            raw_data_aux_eia_gridpath_key.prime_mover_code
+            aux_eia_gridpath_key.prime_mover_code
             AND energy_source_code_1 = energy_source_code
      WHERE 1 = 1
      AND {eia860_sql_filter_string}
@@ -143,9 +143,9 @@ def get_project_opchar(
          agg_project || '_' || balancing_authority_code_eia AS project,
          {hydro_opchars_str}
      FROM raw_data_eia860_generators
-     JOIN raw_data_aux_eia_gridpath_key ON
+     JOIN aux_eia_gridpath_key ON
             raw_data_eia860_generators.prime_mover_code = 
-            raw_data_aux_eia_gridpath_key.prime_mover_code
+            aux_eia_gridpath_key.prime_mover_code
             AND energy_source_code_1 = energy_source_code
      WHERE 1 = 1
      AND {eia860_sql_filter_string}

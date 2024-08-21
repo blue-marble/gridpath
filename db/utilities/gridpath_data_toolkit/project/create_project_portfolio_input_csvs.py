@@ -81,9 +81,9 @@ def get_project_portfolio_for_region(
     NULL as new_build,
     gridpath_capacity_type AS capacity_type
     FROM raw_data_eia860_generators
-    JOIN raw_data_aux_eia_gridpath_key ON
+    JOIN aux_eia_gridpath_key ON
             raw_data_eia860_generators.prime_mover_code = 
-            raw_data_aux_eia_gridpath_key.prime_mover_code
+            aux_eia_gridpath_key.prime_mover_code
             AND energy_source_code_1 = energy_source_code
      WHERE 1 = 1
      AND {eia860_sql_filter_string}
@@ -97,7 +97,7 @@ def get_project_portfolio_for_region(
         NULL as new_build,
         gridpath_capacity_type AS capacity_type
     FROM raw_data_eia860_generators
-    JOIN raw_data_aux_eia_gridpath_key
+    JOIN aux_eia_gridpath_key
     USING (prime_mover_code)
     WHERE 1 = 1
     AND {eia860_sql_filter_string}

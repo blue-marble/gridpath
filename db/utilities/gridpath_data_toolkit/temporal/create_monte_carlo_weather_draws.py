@@ -79,7 +79,7 @@ def create_weather_draws(
     # Get the weather bins
     weather_bins_sql = f"""
         SELECT year, month, day_of_month, day_type, weather_bin
-        FROM raw_data_weather_bins
+        FROM aux_weather_bins
         WHERE weather_bins_id = {weather_bins_id}
         """
     weather_bins = pd.read_sql(sql=weather_bins_sql, con=conn)
@@ -172,7 +172,7 @@ def create_weather_draws(
     c = conn.cursor()
 
     sql_info = f"""
-        INSERT INTO inputs_aux_weather_draws_info ( 
+        INSERT INTO aux_weather_draws_info ( 
             weather_bins_id,
             weather_draws_id,
             seed,
@@ -188,7 +188,7 @@ def create_weather_draws(
     spin_on_database_lock_generic(command=c.execute(sql_info))
 
     sql = """
-        INSERT INTO inputs_aux_weather_iterations (
+        INSERT INTO aux_weather_iterations (
             weather_bins_id,
             weather_draws_id,
             weather_iteration,
@@ -218,7 +218,7 @@ def get_weather_draws(conn, weather_bins_id, weather_draws_id):
     draws = c.execute(
         f"""
         SELECT weather_iteration, draw_number, month, day_type, weather_day_bin
-        FROM inputs_aux_weather_iterations
+        FROM aux_weather_iterations
         WHERE weather_bins_id = {weather_bins_id}
         AND weather_draws_id = {weather_draws_id}
     """
@@ -268,7 +268,7 @@ def make_synthetic_iterations(
                 day_type, weather_bin
                 FROM (
                     SELECT year, month, day_of_month, day_type, weather_bin
-                    FROM raw_data_weather_bins
+                    FROM aux_weather_bins
                     WHERE month = {month}
                     {consider_day_types_str}
                     AND weather_bin = {weather_bin}
@@ -276,7 +276,7 @@ def make_synthetic_iterations(
                 )
                 WHERE year in (
                     SELECT year
-                    FROM raw_data_availability
+                    FROM aux_data_availability
                     WHERE timeseries_name = '{timeseries_name}'
                     )
                 ORDER BY year, month, day_of_month
@@ -307,7 +307,7 @@ def make_synthetic_iterations(
 
         # Load the selection into the database
         update_sql = f"""
-            UPDATE inputs_aux_weather_iterations
+            UPDATE aux_weather_iterations
             SET {sql_set_string}
             WHERE weather_draws_id = {weather_draws_id}
             AND weather_iteration = {weather_iteration}
@@ -349,7 +349,7 @@ def main(args=None):
         (timeseries_name, consider_day_types)
         for (timeseries_name, consider_day_types) in c.execute(
             f"""SELECT timeseries_name, consider_day_types
-        FROM raw_data_monte_carlo_timeseries
+        FROM aux_monte_carlo_timeseries
         ;"""
         ).fetchall()
     ]
@@ -357,7 +357,7 @@ def main(args=None):
     # Update the iterations seed
     # It is currently the same for all timeseries
     it_seed_sql = f"""
-        UPDATE inputs_aux_weather_draws_info
+        UPDATE aux_weather_draws_info
         SET iterations_seed = {parsed_args.iterations_seed}
         ;
     """
@@ -378,7 +378,7 @@ def main(args=None):
 
         for column in columns_to_add:
             sql = f"""
-                ALTER TABLE inputs_aux_weather_iterations
+                ALTER TABLE aux_weather_iterations
                 ADD COLUMN {column} INTEGER
                 ;
             """

@@ -14,11 +14,10 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 
---------------------------
+--------------------------------------------------------------------------------
 -------- RAW DATA --------
---------------------------
+--------------------------------------------------------------------------------
 -- TODO: add timestamps?
--- TODO: change name to load_zone_unit
 DROP TABLE IF EXISTS raw_data_system_load;
 CREATE TABLE raw_data_system_load
 (
@@ -32,15 +31,6 @@ CREATE TABLE raw_data_system_load
     PRIMARY KEY (year, month, day_of_month, hour_of_day, load_zone_unit)
 );
 
-DROP TABLE IF EXISTS raw_data_load_zone_units;
-CREATE TABLE raw_data_load_zone_units
-(
-    load_zone_unit TEXT,
-    load_zone      TEXT,
-    unit_weight    DECIMAL,
-    PRIMARY KEY (load_zone_unit, load_zone)
-);
-
 DROP TABLE IF EXISTS raw_data_project_variable_profiles;
 CREATE TABLE raw_data_project_variable_profiles
 (
@@ -52,34 +42,6 @@ CREATE TABLE raw_data_project_variable_profiles
     unit         VARCHAR(64),
     cap_factor   FLOAT,
     PRIMARY KEY (year, month, day_of_month, hour_of_day, unit)
-);
-
-DROP TABLE IF EXISTS raw_data_weather_bins;
-CREATE TABLE raw_data_weather_bins
-(
-    weather_bins_id INTEGER,
-    year            INTEGER,
-    month           INTEGER,
-    day_of_month    INTEGER,
-    day_type        INTEGER,
-    weather_bin     INTEGER,
-    PRIMARY KEY (weather_bins_id, year, month, day_of_month, day_type)
-);
-
-DROP TABLE IF EXISTS raw_data_availability;
-CREATE TABLE raw_data_availability
-(
-    timeseries_name VARCHAR(32),
-    year            INTEGER,
-    PRIMARY KEY (timeseries_name, year)
-);
-
-DROP TABLE IF EXISTS raw_data_monte_carlo_timeseries;
-CREATE TABLE raw_data_monte_carlo_timeseries
-(
-    timeseries_name    VARCHAR(32),
-    consider_day_types INTEGER,
-    PRIMARY KEY (timeseries_name)
 );
 
 DROP TABLE IF EXISTS raw_data_project_hydro_opchars_by_year_month;
@@ -166,42 +128,6 @@ CREATE TABLE raw_data_fuel_prices
 );
 
 
-DROP TABLE IF EXISTS raw_data_aux_eiaaeo_region_key;
-CREATE TABLE raw_data_aux_eiaaeo_region_key
-(
-    electricity_market_module_region_eiaaeo TEXT PRIMARY KEY,
-    region                                  TEXT,
-    fuel_region                             TEXT
-);
-
-DROP TABLE IF EXISTS inputs_aux_weather_draws_info;
-CREATE TABLE inputs_aux_weather_draws_info
-(
-    weather_bins_id  INTEGER,
-    weather_draws_id INTEGER,
-    seed             INTEGER,
-    n_iterations     INTEGER,
-    iterations_seed  INTEGER,
-    PRIMARY KEY (weather_bins_id, weather_draws_id)
-);
-
-DROP TABLE IF EXISTS inputs_aux_weather_iterations;
-CREATE TABLE inputs_aux_weather_iterations
-(
-    weather_bins_id   INTEGER,
-    weather_draws_id  INTEGER,
-    weather_iteration INTEGER,
-    draw_number       INTEGER,
-    study_date        DATE,
-    month             INTEGER,
-    day_type          INTEGER,
-    weather_day_bin   INTEGER,
-    PRIMARY KEY (weather_bins_id, weather_draws_id,
-                 weather_iteration, draw_number,
-                 month, day_type, weather_day_bin)
-);
-
-
 DROP TABLE IF EXISTS raw_data_eia860_generators;
 CREATE TABLE raw_data_eia860_generators
 (
@@ -221,16 +147,54 @@ CREATE TABLE raw_data_eia860_generators
     PRIMARY KEY (version_num, report_date, plant_id_eia, generator_id)
 );
 
-DROP TABLE IF EXISTS raw_data_aux_baa_key;
-CREATE TABLE raw_data_aux_baa_key
+DROP TABLE IF EXISTS raw_data_aux_eia930_hourly_interchange;
+CREATE TABLE raw_data_aux_eia930_hourly_interchange
+(
+    datetime_utc                          DATETIME,
+    balancing_authority_code_eia          TEXT,
+    balancing_authority_code_adjacent_eia TEXT,
+    interchange_reported_mwh              FLOAT,
+    datetime_pst                          DATETIME,
+    year                                  INTEGER,
+    month                                 INTEGER,
+    day_of_month                          INTEGER,
+    hour_of_day                           INTEGER,
+    PRIMARY KEY (balancing_authority_code_eia,
+                 balancing_authority_code_adjacent_eia,
+                 datetime_pst)
+);
+
+--------------------------------------------------------------------------------
+-- Auxiliary data (maps, etc.)
+--------------------------------------------------------------------------------
+
+DROP TABLE IF EXISTS aux_load_zone_units;
+CREATE TABLE aux_load_zone_units
+(
+    load_zone_unit TEXT,
+    load_zone      TEXT,
+    unit_weight    DECIMAL,
+    PRIMARY KEY (load_zone_unit, load_zone)
+);
+
+DROP TABLE IF EXISTS aux_eiaaeo_region_key;
+CREATE TABLE aux_eiaaeo_region_key
+(
+    electricity_market_module_region_eiaaeo TEXT PRIMARY KEY,
+    region                                  TEXT,
+    fuel_region                             TEXT
+);
+
+DROP TABLE IF EXISTS aux_baa_key;
+CREATE TABLE aux_baa_key
 (
     baa         TEXT PRIMARY KEY,
     region      TEXT,
     fuel_region TEXT
 );
 
-DROP TABLE IF EXISTS raw_data_aux_eia_gridpath_key;
-CREATE TABLE raw_data_aux_eia_gridpath_key
+DROP TABLE IF EXISTS aux_eia_gridpath_key;
+CREATE TABLE aux_eia_gridpath_key
 (
     prime_mover_code          TEXT,
     prime_mover_label         TEXT,
@@ -249,27 +213,67 @@ CREATE TABLE raw_data_aux_eia_gridpath_key
 );
 
 
-DROP TABLE IF EXISTS raw_data_aux_heat_rate_curve;
-CREATE TABLE raw_data_aux_heat_rate_curve
+DROP TABLE IF EXISTS aux_heat_rate_curve;
+CREATE TABLE aux_heat_rate_curve
 (
     load_point_fraction           FLOAT PRIMARY KEY,
     average_heat_rate_coefficient FLOAT
 );
 
 
-DROP TABLE IF EXISTS raw_data_aux_eia930_hourly_interchange;
-CREATE TABLE raw_data_aux_eia930_hourly_interchange
+DROP TABLE IF EXISTS aux_weather_bins;
+CREATE TABLE aux_weather_bins
 (
-    datetime_utc                          DATETIME,
-    balancing_authority_code_eia          TEXT,
-    balancing_authority_code_adjacent_eia TEXT,
-    interchange_reported_mwh              FLOAT,
-    datetime_pst                          DATETIME,
-    year                                  INTEGER,
-    month                                 INTEGER,
-    day_of_month                          INTEGER,
-    hour_of_day                           INTEGER,
-    PRIMARY KEY (balancing_authority_code_eia,
-                 balancing_authority_code_adjacent_eia,
-                 datetime_pst)
+    weather_bins_id INTEGER,
+    year            INTEGER,
+    month           INTEGER,
+    day_of_month    INTEGER,
+    day_type        INTEGER,
+    weather_bin     INTEGER,
+    PRIMARY KEY (weather_bins_id, year, month, day_of_month, day_type)
+);
+
+
+DROP TABLE IF EXISTS aux_data_availability;
+CREATE TABLE aux_data_availability
+(
+    timeseries_name VARCHAR(32),
+    year            INTEGER,
+    PRIMARY KEY (timeseries_name, year)
+);
+
+DROP TABLE IF EXISTS aux_monte_carlo_timeseries;
+CREATE TABLE aux_monte_carlo_timeseries
+(
+    timeseries_name    VARCHAR(32),
+    consider_day_types INTEGER,
+    PRIMARY KEY (timeseries_name)
+);
+
+
+DROP TABLE IF EXISTS aux_weather_draws_info;
+CREATE TABLE aux_weather_draws_info
+(
+    weather_bins_id  INTEGER,
+    weather_draws_id INTEGER,
+    seed             INTEGER,
+    n_iterations     INTEGER,
+    iterations_seed  INTEGER,
+    PRIMARY KEY (weather_bins_id, weather_draws_id)
+);
+
+DROP TABLE IF EXISTS aux_weather_iterations;
+CREATE TABLE aux_weather_iterations
+(
+    weather_bins_id   INTEGER,
+    weather_draws_id  INTEGER,
+    weather_iteration INTEGER,
+    draw_number       INTEGER,
+    study_date        DATE,
+    month             INTEGER,
+    day_type          INTEGER,
+    weather_day_bin   INTEGER,
+    PRIMARY KEY (weather_bins_id, weather_draws_id,
+                 weather_iteration, draw_number,
+                 month, day_type, weather_day_bin)
 );

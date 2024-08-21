@@ -130,7 +130,7 @@ def create_project_csv(
                 SELECT weather_iteration, draw_number,
                 {timeseries_name}_year, {timeseries_name}_month,
                 {timeseries_name}_day_of_month
-                FROM inputs_aux_weather_iterations
+                FROM aux_weather_iterations
                 WHERE weather_bins_id = {weather_bins_id}
                 AND weather_draws_id = {weather_draws_id}
                 ORDER BY weather_iteration, draw_number
