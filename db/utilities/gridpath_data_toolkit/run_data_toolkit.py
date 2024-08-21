@@ -80,6 +80,7 @@ from db.utilities.gridpath_data_toolkit.transmission.availability import (
 from db.utilities.gridpath_data_toolkit.transmission.opchar import (
     create_transmission_opchar_input_csvs,
 )
+from db.utilities.gridpath_data_toolkit import manual_adjustments
 
 # TODO: add checks if files exists, tell user to delete before running
 
