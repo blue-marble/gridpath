@@ -86,7 +86,7 @@ def get_eia_generator_data_from_pudl_sqlite(
     """
     Generator list from EIA860.
     """
-    filepath = os.path.join(raw_data_directory, "eia860_generators.csv")
+    filepath = os.path.join(raw_data_directory, "pudl_eia860_generators.csv")
 
     if determine_proceed(filepath):
         print(f"Getting generator list from pudl.sqlite to {filepath}...")
@@ -136,7 +136,7 @@ def get_eiaaeo_fuel_data_from_pudl_datasette(
     raw_data_directory, pudl_download_directory, eiaaeo_electricity_market_region
 ):
     """ """
-    filepath = os.path.join(raw_data_directory, "eiaaeo_fuel_prices.csv")
+    filepath = os.path.join(raw_data_directory, "pudl_eiaaeo_fuel_prices.csv")
 
     if determine_proceed(filepath):
         print(f"Getting fuel prices from pudl.sqlite to {filepath}...")
@@ -166,7 +166,7 @@ def get_eiaaeo_fuel_data_from_pudl_datasette(
 def convert_ra_toolkit_profiles_to_csv(raw_data_directory, pudl_download_directory):
     """ """
 
-    filepath = os.path.join(raw_data_directory, "var_profiles.csv")
+    filepath = os.path.join(raw_data_directory, "pudl_ra_toolkit_var_profiles.csv")
     if determine_proceed(filepath):
         print(f"Converting RA Toolkit profiles to CSV {filepath}...")
         df = pd.read_parquet(
@@ -201,7 +201,7 @@ def convert_eia930_hourly_interchange_to_csv(
     raw_data_directory, pudl_download_directory
 ):
 
-    filepath = os.path.join(raw_data_directory, "eia930_hourly_interchange.csv")
+    filepath = os.path.join(raw_data_directory, "pudl_eia930_hourly_interchange.csv")
 
     if determine_proceed(filepath):
         print(f"Converting hourly interchange data to CSV {filepath}...")

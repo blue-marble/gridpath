@@ -90,6 +90,9 @@ setup(
             "gridpath_pudl_to_gridpath_raw = "
             "db.utilities.gridpath_data_toolkit.raw_data.pudl"
             ".pudl_to_gridpath_raw_data:main",
+            "gridpath_get_ra_toolkit_data_raw = "
+            "db.utilities.gridpath_data_toolkit.raw_data.ra_toolkit"
+            ".get_ra_toolkit_data:main",
             "gridpath_run_data_toolkit = "
             "db.utilities.gridpath_data_toolkit.run_data_toolkit:main",
         ]
