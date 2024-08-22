@@ -68,6 +68,8 @@ def main(args=None):
             f"{str(temporal_scenario_id)}" f"_{temporal_scenario_name}",
         )
 
+        os.makedirs(subscenario_directory, exist_ok=True)
+
         create_temporal_iteration_csv.main(
             [
                 "--n_passes",

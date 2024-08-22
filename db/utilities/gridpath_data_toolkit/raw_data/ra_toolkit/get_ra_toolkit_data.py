@@ -14,21 +14,16 @@
 
 
 """
-Download data from PUDL.
+Download RA Toolkit data from Google Drive.
 """
-
-RAW_DATA_DIRECTORY_DEFAULT = "./raw_data"
-
-import gzip
-import shutil
 from argparse import ArgumentParser
-import io
+import gdown
 import os.path
-import requests
 import sys
-import zipfile
 
 from db.utilities.common_functions import confirm
+
+RAW_DATA_DIRECTORY_DEFAULT = "./raw_data"
 
 
 def parse_arguments(args):
@@ -53,7 +48,7 @@ def parse_arguments(args):
     return parsed_arguments
 
 
-def download_file(url, filename, download_directory):
+def download_file(gdrive_file_id, filename, download_directory):
     """ """
     proceed = True
     filepath = os.path.join(download_directory, filename)
@@ -65,11 +60,8 @@ def download_file(url, filename, download_directory):
 
     if proceed:
         print(f"Downloading {filename}...")
-
-        data = requests.get(url, stream=True).content
-
-        with open(filepath, "wb") as f:
-            f.write(data)
+        gdrive_file_id = f"https://drive.google.com/uc?id={gdrive_file_id}"
+        gdown.download(gdrive_file_id, filepath, quiet=False)
 
 
 def main(args=None):
@@ -78,18 +70,17 @@ def main(args=None):
 
     parsed_args = parse_arguments(args=args)
 
-    if not os.path.exists(parsed_args.raw_data_directory):
-        os.makedirs(parsed_args.raw_data_directory)
+    os.makedirs(parsed_args.raw_data_directory, exist_ok=True)
 
     file_dict = {
-        "ra_toolkit_hydro.csv": "https://drive.google.com/file/d/1k5FtwE44avnicAXSHbo1twR7zwh2hjo9/view?usp=sharing",
-        "ra_toolkit_load.csv": "https://drive.google.com/file/d/1k4JdsUhMyZg_OQR5rvteg-tg-s2kS8Za/view?usp=sharing",
+        "ra_toolkit_hydro.csv": "1k5FtwE44avnicAXSHbo1twR7zwh2hjo9",
+        "ra_toolkit_load.csv": "1k4JdsUhMyZg_OQR5rvteg-tg-s2kS8Za",
     }
     for filename in file_dict.keys():
         download_file(
             download_directory=parsed_args.raw_data_directory,
             filename=filename,
-            url=file_dict[filename],
+            gdrive_file_id=file_dict[filename],
         )
 
 

@@ -17,8 +17,7 @@ from argparse import ArgumentParser
 import os.path
 import pandas as pd
 
-from db.common_functions import spin_on_database_lock_generic, \
-    connect_to_database
+from db.common_functions import spin_on_database_lock_generic, connect_to_database
 
 
 def parse_arguments(args):

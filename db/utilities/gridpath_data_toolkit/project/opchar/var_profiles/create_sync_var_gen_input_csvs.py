@@ -15,6 +15,7 @@
 
 from argparse import ArgumentParser
 from multiprocessing import get_context
+import os.path
 import sys
 
 from db.common_functions import connect_to_database
@@ -114,6 +115,8 @@ def main(args=None):
 
     if not parsed_args.quiet:
         print("Creating sync variable gen CSVs...")
+
+    os.makedirs(parsed_args.output_directory, exist_ok=True)
 
     conn = connect_to_database(db_path=parsed_args.database)
 

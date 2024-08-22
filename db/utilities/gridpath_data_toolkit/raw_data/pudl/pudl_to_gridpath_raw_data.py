@@ -242,8 +242,7 @@ def main(args=None):
 
     parsed_args = parse_arguments(args=args)
 
-    if not os.path.exists(parsed_args.raw_data_directory):
-        os.makedirs(parsed_args.raw_data_directory)
+    os.makedirs(parsed_args.raw_data_directory, exist_ok=True)
 
     # ### Get only the data we need from pudl.sqlite ### #
     # Generator list

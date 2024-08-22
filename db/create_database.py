@@ -101,11 +101,7 @@ def create_database_schema(conn, parsed_arguments):
         conn.executescript(schema)
 
 
-def load_data(
-    conn,
-    data_directory,
-    custom_units
-):
+def load_data(conn, data_directory, custom_units):
     """
     Load GridPath structural data (e.g. defaults, allowed modules, validation
     data, UI component data, etc.)

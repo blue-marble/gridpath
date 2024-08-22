@@ -140,6 +140,8 @@ def main(args=None):
 
     parsed_args = parse_arguments(args=args)
 
+    os.makedirs(parsed_args.specified_capacity_csv_location, exist_ok=True)
+
     conn = connect_to_database(db_path=parsed_args.database)
 
     get_project_capacity(

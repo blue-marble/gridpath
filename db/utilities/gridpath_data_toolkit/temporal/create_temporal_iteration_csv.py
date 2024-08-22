@@ -195,6 +195,8 @@ def main(args=None):
 
     parsed_args = parse_arguments(args=args)
 
+    os.makedirs(parsed_args.output_directory, exist_ok=True)
+
     create_temporal_scenario_iterations_csv(
         n_passes=int(parsed_args.n_passes),
         filepath=parsed_args.csv_path,

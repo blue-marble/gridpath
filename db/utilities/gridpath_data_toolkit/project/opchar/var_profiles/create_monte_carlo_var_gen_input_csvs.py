@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from argparse import ArgumentParser
+import os.path
 import sys
 
 from db.utilities.gridpath_data_toolkit.project.create_monte_carlo_gen_input_csvs_common import (
@@ -102,6 +103,8 @@ def main(args=None):
 
     if not parsed_args.quiet:
         print("Creating Monte Carlo variable gen CSVs...")
+
+    os.makedirs(parsed_args.output_directory, exist_ok=True)
 
     create_variable_profile_csvs(
         db_path=parsed_args.database,

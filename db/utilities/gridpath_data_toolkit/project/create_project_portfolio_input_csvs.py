@@ -61,6 +61,7 @@ def load_data(conn):
     #     import_file(conn=conn, )
     pass
 
+
 def get_project_portfolio_for_region(
     conn,
     eia860_sql_filter_string,
@@ -124,6 +125,8 @@ def main(args=None):
         args = sys.argv[1:]
 
     parsed_args = parse_arguments(args=args)
+
+    os.makedirs(parsed_args.portfolio_csv_location, exist_ok=True)
 
     conn = connect_to_database(db_path=parsed_args.database)
 

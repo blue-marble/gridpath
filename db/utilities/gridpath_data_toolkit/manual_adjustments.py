@@ -87,6 +87,8 @@ def main(args=None):
 
     parsed_args = parse_arguments(args)
 
+    os.makedirs(parsed_args.output_directory, exist_ok=True)
+
     output_directory = parsed_args.output_directory
     profile_id = parsed_args.variable_generator_profile_scenario_id
     profile_name = parsed_args.variable_generator_profile_scenario_name

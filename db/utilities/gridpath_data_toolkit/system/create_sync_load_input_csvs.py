@@ -141,6 +141,8 @@ def main(args=None):
     if not parsed_args.quiet:
         print("Creating sync load profile CSVs...")
 
+    os.makedirs(parsed_args.output_directory, exist_ok=True)
+
     conn = connect_to_database(db_path=parsed_args.database)
 
     create_load_profile_csv(

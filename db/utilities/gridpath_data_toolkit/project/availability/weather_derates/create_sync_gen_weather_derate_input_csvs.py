@@ -15,6 +15,7 @@
 
 from argparse import ArgumentParser
 from multiprocessing import get_context
+import os.path
 import sys
 
 from db.common_functions import connect_to_database
@@ -113,6 +114,8 @@ def main(args=None):
     parsed_args = parse_arguments(args=args)
     if not parsed_args.quiet:
         print("Creating sync gen weather-dependent derates CSVs...")
+
+    os.makedirs(parsed_args.output_directory, exist_ok=True)
 
     conn = connect_to_database(db_path=parsed_args.database)
 

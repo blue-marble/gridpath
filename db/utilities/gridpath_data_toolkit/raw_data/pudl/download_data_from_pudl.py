@@ -150,8 +150,7 @@ def main(args=None):
 
     parsed_args = parse_arguments(args=args)
 
-    if not os.path.exists(parsed_args.pudl_download_directory):
-        os.makedirs(parsed_args.pudl_download_directory)
+    os.makedirs(parsed_args.pudl_download_directory, exist_ok=True)
 
     # Download the PUDL database
     if not parsed_args.skip_pudl_sqlite_download:

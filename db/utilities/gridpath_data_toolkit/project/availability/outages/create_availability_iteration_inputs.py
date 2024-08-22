@@ -300,6 +300,8 @@ def main(args=None):
     if not parsed_args.quiet:
         print("Creating availability iteration CSVs...")
 
+    os.makedirs(parsed_args.output_directory, exist_ok=True)
+
     db = connect_to_database(parsed_args.database)
 
     projects = [
