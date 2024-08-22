@@ -33,6 +33,7 @@ os.chdir(os.path.join(os.path.dirname(__file__), "..", "gridpath"))
 EXAMPLES_DIRECTORY = os.path.join("..", "examples")
 DB_NAME = "unittest_examples"
 DB_PATH = os.path.join("../db", "{}.db".format(DB_NAME))
+DATA_DIRECTORY = "../db/data"
 CSV_PATH = "../db//csvs_test_examples"
 SCENARIOS_CSV = os.path.join(CSV_PATH, "scenarios.csv")
 TEST_SCENARIOS_CSV = "../tests/test_data/test_scenario_objective_function_values.csv"
@@ -175,7 +176,9 @@ class TestExamples(unittest.TestCase):
         if os.path.exists(DB_PATH):
             os.remove(DB_PATH)
 
-        create_database.main(["--database", DB_PATH])
+        create_database.main(
+            ["--database", DB_PATH, "--data_directory", DATA_DIRECTORY]
+        )
 
         try:
             port_csvs_to_db.main(
