@@ -68,9 +68,9 @@ def get_project_heat_rates(
             raw_data_eia860_generators.prime_mover_code, gridpath_generic_fuel, 
             heat_rate_mmbtu_per_mwh, min_load_fraction
         FROM raw_data_eia860_generators
-        JOIN aux_eia_gridpath_key ON
+        JOIN user_defined_eia_gridpath_key ON
             raw_data_eia860_generators.prime_mover_code = 
-            aux_eia_gridpath_key.prime_mover_code
+            user_defined_eia_gridpath_key.prime_mover_code
             AND energy_source_code_1 = energy_source_code
         WHERE 1 = 1
         AND {eia860_sql_filter_string}
@@ -90,7 +90,7 @@ def get_project_heat_rates(
         min_load_heat_rate_coefficient = c2.execute(
             f"""
             SELECT average_heat_rate_coefficient
-            FROM aux_heat_rate_curve
+            FROM user_defined_heat_rate_curve
             WHERE load_point_fraction = {min_load_fraction}
             ;
             """

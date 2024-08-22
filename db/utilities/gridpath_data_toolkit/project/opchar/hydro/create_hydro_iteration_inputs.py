@@ -105,7 +105,7 @@ def calculate_from_project_year_month_data(
         for bt_h in c.execute(
             """
             SELECT DISTINCT balancing_type, horizon 
-            FROM raw_data_balancing_type_horizons;
+            FROM user_defined_balancing_type_horizons;
             """
         ).fetchall()
     ]
@@ -128,7 +128,7 @@ def calculate_from_project_year_month_data(
             hr_start, hr_end = c.execute(
                 f"""
                     SELECT hour_ending_of_year_start, hour_ending_of_year_end
-                    FROM raw_data_balancing_type_horizons
+                    FROM user_defined_balancing_type_horizons
                     WHERE balancing_type = '{bt}'
                     AND horizon = {h}
                     ;

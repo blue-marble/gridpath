@@ -20,7 +20,7 @@ def get_eia860_sql_filter_string(study_year, region):
      AND (unixepoch(generator_retirement_date) > unixepoch('{study_year}-12-31') or generator_retirement_date IS NULL)
      AND balancing_authority_code_eia in (
          SELECT baa
-         FROM aux_baa_key
+         FROM user_defined_baa_key
          WHERE region = '{region}'
      )
     """

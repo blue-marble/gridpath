@@ -39,20 +39,6 @@ def parse_arguments(args):
     return parsed_arguments
 
 
-def import_file(conn, directory, f_name):
-    f_path = os.path.join(directory, f_name)
-    df = pd.read_csv(f_path, delimiter=",")
-
-    spin_on_database_lock_generic(
-        command=df.to_sql(
-            name=f_name,
-            con=conn,
-            if_exists="append",
-            index=False,
-        )
-    )
-
-
 def main(args=None):
     if args is None:
         args = sys.argv[1:]

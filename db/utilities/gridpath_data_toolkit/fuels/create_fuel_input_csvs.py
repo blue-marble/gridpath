@@ -60,8 +60,8 @@ def get_fuel_prices(
     SELECT gridpath_generic_fuel || '_' || fuel_region as fuel, projection_year as period, 
     fuel_cost_real_per_mmbtu_eiaaeo as fuel_price_per_mmbtu
     FROM raw_data_fuel_prices
-    JOIN (SELECT DISTINCT gridpath_generic_fuel, fuel_type_eiaaeo FROM aux_eia_gridpath_key) USING (fuel_type_eiaaeo)
-    JOIN aux_eiaaeo_region_key using (
+    JOIN (SELECT DISTINCT gridpath_generic_fuel, fuel_type_eiaaeo FROM user_defined_eia_gridpath_key) USING (fuel_type_eiaaeo)
+    JOIN user_defined_eiaaeo_region_key using (
     electricity_market_module_region_eiaaeo)
     WHERE report_year = {report_year}
     AND model_case_eiaaeo = '{model_case}'

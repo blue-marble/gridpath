@@ -79,7 +79,7 @@ def create_weather_draws(
     # Get the weather bins
     weather_bins_sql = f"""
         SELECT year, month, day_of_month, day_type, weather_bin
-        FROM aux_weather_bins
+        FROM user_defined_weather_bins
         WHERE weather_bins_id = {weather_bins_id}
         """
     weather_bins = pd.read_sql(sql=weather_bins_sql, con=conn)
@@ -268,7 +268,7 @@ def make_synthetic_iterations(
                 day_type, weather_bin
                 FROM (
                     SELECT year, month, day_of_month, day_type, weather_bin
-                    FROM aux_weather_bins
+                    FROM user_defined_weather_bins
                     WHERE month = {month}
                     {consider_day_types_str}
                     AND weather_bin = {weather_bin}
@@ -276,7 +276,7 @@ def make_synthetic_iterations(
                 )
                 WHERE year in (
                     SELECT year
-                    FROM aux_data_availability
+                    FROM user_defined_data_availability
                     WHERE timeseries_name = '{timeseries_name}'
                     )
                 ORDER BY year, month, day_of_month
@@ -349,7 +349,7 @@ def main(args=None):
         (timeseries_name, consider_day_types)
         for (timeseries_name, consider_day_types) in c.execute(
             f"""SELECT timeseries_name, consider_day_types
-        FROM aux_monte_carlo_timeseries
+        FROM user_defined_monte_carlo_timeseries
         ;"""
         ).fetchall()
     ]

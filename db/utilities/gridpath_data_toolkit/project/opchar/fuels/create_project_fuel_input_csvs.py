@@ -62,17 +62,17 @@ def get_project_fuels(
 ):
 
     # Only coal, gas, and fuel oil for now (with aeo prices)
-    # TODO: temporarily assign all to CISO to CA_North in aux_baa_key
+    # TODO: temporarily assign all to CISO to CA_North in user_defined_baa_key
     sql = f"""
         SELECT plant_id_eia || '__' || REPLACE(REPLACE(generator_id, ' ', '_'), '-', 
             '_') AS project, 
             gridpath_generic_fuel || '_' || fuel_region as fuel
         FROM raw_data_eia860_generators
-        JOIN aux_eia_gridpath_key ON
+        JOIN user_defined_eia_gridpath_key ON
             raw_data_eia860_generators.prime_mover_code = 
-            aux_eia_gridpath_key.prime_mover_code
+            user_defined_eia_gridpath_key.prime_mover_code
             AND energy_source_code_1 = energy_source_code
-        JOIN aux_baa_key ON (balancing_authority_code_eia = baa)
+        JOIN user_defined_baa_key ON (balancing_authority_code_eia = baa)
         WHERE 1 = 1
         AND {eia860_sql_filter_string}
         AND {fuel_filter_str}

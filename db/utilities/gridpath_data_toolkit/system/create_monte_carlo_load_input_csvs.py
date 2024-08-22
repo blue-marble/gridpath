@@ -107,7 +107,7 @@ def create_load_profile_csv(
     c = conn.cursor()
 
     # Get load zone units
-    df = pd.read_sql("""SELECT * FROM aux_load_zone_units;""", conn)
+    df = pd.read_sql("""SELECT * FROM user_defined_load_zone_units;""", conn)
 
     # Create a dictionary of the form {timeseries: project: [units]}
     load_zone_unit_dict = {}

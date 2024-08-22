@@ -28,7 +28,7 @@ def get_all_links_sql(region):
                         )
                     )
                     LEFT OUTER JOIN
-                    aux_baa_key
+                    user_defined_baa_key
                     USING (baa)
                 WHERE region = '{region}'
                 )
@@ -44,7 +44,7 @@ def get_all_links_sql(region):
                         )
                     )
                     LEFT OUTER JOIN
-                    aux_baa_key
+                    user_defined_baa_key
                     USING (baa)
                 WHERE region = '{region}'
                 )

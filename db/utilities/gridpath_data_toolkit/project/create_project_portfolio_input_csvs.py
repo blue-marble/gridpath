@@ -19,7 +19,6 @@ import pandas as pd
 import sys
 
 from db.common_functions import connect_to_database
-from db.utilities.gridpath_data_toolkit.load_raw_data import import_file
 from db.utilities.gridpath_data_toolkit.project.project_data_filters_common import (
     get_eia860_sql_filter_string,
     VAR_GEN_FILTER_STR,
@@ -42,8 +41,8 @@ def parse_arguments(args):
     parser.add_argument("-y", "--study_year", default=2026)
     parser.add_argument("-r", "--region", default="WECC")
     parser.add_argument(
-        "-p_csv",
-        "--portfolio_csv_location",
+        "-o",
+        "--output_directory",
         default="../../csvs_open_data/project/portfolios",
     )
     parser.add_argument("-p_id", "--project_portfolio_scenario_id", default=1)
@@ -88,9 +87,9 @@ def get_project_portfolio_for_region(
     NULL as new_build,
     gridpath_capacity_type AS capacity_type
     FROM raw_data_eia860_generators
-    JOIN aux_eia_gridpath_key ON
+    JOIN user_defined_eia_gridpath_key ON
             raw_data_eia860_generators.prime_mover_code = 
-            aux_eia_gridpath_key.prime_mover_code
+            user_defined_eia_gridpath_key.prime_mover_code
             AND energy_source_code_1 = energy_source_code
      WHERE 1 = 1
      AND {eia860_sql_filter_string}
@@ -104,7 +103,7 @@ def get_project_portfolio_for_region(
         NULL as new_build,
         gridpath_capacity_type AS capacity_type
     FROM raw_data_eia860_generators
-    JOIN aux_eia_gridpath_key
+    JOIN user_defined_eia_gridpath_key
     USING (prime_mover_code)
     WHERE 1 = 1
     AND {eia860_sql_filter_string}
@@ -126,7 +125,7 @@ def main(args=None):
 
     parsed_args = parse_arguments(args=args)
 
-    os.makedirs(parsed_args.portfolio_csv_location, exist_ok=True)
+    os.makedirs(parsed_args.output_directory, exist_ok=True)
 
     conn = connect_to_database(db_path=parsed_args.database)
 
@@ -138,7 +137,7 @@ def main(args=None):
         ),
         var_gen_filter_str=VAR_GEN_FILTER_STR,
         hydro_filter_str=HYDRO_FILTER_STR,
-        csv_location=parsed_args.portfolio_csv_location,
+        csv_location=parsed_args.output_directory,
         subscenario_id=parsed_args.project_portfolio_scenario_id,
         subscenario_name=parsed_args.project_portfolio_scenario_name,
     )

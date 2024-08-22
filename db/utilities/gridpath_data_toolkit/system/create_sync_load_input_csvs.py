@@ -104,7 +104,7 @@ def create_load_profile_csv(
                     ) AS DECIMAL
                 ) - 1) * 24 + hour_of_day AS hour_of_year
         FROM raw_data_system_load
-        JOIN aux_load_zone_units
+        JOIN user_defined_load_zone_units
         USING (load_zone_unit)
         )
     GROUP BY load_zone, year, hour_of_year

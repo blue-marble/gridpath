@@ -75,8 +75,8 @@ CREATE TABLE raw_data_hydro_years
     PRIMARY KEY (year, month)
 );
 
-DROP TABLE IF EXISTS raw_data_balancing_type_horizons;
-CREATE TABLE raw_data_balancing_type_horizons
+DROP TABLE IF EXISTS user_defined_balancing_type_horizons;
+CREATE TABLE user_defined_balancing_type_horizons
 (
     balancing_type            VARCHAR(32),
     horizon                   INTEGER,
@@ -168,8 +168,8 @@ CREATE TABLE raw_data_eia930_hourly_interchange
 -- Auxiliary data (maps, etc.)
 --------------------------------------------------------------------------------
 
-DROP TABLE IF EXISTS aux_load_zone_units;
-CREATE TABLE aux_load_zone_units
+DROP TABLE IF EXISTS user_defined_load_zone_units;
+CREATE TABLE user_defined_load_zone_units
 (
     load_zone_unit TEXT,
     load_zone      TEXT,
@@ -177,24 +177,24 @@ CREATE TABLE aux_load_zone_units
     PRIMARY KEY (load_zone_unit, load_zone)
 );
 
-DROP TABLE IF EXISTS aux_eiaaeo_region_key;
-CREATE TABLE aux_eiaaeo_region_key
+DROP TABLE IF EXISTS user_defined_eiaaeo_region_key;
+CREATE TABLE user_defined_eiaaeo_region_key
 (
     electricity_market_module_region_eiaaeo TEXT PRIMARY KEY,
     region                                  TEXT,
     fuel_region                             TEXT
 );
 
-DROP TABLE IF EXISTS aux_baa_key;
-CREATE TABLE aux_baa_key
+DROP TABLE IF EXISTS user_defined_baa_key;
+CREATE TABLE user_defined_baa_key
 (
     baa         TEXT PRIMARY KEY,
     region      TEXT,
     fuel_region TEXT
 );
 
-DROP TABLE IF EXISTS aux_eia_gridpath_key;
-CREATE TABLE aux_eia_gridpath_key
+DROP TABLE IF EXISTS user_defined_eia_gridpath_key;
+CREATE TABLE user_defined_eia_gridpath_key
 (
     prime_mover_code          TEXT,
     prime_mover_label         TEXT,
@@ -213,16 +213,16 @@ CREATE TABLE aux_eia_gridpath_key
 );
 
 
-DROP TABLE IF EXISTS aux_heat_rate_curve;
-CREATE TABLE aux_heat_rate_curve
+DROP TABLE IF EXISTS user_defined_heat_rate_curve;
+CREATE TABLE user_defined_heat_rate_curve
 (
     load_point_fraction           FLOAT PRIMARY KEY,
     average_heat_rate_coefficient FLOAT
 );
 
 
-DROP TABLE IF EXISTS aux_weather_bins;
-CREATE TABLE aux_weather_bins
+DROP TABLE IF EXISTS user_defined_weather_bins;
+CREATE TABLE user_defined_weather_bins
 (
     weather_bins_id INTEGER,
     year            INTEGER,
@@ -234,16 +234,16 @@ CREATE TABLE aux_weather_bins
 );
 
 
-DROP TABLE IF EXISTS aux_data_availability;
-CREATE TABLE aux_data_availability
+DROP TABLE IF EXISTS user_defined_data_availability;
+CREATE TABLE user_defined_data_availability
 (
     timeseries_name VARCHAR(32),
     year            INTEGER,
     PRIMARY KEY (timeseries_name, year)
 );
 
-DROP TABLE IF EXISTS aux_monte_carlo_timeseries;
-CREATE TABLE aux_monte_carlo_timeseries
+DROP TABLE IF EXISTS user_defined_monte_carlo_timeseries;
+CREATE TABLE user_defined_monte_carlo_timeseries
 (
     timeseries_name    VARCHAR(32),
     consider_day_types INTEGER,
