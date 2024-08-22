@@ -17,7 +17,8 @@ from argparse import ArgumentParser
 import os.path
 import pandas as pd
 
-from db.common_functions import spin_on_database_lock_generic, connect_to_database
+from db.common_functions import spin_on_database_lock_generic, \
+    connect_to_database
 
 
 def parse_arguments(args):
@@ -37,6 +38,20 @@ def parse_arguments(args):
     parsed_arguments = parser.parse_known_args(args=args)[0]
 
     return parsed_arguments
+
+
+def import_file(conn, directory, f_name):
+    f_path = os.path.join(directory, f_name)
+    df = pd.read_csv(f_path, delimiter=",")
+
+    spin_on_database_lock_generic(
+        command=df.to_sql(
+            name=f_name,
+            con=conn,
+            if_exists="append",
+            index=False,
+        )
+    )
 
 
 def main(args=None):

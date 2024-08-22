@@ -19,6 +19,7 @@ import pandas as pd
 import sys
 
 from db.common_functions import connect_to_database
+from db.utilities.gridpath_data_toolkit.load_raw_data import import_file
 from db.utilities.gridpath_data_toolkit.project.project_data_filters_common import (
     get_eia860_sql_filter_string,
     VAR_GEN_FILTER_STR,
@@ -54,6 +55,11 @@ def parse_arguments(args):
 
     return parsed_arguments
 
+
+def load_data(conn):
+    # for f in []:
+    #     import_file(conn=conn, )
+    pass
 
 def get_project_portfolio_for_region(
     conn,
@@ -121,6 +127,7 @@ def main(args=None):
 
     conn = connect_to_database(db_path=parsed_args.database)
 
+    files = []
     get_project_portfolio_for_region(
         conn=conn,
         eia860_sql_filter_string=get_eia860_sql_filter_string(

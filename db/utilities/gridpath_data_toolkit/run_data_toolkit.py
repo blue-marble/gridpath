@@ -19,7 +19,7 @@ import sys
 
 # GridPath modules
 from db import create_database
-from db.utilities.gridpath_data_toolkit.raw_data import load_raw_data
+from db.utilities.gridpath_data_toolkit import load_raw_data
 from db.utilities.gridpath_data_toolkit.temporal import (
     create_temporal_scenarios,
     create_monte_carlo_weather_draws,

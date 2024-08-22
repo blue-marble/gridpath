@@ -83,14 +83,14 @@ def get_tx_capacities(
                 FROM (
                 SELECT datetime_pst, from1, to1, i1, from2, to2, i2, i1/i2, i2/i1 FROM (
                 SELECT datetime_pst, balancing_authority_code_eia as from1, balancing_authority_code_adjacent_eia as to1, interchange_reported_mwh as i1
-                FROM raw_data_aux_eia930_hourly_interchange
+                FROM raw_data_eia930_hourly_interchange
                 WHERE balancing_authority_code_eia = '{lz_from}' AND 
                 balancing_authority_code_adjacent_eia = '{lz_to}'
                 AND abs(interchange_reported_mwh) <= {cap}
                 ) as tbl1
                 JOIN (
                 SELECT datetime_pst, balancing_authority_code_eia as from2, balancing_authority_code_adjacent_eia as to2, interchange_reported_mwh as i2
-                FROM raw_data_aux_eia930_hourly_interchange
+                FROM raw_data_eia930_hourly_interchange
                 WHERE balancing_authority_code_eia = '{lz_to}' 
                 AND balancing_authority_code_adjacent_eia = '{lz_from}'
                 AND abs(interchange_reported_mwh) <= {cap}

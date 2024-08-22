@@ -147,8 +147,8 @@ CREATE TABLE raw_data_eia860_generators
     PRIMARY KEY (version_num, report_date, plant_id_eia, generator_id)
 );
 
-DROP TABLE IF EXISTS raw_data_aux_eia930_hourly_interchange;
-CREATE TABLE raw_data_aux_eia930_hourly_interchange
+DROP TABLE IF EXISTS raw_data_eia930_hourly_interchange;
+CREATE TABLE raw_data_eia930_hourly_interchange
 (
     datetime_utc                          DATETIME,
     balancing_authority_code_eia          TEXT,

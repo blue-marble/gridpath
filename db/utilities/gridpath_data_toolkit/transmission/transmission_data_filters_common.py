@@ -16,15 +16,15 @@
 def get_all_links_sql(region):
     all_links_sql = f"""
                 SELECT DISTINCT balancing_authority_code_eia, balancing_authority_code_adjacent_eia
-                FROM raw_data_aux_eia930_hourly_interchange
+                FROM raw_data_eia930_hourly_interchange
                 WHERE balancing_authority_code_eia in (
                 SELECT baa FROM (
                     SELECT DISTINCT baa from (
                         SELECT DISTINCT balancing_authority_code_eia as baa
-                        FROM raw_data_aux_eia930_hourly_interchange
+                        FROM raw_data_eia930_hourly_interchange
                         UNION
                         SELECT DISTINCT balancing_authority_code_adjacent_eia as ba
-                        FROM raw_data_aux_eia930_hourly_interchange
+                        FROM raw_data_eia930_hourly_interchange
                         )
                     )
                     LEFT OUTER JOIN
@@ -37,10 +37,10 @@ def get_all_links_sql(region):
                 SELECT baa FROM (
                     SELECT DISTINCT baa from (
                         SELECT DISTINCT balancing_authority_code_eia as baa
-                        FROM raw_data_aux_eia930_hourly_interchange
+                        FROM raw_data_eia930_hourly_interchange
                         UNION
                         SELECT DISTINCT balancing_authority_code_adjacent_eia as ba
-                        FROM raw_data_aux_eia930_hourly_interchange
+                        FROM raw_data_eia930_hourly_interchange
                         )
                     )
                     LEFT OUTER JOIN
