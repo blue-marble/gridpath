@@ -23,6 +23,8 @@ from db.utilities.gridpath_data_toolkit.project.project_data_filters_common impo
     get_eia860_sql_filter_string,
     VAR_GEN_FILTER_STR,
     HYDRO_FILTER_STR,
+    DISAGG_PROJECT_NAME_STR,
+    AGG_PROJECT_NAME_STR,
 )
 
 
@@ -60,14 +62,15 @@ def get_project_fixed_cost(
     eia860_sql_filter_string,
     var_gen_filter_str,
     hydro_filter_str,
+    disagg_project_name_str,
+    agg_project_name_str,
     study_year,
     csv_location,
     subscenario_id,
     subscenario_name,
 ):
     sql = f"""
-    SELECT plant_id_eia || '__' || REPLACE(REPLACE(generator_id, ' ', '_'), '-', 
-        '_') AS project,
+    SELECT {disagg_project_name_str} AS project,
         {study_year} as period,
         0 AS fixed_cost_per_mw_yr,
         NULL AS hyb_gen_fixed_cost_per_mw_yr,
@@ -92,8 +95,7 @@ def get_project_fixed_cost(
      AND NOT {hydro_filter_str}
     UNION
     -- Aggregated units include wind, offshore wind, solar, and hydro
-    SELECT DISTINCT 
-        agg_project || '_' || balancing_authority_code_eia AS project,
+    SELECT {agg_project_name_str} AS project,
         {study_year} as period,
         0 AS specified_fixed_cost_mw,
         NULL AS hyb_gen_specified_fixed_cost_mw,
@@ -141,6 +143,8 @@ def main(args=None):
         study_year=parsed_args.study_year,
         var_gen_filter_str=VAR_GEN_FILTER_STR,
         hydro_filter_str=HYDRO_FILTER_STR,
+        disagg_project_name_str=DISAGG_PROJECT_NAME_STR,
+        agg_project_name_str=AGG_PROJECT_NAME_STR,
         csv_location=parsed_args.fixed_cost_csv_location,
         subscenario_id=parsed_args.project_fixed_cost_scenario_id,
         subscenario_name=parsed_args.project_fixed_cost_scenario_name,

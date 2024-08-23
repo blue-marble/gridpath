@@ -26,6 +26,8 @@ from db.utilities.gridpath_data_toolkit.project.project_data_filters_common impo
     FUEL_FILTER_STR,
     HEAT_RATE_FILTER_STR,
     STOR_FILTER_STR,
+    DISAGG_PROJECT_NAME_STR,
+    AGG_PROJECT_NAME_STR,
 )
 
 
@@ -72,6 +74,8 @@ def get_project_opchar(
     stor_filter_str,
     var_gen_filter_str,
     hydro_filter_str,
+    disagg_project_name_str,
+    agg_project_name_str,
     csv_location,
     subscenario_id,
     subscenario_name,
@@ -111,8 +115,7 @@ def get_project_opchar(
     )
 
     sql = f"""
-     SELECT plant_id_eia || '__' || REPLACE(REPLACE(generator_id, ' ', '_'), '-', 
-         '_') AS project,
+     SELECT {disagg_project_name_str} AS project,
          {non_var_opchars_str}
      FROM raw_data_eia860_generators
      JOIN user_defined_eia_gridpath_key ON
@@ -125,8 +128,7 @@ def get_project_opchar(
      AND NOT {hydro_filter_str}
      -- Variable gen
      UNION
-     SELECT DISTINCT 
-         agg_project || '_' || balancing_authority_code_eia AS project,
+     SELECT {agg_project_name_str} AS project,
          {var_opchars_str}
      FROM raw_data_eia860_generators
      JOIN user_defined_eia_gridpath_key ON
@@ -139,8 +141,7 @@ def get_project_opchar(
      GROUP BY project
      -- Hydro
      UNION
-     SELECT DISTINCT 
-         agg_project || '_' || balancing_authority_code_eia AS project,
+     SELECT {agg_project_name_str} AS project,
          {hydro_opchars_str}
      FROM raw_data_eia860_generators
      JOIN user_defined_eia_gridpath_key ON
@@ -320,6 +321,8 @@ def main(args=None):
         stor_filter_str=STOR_FILTER_STR,
         var_gen_filter_str=VAR_GEN_FILTER_STR,
         hydro_filter_str=HYDRO_FILTER_STR,
+        disagg_project_name_str=DISAGG_PROJECT_NAME_STR,
+        agg_project_name_str=AGG_PROJECT_NAME_STR,
         csv_location=parsed_args.opchar_csv_location,
         subscenario_id=parsed_args.project_operational_chars_scenario_id,
         subscenario_name=parsed_args.project_operational_chars_scenario_name,

@@ -21,6 +21,7 @@ from db.common_functions import connect_to_database
 from db.utilities.gridpath_data_toolkit.project.project_data_filters_common import (
     get_eia860_sql_filter_string,
     HEAT_RATE_FILTER_STR,
+    DISAGG_PROJECT_NAME_STR,
 )
 
 
@@ -56,6 +57,7 @@ def get_project_heat_rates(
     conn,
     eia860_sql_filter_string,
     heat_rate_filter_str,
+    disagg_project_name_str,
     csv_location,
     subscenario_id,
     subscenario_name,
@@ -63,8 +65,7 @@ def get_project_heat_rates(
 
     # Only coal, gas, and fuel oil for now (with aeo prices)
     sql = f"""
-        SELECT plant_id_eia || '__' || REPLACE(REPLACE(generator_id, ' ', '_'), '-', 
-            '_') AS project, 
+        SELECT {disagg_project_name_str} AS project, 
             raw_data_eia860_generators.prime_mover_code, gridpath_generic_fuel, 
             heat_rate_mmbtu_per_mwh, min_load_fraction
         FROM raw_data_eia860_generators
@@ -131,6 +132,7 @@ def main(args=None):
             study_year=parsed_args.study_year, region=parsed_args.region
         ),
         heat_rate_filter_str=HEAT_RATE_FILTER_STR,
+        disagg_project_name_str=DISAGG_PROJECT_NAME_STR,
         csv_location=parsed_args.hr_csv_location,
         subscenario_id=parsed_args.project_hr_scenario_id,
         subscenario_name=parsed_args.project_hr_scenario_name,

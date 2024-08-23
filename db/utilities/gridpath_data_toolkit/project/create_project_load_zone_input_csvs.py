@@ -23,6 +23,8 @@ from db.utilities.gridpath_data_toolkit.project.project_data_filters_common impo
     get_eia860_sql_filter_string,
     HYDRO_FILTER_STR,
     VAR_GEN_FILTER_STR,
+    DISAGG_PROJECT_NAME_STR,
+    AGG_PROJECT_NAME_STR,
 )
 
 
@@ -60,13 +62,14 @@ def get_project_load_zones(
     eia860_sql_filter_string,
     var_gen_filter_str,
     hydro_filter_str,
+    disagg_project_name_str,
+    agg_project_name_str,
     csv_location,
     subscenario_id,
     subscenario_name,
 ):
     sql = f"""
-    SELECT plant_id_eia || '__' || REPLACE(REPLACE(generator_id, ' ', '_'), '-', 
-        '_') AS project, balancing_authority_code_eia AS load_zone
+    SELECT {disagg_project_name_str} AS project, balancing_authority_code_eia AS load_zone
     FROM raw_data_eia860_generators
     JOIN user_defined_eia_gridpath_key ON
             raw_data_eia860_generators.prime_mover_code = 
@@ -78,8 +81,7 @@ def get_project_load_zones(
     AND NOT {hydro_filter_str}
     -- Aggregated units include wind, offshore wind, solar, and hydro
     UNION
-    SELECT DISTINCT 
-        agg_project || '_' || balancing_authority_code_eia AS project,
+    SELECT {agg_project_name_str} AS project,
         balancing_authority_code_eia AS load_zone
     FROM raw_data_eia860_generators
     JOIN user_defined_eia_gridpath_key
@@ -115,6 +117,8 @@ def main(args=None):
         ),
         var_gen_filter_str=VAR_GEN_FILTER_STR,
         hydro_filter_str=HYDRO_FILTER_STR,
+        disagg_project_name_str=DISAGG_PROJECT_NAME_STR,
+        agg_project_name_str=AGG_PROJECT_NAME_STR,
         csv_location=parsed_args.load_zone_csv_location,
         subscenario_id=parsed_args.project_load_zone_scenario_id,
         subscenario_name=parsed_args.project_load_zone_scenario_name,

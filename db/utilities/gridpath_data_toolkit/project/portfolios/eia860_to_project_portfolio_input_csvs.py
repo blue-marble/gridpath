@@ -17,6 +17,20 @@ Create project portfolios from EIA860 data.
 
 The project capacity_types will be based on the data in the
 user_defined_eia_gridpath_key table.
+
+Wind, solar, and hydro are aggregated to the BA level.
+
+.. note:: Hybrids are currently not treated separately. Their renewable
+generation components are lumped with wind/solar, and the storage components
+show up as individual units.
+
+Project portfolios are created based on the data from a particula report
+date. The user selects the region (determines subset of generators to use)
+and the study date (determines which generators are operational, i.e.,
+after their online date and before their retirement date in the EIA data.)
+
+TODO: disaggregate the hybrids out of the wind/solar project and combine
+     with their battery components
 """
 
 from argparse import ArgumentParser
@@ -29,6 +43,8 @@ from db.utilities.gridpath_data_toolkit.project.project_data_filters_common impo
     get_eia860_sql_filter_string,
     VAR_GEN_FILTER_STR,
     HYDRO_FILTER_STR,
+    DISAGG_PROJECT_NAME_STR,
+    AGG_PROJECT_NAME_STR,
 )
 
 
@@ -61,12 +77,13 @@ def parse_arguments(args):
     return parsed_arguments
 
 
-
 def get_project_portfolio_for_region(
     conn,
     eia860_sql_filter_string,
     var_gen_filter_str,
     hydro_filter_str,
+    disagg_project_name_str,
+    agg_project_name_str,
     csv_location,
     subscenario_id,
     subscenario_name,
@@ -74,16 +91,13 @@ def get_project_portfolio_for_region(
     """
     Unit level except for wind (onshore and offshore) and solar PV, which are
     aggregated to the BA-level.
-    TODO: disaggregate the hybrids out of the wind/solar project and combine
-     with their battery components
     """
     # For disaggregated unit-level projects, use plant_id_eia__generator_id
     # as the project name
     # For BA-aggregated projects, use prime_mover_BA
     sql = f"""
     -- Disaggregated units
-    SELECT plant_id_eia || '__' || REPLACE(REPLACE(generator_id, ' ', '_'), '-', 
-        '_') AS project, 
+    SELECT {disagg_project_name_str} AS project, 
     NULL as specified, 
     NULL as new_build,
     gridpath_capacity_type AS capacity_type
@@ -98,8 +112,7 @@ def get_project_portfolio_for_region(
      AND NOT {hydro_filter_str}
     UNION
     -- Aggregated units include wind, offshore wind, solar, and hydro
-    SELECT DISTINCT 
-        agg_project || '_' || balancing_authority_code_eia AS project,
+    SELECT {agg_project_name_str} AS project,
         NULL as specified,
         NULL as new_build,
         gridpath_capacity_type AS capacity_type
@@ -130,7 +143,6 @@ def main(args=None):
 
     conn = connect_to_database(db_path=parsed_args.database)
 
-    files = []
     get_project_portfolio_for_region(
         conn=conn,
         eia860_sql_filter_string=get_eia860_sql_filter_string(
@@ -138,6 +150,8 @@ def main(args=None):
         ),
         var_gen_filter_str=VAR_GEN_FILTER_STR,
         hydro_filter_str=HYDRO_FILTER_STR,
+        disagg_project_name_str=DISAGG_PROJECT_NAME_STR,
+        agg_project_name_str=AGG_PROJECT_NAME_STR,
         csv_location=parsed_args.output_directory,
         subscenario_id=parsed_args.project_portfolio_scenario_id,
         subscenario_name=parsed_args.project_portfolio_scenario_name,

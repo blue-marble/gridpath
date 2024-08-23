@@ -21,6 +21,7 @@ from db.common_functions import connect_to_database
 from db.utilities.gridpath_data_toolkit.project.project_data_filters_common import (
     get_eia860_sql_filter_string,
     FUEL_FILTER_STR,
+    DISAGG_PROJECT_NAME_STR,
 )
 
 
@@ -56,6 +57,7 @@ def get_project_fuels(
     conn,
     eia860_sql_filter_string,
     fuel_filter_str,
+    disagg_project_name_str,
     csv_location,
     subscenario_id,
     subscenario_name,
@@ -64,8 +66,7 @@ def get_project_fuels(
     # Only coal, gas, and fuel oil for now (with aeo prices)
     # TODO: temporarily assign all to CISO to CA_North in user_defined_baa_key
     sql = f"""
-        SELECT plant_id_eia || '__' || REPLACE(REPLACE(generator_id, ' ', '_'), '-', 
-            '_') AS project, 
+        SELECT {disagg_project_name_str} AS project, 
             gridpath_generic_fuel || '_' || fuel_region as fuel
         FROM raw_data_eia860_generators
         JOIN user_defined_eia_gridpath_key ON
@@ -111,6 +112,7 @@ def main(args=None):
             study_year=parsed_args.study_year, region=parsed_args.region
         ),
         fuel_filter_str=FUEL_FILTER_STR,
+        disagg_project_name_str=DISAGG_PROJECT_NAME_STR,
         csv_location=parsed_args.fuels_csv_location,
         subscenario_id=parsed_args.project_fuel_scenario_id,
         subscenario_name=parsed_args.project_fuel_scenario_name,

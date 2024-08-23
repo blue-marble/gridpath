@@ -28,7 +28,9 @@ from db.utilities.gridpath_data_toolkit.system import (
     create_monte_carlo_load_input_csvs,
     create_sync_load_input_csvs,
 )
-from db.utilities.gridpath_data_toolkit.project.portfolios import eia860_to_project_portfolio_input_csvs
+from db.utilities.gridpath_data_toolkit.project.portfolios import (
+    eia860_to_project_portfolio_input_csvs,
+)
 from db.utilities.gridpath_data_toolkit.project import (
     create_project_load_zone_input_csvs,
 )

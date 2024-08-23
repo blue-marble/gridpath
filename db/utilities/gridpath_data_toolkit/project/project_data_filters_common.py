@@ -39,3 +39,7 @@ VAR_GEN_FILTER_STR = """gridpath_operational_type IN ('gen_var', 'gen_var_must_t
 HYDRO_FILTER_STR = (
     """gridpath_operational_type IN ('gen_hydro', 'gen_hydro_must_take')"""
 )
+DISAGG_PROJECT_NAME_STR = (
+    "plant_id_eia || '__' || REPLACE(REPLACE(generator_id, ' ', '_'), '-', '_')"
+)
+AGG_PROJECT_NAME_STR = "DISTINCT agg_project || '_' || balancing_authority_code_eia"
