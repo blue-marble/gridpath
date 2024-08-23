@@ -12,6 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+Create availability type CSV for a EIA860-based project portfolio. Availability
+types are set to 'exogenous' for all projects .
+
+.. note:: The query in this script is kept consistent with the project
+selection from eia860_to_project_portfolio_input_csvs.py.
+"""
 
 from argparse import ArgumentParser
 import os.path
