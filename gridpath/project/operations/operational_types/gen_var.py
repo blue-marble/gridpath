@@ -118,6 +118,14 @@ def add_model_components(
     | Power provision in MW from this project in each timepoint in which the  |
     | project is operational (capacity exists and the project is available).  |
     +-------------------------------------------------------------------------+
+    | | :code:`GenVar_Scheduled_Curtailment_MW`                               |
+    | | *Defined over*: :code:`GEN_VAR_OPR_TMPS`                              |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | Curtailed power in MW from this project in each timepoint in which the  |
+    | project is operational (capacity exists and the project is available).  |
+    | This will be the available power minus what was actually provided.      |
+    +-------------------------------------------------------------------------+
 
     |
 
@@ -133,11 +141,6 @@ def add_model_components(
     | | *Defined over*: :code:`GEN_VAR_OPR_TMPS`                              |
     |                                                                         |
     | Sub-hourly energy delivered (in MW) from providing upward reserves.     |
-    +-------------------------------------------------------------------------+
-    | | :code:`GenVar_Scheduled_Curtailment_MW`                               |
-    | | *Defined over*: :code:`GEN_VAR_OPR_TMPS`                              |
-    |                                                                         |
-    | The available power minus what was actually provided (in MW).           |
     +-------------------------------------------------------------------------+
     | | :code:`GenVar_Total_Curtailment_MW`                                   |
     | | *Defined over*: :code:`GEN_VAR_OPR_TMPS`                              |
@@ -158,13 +161,19 @@ def add_model_components(
     | | :code:`GenVar_Max_Power_Constraint`                                   |
     | | *Defined over*: :code:`GEN_VAR_OPR_TMPS`                              |
     |                                                                         |
-    | Limits the power plus upward reserves in each timepoint based on the    |
+    | Limits the power plus scheduled curtailment in each timepoint to equal  |
+    | the available power.                                                    |
     | :code:`gen_var_cap_factor` and the available capacity.                  |
     +-------------------------------------------------------------------------+
-    | | :code:`GenVar_Min_Power_Constraint`                                   |
+    | | :code:`GenVar_Max_Upward_Reserves_Constraint`                         |
     | | *Defined over*: :code:`GEN_VAR_OPR_TMPS`                              |
     |                                                                         |
-    | Power provision minus downward reserves should exceed zero.             |
+    | Upward reserves cannot exceed curtailment.                              |
+    +-------------------------------------------------------------------------+
+    | | :code:`GenVar_Max_Downward_Reserves_Constraint`                       |
+    | | *Defined over*: :code:`GEN_VAR_OPR_TMPS`                              |
+    |                                                                         |
+    | Downward reserves cannot exceed power provision.                        |
     +-------------------------------------------------------------------------+
 
     """
