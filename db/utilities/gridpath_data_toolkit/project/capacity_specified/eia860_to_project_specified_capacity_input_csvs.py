@@ -12,6 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
+"""
+Create specified capacity CSV for a EIA860-based project portfolio.
+
+.. note:: The query in this script is kept consistent with the project
+selection from eia860_to_project_portfolio_input_csvs.py.
+"""
+
 import csv
 from argparse import ArgumentParser
 import os.path
@@ -44,7 +52,7 @@ def parse_arguments(args):
     parser.add_argument("-r", "--region", default="WECC")
     parser.add_argument(
         "-cap_csv",
-        "--specified_capacity_csv_location",
+        "--output_directory",
         default="../../csvs_open_data/project/capacity_specified",
     )
     parser.add_argument(

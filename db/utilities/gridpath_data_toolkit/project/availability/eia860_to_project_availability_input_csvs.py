@@ -51,7 +51,7 @@ def parse_arguments(args):
     parser.add_argument("-r", "--region", default="WECC")
     parser.add_argument(
         "-avl_csv",
-        "--availability_csv_location",
+        "--output_directory",
         default="../../csvs_open_data/project/availability",
     )
     parser.add_argument("-avl_id", "--project_availability_scenario_id", default=1)
