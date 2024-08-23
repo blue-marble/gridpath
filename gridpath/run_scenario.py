@@ -545,16 +545,6 @@ def solve_sequentially(
                         objective_values=objective_values,
                     )
 
-            # TODO: Should probably just remove this logic here and have a
-            # dictionary for all objective functions
-            if len(objective_values.keys()) == 1:
-                objective_values = objective_values[list(objective_values.keys())[0]]
-                if isinstance(objective_values, dict):
-                    if len(objective_values.keys()) == 1:
-                        objective_values = objective_values[
-                            list(objective_values.keys())[0]
-                        ]
-
     return objective_values
 
 
