@@ -194,7 +194,7 @@ def add_model_components(
     # Variables
     ###########################################################################
 
-    m.GenVar_Provide_Power_MW = Var(m.GEN_VAR_OPR_TMPS, within=NonNegativeReals)
+    m.GenVar_Provide_Power_MW = Var(m.GEN_VAR_OPR_TMPS, within=Reals)
     m.GenVar_Scheduled_Curtailment_MW = Var(m.GEN_VAR_OPR_TMPS, within=NonNegativeReals)
 
     # Expressions
@@ -308,7 +308,7 @@ def max_power_rule(mod, g, tmp):
     **Constraint Name**: GenVar_Max_Power_Constraint
     **Enforced Over**: GEN_VAR_OPR_TMPS
 
-    Power provision plus upward services cannot exceed available power, which
+    Power provision plus curtailment cannot exceed available power, which
     is equal to the available capacity multiplied by the capacity factor.
     """
     return (
@@ -337,10 +337,13 @@ def max_downward_reserves_rule(mod, g, tmp):
 
     Downward reserves can't exceed power provision.
     """
-    return (
-        mod.GenVar_Provide_Power_MW[g, tmp] - mod.GenVar_Downwards_Reserves_MW[g, tmp]
-        >= 0
-    )
+    if mod.gen_var_cap_factor[g, tmp] >= 0:
+        return (
+            mod.GenVar_Downwards_Reserves_MW[g, tmp]
+            <= mod.GenVar_Provide_Power_MW[g, tmp]
+        )
+    else:
+        return mod.GenVar_Downwards_Reserves_MW[g, tmp] == 0
 
 
 # Operational Type Methods
