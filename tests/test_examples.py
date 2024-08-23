@@ -204,9 +204,7 @@ class TestExamples(unittest.TestCase):
             logging.exception(e)
             os.remove(DB_PATH)
 
-    def validate_and_test_example_generic(
-        self, scenario_name, literal=False, skip_validation=False
-    ):
+    def validate_and_test_example_generic(self, scenario_name, skip_validation=False):
         # Use the expected objective column by default
         column_to_use = "expected_objective"
         if MACOS and not pd.isnull(
@@ -218,15 +216,11 @@ class TestExamples(unittest.TestCase):
         ):
             column_to_use = "expected_objective_windows"
 
-        # For multi-subproblem and multi-stage problems, we need to evaluate
-        # the objective function as a literal (as it is in dictionary format
-        # stored as string in the CSV)
-        # For the rest of the problems, convert the objective function value
-        # from string to floating point data type
-        if literal:
-            objective = ast.literal_eval(self.df.loc[scenario_name][column_to_use])
-        else:
-            objective = float(self.df.loc[scenario_name][column_to_use])
+        # Evaluate the objective function as a literal (as it is in
+        # dictionary format stored as string in the CSV)
+        # This is now done for all scenarios, even if they have no iterations
+        # or multiple subproblem/stages
+        objective = ast.literal_eval(self.df.loc[scenario_name][column_to_use])
         if not skip_validation:
             self.check_validation(scenario_name)
         self.run_and_check_objective(scenario_name, objective)
@@ -460,9 +454,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         scenario_name = "single_stage_prod_cost"
-        self.validate_and_test_example_generic(
-            scenario_name=scenario_name, literal=True
-        )
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_single_stage_prod_cost_linked_subproblems(self):
         """
@@ -471,9 +463,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         scenario_name = "single_stage_prod_cost_linked_subproblems"
-        self.validate_and_test_example_generic(
-            scenario_name=scenario_name, literal=True
-        )
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_single_stage_prod_cost_linked_subproblems_w_hydro(self):
         """
@@ -482,9 +472,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         scenario_name = "single_stage_prod_cost_linked_subproblems_w_hydro"
-        self.validate_and_test_example_generic(
-            scenario_name=scenario_name, literal=True
-        )
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_multi_stage_prod_cost(self):
         """
@@ -493,9 +481,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         scenario_name = "multi_stage_prod_cost"
-        self.validate_and_test_example_generic(
-            scenario_name=scenario_name, literal=True
-        )
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_single_stage_prod_cost_cycle_select(self):
         """
@@ -505,9 +491,7 @@ class TestExamples(unittest.TestCase):
         exclusive commitment in this example.
         """
         scenario_name = "single_stage_prod_cost_cycle_select"
-        self.validate_and_test_example_generic(
-            scenario_name=scenario_name, literal=True
-        )
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_multi_stage_prod_cost_parallel(self):
         """
@@ -545,9 +529,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         scenario_name = "multi_stage_prod_cost_w_hydro"
-        self.validate_and_test_example_generic(
-            scenario_name=scenario_name, literal=True
-        )
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_multi_stage_prod_cost_linked_subproblems(self):
         """
@@ -556,9 +538,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         scenario_name = "multi_stage_prod_cost_linked_subproblems"
-        self.validate_and_test_example_generic(
-            scenario_name=scenario_name, literal=True
-        )
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_2periods_gen_lin_econ_retirement(self):
         """
@@ -1025,9 +1005,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         scenario_name = "multi_stage_prod_cost_w_markets"
-        self.validate_and_test_example_generic(
-            scenario_name=scenario_name, literal=True
-        )
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_test_supplemental_firing(self):
         """
@@ -1291,9 +1269,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         scenario_name = "single_stage_prod_cost_w_spinup_lookahead"
-        self.validate_and_test_example_generic(
-            scenario_name=scenario_name, literal=True
-        )
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_test_tx_targets_max(self):
         """
@@ -1313,7 +1289,7 @@ class TestExamples(unittest.TestCase):
         """
         scenario_name = "ra_toolkit_monte_carlo"
         self.validate_and_test_example_generic(
-            scenario_name=scenario_name, literal=True, skip_validation=True
+            scenario_name=scenario_name, skip_validation=True
         )
 
     def test_example_ra_toolkit_sync(self):
@@ -1324,7 +1300,7 @@ class TestExamples(unittest.TestCase):
         """
         scenario_name = "ra_toolkit_sync"
         self.validate_and_test_example_generic(
-            scenario_name=scenario_name, literal=True, skip_validation=True
+            scenario_name=scenario_name, skip_validation=True
         )
 
     def test_example_2periods_nuclear_var_cost_by_period_same(self):
@@ -1352,7 +1328,7 @@ class TestExamples(unittest.TestCase):
         """
         scenario_name = "ra_toolkit_sync_single_year"
         self.validate_and_test_example_generic(
-            scenario_name=scenario_name, literal=True, skip_validation=True
+            scenario_name=scenario_name, skip_validation=True
         )
 
     @classmethod
