@@ -173,7 +173,9 @@ def add_model_components(
     | | :code:`GenVar_Max_Downward_Reserves_Constraint`                       |
     | | *Defined over*: :code:`GEN_VAR_OPR_TMPS`                              |
     |                                                                         |
-    | Downward reserves cannot exceed power provision.                        |
+    | Downward reserves cannot exceed power provision when the capacity       |
+    | factor is non-negative (power is non-negative); otherwise they are set  |
+    | to zero.                                                                |
     +-------------------------------------------------------------------------+
 
     """
