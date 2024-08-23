@@ -12,6 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+Create project portfolios from EIA860 data.
+
+The project capacity_types will be based on the data in the
+user_defined_eia_gridpath_key table.
+"""
 
 from argparse import ArgumentParser
 import os.path
@@ -54,11 +60,6 @@ def parse_arguments(args):
 
     return parsed_arguments
 
-
-def load_data(conn):
-    # for f in []:
-    #     import_file(conn=conn, )
-    pass
 
 
 def get_project_portfolio_for_region(
