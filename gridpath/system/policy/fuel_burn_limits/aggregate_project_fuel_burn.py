@@ -1,4 +1,4 @@
-# Copyright 2016-2022 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,10 +21,20 @@ import csv
 import os.path
 from pyomo.environ import Param, Set, Expression
 
+from gridpath.auxiliary.db_interface import directories_to_db_values
 from gridpath.auxiliary.dynamic_components import fuel_burn_balance_components
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
 
     :param m:
@@ -36,8 +46,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.PRJ_FUELS_WITH_LIMITS = Set(
         dimen=2,
         within=m.PROJECTS * m.FUELS,
-        initialize=lambda mod: set(
-            [(prj, f) for (prj, f, ba) in mod.PRJ_FUEL_BURN_LIMIT_BAS]
+        initialize=lambda mod: sorted(
+            list(
+                set([(prj, f) for (prj, f, ba) in mod.PRJ_FUEL_BURN_LIMIT_BAS]),
+            )
         ),
     )
 
@@ -106,7 +118,17 @@ def record_dynamic_components(dynamic_components):
 ###############################################################################
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
 
     :param m:
@@ -120,8 +142,11 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     data_portal.load(
         filename=os.path.join(
             scenario_directory,
-            str(subproblem),
-            str(stage),
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
             "inputs",
             "project_fuel_burn_limit_bas.tab",
         ),
@@ -133,7 +158,16 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 ###############################################################################
 
 
-def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -141,8 +175,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     :param conn: database connection
     :return:
     """
-    subproblem = 1 if subproblem == "" else subproblem
-    stage = 1 if stage == "" else stage
+
     c = conn.cursor()
 
     # TODO: do we need additional filtering
@@ -166,12 +199,28 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         INNER JOIN (
             SELECT fuel, fuel_burn_limit_ba
                 FROM inputs_geography_fuel_burn_limit_balancing_areas
-                WHERE fuel_burn_limit_ba_scenario_id = {fuel_burn_limit_ba_scenario_id})
+                WHERE fuel_burn_limit_ba_scenario_id = {fuel_burn_limit_ba_scenario_id}
+                AND fuel in (
+                SELECT DISTINCT fuel
+                FROM inputs_project_fuels
+                WHERE (project, project_fuel_scenario_id) in (
+                    SELECT DISTINCT project, project_fuel_scenario_id
+                    FROM inputs_project_operational_chars
+                    WHERE project_operational_chars_scenario_id = {project_operational_chars_scenario_id}
+                    AND project in (
+                    SELECT DISTINCT project
+                    FROM inputs_project_portfolios
+                    WHERE project_portfolio_scenario_id = {project_portfolio_scenario_id}
+                    )
+                )
+                )
+                )
         USING (fuel, fuel_burn_limit_ba);
         """.format(
             project_portfolio_scenario_id=subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
             project_fuel_burn_limit_ba_scenario_id=subscenarios.PROJECT_FUEL_BURN_LIMIT_BA_SCENARIO_ID,
             fuel_burn_limit_ba_scenario_id=subscenarios.FUEL_BURN_LIMIT_BA_SCENARIO_ID,
+            project_operational_chars_scenario_id=subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
         )
     )
 
@@ -179,7 +228,15 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     Get inputs from database and write out the model input
@@ -191,15 +248,36 @@ def write_model_inputs(
     :param conn: database connection
     :return:
     """
+
+    (
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+    ) = directories_to_db_values(
+        weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
+    )
+
     project_fuel_bas = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+        conn,
     )
 
     with open(
         os.path.join(
             scenario_directory,
-            str(subproblem),
-            str(stage),
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
             "inputs",
             "project_fuel_burn_limit_bas.tab",
         ),

@@ -1,1 +1,3 @@
 include gridpath/project/operations/operational_types/opchar_param_requirements.csv
+include db/db_schema.sql
+include db/data/*.*

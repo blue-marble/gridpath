@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -48,6 +48,7 @@ from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.auxiliary.dynamic_components import (
     tx_capacity_type_operational_period_sets,
+    tx_capacity_type_financial_period_sets,
 )
 from gridpath.auxiliary.validations import (
     write_validation_to_database,
@@ -59,11 +60,25 @@ from gridpath.auxiliary.validations import (
     validate_row_monotonicity,
     validate_column_monotonicity,
 )
+from gridpath.common_functions import create_results_df
+from gridpath.project.capacity.capacity_types.common_methods import (
+    relevant_periods_by_project_vintage,
+    project_relevant_periods,
+    project_vintages_relevant_in_period,
+)
 
 
 # TODO: can we have different capacities depending on the direction
-# TODO: add fixed O&M costs similar to gen_new_lin
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     The following Pyomo model components are defined in this module:
 
@@ -94,12 +109,19 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +-------------------------------------------------------------------------+
     | Required Input Params                                                   |
     +=========================================================================+
-    | | :code:`tx_new_lin_lifetime_yrs`                                       |
+    | | :code:`tx_new_lin_operational_lifetime_yrs_by_vintage`                |
     | | *Defined over*: :code:`TX_NEW_LIN_VNTS`                               |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
-    | The transmission line's lifetime, i.e. how long line capacity of a      |
-    | particular vintage remains operational.                                 |
+    | The transmission line's operational lifetime, i.e. how long line        |
+    | capacity of a particular vintage remains operational.                   |
+    +-------------------------------------------------------------------------+
+    | | :code:`tx_new_lin_financial_lifetime_yrs_by_vintage`                  |
+    | | *Defined over*: :code:`TX_NEW_LIN_VNTS`                               |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The transmission line's financial lifetime, i.e. how long payments are  |
+    | made if new capacity is built.                                          |
     +-------------------------------------------------------------------------+
     | | :code:`tx_new_lin_annualized_real_cost_per_mw_yr`                     |
     | | *Defined over*: :code:`TX_NEW_LIN_VNTS`                               |
@@ -109,17 +131,25 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | real dollars per MW.                                                    |
     +-------------------------------------------------------------------------+
 
-    .. note:: The cost input to the model is a levelized cost per unit
+    .. note:: The cost input to the model is an annualized cost per unit
         capacity. This annualized cost is incurred in each period of the study
         (and multiplied by the number of years the period represents) for
-        the duration of the project's lifetime. It is up to the user to
-        ensure that the :code:`tx_new_lin_lifetime_yrs` and
+        the duration of the line's lifetime. It is up to the user to
+        ensure that the :code:`tx_new_lin_financial_lifetime_yrs_by_vintage` and
         :code:`tx_new_lin_annualized_real_cost_per_mw_yr` parameters are
         consistent.
 
     +-------------------------------------------------------------------------+
     | Optional Input Params                                                   |
     +=========================================================================+
+    | | :code:`tx_new_lin_fixed_cost_per_mw_yr`                               |
+    | | *Defined over*: :code:`TX_NEW_LIN_VNTS`                               |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | The transmission line's fixed cost to be paid in each operational       |
+    | period in real dollars per unit capacity of that vintage.               |
+    +-------------------------------------------------------------------------+
     | | :code:`tx_new_lin_min_cumulative_new_build_mw`                        |
     | | *Defined over*: :code:`TX_NEW_LIN_VNTS`                               |
     | | *Within*: :code:`NonNegativeReals`                                    |
@@ -145,8 +175,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     |                                                                         |
     | Indexed set that describes the operational periods for each possible    |
     | transmission line-vintage combination, based on the                     |
-    | :code:`tx_new_lin_lifetime_yrs`. For instance, transmission capacity    |
-    | of the 2020 vintage with lifetime of 30 years will be assumed           |
+    | :code:`tx_new_lin_financial_lifetime_yrs_by_vintage`. For instance,     |
+    | capacity of the 2020 vintage with lifetime of 30 years will be assumed  |
     | operational starting Jan 1, 2020 and through Dec 31, 2049, but will     |
     | *not* be operational in 2050.                                           |
     +-------------------------------------------------------------------------+
@@ -163,7 +193,31 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     |                                                                         |
     | Indexed set that describes the transmission line-vintages that could    |
     | be operational in each period based on the                              |
-    | :code:`tx_new_lin_lifetime_yrs`.                                        |
+    | :code:`tx_new_lin_financial_lifetime_yrs_by_vintage`.                   |
+    +-------------------------------------------------------------------------+
+    | | :code:`FIN_PRDS_BY_TX_NEW_LIN_VINTAGE`                                |
+    | | *Defined over*: :code:`TX_NEW_LIN_VNTS`                               |
+    |                                                                         |
+    | Indexed set that describes the financial periods for each possible      |
+    | line-vintage combination, based on the                                  |
+    | :code:`tx_new_lin_financial_lifetime_yrs_by_vintage`. For instance,     |
+    | capacity of  the 2020 vintage with lifetime of 30 years will be assumed |
+    | to incur costs starting Jan 1, 2020 and through Dec 31, 2049, but will  |
+    | *not* be operational in 2050.                                           |
+    +-------------------------------------------------------------------------+
+    | | :code:`TX_NEW_LIN_FIN_PRDS`                                           |
+    |                                                                         |
+    | Two-dimensional set that includes the periods when line capacity of     |
+    | any vintage *could* be incurring costs if built. This set is added to   |
+    | the list of sets to join to get the final :code:`TX_FIN_PRDS` set       |
+    | defined in **gridpath.transmission.capacity.capacity**.                 |
+    +-------------------------------------------------------------------------+
+    | | :code:`TX_NEW_LIN_VNTS_FIN_IN_PRD`                                    |
+    | | *Defined over*: :code:`PERIODS`                                       |
+    |                                                                         |
+    | Indexed set that describes the line-vintages that could be incurring    |
+    | costs in each period based on the                                       |
+    | :code:`tx_new_lin_operational_lifetime_yrs_by_vintage`.                 |
     +-------------------------------------------------------------------------+
 
     |
@@ -226,7 +280,17 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Required Params
     ###########################################################################
 
-    m.tx_new_lin_lifetime_yrs = Param(m.TX_NEW_LIN_VNTS, within=NonNegativeReals)
+    m.tx_new_lin_operational_lifetime_yrs_by_vintage = Param(
+        m.TX_NEW_LIN_VNTS, within=NonNegativeReals
+    )
+
+    m.tx_new_lin_fixed_cost_per_mw_yr = Param(
+        m.TX_NEW_LIN_VNTS, within=NonNegativeReals, default=0
+    )
+
+    m.tx_new_lin_financial_lifetime_yrs_by_vintage = Param(
+        m.TX_NEW_LIN_VNTS, within=NonNegativeReals
+    )
 
     m.tx_new_lin_annualized_real_cost_per_mw_yr = Param(
         m.TX_NEW_LIN_VNTS, within=NonNegativeReals
@@ -248,17 +312,28 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.OPR_PRDS_BY_TX_NEW_LIN_VINTAGE = Set(
         m.TX_NEW_LIN_VNTS,
-        initialize=operational_periods_by_new_build_transmission_vintage,
+        initialize=operational_periods_by_tx_vintage,
     )
 
-    m.TX_NEW_LIN_OPR_PRDS = Set(
-        dimen=2, initialize=new_build_transmission_operational_periods
-    )
+    m.TX_NEW_LIN_OPR_PRDS = Set(dimen=2, initialize=tx_new_lin_operational_periods)
 
     m.TX_NEW_LIN_VNTS_OPR_IN_PRD = Set(
         m.PERIODS,
         dimen=2,
-        initialize=new_build_transmission_vintages_operational_in_period,
+        initialize=tx_new_lin_vintages_operational_in_period,
+    )
+
+    m.FIN_PRDS_BY_TX_NEW_LIN_VINTAGE = Set(
+        m.TX_NEW_LIN_VNTS,
+        initialize=financial_periods_by_tx_vintage,
+    )
+
+    m.TX_NEW_LIN_FIN_PRDS = Set(dimen=2, initialize=tx_new_lin_financial_periods)
+
+    m.TX_NEW_LIN_VNTS_FIN_IN_PRD = Set(
+        m.PERIODS,
+        dimen=2,
+        initialize=tx_new_lin_vintages_financial_in_period,
     )
 
     # Variables
@@ -291,39 +366,63 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         "TX_NEW_LIN_OPR_PRDS",
     )
 
+    getattr(d, tx_capacity_type_financial_period_sets).append(
+        "TX_NEW_LIN_FIN_PRDS",
+    )
+
 
 # Set Rules
 ###############################################################################
 
 
-def operational_periods_by_new_build_transmission_vintage(mod, g, v):
-    operational_periods = list()
-    for p in mod.PERIODS:
-        if v <= p < v + mod.tx_new_lin_lifetime_yrs[g, v]:
-            operational_periods.append(p)
-        else:
-            pass
-    return operational_periods
-
-
-def new_build_transmission_operational_periods(mod):
-    return list(
-        set(
-            (g, p)
-            for (g, v) in mod.TX_NEW_LIN_VNTS
-            for p in mod.OPR_PRDS_BY_TX_NEW_LIN_VINTAGE[g, v]
-        )
+def operational_periods_by_tx_vintage(mod, prj, v):
+    return relevant_periods_by_project_vintage(
+        periods=getattr(mod, "PERIODS"),
+        period_start_year=getattr(mod, "period_start_year"),
+        period_end_year=getattr(mod, "period_end_year"),
+        vintage=v,
+        lifetime_yrs=mod.tx_new_lin_operational_lifetime_yrs_by_vintage[prj, v],
     )
 
 
-def new_build_transmission_vintages_operational_in_period(mod, p):
-    build_vintages_by_period = list()
-    for (g, v) in mod.TX_NEW_LIN_VNTS:
-        if p in mod.OPR_PRDS_BY_TX_NEW_LIN_VINTAGE[g, v]:
-            build_vintages_by_period.append((g, v))
-        else:
-            pass
-    return build_vintages_by_period
+def tx_new_lin_operational_periods(mod):
+    return project_relevant_periods(
+        project_vintages_set=mod.TX_NEW_LIN_VNTS,
+        relevant_periods_by_project_vintage_set=mod.OPR_PRDS_BY_TX_NEW_LIN_VINTAGE,
+    )
+
+
+def tx_new_lin_vintages_operational_in_period(mod, p):
+    return project_vintages_relevant_in_period(
+        project_vintage_set=mod.TX_NEW_LIN_VNTS,
+        relevant_periods_by_project_vintage_set=mod.OPR_PRDS_BY_TX_NEW_LIN_VINTAGE,
+        period=p,
+    )
+
+
+def financial_periods_by_tx_vintage(mod, prj, v):
+    return relevant_periods_by_project_vintage(
+        periods=getattr(mod, "PERIODS"),
+        period_start_year=getattr(mod, "period_start_year"),
+        period_end_year=getattr(mod, "period_end_year"),
+        vintage=v,
+        lifetime_yrs=mod.tx_new_lin_financial_lifetime_yrs_by_vintage[prj, v],
+    )
+
+
+def tx_new_lin_financial_periods(mod):
+    return project_relevant_periods(
+        project_vintages_set=mod.TX_NEW_LIN_VNTS,
+        relevant_periods_by_project_vintage_set=mod.FIN_PRDS_BY_TX_NEW_LIN_VINTAGE,
+    )
+
+
+def tx_new_lin_vintages_financial_in_period(mod, p):
+    return project_vintages_relevant_in_period(
+        project_vintage_set=mod.TX_NEW_LIN_VNTS,
+        relevant_periods_by_project_vintage_set=mod.FIN_PRDS_BY_TX_NEW_LIN_VINTAGE,
+        period=p,
+    )
 
 
 # Expression Rules
@@ -401,14 +500,26 @@ def max_transmission_capacity_rule(mod, g, p):
     return mod.TxNewLin_Capacity_MW[g, p]
 
 
-def tx_capacity_cost_rule(mod, g, p):
+def capacity_cost_rule(mod, g, p):
     """
     Capacity cost for new builds in each period (sum over all vintages
-    operational in current period).
+    financial in current period).
     """
     return sum(
         mod.TxNewLin_Build_MW[g, v]
         * mod.tx_new_lin_annualized_real_cost_per_mw_yr[g, v]
+        for (gen, v) in mod.TX_NEW_LIN_VNTS_FIN_IN_PRD[p]
+        if gen == g
+    )
+
+
+def fixed_cost_rule(mod, g, p):
+    """
+    Fixed cost for new builds in each period (sum over all vintages
+    operational in current period).
+    """
+    return sum(
+        mod.TxNewLin_Build_MW[g, v] * mod.tx_new_lin_fixed_cost_per_mw_yr[g, v]
         for (gen, v) in mod.TX_NEW_LIN_VNTS_OPR_IN_PRD[p]
         if gen == g
     )
@@ -425,15 +536,27 @@ def new_capacity_rule(mod, g, p):
 ###############################################################################
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
-
+def load_model_data(
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     # TODO: throw an error when a line of the 'tx_new_lin' capacity
     #   type is not found in new_build_transmission_vintage_costs.tab
     data_portal.load(
         filename=os.path.join(
             scenario_directory,
-            str(subproblem),
-            str(stage),
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
             "inputs",
             "new_build_transmission_vintage_costs.tab",
         ),
@@ -441,10 +564,17 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         select=(
             "transmission_line",
             "vintage",
-            "tx_lifetime_yrs",
+            "tx_operational_lifetime_yrs",
+            "tx_fixed_cost_per_mw_yr",
+            "tx_financial_lifetime_yrs",
             "tx_annualized_real_cost_per_mw_yr",
         ),
-        param=(m.tx_new_lin_lifetime_yrs, m.tx_new_lin_annualized_real_cost_per_mw_yr),
+        param=(
+            m.tx_new_lin_operational_lifetime_yrs_by_vintage,
+            m.tx_new_lin_fixed_cost_per_mw_yr,
+            m.tx_new_lin_financial_lifetime_yrs_by_vintage,
+            m.tx_new_lin_annualized_real_cost_per_mw_yr,
+        ),
     )
 
     # Min and max cumulative capacity
@@ -456,8 +586,11 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     header = pd.read_csv(
         os.path.join(
             scenario_directory,
-            str(subproblem),
-            str(stage),
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
             "inputs",
             "new_build_transmission_vintage_costs.tab",
         ),
@@ -472,8 +605,11 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     df = pd.read_csv(
         os.path.join(
             scenario_directory,
-            str(subproblem),
-            str(stage),
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
             "inputs",
             "new_build_transmission_vintage_costs.tab",
         ),
@@ -492,10 +628,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             if row[2] != ".":
                 transmission_vintages_with_min.append((row[0], row[1]))
                 min_cumulative_mw[(row[0], row[1])] = float(row[2])
-            else:
-                pass
-    else:
-        pass
 
     # max_cumulative_new_build_mw is optional,
     # so TX_NEW_LIN_VNTS_W_MAX_CONSTRAINT
@@ -508,10 +640,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             if row[2] != ".":
                 transmission_vintages_with_max.append((row[0], row[1]))
                 max_cumulative_mw[(row[0], row[1])] = float(row[2])
-            else:
-                pass
-    else:
-        pass
 
     # Load min and max cumulative capacity data
     if not transmission_vintages_with_min:
@@ -531,8 +659,16 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     data_portal.data()["tx_new_lin_max_cumulative_new_build_mw"] = max_cumulative_mw
 
 
-# TODO: untested
-def export_results(m, d, scenario_directory, subproblem, stage):
+def add_to_tx_period_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
+):
     """
 
     :param m:
@@ -543,45 +679,34 @@ def export_results(m, d, scenario_directory, subproblem, stage):
     :return:
     """
 
-    # Export transmission capacity
-    with open(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "transmission_new_capacity.csv",
-        ),
-        "w",
-        newline="",
-    ) as f:
-        writer = csv.writer(f)
-        writer.writerow(
-            [
-                "transmission_line",
-                "period",
-                "load_zone_from",
-                "load_zone_to",
-                "new_build_transmission_capacity_mw",
-            ]
-        )
-        for (transmission_line, v) in m.TX_NEW_LIN_VNTS:
-            writer.writerow(
-                [
-                    transmission_line,
-                    v,
-                    m.load_zone_from[transmission_line],
-                    m.load_zone_to[transmission_line],
-                    value(m.TxNewLin_Build_MW[transmission_line, v]),
-                ]
-            )
+    results_columns = ["new_build_capacity_mw"]
+    data = [
+        [tx, prd, value(m.TxNewLin_Build_MW[tx, prd])]
+        for (tx, prd) in m.TX_NEW_LIN_VNTS
+    ]
+    captype_df = create_results_df(
+        index_columns=["tx_line", "period"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    return results_columns, captype_df
 
 
 # Database
 ###############################################################################
 
 
-def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_model_inputs_from_database(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -609,7 +734,10 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
     )
 
     tx_cost = c.execute(
-        """SELECT transmission_line, vintage, tx_lifetime_yrs, 
+        """SELECT transmission_line, vintage,
+        tx_operational_lifetime_yrs, 
+        tx_fixed_cost_per_mw_yr,
+        tx_financial_lifetime_yrs, 
         tx_annualized_real_cost_per_mw_yr"""
         + get_potentials[0]
         + """FROM inputs_transmission_portfolios
@@ -618,7 +746,10 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
         FROM inputs_temporal_periods
         WHERE temporal_scenario_id = {}) as relevant_vintages
         INNER JOIN
-        (SELECT transmission_line, vintage, tx_lifetime_yrs, 
+        (SELECT transmission_line, vintage, 
+        tx_operational_lifetime_yrs, 
+        tx_fixed_cost_per_mw_yr,
+        tx_financial_lifetime_yrs, 
         tx_annualized_real_cost_per_mw_yr
         FROM inputs_transmission_new_cost
         WHERE transmission_new_cost_scenario_id = {} ) as cost
@@ -637,7 +768,15 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     Get inputs from database and write out the model input .tab file.
@@ -650,14 +789,24 @@ def write_model_inputs(
     """
 
     tx_cost = get_model_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        conn,
     )
 
     with open(
         os.path.join(
             scenario_directory,
-            str(subproblem),
-            str(stage),
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
             "inputs",
             "new_build_transmission_vintage_costs.tab",
         ),
@@ -673,7 +822,9 @@ def write_model_inputs(
             [
                 "transmission_line",
                 "vintage",
-                "tx_lifetime_yrs",
+                "tx_operational_lifetime_yrs",
+                "tx_fixed_cost_per_mw_yr",
+                "tx_financial_lifetime_yrs",
                 "tx_annualized_real_cost_per_mw_yr",
             ]
             + (
@@ -688,95 +839,43 @@ def write_model_inputs(
             writer.writerow(replace_nulls)
 
 
-def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
+def save_duals(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    instance,
+    dynamic_components,
 ):
-    """
+    instance.constraint_indices["TxNewLin_Min_Cum_Build_Constraint"] = [
+        "capacity_group",
+        "period",
+        "dual",
+    ]
 
-    :param scenario_id:
-    :param subproblem:
-    :param stage:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-    # New build capacity results
-    if not quiet:
-        print("transmission new build")
-    # Delete prior results and create temporary import table for ordering
-    setup_results_import(
-        conn=db,
-        cursor=c,
-        table="results_transmission_capacity_new_build",
-        scenario_id=scenario_id,
-        subproblem=subproblem,
-        stage=stage,
-    )
-
-    # Load results into the temporary table
-    results = []
-    with open(
-        os.path.join(results_directory, "transmission_new_capacity.csv"), "r"
-    ) as capacity_file:
-        reader = csv.reader(capacity_file)
-
-        next(reader)  # skip header
-        for row in reader:
-            transmission_line = row[0]
-            period = row[1]
-            load_zone_from = row[2]
-            load_zone_to = row[3]
-            new_build_transmission_capacity_mw = row[4]
-
-            results.append(
-                (
-                    scenario_id,
-                    transmission_line,
-                    period,
-                    subproblem,
-                    stage,
-                    load_zone_from,
-                    load_zone_to,
-                    new_build_transmission_capacity_mw,
-                )
-            )
-
-    insert_temp_sql = """
-        INSERT INTO 
-        temp_results_transmission_capacity_new_build{}
-        (scenario_id, transmission_line, period, subproblem_id, stage_id, 
-        load_zone_from, load_zone_to, 
-        new_build_transmission_capacity_mw)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?);
-        """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
-
-    # Insert sorted results into permanent results table
-    insert_sql = """
-        INSERT INTO results_transmission_capacity_new_build
-        (scenario_id, transmission_line, period, subproblem_id, stage_id,
-        load_zone_from, load_zone_to, new_build_transmission_capacity_mw)
-        SELECT
-        scenario_id, transmission_line, period, subproblem_id, stage_id, 
-        load_zone_from, load_zone_to, new_build_transmission_capacity_mw
-        FROM temp_results_transmission_capacity_new_build{}
-        ORDER BY scenario_id, transmission_line, period, subproblem_id, 
-        stage_id;
-        """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)
+    instance.constraint_indices["TxNewLin_Max_Cum_Build_Constraint"] = [
+        "capacity_group",
+        "period",
+        "dual",
+    ]
 
 
 # Validation
 ###############################################################################
 
 
-def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -787,7 +886,14 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
 
     tx_cost = get_model_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        conn,
     )
 
     tx_lines = get_tx_lines(
@@ -812,6 +918,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -826,6 +935,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -839,6 +951,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -858,6 +973,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         write_validation_to_database(
             conn=conn,
             scenario_id=scenario_id,
+            weather_iteration=weather_iteration,
+            hydro_iteration=hydro_iteration,
+            availability_iteration=availability_iteration,
             subproblem_id=subproblem,
             stage_id=stage,
             gridpath_module=__name__,
@@ -873,6 +991,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         write_validation_to_database(
             conn=conn,
             scenario_id=scenario_id,
+            weather_iteration=weather_iteration,
+            hydro_iteration=hydro_iteration,
+            availability_iteration=availability_iteration,
             subproblem_id=subproblem,
             stage_id=stage,
             gridpath_module=__name__,

@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -324,7 +324,7 @@ def get_all_capacity_data(conn, scenarios):
         SUM(new_build_mw) AS new_build_capacity, 
         SUM(retired_mw) AS retired_capacity, 
         SUM(capacity_mw) AS total_capacity
-        FROM results_project_capacity
+        FROM results_project_period
         GROUP BY scenario_id, subproblem_id, stage_id, period, load_zone, 
         technology) AS agg_tbl
         INNER JOIN 
@@ -464,7 +464,7 @@ def get_all_summary_data(conn, scenarios):
     AS overgeneration,
     SUM(timepoint_weight * number_of_hours_in_timepoint * unserved_energy_mw) 
     AS unserved_energy
-    FROM results_system_load_balance
+    FROM results_system_load_zone_timepoint
     WHERE spinup_or_lookahead = 0
     GROUP BY scenario_id, stage_id, period, load_zone
     ) AS load_table

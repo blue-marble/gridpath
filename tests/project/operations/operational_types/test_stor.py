@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import print_function
 
-from builtins import str
 from importlib import import_module
 import os.path
 import sys
@@ -69,6 +67,9 @@ class TestStor(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
+            weather_iteration="",
+            hydro_iteration="",
+            availability_iteration="",
             subproblem="",
             stage="",
         )
@@ -82,6 +83,9 @@ class TestStor(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
+            weather_iteration="",
+            hydro_iteration="",
+            availability_iteration="",
             subproblem="",
             stage="",
         )
@@ -95,6 +99,9 @@ class TestStor(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
+            weather_iteration="",
+            hydro_iteration="",
+            availability_iteration="",
             subproblem="",
             stage="",
         )
@@ -133,6 +140,27 @@ class TestStor(unittest.TestCase):
         self.assertDictEqual(
             expected_discharging_efficiency, actual_discharging_efficiency
         )
+
+        # Param: stor_storage_efficiency
+        expected_storage_efficiency = {
+            "Battery": 0.9,
+            "Battery_Binary": 1.0,
+            "Battery_Specified": 0.5,
+        }
+        actual_storage_efficiency = {
+            prj: instance.stor_storage_efficiency[prj] for prj in instance.STOR
+        }
+        self.assertDictEqual(expected_storage_efficiency, actual_storage_efficiency)
+
+        # Param: stor_exogenous_starting_state_of_charge
+        expected_exog_soc = {
+            ("Battery", 20300101): 1,
+        }
+        actual_exog_soc = {
+            (prj, tmp): instance.stor_exogenous_starting_state_of_charge[prj, tmp]
+            for (prj, tmp) in instance.STOR_EXOG_SOC_TMPS
+        }
+        self.assertDictEqual(expected_exog_soc, actual_exog_soc)
 
 
 if __name__ == "__main__":

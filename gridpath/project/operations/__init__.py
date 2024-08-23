@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -39,9 +39,10 @@ throw a warning (but not an error) at runtime.
 import numpy as np
 import os.path
 import pandas as pd
-from pyomo.environ import Set, Param, Any, NonNegativeReals, Reals, PositiveReals
+from pyomo.environ import Set, Param, NonNegativeReals, Reals, PositiveReals
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
+from gridpath.auxiliary.db_interface import import_csv, directories_to_db_values
 from gridpath.auxiliary.dynamic_components import headroom_variables, footroom_variables
 from gridpath.auxiliary.validations import (
     write_validation_to_database,
@@ -54,7 +55,16 @@ from gridpath.auxiliary.validations import (
 from gridpath.project.common_functions import append_to_input_file
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
      The following Pyomo model components are defined in this module:
 
@@ -174,6 +184,18 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     |                                                                         |
     | The set of projects that incur cost if curtailed.                       |
     +-------------------------------------------------------------------------+
+    | | :code:`SOC_PENALTY_COST_PRJS`                                         |
+    | | *Within*: :code:`PROJECTS`                                            |
+    |                                                                         |
+    | The set of projects that incur cost if their state of charge is below   |
+    | the maximum possible state of charge.                                   |
+    +-------------------------------------------------------------------------+
+    | | :code:`SOC_LAST_TMP_PENALTY_COST_PRJS`                                |
+    | | *Within*: :code:`PROJECTS`                                            |
+    |                                                                         |
+    | The set of projects that incur cost if their state of charge is below   |
+    | the maximum possible state of charge in the last tmp.                   |
+    +-------------------------------------------------------------------------+
 
     +-------------------------------------------------------------------------+
     | Optional Input Params                                                   |
@@ -181,6 +203,15 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | | :code:`variable_om_cost_per_mwh`                                      |
     | | *Defined over*: :code:`VAR_OM_COST_SIMPLE_PRJS`                       |
     | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | The project's variable operations and maintenance cost per MWh of       |
+    | power production.                                                       |
+    +-------------------------------------------------------------------------+
+    | | :code:`variable_om_cost_per_mwh_by_period`                            |
+    | | *Defined over*: :code:`VAR_OM_COST_SIMPLE_PRJS`                       |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`0`                                                  |
     |                                                                         |
     | The project's variable operations and maintenance cost per MWh of       |
     | power production.                                                       |
@@ -280,6 +311,19 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     |                                                                         |
     | The project's cost of curtailment per power-unitXhour.                  |
     +-------------------------------------------------------------------------+
+    | | :code:`soc_penalty_cost_per_energyunit`                               |
+    | | *Defined over*: :code:`SOC_PENALTY_COST_PRJS`                         |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's cost per unit of energy below the maximum state of charge.|
+    +-------------------------------------------------------------------------+
+    | | :code:`soc_last_tmp_penalty_cost_per_energyunit`                      |
+    | | *Defined over*: :code:`SOC_LAST_TMP_PENALTY_COST_PRJS`                |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's cost per unit of energy below the maximum state of charge |
+    | in the last timepoint of the horizon.                                   |
+    +-------------------------------------------------------------------------+
     """
 
     # Sets
@@ -287,19 +331,28 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Variable O&M cost projects (simple)
     m.VAR_OM_COST_SIMPLE_PRJS = Set(within=m.PROJECTS)
 
+    # Variable O&M cost by project and period
+    m.VAR_OM_COST_BY_PRD_PRJ_PRDS = Set(dimen=2, within=m.PROJECTS * m.PERIODS)
+    m.VAR_OM_COST_BY_PRD_PRJS = Set(
+        within=m.PROJECTS,
+        initialize=lambda mod: sorted(
+            list(set([prj for (prj, prd) in mod.VAR_OM_COST_BY_PRD_PRJ_PRDS]))
+        ),
+    )
+
     # Variable O&M cost projects (by loading level)
     m.VAR_OM_COST_CURVE_PRJS_PRDS_SGMS = Set(dimen=3, ordered=True)
     m.VAR_OM_COST_CURVE_PRJS = Set(
         within=m.PROJECTS,
-        initialize=lambda mod: list(
-            set([prj for (prj, p, s) in mod.VAR_OM_COST_CURVE_PRJS_PRDS_SGMS])
+        initialize=lambda mod: sorted(
+            list(set([prj for (prj, p, s) in mod.VAR_OM_COST_CURVE_PRJS_PRDS_SGMS])),
         ),
     )
 
     m.VAR_OM_COST_ALL_PRJS = Set(
         within=m.PROJECTS,
-        initialize=lambda mod: list(
-            set(mod.VAR_OM_COST_SIMPLE_PRJS | mod.VAR_OM_COST_CURVE_PRJS)
+        initialize=lambda mod: sorted(
+            list(set(mod.VAR_OM_COST_SIMPLE_PRJS | mod.VAR_OM_COST_CURVE_PRJS)),
         ),
     )
 
@@ -309,17 +362,21 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Startup cost by startup type projects
     m.STARTUP_BY_ST_PRJS_TYPES = Set(dimen=2, ordered=True)
     m.STARTUP_BY_ST_PRJS = Set(
-        initialize=lambda mod: list(set([p for (p, t) in mod.STARTUP_BY_ST_PRJS_TYPES]))
+        initialize=lambda mod: sorted(
+            list(set([p for (p, t) in mod.STARTUP_BY_ST_PRJS_TYPES]))
+        )
     )
 
     # All startup cost projects
     m.STARTUP_COST_PRJS = Set(
         within=m.PROJECTS,
-        initialize=lambda mod: list(
-            set(
-                [p for p in mod.STARTUP_COST_SIMPLE_PRJS]
-                + [p for p in mod.STARTUP_BY_ST_PRJS]
-            )
+        initialize=lambda mod: sorted(
+            list(
+                set(
+                    [p for p in mod.STARTUP_COST_SIMPLE_PRJS]
+                    + [p for p in mod.STARTUP_BY_ST_PRJS]
+                )
+            ),
         ),
     )
 
@@ -330,7 +387,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.FUEL_PRJ_FUELS = Set(within=m.PROJECTS * m.FUELS)
     m.FUEL_PRJS = Set(
         within=m.PROJECTS,
-        initialize=lambda mod: list(set([prj for (prj, f) in mod.FUEL_PRJ_FUELS])),
+        initialize=lambda mod: sorted(
+            list(set([prj for (prj, f) in mod.FUEL_PRJ_FUELS])),
+        ),
     )
     m.FUELS_BY_PRJ = Set(
         m.FUEL_PRJS,
@@ -341,11 +400,15 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.FUEL_PRJ_FUELS_FUEL_GROUP = Set(
         dimen=3,
         within=m.FUEL_PRJS * m.FUEL_GROUPS_FUELS,
-        initialize=lambda mod: set(
-            (g, fg, f)
-            for (fg, f) in mod.FUEL_GROUPS_FUELS
-            for (g, _f) in mod.FUEL_PRJ_FUELS
-            if f == _f
+        initialize=lambda mod: sorted(
+            list(
+                set(
+                    (g, fg, f)
+                    for (fg, f) in mod.FUEL_GROUPS_FUELS
+                    for (g, _f) in mod.FUEL_PRJ_FUELS
+                    if f == _f
+                ),
+            )
         ),
     )
 
@@ -354,8 +417,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.HR_CURVE_PRJS = Set(
         within=m.FUEL_PRJS,
-        initialize=lambda mod: list(
-            set([prj for (prj, p, s) in mod.HR_CURVE_PRJS_PRDS_SGMS])
+        initialize=lambda mod: sorted(
+            list(set([prj for (prj, p, s) in mod.HR_CURVE_PRJS_PRDS_SGMS])),
         ),
     )
 
@@ -370,23 +433,36 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.VIOL_ALL_PRJS = Set(
         within=m.PROJECTS,
-        initialize=lambda mod: list(
-            set(
-                mod.RAMP_UP_VIOL_PRJS
-                | mod.RAMP_DOWN_VIOL_PRJS
-                | mod.MIN_UP_TIME_VIOL_PRJS
-                | mod.MIN_DOWN_TIME_VIOL_PRJS
-            )
+        initialize=lambda mod: sorted(
+            list(
+                set(
+                    mod.RAMP_UP_VIOL_PRJS
+                    | mod.RAMP_DOWN_VIOL_PRJS
+                    | mod.MIN_UP_TIME_VIOL_PRJS
+                    | mod.MIN_DOWN_TIME_VIOL_PRJS
+                )
+            ),
         ),
     )
 
     # Projects with cost of curtailment
     m.CURTAILMENT_COST_PRJS = Set(within=m.PROJECTS)
 
+    # Projects with cost based on the state of charge
+    m.SOC_PENALTY_COST_PRJS = Set(within=m.PROJECTS)
+    m.SOC_LAST_TMP_PENALTY_COST_PRJS = Set(within=m.PROJECTS)
+
+    # Projects with non-fuel carbon emissions
+    m.NONFUEL_CARBON_EMISSIONS_PRJS = Set(within=m.PROJECTS)
+
     # Optional Params
     ###########################################################################
     m.variable_om_cost_per_mwh = Param(
-        m.VAR_OM_COST_SIMPLE_PRJS, within=NonNegativeReals
+        m.VAR_OM_COST_SIMPLE_PRJS, within=NonNegativeReals, default=0
+    )
+
+    m.variable_om_cost_per_mwh_by_period = Param(
+        m.VAR_OM_COST_BY_PRD_PRJ_PRDS, within=NonNegativeReals, default=0
     )
 
     m.vom_slope_cost_per_mwh = Param(
@@ -431,11 +507,39 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.curtailment_cost_per_pwh = Param(m.CURTAILMENT_COST_PRJS, within=NonNegativeReals)
 
+    m.soc_penalty_cost_per_energyunit = Param(
+        m.SOC_PENALTY_COST_PRJS, within=NonNegativeReals
+    )
+
+    m.soc_last_tmp_penalty_cost_per_energyunit = Param(
+        m.SOC_LAST_TMP_PENALTY_COST_PRJS, within=NonNegativeReals
+    )
+
+    m.nonfuel_carbon_emissions_per_mwh = Param(
+        m.NONFUEL_CARBON_EMISSIONS_PRJS, within=NonNegativeReals
+    )
+
     # Start list of headroom and footroom variables by project
-    record_dynamic_components(d, scenario_directory, subproblem, stage)
+    record_dynamic_components(
+        d,
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+    )
 
 
-def record_dynamic_components(d, scenario_directory, subproblem, stage):
+def record_dynamic_components(
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     :param d: the dynamic components class object we'll be adding to
     :param scenario_directory: the base scenario directory
@@ -457,7 +561,14 @@ def record_dynamic_components(d, scenario_directory, subproblem, stage):
 
     project_df = pd.read_csv(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "projects.tab",
         ),
         sep="\t",
     )
@@ -476,7 +587,17 @@ def record_dynamic_components(d, scenario_directory, subproblem, stage):
 ###############################################################################
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
 
     :param m:
@@ -489,7 +610,14 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
     data_portal.load(
         filename=os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "projects.tab",
         ),
         select=(
             "project",
@@ -502,6 +630,9 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             "min_up_time_violation_penalty",
             "min_down_time_violation_penalty",
             "curtailment_cost_per_pwh",
+            "soc_penalty_cost_per_energyunit",
+            "soc_last_tmp_penalty_cost_per_energyunit",
+            "nonfuel_carbon_emissions_per_mwh",
         ),
         param=(
             m.variable_om_cost_per_mwh,
@@ -513,11 +644,74 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             m.min_up_time_violation_penalty,
             m.min_down_time_violation_penalty,
             m.curtailment_cost_per_pwh,
+            m.soc_penalty_cost_per_energyunit,
+            m.soc_last_tmp_penalty_cost_per_energyunit,
+            m.nonfuel_carbon_emissions_per_mwh,
         ),
     )
 
+    # Get the periods for determining by-period params that apply to all
+    # periods
+    periods_file = os.path.join(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+        "periods.tab",
+    )
+    periods_df = pd.read_csv(periods_file, sep="\t")
+    periods_set = set(periods_df["period"])
+
+    # Variable O&M by period
+    project_period_var_om_file = os.path.join(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+        "project_variable_om_by_period.tab",
+    )
+    if os.path.exists(project_period_var_om_file):
+        var_om_by_period_df = pd.read_csv(
+            project_period_var_om_file, sep="\t"
+        ).set_index(["project", "period"])
+        var_om_by_prd_prj_prd_list = []
+        var_om_by_period_dict = {}
+
+        for idx, val in var_om_by_period_df.iterrows():
+            (prj, prd) = idx
+            if prd == 0:
+                for period in sorted(list(periods_set)):
+                    var_om_by_prd_prj_prd_list.append((prj, period))
+                    var_om_by_period_dict[prj, period] = var_om_by_period_df.loc[
+                        prj, prd
+                    ]["variable_om_cost_by_period"]
+            else:
+                var_om_by_prd_prj_prd_list.append((prj, prd))
+                var_om_by_period_dict[prj, prd] = var_om_by_period_df.loc[prj, prd][
+                    "variable_om_cost_by_period"
+                ]
+
+        data_portal.data()["VAR_OM_COST_BY_PRD_PRJ_PRDS"] = {
+            None: var_om_by_prd_prj_prd_list
+        }
+        data_portal.data()["variable_om_cost_per_mwh_by_period"] = var_om_by_period_dict
+
+    # Fuels
     project_fuels_file = os.path.join(
-        scenario_directory, str(subproblem), str(stage), "inputs", "project_fuels.tab"
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+        "project_fuels.tab",
     )
     if os.path.exists(project_fuels_file):
         data_portal.load(
@@ -563,27 +757,38 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         None: list(data_portal.data()["curtailment_cost_per_pwh"].keys())
     }
 
+    data_portal.data()["SOC_PENALTY_COST_PRJS"] = {
+        None: list(data_portal.data()["soc_penalty_cost_per_energyunit"].keys())
+    }
+
+    data_portal.data()["SOC_LAST_TMP_PENALTY_COST_PRJS"] = {
+        None: list(
+            data_portal.data()["soc_last_tmp_penalty_cost_per_energyunit"].keys()
+        )
+    }
+
+    data_portal.data()["NONFUEL_CARBON_EMISSIONS_PRJS"] = {
+        None: list(data_portal.data()["nonfuel_carbon_emissions_per_mwh"].keys())
+    }
+
     # VOM curves
     vom_curves_file = os.path.join(
         scenario_directory,
-        str(subproblem),
-        str(stage),
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
         "inputs",
         "variable_om_curves.tab",
     )
-    periods_file = os.path.join(
-        scenario_directory, str(subproblem), str(stage), "inputs", "periods.tab"
-    )
 
     if os.path.exists(vom_curves_file):
-        periods = pd.read_csv(periods_file, sep="\t")
         vom_df = pd.read_csv(vom_curves_file, sep="\t")
-
-        periods = set(periods["period"])
         vom_projects = set(vom_df["project"].unique())
 
         slope_dict, intercept_dict = get_slopes_intercept_by_project_period_segment(
-            vom_df, "average_variable_om_cost_per_mwh", vom_projects, periods
+            vom_df, "average_variable_om_cost_per_mwh", vom_projects, periods_set
         )
         vom_project_segments = list(slope_dict.keys())
 
@@ -595,7 +800,14 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 
     # Startup chars
     startup_chars_file = os.path.join(
-        scenario_directory, str(subproblem), str(stage), "inputs", "startup_chars.tab"
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+        "startup_chars.tab",
     )
 
     if os.path.exists(startup_chars_file):
@@ -626,34 +838,38 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     # HR curves
     hr_curves_file = os.path.join(
         scenario_directory,
-        str(subproblem),
-        str(stage),
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
         "inputs",
         "heat_rate_curves.tab",
     )
-    periods_file = os.path.join(
-        scenario_directory, str(subproblem), str(stage), "inputs", "periods.tab"
-    )
     project_fuels_file = os.path.join(
-        scenario_directory, str(subproblem), str(stage), "inputs", "project_fuels.tab"
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+        "project_fuels.tab",
     )
 
     # Get column names as a few columns will be optional;
     # won't load data if fuel column does not exist
     if os.path.exists(hr_curves_file) and os.path.exists(project_fuels_file):
-
         hr_df = pd.read_csv(hr_curves_file, sep="\t")
         projects = set(hr_df["project"].unique())
 
-        periods_df = pd.read_csv(periods_file, sep="\t")
         pr_df = pd.read_csv(project_fuels_file, sep="\t", usecols=["project", "fuel"])
         pr_df = pr_df[(pr_df["fuel"] != ".") & (pr_df["project"].isin(projects))]
 
-        periods = set(periods_df["period"])
         fuel_projects = pr_df["project"].unique()
 
         slope_dict, intercept_dict = get_slopes_intercept_by_project_period_segment(
-            hr_df, "average_heat_rate_mmbtu_per_mwh", fuel_projects, periods
+            hr_df, "average_heat_rate_mmbtu_per_mwh", fuel_projects, periods_set
         )
 
         fuel_project_segments = list(slope_dict.keys())
@@ -667,7 +883,16 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 ###############################################################################
 
 
-def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -675,8 +900,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     :param conn: database connection
     :return:
     """
-    subproblem = 1 if subproblem == "" else subproblem
-    stage = 1 if stage == "" else stage
+
     c = conn.cursor()
     proj_opchar = c.execute(
         """
@@ -692,12 +916,16 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         ramp_down_violation_penalty,
         min_up_time_hours, min_up_time_violation_penalty,
         min_down_time_hours, min_down_time_violation_penalty,
-        charging_efficiency, discharging_efficiency,
+        allow_startup_shutdown_power,
+        storage_efficiency, charging_efficiency, discharging_efficiency,
         charging_capacity_multiplier, discharging_capacity_multiplier,
         minimum_duration_hours, maximum_duration_hours,
         aux_consumption_frac_capacity, aux_consumption_frac_power,
         last_commitment_stage, curtailment_cost_per_pwh,
-        powerunithour_per_fuelunit
+        powerunithour_per_fuelunit, soc_penalty_cost_per_energyunit,
+        soc_last_tmp_penalty_cost_per_energyunit,
+        partial_availability_threshold,
+        nonfuel_carbon_emissions_per_mwh
         -- Get only the subset of projects in the portfolio with their 
         -- capacity types based on the project_portfolio_scenario_id 
         FROM
@@ -715,6 +943,28 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
             subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
             subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
         )
+    )
+
+    var_om_by_prd_c = conn.cursor()
+    var_om_by_prd = var_om_by_prd_c.execute(
+        f"""
+        SELECT project, period, variable_om_cost_by_period
+        FROM inputs_project_portfolios
+        -- select the correct operational characteristics subscenario
+        INNER JOIN
+        (SELECT project, variable_om_cost_by_period_scenario_id
+        FROM inputs_project_operational_chars
+        WHERE project_operational_chars_scenario_id = {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
+        ) AS op_char
+        USING(project)
+        -- select only heat curves of matching projects
+        INNER JOIN
+        inputs_project_variable_om_cost_by_period
+        USING(project, variable_om_cost_by_period_scenario_id)
+        -- Get only the subset of projects in the portfolio based on the 
+        -- project_portfolio_scenario_id 
+        WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
+        """
     )
 
     c5 = conn.cursor()
@@ -854,9 +1104,15 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         INNER JOIN
         inputs_project_cap_factor_limits
         USING(project, cap_factor_limits_scenario_id)
+        JOIN
+        (SELECT balancing_type_horizon, horizon
+        FROM inputs_temporal_horizons
+        WHERE temporal_scenario_id = {temporal_scenario_id}) as relevant_horizons
+        USING (balancing_type_horizon, horizon)
         WHERE project_portfolio_scenario_id = {project_portfolio_scenario_id}
         AND cap_factor_limits_scenario_id IS NOT NULL
         """.format(
+            temporal_scenario_id=subscenarios.TEMPORAL_SCENARIO_ID,
             project_opchar_scenario_id=subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
             project_portfolio_scenario_id=subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
         )
@@ -886,6 +1142,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
     return (
         proj_opchar,
+        var_om_by_prd,
         fuels,
         heat_rates,
         vom_curves,
@@ -897,7 +1154,15 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     Get inputs from database and write out the model inputs
@@ -908,8 +1173,20 @@ def write_model_inputs(
     :param conn: database connection
     :return:
     """
+
+    (
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+    ) = directories_to_db_values(
+        weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
+    )
+
     (
         proj_opchar,
+        var_om_by_prd,
         fuels,
         heat_rate_curves,
         vom_curves,
@@ -917,10 +1194,25 @@ def write_model_inputs(
         cycle_selection,
         cap_factor_limits,
         supplemental_firing,
-    ) = get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
+    ) = get_inputs_from_database(
+        scenario_id,
+        subscenarios,
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+        conn,
+    )
 
     inputs_directory = os.path.join(
-        scenario_directory, str(subproblem), str(stage), "inputs"
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
     )
 
     # Update the projects.tab file
@@ -941,6 +1233,8 @@ def write_model_inputs(
         "min_up_time_violation_penalty",
         "min_down_time_hours",
         "min_down_time_violation_penalty",
+        "allow_startup_shutdown_power",
+        "storage_efficiency",
         "charging_efficiency",
         "discharging_efficiency",
         "charging_capacity_multiplier",
@@ -952,13 +1246,26 @@ def write_model_inputs(
         "last_commitment_stage",
         "curtailment_cost_per_pwh",
         "powerunithour_per_fuelunit",
+        "soc_penalty_cost_per_energyunit",
+        "soc_last_tmp_penalty_cost_per_energyunit",
+        "partial_availability_threshold",
+        "nonfuel_carbon_emissions_per_mwh",
     ]
+
     append_to_input_file(
         inputs_directory=inputs_directory,
         input_file="projects.tab",
         query_results=proj_opchar,
         index_n_columns=1,
         new_column_names=new_columns,
+    )
+
+    # Write fuels file
+    var_om_by_prd_df = cursor_to_df(var_om_by_prd)
+    write_additional_opchar_file(
+        opchar_df=var_om_by_prd_df,
+        inputs_directory=inputs_directory,
+        filename="project_variable_om_by_period.tab",
     )
 
     # Write fuels file
@@ -1016,11 +1323,56 @@ def write_model_inputs(
     )
 
 
+def import_results_into_database(
+    scenario_id,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    c,
+    db,
+    results_directory,
+    quiet,
+):
+    """
+
+    :param scenario_id:
+    :param c:
+    :param db:
+    :param results_directory:
+    :param quiet:
+    :return:
+    """
+    import_csv(
+        conn=db,
+        cursor=c,
+        scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        quiet=quiet,
+        results_directory=results_directory,
+        which_results="project_timepoint",
+    )
+
+
 # Validation
 ###############################################################################
 
 
-def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -1033,6 +1385,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     # Get the project input data
     (
         proj_opchar,
+        var_om_by_prd,
         fuels,
         heat_rates,
         vom_curves,
@@ -1040,7 +1393,16 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         cycle_select,
         cap_factor_limits,
         supplemental_firing,
-    ) = get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
+    ) = get_inputs_from_database(
+        scenario_id,
+        subscenarios,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        conn,
+    )
 
     # Convert input data into DataFrame
     prj_df = cursor_to_df(proj_opchar)
@@ -1052,6 +1414,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -1066,6 +1431,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -1079,6 +1447,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         write_validation_to_database(
             conn=conn,
             scenario_id=scenario_id,
+            weather_iteration=weather_iteration,
+            hydro_iteration=hydro_iteration,
+            availability_iteration=availability_iteration,
             subproblem_id=subproblem,
             stage_id=stage,
             gridpath_module=__name__,
@@ -1098,6 +1469,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -1112,6 +1486,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -1150,6 +1527,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -1173,6 +1553,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -1187,6 +1570,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -1199,6 +1585,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -1245,6 +1634,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         "ramp_up_when_on_rate",
         "ramp_down_when_on_rate",
         "min_up_time_hours, min_down_time_hours",
+        "storage_efficiency",
         "charging_efficiency",
         "discharging_efficiency",
         "charging_capacity_multiplier",
@@ -1253,6 +1643,8 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         "maximum_duration_hours",
         "aux_consumption_frac_capacity",
         "aux_consumption_frac_power",
+        "partial_availability_threshold",
+        "nonfuel_carbon_emissions_per_mwh",
     ]
 
     sql = """SELECT {}
@@ -1274,6 +1666,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -1321,14 +1716,14 @@ def get_slopes_intercept_by_project_period_segment(df, input_col, projects, peri
         df_slice = df[df["project"] == project]
         slice_periods = set(df_slice["period"])
 
-        if slice_periods == set([0]):
+        if slice_periods == {0}:
             p_iterable = [0]
         elif periods.issubset(slice_periods):
             p_iterable = periods
         else:
             raise ValueError(
                 """{} for project '{}' isn't specified for all 
-                modelled periods. Set period to 0 if inputs are the 
+                modeled periods. Set period to 0 if inputs are the 
                 same for each period or make sure all modelled periods 
                 are included.""".format(
                     input_col, project

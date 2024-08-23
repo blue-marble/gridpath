@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
 import csv
 import os.path
 from pyomo.environ import Param, Set, NonNegativeReals, PercentFraction, Expression
+
+from gridpath.auxiliary.db_interface import directories_to_db_values
 
 
 def generic_add_model_components(
@@ -158,6 +160,9 @@ def generic_load_model_data(
     d,
     data_portal,
     scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
     reserve_requirement_param,
@@ -185,7 +190,15 @@ def generic_load_model_data(
     :param reserve_type:
     :return:
     """
-    input_dir = os.path.join(scenario_directory, str(subproblem), str(stage), "inputs")
+    input_dir = os.path.join(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+    )
 
     # Load by-tmp requriement if input file was written
     by_tmp_req_filename = os.path.join(
@@ -236,6 +249,9 @@ def generic_load_model_data(
 def generic_get_inputs_from_database(
     scenario_id,
     subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
     conn,
@@ -253,8 +269,7 @@ def generic_get_inputs_from_database(
     :param reserve_type_req_subscenario_id:
     :return:
     """
-    subproblem = 1 if subproblem == "" else subproblem
-    stage = 1 if stage == "" else stage
+
     c = conn.cursor()
 
     partial_freq_resp_extra_column = (
@@ -297,10 +312,16 @@ def generic_get_inputs_from_database(
         """
         SELECT {reserve_type}_ba, percent_load_req
         FROM inputs_system_{reserve_type}_percent
+        JOIN
+        (SELECT {reserve_type}_ba
+        FROM inputs_geography_{reserve_type}_bas
+        WHERE {reserve_type}_ba_scenario_id = {reserve_type_ba_subscenario_id}) as relevant_bas
+        USING ({reserve_type}_ba)
         WHERE {reserve_type}_scenario_id = {reserve_type_req_subscenario_id}
         AND stage_id = {stage}
         """.format(
             reserve_type=reserve_type,
+            reserve_type_ba_subscenario_id=reserve_type_ba_subscenario_id,
             reserve_type_req_subscenario_id=reserve_type_req_subscenario_id,
             stage=stage,
         )
@@ -370,6 +391,9 @@ def generic_get_inputs_from_database(
 
 def generic_write_model_inputs(
     scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
     timepoint_req,
@@ -391,7 +415,26 @@ def generic_write_model_inputs(
     :param reserve_type:
     :return:
     """
-    inputs_dir = os.path.join(scenario_directory, str(subproblem), str(stage), "inputs")
+
+    (
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+    ) = directories_to_db_values(
+        weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
+    )
+
+    inputs_dir = os.path.join(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+    )
 
     # Write the by-timepoint requirement file if by-tmp requirement specified
     timepoint_req = timepoint_req.fetchall()
@@ -441,14 +484,12 @@ def generic_write_model_inputs(
 
             for row in ba_lz_map_list:
                 writer.writerow(row)
-    else:
-        pass
 
     # Project contributions to the magnitude requirement
     project_contributions = project_contributions.fetchall()
 
     prj_contributions = False
-    for (ba, prj, pwr, cap) in project_contributions:
+    for ba, prj, pwr, cap in project_contributions:
         if pwr is not None or cap is not None:
             prj_contributions = True
 
@@ -467,7 +508,7 @@ def generic_write_model_inputs(
             writer.writerow(
                 ["ba", "project", "percent_power_req", "percent_capacity_req"]
             )
-            for (ba, prj, pwr, cap) in project_contributions:
+            for ba, prj, pwr, cap in project_contributions:
                 if pwr is None:
                     pwr = "."
                 if cap is None:

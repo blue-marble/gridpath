@@ -117,7 +117,6 @@ export class ScenarioNewComponent implements OnInit {
     prm$projects: new FormControl(),
     prm$project_elcc: new FormControl(),
     prm$elcc: new FormControl(),
-    prm$energy_only: new FormControl(),
     local_capacity$bas: new FormControl(),
     local_capacity$req: new FormControl(),
     local_capacity$projects: new FormControl(),

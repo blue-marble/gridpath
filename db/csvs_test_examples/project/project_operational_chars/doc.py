@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2023 Blue Marble Analytics LLC. All rights reserved.
 
 """
 
@@ -43,7 +43,7 @@ populated and warns the user if some characteristics that have been filled
 are actually not used by the respective operational type. See the matrix below
 for the required and optional characteristics for each operational type.
 
-.. image:: ../graphics/optype_opchar_matrix.png
+.. image:: ../graphics/optype_opchar_matrix.svg
 
 Several types of operational characteristics vary by dimensions are other
 than project, so they are input in separate tables and linked to the

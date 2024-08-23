@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -163,7 +163,7 @@ def get_plotting_data(
         (SELECT scenario_id, project, period, stage_id, horizon, timepoint, 
         number_of_hours_in_timepoint,
         committed_mw, power_mw
-        FROM results_project_dispatch
+        FROM results_project_timepoint
         WHERE operational_type = '{}'
         AND scenario_id = ?
         {} 
@@ -175,43 +175,43 @@ def get_plotting_data(
         LEFT JOIN
         
         (SELECT scenario_id, project, period, stage_id, horizon, timepoint,
-        reserve_provision_mw as spin_mw 
-        FROM results_project_spinning_reserves) AS spin_tbl
+        spinning_reserves_reserve_provision_mw as spin_mw 
+        FROM results_project_timepoint) AS spin_tbl
         USING (scenario_id, project, period, stage_id, horizon, timepoint)
         
         LEFT JOIN
         
         (SELECT scenario_id, project, period, stage_id, horizon, timepoint,
-        reserve_provision_mw as reg_up_mw 
-        FROM results_project_regulation_up) AS reg_up_tbl
+        regulation_up_reserve_provision_mw as reg_up_mw 
+        FROM results_project_timepoint) AS reg_up_tbl
         USING (scenario_id, project, period, stage_id, horizon, timepoint)
         
         LEFT JOIN
         
         (SELECT scenario_id, project, period, stage_id, horizon, timepoint,
-        reserve_provision_mw as reg_down_mw 
-        FROM results_project_regulation_down) AS reg_down_tbl
+        regulation_down_reserve_provision_mw as reg_down_mw 
+        FROM results_project_timepoint) AS reg_down_tbl
         USING (scenario_id, project, period, stage_id, horizon, timepoint)
         
         LEFT JOIN
         
         (SELECT scenario_id, project, period, stage_id, horizon, timepoint,
-        reserve_provision_mw as lf_up_mw 
-        FROM results_project_lf_reserves_up) AS lf_up_tbl
+        lf_reserves_up_reserve_provision_mw as lf_up_mw 
+        FROM results_project_timepoint) AS lf_up_tbl
         USING (scenario_id, project, period, stage_id, horizon, timepoint)
         
         LEFT JOIN
         
         (SELECT scenario_id, project, period, stage_id, horizon, timepoint,
-        reserve_provision_mw as lf_down_mw 
-        FROM results_project_lf_reserves_down) AS lf_down_tbl
+        lf_reserves_down_reserve_provision_mw as lf_down_mw 
+        FROM results_project_timepoint) AS lf_down_tbl
         USING (scenario_id, project, period, stage_id, horizon, timepoint)
         
         LEFT JOIN
         
         (SELECT scenario_id, project, period, stage_id, horizon, timepoint,
-        reserve_provision_mw as frq_resp_mw 
-        FROM results_project_frequency_response) AS frq_resp_tbl
+        frequency_response_reserve_provision_mw as frq_resp_mw 
+        FROM results_project_timepoint) AS frq_resp_tbl
         USING (scenario_id, project, period, stage_id, horizon, timepoint)
         
         LEFT JOIN

@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import print_function
 
-from builtins import str
 from collections import OrderedDict
 from importlib import import_module
 import os.path
@@ -34,7 +32,7 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.investment.periods",
     "geography.load_zones",
     "geography.markets",
-    "system.load_balance.market_participation",
+    "system.markets.market_participation",
 ]
 NAME_OF_MODULE_BEING_TESTED = "system.markets.volume"
 IMPORTED_PREREQ_MODULES = list()
@@ -66,6 +64,9 @@ class TestMarketPrices(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
+            weather_iteration="",
+            hydro_iteration="",
+            availability_iteration="",
             subproblem="",
             stage="",
         )
@@ -79,6 +80,9 @@ class TestMarketPrices(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
+            weather_iteration="",
+            hydro_iteration="",
+            availability_iteration="",
             subproblem="",
             stage="",
         )
@@ -91,6 +95,9 @@ class TestMarketPrices(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
+            weather_iteration="",
+            hydro_iteration="",
+            availability_iteration="",
             subproblem="",
             stage="",
         )
@@ -139,6 +146,47 @@ class TestMarketPrices(unittest.TestCase):
             )
         )
         self.assertDictEqual(expected_max_purchases, actual_max_purchases)
+
+        # Param: max_final_market_sales
+        expected_max_final_sales = OrderedDict(
+            sorted(
+                market_volume_df.set_index(["market", "timepoint"])
+                .to_dict()["max_final_market_sales"]
+                .items()
+            )
+        )
+        for key in expected_max_final_sales.keys():
+            expected_max_final_sales[key] = float("inf")
+
+        actual_max_final_sales = OrderedDict(
+            sorted(
+                {
+                    (mrkt, tmp): instance.max_final_market_sales[mrkt, tmp]
+                    for mrkt in instance.MARKETS
+                    for tmp in instance.TMPS
+                }.items()
+            )
+        )
+        self.assertDictEqual(expected_max_final_sales, actual_max_final_sales)
+
+        # Param: max_final_market_purchases
+        expected_max_final_purchases = OrderedDict(
+            sorted(
+                market_volume_df.set_index(["market", "timepoint"])
+                .to_dict()["max_final_market_purchases"]
+                .items()
+            )
+        )
+        actual_max_final_purchases = OrderedDict(
+            sorted(
+                {
+                    (mrkt, tmp): instance.max_final_market_purchases[mrkt, tmp]
+                    for mrkt in instance.MARKETS
+                    for tmp in instance.TMPS
+                }.items()
+            )
+        )
+        self.assertDictEqual(expected_max_final_purchases, actual_max_final_purchases)
 
 
 if __name__ == "__main__":

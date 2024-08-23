@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import print_function
-from __future__ import absolute_import
 
 from .reserve_balance import (
     generic_add_model_components,
@@ -23,7 +21,16 @@ from .reserve_balance import (
 )
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
 
     :param m:
@@ -44,7 +51,16 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
+):
     """
 
     :param scenario_directory:
@@ -54,30 +70,51 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
+
     generic_export_results(
-        scenario_directory,
-        subproblem,
-        stage,
-        m,
-        d,
-        "lf_reserves_up_violation.csv",
-        "lf_reserves_up_violation_mw",
-        "LF_RESERVES_UP_ZONES",
-        "LF_Reserves_Up_Violation_MW_Expression",
+        scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        m=m,
+        d=d,
+        reserve_type="lf_reserves_up",
+        reserve_zone_set="LF_RESERVES_UP_ZONES",
+        reserve_violation_expression="LF_Reserves_Up_Violation_MW_Expression",
     )
 
 
-def save_duals(m):
+def save_duals(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    instance,
+    dynamic_components,
+):
     """
 
     :param m:
     :return:
     """
-    generic_save_duals(m, "Meet_LF_Reserves_Up_Constraint")
+    generic_save_duals(instance, "Meet_LF_Reserves_Up_Constraint")
 
 
 def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    c,
+    db,
+    results_directory,
+    quiet,
 ):
     """
 
@@ -88,15 +125,16 @@ def import_results_into_database(
     :param quiet:
     :return:
     """
-    if not quiet:
-        print("system lf reserves up balance")
-
     generic_import_results_to_database(
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         c=c,
         db=db,
         results_directory=results_directory,
         reserve_type="lf_reserves_up",
+        quiet=quiet,
     )

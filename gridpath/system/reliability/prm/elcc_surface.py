@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,10 +15,7 @@
 """
 Total ELCC of projects on ELCC surface
 """
-from __future__ import print_function
 
-from builtins import next
-from builtins import range
 import csv
 import os.path
 from pyomo.environ import (
@@ -32,13 +29,25 @@ from pyomo.environ import (
 )
 
 from db.common_functions import spin_on_database_lock
+from gridpath.auxiliary.db_interface import directories_to_db_values
 from gridpath.auxiliary.dynamic_components import (
     prm_balance_provision_components,
     cost_components,
 )
+from gridpath.common_functions import create_results_df
+from gridpath.system.reliability.prm import PRM_ZONE_PRD_DF
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
 
     :param m:
@@ -48,21 +57,19 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     # Surface can change by prm_zone and period
     # Limit surface to 1000 facets
-    m.PRM_ZONE_PERIOD_ELCC_SURFACE_FACETS = Set(
-        dimen=3, within=m.PRM_ZONES * m.PERIODS * list(range(1, 1001))
+    m.ELCC_SURFACE_PRM_ZONE_PERIOD_FACETS = Set(
+        dimen=4, within=m.ELCC_SURFACE_PRM_ZONE_PERIODS * list(range(1, 1001))
     )
 
     # The intercept for the prm_zone/period/facet combination
     m.elcc_surface_intercept = Param(
-        m.PRM_ZONE_PERIOD_ELCC_SURFACE_FACETS, within=NonNegativeReals
+        m.ELCC_SURFACE_PRM_ZONE_PERIOD_FACETS, within=NonNegativeReals
     )
 
     # Endogenous dynamic ELCC surface
-    m.Dynamic_ELCC_MW = Var(
-        m.PRM_ZONE_PERIODS_WITH_REQUIREMENT, within=NonNegativeReals
-    )
+    m.Dynamic_ELCC_MW = Var(m.ELCC_SURFACE_PRM_ZONE_PERIODS, within=NonNegativeReals)
 
-    def elcc_surface_rule(mod, prm_zone, period, facet):
+    def elcc_surface_rule(mod, surface, prm_zone, period, facet):
         """
 
         :param mod:
@@ -72,29 +79,54 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         :return:
         """
         return (
-            mod.Dynamic_ELCC_MW[prm_zone, period]
+            mod.Dynamic_ELCC_MW[surface, prm_zone, period]
             <= sum(
-                mod.ELCC_Surface_Contribution_MW[prj, period, facet]
-                for prj in mod.ELCC_SURFACE_PROJECTS_BY_PRM_ZONE[prm_zone]
+                mod.ELCC_Surface_Contribution_MW[s, prj, period, facet]
+                for (s, prj) in mod.ELCC_SURFACE_PROJECTS_BY_PRM_ZONE[prm_zone]
+                if s == surface
                 # This is redundant since since ELCC_Surface_Contribution_MW
                 # is 0 for non-operational periods, but keep here for
                 # extra safety
-                if period in mod.OPR_PRDS_BY_PRJ[prj]
+                and period in mod.OPR_PRDS_BY_PRJ[prj]
             )
-            + mod.elcc_surface_intercept[prm_zone, period, facet]
-            * mod.prm_peak_load_mw[prm_zone, period]
+            + mod.elcc_surface_intercept[surface, prm_zone, period, facet]
+            * mod.prm_peak_load_mw[surface, prm_zone, period]
         )
 
     # Dynamic ELCC piecewise constraint
     m.Dynamic_ELCC_Constraint = Constraint(
-        m.PRM_ZONE_PERIOD_ELCC_SURFACE_FACETS, rule=elcc_surface_rule
+        m.ELCC_SURFACE_PRM_ZONE_PERIOD_FACETS, rule=elcc_surface_rule
+    )
+
+    def total_contribution_from_all_surfaces_init(mod, prm_zone, period):
+        return sum(
+            mod.Dynamic_ELCC_MW[surface, z, p]
+            for (surface, z, p) in mod.ELCC_SURFACE_PRM_ZONE_PERIODS
+            if z == prm_zone and p == period
+        )
+
+    m.Total_Contribution_from_ELCC_Surfaces = Expression(
+        m.PRM_ZONE_PERIODS_WITH_REQUIREMENT,
+        initialize=total_contribution_from_all_surfaces_init,
     )
 
     # Add to emission imports to carbon balance
-    getattr(d, prm_balance_provision_components).append("Dynamic_ELCC_MW")
+    getattr(d, prm_balance_provision_components).append(
+        "Total_Contribution_from_ELCC_Surfaces"
+    )
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
 
     :param m:
@@ -109,18 +141,36 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     data_portal.load(
         filename=os.path.join(
             scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
             subproblem,
             stage,
             "inputs",
             "prm_zone_surface_facets_and_intercept.tab",
         ),
-        index=m.PRM_ZONE_PERIOD_ELCC_SURFACE_FACETS,
+        index=m.ELCC_SURFACE_PRM_ZONE_PERIOD_FACETS,
         param=m.elcc_surface_intercept,
-        select=("prm_zone", "period", "facet", "elcc_surface_intercept"),
+        select=(
+            "elcc_surface_name",
+            "prm_zone",
+            "period",
+            "facet",
+            "elcc_surface_intercept",
+        ),
     )
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
+):
     """
 
     :param scenario_directory:
@@ -130,11 +180,36 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
+    results_columns = [
+        "elcc_surface_mw",
+    ]
+    data = [
+        [
+            z,
+            p,
+            value(m.Total_Contribution_from_ELCC_Surfaces[z, p]),
+        ]
+        for (z, p) in m.PRM_ZONE_PERIODS_WITH_REQUIREMENT
+    ]
+    results_df = create_results_df(
+        index_columns=["prm_zone", "period"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    for c in results_columns:
+        getattr(d, PRM_ZONE_PRD_DF)[c] = None
+    getattr(d, PRM_ZONE_PRD_DF).update(results_df)
+
+    # By ELCC surface results
     with open(
         os.path.join(
             scenario_directory,
-            str(subproblem),
-            str(stage),
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
             "results",
             "prm_elcc_surface.csv",
         ),
@@ -142,13 +217,23 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         newline="",
     ) as results_file:
         writer = csv.writer(results_file)
-        writer.writerow(["prm_zone", "period", "elcc_mw"])
-        for (z, p) in m.PRM_ZONE_PERIODS_WITH_REQUIREMENT:
-            writer.writerow([z, p, value(m.Dynamic_ELCC_MW[z, p])])
+        writer.writerow(["elcc_surface_name", "prm_zone", "period", "elcc_mw"])
+        for s, z, p in m.ELCC_SURFACE_PRM_ZONE_PERIODS:
+            writer.writerow([s, z, p, value(m.Dynamic_ELCC_MW[s, z, p])])
 
 
-def save_duals(m):
-    m.constraint_indices["Dynamic_ELCC_Constraint"] = [
+def save_duals(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    instance,
+    dynamic_components,
+):
+    instance.constraint_indices["Dynamic_ELCC_Constraint"] = [
+        "surface_name",
         "prm_zone",
         "period",
         "facet",
@@ -156,7 +241,16 @@ def save_duals(m):
     ]
 
 
-def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -167,20 +261,41 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     c = conn.cursor()
     # The intercepts for the surface
     intercepts = c.execute(
-        """SELECT prm_zone, period, facet, elcc_surface_intercept
-        FROM inputs_system_prm_zone_elcc_surface
-        INNER JOIN inputs_temporal_periods
-        USING (period)
-        WHERE elcc_surface_scenario_id = {}
-        AND temporal_scenario_id = {}""".format(
-            subscenarios.ELCC_SURFACE_SCENARIO_ID, subscenarios.TEMPORAL_SCENARIO_ID
+        """
+        SELECT elcc_surface_name, prm_zone, period, facet, elcc_surface_intercept
+        FROM
+        (SELECT prm_zone
+        FROM inputs_geography_prm_zones
+        WHERE prm_zone_scenario_id = {prm_zone}) as prm_zone_tbl
+        CROSS JOIN
+        (SELECT period
+        FROM inputs_temporal_periods
+        WHERE temporal_scenario_id = {temporal}) as period_tbl
+        -- Join to the normalization params
+        LEFT OUTER JOIN
+        inputs_system_prm_zone_elcc_surface
+        USING (prm_zone, period)
+        WHERE elcc_surface_scenario_id = {elcc_surface}
+        """.format(
+            prm_zone=subscenarios.PRM_ZONE_SCENARIO_ID,
+            temporal=subscenarios.TEMPORAL_SCENARIO_ID,
+            elcc_surface=subscenarios.ELCC_SURFACE_SCENARIO_ID,
         )
     )
 
     return intercepts
 
 
-def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -197,7 +312,15 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     Get inputs from database and write out the model input
@@ -209,13 +332,33 @@ def write_model_inputs(
     :param c: database cursor
     :return:
     """
+
+    (
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+    ) = directories_to_db_values(
+        weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
+    )
+
     intercepts = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+        conn,
     )
 
     with open(
         os.path.join(
             scenario_directory,
+            hydro_iteration,
+            availability_iteration,
             subproblem,
             stage,
             "inputs",
@@ -227,68 +370,15 @@ def write_model_inputs(
         writer = csv.writer(intercepts_file, delimiter="\t", lineterminator="\n")
 
         # Writer header
-        writer.writerow(["prm_zone", "period", "facet", "elcc_surface_intercept"])
+        writer.writerow(
+            [
+                "elcc_surface_name",
+                "prm_zone",
+                "period",
+                "facet",
+                "elcc_surface_intercept",
+            ]
+        )
         # Write data
         for row in intercepts:
             writer.writerow(row)
-
-
-def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    """
-
-    :param scenario_id:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-    if not quiet:
-        print("system prm elcc surface")
-    # PRM contribution from the ELCC surface
-    # Prior results should have already been cleared by
-    # system.prm.aggregate_project_simple_prm_contribution,
-    # then elcc_simple_mw imported
-    # Update results_system_prm with NULL for surface contribution just in
-    # case (instead of clearing prior results)
-    nullify_sql = """
-        UPDATE results_system_prm
-        SET elcc_surface_mw = NULL
-        WHERE scenario_id = ?
-        AND subproblem_id = ?
-        AND stage_id = ?;
-        """
-    spin_on_database_lock(
-        conn=db,
-        cursor=c,
-        sql=nullify_sql,
-        data=(scenario_id, subproblem, stage),
-        many=False,
-    )
-
-    results = []
-    with open(
-        os.path.join(results_directory, "prm_elcc_surface.csv"), "r"
-    ) as surface_file:
-        reader = csv.reader(surface_file)
-
-        next(reader)  # skip header
-        for row in reader:
-            prm_zone = row[0]
-            period = row[1]
-            elcc = row[2]
-
-            results.append((elcc, scenario_id, prm_zone, period, subproblem, stage))
-
-    update_sql = """
-        UPDATE results_system_prm
-        SET elcc_surface_mw = ?
-        WHERE scenario_id = ?
-        AND prm_zone = ?
-        AND period = ?
-        AND subproblem_id = ?
-        AND stage_id = ?
-        """
-    spin_on_database_lock(conn=db, cursor=c, sql=update_sql, data=results)

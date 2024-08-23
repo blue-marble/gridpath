@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import print_function
 
-from builtins import str
 from collections import OrderedDict
 from importlib import import_module
 import os.path
@@ -35,6 +33,7 @@ PREREQUISITE_MODULE_NAMES = [
     "system.policy.carbon_cap.carbon_cap",
     "transmission",
     "transmission.capacity",
+    "transmission.capacity.capacity_types",
     "transmission.capacity.capacity",
     "transmission.availability.availability",
     "transmission.operations.operational_types",
@@ -58,7 +57,7 @@ except ImportError:
     print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED + " to test.")
 
 
-class TestTxAggregateCosts(unittest.TestCase):
+class TestTxHurdleCosts(unittest.TestCase):
     """ """
 
     def test_add_model_components(self):
@@ -70,6 +69,9 @@ class TestTxAggregateCosts(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
+            weather_iteration="",
+            hydro_iteration="",
+            availability_iteration="",
             subproblem="",
             stage="",
         )
@@ -83,6 +85,9 @@ class TestTxAggregateCosts(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
+            weather_iteration="",
+            hydro_iteration="",
+            availability_iteration="",
             subproblem="",
             stage="",
         )
@@ -96,6 +101,9 @@ class TestTxAggregateCosts(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
+            weather_iteration="",
+            hydro_iteration="",
+            availability_iteration="",
             subproblem="",
             stage="",
         )
@@ -113,6 +121,8 @@ class TestTxAggregateCosts(unittest.TestCase):
                     (("Tx3", 2030), 0),
                     (("Tx_New", 2020), 0.0),
                     (("Tx_New", 2030), 0.0),
+                    (("Tx_binary_1", 2020), 0),
+                    (("Tx_binary_1", 2030), 0),
                 ]
             )
         )
@@ -139,6 +149,8 @@ class TestTxAggregateCosts(unittest.TestCase):
                     (("Tx3", 2030), 0),
                     (("Tx_New", 2020), 0.0),
                     (("Tx_New", 2030), 0.0),
+                    (("Tx_binary_1", 2020), 0),
+                    (("Tx_binary_1", 2030), 0),
                 ]
             )
         )

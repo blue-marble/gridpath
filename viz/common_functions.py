@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -205,7 +205,7 @@ def get_capacity_data(
     :param conn:
     :param subproblem:
     :param stage:
-    :param capacity_col: str, capacity column in results_project_capacity
+    :param capacity_col: str, capacity column in results_project_period
     :param scenario_id: int or list of int, optional (default: return all
         scenarios)
     :param load_zone: str or list of str, optional (default: aggregate across
@@ -217,7 +217,7 @@ def get_capacity_data(
     params = [subproblem, stage]
     sql = """SELECT scenario_name AS scenario, period, technology, 
         sum({}) AS capacity_mw
-        FROM results_project_capacity
+        FROM results_project_period
         INNER JOIN 
         (SELECT scenario_name, scenario_id FROM scenarios) as scen_table
         USING (scenario_id)
@@ -314,7 +314,7 @@ def process_stacked_plot_data(df, y_col, x_col, category_col, column_mapper={}):
     #   pd.pivot_table doesn't work with empty table without aggfunc="first"
     df = (
         pd.pivot_table(
-            data=df.fillna(0),
+            data=df.infer_objects(copy=False).fillna(0),
             index=x_col_reordered,  # can be multi-level index!
             columns=category_col,
             values=y_col,
@@ -454,12 +454,11 @@ def create_stacked_bar_plot(
             ("%s" % x_label, "@{%s}" % x_col),
             ("%s" % category_label, category),
         ]
-        if y_label is None:
-            pass
-        elif "$" in y_label or "USD" in y_label:
-            tooltips.append(("%s" % y_label, "@%s{$0,0}" % category))
-        else:
-            tooltips.append(("%s" % y_label, "@%s{0,0}" % category))
+        if y_label is not None:
+            if "$" in y_label or "USD" in y_label:
+                tooltips.append(("%s" % y_label, "@%s{$0,0}" % category))
+            else:
+                tooltips.append(("%s" % y_label, "@%s{0,0}" % category))
         hover = HoverTool(tooltips=tooltips, renderers=[r], toggleable=False)
         plot.add_tools(hover)
 

@@ -1,4 +1,4 @@
-# Copyright 2016-2022 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import print_function
 
-from builtins import str
 from importlib import import_module
 import os.path
 import sys
@@ -68,6 +66,9 @@ class TestCycleSelect(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
+            weather_iteration="",
+            hydro_iteration="",
+            availability_iteration="",
             subproblem="",
             stage="",
         )
@@ -81,6 +82,9 @@ class TestCycleSelect(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
+            weather_iteration="",
+            hydro_iteration="",
+            availability_iteration="",
             subproblem="",
             stage="",
         )
@@ -90,6 +94,9 @@ class TestCycleSelect(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
+            weather_iteration="",
+            hydro_iteration="",
+            availability_iteration="",
             subproblem="",
             stage="",
         )
@@ -126,7 +133,7 @@ class TestCycleSelect(unittest.TestCase):
             get_project_operational_timepoints(expected_gen_w_supplemental_firing)
         )
         expected_supplemental_firing_opr_tmps = list()
-        for (p, tmp) in expected_operational_timepoints_by_project:
+        for p, tmp in expected_operational_timepoints_by_project:
             supplemental_firing_prj_list = expected_supplemental_firing_by_prj[p]
             # Only expecting the timepoints for projects that do have cycle-select
             # projects

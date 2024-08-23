@@ -1,4 +1,4 @@
-# Copyright 2016-2021 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,8 +23,16 @@ import os
 from pyomo.environ import Var, NonNegativeReals, Constraint, Expression
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
-
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     # Tuning cost can be applied on exports from a load zone to prioritize
     # meeting local load first
     m.LZ_Exports = Var(m.LOAD_ZONES, m.TMPS, within=NonNegativeReals)

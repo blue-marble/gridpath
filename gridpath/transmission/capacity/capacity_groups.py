@@ -1,4 +1,5 @@
 # Copyright 2022 (c) Crown Copyright, GC.
+# Modifications Copyright 2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,16 +22,24 @@ import os.path
 import pandas as pd
 from pyomo.environ import Set, Param, Constraint, NonNegativeReals, Expression, value
 
-from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file
-from gridpath.auxiliary.db_interface import setup_results_import
+from gridpath.auxiliary.auxiliary import get_required_subtype_modules
+from gridpath.auxiliary.db_interface import import_csv, directories_to_db_values
 import gridpath.transmission.capacity.capacity_types as cap_type_init
 from gridpath.transmission.capacity.common_functions import (
     load_tx_capacity_type_modules,
 )
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     The following Pyomo model components are defined in this module:
 
@@ -106,8 +115,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.TX_CAPACITY_GROUP_PERIODS = Set(dimen=2)
 
     m.TX_CAPACITY_GROUPS = Set(
-        initialize=lambda mod: list(
-            set([g for (g, p) in mod.TX_CAPACITY_GROUP_PERIODS])
+        initialize=lambda mod: sorted(
+            list(set([g for (g, p) in mod.TX_CAPACITY_GROUP_PERIODS]))
         )
     )
 
@@ -122,8 +131,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
     # Import needed capacity type modules
-    required_tx_capacity_modules = get_required_subtype_modules_from_projects_file(
+    required_tx_capacity_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         prj_or_tx="transmission_line",
@@ -171,30 +183,48 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 # Constraint Formulation Rules
 ###############################################################################
 def new_capacity_max_rule(mod, grp, prd):
-    return (
-        mod.Tx_Group_New_Capacity_in_Period[grp, prd]
-        <= mod.tx_capacity_group_new_capacity_max[grp, prd]
-    )
+    if mod.tx_capacity_group_new_capacity_max[grp, prd] == float("inf"):
+        return Constraint.Feasible
+    else:
+        return (
+            mod.Tx_Group_New_Capacity_in_Period[grp, prd]
+            <= mod.tx_capacity_group_new_capacity_max[grp, prd]
+        )
 
 
 def new_capacity_min_rule(mod, grp, prd):
-    return (
-        mod.Tx_Group_New_Capacity_in_Period[grp, prd]
-        >= mod.tx_capacity_group_new_capacity_min[grp, prd]
-    )
+    if mod.tx_capacity_group_new_capacity_min[grp, prd] == 0:
+        return Constraint.Feasible
+    else:
+        return (
+            mod.Tx_Group_New_Capacity_in_Period[grp, prd]
+            >= mod.tx_capacity_group_new_capacity_min[grp, prd]
+        )
 
 
 # Input-Output
 ###############################################################################
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """ """
     # Only load data if the input files were written; otherwise, we won't
     # initialize the components in this module
 
     req_file = os.path.join(
         scenario_directory,
+        hydro_iteration,
+        availability_iteration,
         subproblem,
         stage,
         "inputs",
@@ -209,8 +239,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                 m.tx_capacity_group_new_capacity_max,
             ),
         )
-    else:
-        pass
 
     tx_file = os.path.join(
         scenario_directory,
@@ -226,14 +254,24 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             for g, v in tx_groups_df.groupby("transmission_capacity_group")
         }
         data_portal.data()["TX_IN_TX_CAPACITY_GROUP"] = tx_groups_dict
-    else:
-        pass
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
+):
     """ """
     req_file = os.path.join(
         scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
         subproblem,
         stage,
         "inputs",
@@ -241,6 +279,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     )
     tx_file = os.path.join(
         scenario_directory,
+        hydro_iteration,
+        availability_iteration,
         subproblem,
         stage,
         "inputs",
@@ -251,10 +291,13 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         with open(
             os.path.join(
                 scenario_directory,
-                str(subproblem),
-                str(stage),
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
                 "results",
-                "transmission_capacity_groups.csv",
+                "transmission_group_capacity.csv",
             ),
             "w",
             newline="",
@@ -269,7 +312,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                     "transmission_capacity_group_new_capacity_max",
                 ]
             )
-            for (grp, prd) in m.TX_CAPACITY_GROUP_PERIODS:
+            for grp, prd in sorted(m.TX_CAPACITY_GROUP_PERIODS):
                 writer.writerow(
                     [
                         grp,
@@ -285,7 +328,16 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 ###############################################################################
 
 
-def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -321,11 +373,37 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """ """
+
+    (
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+    ) = directories_to_db_values(
+        weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
+    )
+
     cap_grp_reqs, cap_grp_tx = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+        conn,
     )
 
     # Write the input files only if a subscenario is specified
@@ -333,8 +411,11 @@ def write_model_inputs(
         with open(
             os.path.join(
                 scenario_directory,
-                str(subproblem),
-                str(stage),
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
                 "inputs",
                 "transmission_capacity_group_requirements.tab",
             ),
@@ -361,8 +442,11 @@ def write_model_inputs(
         with open(
             os.path.join(
                 scenario_directory,
-                str(subproblem),
-                str(stage),
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
                 "inputs",
                 "transmission_capacity_group_transmission_lines.tab",
             ),
@@ -378,65 +462,62 @@ def write_model_inputs(
                 writer.writerow(row)
 
 
-def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
+def save_duals(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    instance,
+    dynamic_components,
 ):
-    # Import only if a results-file was exported
-    results_file = os.path.join(results_directory, "transmission_capacity_groups.csv")
-    if os.path.exists(results_file):
-        if not quiet:
-            print("transmission group capacity")
+    instance.constraint_indices["Max_Tx_Group_Build_in_Period_Constraint"] = [
+        "capacity_group",
+        "period",
+        "dual",
+    ]
 
-        # Delete prior results and create temporary import table for ordering
-        setup_results_import(
+    instance.constraint_indices["Min_Tx_Group_Build_in_Period_Constraint"] = [
+        "capacity_group",
+        "period",
+        "dual",
+    ]
+
+
+def import_results_into_database(
+    scenario_id,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    c,
+    db,
+    results_directory,
+    quiet,
+):
+    which_results = "transmission_group_capacity"
+
+    if os.path.exists(
+        os.path.join(
+            results_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "results",
+            f"{which_results}.csv",
+        )
+    ):
+        import_csv(
             conn=db,
             cursor=c,
-            table="results_transmission_group_capacity",
             scenario_id=scenario_id,
             subproblem=subproblem,
             stage=stage,
+            quiet=quiet,
+            results_directory=results_directory,
+            which_results=which_results,
         )
-
-        # Load results into the temporary table
-        results = []
-        with open(results_file, "r") as f:
-            reader = csv.reader(f)
-
-            next(reader)  # skip header
-            for row in reader:
-                results.append((scenario_id, subproblem, stage) + tuple(row))
-
-        insert_temp_sql = """
-            INSERT INTO temp_results_transmission_group_capacity{}
-            (scenario_id, subproblem_id, stage_id, 
-            transmission_capacity_group, period, 
-            group_new_capacity,
-            transmission_capacity_group_new_capacity_min, 
-            transmission_capacity_group_new_capacity_max)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?);
-            """.format(
-            scenario_id
-        )
-        spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
-
-        # Insert sorted results into permanent results table
-        insert_sql = """
-            INSERT INTO results_transmission_group_capacity
-            (scenario_id, subproblem_id, stage_id, 
-            transmission_capacity_group, period, 
-            group_new_capacity,
-            transmission_capacity_group_new_capacity_min, 
-            transmission_capacity_group_new_capacity_max)
-            SELECT
-            scenario_id, subproblem_id, stage_id, 
-            transmission_capacity_group, period, 
-            group_new_capacity,
-            transmission_capacity_group_new_capacity_min, 
-            transmission_capacity_group_new_capacity_max
-            FROM temp_results_transmission_group_capacity{}
-             ORDER BY scenario_id, subproblem_id, stage_id,
-             transmission_capacity_group, period;
-            """.format(
-            scenario_id
-        )
-        spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)

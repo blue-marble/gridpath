@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,19 +16,25 @@
 Simple local capacity contribution where each local project contributes a 
 fraction of its installed capacity.
 """
-from __future__ import print_function
 
-from builtins import next
-from builtins import str
+
 import csv
 import os.path
 from pyomo.environ import Param, PercentFraction, Expression, value
 
-from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.db_interface import setup_results_import
+from gridpath.auxiliary.db_interface import import_csv, directories_to_db_values
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
 
     :param m:
@@ -53,7 +59,17 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
 
     :param m:
@@ -71,7 +87,16 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     )
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
+):
     """
 
     :param scenario_directory:
@@ -84,10 +109,12 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     with open(
         os.path.join(
             scenario_directory,
-            str(subproblem),
-            str(stage),
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
             "results",
-            "project_local_capacity_contribution.csv",
+            "project_local_capacity.csv",
         ),
         "w",
         newline="",
@@ -105,7 +132,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "local_capacity_contribution_mw",
             ]
         )
-        for (prj, period) in m.LOCAL_CAPACITY_PRJ_OPR_PRDS:
+        for prj, period in sorted(m.LOCAL_CAPACITY_PRJ_OPR_PRDS):
             writer.writerow(
                 [
                     prj,
@@ -120,7 +147,16 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             )
 
 
-def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -128,8 +164,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     :param conn: database connection
     :return:
     """
-    subproblem = 1 if subproblem == "" else subproblem
-    stage = 1 if stage == "" else stage
+
     c = conn.cursor()
     project_frac = c.execute(
         """SELECT project, local_capacity_fraction
@@ -150,7 +185,16 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     return project_frac
 
 
-def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -167,7 +211,15 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     Get inputs from database and write out the model input
@@ -179,15 +231,40 @@ def write_model_inputs(
     :param conn: database connection
     :return:
     """
+
+    (
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+    ) = directories_to_db_values(
+        weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
+    )
+
     project_frac = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+        conn,
     )
 
     prj_frac_dict = {p: "." if f is None else f for (p, f) in project_frac}
 
     with open(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "projects.tab",
         ),
         "r",
     ) as projects_file_in:
@@ -213,7 +290,14 @@ def write_model_inputs(
 
     with open(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "projects.tab",
         ),
         "w",
         newline="",
@@ -223,7 +307,16 @@ def write_model_inputs(
 
 
 def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    c,
+    db,
+    results_directory,
+    quiet,
 ):
     """
 
@@ -234,78 +327,16 @@ def import_results_into_database(
     :param quiet:
     :return:
     """
-    if not quiet:
-        print("project local capacity contributions")
-
-    # Delete prior results and create temporary import table for ordering
-    setup_results_import(
+    import_csv(
         conn=db,
         cursor=c,
-        table="results_project_local_capacity",
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
+        quiet=quiet,
+        results_directory=results_directory,
+        which_results="project_local_capacity",
     )
-
-    # Load results into the temporary table
-    results = []
-    with open(
-        os.path.join(results_directory, "project_local_capacity_contribution.csv"), "r"
-    ) as local_capacity_results_file:
-        reader = csv.reader(local_capacity_results_file)
-
-        next(reader)  # skip header
-        for row in reader:
-            project = row[0]
-            period = row[1]
-            local_capacity_zone = row[2]
-            technology = row[3]
-            load_zone = row[4]
-            capacity = row[5]
-            local_capacity_fraction = row[6]
-            contribution_mw = row[7]
-
-            results.append(
-                (
-                    scenario_id,
-                    project,
-                    period,
-                    subproblem,
-                    stage,
-                    local_capacity_zone,
-                    technology,
-                    load_zone,
-                    capacity,
-                    local_capacity_fraction,
-                    contribution_mw,
-                )
-            )
-
-    insert_temp_sql = """
-        INSERT INTO temp_results_project_local_capacity{}
-        (scenario_id, project, period, subproblem_id, stage_id,
-        local_capacity_zone, technology, load_zone, 
-        capacity_mw, local_capacity_fraction,
-        local_capacity_contribution_mw)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-        """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
-
-    # Insert sorted results into permanent results table
-    insert_sql = """
-        INSERT INTO results_project_local_capacity
-        (scenario_id, project, period, subproblem_id, stage_id,
-        local_capacity_zone, technology, load_zone, 
-        capacity_mw, local_capacity_fraction, local_capacity_contribution_mw)
-        SELECT
-        scenario_id, project, period, subproblem_id, stage_id,
-        local_capacity_zone, technology, load_zone,
-        capacity_mw, local_capacity_fraction, local_capacity_contribution_mw
-        FROM temp_results_project_local_capacity{}
-        ORDER BY scenario_id, project, subproblem_id, stage_id, period;
-        """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)

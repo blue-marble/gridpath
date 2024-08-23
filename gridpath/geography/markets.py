@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,8 +21,19 @@ import csv
 import os.path
 from pyomo.environ import Set
 
+from gridpath.auxiliary.db_interface import directories_to_db_values
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
 
     :param m:
@@ -33,7 +44,17 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.MARKETS = Set()
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
 
     :param m:
@@ -46,13 +67,29 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
     data_portal.load(
         filename=os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "markets.tab"
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "markets.tab",
         ),
         set=m.MARKETS,
     )
 
 
-def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -60,8 +97,6 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     :param conn: database connection
     :return:
     """
-    subproblem = 1 if subproblem == "" else subproblem
-    stage = 1 if stage == "" else stage
     c = conn.cursor()
     markets = c.execute(
         """SELECT market
@@ -75,7 +110,16 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     return markets
 
 
-def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -88,7 +132,15 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     Get inputs from database and write out the model input
@@ -101,13 +153,37 @@ def write_model_inputs(
     :return:
     """
 
+    (
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+    ) = directories_to_db_values(
+        weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
+    )
+
     markets = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+        conn,
     )
 
     with open(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "markets.tab"
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "markets.tab",
         ),
         "w",
         newline="",

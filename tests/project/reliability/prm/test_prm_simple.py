@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import print_function
 
-from builtins import str
 from collections import OrderedDict
 from importlib import import_module
 import os.path
@@ -69,6 +67,9 @@ class TestProjPRMSimple(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
+            weather_iteration="",
+            hydro_iteration="",
+            availability_iteration="",
             subproblem="",
             stage="",
         )
@@ -82,6 +83,9 @@ class TestProjPRMSimple(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
+            weather_iteration="",
+            hydro_iteration="",
+            availability_iteration="",
             subproblem="",
             stage="",
         )
@@ -95,6 +99,9 @@ class TestProjPRMSimple(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
+            weather_iteration="",
+            hydro_iteration="",
+            availability_iteration="",
             subproblem="",
             stage="",
         )
@@ -104,38 +111,63 @@ class TestProjPRMSimple(unittest.TestCase):
         expected_prm_frac = OrderedDict(
             sorted(
                 {
-                    "Coal": 0.8,
-                    "Coal_z2": 0.8,
-                    "Gas_CCGT": 0.8,
-                    "Gas_CCGT_New": 0.8,
-                    "Gas_CCGT_New_Binary": 0.8,
-                    "Gas_CCGT_z2": 0.8,
-                    "Gas_CT": 0.8,
-                    "Gas_CT_New": 0.8,
-                    "Gas_CT_z2": 0.8,
-                    "Nuclear": 0.8,
-                    "Nuclear_z2": 0.8,
-                    "Wind": 0.8,
-                    "Wind_z2": 0.8,
-                    "Battery": 0.8,
-                    "Battery_Binary": 0.8,
-                    "Battery_Specified": 0.8,
-                    "Hydro": 0.8,
-                    "Hydro_NonCurtailable": 0.8,
-                    "Disp_Binary_Commit": 0.8,
-                    "Disp_Cont_Commit": 0.8,
-                    "Disp_No_Commit": 0.8,
-                    "Clunky_Old_Gen": 0.8,
-                    "Clunky_Old_Gen2": 0.8,
-                    "Nuclear_Flexible": 0.8,
+                    ("Coal", 2020): 0.8,
+                    ("Coal_z2", 2020): 0.8,
+                    ("Gas_CCGT", 2020): 0.8,
+                    ("Gas_CCGT_New", 2020): 0.8,
+                    ("Gas_CCGT_New_Binary", 2020): 0.8,
+                    ("Gas_CCGT_z2", 2020): 0.8,
+                    ("Gas_CT", 2020): 0.8,
+                    ("Gas_CT_New", 2020): 0.8,
+                    ("Gas_CT_z2", 2020): 0.8,
+                    ("Nuclear", 2020): 0.8,
+                    ("Nuclear_z2", 2020): 0.8,
+                    ("Wind", 2020): 0.8,
+                    ("Wind_z2", 2020): 0.8,
+                    ("Battery", 2020): 0.8,
+                    ("Battery_Binary", 2020): 0.8,
+                    ("Battery_Specified", 2020): 0.8,
+                    ("Hydro", 2020): 0.8,
+                    ("Hydro_NonCurtailable", 2020): 0.8,
+                    ("Disp_Binary_Commit", 2020): 0.8,
+                    ("Disp_Cont_Commit", 2020): 0.8,
+                    ("Disp_No_Commit", 2020): 0.8,
+                    ("Clunky_Old_Gen", 2020): 0.8,
+                    ("Clunky_Old_Gen2", 2020): 0.8,
+                    ("Nuclear_Flexible", 2020): 0.8,
+                    ("Coal", 2030): 0.5,
+                    ("Coal_z2", 2030): 0.5,
+                    ("Gas_CCGT", 2030): 0.5,
+                    ("Gas_CCGT_New", 2030): 0.5,
+                    ("Gas_CCGT_New_Binary", 2030): 0.5,
+                    ("Gas_CCGT_z2", 2030): 0.5,
+                    ("Gas_CT", 2030): 0.5,
+                    ("Gas_CT_New", 2030): 0.5,
+                    ("Gas_CT_z2", 2030): 0.5,
+                    ("Nuclear", 2030): 0.5,
+                    ("Nuclear_z2", 2030): 0.5,
+                    ("Wind", 2030): 0.5,
+                    ("Wind_z2", 2030): 0.5,
+                    ("Battery", 2030): 0.5,
+                    ("Battery_Binary", 2030): 0.5,
+                    ("Battery_Specified", 2030): 0.5,
+                    ("Hydro", 2030): 0.5,
+                    ("Hydro_NonCurtailable", 2030): 0.5,
+                    ("Disp_Binary_Commit", 2030): 0.5,
+                    ("Disp_Cont_Commit", 2030): 0.5,
+                    ("Disp_No_Commit", 2030): 0.5,
+                    ("Clunky_Old_Gen", 2030): 0,
+                    ("Clunky_Old_Gen2", 2030): 0,
+                    ("Nuclear_Flexible", 2030): 0.5,
                 }.items()
             )
         )
         actual_prm_frac = OrderedDict(
             sorted(
                 {
-                    prj: instance.elcc_simple_fraction[prj]
+                    (prj, prd): instance.elcc_simple_fraction[prj, prd]
                     for prj in instance.PRM_PROJECTS
+                    for prd in instance.PERIODS
                 }.items()
             )
         )

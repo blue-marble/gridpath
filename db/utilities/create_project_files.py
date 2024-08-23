@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -117,7 +117,7 @@ def create_individual_csvs_from_aggregate_csv(
     # create the individual files
     if verbose:
         print("Writing individual files to {}.".format(project_csv_folder))
-    for (project, subscenario_id, subscenario_name) in unique_prj_id_name.values:
+    for project, subscenario_id, subscenario_name in unique_prj_id_name.values:
         ind_csv_name = "{}-{}-{}.csv".format(project, subscenario_id, subscenario_name)
 
         if verbose:

@@ -20,15 +20,29 @@ import csv
 import os.path
 from pyomo.environ import Param, Set
 
-from gridpath.auxiliary.auxiliary import cursor_to_df, subset_init_by_param_value
+from gridpath.auxiliary.auxiliary import (
+    cursor_to_df,
+    subset_init_by_param_value,
+    subset_init_by_set_membership,
+)
 from gridpath.auxiliary.db_interface import (
     update_prj_zone_column,
     determine_table_subset_by_start_and_column,
+    directories_to_db_values,
 )
 from gridpath.auxiliary.validations import write_validation_to_database, validate_idxs
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     The following Pyomo model components are defined in this module:
 
@@ -100,11 +114,12 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.PERFORMANCE_STANDARD_OPR_TMPS = Set(
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: [
-            (p, tmp)
-            for (p, tmp) in mod.PRJ_OPR_TMPS
-            if p in mod.PERFORMANCE_STANDARD_PRJS
-        ],
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod,
+            superset="PRJ_OPR_TMPS",
+            index=0,
+            membership_set=mod.PERFORMANCE_STANDARD_PRJS,
+        ),
     )
 
 
@@ -112,7 +127,17 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 ###############################################################################
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
 
     :param m:
@@ -125,7 +150,14 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
     data_portal.load(
         filename=os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "projects.tab",
         ),
         select=("project", "performance_standard_zone"),
         param=(m.performance_standard_zone,),
@@ -140,7 +172,16 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 ###############################################################################
 
 
-def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -148,8 +189,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     :param conn: database connection
     :return:
     """
-    subproblem = 1 if subproblem == "" else subproblem
-    stage = 1 if stage == "" else stage
+
     c = conn.cursor()
     project_zones = c.execute(
         """SELECT project, performance_standard_zone
@@ -184,7 +224,15 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     Get inputs from database and write out the model input
@@ -196,18 +244,42 @@ def write_model_inputs(
     :param conn: database connection
     :return:
     """
+    (
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+    ) = directories_to_db_values(
+        weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
+    )
+
     project_zones = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+        conn,
     )
 
     # Make a dict for easy access
     prj_zone_dict = dict()
-    for (prj, zone) in project_zones:
+    for prj, zone in project_zones:
         prj_zone_dict[str(prj)] = "." if zone is None else str(zone)
 
     with open(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "projects.tab",
         ),
         "r",
     ) as projects_file_in:
@@ -233,7 +305,14 @@ def write_model_inputs(
 
     with open(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "projects.tab",
         ),
         "w",
         newline="",
@@ -274,7 +353,16 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
 ###############################################################################
 
 
-def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -285,7 +373,14 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
 
     project_zones = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        conn,
     )
 
     # Convert input data into pandas DataFrame
@@ -307,6 +402,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,

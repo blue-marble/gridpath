@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,15 +16,17 @@
 Storage projects with additional constraints on deliverability based on their 
 duration
 """
-from __future__ import division
 
-from builtins import next
-from builtins import str
+
 import csv
 import os.path
 from pyomo.environ import Param, Var, Set, Constraint, PositiveReals, NonNegativeReals
 
-from gridpath.auxiliary.auxiliary import cursor_to_df
+from gridpath.auxiliary.auxiliary import (
+    cursor_to_df,
+    subset_init_by_param_value,
+    subset_init_by_set_membership,
+)
 from gridpath.auxiliary.validations import (
     write_validation_to_database,
     validate_values,
@@ -32,7 +34,16 @@ from gridpath.auxiliary.validations import (
 )
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     FDDL: Fully Deliverable Duration Limited
     :param m:
@@ -42,11 +53,12 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.FDDL_PRM_PROJECTS = Set(
         within=m.PRM_PROJECTS,
-        initialize=lambda mod: [
-            p
-            for p in mod.PRM_PROJECTS
-            if mod.prm_type[p] == "fully_deliverable_energy_limited"
-        ],
+        initialize=lambda mod: subset_init_by_param_value(
+            mod=mod,
+            set_name="PRM_PROJECTS",
+            param_name="prm_type",
+            param_value="fully_deliverable_energy_limited",
+        ),
     )
 
     # Will limit this to storage project operational periods in addition to
@@ -54,11 +66,12 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.FDDL_PRM_PRJ_OPR_PRDS = Set(
         dimen=2,
         within=m.PRM_PRJ_OPR_PRDS & m.PRJ_OPR_PRDS,
-        initialize=lambda mod: [
-            (project, period)
-            for (project, period) in mod.PRM_PRJ_OPR_PRDS
-            if project in mod.FDDL_PRM_PROJECTS
-        ],
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod,
+            superset="PRM_PRJ_OPR_PRDS",
+            index=0,
+            membership_set=mod.FDDL_PRM_PROJECTS,
+        ),
     )
 
     m.min_duration_for_full_capacity_credit = Param(
@@ -116,7 +129,17 @@ def elcc_eligible_capacity_rule(mod, g, p):
     return mod.FDDL_Project_Capacity_Credit_Eligible_Capacity_MW[g, p]
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
 
     :param m:
@@ -128,14 +151,30 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
     data_portal.load(
         filename=os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "projects.tab",
         ),
         select=("project", "minimum_duration_for_full_capacity_credit_hours"),
         param=m.min_duration_for_full_capacity_credit,
     )
 
 
-def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_model_inputs_from_database(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -164,7 +203,16 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
     return project_zone_dur
 
 
-def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -175,7 +223,14 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
 
     project_zone_dur = get_model_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        conn,
     )
 
     df = cursor_to_df(project_zone_dur)
@@ -185,6 +240,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -197,6 +255,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -207,7 +268,15 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     Get inputs from database and write out the model input
@@ -221,19 +290,33 @@ def write_model_inputs(
     """
 
     project_zone_dur = get_model_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        conn,
     )
 
     # Make a dict for easy access
     # Only assign a min duration to projects that contribute to a PRM zone in
     # case we have projects with missing zones here
     prj_zone_dur_dict = dict()
-    for (prj, zone, min_dur) in project_zone_dur:
+    for prj, zone, min_dur in project_zone_dur:
         prj_zone_dur_dict[str(prj)] = "." if zone is None else min_dur
 
     with open(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "projects.tab",
         ),
         "r",
     ) as projects_file_in:
@@ -249,8 +332,10 @@ def write_model_inputs(
         # Append correct values
         for row in reader:
             if row[0] in list(prj_zone_dur_dict.keys()):
-                row.append(".") if prj_zone_dur_dict[row[0]] is None else row.append(
-                    prj_zone_dur_dict[row[0]]
+                (
+                    row.append(".")
+                    if prj_zone_dur_dict[row[0]] is None
+                    else row.append(prj_zone_dur_dict[row[0]])
                 )
                 new_rows.append(row)
             # If project not specified
@@ -259,7 +344,14 @@ def write_model_inputs(
                 new_rows.append(row)
     with open(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "projects.tab",
         ),
         "w",
         newline="",

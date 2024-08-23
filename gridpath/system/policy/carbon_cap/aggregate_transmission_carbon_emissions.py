@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,10 +16,8 @@
 Aggregate carbon emissions from the transmission-line-timepoint level to
 the carbon cap zone - period level.
 """
-from __future__ import division
-from __future__ import print_function
 
-from builtins import next
+
 import csv
 import os.path
 from pyomo.environ import (
@@ -34,12 +32,23 @@ from pyomo.environ import (
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.dynamic_components import carbon_cap_balance_emission_components
+from gridpath.common_functions import create_results_df
+from gridpath.system.policy.carbon_cap import CARBON_CAP_ZONE_PRD_DF
 from gridpath.transmission.operations.carbon_emissions import (
     calculate_carbon_emissions_imports,
 )
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     Aggregate total imports of emissions and add to carbon balance constraint
     :param m:
@@ -105,7 +114,16 @@ def total_carbon_emissions_imports_degen_expr_rule(mod, z, p):
     )
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
+):
     """
 
     :param scenario_directory:
@@ -115,125 +133,34 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "carbon_cap_total_transmission.csv",
-        ),
-        "w",
-        newline="",
-    ) as carbon_results_file:
-        writer = csv.writer(carbon_results_file)
-        writer.writerow(
-            [
-                "carbon_cap_zone",
-                "period",
-                "carbon_cap_target",
-                "transmission_carbon_emissions",
-                "transmission_carbon_emissions_degen",
-            ]
-        )
-        for (z, p) in m.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP:
-            writer.writerow(
-                [
-                    z,
-                    p,
-                    float(m.carbon_cap_target[z, p]),
-                    value(m.Total_Carbon_Emission_Imports_Tons[z, p]),
-                    total_carbon_emissions_imports_degen_expr_rule(m, z, p),
-                ]
-            )
 
-
-def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    """
-
-    :param scenario_id:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-    if not quiet:
-        print("system carbon emissions (imports)")
-    # Carbon emissions from imports
-    # Prior results should have already been cleared by
-    # system.policy.carbon_cap.aggregate_project_carbon_emissions,
-    # then project total emissions imported
-    # Update results_system_carbon_emissions with NULL just in case (instead of
-    # clearing prior results)
-    # TODO: why not just clear the results?
-    nullify_sql = """
-        UPDATE results_system_carbon_emissions
-        SET import_emissions = NULL
-        WHERE scenario_id = ?
-        AND subproblem_id = ?
-        AND stage_id = ?;
-        """
-    spin_on_database_lock(
-        conn=db,
-        cursor=c,
-        sql=nullify_sql,
-        data=(scenario_id, subproblem, stage),
-        many=False,
+    results_columns = [
+        "import_emissions",
+        "import_emissions_degen",
+        "total_emissions_degen",
+    ]
+    data = [
+        [
+            z,
+            p,
+            value(m.Total_Carbon_Emission_Imports_Tons[z, p]),
+            total_carbon_emissions_imports_degen_expr_rule(m, z, p),
+            None,
+        ]
+        for (z, p) in m.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP
+    ]
+    results_df = create_results_df(
+        index_columns=["carbon_cap_zone", "period"],
+        results_columns=results_columns,
+        data=data,
     )
 
-    results = []
-    with open(
-        os.path.join(results_directory, "carbon_cap_total_transmission.csv"), "r"
-    ) as emissions_file:
-        reader = csv.reader(emissions_file)
+    for c in results_columns:
+        getattr(d, CARBON_CAP_ZONE_PRD_DF)[c] = None
+    getattr(d, CARBON_CAP_ZONE_PRD_DF).update(results_df)
 
-        next(reader)  # skip header
-        for row in reader:
-            carbon_cap_zone = row[0]
-            period = row[1]
-            tx_carbon_emissions = row[3]
-            tx_carbon_emissions_degen = row[4]
-
-            results.append(
-                (
-                    tx_carbon_emissions,
-                    tx_carbon_emissions_degen,
-                    scenario_id,
-                    carbon_cap_zone,
-                    period,
-                    subproblem,
-                    stage,
-                )
-            )
-
-    imports_sql = """
-        UPDATE results_system_carbon_emissions
-        SET import_emissions = ?,
-        import_emissions_degen = ?
-        WHERE scenario_id = ?
-        AND carbon_cap_zone = ?
-        AND period = ?
-        AND subproblem_id = ?
-        AND stage_id = ?"""
-
-    spin_on_database_lock(conn=db, cursor=c, sql=imports_sql, data=results)
-
-    # Update the total emissions in case of degeneracy
-    total_degen_sql = """
-        UPDATE results_system_carbon_emissions
-           SET total_emissions_degen = 
-           in_zone_project_emissions + import_emissions_degen
-           WHERE scenario_id = ?
-           AND subproblem_id = ?
-           AND stage_id = ?;
-           """
-    spin_on_database_lock(
-        conn=db,
-        cursor=c,
-        sql=total_degen_sql,
-        data=(scenario_id, subproblem, stage),
-        many=False,
+    # Update the total_emissions_degen column
+    getattr(d, CARBON_CAP_ZONE_PRD_DF)["total_emissions_degen"] = (
+        getattr(d, CARBON_CAP_ZONE_PRD_DF)["project_emissions"]
+        + getattr(d, CARBON_CAP_ZONE_PRD_DF)["import_emissions_degen"]
     )

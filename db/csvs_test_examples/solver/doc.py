@@ -1,4 +1,4 @@
-# Copyright 2016-2022 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2023 Blue Marble Analytics LLC. All rights reserved.
 
 """
 Note that with "shell solvers" such as GAMS and AMPL, you also need to specify "solver"

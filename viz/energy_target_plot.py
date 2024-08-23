@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -111,7 +111,7 @@ def get_plotting_data(
             curtailed_energy_target_energy_mwh, 
             fraction_of_energy_target_met, 
             fraction_of_energy_target_energy_curtailed,
-            energy_target_marginal_cost_per_mwh
+            dual
         FROM results_system_period_energy_target
         WHERE scenario_id = ?
         AND energy_target_zone = ?
@@ -171,7 +171,7 @@ def create_plot(df, title, energy_unit, cost_unit, ylimit=None):
         plot_height=500,
         tools=["pan", "reset", "zoom_in", "zoom_out", "save", "help"],
         title=title,
-        x_range=df[x_col]
+        x_range=df[x_col],
         # sizing_mode="scale_both"
     )
 
@@ -257,9 +257,8 @@ def create_plot(df, title, energy_unit, cost_unit, ylimit=None):
             ("RPS Target", "@%s{0,0} %s" % (line_col, energy_unit)),
             ("Fraction of RPS Met", "@fraction_of_energy_target_met{0%}"),
             (
-                "Marginal Cost",
-                "@energy_target_marginal_cost_per_mwh{0,0} %s/%s"
-                % (cost_unit, energy_unit),
+                "Dual",
+                "@dual{0,0} %s/%s" % (cost_unit, energy_unit),
             ),
         ],
         renderers=[target_renderer],

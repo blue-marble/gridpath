@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,7 +25,16 @@ from gridpath.project.reliability.prm.common_functions import load_prm_type_modu
 
 # TODO: rename to deliverability types; the PRM types are really 'simple'
 #  and 'elcc surface'
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
 
     :param m:
@@ -35,7 +44,14 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Import needed PRM modules
     project_df = pd.read_csv(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "projects.tab",
         ),
         sep="\t",
         usecols=["project", "prm_type"],
@@ -50,7 +66,16 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     for prm_m in required_prm_modules:
         imp_prm_m = imported_prm_modules[prm_m]
         if hasattr(imp_prm_m, "add_model_components"):
-            imp_prm_m.add_model_components(m, d, scenario_directory, subproblem, stage)
+            imp_prm_m.add_model_components(
+                m,
+                d,
+                scenario_directory,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
+            )
 
     # For each PRM project, get the ELCC-eligible capacity
     def elcc_eligible_capacity_rule(mod, g, p):
@@ -64,7 +89,17 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
 # TODO: refactor importing prm modules as it's used several places in this
 #  module
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
 
     :param m:
@@ -77,7 +112,14 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
     project_df = pd.read_csv(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "projects.tab",
         ),
         sep="\t",
         usecols=["project", "prm_type"],
@@ -91,13 +133,28 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     for prm_m in required_prm_modules:
         if hasattr(imported_prm_modules[prm_m], "load_model_data"):
             imported_prm_modules[prm_m].load_model_data(
-                m, d, data_portal, scenario_directory, subproblem, stage
+                m,
+                d,
+                data_portal,
+                scenario_directory,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
             )
-        else:
-            pass
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
+):
     """
     Export operations results.
     :param scenario_directory:
@@ -115,7 +172,14 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     # Operational type modules
     project_df = pd.read_csv(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "projects.tab",
         ),
         sep="\t",
         usecols=["project", "prm_type"],
@@ -132,11 +196,12 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 m,
                 d,
                 scenario_directory,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
                 subproblem,
                 stage,
             )
-        else:
-            pass
 
 
 def get_required_prm_type_modules(
@@ -185,7 +250,16 @@ def get_required_prm_type_modules(
     return required_prm_type_modules
 
 
-def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -211,12 +285,18 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
             imported_prm_modules[prm_m].validate_inputs(
                 scenario_id, subscenarios, subproblem, stage, conn
             )
-        else:
-            pass
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     Get inputs from database and write out the model input .tab files.
@@ -243,12 +323,19 @@ def write_model_inputs(
             imported_prm_modules[prm_m].write_model_inputs(
                 scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
             )
-        else:
-            pass
 
 
 def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    c,
+    db,
+    results_directory,
+    quiet,
 ):
     """
 
@@ -292,10 +379,17 @@ def import_results_into_database(
     for prm_m in required_prm_type_modules:
         if hasattr(imported_prm_modules[prm_m], "import_results_into_database"):
             imported_prm_modules[prm_m].import_results_into_database(
-                scenario_id, subproblem, stage, c, db, results_directory, quiet
+                scenario_id,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
+                c,
+                db,
+                results_directory,
+                quiet,
             )
-        else:
-            pass
 
 
 def process_results(db, c, scenario_id, subscenarios, quiet):
@@ -330,5 +424,3 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
                 subscenarios=subscenarios,
                 quiet=quiet,
             )
-        else:
-            pass

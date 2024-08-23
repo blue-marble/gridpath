@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,31 +16,17 @@ from pyomo.environ import AbstractModel, DataPortal
 from gridpath.auxiliary.dynamic_components import DynamicComponents
 
 
-def determine_dynamic_components(
-    prereq_modules, module_to_test, test_data_dir, subproblem, stage
-):
-    """
-
-    :param prereq_modules:
-    :param module_to_test:
-    :param dynamic_inputs:
-    :param stage:
-    :param stage:
-    :return:
-    """
-    d = DynamicComponents()
-
-    for mod in prereq_modules:
-        if hasattr(mod, "determine_dynamic_components"):
-            mod.determine_dynamic_components(d, test_data_dir, subproblem, stage)
-    if hasattr(module_to_test, "determine_dynamic_components"):
-        module_to_test.determine_dynamic_components(d, test_data_dir, subproblem, stage)
-
-    return d
-
-
 def add_model_components(
-    prereq_modules, module_to_test, model, d, test_data_dir, subproblem, stage
+    prereq_modules,
+    module_to_test,
+    model,
+    d,
+    test_data_dir,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
 ):
     """
     Create abstract model, add components from prerequisite modules, add
@@ -53,15 +39,40 @@ def add_model_components(
     """
     for m in prereq_modules:
         if hasattr(m, "add_model_components"):
-            m.add_model_components(model, d, test_data_dir, subproblem, stage)
+            m.add_model_components(
+                model,
+                d,
+                test_data_dir,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
+            )
     if hasattr(module_to_test, "add_model_components"):
-        module_to_test.add_model_components(model, d, test_data_dir, subproblem, stage)
+        module_to_test.add_model_components(
+            model,
+            d,
+            test_data_dir,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+        )
 
     return model
 
 
 def create_abstract_model(
-    prereq_modules, module_to_test, test_data_dir, subproblem, stage
+    prereq_modules,
+    module_to_test,
+    test_data_dir,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
 ):
     """
     Determine dynamic components and build abstract model
@@ -72,19 +83,33 @@ def create_abstract_model(
     :param stage:
     :return:
     """
-    d = determine_dynamic_components(
-        prereq_modules, module_to_test, test_data_dir, subproblem, stage
-    )
+    d = DynamicComponents()
     m = AbstractModel()
     add_model_components(
-        prereq_modules, module_to_test, m, d, test_data_dir, subproblem, stage
+        prereq_modules,
+        module_to_test,
+        m,
+        d,
+        test_data_dir,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
     )
 
     return m, d
 
 
 def add_components_and_load_data(
-    prereq_modules, module_to_test, test_data_dir, subproblem, stage
+    prereq_modules,
+    module_to_test,
+    test_data_dir,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
 ):
     """
     Test that data are loaded with no errors
@@ -92,13 +117,40 @@ def add_components_and_load_data(
     """
 
     m, d = create_abstract_model(
-        prereq_modules, module_to_test, test_data_dir, subproblem, stage
+        prereq_modules,
+        module_to_test,
+        test_data_dir,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
     )
     data = DataPortal()
     for mod in prereq_modules:
         if hasattr(mod, "load_model_data"):
-            mod.load_model_data(m, d, data, test_data_dir, subproblem, stage)
+            mod.load_model_data(
+                m,
+                d,
+                data,
+                test_data_dir,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
+            )
     if hasattr(module_to_test, "load_model_data"):
-        module_to_test.load_model_data(m, d, data, test_data_dir, subproblem, stage)
+        module_to_test.load_model_data(
+            m,
+            d,
+            data,
+            test_data_dir,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+        )
 
     return m, data

@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import print_function
 
-from builtins import str
 from collections import OrderedDict
 from importlib import import_module
 import os.path
@@ -71,6 +69,9 @@ class TestELCCSurface(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
+            weather_iteration="",
+            hydro_iteration="",
+            availability_iteration="",
             subproblem="",
             stage="",
         )
@@ -84,6 +85,9 @@ class TestELCCSurface(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
+            weather_iteration="",
+            hydro_iteration="",
+            availability_iteration="",
             subproblem="",
             stage="",
         )
@@ -97,43 +101,57 @@ class TestELCCSurface(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
+            weather_iteration="",
+            hydro_iteration="",
+            availability_iteration="",
             subproblem="",
             stage="",
         )
         instance = m.create_instance(data)
 
-        # Set: PRM_ZONE_PERIOD_ELCC_SURFACE_FACETS
-        expected_z_p_f = sorted(
+        # Set: ELCC_SURFACE_PRM_ZONE_PERIOD_FACETS
+        expected_s_z_p_f = sorted(
             [
-                ("PRM_Zone1", 2020, 1),
-                ("PRM_Zone1", 2020, 2),
-                ("PRM_Zone1", 2030, 1),
-                ("PRM_Zone1", 2030, 2),
-                ("PRM_Zone2", 2020, 1),
-                ("PRM_Zone2", 2020, 2),
-                ("PRM_Zone2", 2030, 1),
-                ("PRM_Zone2", 2030, 2),
+                ("Nuclear", "PRM_Zone1", 2020, 1),
+                ("Nuclear", "PRM_Zone1", 2020, 2),
+                ("Nuclear", "PRM_Zone1", 2030, 1),
+                ("Nuclear", "PRM_Zone1", 2030, 2),
+                ("Wind_Solar", "PRM_Zone1", 2020, 1),
+                ("Wind_Solar", "PRM_Zone1", 2020, 2),
+                ("Wind_Solar", "PRM_Zone1", 2030, 1),
+                ("Wind_Solar", "PRM_Zone1", 2030, 2),
+                ("Wind_Solar", "PRM_Zone2", 2020, 1),
+                ("Wind_Solar", "PRM_Zone2", 2020, 2),
+                ("Wind_Solar", "PRM_Zone2", 2030, 1),
+                ("Wind_Solar", "PRM_Zone2", 2030, 2),
             ]
         )
 
-        actual_z_p_f = sorted(
-            [(z, p, f) for (z, p, f) in instance.PRM_ZONE_PERIOD_ELCC_SURFACE_FACETS]
+        actual_s_z_p_f = sorted(
+            [
+                (s, z, p, f)
+                for (s, z, p, f) in instance.ELCC_SURFACE_PRM_ZONE_PERIOD_FACETS
+            ]
         )
 
-        self.assertListEqual(expected_z_p_f, actual_z_p_f)
+        self.assertListEqual(expected_s_z_p_f, actual_s_z_p_f)
 
         # Param: elcc_surface_intercept
         expected_intercept = OrderedDict(
             sorted(
                 {
-                    ("PRM_Zone1", 2020, 1): 5000,
-                    ("PRM_Zone1", 2020, 2): 6000,
-                    ("PRM_Zone1", 2030, 1): 10000,
-                    ("PRM_Zone1", 2030, 2): 12000,
-                    ("PRM_Zone2", 2020, 1): 1000,
-                    ("PRM_Zone2", 2020, 2): 1100,
-                    ("PRM_Zone2", 2030, 1): 1200,
-                    ("PRM_Zone2", 2030, 2): 1300,
+                    ("Nuclear", "PRM_Zone1", 2020, 1): 5000,
+                    ("Nuclear", "PRM_Zone1", 2020, 2): 6000,
+                    ("Nuclear", "PRM_Zone1", 2030, 1): 10000,
+                    ("Nuclear", "PRM_Zone1", 2030, 2): 12000,
+                    ("Wind_Solar", "PRM_Zone1", 2020, 1): 500,
+                    ("Wind_Solar", "PRM_Zone1", 2020, 2): 600,
+                    ("Wind_Solar", "PRM_Zone1", 2030, 1): 1000,
+                    ("Wind_Solar", "PRM_Zone1", 2030, 2): 1200,
+                    ("Wind_Solar", "PRM_Zone2", 2020, 1): 1000,
+                    ("Wind_Solar", "PRM_Zone2", 2020, 2): 1100,
+                    ("Wind_Solar", "PRM_Zone2", 2030, 1): 1200,
+                    ("Wind_Solar", "PRM_Zone2", 2030, 2): 1300,
                 }.items()
             )
         )
@@ -141,8 +159,8 @@ class TestELCCSurface(unittest.TestCase):
         actual_intercept = OrderedDict(
             sorted(
                 {
-                    (z, p, f): instance.elcc_surface_intercept[z, p, f]
-                    for (z, p, f) in instance.PRM_ZONE_PERIOD_ELCC_SURFACE_FACETS
+                    (s, z, p, f): instance.elcc_surface_intercept[s, z, p, f]
+                    for (s, z, p, f) in instance.ELCC_SURFACE_PRM_ZONE_PERIOD_FACETS
                 }.items()
             )
         )

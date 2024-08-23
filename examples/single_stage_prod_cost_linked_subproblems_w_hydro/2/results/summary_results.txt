@@ -1,0 +1,14 @@
+##### SUMMARY RESULTS FOR SCENARIO *single_stage_prod_cost_linked_subproblems_w_hydro* #####
+
+### CAPACITY RESULTS ###
+
+### OPERATIONAL RESULTS ###
+
+--> Energy Production <--
+                             Annual Energy (MWh)  % Total Power
+load_zone period technology                                    
+Zone1     2020   Coal                       0.00           0.00
+                 Gas                   14,600.00          33.33
+                 Hydro                  8,760.00          20.00
+                 Nuclear               17,520.00          40.00
+                 Wind                   2,920.00           6.67

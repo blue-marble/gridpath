@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -48,6 +48,7 @@ import os.path
 from pyomo.environ import Set, Param, PositiveIntegers
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
+from gridpath.auxiliary.db_interface import directories_to_db_values
 from gridpath.auxiliary.validations import (
     write_validation_to_database,
     get_expected_dtypes,
@@ -58,7 +59,16 @@ from gridpath.auxiliary.validations import (
 )
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     The following Pyomo model components are defined in this module:
 
@@ -181,12 +191,16 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.TMPS_BLN_TYPES = Set(
         dimen=2,
         within=m.TMPS * m.BLN_TYPES,
-        initialize=lambda mod: set(
-            [
-                (tmp, bt)
-                for (bt, h) in mod.BLN_TYPE_HRZS
-                for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, h]
-            ]
+        initialize=lambda mod: sorted(
+            list(
+                set(
+                    [
+                        (tmp, bt)
+                        for (bt, h) in mod.BLN_TYPE_HRZS
+                        for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, h]
+                    ]
+                ),
+            )
         ),
     )
 
@@ -235,7 +249,7 @@ def balancing_types_init(mod):
     BLN_TYPE_HRZS set.
     """
     balancing_types = list()
-    for (b, h) in mod.BLN_TYPE_HRZS:
+    for b, h in mod.BLN_TYPE_HRZS:
         if b in balancing_types:
             pass
         else:
@@ -253,7 +267,7 @@ def horizons_by_balancing_type_init(mod, bt):
     horizons by balancing type.
     """
     horizons_of_balancing_type = []
-    for (b, h) in mod.BLN_TYPE_HRZS:
+    for b, h in mod.BLN_TYPE_HRZS:
         if b == bt:
             horizons_of_balancing_type.append(h)
 
@@ -339,11 +353,28 @@ def next_tmp_init(mod, tmp, bt):
 ###############################################################################
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """ """
     data_portal.load(
         filename=os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "horizons.tab"
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "horizons.tab",
         ),
         select=("balancing_type_horizon", "horizon", "boundary"),
         index=m.BLN_TYPE_HRZS,
@@ -353,8 +384,11 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     with open(
         os.path.join(
             scenario_directory,
-            str(subproblem),
-            str(stage),
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
             "inputs",
             "horizon_timepoints.tab",
         )
@@ -379,7 +413,16 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 ###############################################################################
 
 
-def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -387,37 +430,46 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     :param conn: database connection
     :return:
     """
-    subproblem = 1 if subproblem == "" else subproblem
-    stage = 1 if stage == "" else stage
+
     c1 = conn.cursor()
     horizons = c1.execute(
-        """SELECT horizon, balancing_type_horizon, boundary
+        f"""SELECT horizon, balancing_type_horizon, boundary
         FROM inputs_temporal_horizons
-        WHERE temporal_scenario_id = {}
-        AND subproblem_id = {}
-        ORDER BY balancing_type_horizon, horizon;
-        """.format(
-            subscenarios.TEMPORAL_SCENARIO_ID, subproblem, stage
+        WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+        AND (balancing_type_horizon, horizon) in (
+            SELECT DISTINCT balancing_type_horizon, horizon
+            FROM inputs_temporal_horizon_timepoints
+            WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+            AND subproblem_id = {subproblem}
+            AND stage_id = {stage}
         )
+        ORDER BY balancing_type_horizon, horizon;
+        """
     )
 
     c2 = conn.cursor()
     horizon_timepoints = c2.execute(
-        """SELECT horizon, balancing_type_horizon, timepoint
+        f"""SELECT horizon, balancing_type_horizon, timepoint
         FROM inputs_temporal_horizon_timepoints
-        WHERE temporal_scenario_id = {}
-       AND subproblem_id = {}
-       AND stage_id = {}
-       ORDER BY balancing_type_horizon, timepoint;""".format(
-            subscenarios.TEMPORAL_SCENARIO_ID, subproblem, stage
-        )
+        WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+       AND subproblem_id = {subproblem}
+       AND stage_id = {stage}
+       ORDER BY balancing_type_horizon, timepoint;"""
     )
 
     return horizons, horizon_timepoints
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     Get inputs from database and write out the model input
@@ -430,13 +482,37 @@ def write_model_inputs(
     :return:
     """
 
+    (
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+    ) = directories_to_db_values(
+        weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
+    )
+
     horizons, horizon_timepoints = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+        conn,
     )
 
     with open(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "horizons.tab"
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "horizons.tab",
         ),
         "w",
         newline="",
@@ -452,8 +528,11 @@ def write_model_inputs(
     with open(
         os.path.join(
             scenario_directory,
-            str(subproblem),
-            str(stage),
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
             "inputs",
             "horizon_timepoints.tab",
         ),
@@ -475,7 +554,16 @@ def write_model_inputs(
 ###############################################################################
 
 
-def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -486,7 +574,14 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
 
     hrzs, hrz_tmps = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        conn,
     )
 
     c = conn.cursor()
@@ -495,7 +590,6 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         SELECT balancing_type_horizon, period, horizon
         FROM periods_horizons
         WHERE temporal_scenario_id = {}
-        AND subproblem_id = {}
         and stage_id = {}
         """.format(
             subscenarios.TEMPORAL_SCENARIO_ID, subproblem, stage
@@ -517,6 +611,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -530,6 +627,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -544,6 +644,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -558,6 +661,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -573,6 +679,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -587,6 +696,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,

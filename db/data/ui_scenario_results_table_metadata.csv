@@ -1,41 +1,30 @@
 ﻿results_table,include,caption
-results_project_capacity,1,Project Capacity
-results_project_carbon_emissions,1,Project Carbon Emissions
-results_project_costs_capacity,1,Project Capacity Costs
-results_project_costs_operations,1,Project Operations Costs
-results_project_curtailment_hydro,1,Hydro Project Curtailment
-results_project_curtailment_variable,1,Variable Project Curtailment
-results_project_dispatch,1,Project Dispatch
+results_project_period,1,Project Capacity & Capacity Costs
+results_project_timepoint,1,Project Operations
+results_project_curtailment_hydro_periodagg,1,Hydro Project Curtailment by Period
+results_project_curtailment_variable_periodagg,1,Variable Project Curtailment by Period
 results_project_dispatch_by_technology,1,Dispatch by Technology
 results_project_elcc_simple,1,Project Simple ELCC
 results_project_elcc_surface,1,Project ELCC Surface
-results_project_frequency_response,1,Project Frequency Response
 results_project_fuel_burn,1,Project Fuel Burn
-results_project_lf_reserves_down,1,Project Load-Following Reserves Down
-results_project_lf_reserves_up,1,Project Load-Following Reserves Up
 results_project_local_capacity,1,Project Local Capacity Contribution
-results_project_prm_deliverability,1,Project PRM Deliverability
-results_project_prm_deliverability_group_capacity_and_costs,1,Project PRM Deliverability Group Capacity and Costs
-results_project_regulation_down,1,Project Regulation Down
-results_project_regulation_up,1,Project Regulation Up
-results_project_energy_target,1,Project RPS Contributions
-results_project_spinning_reserves,1,Project Spinning Reserves
-results_system_carbon_emissions,1,System Carbon Emissions
+results_project_deliverability,1,Project PRM Deliverability
+results_project_deliverability_groups,1,Project PRM Deliverability Group Capacity and Costs
+results_system_carbon_cap,1,System Carbon Emissions
 results_system_frequency_response_balance,1,System Frequency Response Balance
 results_system_frequency_response_partial_balance,1,System Frequency Response (Partial) Balance
 results_system_lf_reserves_down_balance,1,System Load-Following Reserves Down Balance
 results_system_lf_reserves_up_balance,1,System Load-Following Reserves Up  Balance
-results_system_load_balance,1,System Load Balance
+results_system_load_zone_timepoint,1,System Load Balance
 results_system_local_capacity,1,System Local Capacity Balance
 results_system_prm,1,System PRM Balance
 results_system_regulation_down_balance,1,System Regulation Down Balance
 results_system_regulation_up_balance,1,System Regulation Up Balance
 results_system_energy_target,1,System RPS
 results_system_spinning_reserves_balance,1,System Spining Reserves Balance
-results_transmission_capacity,1,Transmission Capacity
-results_transmission_capacity_new_build,1,Transmission New Build Capacity
+results_transmission_period,1,Transmission Capacity
+results_transmission_period_new_build,1,Transmission New Build Capacity
 results_transmission_carbon_emissions,1,Transmission Carbon Emissions
 results_transmission_costs_capacity,1,Transmission Capacity Costs
 results_transmission_hurdle_costs,1,Transmission Hurdle Costs
-results_transmission_imports_exports,1,Imports/Exports
-results_transmission_operations,1,Transmission Operations
+results_transmission_timepoint,1,Transmission Operations

@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -86,14 +86,15 @@ def make_column_values_dict(db_path, msg):
     column_values_dict["scenario_name"] = msg["scenarioName"]
 
     for key in msg.keys():
-        if key == "scenarioName":
-            pass
-        elif key == "scenarioDescription":
-            column_values_dict["scenario_description"] = msg["scenarioDescription"]
-        else:
-            id_column, column_value = get_subscenario_id_value(c=c, msg=msg, key=key)
+        if not key == "scenarioName":
+            if key == "scenarioDescription":
+                column_values_dict["scenario_description"] = msg["scenarioDescription"]
+            else:
+                id_column, column_value = get_subscenario_id_value(
+                    c=c, msg=msg, key=key
+                )
 
-            column_values_dict[id_column] = column_value
+                column_values_dict[id_column] = column_value
 
     return column_values_dict
 
@@ -150,6 +151,7 @@ def get_meta_data(c, form_key):
     ui_table = form_key[:sep]
     ui_table_row = form_key[sep + 1 :]
 
+    print(ui_table, ui_table_row)
     (subscenario_table, subscenario_id_column) = c.execute(
         """SELECT ui_row_db_subscenario_table,
       ui_row_db_subscenario_table_id_column

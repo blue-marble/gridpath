@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,6 +25,121 @@ import os.path
 from gridpath.transmission.capacity.common_functions import (
     load_tx_capacity_type_modules,
 )
+
+
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
+    """ """
+
+    # Dynamic Inputs
+    ###########################################################################
+    df = pd.read_csv(
+        os.path.join(
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "transmission_lines.tab",
+        ),
+        sep="\t",
+        usecols=["transmission_line", "tx_capacity_type", "tx_operational_type"],
+    )
+
+    # Required capacity modules are the unique set of tx capacity types
+    # This list will be used to know which capacity modules to load
+    required_tx_capacity_modules = df.tx_capacity_type.unique()
+
+    # Import needed transmission capacity type modules for expression rules
+    imported_tx_capacity_modules = load_tx_capacity_type_modules(
+        required_tx_capacity_modules
+    )
+
+    # Add model components for each of the transmission capacity modules
+    for op_m in required_tx_capacity_modules:
+        imp_op_m = imported_tx_capacity_modules[op_m]
+        if hasattr(imp_op_m, "add_model_components"):
+            imp_op_m.add_model_components(
+                m,
+                d,
+                scenario_directory,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
+            )
+
+
+def load_model_data(
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
+    """
+
+    :param m:
+    :param d:
+    :param data_portal:
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :return:
+    """
+    df = pd.read_csv(
+        os.path.join(
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "transmission_lines.tab",
+        ),
+        sep="\t",
+        usecols=["transmission_line", "tx_capacity_type", "tx_operational_type"],
+    )
+
+    # Required capacity modules are the unique set of tx capacity types
+    # This list will be used to know which capacity modules to load
+    required_tx_capacity_modules = df.tx_capacity_type.unique()
+
+    # Import needed transmission capacity type modules for expression rules
+    imported_tx_capacity_modules = load_tx_capacity_type_modules(
+        required_tx_capacity_modules
+    )
+
+    # Add model components for each of the transmission capacity modules
+    for op_m in required_tx_capacity_modules:
+        if hasattr(imported_tx_capacity_modules[op_m], "load_model_data"):
+            imported_tx_capacity_modules[op_m].load_model_data(
+                m,
+                d,
+                data_portal,
+                scenario_directory,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
+            )
 
 
 def get_required_capacity_type_modules(scenario_id, subscenarios, conn):
@@ -72,7 +187,16 @@ def get_required_capacity_type_modules(scenario_id, subscenarios, conn):
     return required_tx_capacity_modules
 
 
-def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -95,14 +219,27 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     for op_m in required_capacity_type_modules:
         if hasattr(imported_capacity_type_modules[op_m], "validate_inputs"):
             imported_capacity_type_modules[op_m].validate_inputs(
-                scenario_id, subscenarios, subproblem, stage, conn
+                scenario_id,
+                subscenarios,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
+                conn,
             )
-        else:
-            pass
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     Get inputs from database and write out the model input .tab file.
@@ -125,10 +262,16 @@ def write_model_inputs(
     for op_m in required_capacity_type_modules:
         if hasattr(imported_capacity_type_modules[op_m], "write_model_inputs"):
             imported_capacity_type_modules[op_m].write_model_inputs(
-                scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+                scenario_directory,
+                scenario_id,
+                subscenarios,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
+                conn,
             )
-        else:
-            pass
 
 
 # Capacity Type Module Method Defaults
@@ -137,4 +280,14 @@ def new_capacity_rule(mod, prj, prd):
     """
     New capacity built at project g in period p.
     """
+    return 0
+
+
+def capacity_cost_rule(mod, prj, prd):
+    """ """
+    return 0
+
+
+def fixed_cost_rule(mod, prj, prd):
+    """ """
     return 0

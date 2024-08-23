@@ -1,4 +1,4 @@
-# Copyright 2016-2022 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,7 +26,16 @@ import os.path
 from pyomo.environ import Set, Constraint
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     The tables below list the Pyomo model components defined in the
     'gen_commit_bin' module followed below by the respective components
@@ -136,7 +145,17 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
 
-def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    mod,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     :param mod:
     :param data_portal:
@@ -148,8 +167,11 @@ def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
     # Load any projects for cycle selection
     supplemental_firing_tab_file = os.path.join(
         scenario_directory,
-        str(subproblem),
-        str(stage),
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
         "inputs",
         "supplemental_firing.tab",
     )
@@ -166,8 +188,8 @@ def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
                 else:
                     supplemental_firing_by_project[g] = [supplemental_firing_g]
 
-        data_portal.data()["GEN_W_SUPPLEMENTAL_FIRING"] = list(
-            set(supplemental_firing_by_project.keys())
+        data_portal.data()["GEN_W_SUPPLEMENTAL_FIRING"] = sorted(
+            list(set(supplemental_firing_by_project.keys()))
         )
 
         data_portal.data()[

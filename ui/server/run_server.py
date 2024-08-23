@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -121,6 +121,7 @@ add_api_resources(api=api, db_path=DATABASE_PATH)
 
 # ########################## Socket Communication ########################### #
 
+
 # ### DATABASE OPERATIONS ### #
 @socketio.on("add_new_scenario")
 def socket_add_or_edit_new_scenario(msg):
@@ -153,9 +154,7 @@ def socket_launch_scenario_process(client_message):
 
     warn_user_boolean = False if skip_warnings else warn_user(scenario_id=scenario_id)
 
-    if warn_user_boolean:
-        pass
-    else:
+    if not warn_user_boolean:
         # Launch the process, get back the process object, scenario_id,
         # and scenario_name
         p, scenario_id, scenario_name = launch_scenario_process(

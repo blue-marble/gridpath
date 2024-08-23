@@ -1,4 +1,4 @@
-# Copyright 2016-2021 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,10 +17,22 @@ Aggregate delivered energy-target-eligible power from the project-timepoint leve
 the energy-target zone - period level.
 """
 
-from pyomo.environ import Expression
+from pyomo.environ import Expression, value
+
+from gridpath.common_functions import create_results_df
+from gridpath.system.policy.energy_targets import ENERGY_TARGET_ZONE_PRD_DF
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
 
     :param m:
@@ -80,9 +92,51 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             and tmp in mod.TMPS_IN_PRD[p]
         )
 
-    # TODO: is this only needed for export and, if so, should it be created on
-    # export?
     m.Total_Curtailed_Period_Energy_Target_Energy_MWh = Expression(
         m.ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET,
         rule=total_curtailed_energy_target_energy_rule,
     )
+
+
+def export_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
+):
+    """
+
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :param m:
+    :param d:
+    :return:
+    """
+
+    results_columns = [
+        "delivered_energy_target_energy_mwh",
+        "curtailed_energy_target_energy_mwh",
+    ]
+    data = [
+        [
+            z,
+            p,
+            value(m.Total_Delivered_Period_Energy_Target_Energy_MWh[z, p]),
+            value(m.Total_Curtailed_Period_Energy_Target_Energy_MWh[z, p]),
+        ]
+        for (z, p) in m.ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET
+    ]
+    results_df = create_results_df(
+        index_columns=["energy_target_zone", "period"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    for c in results_columns:
+        getattr(d, ENERGY_TARGET_ZONE_PRD_DF)[c] = None
+    getattr(d, ENERGY_TARGET_ZONE_PRD_DF).update(results_df)

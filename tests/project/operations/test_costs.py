@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -69,6 +69,9 @@ class TestOperationalCosts(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
+            weather_iteration="",
+            hydro_iteration="",
+            availability_iteration="",
             subproblem="",
             stage="",
         )
@@ -82,6 +85,9 @@ class TestOperationalCosts(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
+            weather_iteration="",
+            hydro_iteration="",
+            availability_iteration="",
             subproblem="",
             stage="",
         )
@@ -95,6 +101,9 @@ class TestOperationalCosts(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
+            weather_iteration="",
+            hydro_iteration="",
+            availability_iteration="",
             subproblem="",
             stage="",
         )
@@ -163,7 +172,7 @@ class TestOperationalCosts(unittest.TestCase):
             ("Disp_Cont_Commit", 2030): [0],
         }
         expected_var_om_curve_prj_tmp_sgms = list()
-        for (prj, tmp) in expected_var_om_curve_prj_tmps:
+        for prj, tmp in expected_var_om_curve_prj_tmps:
             prd = timepoints_df[timepoints_df["timepoint"] == tmp].iloc[0]["period"]
             segments = expected_segments_by_prj_period[prj, prd]
             for sgm in segments:

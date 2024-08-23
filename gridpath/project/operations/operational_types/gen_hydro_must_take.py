@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -35,7 +35,11 @@ from pyomo.environ import (
 )
 import warnings
 
-from gridpath.auxiliary.auxiliary import subset_init_by_param_value
+from gridpath.auxiliary.auxiliary import (
+    subset_init_by_param_value,
+    subset_init_by_set_membership,
+)
+from gridpath.auxiliary.db_interface import directories_to_db_values
 from gridpath.auxiliary.dynamic_components import headroom_variables, footroom_variables
 from gridpath.project.common_functions import (
     check_if_boundary_type_and_first_timepoint,
@@ -51,9 +55,19 @@ from gridpath.project.operations.operational_types.common_functions import (
     validate_opchars,
     validate_hydro_opchars,
 )
+from gridpath.common_functions import create_results_df
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     The following Pyomo model components are defined in this module:
 
@@ -254,12 +268,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.GEN_HYDRO_MUST_TAKE_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: list(
-            set(
-                (g, tmp)
-                for (g, tmp) in mod.PRJ_OPR_TMPS
-                if g in mod.GEN_HYDRO_MUST_TAKE
-            )
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod,
+            superset="PRJ_OPR_TMPS",
+            index=0,
+            membership_set=mod.GEN_HYDRO_MUST_TAKE,
         ),
     )
 
@@ -652,7 +665,17 @@ def power_delta_rule(mod, g, tmp):
 ###############################################################################
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
 
     :param m:
@@ -669,6 +692,9 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         mod=m,
         data_portal=data_portal,
         scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         op_type="gen_hydro_must_take",
@@ -678,6 +704,9 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     load_hydro_opchars(
         data_portal=data_portal,
         scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         op_type="gen_hydro_must_take",
@@ -687,8 +716,8 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     # Linked timepoint params
     linked_inputs_filename = os.path.join(
         scenario_directory,
-        str(subproblem),
-        str(stage),
+        subproblem,
+        stage,
         "inputs",
         "gen_hydro_must_take_linked_timepoint_params.tab",
     )
@@ -702,11 +731,42 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                 m.gen_hydro_must_take_linked_downwards_reserves,
             ),
         )
-    else:
-        pass
 
 
-def export_results(mod, d, scenario_directory, subproblem, stage):
+def add_to_prj_tmp_results(mod):
+    results_columns = [
+        "gross_power_mw",
+        "auxiliary_consumption_mw",
+    ]
+    data = [
+        [
+            prj,
+            tmp,
+            value(mod.GenHydroMustTake_Gross_Power_MW[prj, tmp]),
+            value(mod.GenHydroMustTake_Auxiliary_Consumption_MW[prj, tmp]),
+        ]
+        for (prj, tmp) in mod.GEN_HYDRO_MUST_TAKE_OPR_TMPS
+    ]
+
+    optype_dispatch_df = create_results_df(
+        index_columns=["project", "timepoint"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    return results_columns, optype_dispatch_df
+
+
+def export_results(
+    mod,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
 
     :param scenario_directory:
@@ -716,52 +776,8 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
     :param d:
     :return:
     """
-    with open(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "dispatch_gen_hydro_must_take.csv",
-        ),
-        "w",
-        newline="",
-    ) as f:
-        writer = csv.writer(f)
-        writer.writerow(
-            [
-                "project",
-                "period",
-                "balancing_type_project",
-                "horizon",
-                "timepoint",
-                "timepoint_weight",
-                "number_of_hours_in_timepoint",
-                "technology",
-                "load_zone",
-                "power_mw",
-                "gross_power_mw",
-                "auxiliary_consumption_mw",
-            ]
-        )
 
-        for (p, tmp) in mod.GEN_HYDRO_MUST_TAKE_OPR_TMPS:
-            writer.writerow(
-                [
-                    p,
-                    mod.period[tmp],
-                    mod.balancing_type_project[p],
-                    mod.horizon[tmp, mod.balancing_type_project[p]],
-                    tmp,
-                    mod.tmp_weight[tmp],
-                    mod.hrs_in_tmp[tmp],
-                    mod.technology[p],
-                    mod.load_zone[p],
-                    value(mod.Power_Provision_MW[p, tmp]),
-                    value(mod.GenHydroMustTake_Gross_Power_MW[p, tmp]),
-                    value(mod.GenHydroMustTake_Auxiliary_Consumption_MW[p, tmp]),
-                ]
-            )
+    # Dispatch results added to project_timepoint.csv via add_to_prj_tmp_results()
 
     # If there's a linked_subproblems_map CSV file, check which of the
     # current subproblem TMPS we should export results for to link to the
@@ -780,6 +796,9 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
         with open(
             os.path.join(
                 scenario_directory,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
                 next_subproblem,
                 stage,
                 "inputs",
@@ -798,13 +817,13 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
                     "linked_downward_reserves",
                 ]
             )
-            for (p, tmp) in sorted(mod.GEN_HYDRO_MUST_TAKE_OPR_TMPS):
+            for p, tmp in sorted(mod.GEN_HYDRO_MUST_TAKE_OPR_TMPS):
                 if tmp in tmps_to_link:
                     writer.writerow(
                         [
                             p,
                             tmp_linked_tmp_dict[tmp],
-                            max(value(mod.GenHydroMustTake_Gross_Power_MW_[p, tmp]), 0),
+                            max(value(mod.GenHydroMustTake_Gross_Power_MW[p, tmp]), 0),
                             max(
                                 value(mod.GenHydroMustTake_Upwards_Reserves_MW[p, tmp]),
                                 0,
@@ -823,7 +842,16 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
 ###############################################################################
 
 
-def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_model_inputs_from_database(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -831,18 +859,38 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
     :param conn: database connection
     :return: cursor object with query results
     """
+
+    (
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+    ) = directories_to_db_values(
+        weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
+    )
+
     return get_hydro_inputs_from_database(
-        scenario_id,
         subscenarios,
-        subproblem,
-        stage,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
         conn,
         op_type="gen_hydro_must_take",
     )
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     Get inputs from database and write out the model input
@@ -856,18 +904,43 @@ def write_model_inputs(
     """
 
     data = get_model_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        conn,
     )
     fname = "hydro_conventional_horizon_params.tab"
 
-    write_tab_file_model_inputs(scenario_directory, subproblem, stage, fname, data)
+    write_tab_file_model_inputs(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        fname,
+        data,
+    )
 
 
 # Validation
 ###############################################################################
 
 
-def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -879,12 +952,28 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
 
     # Validate operational chars table inputs
     validate_opchars(
-        scenario_id, subscenarios, subproblem, stage, conn, "gen_hydro_must_take"
+        scenario_id,
+        subscenarios,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        conn,
+        "gen_hydro_must_take",
     )
 
     # Validate hydro opchars input table
     hydro_opchar_fraction_error = validate_hydro_opchars(
-        scenario_id, subscenarios, subproblem, stage, conn, "gen_hydro_must_take"
+        scenario_id,
+        subscenarios,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        conn,
+        "gen_hydro_must_take",
     )
 
     if hydro_opchar_fraction_error:

@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,16 +21,25 @@ import os.path
 import pandas as pd
 from pyomo.environ import Set, Param, Constraint, NonNegativeReals, Expression, value
 
-from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file
+from gridpath.auxiliary.auxiliary import get_required_subtype_modules
+from gridpath.common_functions import duals_wrapper, none_dual_type_error_wrapper
 from gridpath.project.capacity.common_functions import (
     load_project_capacity_type_modules,
 )
-from gridpath.auxiliary.db_interface import setup_results_import
+from gridpath.auxiliary.db_interface import import_csv, directories_to_db_values
 import gridpath.project.capacity.capacity_types as cap_type_init
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     The following Pyomo model components are defined in this module:
 
@@ -136,7 +145,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.CAPACITY_GROUP_PERIODS = Set(dimen=2)
 
     m.CAPACITY_GROUPS = Set(
-        initialize=lambda mod: list(set([g for (g, p) in mod.CAPACITY_GROUP_PERIODS]))
+        initialize=lambda mod: sorted(
+            list(set([g for (g, p) in mod.CAPACITY_GROUP_PERIODS]))
+        )
     )
 
     m.PROJECTS_IN_CAPACITY_GROUP = Set(m.CAPACITY_GROUPS, within=m.PROJECTS)
@@ -156,8 +167,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
     # Import needed capacity type modules
-    required_capacity_modules = get_required_subtype_modules_from_projects_file(
+    required_capacity_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         which_type="capacity_type",
@@ -234,44 +248,69 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 # Constraint Formulation Rules
 ###############################################################################
 def new_capacity_max_rule(mod, grp, prd):
-    return (
-        mod.Group_New_Capacity_in_Period[grp, prd]
-        <= mod.capacity_group_new_capacity_max[grp, prd]
-    )
+    if mod.capacity_group_new_capacity_max[grp, prd] == float("inf"):
+        return Constraint.Feasible
+    else:
+        return (
+            mod.Group_New_Capacity_in_Period[grp, prd]
+            <= mod.capacity_group_new_capacity_max[grp, prd]
+        )
 
 
 def new_capacity_min_rule(mod, grp, prd):
-    return (
-        mod.Group_New_Capacity_in_Period[grp, prd]
-        >= mod.capacity_group_new_capacity_min[grp, prd]
-    )
+    if mod.capacity_group_new_capacity_min[grp, prd] == 0:
+        return Constraint.Feasible
+    else:
+        return (
+            mod.Group_New_Capacity_in_Period[grp, prd]
+            >= mod.capacity_group_new_capacity_min[grp, prd]
+        )
 
 
 def total_capacity_max_rule(mod, grp, prd):
-    return (
-        mod.Group_Total_Capacity_in_Period[grp, prd]
-        <= mod.capacity_group_total_capacity_max[grp, prd]
-    )
+    if mod.capacity_group_total_capacity_max[grp, prd] == float("inf"):
+        return Constraint.Feasible
+    else:
+        return (
+            mod.Group_Total_Capacity_in_Period[grp, prd]
+            <= mod.capacity_group_total_capacity_max[grp, prd]
+        )
 
 
 def total_capacity_min_rule(mod, grp, prd):
-    return (
-        mod.Group_Total_Capacity_in_Period[grp, prd]
-        >= mod.capacity_group_total_capacity_min[grp, prd]
-    )
+    if mod.capacity_group_total_capacity_min[grp, prd] == 0:
+        return Constraint.Feasible
+    else:
+        return (
+            mod.Group_Total_Capacity_in_Period[grp, prd]
+            >= mod.capacity_group_total_capacity_min[grp, prd]
+        )
 
 
 # Input-Output
 ###############################################################################
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """ """
     # Only load data if the input files were written; otehrwise, we won't
     # initialize the components in this module
 
     req_file = os.path.join(
         scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
         subproblem,
         stage,
         "inputs",
@@ -288,11 +327,16 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                 m.capacity_group_total_capacity_max,
             ),
         )
-    else:
-        pass
 
     prj_file = os.path.join(
-        scenario_directory, subproblem, stage, "inputs", "capacity_group_projects.tab"
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+        "capacity_group_projects.tab",
     )
     if os.path.exists(prj_file):
         proj_groups_df = pd.read_csv(prj_file, delimiter="\t")
@@ -301,31 +345,51 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             for g, v in proj_groups_df.groupby("capacity_group")
         }
         data_portal.data()["PROJECTS_IN_CAPACITY_GROUP"] = proj_groups_dict
-    else:
-        pass
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
+):
     """ """
     req_file = os.path.join(
         scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
         subproblem,
         stage,
         "inputs",
         "capacity_group_requirements.tab",
     )
     prj_file = os.path.join(
-        scenario_directory, subproblem, stage, "inputs", "capacity_group_projects.tab"
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+        "capacity_group_projects.tab",
     )
 
     if os.path.exists(req_file) and os.path.exists(prj_file):
         with open(
             os.path.join(
                 scenario_directory,
-                str(subproblem),
-                str(stage),
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
                 "results",
-                "capacity_groups.csv",
+                "project_group_capacity.csv",
             ),
             "w",
             newline="",
@@ -335,15 +399,24 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 [
                     "capacity_group",
                     "period",
-                    "new_capacity",
-                    "total_capacity",
+                    "group_new_capacity",
+                    "group_total_capacity",
                     "capacity_group_new_capacity_min",
                     "capacity_group_new_capacity_max",
                     "capacity_group_total_capacity_min",
                     "capacity_group_total_capacity_max",
+                    "capacity_group_new_max_dual",
+                    "capacity_group_new_min_dual",
+                    "capacity_group_total_max_dual",
+                    "capacity_group_total_min_dual",
+                    "capacity_group_new_max_marginal_cost",
+                    "capacity_group_new_min_marginal_cost",
+                    "capacity_group_total_max_marginal_cost",
+                    "capacity_group_total_min_marginal_cost",
                 ]
             )
-            for (grp, prd) in m.CAPACITY_GROUP_PERIODS:
+
+            for grp, prd in sorted(m.CAPACITY_GROUP_PERIODS):
                 writer.writerow(
                     [
                         grp,
@@ -354,6 +427,147 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                         m.capacity_group_new_capacity_max[grp, prd],
                         m.capacity_group_total_capacity_min[grp, prd],
                         m.capacity_group_total_capacity_max[grp, prd],
+                        (
+                            duals_wrapper(
+                                m,
+                                getattr(m, "Max_Group_Build_in_Period_Constraint")[
+                                    grp, prd
+                                ],
+                            )
+                            if (grp, prd)
+                            in [
+                                idx
+                                for idx in getattr(
+                                    m, "Max_Group_Build_in_Period_Constraint"
+                                )
+                            ]
+                            else None
+                        ),
+                        (
+                            duals_wrapper(
+                                m,
+                                getattr(m, "Min_Group_Build_in_Period_Constraint")[
+                                    grp, prd
+                                ],
+                            )
+                            if (grp, prd)
+                            in [
+                                idx
+                                for idx in getattr(
+                                    m, "Min_Group_Build_in_Period_Constraint"
+                                )
+                            ]
+                            else None
+                        ),
+                        (
+                            duals_wrapper(
+                                m,
+                                (
+                                    getattr(
+                                        m, "Max_Group_Total_Cap_in_Period_Constraint"
+                                    )[grp, prd]
+                                    if (grp, prd)
+                                    in [
+                                        idx
+                                        for idx in getattr(
+                                            m,
+                                            "Max_Group_Total_Cap_in_Period_Constraint",
+                                        )
+                                    ]
+                                    else None
+                                ),
+                                duals_wrapper(
+                                    m,
+                                    getattr(
+                                        m, "Min_Group_Total_Cap_in_Period_Constraint"
+                                    )[grp, prd],
+                                ),
+                            )
+                            if (grp, prd)
+                            in [
+                                idx
+                                for idx in getattr(
+                                    m, "Min_Group_Total_Cap_in_Period_Constraint"
+                                )
+                            ]
+                            else None
+                        ),
+                        (
+                            none_dual_type_error_wrapper(
+                                duals_wrapper(
+                                    m,
+                                    getattr(m, "Max_Group_Build_in_Period_Constraint")[
+                                        grp, prd
+                                    ],
+                                ),
+                                m.period_objective_coefficient[prd],
+                            )
+                            if (grp, prd)
+                            in [
+                                idx
+                                for idx in getattr(
+                                    m, "Max_Group_Build_in_Period_Constraint"
+                                )
+                            ]
+                            else None
+                        ),
+                        (
+                            none_dual_type_error_wrapper(
+                                duals_wrapper(
+                                    m,
+                                    getattr(m, "Min_Group_Build_in_Period_Constraint")[
+                                        grp, prd
+                                    ],
+                                ),
+                                m.period_objective_coefficient[prd],
+                            )
+                            if (grp, prd)
+                            in [
+                                idx
+                                for idx in getattr(
+                                    m, "Min_Group_Build_in_Period_Constraint"
+                                )
+                            ]
+                            else None
+                        ),
+                        (
+                            none_dual_type_error_wrapper(
+                                duals_wrapper(
+                                    m,
+                                    getattr(
+                                        m, "Max_Group_Total_Cap_in_Period_Constraint"
+                                    )[grp, prd],
+                                ),
+                                m.period_objective_coefficient[prd],
+                            )
+                            if (grp, prd)
+                            in [
+                                idx
+                                for idx in getattr(
+                                    m, "Max_Group_Total_Cap_in_Period_Constraint"
+                                )
+                            ]
+                            else None
+                        ),
+                        (
+                            none_dual_type_error_wrapper(
+                                duals_wrapper(
+                                    m,
+                                    getattr(
+                                        m, "Min_Group_Total_Cap_in_Period_Constraint"
+                                    )[grp, prd],
+                                ),
+                                m.period_objective_coefficient[prd],
+                            )
+                            if (grp, prd)
+                            in [
+                                idx
+                                for idx in getattr(
+                                    m, "Min_Group_Total_Cap_in_Period_Constraint"
+                                )
+                            ]
+                            else None
+                        ),
                     ]
                 )
 
@@ -362,7 +576,16 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 ###############################################################################
 
 
-def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -389,9 +612,15 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         """
         SELECT capacity_group, project
         FROM inputs_project_capacity_groups
-        WHERE project_capacity_group_scenario_id = {}
+        WHERE project_capacity_group_scenario_id = {prj_cap_group_sid}
+        AND project in (
+            SELECT DISTINCT project
+            FROM inputs_project_portfolios
+            WHERE project_portfolio_scenario_id = {prj_portfolio_sid}
+            )
         """.format(
-            subscenarios.PROJECT_CAPACITY_GROUP_SCENARIO_ID
+            prj_cap_group_sid=subscenarios.PROJECT_CAPACITY_GROUP_SCENARIO_ID,
+            prj_portfolio_sid=subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
         )
     )
 
@@ -399,11 +628,37 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """ """
+
+    (
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+    ) = directories_to_db_values(
+        weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
+    )
+
     cap_grp_reqs, cap_grp_prj = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+        conn,
     )
 
     # Write the input files only if a subscenario is specified
@@ -411,8 +666,11 @@ def write_model_inputs(
         with open(
             os.path.join(
                 scenario_directory,
-                str(subproblem),
-                str(stage),
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
                 "inputs",
                 "capacity_group_requirements.tab",
             ),
@@ -441,8 +699,11 @@ def write_model_inputs(
         with open(
             os.path.join(
                 scenario_directory,
-                str(subproblem),
-                str(stage),
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
                 "inputs",
                 "capacity_group_projects.tab",
             ),
@@ -458,71 +719,67 @@ def write_model_inputs(
                 writer.writerow(row)
 
 
-def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
+def save_duals(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    instance,
+    dynamic_components,
 ):
-    # Import only if a results-file was exported
-    results_file = os.path.join(results_directory, "capacity_groups.csv")
-    if os.path.exists(results_file):
-        if not quiet:
-            print("group capacity")
+    instance.constraint_indices["Max_Group_Build_in_Period_Constraint"] = [
+        "capacity_group",
+        "period",
+        "dual",
+    ]
 
-        # Delete prior results and create temporary import table for ordering
-        setup_results_import(
+    instance.constraint_indices["Min_Group_Build_in_Period_Constraint"] = [
+        "capacity_group",
+        "period",
+        "dual",
+    ]
+
+    instance.constraint_indices["Max_Group_Total_Cap_in_Period_Constraint"] = [
+        "capacity_group",
+        "period",
+        "dual",
+    ]
+
+    instance.constraint_indices["Min_Group_Total_Cap_in_Period_Constraint"] = [
+        "capacity_group",
+        "period",
+        "dual",
+    ]
+
+
+def import_results_into_database(
+    scenario_id,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    c,
+    db,
+    results_directory,
+    quiet,
+):
+    which_results = "project_group_capacity"
+    # Import only if a results-file was exported
+    results_file = os.path.join(results_directory, f"{which_results}.csv")
+    if os.path.exists(results_file):
+        import_csv(
             conn=db,
             cursor=c,
-            table="results_project_group_capacity",
             scenario_id=scenario_id,
+            weather_iteration=weather_iteration,
+            hydro_iteration=hydro_iteration,
+            availability_iteration=availability_iteration,
             subproblem=subproblem,
             stage=stage,
+            quiet=quiet,
+            results_directory=results_directory,
+            which_results=which_results,
         )
-
-        # Load results into the temporary table
-        results = []
-        with open(results_file, "r") as f:
-            reader = csv.reader(f)
-
-            next(reader)  # skip header
-            for row in reader:
-                results.append((scenario_id, subproblem, stage) + tuple(row))
-
-        insert_temp_sql = """
-            INSERT INTO temp_results_project_group_capacity{}
-            (scenario_id, subproblem_id, stage_id, 
-            capacity_group, period, 
-            group_new_capacity, group_total_capacity,
-            capacity_group_new_capacity_min, 
-            capacity_group_new_capacity_max, 
-            capacity_group_total_capacity_min, 
-            capacity_group_total_capacity_max)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-            """.format(
-            scenario_id
-        )
-        spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
-
-        # Insert sorted results into permanent results table
-        insert_sql = """
-            INSERT INTO results_project_group_capacity
-            (scenario_id, subproblem_id, stage_id, 
-            capacity_group, period, 
-            group_new_capacity, group_total_capacity,
-            capacity_group_new_capacity_min, 
-            capacity_group_new_capacity_max, 
-            capacity_group_total_capacity_min, 
-            capacity_group_total_capacity_max)
-            SELECT
-            scenario_id, subproblem_id, stage_id, 
-            capacity_group, period, 
-            group_new_capacity, group_total_capacity,
-            capacity_group_new_capacity_min, 
-            capacity_group_new_capacity_max, 
-            capacity_group_total_capacity_min, 
-            capacity_group_total_capacity_max
-            FROM temp_results_project_group_capacity{}
-             ORDER BY scenario_id, subproblem_id, stage_id,
-             capacity_group, period;
-            """.format(
-            scenario_id
-        )
-        spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)

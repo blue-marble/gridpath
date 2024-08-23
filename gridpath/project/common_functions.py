@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,7 +24,15 @@ import pandas as pd
 # TODO: use this in capacity and operational type project subset
 #  determinations
 def determine_project_subset(
-    scenario_directory, subproblem, stage, column, type, prj_or_tx
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    column,
+    type,
+    prj_or_tx,
 ):
     """
     :param scenario_directory:
@@ -41,8 +49,11 @@ def determine_project_subset(
     dynamic_components = pd.read_csv(
         os.path.join(
             scenario_directory,
-            str(subproblem),
-            str(stage),
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
             "inputs",
             "{}s.tab".format(prj_or_tx),
         ),
@@ -53,8 +64,6 @@ def determine_project_subset(
     for row in zip(dynamic_components[prj_or_tx], dynamic_components[column]):
         if row[1] == type:
             project_subset.append(row[0])
-        else:
-            pass
 
     return project_subset
 
@@ -127,6 +136,7 @@ def append_to_input_file(
         dict_by_project[indx] = ["." if x is None else x for x in indx_char]
 
     # Open the projects file
+
     with open(os.path.join(inputs_directory, input_file), "r") as f_in:
         # Read in the file
         reader = csv.reader(f_in, delimiter="\t", lineterminator="\n")

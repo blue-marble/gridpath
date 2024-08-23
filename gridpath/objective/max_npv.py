@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -37,6 +37,9 @@ be standard for all systems. Examples currently include:
 
 Market costs and revenues may also be included.
 
+GridPath can include costs on carbon emissions, so certain formulations can
+interpreted as minimizing emissions.
+
 All revenue and costs are in net present value terms, with a user-specified
 discount factor applied depending on the period.
 """
@@ -55,7 +58,16 @@ from gridpath.auxiliary.dynamic_components import cost_components, revenue_compo
 from gridpath.auxiliary.db_interface import setup_results_import
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     :param m: the Pyomo abstract model object we are adding components to
     :param d: the DynamicComponents class object we will get components from
@@ -94,7 +106,16 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 ###############################################################################
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_summary_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
+):
     """
     Export objective function cost components
     :param scenario_directory:
@@ -109,7 +130,14 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     """
     with open(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "results", "npv.csv"
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "results",
+            "npv.csv",
         ),
         "w",
         newline="",
@@ -125,7 +153,16 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 
 
 def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    c,
+    db,
+    results_directory,
+    quiet,
 ):
     """
     :param scenario_id:
@@ -145,12 +182,17 @@ def import_results_into_database(
         cursor=c,
         table="results_system_costs",
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
     )
 
     df = pd.read_csv(os.path.join(results_directory, "npv.csv"))
     df["scenario_id"] = scenario_id
+    df["weather_iteration"] = weather_iteration
+    df["hydro_iteration"] = hydro_iteration
     df["subproblem_id"] = subproblem
     df["stage_id"] = stage
     results = df.to_records(index=False)

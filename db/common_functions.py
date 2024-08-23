@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,7 +30,6 @@ def connect_to_database(db_path="../db/io.db", timeout=5, detect_types=0):
 
     Connect to a database and return the connection object.
     """
-
     if not os.path.isfile(db_path):
         raise OSError(
             "The database file {} was not found. Did you mean to "
@@ -45,6 +44,7 @@ def connect_to_database(db_path="../db/io.db", timeout=5, detect_types=0):
     return conn
 
 
+# TODO: move to spin_database_lock_generic
 def spin_on_database_lock(
     conn, cursor, sql, data, many=True, max_attempts=61, interval=10, quiet=True
 ):
@@ -76,10 +76,7 @@ def spin_on_database_lock(
         print(sql)
 
     for i in range(0, max_attempts):
-        if i == 0:
-            # print("initial attempt")
-            pass
-        else:
+        if i > 0:
             print("...retrying (attempt {} of {})...".format(i, max_attempts))
         try:
             if many:
@@ -103,6 +100,58 @@ def spin_on_database_lock(
                     time.sleep(interval)
             else:
                 print("Error while running the following query:\n", sql)
+                traceback.print_exc()
+                sys.exit()
+        # Do this if exception not caught
+        else:
+            # print("...done.")
+            break
+
+
+def spin_on_database_lock_generic(
+    command,
+    max_attempts=61,
+    interval=10,
+):
+    """
+    :param command:
+    :param max_attempts: how long to wait for the database lock to be
+        released; the default is 600 seconds, but that can be overridden
+    :param interval: how frequently to poll the database for whether
+        the lock has been released; the default is 10 seconds, but that can
+        be overridden
+
+    If the database is locked, wait for the lock to be released for a
+    certain amount of time and occasionally retry to execute the SQL
+    statement until the timeout.
+
+    To lock the database deliberately, run the following:
+        PRAGMA locking_mode = EXCLUSIVE;
+        BEGIN EXCLUSIVE;
+    The database will be locked until you run:
+        COMMIT;
+    """
+    for i in range(0, max_attempts):
+        if i > 0:
+            print("...retrying (attempt {} of {})...".format(i, max_attempts))
+        try:
+            command
+        except sqlite3.OperationalError as e:
+            if "locked" in str(e):
+                print(
+                    "Database is locked, sleeping for {} seconds, "
+                    "then retrying.".format(interval)
+                )
+                if i == max_attempts:
+                    print(
+                        "Database still locked after {} seconds. "
+                        "Exiting.".format(max_attempts * interval)
+                    )
+                    sys.exit(1)
+                else:
+                    time.sleep(interval)
+            else:
+                print("Error while running the following query:\n", command)
                 traceback.print_exc()
                 sys.exit()
         # Do this if exception not caught

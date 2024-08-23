@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,8 +23,12 @@ The main() function of this script can also be called with the
 import argparse
 from csv import reader, writer
 import datetime
+import dill
+import json
 from multiprocessing import get_context, Manager
 import os.path
+import xml.etree.ElementTree as ET
+
 from pyomo.environ import (
     AbstractModel,
     Suffix,
@@ -36,11 +40,17 @@ from pyomo.environ import (
 
 # from pyomo.util.infeasible import log_infeasible_constraints
 from pyomo.common.tempfiles import TempfileManager
+from pyomo.core import ComponentUID, SymbolMap
+import pyomo.environ
+from pyomo.opt import ReaderFactory, ResultsFormat, ProblemFormat
 import sys
 import warnings
 
 from gridpath.auxiliary.import_export_rules import import_export_rules
-from gridpath.auxiliary.scenario_chars import get_subproblem_structure_from_disk
+from gridpath.auxiliary.scenario_chars import (
+    get_scenario_structure_from_disk,
+    ScenarioDirectoryStructure,
+)
 from gridpath.common_functions import (
     determine_scenario_directory,
     get_scenario_name_parser,
@@ -48,12 +58,22 @@ from gridpath.common_functions import (
     get_run_scenario_parser,
     create_logs_directory_if_not_exists,
     Logging,
+    ensure_empty_string,
 )
 from gridpath.auxiliary.dynamic_components import DynamicComponents
 from gridpath.auxiliary.module_list import determine_modules, load_modules
 
 
-def create_and_solve_problem(scenario_directory, subproblem, stage, parsed_arguments):
+def create_problem(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    multi_stage,
+    parsed_arguments,
+):
     """
     :param scenario_directory: the main scenario directory
     :param subproblem: the horizon subproblem name
@@ -64,7 +84,7 @@ def create_and_solve_problem(scenario_directory, subproblem, stage, parsed_argum
         dynamic components class), instance (the problem instance), results
         (the optimization results)
 
-    This method creates the problem instance and solves it.
+    This method creates the problem instance.
 
     To create the problem, we use a Pyomo AbstractModel() class. We will add
     Pyomo optimization components to this class, will load data into the
@@ -82,9 +102,9 @@ def create_and_solve_problem(scenario_directory, subproblem, stage, parsed_argum
     method) and load the input data into its components (see
     *load_scenario_data*).
 
-    Finally, we compile and solve the problem (*create_problem_instance* and
-    *solve* methods respectively). If any variables need to be fixed,
-    this is done before solving (see the *fix_variables* method).
+    Finally, we compile the problem (see *create_problem_instance* method).
+    If any variables need to be fixed, this is done as the last step here
+    (see the *fix_variables* method).
     """
     # Create pyomo abstract model class
     model = AbstractModel()
@@ -92,14 +112,22 @@ def create_and_solve_problem(scenario_directory, subproblem, stage, parsed_argum
 
     # Determine/load modules and dynamic components
     modules_to_use, loaded_modules = set_up_gridpath_modules(
-        scenario_directory=scenario_directory, subproblem=subproblem, stage=stage
+        scenario_directory=scenario_directory, multi_stage=multi_stage
     )
 
     # Create the abstract model; some components are initialized here
     if not parsed_arguments.quiet:
         print("Building model...")
     create_abstract_model(
-        model, dynamic_components, loaded_modules, scenario_directory, subproblem, stage
+        model,
+        dynamic_components,
+        loaded_modules,
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
     )
 
     # Create a dual suffix component
@@ -110,7 +138,15 @@ def create_and_solve_problem(scenario_directory, subproblem, stage, parsed_argum
     if not parsed_arguments.quiet:
         print("Loading data...")
     scenario_data = load_scenario_data(
-        model, dynamic_components, loaded_modules, scenario_directory, subproblem, stage
+        model,
+        dynamic_components,
+        loaded_modules,
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
     )
 
     if not parsed_arguments.quiet:
@@ -122,23 +158,34 @@ def create_and_solve_problem(scenario_directory, subproblem, stage, parsed_argum
         instance,
         dynamic_components,
         scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
         subproblem,
         stage,
         loaded_modules,
     )
 
+    return dynamic_components, instance
+
+
+def solve_problem(parsed_arguments, instance):
     # Solve
     if not parsed_arguments.quiet:
         print("Solving...")
     results = solve(instance, parsed_arguments)
 
-    return instance, results, dynamic_components
+    return instance, results
 
 
 def run_optimization_for_subproblem_stage(
     scenario_directory,
+    weather_iteration_directory,
+    hydro_iteration_directory,
+    availability_iteration_directory,
     subproblem_directory,
     stage_directory,
+    multi_stage,
     parsed_arguments,
 ):
     """
@@ -151,7 +198,8 @@ def run_optimization_for_subproblem_stage(
 
     Log each run in the (sub)problem directory if requested by the user.
 
-    Create and solve the (sub)problem. See *create_and_solve_problem* method.
+    Create and solve the (sub)problem (See *create_problem* and
+    *solve_problem* methods respectively).
 
     Save results. See *save_results()* method.
 
@@ -164,10 +212,15 @@ def run_optimization_for_subproblem_stage(
     # If directed to do so, log optimization run
     if parsed_arguments.log:
         logs_directory = create_logs_directory_if_not_exists(
-            scenario_directory, subproblem_directory, stage_directory
+            scenario_directory,
+            weather_iteration_directory,
+            hydro_iteration_directory,
+            availability_iteration_directory,
+            subproblem_directory,
+            stage_directory,
         )
 
-        # Save sys.stdout so we can return to it later
+        # Save sys.stdout, so we can return to it later
         stdout_original = sys.stdout
         stderr_original = sys.stderr
 
@@ -184,76 +237,183 @@ def run_optimization_for_subproblem_stage(
         sys.stdout = logger
         sys.stderr = logger
 
-    # If directed, set temporary file directory to be the logs directory
-    # In conjunction with --keepfiles, this will write the solver solution
-    # files into the log directory (rather than a hidden temp folder).
-    # Use the --symbolic argument as well for best debugging results
-    if parsed_arguments.write_solver_files_to_logs_dir:
-        logs_directory = create_logs_directory_if_not_exists(
-            scenario_directory, subproblem_directory, stage_directory
+    # Determine whether to skip this optimization
+    skip_solve = False
+    if parsed_arguments.incomplete_only:
+        termination_condition_file = os.path.join(
+            scenario_directory,
+            subproblem_directory,
+            stage_directory,
+            "results",
+            "termination_condition.txt",
         )
-        TempfileManager.tempdir = logs_directory
+        if os.path.isfile(termination_condition_file):
+            with open(termination_condition_file, "r") as f:
+                termination_condition = f.read()
+            if not parsed_arguments.quiet:
+                print(
+                    f"Subproblem stage {subproblem_directory} "
+                    f"{stage_directory} "
+                    f"previously solved with termination condition "
+                    f"**{termination_condition}**. Skipping solve."
+                )
+                skip_solve = True
 
-    if not parsed_arguments.quiet:
-        print(
-            "\nRunning optimization for scenario {}".format(
-                scenario_directory.split("/")[-1]
+    if not skip_solve:
+        # If directed, set temporary file directory to be the logs directory
+        # In conjunction with --keepfiles, this will write the solver solution
+        # files into the log directory (rather than a hidden temp folder).
+        # Use the --symbolic argument as well for best debugging results
+        if parsed_arguments.write_solver_files_to_logs_dir:
+            logs_directory = create_logs_directory_if_not_exists(
+                scenario_directory,
+                weather_iteration_directory,
+                hydro_iteration_directory,
+                availability_iteration_directory,
+                subproblem_directory,
+                stage_directory,
             )
+            TempfileManager.tempdir = logs_directory
+
+        if not parsed_arguments.quiet:
+            print(
+                "\nRunning optimization for scenario {}".format(
+                    scenario_directory.split("/")[-1]
+                )
+            )
+            if subproblem_directory != "":
+                print("--- subproblem {}".format(subproblem_directory))
+            if stage_directory != "":
+                print("--- stage {}".format(stage_directory))
+
+        # We're expecting subproblem and stage to be strings downstream from here
+        subproblem_directory = str(subproblem_directory)
+        stage_directory = str(stage_directory)
+
+        # Used only if we are writing problem files or loading solutions
+        prob_sol_files_directory = os.path.join(
+            scenario_directory, subproblem_directory, stage_directory, "prob_sol_files"
         )
-        if subproblem_directory != "":
-            print("--- subproblem {}".format(subproblem_directory))
-        if stage_directory != "":
-            print("--- stage {}".format(stage_directory))
 
-    # We're expecting subproblem and stage to be strings downstream from here
-    subproblem_directory = str(subproblem_directory)
-    stage_directory = str(stage_directory)
+        # Create problem instance and either save the problem file or solve the instance
+        # TODO: incompatible options
+        # If we are loading a solution, skip the compilation step; we'll use the saved
+        # instance and dynamic components
+        if parsed_arguments.load_cplex_solution:
+            solved_instance, results, dynamic_components = load_cplex_xml_solution(
+                prob_sol_files_directory=prob_sol_files_directory,
+                solution_filename="cplex_solution.sol",
+            )
+        elif parsed_arguments.load_gurobi_solution:
+            solved_instance, results, dynamic_components = load_gurobi_json_solution(
+                prob_sol_files_directory=prob_sol_files_directory,
+                solution_filename="gurobi_solution.json",
+            )
+        else:
+            dynamic_components, instance = create_problem(
+                scenario_directory=scenario_directory,
+                weather_iteration=weather_iteration_directory,
+                hydro_iteration=hydro_iteration_directory,
+                availability_iteration=availability_iteration_directory,
+                subproblem=subproblem_directory,
+                stage=stage_directory,
+                multi_stage=multi_stage,
+                parsed_arguments=parsed_arguments,
+            )
 
-    # Create problem instance and solve it
-    solved_instance, results, dynamic_components = create_and_solve_problem(
-        scenario_directory, subproblem_directory, stage_directory, parsed_arguments
-    )
+            if parsed_arguments.create_lp_problem_file_only:
+                prob_sol_files_directory = os.path.join(
+                    scenario_directory,
+                    subproblem_directory,
+                    stage_directory,
+                    "prob_sol_files",
+                )
+                if not os.path.exists(prob_sol_files_directory):
+                    os.makedirs(prob_sol_files_directory)
+                with open(
+                    os.path.join(prob_sol_files_directory, "instance.pickle"), "wb"
+                ) as f_out:
+                    dill.dump(instance, f_out)
+                with open(
+                    os.path.join(prob_sol_files_directory, "dynamic_components.pickle"),
+                    "wb",
+                ) as f_out:
+                    dill.dump(dynamic_components, f_out)
 
-    # Save the scenario results to disk
-    save_results(
-        scenario_directory,
-        subproblem_directory,
-        stage_directory,
-        solved_instance,
-        results,
-        dynamic_components,
-        parsed_arguments,
-    )
+                smap_id = write_problem_file(
+                    instance=instance, prob_sol_files_directory=prob_sol_files_directory
+                )
+                symbol_map = instance.solutions.symbol_map[smap_id]
 
-    # Summarize results
-    summarize_results(
-        scenario_directory,
-        subproblem_directory,
-        stage_directory,
-        parsed_arguments,
-    )
+                symbol_cuid_pairs = tuple(
+                    (symbol, ComponentUID(var_weakref(), cuid_buffer={}))
+                    for symbol, var_weakref in symbol_map.bySymbol.items()
+                )
 
-    # If logging, we need to return sys.stdout to original (i.e. stop writing
-    # to log file)
-    if parsed_arguments.log:
-        sys.stdout = stdout_original
-        sys.stderr = stderr_original
+                with open(
+                    os.path.join(prob_sol_files_directory, "symbol_map.pickle"), "wb"
+                ) as f_out:
+                    dill.dump(symbol_cuid_pairs, f_out)
 
-    # Return the objective function value (in the testing suite, the value
-    # gets checked against the expected value, but this is the only place
-    # this is actually used)
-    # TODO: this will need to have a variable for the name of the objective
-    #  function component once there are multiple possible objective functions
-    if results.solver.termination_condition != "infeasible":
-        return solved_instance.NPV()
-    else:
-        warnings.warn("WARNING: the problem was infeasible!")
+                print("Problem file written to {}".format(prob_sol_files_directory))
+                sys.exit()
+            else:
+                solved_instance, results = solve_problem(
+                    parsed_arguments=parsed_arguments,
+                    instance=instance,
+                )
+
+        # Save the scenario results to disk
+        save_results(
+            scenario_directory,
+            weather_iteration_directory,
+            hydro_iteration_directory,
+            availability_iteration_directory,
+            subproblem_directory,
+            stage_directory,
+            multi_stage,
+            solved_instance,
+            results,
+            dynamic_components,
+            parsed_arguments,
+        )
+
+        # Summarize results
+        summarize_results(
+            scenario_directory,
+            weather_iteration_directory,
+            hydro_iteration_directory,
+            availability_iteration_directory,
+            subproblem_directory,
+            stage_directory,
+            multi_stage,
+            parsed_arguments,
+        )
+
+        # If logging, we need to return sys.stdout to original (i.e. stop writing
+        # to log file)
+        if parsed_arguments.log:
+            sys.stdout = stdout_original
+            sys.stderr = stderr_original
+
+        # Return the objective function value (in the testing suite, the value
+        # gets checked against the expected value, but this is the only place
+        # this is actually used)
+        if results.solver.termination_condition != "infeasible":
+            if parsed_arguments.testing:
+                return solved_instance.NPV()
+        else:
+            warnings.warn("WARNING: the problem was infeasible!")
 
 
 def run_optimization_for_subproblem(
     scenario_directory,
-    subproblem_structure,
-    subproblem,
+    weather_iteration_directory,
+    hydro_iteration_directory,
+    availability_iteration_directory,
+    subproblem_directory,
+    stage_directories,
+    multi_stage,
     parsed_arguments,
     objective_values,
 ):
@@ -261,39 +421,27 @@ def run_optimization_for_subproblem(
     Check if there are stages in the subproblem; if not solve subproblem;
     if, yes, solve each stage sequentially
     """
+    subproblem = 1 if subproblem_directory == "" else int(subproblem_directory)
 
-    # If we only have a single subproblem AND it does not have stages, set the
-    # subproblem_string to an empty string (the subproblem directory should not
-    # have been created)
-    # If we have multiple subproblems or a single subproblems with stages,
-    # we're expecting a subproblem directory
-    if list(subproblem_structure.SUBPROBLEM_STAGES.keys()) == [
-        1
-    ] and subproblem_structure.SUBPROBLEM_STAGES[subproblem] == [1]:
-        subproblem_directory = ""
-    else:
-        subproblem_directory = str(subproblem)
-
-    # If no stages in this subproblem (empty list), run the
-    # subproblem
-    if subproblem_structure.SUBPROBLEM_STAGES[subproblem] == [1]:
-        stage_directory = ""
-        objective_values[subproblem] = run_optimization_for_subproblem_stage(
+    for stage_directory in stage_directories:
+        stage = 1 if stage_directory == "" else int(stage_directory)
+        objective_values[
+            (
+                weather_iteration_directory,
+                hydro_iteration_directory,
+                availability_iteration_directory,
+                subproblem,
+            )
+        ][stage] = run_optimization_for_subproblem_stage(
             scenario_directory,
+            weather_iteration_directory,
+            hydro_iteration_directory,
+            availability_iteration_directory,
             subproblem_directory,
             stage_directory,
+            multi_stage,
             parsed_arguments,
         )
-    # Otherwise, run the stage problem
-    else:
-        for stage in subproblem_structure.SUBPROBLEM_STAGES[subproblem]:
-            stage_directory = str(stage)
-            objective_values[subproblem][stage] = run_optimization_for_subproblem_stage(
-                scenario_directory,
-                subproblem_directory,
-                stage_directory,
-                parsed_arguments,
-            )
 
 
 def run_optimization_for_subproblem_pool(pool_datum):
@@ -303,24 +451,116 @@ def run_optimization_for_subproblem_pool(pool_datum):
     """
     [
         scenario_directory,
-        subproblem_structure,
-        subproblem,
+        weather_iteration_directory,
+        hydro_iteration_directory,
+        availability_iteration_directory,
+        subproblem_directory,
+        stage_directories,
+        multi_stage,
         parsed_arguments,
         objective_values,
     ] = pool_datum
 
     run_optimization_for_subproblem(
         scenario_directory=scenario_directory,
-        subproblem_structure=subproblem_structure,
-        subproblem=subproblem,
+        weather_iteration_directory=weather_iteration_directory,
+        hydro_iteration_directory=hydro_iteration_directory,
+        availability_iteration_directory=availability_iteration_directory,
+        subproblem_directory=subproblem_directory,
+        stage_directories=stage_directories,
+        multi_stage=multi_stage,
         parsed_arguments=parsed_arguments,
         objective_values=objective_values,
     )
 
 
+def solve_sequentially(
+    iteration_directory_strings,
+    subproblem_stage_directory_strings,
+    scenario_directory,
+    scenario_structure,
+    parsed_arguments,
+):
+    # Create dictionary with which we'll keep track of subproblem/stage
+    # objective function values
+    objective_values = {}
+
+    # TODO: refactor this
+    for weather_iteration_str in iteration_directory_strings.keys():
+        for hydro_iteration_str in iteration_directory_strings[
+            weather_iteration_str
+        ].keys():
+            for availability_iteration_str in iteration_directory_strings[
+                weather_iteration_str
+            ][hydro_iteration_str]:
+                # We may have passed "empty_string" to avoid actual empty
+                # strings as dictionary keys; convert to actual empty
+                # strings here to pass to the directory creation methods
+                weather_iteration_str = ensure_empty_string(weather_iteration_str)
+                hydro_iteration_str = ensure_empty_string(hydro_iteration_str)
+                availability_iteration_str = ensure_empty_string(
+                    availability_iteration_str
+                )
+
+                for subproblem_str in subproblem_stage_directory_strings.keys():
+                    subproblem = 1 if subproblem_str == "" else int(subproblem_str)
+
+                    # Write pass through input file headers
+                    # TODO: this is not the best place for this; we should
+                    #  probably set up the gridpath modules only once and do
+                    #  this first
+                    #  It needs to be created BEFORE stage 1 is run; it could
+                    #  alternatively be created by the first stage that
+                    #  exports pass through inputs, but this will require
+                    #  changes to the formulation (for commitment)
+                    if scenario_structure.MULTI_STAGE:
+                        create_pass_through_inputs(
+                            scenario_directory,
+                            scenario_structure,
+                            subproblem_str,
+                            weather_iteration_str,
+                            hydro_iteration_str,
+                            availability_iteration_str,
+                        )
+
+                    objective_values[
+                        (
+                            weather_iteration_str,
+                            hydro_iteration_str,
+                            availability_iteration_str,
+                            subproblem,
+                        )
+                    ] = {}
+                    run_optimization_for_subproblem(
+                        scenario_directory=scenario_directory,
+                        weather_iteration_directory=weather_iteration_str,
+                        hydro_iteration_directory=hydro_iteration_str,
+                        availability_iteration_directory=availability_iteration_str,
+                        subproblem_directory=subproblem_str,
+                        stage_directories=subproblem_stage_directory_strings[
+                            subproblem_str
+                        ],
+                        multi_stage=scenario_structure.MULTI_STAGE,
+                        parsed_arguments=parsed_arguments,
+                        objective_values=objective_values,
+                    )
+
+            # TODO: Should probably just remove this logic here and have a
+            # dictionary for all objective functions
+            if len(objective_values.keys()) == 1:
+                objective_values = objective_values[list(objective_values.keys())[0]]
+                if isinstance(objective_values, dict):
+                    if len(objective_values.keys()) == 1:
+                        objective_values = objective_values[
+                            list(objective_values.keys())[0]
+                        ]
+
+    return objective_values
+
+
 def run_scenario(
     scenario_directory,
-    subproblem_structure,
+    scenario_structure,
     parsed_arguments,
 ):
     """
@@ -331,11 +571,20 @@ def run_scenario(
     are in 'testing' mode.
 
     :param scenario_directory: scenario directory path
-    :param subproblem_structure: the subproblem structure object
+    :param scenario_structure: the subproblem structure object
     :param parsed_arguments:
     :return: the objective function value (NPV); only used in
      'testing' mode.
     """
+
+    iteration_directory_strings = ScenarioDirectoryStructure(
+        scenario_structure
+    ).ITERATION_DIRECTORIES
+    subproblem_stage_directory_strings = ScenarioDirectoryStructure(
+        scenario_structure
+    ).SUBPROBLEM_STAGE_DIRECTORIES
+
+    # TODO: consolidate parallelization checks
     try:
         n_parallel_subproblems = int(parsed_arguments.n_parallel_solve)
     except ValueError:
@@ -346,36 +595,23 @@ def run_scenario(
         n_parallel_subproblems = 1
 
     # If only a single subproblem, run main problem
-    if list(subproblem_structure.SUBPROBLEM_STAGES.keys()) == [1]:
+    if len(list(scenario_structure.SUBPROBLEM_STAGES.keys())) == 1:
         if n_parallel_subproblems > 1:
             warnings.warn(
                 "GridPath WARNING: only a single subproblem in "
                 "scenario. No parallelization possible."
             )
         n_parallel_subproblems = 1
-    else:
-        pass
 
     # If parallelization is not requested, solve sequentially
     if n_parallel_subproblems == 1:
-        # Create dictionary with which we'll keep track of subproblem/stage
-        # objective function values
-        objective_values = {}
-
-        for subproblem in list(subproblem_structure.SUBPROBLEM_STAGES.keys()):
-            objective_values[subproblem] = {}
-            run_optimization_for_subproblem(
-                scenario_directory=scenario_directory,
-                subproblem_structure=subproblem_structure,
-                subproblem=subproblem,
-                parsed_arguments=parsed_arguments,
-                objective_values=objective_values,
-            )
-
-        # Should probably just remove this logic here and have a dictionary
-        # for all objective functions
-        if len(objective_values.keys()) == 1:
-            objective_values = objective_values[1]
+        objective_values = solve_sequentially(
+            iteration_directory_strings=iteration_directory_strings,
+            subproblem_stage_directory_strings=subproblem_stage_directory_strings,
+            scenario_directory=scenario_directory,
+            scenario_structure=scenario_structure,
+            parsed_arguments=parsed_arguments,
+        )
 
         return objective_values
 
@@ -392,19 +628,13 @@ def run_scenario(
                 "cannot be solved in parallel. Solving "
                 "sequentially."
             )
-            # Solve sequentially
-            objective_values = {}
-            for subproblem in list(subproblem_structure.SUBPROBLEM_STAGES.keys()):
-                run_optimization_for_subproblem(
-                    scenario_directory=scenario_directory,
-                    subproblem_structure=subproblem_structure,
-                    subproblem=subproblem,
-                    parsed_arguments=parsed_arguments,
-                    objective_values=objective_values,
-                )
-
-            if len(objective_values.keys()) == 1:
-                objective_values = objective_values[1]
+            objective_values = solve_sequentially(
+                iteration_directory_strings=iteration_directory_strings,
+                subproblem_stage_directory_strings=subproblem_stage_directory_strings,
+                scenario_directory=scenario_directory,
+                scenario_structure=scenario_structure,
+                parsed_arguments=parsed_arguments,
+            )
 
             return objective_values
 
@@ -416,23 +646,84 @@ def run_scenario(
             manager = Manager()
             objective_values = manager.dict()
 
-            for subproblem in subproblem_structure.SUBPROBLEM_STAGES.keys():
-                objective_values[subproblem] = manager.dict()
+            for weather_iteration_str in iteration_directory_strings.keys():
+                for hydro_iteration_str in iteration_directory_strings[
+                    weather_iteration_str
+                ].keys():
+                    for availability_iteration_str in iteration_directory_strings[
+                        weather_iteration_str
+                    ][hydro_iteration_str]:
+                        # We may have passed "empty_string" to avoid actual empty
+                        # strings as dictionary keys; convert to actual empty
+                        # strings here to pass to the directory creation methods
+                        weather_iteration_str = ensure_empty_string(
+                            weather_iteration_str
+                        )
+                        hydro_iteration_str = ensure_empty_string(hydro_iteration_str)
+                        availability_iteration_str = ensure_empty_string(
+                            availability_iteration_str
+                        )
+                        for subproblem_str in subproblem_stage_directory_strings.keys():
+                            if scenario_structure.MULTI_STAGE:
+                                create_pass_through_inputs(
+                                    scenario_directory,
+                                    scenario_structure,
+                                    subproblem_str,
+                                    weather_iteration_str,
+                                    hydro_iteration_str,
+                                    availability_iteration_str,
+                                )
+
+                            # TODO: create management of iteration objective functions
+                            subproblem = (
+                                1 if subproblem_str == "" else int(subproblem_str)
+                            )
+                            objective_values[
+                                (
+                                    weather_iteration_str,
+                                    hydro_iteration_str,
+                                    availability_iteration_str,
+                                    subproblem,
+                                )
+                            ] = manager.dict()
 
             # Pool must use spawn to work properly on Linux
             pool = get_context("spawn").Pool(n_parallel_subproblems)
-            pool_data = tuple(
-                [
-                    [
-                        scenario_directory,
-                        subproblem_structure,
-                        subproblem,
-                        parsed_arguments,
-                        objective_values,
-                    ]
-                    for subproblem in subproblem_structure.SUBPROBLEM_STAGES.keys()
-                ]
-            )
+
+            pool_data = []
+            for weather_iteration_str in iteration_directory_strings.keys():
+                for hydro_iteration_str in iteration_directory_strings[
+                    weather_iteration_str
+                ].keys():
+                    for availability_iteration_str in iteration_directory_strings[
+                        weather_iteration_str
+                    ][hydro_iteration_str]:
+                        # We may have passed "empty_string" to avoid actual empty
+                        # strings as dictionary keys; convert to actual empty
+                        # strings here to pass to the directory creation methods
+                        weather_iteration_str = ensure_empty_string(
+                            weather_iteration_str
+                        )
+                        hydro_iteration_str = ensure_empty_string(hydro_iteration_str)
+                        availability_iteration_str = ensure_empty_string(
+                            availability_iteration_str
+                        )
+                        for subproblem_str in subproblem_stage_directory_strings.keys():
+                            pool_data.append(
+                                [
+                                    scenario_directory,
+                                    weather_iteration_str,
+                                    hydro_iteration_str,
+                                    availability_iteration_str,
+                                    subproblem_str,
+                                    subproblem_stage_directory_strings[subproblem_str],
+                                    scenario_structure.MULTI_STAGE,
+                                    parsed_arguments,
+                                    objective_values,
+                                ]
+                            )
+
+            pool_data = tuple(pool_data)
 
             pool.map(run_optimization_for_subproblem_pool, pool_data)
             pool.close()
@@ -440,10 +731,44 @@ def run_scenario(
             return objective_values
 
 
+def create_pass_through_inputs(
+    scenario_directory,
+    scenario_structure,
+    subproblem_str,
+    weather_iteration_str,
+    hydro_iteration_str,
+    availability_iteration_str,
+):
+    modules_to_use, loaded_modules = set_up_gridpath_modules(
+        scenario_directory=scenario_directory,
+        multi_stage=scenario_structure.MULTI_STAGE,
+    )
+    pass_through_directory = os.path.join(
+        scenario_directory,
+        weather_iteration_str,
+        hydro_iteration_str,
+        availability_iteration_str,
+        subproblem_str,
+        "pass_through_inputs",
+    )
+    if not os.path.exists(pass_through_directory):
+        os.makedirs(pass_through_directory)
+    for m in loaded_modules:
+        # Writing the headers will delete prior data in the file
+        if hasattr(m, "write_pass_through_file_headers"):
+            m.write_pass_through_file_headers(
+                pass_through_directory=pass_through_directory
+            )
+
+
 def save_results(
     scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
+    multi_stage,
     instance,
     results,
     dynamic_components,
@@ -469,7 +794,13 @@ def save_results(
 
     # TODO: how best to handle non-empty results directories?
     results_directory = os.path.join(
-        scenario_directory, str(subproblem), str(stage), "results"
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "results",
     )
     if not os.path.exists(results_directory):
         os.makedirs(results_directory)
@@ -489,14 +820,12 @@ def save_results(
     if results.solver.status == SolverStatus.ok:
         if not parsed_arguments.quiet:
             print(
-                "Solver termination condition: {}.".format(
+                "...solver termination condition: {}.".format(
                     results.solver.termination_condition
                 )
             )
-            if results.solver.termination_condition == TerminationCondition.optimal:
-                print("Optimal solution found.")
-            else:
-                print("Solution is not optimal.")
+        if results.solver.termination_condition != TerminationCondition.optimal:
+            warnings.warn("   ...solution is not optimal.")
         # Continue with results export
         # Parse arguments to see if we're following a special rule for whether to
         # export results
@@ -506,20 +835,82 @@ def save_results(
             export_rule = import_export_rules[parsed_arguments.results_export_rule][
                 "export"
             ](instance=instance, quiet=parsed_arguments.quiet)
+
+        if not parsed_arguments.quiet:
+            print("...exporting detailed CSV results")
         export_results(
-            scenario_directory,
-            subproblem,
-            stage,
-            instance,
-            dynamic_components,
-            export_rule,
+            scenario_directory=scenario_directory,
+            weather_iteration=weather_iteration,
+            hydro_iteration=hydro_iteration,
+            availability_iteration=availability_iteration,
+            subproblem=subproblem,
+            stage=stage,
+            multi_stage=multi_stage,
+            instance=instance,
+            dynamic_components=dynamic_components,
+            export_rule=export_rule,
+            verbose=parsed_arguments.verbose,
         )
 
-        export_pass_through_inputs(scenario_directory, subproblem, stage, instance)
+        if parsed_arguments.results_export_summary_rule is None:
+            export_summary_rule = _export_summary_results_rule(
+                instance=instance, quiet=parsed_arguments.quiet
+            )
+        else:
+            export_summary_rule = import_export_rules[
+                parsed_arguments.results_export_summary_rule
+            ]["export_summary"](instance=instance, quiet=parsed_arguments.quiet)
 
-        save_objective_function_value(scenario_directory, subproblem, stage, instance)
+        if not parsed_arguments.quiet:
+            print("...exporting summary CSV results")
+        export_summary_results(
+            scenario_directory=scenario_directory,
+            weather_iteration=weather_iteration,
+            hydro_iteration=hydro_iteration,
+            availability_iteration=availability_iteration,
+            subproblem=subproblem,
+            stage=stage,
+            multi_stage=multi_stage,
+            instance=instance,
+            dynamic_components=dynamic_components,
+            export_summary_results_rule=export_summary_rule,
+            verbose=parsed_arguments.verbose,
+        )
 
-        save_duals(scenario_directory, subproblem, stage, instance)
+        export_pass_through_inputs(
+            scenario_directory=scenario_directory,
+            weather_iteration=weather_iteration,
+            hydro_iteration=hydro_iteration,
+            availability_iteration=availability_iteration,
+            subproblem=subproblem,
+            stage=stage,
+            multi_stage=multi_stage,
+            instance=instance,
+            verbose=parsed_arguments.verbose,
+        )
+
+        save_objective_function_value(
+            scenario_directory=scenario_directory,
+            weather_iteration=weather_iteration,
+            hydro_iteration=hydro_iteration,
+            availability_iteration=availability_iteration,
+            subproblem=subproblem,
+            stage=stage,
+            instance=instance,
+        )
+
+        save_duals(
+            scenario_directory=scenario_directory,
+            weather_iteration=weather_iteration,
+            hydro_iteration=hydro_iteration,
+            availability_iteration=availability_iteration,
+            subproblem=subproblem,
+            stage=stage,
+            multi_stage=multi_stage,
+            instance=instance,
+            dynamic_components=dynamic_components,
+            verbose=parsed_arguments.verbose,
+        )
     # If solver status is not ok, don't export results and print some
     # messages for the user
     else:
@@ -539,12 +930,18 @@ def save_results(
                     "Subproblem {}, stage {} was infeasible. "
                     "Exiting linked subproblem run.".format(subproblem, stage)
                 )
-            else:
-                pass
 
 
 def create_abstract_model(
-    model, dynamic_components, loaded_modules, scenario_directory, subproblem, stage
+    model,
+    dynamic_components,
+    loaded_modules,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
 ):
     """
     :param model: the Pyomo AbstractModel object
@@ -563,12 +960,27 @@ def create_abstract_model(
     for m in loaded_modules:
         if hasattr(m, "add_model_components"):
             m.add_model_components(
-                model, dynamic_components, scenario_directory, subproblem, stage
+                model,
+                dynamic_components,
+                scenario_directory,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
             )
 
 
 def load_scenario_data(
-    model, dynamic_components, loaded_modules, scenario_directory, subproblem, stage
+    model,
+    dynamic_components,
+    loaded_modules,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
 ):
     """
     :param model: the Pyomo abstract model object with components added
@@ -594,11 +1006,12 @@ def load_scenario_data(
                 dynamic_components,
                 data_portal,
                 scenario_directory,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
                 subproblem,
                 stage,
             )
-        else:
-            pass
     return data_portal
 
 
@@ -618,7 +1031,15 @@ def create_problem_instance(model, loaded_data):
 
 
 def fix_variables(
-    instance, dynamic_components, scenario_directory, subproblem, stage, loaded_modules
+    instance,
+    dynamic_components,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    loaded_modules,
 ):
     """
     :param instance: the compiled problem instance
@@ -636,10 +1057,15 @@ def fix_variables(
     for m in loaded_modules:
         if hasattr(m, "fix_variables"):
             m.fix_variables(
-                instance, dynamic_components, scenario_directory, subproblem, stage
+                instance,
+                dynamic_components,
+                scenario_directory,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
             )
-        else:
-            pass
 
     return instance
 
@@ -691,9 +1117,7 @@ def solve(instance, parsed_arguments):
         # Check the the solver name specified is the same as that given from the
         # command line (if any)
         if parsed_arguments.solver is not None:
-            if parsed_arguments.solver == solver_options["solver_name"]:
-                pass
-            else:
+            if not parsed_arguments.solver == solver_options["solver_name"]:
                 raise UserWarning(
                     "ERROR! Solver specified on command line ({}) and solver name "
                     "in solver_options.csv ({}) do not match.".format(
@@ -745,9 +1169,7 @@ def solve(instance, parsed_arguments):
                 "$onecho > {solver}.opt".format(solver=solver_options["solver"]),
             ]
             for opt in solver_options.keys():
-                if opt == "solver":
-                    pass
-                else:
+                if not opt == "solver":
                     opt_string = "{option} {value}".format(
                         option=opt, value=solver_options[opt]
                     )
@@ -788,14 +1210,27 @@ def solve(instance, parsed_arguments):
 
 
 def export_results(
-    scenario_directory, subproblem, stage, instance, dynamic_components, export_rule
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    multi_stage,
+    instance,
+    dynamic_components,
+    export_rule,
+    verbose,
 ):
     """
     :param scenario_directory:
+    :param hydro_iteration:
     :param subproblem:
     :param stage:
     :param instance:
     :param dynamic_components:
+    :param export_rule:
+    :param verbose:
     :return:
 
     Export results for each loaded module (if applicable)
@@ -803,45 +1238,131 @@ def export_results(
     if export_rule:
         # Determine/load modules and dynamic components
         modules_to_use, loaded_modules = set_up_gridpath_modules(
-            scenario_directory=scenario_directory, subproblem=subproblem, stage=stage
+            scenario_directory=scenario_directory, multi_stage=multi_stage
         )
 
+        n = 0
         for m in loaded_modules:
             if hasattr(m, "export_results"):
+                if verbose:
+                    print(f"... {modules_to_use[n]}")
                 m.export_results(
-                    scenario_directory, subproblem, stage, instance, dynamic_components
+                    scenario_directory,
+                    weather_iteration,
+                    hydro_iteration,
+                    availability_iteration,
+                    subproblem,
+                    stage,
+                    instance,
+                    dynamic_components,
                 )
-        else:
-            pass
+
+            n += 1
 
 
-def export_pass_through_inputs(scenario_directory, subproblem, stage, instance):
+def export_summary_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    multi_stage,
+    instance,
+    dynamic_components,
+    export_summary_results_rule,
+    verbose,
+):
+    """
+    :param scenario_directory:
+    :param hydro_iteration:
+    :param subproblem:
+    :param stage:
+    :param instance:
+    :param dynamic_components:
+    :param export_rule:
+    :param verbose:
+    :return:
+
+    Export results for each loaded module (if applicable)
+    """
+    if export_summary_results_rule:
+        # Determine/load modules and dynamic components
+        modules_to_use, loaded_modules = set_up_gridpath_modules(
+            scenario_directory=scenario_directory, multi_stage=multi_stage
+        )
+
+        n = 0
+        for m in loaded_modules:
+            if hasattr(m, "export_summary_results"):
+                if verbose:
+                    print(f"... {modules_to_use[n]}")
+                m.export_summary_results(
+                    scenario_directory,
+                    weather_iteration,
+                    hydro_iteration,
+                    availability_iteration,
+                    subproblem,
+                    stage,
+                    instance,
+                    dynamic_components,
+                )
+
+            n += 1
+
+
+def export_pass_through_inputs(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    multi_stage,
+    instance,
+    verbose,
+):
     """
     :param scenario_directory:
     :param subproblem:
     :param stage:
     :param instance:
-    :param dynamic_components:
-    :param loaded_modules:
+    :param verbose:
     :return:
 
     Export pass through inputs for each loaded module (if applicable)
     """
     # Determine/load modules and dynamic components
     modules_to_use, loaded_modules = set_up_gridpath_modules(
-        scenario_directory=scenario_directory, subproblem=subproblem, stage=stage
+        scenario_directory=scenario_directory, multi_stage=multi_stage
     )
 
+    n = 0
     for m in loaded_modules:
         if hasattr(m, "export_pass_through_inputs"):
+            if verbose:
+                print(f"... {modules_to_use[n]}")
             m.export_pass_through_inputs(
-                scenario_directory, subproblem, stage, instance
+                scenario_directory,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
+                instance,
             )
-    else:
-        pass
+        n += 1
 
 
-def save_objective_function_value(scenario_directory, subproblem, stage, instance):
+def save_objective_function_value(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    instance,
+):
     """
     Save the objective function value.
     :param scenario_directory:
@@ -859,6 +1380,9 @@ def save_objective_function_value(scenario_directory, subproblem, stage, instanc
     with open(
         os.path.join(
             scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
             subproblem,
             stage,
             "results",
@@ -867,65 +1391,67 @@ def save_objective_function_value(scenario_directory, subproblem, stage, instanc
         "w",
         newline="",
     ) as objective_file:
-        objective_file.write("Objective function: " + str(objective_function_value))
-        # TODO: change to writing the value only when we implement importing
-        #  the objective function value into the results_scenario table
-        # objective_file.write(str(objective_function_value))
+        objective_file.write(str(objective_function_value))
 
 
-def save_duals(scenario_directory, subproblem, stage, instance):
+def save_duals(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    multi_stage,
+    instance,
+    dynamic_components,
+    verbose,
+):
     """
     :param scenario_directory:
     :param subproblem:
     :param stage:
     :param instance:
+    :param dynamic_components:
+    :param verbose:
     :return:
 
     Save the duals of various constraints.
     """
     # Determine/load modules and dynamic components
     modules_to_use, loaded_modules = set_up_gridpath_modules(
-        scenario_directory=scenario_directory, subproblem=subproblem, stage=stage
+        scenario_directory=scenario_directory, multi_stage=multi_stage
     )
 
     instance.constraint_indices = {}
+
+    n = 0
     for m in loaded_modules:
+        if verbose:
+            print(f"... {modules_to_use[n]}")
         if hasattr(m, "save_duals"):
-            m.save_duals(instance)
-        else:
-            pass
-
-    for c in list(instance.constraint_indices.keys()):
-        constraint_object = getattr(instance, c)
-        with open(
-            os.path.join(
-                scenario_directory, subproblem, stage, "results", str(c) + ".csv"
-            ),
-            "w",
-            newline="",
-        ) as duals_results_file:
-            duals_writer = writer(duals_results_file)
-            duals_writer.writerow(instance.constraint_indices[c])
-            for index in constraint_object:
-                try:
-                    duals_writer.writerow(
-                        list(index) + [instance.dual[constraint_object[index]]]
-                    )
-                # We get an error when trying to export duals with CPLEX
-                # when solving MIPs, so catch it here and ignore to avoid
-                # breaking the script, but throw a warning
-                except KeyError:
-                    warnings.warn(
-                        """
-                    KeyError caught when saving duals. Duals were not exported.
-                    This is expected if solving a MIP with CPLEX, 
-                    not otherwise.
-                    """
-                    )
-                    pass
+            m.save_duals(
+                scenario_directory,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
+                instance,
+                dynamic_components,
+            )
+        n += 1
 
 
-def summarize_results(scenario_directory, subproblem, stage, parsed_arguments):
+def summarize_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    multi_stage,
+    parsed_arguments,
+):
     """
     :param scenario_directory:
     :param subproblem:
@@ -938,6 +1464,9 @@ def summarize_results(scenario_directory, subproblem, stage, parsed_arguments):
     if parsed_arguments.results_export_rule is None:
         summarize_rule = _summarize_rule(
             scenario_directory=scenario_directory,
+            weather_iteration=weather_iteration,
+            hydro_iteration=hydro_iteration,
+            availability_iteration=availability_iteration,
             subproblem=subproblem,
             stage=stage,
             quiet=parsed_arguments.quiet,
@@ -947,6 +1476,9 @@ def summarize_results(scenario_directory, subproblem, stage, parsed_arguments):
             "summarize"
         ](
             scenario_directory=scenario_directory,
+            weather_iteration=weather_iteration,
+            hydro_iteration=hydro_iteration,
+            availability_iteration=availability_iteration,
             subproblem=subproblem,
             stage=stage,
             quiet=parsed_arguments.quiet,
@@ -956,7 +1488,14 @@ def summarize_results(scenario_directory, subproblem, stage, parsed_arguments):
         # Only summarize results if solver status was "optimal"
         with open(
             os.path.join(
-                scenario_directory, subproblem, stage, "results", "solver_status.txt"
+                scenario_directory,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
+                "results",
+                "solver_status.txt",
             ),
             "r",
         ) as f:
@@ -968,14 +1507,19 @@ def summarize_results(scenario_directory, subproblem, stage, parsed_arguments):
 
             # Determine/load modules and dynamic components
             modules_to_use, loaded_modules = set_up_gridpath_modules(
-                scenario_directory=scenario_directory,
-                subproblem=subproblem,
-                stage=stage,
+                scenario_directory=scenario_directory, multi_stage=multi_stage
             )
 
             # Make the summary results file
             summary_results_file = os.path.join(
-                scenario_directory, subproblem, stage, "results", "summary_results.txt"
+                scenario_directory,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
+                "results",
+                "summary_results.txt",
             )
 
             # TODO: how to handle results from previous runs
@@ -988,16 +1532,23 @@ def summarize_results(scenario_directory, subproblem, stage, parsed_arguments):
                 )
 
             # Go through the modules and get the appropriate results
+            n = 0
             for m in loaded_modules:
                 if hasattr(m, "summarize_results"):
-                    m.summarize_results(scenario_directory, subproblem, stage)
-            else:
-                pass
-        else:
-            pass
+                    if parsed_arguments.verbose:
+                        print(f"... {modules_to_use[n]}")
+                    m.summarize_results(
+                        scenario_directory,
+                        weather_iteration,
+                        hydro_iteration,
+                        availability_iteration,
+                        subproblem,
+                        stage,
+                    )
+                n += 1
 
 
-def set_up_gridpath_modules(scenario_directory, subproblem, stage):
+def set_up_gridpath_modules(scenario_directory, multi_stage):
     """
     :return: list of the names of the modules the scenario uses, list of the
         loaded modules, and the populated dynamic components for the scenario
@@ -1006,7 +1557,9 @@ def set_up_gridpath_modules(scenario_directory, subproblem, stage):
     instance.
     """
     # Determine and load modules
-    modules_to_use = determine_modules(scenario_directory=scenario_directory)
+    modules_to_use = determine_modules(
+        scenario_directory=scenario_directory, multi_stage=multi_stage
+    )
     loaded_modules = load_modules(modules_to_use)
     # Determine the dynamic components based on the needed modules and input
     # data
@@ -1076,14 +1629,14 @@ def main(args=None):
             )
         )
 
-    subproblem_structure = get_subproblem_structure_from_disk(
+    scenario_structure = get_scenario_structure_from_disk(
         scenario_directory=scenario_directory
     )
 
     # Run the scenario (can be multiple optimization subproblems)
     expected_objective_values = run_scenario(
         scenario_directory=scenario_directory,
-        subproblem_structure=subproblem_structure,
+        scenario_structure=scenario_structure,
         parsed_arguments=parsed_args,
     )
 
@@ -1103,7 +1656,27 @@ def _export_rule(instance, quiet):
     return export_results
 
 
-def _summarize_rule(scenario_directory, subproblem, stage, quiet):
+def _export_summary_results_rule(instance, quiet):
+    """
+    :return: boolean
+
+    Rule for whether to export summary results for the current problem. Write
+    your custom rule here to use this functionality. Must return True or False.
+    """
+    export_summary_results_results = True
+
+    return export_summary_results_results
+
+
+def _summarize_rule(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    quiet,
+):
     """
     :return: boolean
 
@@ -1113,6 +1686,180 @@ def _summarize_rule(scenario_directory, subproblem, stage, quiet):
     summarize_results = True
 
     return summarize_results
+
+
+#####
+
+
+def write_problem_file(instance, prob_sol_files_directory, problem_format="lp"):
+    """
+
+    :param instance:
+    :param prob_sol_files_directory:
+    :param problem_format:
+    :return:
+
+    """
+    formats = dict()
+    # Only supporting LP problem format for now
+    formats["lp"] = ProblemFormat.cpxlp
+
+    # formats["py"] = ProblemFormat.pyomo
+    # formats["nl"] = ProblemFormat.nl
+    # formats["bar"] = ProblemFormat.bar
+    # formats["mps"] = ProblemFormat.mps
+    # formats["mod"] = ProblemFormat.mod
+    # formats["osil"] = ProblemFormat.osil
+    # formats["gms"] = ProblemFormat.gams
+    # formats["gams"] = ProblemFormat.gams
+
+    print("Writing {} problem file...".format(problem_format.upper()))
+    filename, smap_id = instance.write(
+        os.path.join(
+            prob_sol_files_directory, "problem_file.{}".format(problem_format)
+        ),
+        format=formats[problem_format],
+        io_options=[],
+    )
+
+    return smap_id
+
+
+def load_cplex_xml_solution(
+    prob_sol_files_directory, solution_filename="cplex_solution.sol"
+):
+    """
+    :param prob_sol_files_directory:
+    :param solution_filename:
+    :return:
+    """
+    print(
+        "Loading results from solution file {}...".format(
+            os.path.join(prob_sol_files_directory, solution_filename)
+        )
+    )
+    instance, dynamic_components, symbol_map = load_problem_info(
+        prob_sol_files_directory=prob_sol_files_directory
+    )
+
+    # Read XML (.sol) solution file
+    root = ET.parse(os.path.join(prob_sol_files_directory, solution_filename)).getroot()
+
+    # Variables
+    for type_tag in root.findall("variables/variable"):
+        var_id, var_index, value = (
+            type_tag.get("name"),
+            type_tag.get("index"),
+            type_tag.get("value"),
+        )
+        if not var_id == "ONE_VAR_CONSTANT":
+            symbol_map.bySymbol[var_id]().value = float(value)
+
+    # Constraints
+    for type_tag in root.findall("linearConstraints/constraint"):
+        constraint_id_w_extra_symbols, const_index, dual = (
+            type_tag.get("name"),
+            type_tag.get("index"),
+            type_tag.get("dual"),
+        )
+        if not constraint_id_w_extra_symbols == "c_e_ONE_VAR_CONSTANT":
+            constraint_id = constraint_id_w_extra_symbols[4:-1]
+            instance.dual[symbol_map.bySymbol[constraint_id]()] = float(dual)
+
+    # Solver status
+    header = root.findall("header")[0]  # Need a check that there is only one element
+
+    termination_condition = header.get("solutionStatusString")
+    # TODO: what are the types
+    solver_status = "ok" if header.get("solutionStatusValue") == "1" else "unknown"
+    results = Results(
+        solver_status=solver_status, termination_condition=termination_condition
+    )
+
+    return instance, results, dynamic_components
+
+
+def load_gurobi_json_solution(
+    prob_sol_files_directory, solution_filename="gurobi_solution.json"
+):
+    """
+    :param prob_sol_files_directory:
+    :param solution_filename:
+    :return:
+    """
+    print(
+        "Loading results from solution file {}...".format(
+            os.path.join(prob_sol_files_directory, solution_filename)
+        )
+    )
+
+    instance, dynamic_components, symbol_map = load_problem_info(
+        prob_sol_files_directory=prob_sol_files_directory
+    )
+
+    # #### WORKING VERSION #####
+    # This needs to be under an if statement and execute when we are loading
+    # solution from disk
+    # Read JSON solution file
+    with open(os.path.join(prob_sol_files_directory, solution_filename), "r") as f:
+        solution = json.load(f)
+
+    # Variables
+    for v in solution["Vars"]:
+        var_id, value = v["VTag"][0], v["X"]
+        if not var_id == "ONE_VAR_CONSTANT":
+            symbol_map.bySymbol[var_id]().value = float(value)
+
+    # Constraints
+    for c in solution["Constrs"]:
+        constraint_id, dual = c["CTag"][0][4:], c["Pi"]
+        if not constraint_id == "ONE_VAR_CONSTAN":
+            instance.dual[symbol_map.bySymbol[constraint_id]()] = float(dual)
+
+    # Solver status
+    # TODO: what are the types
+    termination_condition = (
+        "optimal" if solution["SolutionInfo"]["Status"] == 2 else "unknown"
+    )
+    solver_status = "ok" if solution["SolutionInfo"]["Status"] == 2 else "unknown"
+    results = Results(
+        solver_status=solver_status, termination_condition=termination_condition
+    )
+
+    return instance, results, dynamic_components
+
+
+def load_problem_info(prob_sol_files_directory):
+    with open(
+        os.path.join(prob_sol_files_directory, "instance.pickle"), "rb"
+    ) as instance_in:
+        instance = dill.load(instance_in)
+    with open(
+        os.path.join(prob_sol_files_directory, "dynamic_components.pickle"), "rb"
+    ) as dc_in:
+        dynamic_components = dill.load(dc_in)
+    with open(
+        os.path.join(prob_sol_files_directory, "symbol_map.pickle"), "rb"
+    ) as map_in:
+        symbol_cuid_pairs = dill.load(map_in)
+        symbol_map = SymbolMap()
+        symbol_map.addSymbols(
+            (cuid.find_component_on(instance), symbol)
+            for symbol, cuid in symbol_cuid_pairs
+        )
+
+    return instance, dynamic_components, symbol_map
+
+
+class Results(object):
+    def __init__(self, solver_status, termination_condition):
+        self.solver = Object()
+        self.solver.status = solver_status
+        self.solver.termination_condition = termination_condition
+
+
+class Object(object):
+    pass
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,18 +22,31 @@ For the purpose, this module calls the respective method from the
 operational type modules.
 """
 
-import csv
-import os.path
 from pyomo.environ import Set, Var, Expression, Constraint, NonNegativeReals, value
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file
-from gridpath.project.operations.common_functions import load_operational_type_modules
-from gridpath.auxiliary.db_interface import setup_results_import
+from gridpath.auxiliary.auxiliary import (
+    get_required_subtype_modules,
+    subset_init_by_set_membership,
+)
+from gridpath.project.operations.common_functions import (
+    load_operational_type_modules,
+)
+from gridpath.common_functions import create_results_df
 import gridpath.project.operations.operational_types as op_type_init
+from gridpath.project import PROJECT_TIMEPOINT_DF
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     The following Pyomo model components are defined in this module:
 
@@ -175,8 +188,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Dynamic Inputs
     ###########################################################################
 
-    required_operational_modules = get_required_subtype_modules_from_projects_file(
+    required_operational_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         which_type="operational_type",
@@ -192,74 +208,126 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.VAR_OM_COST_SIMPLE_PRJ_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: [
-            (p, tmp)
-            for (p, tmp) in mod.PRJ_OPR_TMPS
-            if p in mod.VAR_OM_COST_SIMPLE_PRJS
-        ],
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod,
+            superset="PRJ_OPR_TMPS",
+            index=0,
+            membership_set=mod.VAR_OM_COST_SIMPLE_PRJS,
+        ),
+    )
+
+    m.VAR_OM_COST_BY_PRD_PRJS_OPR_TMPS = Set(
+        dimen=2,
+        within=m.PRJ_OPR_TMPS,
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod,
+            superset="PRJ_OPR_TMPS",
+            index=0,
+            membership_set=mod.VAR_OM_COST_BY_PRD_PRJS,
+        ),
     )
 
     m.VAR_OM_COST_CURVE_PRJS_OPR_TMPS_SGMS = Set(
         dimen=3,
-        initialize=lambda mod: list(
-            set(
-                (g, tmp, s)
-                for (g, tmp) in mod.PRJ_OPR_TMPS
-                for _g, p, s in mod.VAR_OM_COST_CURVE_PRJS_PRDS_SGMS
-                if g == _g and mod.period[tmp] == p
-            )
+        initialize=lambda mod: sorted(
+            list(
+                set(
+                    (g, tmp, s)
+                    for (g, tmp) in mod.PRJ_OPR_TMPS
+                    for _g, p, s in mod.VAR_OM_COST_CURVE_PRJS_PRDS_SGMS
+                    if g == _g and mod.period[tmp] == p
+                )
+            ),
         ),
     )
 
     m.VAR_OM_COST_CURVE_PRJS_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: list(
-            set((g, tmp) for (g, tmp, s) in mod.VAR_OM_COST_CURVE_PRJS_OPR_TMPS_SGMS)
+        initialize=lambda mod: sorted(
+            list(
+                set(
+                    (g, tmp) for (g, tmp, s) in mod.VAR_OM_COST_CURVE_PRJS_OPR_TMPS_SGMS
+                )
+            ),
         ),
     )
 
     # All VOM projects
     m.VAR_OM_COST_ALL_PRJS_OPR_TMPS = Set(
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: list(
-            set(
-                mod.VAR_OM_COST_SIMPLE_PRJ_OPR_TMPS
-                | mod.VAR_OM_COST_CURVE_PRJS_OPR_TMPS
-            )
+        initialize=lambda mod: sorted(
+            list(
+                set(
+                    mod.VAR_OM_COST_SIMPLE_PRJ_OPR_TMPS
+                    | mod.VAR_OM_COST_BY_PRD_PRJS_OPR_TMPS
+                    | mod.VAR_OM_COST_CURVE_PRJS_OPR_TMPS
+                )
+            ),
         ),
     )
 
     m.STARTUP_COST_PRJ_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: [
-            (p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS if p in mod.STARTUP_COST_PRJS
-        ],
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod,
+            superset="PRJ_OPR_TMPS",
+            index=0,
+            membership_set=mod.STARTUP_COST_PRJS,
+        ),
     )
 
     m.SHUTDOWN_COST_PRJ_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: [
-            (p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS if p in mod.SHUTDOWN_COST_PRJS
-        ],
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod,
+            superset="PRJ_OPR_TMPS",
+            index=0,
+            membership_set=mod.SHUTDOWN_COST_PRJS,
+        ),
     )
 
     m.VIOL_ALL_PRJ_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: [
-            (p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS if p in mod.VIOL_ALL_PRJS
-        ],
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod, superset="PRJ_OPR_TMPS", index=0, membership_set=mod.VIOL_ALL_PRJS
+        ),
     )
 
     m.CURTAILMENT_COST_PRJ_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: [
-            (p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS if p in mod.CURTAILMENT_COST_PRJS
-        ],
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod,
+            superset="PRJ_OPR_TMPS",
+            index=0,
+            membership_set=mod.CURTAILMENT_COST_PRJS,
+        ),
+    )
+
+    m.SOC_PENALTY_COST_PRJ_OPR_TMPS = Set(
+        dimen=2,
+        within=m.PRJ_OPR_TMPS,
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod,
+            superset="PRJ_OPR_TMPS",
+            index=0,
+            membership_set=mod.SOC_PENALTY_COST_PRJS,
+        ),
+    )
+
+    m.SOC_LAST_TMP_PENALTY_COST_PRJ_OPR_TMPS = Set(
+        dimen=2,
+        within=m.PRJ_OPR_TMPS,
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod,
+            superset="PRJ_OPR_TMPS",
+            index=0,
+            membership_set=mod.SOC_LAST_TMP_PENALTY_COST_PRJS,
+        ),
     )
 
     # Variables
@@ -313,12 +381,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         **Defined Over**: VAR_OM_COST_ALL_PRJS_OPR_TMPS
 
         This is the variable cost incurred in each operational timepoints for
-        projects for which either a simple VOM or a VOM curve is specified.
-        If both are specified, the two are additive.
+        projects for which a simple VOM, a by-period VOM, or a VOM curve is
+        specified.
+        The three components are additive.
         """
+        op_type = mod.operational_type[prj]
 
         # Simple VOM cost
-        op_type = mod.operational_type[prj]
         if prj in mod.VAR_OM_COST_SIMPLE_PRJS:
             if hasattr(imported_operational_modules[op_type], "variable_om_cost_rule"):
                 var_cost_simple = imported_operational_modules[
@@ -329,14 +398,29 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         else:
             var_cost_simple = 0
 
+        # By period VOM
+        if prj in mod.VAR_OM_COST_BY_PRD_PRJS:
+            if hasattr(
+                imported_operational_modules[op_type], "variable_om_by_period_cost_rule"
+            ):
+                var_cost_by_prd = imported_operational_modules[
+                    op_type
+                ].variable_om_by_period_cost_rule(mod, prj, tmp)
+            else:
+                var_cost_by_prd = op_type_init.variable_om_by_period_cost_rule(
+                    mod, prj, tmp
+                )
+        else:
+            var_cost_by_prd = 0
+
         # VOM curve cost
         if prj in mod.VAR_OM_COST_CURVE_PRJS:
             var_cost_curve = mod.Variable_OM_Curve_Cost[prj, tmp]
         else:
             var_cost_curve = 0
 
-        # The two are additive
-        return var_cost_simple + var_cost_curve
+        # The three are additive
+        return var_cost_simple + var_cost_by_prd + var_cost_curve
 
     m.Variable_OM_Cost = Expression(
         m.VAR_OM_COST_ALL_PRJS_OPR_TMPS, rule=variable_om_cost_rule
@@ -450,12 +534,59 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.CURTAILMENT_COST_PRJ_OPR_TMPS, rule=curtailment_cost_rule
     )
 
+    def soc_penalty_cost_rule(mod, prj, tmp):
+        """
+        State of charge penalty costs are defined for some operational types while
+        they are zero for others. Get the appropriate expression for each project
+        based on its operational type.
+        """
+        op_type = mod.operational_type[prj]
+        if hasattr(imported_operational_modules[op_type], "soc_penalty_cost_rule"):
+            return imported_operational_modules[op_type].soc_penalty_cost_rule(
+                mod, prj, tmp
+            )
+        else:
+            return op_type_init.soc_penalty_cost_rule(mod, prj, tmp)
+
+    m.SOC_Penalty_Cost = Expression(
+        m.SOC_PENALTY_COST_PRJ_OPR_TMPS, rule=soc_penalty_cost_rule
+    )
+
+    def soc_last_tmp_penalty_cost_rule(mod, prj, tmp):
+        """
+        State of charge penalty costs are defined for some operational types while
+        they are zero for others. Get the appropriate expression for each project
+        based on its operational type.
+        """
+        op_type = mod.operational_type[prj]
+        if hasattr(
+            imported_operational_modules[op_type], "soc_last_tmp_penalty_cost_rule"
+        ):
+            return imported_operational_modules[op_type].soc_last_tmp_penalty_cost_rule(
+                mod, prj, tmp
+            )
+        else:
+            return op_type_init.soc_last_tmp_penalty_cost_rule(mod, prj, tmp)
+
+    m.SOC_Penalty_Last_Tmp_Cost = Expression(
+        m.SOC_LAST_TMP_PENALTY_COST_PRJ_OPR_TMPS, rule=soc_last_tmp_penalty_cost_rule
+    )
+
 
 # Input-Output
 ###############################################################################
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
+):
     """
     Export operations results. Note: fuel cost includes startup fuel as well
     if applicable, in which case this is startup fuel cost is additional to
@@ -470,168 +601,65 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return:
     Nothing
     """
-    with open(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "costs_operations.csv",
-        ),
-        "w",
-        newline="",
-    ) as f:
-        writer = csv.writer(f)
-        writer.writerow(
-            [
-                "project",
-                "period",
-                "horizon",
-                "timepoint",
-                "timepoint_weight",
-                "number_of_hours_in_timepoint",
-                "load_zone",
-                "technology",
-                "variable_om_cost",
-                "fuel_cost",
-                "startup_cost",
-                "shutdown_cost",
-                "operational_violation_cost",
-                "curtailment_cost",
-            ]
-        )
-        for (p, tmp) in m.PRJ_OPR_TMPS:
-            writer.writerow(
-                [
-                    p,
-                    m.period[tmp],
-                    m.horizon[tmp, m.balancing_type_project[p]],
-                    tmp,
-                    m.tmp_weight[tmp],
-                    m.hrs_in_tmp[tmp],
-                    m.load_zone[p],
-                    m.technology[p],
-                    value(m.Variable_OM_Cost[p, tmp])
-                    if p in m.VAR_OM_COST_ALL_PRJS
-                    else None,
-                    value(m.Fuel_Cost[p, tmp]) if p in m.FUEL_PRJS else None,
-                    value(m.Startup_Cost[p, tmp]) if p in m.STARTUP_COST_PRJS else None,
-                    value(m.Shutdown_Cost[p, tmp])
-                    if p in m.SHUTDOWN_COST_PRJS
-                    else None,
-                    value(m.Operational_Violation_Cost[p, tmp])
-                    if p in m.VIOL_ALL_PRJ_OPR_TMPS
-                    else None,
-                    value(m.Curtailment_Cost[p, tmp])
-                    if p in m.CURTAILMENT_COST_PRJS
-                    else None,
-                ]
-            )
+
+    results_columns = [
+        "variable_om_cost",
+        "fuel_cost",
+        "startup_cost",
+        "shutdown_cost",
+        "operational_violation_cost",
+        "curtailment_cost",
+        "soc_penalty_cost",
+        "soc_last_tmp_penalty_cost",
+    ]
+    data = [
+        [
+            prj,
+            tmp,
+            (
+                value(m.Variable_OM_Cost[prj, tmp])
+                if prj in m.VAR_OM_COST_ALL_PRJS
+                else None
+            ),
+            value(m.Fuel_Cost[prj, tmp]) if prj in m.FUEL_PRJS else None,
+            value(m.Startup_Cost[prj, tmp]) if prj in m.STARTUP_COST_PRJS else None,
+            value(m.Shutdown_Cost[prj, tmp]) if prj in m.SHUTDOWN_COST_PRJS else None,
+            (
+                value(m.Operational_Violation_Cost[prj, tmp])
+                if prj in m.VIOL_ALL_PRJ_OPR_TMPS
+                else None
+            ),
+            (
+                value(m.Curtailment_Cost[prj, tmp])
+                if prj in m.CURTAILMENT_COST_PRJS
+                else None
+            ),
+            (
+                value(m.SOC_Penalty_Cost[prj, tmp])
+                if prj in m.SOC_PENALTY_COST_PRJS
+                else None
+            ),
+            (
+                value(m.SOC_Penalty_Last_Tmp_Cost[prj, tmp])
+                if prj in m.SOC_LAST_TMP_PENALTY_COST_PRJS
+                else None
+            ),
+        ]
+        for (prj, tmp) in m.PRJ_OPR_TMPS
+    ]
+    results_df = create_results_df(
+        index_columns=["project", "timepoint"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    for c in results_columns:
+        getattr(d, PROJECT_TIMEPOINT_DF)[c] = None
+    getattr(d, PROJECT_TIMEPOINT_DF).update(results_df)
 
 
 # Database
 ###############################################################################
-
-
-def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    """
-
-    :param scenario_id:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-    if not quiet:
-        print("project costs operations")
-
-    # costs_operations.csv
-    # Delete prior results and create temporary import table for ordering
-    setup_results_import(
-        conn=db,
-        cursor=c,
-        table="results_project_costs_operations",
-        scenario_id=scenario_id,
-        subproblem=subproblem,
-        stage=stage,
-    )
-
-    # Load results into the temporary table
-    results = []
-    with open(
-        os.path.join(results_directory, "costs_operations.csv"), "r"
-    ) as dispatch_file:
-        reader = csv.reader(dispatch_file)
-
-        next(reader)  # skip header
-        for row in reader:
-            project = row[0]
-            period = row[1]
-            horizon = row[2]
-            timepoint = row[3]
-            timepoint_weight = row[4]
-            number_of_hours_in_timepoint = row[5]
-            load_zone = row[6]
-            technology = row[7]
-            variable_om_cost = row[8]
-            fuel_cost = row[9]
-            startup_cost = row[10]
-            shutdown_cost = row[11]
-
-            results.append(
-                (
-                    scenario_id,
-                    project,
-                    period,
-                    subproblem,
-                    stage,
-                    horizon,
-                    timepoint,
-                    timepoint_weight,
-                    number_of_hours_in_timepoint,
-                    load_zone,
-                    technology,
-                    variable_om_cost,
-                    fuel_cost,
-                    startup_cost,
-                    shutdown_cost,
-                )
-            )
-
-    insert_temp_sql = """
-        INSERT INTO
-        temp_results_project_costs_operations{}
-        (scenario_id, project, period, subproblem_id, stage_id,
-        horizon, timepoint, timepoint_weight,
-        number_of_hours_in_timepoint, load_zone, technology, 
-        variable_om_cost, fuel_cost, startup_cost, shutdown_cost)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);""".format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
-
-    # Insert sorted results into permanent results table
-    insert_sql = """
-        INSERT INTO 
-        results_project_costs_operations
-        (scenario_id, project, period, subproblem_id, stage_id, 
-        horizon, timepoint, timepoint_weight, 
-        number_of_hours_in_timepoint, load_zone, technology, 
-        variable_om_cost, fuel_cost, startup_cost, shutdown_cost)
-        SELECT
-        scenario_id, project, period, subproblem_id, stage_id, 
-        horizon, timepoint, timepoint_weight, 
-        number_of_hours_in_timepoint, load_zone, technology, 
-        variable_om_cost, fuel_cost, startup_cost, shutdown_cost
-        FROM temp_results_project_costs_operations{}
-        ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;
-        """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)
 
 
 def process_results(db, c, scenario_id, subscenarios, quiet):
@@ -670,7 +698,7 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
         AS variable_om_cost,
         SUM(startup_cost * timepoint_weight) AS startup_cost,
         SUM(shutdown_cost * timepoint_weight) AS shutdown_cost
-        FROM results_project_costs_operations
+        FROM results_project_timepoint
         WHERE scenario_id = ?
         GROUP BY subproblem_id, stage_id, period, load_zone, spinup_or_lookahead
         ORDER BY subproblem_id, stage_id, period, load_zone, spinup_or_lookahead

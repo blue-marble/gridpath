@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -100,12 +100,12 @@ def get_plotting_data(conn, scenario_id, carbon_cap_zone, subproblem, stage, **k
     sql = """
         SELECT 
             period, 
-            carbon_cap, 
-            in_zone_project_emissions, 
+            carbon_cap_target, 
+            project_emissions, 
             import_emissions_degen, 
             total_emissions_degen,
             carbon_cap_marginal_cost_per_emission
-        FROM results_system_carbon_emissions
+        FROM results_system_carbon_cap
         WHERE scenario_id = ?
         AND carbon_cap_zone = ?
         AND subproblem_id = ?
@@ -120,7 +120,7 @@ def get_plotting_data(conn, scenario_id, carbon_cap_zone, subproblem, stage, **k
     # df = pd.DataFrame(
     #     data=[[2018, 50, 40, 5, 45, 0],
     #           [2020, 20, 15, 5, 20, 100]],
-    #     columns=["period", "carbon_cap", "in_zone_project_emissions",
+    #     columns=["period", "carbon_cap_target", "project_emissions",
     #              "import_emissions_degen", "total_emissions_degen",
     #              "carbon_cap_marginal_cost_per_emission"]
     # )
@@ -132,7 +132,7 @@ def get_plotting_data(conn, scenario_id, carbon_cap_zone, subproblem, stage, **k
     #  there are no carbon transmission lines.
     # Add project/import fractions
     df["fraction_of_project_emissions"] = (
-        df["in_zone_project_emissions"] / df["total_emissions_degen"]
+        df["project_emissions"] / df["total_emissions_degen"]
     )
 
     df["fraction_of_import_emissions"] = (
@@ -165,7 +165,7 @@ def create_plot(df, title, carbon_unit, cost_unit, ylimit=None):
     # Order of stacked_cols will define order of stacked areas in chart
     x_col = "period"
     line_col = "carbon_cap"
-    stacked_cols = ["in_zone_project_emissions", "import_emissions_degen"]
+    stacked_cols = ["project_emissions", "import_emissions_degen"]
 
     # Stacked Area Colors
     colors = ["#666666", "#999999"]
@@ -176,7 +176,7 @@ def create_plot(df, title, carbon_unit, cost_unit, ylimit=None):
         plot_height=500,
         tools=["pan", "reset", "zoom_in", "zoom_out", "save", "help"],
         title=title,
-        x_range=df[x_col]
+        x_range=df[x_col],
         # sizing_mode="scale_both"
     )
 

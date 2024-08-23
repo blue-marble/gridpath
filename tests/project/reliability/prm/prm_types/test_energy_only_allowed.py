@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import print_function
 
-from builtins import str
 from collections import OrderedDict
 from importlib import import_module
 import os.path
@@ -68,6 +66,9 @@ class TestProjPRMTypeFullyDeliverable(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
+            weather_iteration="",
+            hydro_iteration="",
+            availability_iteration="",
             subproblem="",
             stage="",
         )
@@ -81,6 +82,9 @@ class TestProjPRMTypeFullyDeliverable(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
+            weather_iteration="",
+            hydro_iteration="",
+            availability_iteration="",
             subproblem="",
             stage="",
         )
@@ -94,6 +98,9 @@ class TestProjPRMTypeFullyDeliverable(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
+            weather_iteration="",
+            hydro_iteration="",
+            availability_iteration="",
             subproblem="",
             stage="",
         )
@@ -114,95 +121,6 @@ class TestProjPRMTypeFullyDeliverable(unittest.TestCase):
         )
 
         self.assertListEqual(expected_proj_period_set, actual_proj_period_set)
-
-        # Set: DELIVERABILITY_GROUPS
-        expected_deliverability_groups_set = sorted(
-            ["Threshold_Group_1", "Threshold_Group_2"]
-        )
-        actual_deliverability_groups_set = sorted(
-            [g for g in instance.DELIVERABILITY_GROUPS]
-        )
-
-        self.assertListEqual(
-            expected_deliverability_groups_set, actual_deliverability_groups_set
-        )
-
-        # Param: deliverability_group_no_cost_deliverable_capacity_mw
-        expected_no_cost_deliv_cap = OrderedDict(
-            sorted({"Threshold_Group_1": 2000.0, "Threshold_Group_2": 1140.0}.items())
-        )
-        actual_no_cost_deliv_cap = OrderedDict(
-            sorted(
-                {
-                    g: instance.deliverability_group_no_cost_deliverable_capacity_mw[g]
-                    for g in instance.DELIVERABILITY_GROUPS
-                }.items()
-            )
-        )
-
-        self.assertDictEqual(expected_no_cost_deliv_cap, actual_no_cost_deliv_cap)
-
-        # Param: deliverability_group_deliverability_cost_per_mw
-        expected_deliv_cost = OrderedDict(
-            sorted({"Threshold_Group_1": 37.0, "Threshold_Group_2": 147.0}.items())
-        )
-        actual_deliv_cost = OrderedDict(
-            sorted(
-                {
-                    g: instance.deliverability_group_deliverability_cost_per_mw[g]
-                    for g in instance.DELIVERABILITY_GROUPS
-                }.items()
-            )
-        )
-
-        self.assertDictEqual(expected_deliv_cost, actual_deliv_cost)
-
-        # Param: deliverability_group_energy_only_capacity_limit_mw
-        expected_energy_only_limit = OrderedDict(
-            sorted({"Threshold_Group_1": 4000, "Threshold_Group_2": 5000}.items())
-        )
-        actual_energy_only_limit = OrderedDict(
-            sorted(
-                {
-                    g: instance.deliverability_group_energy_only_capacity_limit_mw[g]
-                    for g in instance.DELIVERABILITY_GROUPS
-                }.items()
-            )
-        )
-
-        self.assertDictEqual(expected_energy_only_limit, actual_energy_only_limit)
-
-        # Set: DELIVERABILITY_GROUP_PROJECTS
-        expected_deliverability_group_projects = sorted(
-            [("Threshold_Group_1", "Wind"), ("Threshold_Group_2", "Wind_z2")]
-        )
-        actual_deliverability_group_projects = sorted(
-            [(g, p) for (g, p) in instance.DELIVERABILITY_GROUP_PROJECTS]
-        )
-
-        self.assertListEqual(
-            expected_deliverability_group_projects, actual_deliverability_group_projects
-        )
-
-        # Set: PROJECTS_BY_DELIVERABILITY_GROUP
-        expected_prj_by_grp = OrderedDict(
-            sorted(
-                {
-                    "Threshold_Group_1": ["Wind"],
-                    "Threshold_Group_2": ["Wind_z2"],
-                }.items()
-            )
-        )
-        actual_prj_by_grp = OrderedDict(
-            sorted(
-                {
-                    g: [p for p in instance.PROJECTS_BY_DELIVERABILITY_GROUP[g]]
-                    for g in instance.DELIVERABILITY_GROUPS
-                }.items()
-            )
-        )
-
-        self.assertDictEqual(expected_prj_by_grp, actual_prj_by_grp)
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-# Copyright 2016-2022 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ from pyomo.environ import value
 
 # Import-export rules
 
+
 # Export & import if USE is found only
 def export_rule_use(instance, quiet):
     unserved_energy_found = any(
@@ -35,14 +36,25 @@ def export_rule_use(instance, quiet):
     return unserved_energy_found
 
 
-def summarize_results_use(scenario_directory, subproblem, stage, quiet):
+def summarize_results_use(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    quiet,
+):
     if os.path.exists(
         os.path.join(
             scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
             subproblem,
             stage,
             "results",
-            "load_balance.csv",
+            "system_load_zone_timepoint.csv",
         )
     ):
         return True
@@ -53,7 +65,9 @@ def summarize_results_use(scenario_directory, subproblem, stage, quiet):
 
 
 def import_rule_use(results_directory, quiet):
-    if os.path.exists(os.path.join(results_directory, "load_balance.csv")):
+    if os.path.exists(
+        os.path.join(results_directory, "system_load_zone_timepoint.csv")
+    ):
         import_results = True
         if not quiet:
             print("unserved energy found -- importing")
@@ -68,7 +82,14 @@ def import_rule_use(results_directory, quiet):
 import_export_rules = {
     "USE": {
         "export": export_rule_use,
+        "export_summary": True,
         "summarize": summarize_results_use,
         "import": import_rule_use,
-    }
+    },
+    "USE_import_only": {
+        "export": True,
+        "export_summary": True,
+        "summarize": True,
+        "import": import_rule_use,
+    },
 }

@@ -63,6 +63,9 @@ instance/
 # Sphinx documentation
 docs/_build/
 
+#Ignore SVG image in documentation
+doc/*/*.svg
+
 # PyBuilder
 target/
 
@@ -98,6 +101,9 @@ examples/*/results/*.csv
 examples/*/*/results/*.csv
 # Multi-horizon, multi-stage prod cost run
 examples/*/*/*/results/*.csv
+# RA iteration runs
+# Weather/hydro/availability iterations + subproblems
+examples/*/*/*/*/*/results/*.csv
 
 # Don't track pass-through inputs directory in multi-stage runs
 examples/*/*/pass_through_inputs/

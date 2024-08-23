@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -37,20 +37,21 @@ from gridpath.common_functions import (
     get_db_parser,
     get_required_e2e_arguments_parser,
     get_get_inputs_parser,
+    ensure_empty_string,
 )
 from gridpath.auxiliary.module_list import determine_modules, load_modules
 from gridpath.auxiliary.scenario_chars import (
     OptionalFeatures,
     SubScenarios,
-    get_subproblem_structure_from_db,
+    get_scenario_structure_from_db,
     SolverOptions,
+    ScenarioDirectoryStructure,
 )
 
 
 def write_model_inputs(
     scenario_directory,
-    subproblem_structure,
-    multi_stage,
+    scenario_structure,
     modules_to_use,
     scenario_id,
     subscenarios,
@@ -62,8 +63,8 @@ def write_model_inputs(
     into .tab files, which will be used to construct the optimization problem.
 
     :param scenario_directory: local scenario directory
-    :param subproblem_structure: SubProblems object with info on the
-        subproblem/stage structure
+    :param scenario_structure: ScenarioStructure object with info on the
+        weather/hydro iterations and subproblem/stage structure
     :param modules_to_use: list of imported modules (Python <class 'module'>
         objects)
     :param scenario_id: integer
@@ -81,56 +82,100 @@ def write_model_inputs(
     # files
     delete_prior_aux_files(scenario_directory=scenario_directory)
 
-    # Determine whether we will have subproblem directories
-    # We write the subproblem directories if we have multiple subproblems or if we
-    # have a single subroblem with stages (the multi_stage flag will be True)
-    if len(subproblem_structure.SUBPROBLEM_STAGES) == 1 and multi_stage is False:
-        make_subproblem_directories = False
-    else:
-        make_subproblem_directories = True
+    # Determine whether we will have iteration (weather, hydro iteration),
+    # and subproblem and stage directories
+    # The subproblem structure is the same within each iteration
+    iteration_directory_strings = ScenarioDirectoryStructure(
+        scenario_structure
+    ).ITERATION_DIRECTORIES
+    subproblem_stage_directory_strings = ScenarioDirectoryStructure(
+        scenario_structure
+    ).SUBPROBLEM_STAGE_DIRECTORIES
 
     # Do a few checks on parallelization request
     if n_parallel_subproblems < 1:
         warnings.warn(
-            "n_parallel_subproblem can't be 0. Solving without " "parallelization."
+            "n_parallel_subproblem can't be 0. Solving without parallelization."
         )
         n_parallel_subproblems = 1
 
-    if len(subproblem_structure.SUBPROBLEM_STAGES) == 1 and n_parallel_subproblems > 1:
-        warnings.warn(
-            "Only one subproblem in scenario. Parallelization " "not possible."
-        )
+    if len(scenario_structure.SUBPROBLEM_STAGES) == 1 and n_parallel_subproblems > 1:
+        warnings.warn("Only one subproblem in scenario. Parallelization not possible.")
         n_parallel_subproblems = 1
 
-    # If no parallelization requested, loop through the subproblems
+    # If no parallelization requested, loop through the iterations
+    # and subproblems
     if n_parallel_subproblems == 1:
-        for subproblem in subproblem_structure.SUBPROBLEM_STAGES.keys():
-            get_inputs_for_subproblem(
-                scenario_directory=scenario_directory,
-                subproblem_structure=subproblem_structure,
-                subproblem=subproblem,
-                make_subproblem_directories=make_subproblem_directories,
-                modules_to_use=modules_to_use,
-                scenario_id=scenario_id,
-                subscenarios=subscenarios,
-                db_path=db_path,
-            )
+        for weather_iteration_str in iteration_directory_strings.keys():
+            for hydro_iteration_str in iteration_directory_strings[
+                weather_iteration_str
+            ].keys():
+                for availability_iteration_str in iteration_directory_strings[
+                    weather_iteration_str
+                ][hydro_iteration_str]:
+                    # We may have passed "empty_string" to avoid actual empty
+                    # strings as dictionary keys; convert to actual empty
+                    # strings here to pass to the directory creation methods
+                    weather_iteration_str = ensure_empty_string(weather_iteration_str)
+                    hydro_iteration_str = ensure_empty_string(hydro_iteration_str)
+                    availability_iteration_str = ensure_empty_string(
+                        availability_iteration_str
+                    )
+
+                    for subproblem_str in subproblem_stage_directory_strings.keys():
+                        for stage_str in subproblem_stage_directory_strings[
+                            subproblem_str
+                        ]:
+                            write_inputs(
+                                scenario_directory=scenario_directory,
+                                weather_iteration_str=weather_iteration_str,
+                                hydro_iteration_str=hydro_iteration_str,
+                                availability_iteration_str=availability_iteration_str,
+                                subproblem_str=subproblem_str,
+                                stage_str=stage_str,
+                                modules_to_use=modules_to_use,
+                                scenario_id=scenario_id,
+                                subscenarios=subscenarios,
+                                db_path=db_path,
+                            )
     else:
-        pool_data = tuple(
-            [
-                [
-                    scenario_directory,
-                    subproblem_structure,
-                    subproblem,
-                    make_subproblem_directories,
-                    modules_to_use,
-                    scenario_id,
-                    subscenarios,
-                    db_path,
-                ]
-                for subproblem in subproblem_structure.SUBPROBLEM_STAGES.keys()
-            ]
-        )
+        pool_data = []
+        for weather_iteration_str in iteration_directory_strings.keys():
+            for hydro_iteration_str in iteration_directory_strings[
+                weather_iteration_str
+            ].keys():
+                for availability_iteration_str in iteration_directory_strings[
+                    weather_iteration_str
+                ][hydro_iteration_str]:
+                    # We may have passed "empty_string" to avoid actual empty
+                    # strings as dictionary keys; convert to actual empty
+                    # strings here to pass to the directory creation methods
+                    weather_iteration_str = ensure_empty_string(weather_iteration_str)
+                    hydro_iteration_str = ensure_empty_string(hydro_iteration_str)
+                    availability_iteration_str = ensure_empty_string(
+                        availability_iteration_str
+                    )
+
+                    for subproblem_str in subproblem_stage_directory_strings.keys():
+                        for stage_str in subproblem_stage_directory_strings[
+                            subproblem_str
+                        ]:
+                            pool_data.append(
+                                [
+                                    scenario_directory,
+                                    weather_iteration_str,
+                                    hydro_iteration_str,
+                                    availability_iteration_str,
+                                    subproblem_str,
+                                    stage_str,
+                                    modules_to_use,
+                                    scenario_id,
+                                    subscenarios,
+                                    db_path,
+                                ]
+                            )
+
+        pool_data = tuple(pool_data)
 
         # Pool must use spawn to work properly on Linux
         pool = get_context("spawn").Pool(n_parallel_subproblems)
@@ -138,94 +183,59 @@ def write_model_inputs(
         pool.close()
 
 
-def get_inputs_for_subproblem(
+def write_inputs(
     scenario_directory,
-    subproblem_structure,
-    subproblem,
-    make_subproblem_directories,
+    weather_iteration_str,
+    hydro_iteration_str,
+    availability_iteration_str,
+    subproblem_str,
+    stage_str,
     modules_to_use,
     scenario_id,
     subscenarios,
     db_path,
 ):
-
     loaded_modules = load_modules(modules_to_use=modules_to_use)
 
-    # First make inputs directory if needed
-    # If there are subproblems/stages, input directory will be nested
-    if make_subproblem_directories:
-        subproblem_str = str(subproblem)
-    else:
-        subproblem_str = ""
+    inputs_directory = os.path.join(
+        scenario_directory,
+        weather_iteration_str,
+        hydro_iteration_str,
+        availability_iteration_str,
+        subproblem_str,
+        stage_str,
+        "inputs",
+    )
 
-    stages = subproblem_structure.SUBPROBLEM_STAGES[subproblem]
-    if len(stages) == 1:
-        make_stage_directories = False
-    else:
-        make_stage_directories = True
+    if not os.path.exists(inputs_directory):
+        os.makedirs(inputs_directory)
 
-    for stage in stages:
-        if make_stage_directories:
-            stage_str = str(stage)
-        else:
-            stage_str = ""
-        inputs_directory = os.path.join(
-            scenario_directory, subproblem_str, stage_str, "inputs"
-        )
-        if not os.path.exists(inputs_directory):
-            os.makedirs(inputs_directory)
+    # Delete input files that may have existed before to avoid
+    # phantom inputs
+    delete_prior_inputs(inputs_directory=inputs_directory)
 
-        # Delete input files that may have existed before to avoid
-        # phantom inputs
-        delete_prior_inputs(inputs_directory=inputs_directory)
+    # Write model input .tab files for each of the loaded_modules if
+    # appropriate. Note that all input files are saved in the
+    # input_directory, even the non-temporal inputs that are not
+    # dependent on the subproblem or stage. This simplifies the file
+    # structure at the expense of unnecessarily duplicating
+    # non-temporal input files such as projects.tab.
+    conn = connect_to_database(db_path=db_path)
+    for m in loaded_modules:
+        if hasattr(m, "write_model_inputs"):
+            m.write_model_inputs(
+                scenario_directory=scenario_directory,
+                scenario_id=scenario_id,
+                subscenarios=subscenarios,
+                weather_iteration=weather_iteration_str,
+                hydro_iteration=hydro_iteration_str,
+                availability_iteration=availability_iteration_str,
+                subproblem=subproblem_str,
+                stage=stage_str,
+                conn=conn,
+            )
 
-        # Write model input .tab files for each of the loaded_modules if
-        # appropriate. Note that all input files are saved in the
-        # input_directory, even the non-temporal inputs that are not
-        # dependent on the subproblem or stage. This simplifies the file
-        # structure at the expense of unnecessarily duplicating
-        # non-temporal input files such as projects.tab.
-        conn = connect_to_database(db_path=db_path)
-        for m in loaded_modules:
-            if hasattr(m, "write_model_inputs"):
-                m.write_model_inputs(
-                    scenario_directory=scenario_directory,
-                    scenario_id=scenario_id,
-                    subscenarios=subscenarios,
-                    subproblem=subproblem_str,
-                    stage=stage_str,
-                    conn=conn,
-                )
-            else:
-                pass
-        conn.close()
-
-    # If there are stages in the subproblem, we also need a pass-through
-    # directory and to write headers of the pass-through input file
-    # TODO: this should probably be moved to the module responsible for
-    #  writing to this file
-    # TODO: how to deal with pass-through inputs
-    # TODO: we probably don't need a directory for the
-    #  pass-through inputs, as it's only one file
-    if len(stages) > 1:
-        # Create the commitment pass-through file (also deletes any
-        # prior results)
-        # First create the pass-through directory if it doesn't
-        # exist
-        # TODO: need better handling of deleting prior results?
-        pass_through_directory = os.path.join(
-            scenario_directory, str(subproblem), "pass_through_inputs"
-        )
-        if not os.path.exists(pass_through_directory):
-            os.makedirs(pass_through_directory)
-        # Write the headers of the pass through files
-        for m in loaded_modules:
-            if hasattr(m, "write_pass_through_file_headers"):
-                m.write_pass_through_file_headers(
-                    pass_through_directory=pass_through_directory
-                )
-            else:
-                pass
+    conn.close()
 
 
 def get_inputs_for_subproblem_pool(pool_datum):
@@ -235,20 +245,24 @@ def get_inputs_for_subproblem_pool(pool_datum):
     """
     [
         scenario_directory,
-        subproblem_structure,
-        subproblem,
-        make_subproblem_directories,
+        weather_iteration_str,
+        hydro_iteration_str,
+        availability_iteration_str,
+        subproblem_str,
+        stage_str,
         modules_to_use,
         scenario_id,
         subscenarios,
         db_path,
     ] = pool_datum
 
-    get_inputs_for_subproblem(
+    write_inputs(
         scenario_directory=scenario_directory,
-        subproblem_structure=subproblem_structure,
-        subproblem=subproblem,
-        make_subproblem_directories=make_subproblem_directories,
+        weather_iteration_str=weather_iteration_str,
+        hydro_iteration_str=hydro_iteration_str,
+        availability_iteration_str=availability_iteration_str,
+        subproblem_str=subproblem_str,
+        stage_str=stage_str,
         modules_to_use=modules_to_use,
         scenario_id=scenario_id,
         subscenarios=subscenarios,
@@ -272,8 +286,6 @@ def delete_prior_aux_files(scenario_directory):
     for f in prior_aux_files:
         if f in os.listdir(scenario_directory):
             os.remove(os.path.join(scenario_directory, f))
-        else:
-            pass
 
 
 def delete_prior_inputs(inputs_directory):
@@ -393,13 +405,16 @@ def write_solver_options(scenario_directory, solver_options):
     If a solver_options_id is specified, writer the solver options to the
     scenario directory.
     """
-    if solver_options.SOLVER_NAME is None and solver_options.SOLVER_OPTIONS is None:
-        pass
-    else:
+    if (
+        not solver_options.SOLVER_NAME is None
+        and not solver_options.SOLVER_OPTIONS is None
+    ):
         with open(
-            os.path.join(scenario_directory, "solver_options.csv"), "w", newline=""
+            os.path.join(scenario_directory, "solver_options.csv"),
+            "w",
+            newline="",
         ) as solver_options_file:
-            writer = csv.writer(solver_options_file, delimiter=",")
+            writer = csv.writer(solver_options_file, delimiter=",", lineterminator="\n")
             writer.writerow(["solver_name", solver_options.SOLVER_NAME])
             for opt in solver_options.SOLVER_OPTIONS.keys():
                 writer.writerow([opt, solver_options.SOLVER_OPTIONS[opt]])
@@ -464,7 +479,7 @@ def main(args=None):
     #  some validation
     optional_features = OptionalFeatures(conn=conn, scenario_id=scenario_id)
     subscenarios = SubScenarios(conn=conn, scenario_id=scenario_id)
-    subproblem_structure = get_subproblem_structure_from_db(
+    scenario_structure = get_scenario_structure_from_db(
         conn=conn, scenario_id=scenario_id
     )
     solver_options = SolverOptions(conn=conn, scenario_id=scenario_id)
@@ -472,25 +487,16 @@ def main(args=None):
     # Determine requested features and use this to determine what modules to
     # load for Gridpath
     feature_list = optional_features.get_active_features()
-    # If any subproblem's stage list is non-empty, we have stages, so set
-    # the stages_flag to True to pass to determine_modules below
-    # This tells the determine_modules function to include the
-    # stages-related modules
-    stages_flag = any(
-        [
-            len(subproblem_structure.SUBPROBLEM_STAGES[subp]) > 1
-            for subp in list(subproblem_structure.SUBPROBLEM_STAGES.keys())
-        ]
-    )
 
     # Figure out which modules to use and load the modules
-    modules_to_use = determine_modules(features=feature_list, multi_stage=stages_flag)
+    modules_to_use = determine_modules(
+        features=feature_list, multi_stage=scenario_structure.MULTI_STAGE
+    )
 
     # Get appropriate inputs from database and write the .tab file model inputs
     write_model_inputs(
         scenario_directory=scenario_directory,
-        subproblem_structure=subproblem_structure,
-        multi_stage=stages_flag,
+        scenario_structure=scenario_structure,
         modules_to_use=modules_to_use,
         scenario_id=scenario_id,
         subscenarios=subscenarios,

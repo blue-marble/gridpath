@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -105,7 +105,7 @@ def get_plotting_data(conn, scenario_id, load_zone, stage, **kwargs):
             AS period_mwh,
             sum(timepoint_weight * number_of_hours_in_timepoint) 
             AS period_weight
-            FROM results_project_dispatch
+            FROM results_project_timepoint
 
             -- add temporal scenario id so we can join timepoints table
             INNER JOIN
@@ -133,7 +133,7 @@ def get_plotting_data(conn, scenario_id, load_zone, stage, **kwargs):
         INNER JOIN
         
         (SELECT scenario_id, project, period, avg(capacity_mw) as capacity_mw
-        FROM results_project_capacity
+        FROM results_project_period
         GROUP BY scenario_id, project, period) AS capacity_table
         USING (scenario_id, project, period)
         

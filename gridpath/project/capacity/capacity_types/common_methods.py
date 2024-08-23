@@ -1,4 +1,4 @@
-# Copyright 2016-2021 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ from db.common_functions import spin_on_database_lock
 from gridpath.project.common_functions import get_column_row_value
 
 
-def operational_periods_by_project_vintage(
+def relevant_periods_by_project_vintage(
     periods, period_start_year, period_end_year, vintage, lifetime_yrs
 ):
     """
@@ -31,156 +31,99 @@ def operational_periods_by_project_vintage(
         by period
     :param vintage: the project vintage
     :param lifetime_yrs: the project-vintage lifetime
-    :return: the operational periods given the study periods and
+    :return: the operational or financial periods given the study periods and
         the project vintage and lifetime
 
-    Given the list of study periods and the project's vintage and lifetime,
-    this function returns the list of periods in which a project with
-    this vintage and lifetime will be operational.
+    Given the list of study periods and the project's vintage and lifetime (either
+    the operational lifetime or the financial lifetime), this function returns the
+    list of periods in which a project with this vintage and lifetime will be
+    operational (based on the operational lifetime) or incurring an annualized capital
+    cost (based on the financial lifetime) respectively. When a project is
+    operational, it incurs annual fixed O&M costs.
 
-    Two conditions must be met for a period to be operational for a project
-    of a certain vintage:
+    Two conditions must be met for a period to be operational / incurring costs for a
+    project of a certain vintage:
     1) project vintage (i.e. first operational year) must be before or equal
     to the start year of the period
-    2) project last operational year must be after the period end year.
+    2) project last lifetime year must be **after** the period end year.
 
     The end year of the period is exclusive (i.e. the last day of a period
     with end year 2030 is actually 2020-12-29). With the current
     formulation, a project with a 10 year lifetime of the 2020 vintage is
-    assumed to be operational on 2020-01-01 and remain operational through
-    2029-12-31 (vintage 2020, last operational year 2030 exclusive). It will be
-    operational in a period with a start year of 2020 and end year of 2030.
+    assumed to be operational / incurring costs on 2020-01-01 and remain operational
+    / incurring costs through 2029-12-31 (vintage 2020, last lifetime year 2030
+    exclusive). It will be operational / incurring costs in a period with a start
+    year of 2020 and end year of 2030.
 
-    If either the vintage or the last operational year is within the period,
-    the period is assumed to not be operational for the project.
+    If either the vintage or the last lifetime year is within the period,
+    the period is assumed to not be operational / incurring capital costs for the
+    project.
     """
-    # No operational periods if vintage does not belong to the project set;
+    # No relevant periods if vintage does not belong to the project set;
     # this shouldn't happen as we (should) enforce VINTAGES within PERIODS.
     if vintage not in periods:
         return []
     else:
-        first_operational_year = period_start_year[vintage]
-        last_operational_year = period_start_year[vintage] + lifetime_yrs
-        operational_periods = list()
+        first_lifetime_year = period_start_year[vintage]
+        last_lifetime_year = period_start_year[vintage] + lifetime_yrs
+        relevant_periods = list()
         for p in periods:
             if (
-                first_operational_year <= period_start_year[p]
-                and last_operational_year >= period_end_year[p]
+                first_lifetime_year <= period_start_year[p]
+                and last_lifetime_year >= period_end_year[p]
             ):
-                operational_periods.append(p)
-            else:
-                pass
+                relevant_periods.append(p)
 
-    return operational_periods
+    return relevant_periods
 
 
-def project_operational_periods(
-    project_vintages_set, operational_periods_by_project_vintage_set
+def project_relevant_periods(
+    project_vintages_set, relevant_periods_by_project_vintage_set
 ):
     """
     :param project_vintages_set: the possible project-vintages when capacity
         can be built
-    :param operational_periods_by_project_vintage_set: the project operational
+    :param relevant_periods_by_project_vintage_set: the project operational
         periods based on vintage
     :return: all study periods when the project could be operational
 
-    Get the periods in which each project COULD be operational given all
-    project-vintages and operational periods by project-vintage (the
-    lifetime is allowed to differ by vintage).
+    Get the periods in which each project COULD be operational (or incurring
+    capital costs) given all project-vintages and relevant periods by
+    project-vintage (the lifetime is allowed to differ by vintage).
     """
-    return set(
-        (g, p)
-        for (g, v) in project_vintages_set
-        for p in operational_periods_by_project_vintage_set[g, v]
+    return sorted(
+        list(
+            set(
+                (g, p)
+                for (g, v) in project_vintages_set
+                for p in relevant_periods_by_project_vintage_set[g, v]
+            )
+        )
     )
 
 
-def project_vintages_operational_in_period(
-    project_vintage_set, operational_periods_by_project_vintage_set, period
+def project_vintages_relevant_in_period(
+    project_vintage_set, relevant_periods_by_project_vintage_set, period
 ):
     """
     :param project_vintage_set: possible project-vintages when capacity
         could be built
-    :param operational_periods_by_project_vintage_set: the periods when
-        project capacity of a particular vintage could be operational
+    :param relevant_periods_by_project_vintage_set: the periods when
+        project capacity of a particular vintage could be operational (or incurring
+        capital costs)
     :param period: the period we're in
-    :return: all vintages that could be operational in a period
+    :return: all vintages that could be operational (or incurring capital costs) in a
+        period
 
-    Get the project vintages that COULD be operational in each period.
+    Get the project vintages that COULD be operational (or incurring capital costs) in
+    each period.
     """
     project_vintages = list()
-    for (prj, v) in project_vintage_set:
-        if period in operational_periods_by_project_vintage_set[prj, v]:
+    for prj, v in project_vintage_set:
+        if period in relevant_periods_by_project_vintage_set[prj, v]:
             project_vintages.append((prj, v))
-        else:
-            pass
+
     return project_vintages
-
-
-def update_capacity_results_table(
-    db, c, results_directory, scenario_id, subproblem, stage, results_file
-):
-    results = []
-    with open(os.path.join(results_directory, results_file), "r") as capacity_file:
-        reader = csv.reader(capacity_file)
-
-        header = next(reader)
-
-        for row in reader:
-            project = row[0]
-            period = row[1]
-            new_build_mw = get_column_row_value(header, "new_build_mw", row)
-            new_build_mwh = get_column_row_value(header, "new_build_mwh", row)
-            new_build_binary = get_column_row_value(header, "new_build_binary", row)
-            retired_mw = get_column_row_value(header, "retired_mw", row)
-            retired_binary = get_column_row_value(header, "retired_binary", row)
-            fuel_prod = get_column_row_value(
-                header, "new_fuel_prod_capacity_fuelunitperhour", row
-            )
-            fuel_rel = get_column_row_value(
-                header, "new_fuel_rel_capacity_fuelunitperhour", row
-            )
-            fuel_stor = get_column_row_value(
-                header, "new_fuel_stor_capacity_fuelunitperhour", row
-            )
-
-            results.append(
-                (
-                    new_build_mw,
-                    new_build_mwh,
-                    new_build_binary,
-                    retired_mw,
-                    retired_binary,
-                    fuel_prod,
-                    fuel_rel,
-                    fuel_stor,
-                    scenario_id,
-                    project,
-                    period,
-                    subproblem,
-                    stage,
-                )
-            )
-
-    # Update the results table with the module-specific results
-    update_sql = """
-        UPDATE results_project_capacity
-        SET new_build_mw = ?,
-        new_build_mwh = ?,
-        new_build_binary = ?,
-        retired_mw = ?,
-        retired_binary = ?,
-        new_fuel_prod_capacity_fuelunitperhour = ?,
-        new_fuel_rel_capacity_fuelunitperhour = ?,
-        new_fuel_stor_capacity_fuelunit = ?
-        WHERE scenario_id = ?
-        AND project = ?
-        AND period = ?
-        AND subproblem_id = ?
-        AND stage_id = ?;
-        """
-
-    spin_on_database_lock(conn=db, cursor=c, sql=update_sql, data=results)
 
 
 # Specified projects common functions
@@ -201,7 +144,7 @@ def spec_get_inputs_from_database(conn, subscenarios, capacity_type):
         fuel_production_capacity_fuelunitperhour,
         fuel_release_capacity_fuelunitperhour,
         fuel_storage_capacity_fuelunit,
-        fixed_cost_per_mw_year,
+        fixed_cost_per_mw_yr,
         hyb_gen_fixed_cost_per_mw_yr,
         hyb_stor_fixed_cost_per_mw_yr,
         fixed_cost_per_mwh_year,
@@ -227,7 +170,7 @@ def spec_get_inputs_from_database(conn, subscenarios, capacity_type):
         USING (project, period)
         INNER JOIN
         (SELECT project, period,
-        fixed_cost_per_mw_year,
+        fixed_cost_per_mw_yr,
         hyb_gen_fixed_cost_per_mw_yr,
         hyb_stor_fixed_cost_per_mw_yr,
         fixed_cost_per_mwh_year,
@@ -251,12 +194,22 @@ def spec_get_inputs_from_database(conn, subscenarios, capacity_type):
     return spec_project_params
 
 
-def spec_write_tab_file(scenario_directory, subproblem, stage, spec_project_params):
-
+def spec_write_tab_file(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    spec_project_params,
+):
     spec_params_filepath = os.path.join(
         scenario_directory,
-        str(subproblem),
-        str(stage),
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
         "inputs",
         "spec_capacity_period_params.tab",
     )
@@ -313,7 +266,7 @@ def write_from_query(spec_project_params, writer):
             fuel_prod_cap,
             fuel_rel_cap,
             fuel_stor_cap,
-            fixed_cost_per_mw_year,
+            fixed_cost_per_mw_yr,
             hyb_gen_fixed_cost_per_mw_yr,
             hyb_stor_fixed_cost_per_mw_yr,
             fixed_cost_per_mwh_year,
@@ -332,7 +285,7 @@ def write_from_query(spec_project_params, writer):
                 fuel_prod_cap,
                 fuel_rel_cap,
                 fuel_stor_cap,
-                fixed_cost_per_mw_year,
+                fixed_cost_per_mw_yr,
                 hyb_gen_fixed_cost_per_mw_yr,
                 hyb_stor_fixed_cost_per_mw_yr,
                 fixed_cost_per_mwh_year,
@@ -343,14 +296,28 @@ def write_from_query(spec_project_params, writer):
         )
 
 
-def spec_determine_inputs(scenario_directory, subproblem, stage, capacity_type):
-
+def spec_determine_inputs(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    capacity_type,
+):
     # Determine the relevant projects
     project_list = list()
 
     df = pd.read_csv(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "projects.tab",
         ),
         sep="\t",
         usecols=["project", "capacity_type"],
@@ -359,8 +326,6 @@ def spec_determine_inputs(scenario_directory, subproblem, stage, capacity_type):
     for row in zip(df["project"], df["capacity_type"]):
         if row[1] == capacity_type:
             project_list.append(row[0])
-        else:
-            pass
 
     # Determine the operational periods & params for each project/period
     project_period_list = list()
@@ -382,8 +347,11 @@ def spec_determine_inputs(scenario_directory, subproblem, stage, capacity_type):
     df = pd.read_csv(
         os.path.join(
             scenario_directory,
-            str(subproblem),
-            str(stage),
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
             "inputs",
             "spec_capacity_period_params.tab",
         ),
@@ -424,8 +392,6 @@ def spec_determine_inputs(scenario_directory, subproblem, stage, capacity_type):
             spec_fuel_prod_fixed_cost_dict[(row[0], row[1])] = float(row[13])
             spec_fuel_rel_fixed_cost_dict[(row[0], row[1])] = float(row[14])
             spec_fuel_stor_fixed_cost_dict[(row[0], row[1])] = float(row[15])
-        else:
-            pass
 
     # Quick check that all relevant projects from projects.tab have capacity
     # params specified
@@ -450,14 +416,80 @@ def spec_determine_inputs(scenario_directory, subproblem, stage, capacity_type):
     main_dict["hyb_gen_fixed_cost_per_mw_yr"] = hyb_gen_spec_fixed_cost_per_mw_yr_dict
     main_dict["hyb_stor_fixed_cost_per_mw_yr"] = hyb_stor_spec_fixed_cost_per_mw_yr_dict
     main_dict["fixed_cost_per_mwh_yr"] = spec_fixed_cost_per_mwh_yr_dict
-    main_dict[
-        "fuel_production_capacity_fixed_cost_per_fuelunitperhour_yr"
-    ] = spec_fuel_prod_fixed_cost_dict
-    main_dict[
-        "fuel_release_capacity_fixed_cost_per_fuelunitperhour_yr"
-    ] = spec_fuel_rel_fixed_cost_dict
-    main_dict[
-        "fuel_storage_capacity_fixed_cost_per_fuelunit_yr"
-    ] = spec_fuel_stor_fixed_cost_dict
+    main_dict["fuel_production_capacity_fixed_cost_per_fuelunitperhour_yr"] = (
+        spec_fuel_prod_fixed_cost_dict
+    )
+    main_dict["fuel_release_capacity_fixed_cost_per_fuelunitperhour_yr"] = (
+        spec_fuel_rel_fixed_cost_dict
+    )
+    main_dict["fuel_storage_capacity_fixed_cost_per_fuelunit_yr"] = (
+        spec_fuel_stor_fixed_cost_dict
+    )
 
     return project_period_list, main_dict
+
+
+def read_results_file_generic(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    capacity_type,
+):
+    """
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :param capacity_type:
+    :return:
+    """
+
+    # Get the results CSV as dataframe
+    df = pd.read_csv(
+        os.path.join(
+            scenario_directory,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "results",
+            "project_period.csv",
+        )
+    )
+
+    # Filter by capacity type and aggregate by technology
+    capacity_results_agg_df = (
+        df.loc[df["capacity_type"] == capacity_type]
+        .groupby(by=["load_zone", "technology", "period"], as_index=True)
+        .sum(numeric_only=True)
+    )
+
+    return capacity_results_agg_df
+
+
+def write_summary_results_generic(
+    results_df, columns, summary_results_file, title, empty_title
+):
+    # Rename column header
+    results_df.columns = columns
+
+    with open(summary_results_file, "a") as outfile:
+        outfile.write(f"\n--> {title} <--\n")
+        if results_df.empty:
+            outfile.write(f"{empty_title}\n")
+        else:
+            results_df.to_string(outfile, float_format="{:,.2f}".format)
+            outfile.write("\n")
+
+
+def get_units(scenario_directory):
+    units_df = pd.read_csv(
+        os.path.join(scenario_directory, "units.csv"), index_col="metric"
+    )
+    power_unit = units_df.loc["power", "unit"]
+    energy_unit = units_df.loc["energy", "unit"]
+    fuel_unit = units_df.loc["fuel_energy", "unit"]
+
+    return power_unit, energy_unit, fuel_unit

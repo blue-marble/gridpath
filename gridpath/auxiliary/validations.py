@@ -1,4 +1,4 @@
-# Copyright 2016-2022 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -37,9 +37,13 @@ def _get_idx_col(df):
         )
 
 
+# TODO: add iterations to validation?
 def write_validation_to_database(
     conn,
     scenario_id,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
     subproblem_id,
     stage_id,
     gridpath_module,
@@ -283,30 +287,38 @@ def validate_dtypes(df, expected_dtypes):
     Helper function for input validation.
     :param df: DataFrame for which to check data types
     :param expected_dtypes: dictionary with expected datatype ("numeric" or
-        "string" for each column.
+        "string" for each column).
     :return: List of error messages for each column with invalid datatypes.
         Error message specifies the column and the expected data type.
         List of columns with erroneous data types.
     """
     result = []
     columns = []
+
     for column in df.columns:
-        if pd.isna(df[column]).all():
-            pass
-        elif expected_dtypes[column] == "numeric" and not pd.api.types.is_numeric_dtype(
-            df[column]
-        ):
-            result.append(
-                "Invalid data type for column '{}'; expected numeric".format(column)
-            )
-            columns.append(column)
-        elif expected_dtypes[column] == "string" and not pd.api.types.is_string_dtype(
-            df[column]
-        ):
-            result.append(
-                "Invalid data type for column '{}'; expected string".format(column)
-            )
-            columns.append(column)
+        column_df = pd.DataFrame(df[column])
+        # Only check if not all values are null
+        # TODO: we need a separate validation for whether NULL values should
+        #  be allowed in a column; maybe shoud be NOT NULL in the database
+        if not pd.isna(column_df[column]).all():
+            # Drop any NaN/NULLs, so that they don't interfere with the data
+            # type of the column
+            if pd.isna(column_df[column]).any():
+                column_df = column_df.loc[:, column_df.isna().sum() > 0].dropna()
+            if expected_dtypes[
+                column
+            ] == "numeric" and not pd.api.types.is_numeric_dtype(column_df[column]):
+                result.append(
+                    "Invalid data type for column '{}'; expected numeric".format(column)
+                )
+                columns.append(column)
+            if expected_dtypes[column] == "string" and not pd.api.types.is_string_dtype(
+                column_df[column]
+            ):
+                result.append(
+                    "Invalid data type for column '{}'; expected string".format(column)
+                )
+                columns.append(column)
 
     # Alternative that avoids pd.api.types:
     # numeric_columns = [k for k, v in expected_dtypes.items() if v == "numeric"]
@@ -438,7 +450,7 @@ def validate_columns(df, columns, valids=[], invalids=[]):
 
     # Entries are invalid if they are either not in the provided list of valid
     # entries (if any), or if they are in the provided list of invalid entries
-    falses = pd.Series([False] * len(df))
+    falses = pd.Series([False] * len(df), dtype="object")
     valids_mask = ~df["lookup"].isin(valids) if valids else falses
     invalids_mask = df["lookup"].isin(invalids) if invalids else falses
     mask = valids_mask | invalids_mask
@@ -535,7 +547,7 @@ def validate_single_input(df, idx_col="project", msg=""):
 
     results = []
 
-    n_inputs = df.groupby(idx_col).size()
+    n_inputs = df.groupby(idx_col, group_keys=False).size()
     invalids = n_inputs > 1
     if invalids.any():
         bad_idxs = invalids.index[invalids]
@@ -573,9 +585,11 @@ def validate_row_monotonicity(
     cols = [col] if isinstance(col, str) else col
     for c in cols:
         df2 = df.dropna(subset=[c])
-        group = df2.sort_values([idx_col, rank_col]).groupby(idx_col)[c]
+        group = df2.sort_values([idx_col, rank_col]).groupby(idx_col, group_keys=False)[
+            c
+        ]
         if increasing:
-            invalids = ~group.apply(lambda x: x.is_monotonic)
+            invalids = ~group.apply(lambda x: x.is_monotonic_increasing)
             direction = "increase"
         else:
             invalids = ~group.apply(lambda x: x.is_monotonic_decreasing)
@@ -605,7 +619,7 @@ def validate_column_monotonicity(df, cols, idx_col="project", msg=""):
     results = []
 
     df = df.dropna(subset=cols)
-    invalids = ~df[cols].apply(lambda x: x.is_monotonic, axis=1)
+    invalids = ~df[cols].apply(lambda x: x.is_monotonic_increasing, axis=1)
     if invalids.any():
         bad_idxs = df[idx_col][invalids].values
         results.append(
@@ -740,7 +754,7 @@ def validate_startup_shutdown_rate_inputs(prj_df, su_df, hrs_in_tmp):
 
     # Split su_df in df with hottest starts and df with coldest starts
     su_df_hot = (
-        su_df.groupby("project")
+        su_df.groupby("project", group_keys=False)[su_df.columns]
         .apply(lambda grp: grp.nsmallest(1, columns=["down_time_cutoff_hours"]))
         .reset_index(drop=True)
         .rename(
@@ -751,7 +765,7 @@ def validate_startup_shutdown_rate_inputs(prj_df, su_df, hrs_in_tmp):
         )
     )
     su_df_cold = (
-        su_df.groupby("project")
+        su_df.groupby("project", group_keys=False)[su_df.columns]
         .apply(lambda grp: grp.nlargest(1, columns=["down_time_cutoff_hours"]))
         .reset_index(drop=True)
         .rename(
@@ -763,12 +777,18 @@ def validate_startup_shutdown_rate_inputs(prj_df, su_df, hrs_in_tmp):
     )
 
     # Calculate number of startup types and null values for each project
-    su_count = su_df.groupby("project").size().reset_index(name="n_types")
+    su_count = (
+        su_df.groupby("project", group_keys=False).size().reset_index(name="n_types")
+    )
     su_count_series = su_count.set_index("project")["n_types"]  # DF to Series
-    cutoff_na_count = su_df.groupby("project")["down_time_cutoff_hours"].apply(
+    cutoff_na_count = su_df.groupby("project", group_keys=False)[
+        "down_time_cutoff_hours"
+    ].apply(
         lambda grp: grp.isnull().sum()
     )  # pd.Series (index = project)
-    ramp_na_count = su_df.groupby("project")["startup_plus_ramp_up_rate"].apply(
+    ramp_na_count = su_df.groupby("project", group_keys=False)[
+        "startup_plus_ramp_up_rate"
+    ].apply(
         lambda grp: grp.isnull().sum()
     )  # pd.Series (index = project)
 
@@ -791,6 +811,17 @@ def validate_startup_shutdown_rate_inputs(prj_df, su_df, hrs_in_tmp):
         prj_df["startup_fuel_mmbtu_per_mw"] = 0
 
     # Replace any NA/None with defaults
+    def downcast_column(column):
+        if column.dtype == "object":
+            try:
+                return column.astype(float)
+            except ValueError:
+                return column.astype("category")
+        return column
+
+    for col in prj_df.columns:
+        prj_df[col] = downcast_column(prj_df[col])
+
     prj_df.fillna(
         value={
             "min_down_time_hours": 0,
@@ -918,10 +949,12 @@ def validate_startup_shutdown_rate_inputs(prj_df, su_df, hrs_in_tmp):
 
     # 6. Check that cutoff and ramp rate are in right order
     if ~cutoff_na_mask.any() and ~ramp_na_mask.any():
-        rank_cutoff = su_df.groupby("project")["down_time_cutoff_hours"].rank()
-        rank_ramp = su_df.groupby("project")["startup_plus_ramp_up_rate"].rank(
-            ascending=False
-        )
+        rank_cutoff = su_df.groupby("project", group_keys=False)[
+            "down_time_cutoff_hours"
+        ].rank()
+        rank_ramp = su_df.groupby("project", group_keys=False)[
+            "startup_plus_ramp_up_rate"
+        ].rank(ascending=False)
 
         invalids = rank_cutoff != rank_ramp
         if invalids.any():

@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -48,7 +48,6 @@ Linear Optimal Power Flow Using Cycle Flows".
 
 """
 
-from __future__ import print_function
 
 import networkx as nx
 import os
@@ -56,8 +55,22 @@ import pandas as pd
 
 from pyomo.environ import Set, Var, Constraint, Reals, Param
 
+from gridpath.auxiliary.auxiliary import (
+    subset_init_by_param_value,
+    subset_init_by_set_membership,
+)
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     The following Pyomo model components are defined in this module:
 
@@ -184,16 +197,19 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.TX_DCOPF = Set(
         within=m.TX_LINES,
-        initialize=lambda mod: list(
-            set(l for l in mod.TX_LINES if mod.tx_operational_type[l] == "tx_dcopf")
+        initialize=lambda mod: subset_init_by_param_value(
+            mod=mod,
+            set_name="TX_LINES",
+            param_name="tx_operational_type",
+            param_value="tx_dcopf",
         ),
     )
 
     m.TX_DCOPF_OPR_TMPS = Set(
         dimen=2,
         within=m.TX_OPR_TMPS,
-        initialize=lambda mod: list(
-            set((l, tmp) for (l, tmp) in mod.TX_OPR_TMPS if l in mod.TX_DCOPF)
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod, superset="TX_OPR_TMPS", index=0, membership_set=mod.TX_DCOPF
         ),
     )
 
@@ -509,7 +525,17 @@ def transmit_power_losses_lz_to_rule(mod, line, tmp):
 ###############################################################################
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
 
     :param m:
@@ -524,8 +550,11 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     df = pd.read_csv(
         os.path.join(
             scenario_directory,
-            str(subproblem),
-            str(stage),
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
             "inputs",
             "transmission_lines.tab",
         ),

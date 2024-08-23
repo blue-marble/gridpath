@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ from gridpath.common_functions import (
     create_logs_directory_if_not_exists,
     Logging,
     determine_scenario_directory,
+    get_import_results_parser,
 )
 from gridpath import (
     get_scenario_inputs,
@@ -68,6 +69,7 @@ def parse_arguments(args):
             get_required_e2e_arguments_parser(),
             get_run_scenario_parser(),
             get_get_inputs_parser(),
+            get_import_results_parser(),
         ],
     )
 
@@ -239,8 +241,6 @@ def remove_from_queue_if_in_queue(db_path, scenario, queue_order_id):
         spin_on_database_lock(
             conn=conn, cursor=c, sql=sql, data=(scenario,), many=False
         )
-    else:
-        pass
 
     conn.close()
 
@@ -277,12 +277,19 @@ def main(args=None):
         scenario_name=parsed_args.scenario,
     )
 
+    # TODO: why aren't we printing the log in the individual optimization
+    #  directory
     if parsed_args.log:
         logs_directory = create_logs_directory_if_not_exists(
-            scenario_directory=scenario_directory, subproblem="", stage=""
+            scenario_directory=scenario_directory,
+            weather_iteration="",
+            hydro_iteration="",
+            availability_iteration="",
+            subproblem="",
+            stage="",
         )
 
-        # Save sys.stdout so we can return to it later
+        # Save sys.stdout, so we can return to it later
         stdout_original = sys.stdout
         stderr_original = sys.stderr
 
@@ -449,7 +456,8 @@ def main(args=None):
         sys.stderr = stderr_original
 
     # Return expected objective values (for testing)
-    return expected_objective_values
+    if parsed_args.testing:
+        return expected_objective_values
 
 
 def update_db_for_run_end(db_path, scenario, queue_order_id, process_id, run_status_id):

@@ -34,7 +34,15 @@ Creating the Database
 Populating the Database
 ***********************
 
+Loading Input Data
+******************
+
 .. automodule:: db.utilities.port_csvs_to_db
+
+Creating Scenarios
+******************
+
+.. automodule:: db.utilities.scenario
 
 GridPath Input Data
 ###################
@@ -447,3 +455,4 @@ To run the validation suite from the command line, navigate to the
 :code:`gridpath/gridpath` folder and type::
 
     validate_inputs.py --scenario SCENARIO_NAME --database PATH/TO/DATABASE
+

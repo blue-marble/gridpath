@@ -1,0 +1,23 @@
+##### SUMMARY RESULTS FOR SCENARIO *2periods_new_build_cumulative_and_vintage_min_max* #####
+
+### CAPACITY RESULTS ###
+
+--> New Generation Capacity <--
+                             New Capacity (MW)
+load_zone technology period                   
+Zone1     Gas        2020                10.00
+                     2030                30.00
+
+### OPERATIONAL RESULTS ###
+
+--> Energy Production <--
+                             Annual Energy (MWh)  % Total Power
+load_zone period technology                                    
+Zone1     2020   Coal                  39,420.00          13.89
+                 Gas                  179,580.00          63.27
+                 Nuclear               52,560.00          18.52
+                 Wind                  12,264.00           4.32
+          2030   Coal                       0.00           0.00
+                 Gas                  329,376.00          83.56
+                 Nuclear               52,560.00          13.33
+                 Wind                  12,264.00           3.11

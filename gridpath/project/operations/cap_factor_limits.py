@@ -1,4 +1,4 @@
-# Copyright 2016-2022 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,14 +22,22 @@ import csv
 import os.path
 from pyomo.environ import Set, Param, Constraint, Expression, Reals, value
 
-from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.db_interface import setup_results_import
+from gridpath.auxiliary.db_interface import import_csv
 
 Infinity = float("inf")
 Negative_Infinity = float("-inf")
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     The tables below list the Pyomo model components defined in the
     'gen_commit_bin' module followed below by the respective components
@@ -151,7 +159,17 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     :param mod:
     :param data_portal:
@@ -160,11 +178,13 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :param stage:
     :return:
     """
-    # Load any projects for cycle selection
     input_file = os.path.join(
         scenario_directory,
-        str(subproblem),
-        str(stage),
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
         "inputs",
         "cap_factor_limits.tab",
     )
@@ -180,47 +200,76 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         )
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
+):
     """ """
-    with open(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "cap_factor_limits.csv",
-        ),
-        "w",
-        newline="",
-    ) as results_f:
-        writer = csv.writer(results_f)
-        writer.writerow(
-            [
-                "project",
-                "balancing_type_horizon",
-                "horizon",
-                "min_cap_factor",
-                "max_cap_factor",
-                "actual_power_provision_mwh",
-                "possible_power_provision_mwh",
-            ]
-        )
-        for (prj, bt, h) in m.CAP_FACTOR_LIMIT_PRJ_BT_HRZ:
+    input_file = os.path.join(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+        "cap_factor_limits.tab",
+    )
+
+    if os.path.exists(input_file):
+        with open(
+            os.path.join(
+                scenario_directory,
+                subproblem,
+                stage,
+                "results",
+                "project_cap_factor_limits.csv",
+            ),
+            "w",
+            newline="",
+        ) as results_f:
+            writer = csv.writer(results_f)
             writer.writerow(
                 [
-                    prj,
-                    bt,
-                    h,
-                    None
-                    if m.min_cap_factor[prj, bt, h] == Negative_Infinity
-                    else m.min_cap_factor[prj, bt, h],
-                    None
-                    if m.max_cap_factor[prj, bt, h] == Infinity
-                    else m.max_cap_factor[prj, bt, h],
-                    value(m.Actual_Power_Provision_in_Horizon_Expression[prj, bt, h]),
-                    value(m.Possible_Power_Provision_in_Horizon_Expression[prj, bt, h]),
+                    "project",
+                    "balancing_type_horizon",
+                    "horizon",
+                    "min_cap_factor",
+                    "max_cap_factor",
+                    "actual_power_provision_mwh",
+                    "possible_power_provision_mwh",
                 ]
             )
+            for prj, bt, h in sorted(m.CAP_FACTOR_LIMIT_PRJ_BT_HRZ):
+                writer.writerow(
+                    [
+                        prj,
+                        bt,
+                        h,
+                        (
+                            None
+                            if m.min_cap_factor[prj, bt, h] == Negative_Infinity
+                            else m.min_cap_factor[prj, bt, h]
+                        ),
+                        (
+                            None
+                            if m.max_cap_factor[prj, bt, h] == Infinity
+                            else m.max_cap_factor[prj, bt, h]
+                        ),
+                        value(
+                            m.Actual_Power_Provision_in_Horizon_Expression[prj, bt, h]
+                        ),
+                        value(
+                            m.Possible_Power_Provision_in_Horizon_Expression[prj, bt, h]
+                        ),
+                    ]
+                )
 
 
 # Database
@@ -228,7 +277,16 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 
 
 def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    c,
+    db,
+    results_directory,
+    quiet,
 ):
     """
     :param scenario_id:
@@ -238,77 +296,29 @@ def import_results_into_database(
     :param quiet:
     :return:
     """
-    # Fuel burned by project and timepoint
-    if not quiet:
-        print("project cap factor limits")
-    # Delete prior results and create temporary import table for ordering
-    setup_results_import(
-        conn=db,
-        cursor=c,
-        table="results_project_cap_factor_limits",
-        scenario_id=scenario_id,
-        subproblem=subproblem,
-        stage=stage,
-    )
+    which_results = "project_cap_factor_limits"
 
-    # Load results into the temporary table
-    results = []
-    with open(
-        os.path.join(results_directory, "cap_factor_limits.csv"), "r"
-    ) as results_file:
-        reader = csv.reader(results_file)
-
-        next(reader)  # skip header
-        for row in reader:
-            project = row[0]
-            balancing_type_horizon = row[1]
-            horizon = row[2]
-            min_cap_factor = row[3]
-            max_cap_factor = row[4]
-            actual_power_provision = row[5]
-            possible_power_provision = row[6]
-
-            results.append(
-                (
-                    scenario_id,
-                    subproblem,
-                    stage,
-                    project,
-                    balancing_type_horizon,
-                    horizon,
-                    min_cap_factor,
-                    max_cap_factor,
-                    actual_power_provision,
-                    possible_power_provision,
-                )
-            )
-
-    insert_temp_sql = """
-        INSERT INTO 
-        temp_results_project_cap_factor_limits{}
-         (scenario_id, subproblem_id, stage_id, project, balancing_type_horizon, 
-         horizon, min_cap_factor, max_cap_factor, actual_power_provision_mwh, 
-         possible_power_provision_mwh)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-         """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
-
-    # Insert sorted results into permanent results table
-    insert_sql = """
-        INSERT INTO results_project_cap_factor_limits
-        (scenario_id, subproblem_id, stage_id, project, balancing_type_horizon, 
-         horizon, min_cap_factor, max_cap_factor, actual_power_provision_mwh, 
-         possible_power_provision_mwh)
-        SELECT
-        scenario_id, subproblem_id, stage_id, project, balancing_type_horizon, 
-         horizon, min_cap_factor, max_cap_factor, actual_power_provision_mwh, 
-         possible_power_provision_mwh
-        FROM temp_results_project_cap_factor_limits{}
-         ORDER BY scenario_id, subproblem_id, stage_id, project, 
-         balancing_type_horizon, horizon;
-         """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)
+    if os.path.exists(
+        os.path.join(
+            results_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "results",
+            f"{which_results}.csv",
+        )
+    ):
+        import_csv(
+            conn=db,
+            cursor=c,
+            scenario_id=scenario_id,
+            hydro_iteration=hydro_iteration,
+            availability_iteration=availability_iteration,
+            subproblem=subproblem,
+            stage=stage,
+            quiet=quiet,
+            results_directory=results_directory,
+            which_results=which_results,
+        )

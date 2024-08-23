@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -107,7 +107,7 @@ def get_plotting_data(conn, scenario_id, load_zone, period, stage, **kwargs):
     # through inner joins and adding a conditional to ignore those timepoints
     sql = """SELECT month, hour_of_day, 
         SUM(scheduled_curtailment_mw) AS scheduled_curtailment_mwh
-        FROM results_project_curtailment_variable
+        FROM results_project_curtailment_variable_periodagg
         
         -- add temporal scenario id so we can join timepoints table
         INNER JOIN

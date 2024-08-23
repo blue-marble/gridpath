@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -125,9 +125,7 @@ def get_subscenario_data(csv_file, cols_to_exclude_str, **kwargs):
     csv_columns = df.columns.tolist()
 
     # Exclude some columns if directed to do so
-    if cols_to_exclude_str == "nan":
-        pass
-    else:
+    if cols_to_exclude_str != "nan":
         cols_to_exclude = [i for i in csv_columns if i.startswith(cols_to_exclude_str)]
         for c in cols_to_exclude:
             csv_columns.remove(c)
@@ -521,17 +519,17 @@ def generic_insert_subscenario(
         )
 
 
-def determine_tables_to_delete_from(csv_data_master, subscenario):
+def determine_tables_to_delete_from(csv_structure, subscenario):
     """
-    :param csv_data_master: Pandas DataFrame
+    :param csv_structure: Pandas DataFrame
     :param subscenario: str;
     :return: subscenario_table, input_tables, project_flag, project_is_tx,
         base_table, base_subscenario
 
     Determine the relevant tables from which to delete prior data.
     """
-    # Get the sub-dataframe for this subscenario from the master CSV
-    subscenario_df = csv_data_master.loc[csv_data_master["subscenario"] == subscenario]
+    # Get the sub-dataframe for this subscenario from the CSV structure file
+    subscenario_df = csv_structure.loc[csv_structure["subscenario"] == subscenario]
 
     # Determine the relevant tables for this subscenario
     subscenario_table = None
@@ -627,18 +625,21 @@ def confirm_and_temp_update_affected_tables(
 
     c = conn.cursor()
 
+    # Project-level params default to None
+    base_subscenario_ids_str, base_subscenario_ids_data = None, None
+
     # For project-level data, we first check whether this
     # project-subscenario_id is used in the base table
     if project_flag:
         if project_is_tx:
-            project = "transmission_line"
+            project_type = "transmission_line"
         else:
-            project = "project"
+            project_type = "project"
         # Check if this project-subscenario ID exists in the base table
         base_subscenario_ids_sql = """
             SELECT {} FROM {} WHERE {} = ? and {} = ?
             """.format(
-            base_subscenario, base_table, project, subscenario
+            base_subscenario, base_table, project_type, subscenario
         )
         base_subscenario_ids_tuples = c.execute(
             base_subscenario_ids_sql, (project, subscenario_id)
@@ -682,9 +683,6 @@ def confirm_and_temp_update_affected_tables(
     # For non-project-level data, we only need to check if any scenarios
     # have this subscenario ID
     else:
-        # Project-level params to pass downstream set to None
-        base_subscenario_ids_str, base_subscenario_ids_data = None, None
-
         # Figure out if there are scenarios using this subscenario_id;
         # if there are, we need to NULLify that subscenario for these
         # scenarios in order to avoid a FOREIGN KEY error when deleting the
@@ -743,7 +741,7 @@ def confirm_and_temp_update_affected_tables(
             base_table_update_sql = """
                 UPDATE {} SET {} = NULL WHERE {} = ? and {} = ?
             """.format(
-                base_table, subscenario, base_subscenario, project
+                base_table, subscenario, base_subscenario, project_type
             )
             spin_on_database_lock(
                 conn=conn,
@@ -802,13 +800,17 @@ def repopulate_tables(
     # Update the base table if project-level if there's any update data
     if project_flag and base_subscenario_ids_data:
         if project_is_tx:
-            project = "transmission_line"
+            project_type = "transmission_line"
         else:
-            project = "project"
+            project_type = "project"
         base_subscenario_reupdate_sql = """
             UPDATE {} SET {} = ? WHERE {} in ({}) AND {} = ?
             """.format(
-            base_table, subscenario, base_subscenario, base_subscenario_ids_str, project
+            base_table,
+            subscenario,
+            base_subscenario,
+            base_subscenario_ids_str,
+            project_type,
         )
         base_subscenario_update_tuple = (
             (int(subscenario_id),) + tuple(base_subscenario_ids_data) + (project,)
@@ -887,9 +889,9 @@ def generic_delete_subscenario(
         )
     else:
         if project_is_tx:
-            project = "transmission_line"
+            project_type = "transmission_line"
         else:
-            project = "project"
+            project_type = "project"
         delete_data = (
             project,
             subscenario_id,
@@ -900,7 +902,7 @@ def generic_delete_subscenario(
             WHERE {} = ?
             AND {} = ?;
             """.format(
-                table, project, subscenario
+                table, project_type, subscenario
             )
             for table in input_tables
         ]
@@ -909,7 +911,7 @@ def generic_delete_subscenario(
                     WHERE {} = ?
                     AND {} = ?;
                     """.format(
-            subscenario_table, project, subscenario
+            subscenario_table, project_type, subscenario
         )
 
     # Delete the inputs and subscenario info
@@ -952,15 +954,15 @@ def generic_insert_subscenario_info(
         )
     else:
         if project_is_tx:
-            project = "transmission_line"
+            project_type = "transmission_line"
         else:
-            project = "project"
+            project_type = "project"
         subs_sql = """
             INSERT INTO subscenarios_{table}
             ({project}, {subscenario_id}, name, description)
             VALUES (?, ?, ?, ?);
             """.format(
-            table=table, project=project, subscenario_id=subscenario
+            table=table, project=project_type, subscenario_id=subscenario
         )
 
     spin_on_database_lock(conn=conn, cursor=c, sql=subs_sql, data=subscenario_data)
@@ -1098,8 +1100,6 @@ def load_all_subscenario_ids_from_dir_to_subscenario_table(
             cols_to_exclude_str=cols_to_exclude_str,
             custom_method=custom_method,
         )
-    else:
-        pass
 
 
 def load_single_subscenario_id_from_dir_to_subscenario_table(
@@ -1187,7 +1187,7 @@ def load_single_subscenario_id_from_dir_to_subscenario_table(
         subscenario_directories = [
             d
             for d in sorted(next(os.walk(inputs_dir))[1])
-            if d.startswith(str(subscenario_id_to_load))
+            if d.startswith("{}_".format(subscenario_id_to_load))
         ]
         if len(subscenario_directories) == 1:
             subscenario_directory = subscenario_directories[0]
@@ -1218,8 +1218,6 @@ def load_single_subscenario_id_from_dir_to_subscenario_table(
             cols_to_exclude_str=cols_to_exclude_str,
             custom_method=custom_method,
         )
-    else:
-        pass
 
 
 def determine_whether_to_skip_subscenario_info_and_or_data(subscenario_type):

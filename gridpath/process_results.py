@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,8 +21,6 @@ The main() function of this script can also be called with the
 *gridpath_process_results* command when GridPath is installed.
 """
 
-
-from __future__ import print_function
 
 from argparse import ArgumentParser
 import sys
@@ -51,8 +49,6 @@ def process_results(loaded_modules, db, cursor, scenario_id, subscenarios, quiet
     for m in loaded_modules:
         if hasattr(m, "process_results"):
             m.process_results(db, cursor, scenario_id, subscenarios, quiet)
-        else:
-            pass
 
 
 def parse_arguments(args):

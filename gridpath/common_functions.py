@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,8 +14,11 @@
 
 import os.path
 import sys
+import warnings
 
 from argparse import ArgumentParser
+
+import pandas as pd
 
 
 def determine_scenario_directory(scenario_location, scenario_name):
@@ -74,6 +77,13 @@ def get_required_e2e_arguments_parser():
     )
     parser.add_argument(
         "--quiet", default=False, action="store_true", help="Don't print run output."
+    )
+
+    parser.add_argument(
+        "--verbose",
+        default=False,
+        action="store_true",
+        help="Print extra output, e.g. current module info.",
     )
 
     return parser
@@ -176,6 +186,25 @@ def get_run_scenario_parser():
         help="Log output to a file in the scenario's 'logs' "
         "directory as well as the terminal.",
     )
+    # Problem files and solutions
+    parser.add_argument(
+        "--create_lp_problem_file_only",
+        default=False,
+        action="store_true",
+        help="Create and save the problem file, but don't solve yet.",
+    )
+    parser.add_argument(
+        "--load_cplex_solution",
+        default=False,
+        action="store_true",
+        help="Skip solve and load results from a CPLEX solution file instead.",
+    )
+    parser.add_argument(
+        "--load_gurobi_solution",
+        default=False,
+        action="store_true",
+        help="Skip solve and load results from a Gurobi solution file instead.",
+    )
     # Solver options
     parser.add_argument(
         "--solver",
@@ -223,7 +252,7 @@ def get_run_scenario_parser():
         "--testing",
         default=False,
         action="store_true",
-        help="Flag for test suite runs. Results not saved.",
+        help="Flag for test suite runs.",
     )
 
     # Parallel solve
@@ -233,10 +262,26 @@ def get_run_scenario_parser():
         help="Solve n subproblems in parallel.",
     )
 
+    # Solve only incomplete subproblems
+    parser.add_argument(
+        "--incomplete_only",
+        default=False,
+        action="store_true",
+        help="Solve only incomplete subproblems, i.e. do no re-solve if "
+        "results are found. The subproblem is assumed complete if the"
+        "termination_condition.txt file is found.",
+    )
+
     # Results export rule name
     parser.add_argument(
         "--results_export_rule",
         help="The name of the rule to use to decide whether to export results.",
+    )
+
+    parser.add_argument(
+        "--results_export_summary_rule",
+        help="The name of the rule to use to decide whether to export "
+        "summary results.",
     )
 
     return parser
@@ -252,7 +297,20 @@ def get_import_results_parser():
     return parser
 
 
-def create_logs_directory_if_not_exists(scenario_directory, subproblem, stage):
+def ensure_empty_string(string):
+    empty_string_ensured = "" if string == "empty_string" else string
+
+    return empty_string_ensured
+
+
+def create_logs_directory_if_not_exists(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     Create a logs directory if it doesn't exist already
     :param scenario_directory:
@@ -261,7 +319,13 @@ def create_logs_directory_if_not_exists(scenario_directory, subproblem, stage):
     :return:
     """
     logs_directory = os.path.join(
-        scenario_directory, str(subproblem), str(stage), "logs"
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "logs",
     )
     if not os.path.exists(logs_directory):
         os.makedirs(logs_directory)
@@ -321,6 +385,20 @@ class Logging(object):
         self.terminal.write(message)
         self.log_file.write(message)
 
+        # Find a print statement
+        # import collections
+        # import inspect
+
+        # if message.strip():
+        #     Record = collections.namedtuple(
+        #         'Record',
+        #         'frame filename line_number function_name lines index')
+        #
+        #     record = Record(*inspect.getouterframes(inspect.currentframe())[1])
+        #     self.terminal.write(
+        #         '{f} {n}: '.format(f=record.filename, n=record.line_number))
+        # self.terminal.write(message)
+
     def flush(self):
         """
         Flush both the terminal and the log file
@@ -337,3 +415,34 @@ def string_from_time(datetime_string):
     :return: formatted time string
     """
     return datetime_string.strftime("%Y-%m-%d_%H-%M-%S")
+
+
+def create_results_df(index_columns, results_columns, data):
+    df = pd.DataFrame(
+        columns=index_columns + results_columns,
+        data=data,
+    ).set_index(index_columns)
+
+    return df
+
+
+def duals_wrapper(m, component, verbose=False):
+    try:
+        return m.dual[component]
+    except KeyError:
+        if verbose:
+            warnings.warn(
+                f"""
+                KeyError caught when saving duals for {component}. Duals were 
+                not exported. This is expected if solving a MIP with CPLEX (and 
+                possibly other solvers), not otherwise.
+                """
+            )
+        return None
+
+
+def none_dual_type_error_wrapper(component, coefficient):
+    try:
+        return component / coefficient
+    except TypeError:
+        return None

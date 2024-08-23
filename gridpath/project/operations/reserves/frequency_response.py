@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,9 +21,10 @@ import os.path
 import pandas as pd
 from pyomo.environ import Set, value
 
-from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.db_interface import setup_results_import
+from gridpath.auxiliary.db_interface import directories_to_db_values
 from gridpath.auxiliary.dynamic_components import headroom_variables
+from gridpath.common_functions import create_results_df
+from gridpath.project import PROJECT_TIMEPOINT_DF
 from gridpath.project.operations.reserves.reserve_provision import (
     generic_record_dynamic_components,
     generic_add_model_components,
@@ -52,7 +53,15 @@ RESERVE_BALANCING_AREAS_SET_NAME = "FREQUENCY_RESPONSE_BAS"
 RESERVE_PRJ_OPR_TMPS_SET_NAME = "FREQUENCY_RESPONSE_PRJ_OPR_TMPS"
 
 
-def record_dynamic_components(d, scenario_directory, subproblem, stage):
+def record_dynamic_components(
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
 
     :param d:
@@ -65,6 +74,9 @@ def record_dynamic_components(d, scenario_directory, subproblem, stage):
     generic_record_dynamic_components(
         d=d,
         scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         headroom_or_footroom_dict=HEADROOM_OR_FOOTROOM_DICT_NAME,
@@ -76,7 +88,16 @@ def record_dynamic_components(d, scenario_directory, subproblem, stage):
     )
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
 
     :param m:
@@ -84,7 +105,15 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     :return:
     """
 
-    record_dynamic_components(d, scenario_directory, subproblem, stage)
+    record_dynamic_components(
+        d,
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+    )
 
     generic_add_model_components(
         m=m,
@@ -110,7 +139,17 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     #         within=m.FREQUENCY_RESPONSE_PRJ_OPR_TMPS)
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
 
     :param m:
@@ -126,6 +165,9 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         d=d,
         data_portal=data_portal,
         scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         ba_column_name=BA_COLUMN_NAME_IN_INPUT_FILE,
@@ -142,7 +184,14 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     project_fr_partial_list = list()
     projects = pd.read_csv(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "projects.tab",
         ),
         sep="\t",
     )
@@ -154,15 +203,22 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     ):
         if row[1] != "." and int(float(row[2])) == 1:
             project_fr_partial_list.append(row[0])
-        else:
-            pass
 
     data_portal.data()["FREQUENCY_RESPONSE_PARTIAL_PROJECTS"] = {
         None: project_fr_partial_list
     }
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
+):
     """
     Export project-level results for downward load-following
     :param scenario_directory:
@@ -180,49 +236,43 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         else:
             partial_proj[prj] = 0
 
-    with open(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "reserves_provision_frequency_response.csv",
-        ),
-        "w",
-        newline="",
-    ) as f:
-        writer = csv.writer(f)
-        writer.writerow(
-            [
-                "project",
-                "period",
-                "horizon",
-                "timepoint",
-                "timepoint_weight",
-                "number_of_hours_in_timepoint",
-                "reserve_provision_mw",
-                "partial",
-            ]
-        )
-        for (p, tmp) in m.FREQUENCY_RESPONSE_PRJ_OPR_TMPS:
-            writer.writerow(
-                [
-                    p,
-                    m.period[tmp],
-                    m.horizon[tmp, m.balancing_type_project[p]],
-                    tmp,
-                    m.tmp_weight[tmp],
-                    m.hrs_in_tmp[tmp],
-                    m.load_zone[p],
-                    m.frequency_response_ba[p],
-                    m.technology[p],
-                    value(m.Provide_Frequency_Response_MW[p, tmp]),
-                    partial_proj[p],
-                ]
-            )
+    results_columns = [
+        "frequency_response_ba",
+        "frequency_response_reserve_provision_mw",
+        "frequency_response_partial_reserve_provision",
+    ]
+    data = [
+        [
+            prj,
+            tmp,
+            m.frequency_response_ba[prj],
+            value(m.Provide_Frequency_Response_MW[prj, tmp]),
+            partial_proj[prj],
+        ]
+        for (prj, tmp) in m.FREQUENCY_RESPONSE_PRJ_OPR_TMPS
+    ]
+
+    results_df = create_results_df(
+        index_columns=["project", "timepoint"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    for c in results_columns:
+        getattr(d, PROJECT_TIMEPOINT_DF)[c] = None
+    getattr(d, PROJECT_TIMEPOINT_DF).update(results_df)
 
 
-def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -230,12 +280,14 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     :param conn: database connection
     :return:
     """
-    subproblem = 1 if subproblem == "" else subproblem
-    stage = 1 if stage == "" else stage
+
     # Get project BA
     _, prj_derates = generic_get_inputs_from_database(
         scenario_id=scenario_id,
         subscenarios=subscenarios,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         conn=conn,
@@ -278,7 +330,16 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     return project_bas, prj_derates
 
 
-def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -291,6 +352,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     generic_validate_project_bas(
         scenario_id=scenario_id,
         subscenarios=subscenarios,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         conn=conn,
@@ -301,7 +365,15 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     Get inputs from database and write out the model input
@@ -313,24 +385,48 @@ def write_model_inputs(
     :param conn: database connection
     :return:
     """
+    (
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+    ) = directories_to_db_values(
+        weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
+    )
+
     project_bas, prj_derates = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+        conn,
     )
 
     # Make a dict for easy access
     prj_ba_dict = dict()
-    for (prj, ba, partial) in project_bas:
+    for prj, ba, partial in project_bas:
         prj_ba_dict[str(prj)] = (".", ".") if ba is None else (str(ba), partial)
 
     # Make a dict for easy access
     prj_derate_dict = dict()
-    for (prj, derate) in prj_derates:
+    for prj, derate in prj_derates:
         prj_derate_dict[str(prj)] = "." if derate is None else str(derate)
 
     # Add params to projects file
     with open(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "projects.tab",
         ),
         "r",
     ) as projects_file_in:
@@ -370,105 +466,17 @@ def write_model_inputs(
 
     with open(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "projects.tab",
         ),
         "w",
         newline="",
     ) as projects_file_out:
         writer = csv.writer(projects_file_out, delimiter="\t", lineterminator="\n")
         writer.writerows(new_rows)
-
-
-def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    """
-
-    :param scenario_id:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-    # Delete prior results and create temporary import table for ordering
-    setup_results_import(
-        conn=db,
-        cursor=c,
-        table="results_project_frequency_response",
-        scenario_id=scenario_id,
-        subproblem=subproblem,
-        stage=stage,
-    )
-
-    # Load results into the temporary table
-    results = []
-    with open(
-        os.path.join(results_directory, "reserves_provision_frequency_response.csv"),
-        "r",
-    ) as reserve_provision_file:
-        reader = csv.reader(reserve_provision_file)
-
-        next(reader)  # skip header
-        for row in reader:
-            project = row[0]
-            period = row[1]
-            horizon = row[2]
-            timepoint = row[3]
-            timepoint_weight = row[4]
-            number_of_hours_in_timepoint = row[5]
-            ba = row[6]
-            load_zone = row[7]
-            technology = row[8]
-            reserve_provision = row[9]
-            partial = row[10]
-
-            results.append(
-                (
-                    scenario_id,
-                    project,
-                    period,
-                    subproblem,
-                    stage,
-                    horizon,
-                    timepoint,
-                    timepoint_weight,
-                    number_of_hours_in_timepoint,
-                    ba,
-                    load_zone,
-                    technology,
-                    reserve_provision,
-                    partial,
-                )
-            )
-    insert_temp_sql = """
-        INSERT INTO temp_results_project_frequency_response{}
-        (scenario_id, project, period, subproblem_id, stage_id,
-        horizon, timepoint, timepoint_weight, 
-        number_of_hours_in_timepoint, 
-        frequency_response_ba, load_zone, technology,
-        reserve_provision_mw, partial)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 
-        ?, ?, ?, ?, ?);""".format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
-
-    # Insert sorted results into permanent results table
-    insert_sql = """
-        INSERT INTO results_project_frequency_response
-        (scenario_id, project, period, subproblem_id, stage_id, 
-        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint, 
-        frequency_response_ba, load_zone, technology,
-        reserve_provision_mw, partial)
-        SELECT
-        scenario_id, project, period, subproblem_id, stage_id, 
-        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
-        frequency_response_ba, load_zone, technology,
-        reserve_provision_mw, partial
-        FROM temp_results_project_frequency_response{} 
-        ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;
-        """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)

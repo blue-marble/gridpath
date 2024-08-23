@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -28,7 +28,9 @@ up to 1,200 MW from Zone 1 to Zone 2.
 
 import csv
 import os.path
-from pyomo.environ import Set, Param, Reals
+from statistics import mean
+
+from pyomo.environ import Set, Param, Reals, NonNegativeReals
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.dynamic_components import (
@@ -45,8 +47,16 @@ from gridpath.auxiliary.validations import (
 )
 
 
-# TODO: add fixed O&M costs similar to gen_spec
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     The following Pyomo model components are defined in this module:
 
@@ -67,7 +77,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +-------------------------------------------------------------------------+
     | Required Input Params                                                   |
     +=========================================================================+
-    | | :code:`tx_spec_min_flow_mw`                                           |
+    | | :code:`tx_spec_min_cap_mw`                                            |
     | | *Defined over*: :code:`TX_SPEC_OPR_PRDS`                              |
     | | *Within*: :code:`Reals`                                               |
     |                                                                         |
@@ -75,13 +85,25 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | each operational period. A negative number designates flow in the       |
     | opposite direction of the defined line flow direction.                  |
     +-------------------------------------------------------------------------+
-    | | :code:`tx_spec_max_flow_mw`                                           |
+    | | :code:`tx_spec_max_cap_mw`                                            |
     | | *Defined over*: :code:`TX_SPEC_OPR_PRDS`                              |
     | | *Within*: :code:`Reals`                                               |
     |                                                                         |
     | The transmission line's specified maximum flow capacity (in MW) in      |
     | each operational period. A negative number designates flow in the       |
     | opposite direction of the defined line flow direction.                  |
+    +-------------------------------------------------------------------------+
+
+    +-------------------------------------------------------------------------+
+    | Optional Input Params                                                   |
+    +=========================================================================+
+    | | :code:`tx_spec_fixed_cost_per_mw_yr`                                  |
+    | | *Defined over*: :code:`TX_SPEC_OPR_PRDS`                              |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | Fixed cost to be incurred in each operational period. Multiplied by the |
+    | average of the absolute values of the min and max line capacity.        |
     +-------------------------------------------------------------------------+
 
     """
@@ -94,8 +116,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Required Params
     ###########################################################################
 
-    m.tx_spec_min_flow_mw = Param(m.TX_SPEC_OPR_PRDS, within=Reals)
-    m.tx_spec_max_flow_mw = Param(m.TX_SPEC_OPR_PRDS, within=Reals)
+    m.tx_spec_min_cap_mw = Param(m.TX_SPEC_OPR_PRDS, within=Reals)
+    m.tx_spec_max_cap_mw = Param(m.TX_SPEC_OPR_PRDS, within=Reals)
+    m.tx_spec_fixed_cost_per_mw_yr = Param(
+        m.TX_SPEC_OPR_PRDS, within=NonNegativeReals, default=0
+    )
 
     # Dynamic Components
     ###########################################################################
@@ -108,31 +133,48 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
 
 def min_transmission_capacity_rule(mod, tx, p):
-    return mod.tx_spec_min_flow_mw[tx, p]
+    return mod.tx_spec_min_cap_mw[tx, p]
 
 
 def max_transmission_capacity_rule(mod, tx, p):
-    return mod.tx_spec_max_flow_mw[tx, p]
+    return mod.tx_spec_max_cap_mw[tx, p]
 
 
-def tx_capacity_cost_rule(mod, g, p):
+def fixed_cost_rule(mod, g, p):
     """
-    None for now.
-    TODO: should there be a fixed cost for keeping transmission around
+    The fixed cost of Tx lines of the *tx_spec* capacity type is a
+    pre-specified number equal to the average capacity times the per-mw fixed
+    cost for each of the project's operational periods.
     """
-    return 0
+    return (
+        mean([abs(mod.tx_spec_min_cap_mw[g, p]), abs(mod.tx_spec_max_cap_mw[g, p])])
+        * mod.tx_spec_fixed_cost_per_mw_yr[g, p]
+    )
 
 
 # Input-Output
 ###############################################################################
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     data_portal.load(
         filename=os.path.join(
             scenario_directory,
-            str(subproblem),
-            str(stage),
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
             "inputs",
             "specified_transmission_line_capacities.tab",
         ),
@@ -141,9 +183,14 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             "period",
             "specified_tx_min_mw",
             "specified_tx_max_mw",
+            "fixed_cost_per_mw_yr",
         ),
         index=m.TX_SPEC_OPR_PRDS,
-        param=(m.tx_spec_min_flow_mw, m.tx_spec_max_flow_mw),
+        param=(
+            m.tx_spec_min_cap_mw,
+            m.tx_spec_max_cap_mw,
+            m.tx_spec_fixed_cost_per_mw_yr,
+        ),
     )
 
 
@@ -151,7 +198,16 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 ###############################################################################
 
 
-def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_model_inputs_from_database(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -161,14 +217,14 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
     """
     c = conn.cursor()
     tx_capacities = c.execute(
-        """SELECT transmission_line, period, min_mw, max_mw
+        """SELECT transmission_line, period, min_mw, max_mw, fixed_cost_per_mw_yr
         FROM inputs_transmission_portfolios
         CROSS JOIN
         (SELECT period
         FROM inputs_temporal_periods
         WHERE temporal_scenario_id = {}) as relevant_periods
         INNER JOIN
-        (SELECT transmission_line, period, min_mw, max_mw
+        (SELECT transmission_line, period, min_mw, max_mw, fixed_cost_per_mw_yr
         FROM inputs_transmission_specified_capacity
         WHERE transmission_specified_capacity_scenario_id = {} ) as capacity
         USING (transmission_line, period)
@@ -183,7 +239,15 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     Get inputs from database and write out the model input
@@ -197,14 +261,24 @@ def write_model_inputs(
     """
 
     tx_capacities = get_model_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        conn,
     )
 
     with open(
         os.path.join(
             scenario_directory,
-            str(subproblem),
-            str(stage),
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
             "inputs",
             "specified_transmission_line_capacities.tab",
         ),
@@ -222,18 +296,29 @@ def write_model_inputs(
                 "period",
                 "specified_tx_min_mw",
                 "specified_tx_max_mw",
+                "fixed_cost_per_mw_yr",
             ]
         )
 
         for row in tx_capacities:
-            writer.writerow(row)
+            replace_nulls = ["." if i is None else i for i in row]
+            writer.writerow(replace_nulls)
 
 
 # Validation
 ###############################################################################
 
 
-def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -244,7 +329,14 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
 
     tx_capacities = get_model_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        conn,
     )
 
     tx_lines = get_tx_lines(conn, scenario_id, subscenarios, "capacity_type", "tx_spec")
@@ -263,6 +355,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -276,6 +371,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -294,6 +392,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -306,6 +407,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,

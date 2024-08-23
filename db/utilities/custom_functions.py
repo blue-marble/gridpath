@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2024 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -54,58 +54,73 @@ def temporal(conn, subscenario_id):
     )
 
     # TIMEPOINT HORIZONS
-    sid_stg_bt_hr_sql = """
-        SELECT subproblem_id, stage_id, balancing_type_horizon, horizon
-        FROM inputs_temporal_horizons
-        JOIN inputs_temporal_subproblems_stages
-        USING (temporal_scenario_id, subproblem_id)
-        WHERE temporal_scenario_id = ?
+    subproblem_stages = c.execute(
+        f"""
+        SELECT subproblem_id, stage_id
+        FROM inputs_temporal_subproblems_stages
+        WHERE temporal_scenario_id = {subscenario_id}
         """
-    sid_stg_bt_hr = c.execute(sid_stg_bt_hr_sql, (subscenario_id,)).fetchall()
+    ).fetchall()
 
-    hor_tmps_tuples_list = list()
-    for (sid, stage, bt, hr) in sid_stg_bt_hr:
-        tmp_start_tmp_end = c.execute(
-            """SELECT tmp_start, tmp_end
+    # For each subproblem-stage, figure out how the timepoints are organized
+    # into horizons
+    for subproblem, stage in subproblem_stages:
+        # Find the relevant balancing_type-horizons for this subproblem, stage
+        bt_hr_sql = f"""
+            SELECT balancing_type_horizon, horizon, tmp_start, tmp_end
             FROM inputs_temporal_horizon_timepoints_start_end
-            WHERE temporal_scenario_id = ?
-            AND subproblem_id = ?
-            AND stage_id = ?
-            AND balancing_type_horizon = ?
-            AND horizon = ?""",
-            (subscenario_id, sid, stage, bt, hr),
-        ).fetchall()
+            WHERE temporal_scenario_id = {subscenario_id}
+            AND stage_id = {stage}
+            AND (tmp_start, tmp_start_spinup_or_lookahead) in (
+                SELECT timepoint, spinup_or_lookahead
+                FROM inputs_temporal
+                WHERE temporal_scenario_id = {subscenario_id}
+                AND subproblem_id = {subproblem}
+                AND stage_id = {stage}
+                )
+            AND (tmp_end, tmp_end_spinup_or_lookahead) in (
+                SELECT timepoint, spinup_or_lookahead
+                FROM inputs_temporal
+                WHERE temporal_scenario_id = {subscenario_id}
+                AND subproblem_id = {subproblem}
+                AND stage_id = {stage}
+                )
+            ;
+            """
 
-        tmps = []
-        for tmp_start, tmp_end in tmp_start_tmp_end:
-            tmps += [
-                tmp
+        bt_hr = c.execute(bt_hr_sql, ()).fetchall()
+
+        hor_tmps_tuples_list = list()
+
+        for bt, hr, tmp_start, tmp_end in bt_hr:
+            sid_tmps = [
+                tmp[0]
                 for tmp in c.execute(
-                    """
+                    f"""
                 SELECT timepoint
                 FROM inputs_temporal
-                WHERE temporal_scenario_id = ?
-                AND subproblem_id = ?
-                AND stage_id = ?
-                AND timepoint >= ?
-                AND timepoint <= ?
-                """,
-                    (subscenario_id, sid, stage, tmp_start, tmp_end),
+                WHERE temporal_scenario_id = {subscenario_id}
+                AND subproblem_id = {subproblem}
+                AND stage_id = {stage}
+                AND timepoint >= {tmp_start}
+                AND timepoint <= {tmp_end}
+                ;
+                """
                 ).fetchall()
             ]
 
-        for tmp_tuple in tmps:
-            tmp = tmp_tuple[0]
+            for tmp in sid_tmps:
+                hor_tmps_tuples_list.append(
+                    (subscenario_id, subproblem, stage, tmp, bt, hr)
+                )
 
-            hor_tmps_tuples_list.append((subscenario_id, sid, stage, tmp, bt, hr))
+        horizon_timepoints_sql = """
+            INSERT INTO inputs_temporal_horizon_timepoints
+            (temporal_scenario_id, subproblem_id, stage_id, timepoint, 
+            balancing_type_horizon, horizon)
+            VALUES (?, ?, ?, ?, ?, ?);
+            """
 
-    horizon_timepoints_sql = """
-        INSERT INTO inputs_temporal_horizon_timepoints
-        (temporal_scenario_id, subproblem_id, stage_id, timepoint, 
-        balancing_type_horizon, horizon)
-        VALUES (?, ?, ?, ?, ?, ?);
-        """
-
-    spin_on_database_lock(
-        conn=conn, cursor=c, sql=horizon_timepoints_sql, data=hor_tmps_tuples_list
-    )
+        spin_on_database_lock(
+            conn=conn, cursor=c, sql=horizon_timepoints_sql, data=hor_tmps_tuples_list
+        )

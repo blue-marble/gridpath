@@ -1,0 +1,5 @@
+deliverability_group	period	constraint_type	peak_designation	existing_deliverability
+Threshold_Group_2	2030	deliverable	peak_highest	200
+Threshold_Group_1	2020	deliverable	peak_secondary	200
+Threshold_Group_1	2020	total	offpeak	1000
+Threshold_Group_2	2030	total	offpeak	999

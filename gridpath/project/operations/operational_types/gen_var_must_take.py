@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,7 +22,11 @@ of this operational type cannot provide operational reserves .
 from pyomo.environ import Param, Set, Reals, Constraint
 import warnings
 
-from gridpath.auxiliary.auxiliary import subset_init_by_param_value
+from gridpath.auxiliary.auxiliary import (
+    subset_init_by_param_value,
+    subset_init_by_set_membership,
+)
+from gridpath.auxiliary.db_interface import directories_to_db_values
 from gridpath.auxiliary.validations import (
     write_validation_to_database,
     get_projects_by_reserve,
@@ -35,7 +39,7 @@ from gridpath.project.common_functions import (
 )
 from gridpath.project.operations.operational_types.common_functions import (
     load_var_profile_inputs,
-    get_var_profile_inputs_from_database,
+    get_prj_tmp_opr_inputs_from_db,
     write_tab_file_model_inputs,
     validate_opchars,
     validate_var_profiles,
@@ -43,7 +47,16 @@ from gridpath.project.operations.operational_types.common_functions import (
 )
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     The following Pyomo model components are defined in this module:
 
@@ -105,8 +118,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.GEN_VAR_MUST_TAKE_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: list(
-            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS if g in mod.GEN_VAR_MUST_TAKE)
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod,
+            superset="PRJ_OPR_TMPS",
+            index=0,
+            membership_set=mod.GEN_VAR_MUST_TAKE,
         ),
     )
 
@@ -246,7 +262,17 @@ def power_delta_rule(mod, g, tmp):
 ###############################################################################
 
 
-def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    mod,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     :param mod:
     :param data_portal:
@@ -261,13 +287,23 @@ def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
         mod=mod,
         data_portal=data_portal,
         scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         op_type="gen_var_must_take",
     )
 
     load_var_profile_inputs(
-        data_portal, scenario_directory, subproblem, stage, "gen_var_must_take"
+        data_portal,
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "gen_var_must_take",
     )
 
 
@@ -275,7 +311,16 @@ def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
 ###############################################################################
 
 
-def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_model_inputs_from_database(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -283,13 +328,43 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
     :param conn: database connection
     :return: cursor object with query results
     """
-    return get_var_profile_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn, "gen_var_must_take"
+    (
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+    ) = directories_to_db_values(
+        weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
     )
+
+    prj_tmp_data = get_prj_tmp_opr_inputs_from_db(
+        subscenarios=subscenarios,
+        weather_iteration=db_weather_iteration,
+        hydro_iteration=db_hydro_iteration,
+        availability_iteration=db_availability_iteration,
+        subproblem=db_subproblem,
+        stage=db_stage,
+        conn=conn,
+        op_type="gen_var_must_take",
+        table="inputs_project_variable_generator_profiles" "",
+        subscenario_id_column="variable_generator_profile_scenario_id",
+        data_column="cap_factor",
+    )
+
+    return prj_tmp_data
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     Get inputs from database and write out the model input
@@ -303,18 +378,43 @@ def write_model_inputs(
     """
 
     data = get_model_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        conn,
     )
     fname = "variable_generator_profiles.tab"
 
-    write_tab_file_model_inputs(scenario_directory, subproblem, stage, fname, data)
+    write_tab_file_model_inputs(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        fname,
+        data,
+    )
 
 
 # Validation
 ###############################################################################
 
 
-def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -326,12 +426,28 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
 
     # Validate operational chars table inputs
     opchar_df = validate_opchars(
-        scenario_id, subscenarios, subproblem, stage, conn, "gen_var_must_take"
+        scenario_id,
+        subscenarios,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        conn,
+        "gen_var_must_take",
     )
 
     # Validate var profiles input table
     cap_factor_validation_error = validate_var_profiles(
-        scenario_id, subscenarios, subproblem, stage, conn, "gen_var_must_take"
+        scenario_id,
+        subscenarios,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        conn,
+        "gen_var_must_take",
     )
     if cap_factor_validation_error:
         warnings.warn(
@@ -358,6 +474,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         write_validation_to_database(
             conn=conn,
             scenario_id=scenario_id,
+            weather_iteration=weather_iteration,
+            hydro_iteration=hydro_iteration,
+            availability_iteration=availability_iteration,
             subproblem_id=subproblem,
             stage_id=stage,
             gridpath_module=__name__,

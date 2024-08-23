@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -54,6 +54,7 @@ def generic_add_model_components(
     :param objective_function_reserve_penalty_cost_component:
     :return:
     """
+
     # Add violation penalty costs incurred to objective function
     def penalty_costs_rule(mod):
         return sum(

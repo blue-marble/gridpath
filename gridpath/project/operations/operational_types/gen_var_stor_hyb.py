@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -51,7 +51,11 @@ from pyomo.environ import (
 )
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import subset_init_by_param_value
+from gridpath.auxiliary.auxiliary import (
+    subset_init_by_param_value,
+    subset_init_by_set_membership,
+)
+from gridpath.auxiliary.db_interface import directories_to_db_values
 from gridpath.auxiliary.dynamic_components import (
     footroom_variables,
     headroom_variables,
@@ -66,17 +70,26 @@ from gridpath.project.common_functions import (
     check_boundary_type,
 )
 from gridpath.project.operations.operational_types.common_functions import (
-    update_dispatch_results_table,
     load_var_profile_inputs,
-    get_var_profile_inputs_from_database,
+    get_prj_tmp_opr_inputs_from_db,
     write_tab_file_model_inputs,
     validate_opchars,
     validate_var_profiles,
     load_optype_model_data,
 )
+from gridpath.common_functions import create_results_df
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     The following Pyomo model components are defined in this module:
 
@@ -267,12 +280,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.GEN_VAR_STOR_HYB_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: list(
-            set(
-                (prj, tmp)
-                for (prj, tmp) in mod.PRJ_OPR_TMPS
-                if prj in mod.GEN_VAR_STOR_HYB
-            )
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod,
+            superset="PRJ_OPR_TMPS",
+            index=0,
+            membership_set=mod.GEN_VAR_STOR_HYB,
         ),
     )
 
@@ -685,6 +697,16 @@ def variable_om_cost_rule(mod, prj, tmp):
     )
 
 
+def variable_om_by_period_cost_rule(mod, prj, tmp):
+    """ """
+    return (
+        mod.Capacity_MW[prj, mod.period[tmp]]
+        * mod.Availability_Derate[prj, tmp]
+        * mod.gen_var_stor_hyb_cap_factor[prj, tmp]
+        * mod.variable_om_cost_per_mwh_by_period[prj, mod.period[tmp]]
+    )
+
+
 def scheduled_curtailment_rule(mod, prj, tmp):
     """
     Variable generation can be dispatched down, i.e. scheduled below the
@@ -768,7 +790,17 @@ def power_delta_rule(mod, prj, tmp):
 ###############################################################################
 
 
-def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    mod,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     :param mod:
     :param data_portal:
@@ -783,87 +815,72 @@ def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
         mod=mod,
         data_portal=data_portal,
         scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         op_type="gen_var_stor_hyb",
     )
 
     load_var_profile_inputs(
-        data_portal, scenario_directory, subproblem, stage, "gen_var_stor_hyb"
+        data_portal,
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "gen_var_stor_hyb",
     )
 
 
-def export_results(mod, d, scenario_directory, subproblem, stage):
-    """
+def add_to_prj_tmp_results(mod):
+    results_columns = [
+        "scheduled_curtailment_mw",
+        "hyb_storage_charge_mw",
+        "hyb_storage_discharge_mw",
+        "subhourly_curtailment_mw",
+        "subhourly_energy_delivered_mw",
+        "total_curtailment_mw",
+    ]
+    data = [
+        [
+            prj,
+            tmp,
+            value(mod.GenVarStorHyb_Scheduled_Curtailment_MW[prj, tmp]),
+            value(mod.GenVarStorHyb_Charge_MW[prj, tmp]),
+            value(mod.GenVarStorHyb_Discharge_MW[prj, tmp]),
+            value(mod.GenVarStorHyb_Subtimepoint_Curtailment_MW[prj, tmp]),
+            value(mod.GenVarStorHyb_Subtimepoint_Energy_Delivered_MW[prj, tmp]),
+            value(mod.GenVarStorHyb_Total_Curtailment_MW[prj, tmp]),
+        ]
+        for (prj, tmp) in mod.GEN_VAR_STOR_HYB_OPR_TMPS
+    ]
 
-    :param scenario_directory:
-    :param subproblem:
-    :param stage:
-    :param mod:
-    :param d:
-    :return:
-    """
-    with open(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "dispatch_gen_var_stor_hybrid.csv",
-        ),
-        "w",
-        newline="",
-    ) as f:
-        writer = csv.writer(f)
-        writer.writerow(
-            [
-                "project",
-                "period",
-                "balancing_type_project",
-                "horizon",
-                "timepoint",
-                "timepoint_weight",
-                "number_of_hours_in_timepoint",
-                "technology",
-                "load_zone",
-                "power_mw",
-                "scheduled_curtailment_mw",
-                "hyb_storage_charge_mw",
-                "hyb_storage_discharge_mw",
-                "subhourly_curtailment_mw",
-                "subhourly_energy_delivered_mw",
-                "total_curtailment_mw",
-            ]
-        )
+    optype_dispatch_df = create_results_df(
+        index_columns=["project", "timepoint"],
+        results_columns=results_columns,
+        data=data,
+    )
 
-        for (p, tmp) in mod.GEN_VAR_STOR_HYB_OPR_TMPS:
-            writer.writerow(
-                [
-                    p,
-                    mod.period[tmp],
-                    mod.balancing_type_project[p],
-                    mod.horizon[tmp, mod.balancing_type_project[p]],
-                    tmp,
-                    mod.tmp_weight[tmp],
-                    mod.hrs_in_tmp[tmp],
-                    mod.technology[p],
-                    mod.load_zone[p],
-                    value(mod.GenVarStorHyb_Provide_Power_MW[p, tmp]),
-                    value(mod.GenVarStorHyb_Scheduled_Curtailment_MW[p, tmp]),
-                    value(mod.GenVarStorHyb_Charge_MW[p, tmp]),
-                    value(mod.GenVarStorHyb_Discharge_MW[p, tmp]),
-                    value(mod.GenVarStorHyb_Subtimepoint_Curtailment_MW[p, tmp]),
-                    value(mod.GenVarStorHyb_Subtimepoint_Energy_Delivered_MW[p, tmp]),
-                    value(mod.GenVarStorHyb_Total_Curtailment_MW[p, tmp]),
-                ]
-            )
+    return results_columns, optype_dispatch_df
 
 
 # Database
 ###############################################################################
 
 
-def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_model_inputs_from_database(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -872,13 +889,43 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
     :return: cursor object with query results
     """
 
-    return get_var_profile_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn, "gen_var_stor_hyb"
+    (
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+    ) = directories_to_db_values(
+        weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
     )
+
+    prj_tmp_data = get_prj_tmp_opr_inputs_from_db(
+        subscenarios=subscenarios,
+        weather_iteration=db_weather_iteration,
+        hydro_iteration=db_hydro_iteration,
+        availability_iteration=db_availability_iteration,
+        subproblem=db_subproblem,
+        stage=db_stage,
+        conn=conn,
+        op_type="gen_var_stor_hyb",
+        table="inputs_project_variable_generator_profiles" "",
+        subscenario_id_column="variable_generator_profile_scenario_id",
+        data_column="cap_factor",
+    )
+
+    return prj_tmp_data
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     Get inputs from database and write out the model input
@@ -892,38 +939,26 @@ def write_model_inputs(
     """
 
     data = get_model_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        conn,
     )
     fname = "variable_generator_profiles.tab"
 
-    write_tab_file_model_inputs(scenario_directory, subproblem, stage, fname, data)
-
-
-def import_model_results_to_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    """
-
-    :param scenario_id:
-    :param subproblem:
-    :param stage:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-    if not quiet:
-        print("project dispatch gen_var_stor_hyb")
-
-    update_dispatch_results_table(
-        db=db,
-        c=c,
-        results_directory=results_directory,
-        scenario_id=scenario_id,
-        subproblem=subproblem,
-        stage=stage,
-        results_file="dispatch_gen_var_stor_hybrid.csv",
+    write_tab_file_model_inputs(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        fname,
+        data,
     )
 
 
@@ -941,7 +976,7 @@ def process_model_results(db, c, scenario_id, subscenarios, quiet):
 
     # Delete old aggregated variable curtailment results
     del_sql = """
-        DELETE FROM results_project_curtailment_variable 
+        DELETE FROM results_project_curtailment_variable_periodagg 
         WHERE scenario_id = ?;
         """
     spin_on_database_lock(
@@ -950,7 +985,7 @@ def process_model_results(db, c, scenario_id, subscenarios, quiet):
 
     # Aggregate variable curtailment (just scheduled curtailment)
     insert_sql = """
-        INSERT INTO results_project_curtailment_variable
+        INSERT INTO results_project_curtailment_variable_periodagg
         (scenario_id, subproblem_id, stage_id, period, timepoint, 
         timepoint_weight, number_of_hours_in_timepoint, month, hour_of_day,
         load_zone, scheduled_curtailment_mw)
@@ -963,7 +998,7 @@ def process_model_results(db, c, scenario_id, subscenarios, quiet):
             timepoint, timepoint_weight, number_of_hours_in_timepoint, 
             load_zone, 
             sum(scheduled_curtailment_mw) AS scheduled_curtailment_mw
-            FROM results_project_dispatch
+            FROM results_project_timepoint
             WHERE operational_type = 'gen_var_stor_hyb'
             GROUP BY scenario_id, subproblem_id, stage_id, timepoint, load_zone
         ) as agg_curtailment_tbl
@@ -989,7 +1024,16 @@ def process_model_results(db, c, scenario_id, subscenarios, quiet):
 ###############################################################################
 
 
-def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -1001,10 +1045,26 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
 
     # Validate operational chars table inputs
     validate_opchars(
-        scenario_id, subscenarios, subproblem, stage, conn, "gen_var_stor_hyb"
+        scenario_id,
+        subscenarios,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        conn,
+        "gen_var_stor_hyb",
     )
 
     # Validate var profiles input table
     validate_var_profiles(
-        scenario_id, subscenarios, subproblem, stage, conn, "gen_var_stor_hyb"
+        scenario_id,
+        subscenarios,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        conn,
+        "gen_var_stor_hyb",
     )

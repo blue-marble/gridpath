@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,12 +23,10 @@ Like with new-build generation, capacity costs added to the objective
 function include the annualized capital cost and the annual fixed O&M cost.
 """
 
-from __future__ import print_function
-
-from builtins import next
-from builtins import zip
 import csv
 import os.path
+from pathlib import Path
+
 import pandas as pd
 from pyomo.environ import (
     Set,
@@ -40,7 +38,10 @@ from pyomo.environ import (
 )
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
-from gridpath.auxiliary.dynamic_components import capacity_type_operational_period_sets
+from gridpath.auxiliary.dynamic_components import (
+    capacity_type_operational_period_sets,
+    capacity_type_financial_period_sets,
+)
 from gridpath.auxiliary.validations import (
     write_validation_to_database,
     validate_values,
@@ -49,15 +50,27 @@ from gridpath.auxiliary.validations import (
     validate_dtypes,
     validate_idxs,
 )
+from gridpath.common_functions import create_results_df
 from gridpath.project.capacity.capacity_types.common_methods import (
-    operational_periods_by_project_vintage,
-    project_operational_periods,
-    project_vintages_operational_in_period,
-    update_capacity_results_table,
+    relevant_periods_by_project_vintage,
+    project_relevant_periods,
+    project_vintages_relevant_in_period,
+    read_results_file_generic,
+    write_summary_results_generic,
+    get_units,
 )
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     The following Pyomo model components are defined in this module:
 
@@ -80,12 +93,41 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +-------------------------------------------------------------------------+
     | Required Input Params                                                   |
     +=========================================================================+
-    | | :code:`fuel_prod_new_lifetime_yrs`                                    |
+    | | :code:`fuel_prod_new_operational_lifetime_yrs`                        |
     | | *Defined over*: :code:`FUEL_PROD_NEW_VNTS`                            |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
-    | The project's lifetime, i.e. how long project capacity/energy of a      |
-    | particular vintage remains operational.                                 |
+    | The project's operational lifetime, i.e. how long project               |
+    | capacity/energy of a particular vintage remains operational and can be  |
+    | used.                                                                   |
+    +-------------------------------------------------------------------------+
+    | | :code:`fuel_prod_new_prod_fixed_cost_fuelunitperhour_yr`              |
+    | | *Defined over*: :code:`FUEL_PROD_NEW_VNTS`                            |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's fixed cost incurred while the fuel production capacity is |
+    | operational.
+    +-------------------------------------------------------------------------+
+    | | :code:`fuel_prod_new_release_fixed_cost_fuelunitperhour_yr`           |
+    | | *Defined over*: :code:`FUEL_PROD_NEW_VNTS`                            |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's fixed cost incurred while the fuel release capacity is    |
+    | operational.                                                            |
+    +-------------------------------------------------------------------------+
+    | | :code:`fuel_prod_new_storage_fixed_cost_fuelunit_yr`                  |
+    | | *Defined over*: :code:`FUEL_PROD_NEW_VNTS`                            |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's cost to build new fuel storage capacity in annualized     |
+    | real dollars per FuelUnit (per FuelUnit-year).                          |
+    +-------------------------------------------------------------------------+
+    | | :code:`fuel_prod_new_financial_lifetime_yrs`                          |
+    | | *Defined over*: :code:`FUEL_PROD_NEW_VNTS`                            |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's financial lifetime, i.e. how the annual payments for the  |
+    | project capacity of a particular vintage must be made.                  |
     +-------------------------------------------------------------------------+
     | | :code:`fuel_prod_new_prod_cost_fuelunitperhour_yr`                    |
     | | *Defined over*: :code:`FUEL_PROD_NEW_VNTS`                            |
@@ -109,6 +151,15 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | real dollars per FuelUnit (per FuelUnit-year).                          |
     +-------------------------------------------------------------------------+
 
+    .. note:: The cost input to the model is an annualized cost per unit
+        capacity. This annualized cost is incurred in each period of the study
+        (and multiplied by the number of years the period represents) for
+        the duration of the project's "financial" lifetime. It is up to the
+        user to ensure that the variousl lifetime and cost parameters are consistent
+        with one another and with the period length (projects are operational
+        and incur capital costs only if the operational and financial lifetimes last
+        through the end of a period respectively.
+
     |
 
     +-------------------------------------------------------------------------+
@@ -119,10 +170,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     |                                                                         |
     | Indexed set that describes the operational periods for each possible    |
     | project-vintage combination, based on the                               |
-    | :code:`fuel_prod_new_lifetime_yrs`. For instance, capacity of 2020      |
-    | vintage with lifetime of 30 years will be assumed operational starting  |
-    | Jan 1, 2020 and through Dec 31, 2049, but will *not* be operational     |
-    | in 2050.                                                                |
+    | :code:`fuel_prod_new_operational_lifetime_yrs`. For instance, capacity  |
+    | of 2020 vintage with lifetime of 30 years will be assumed operational   |
+    | starting Jan 1, 2020 and through Dec 31, 2049, but will *not* be        |
+    | operational in 2050.                                                    |
     +-------------------------------------------------------------------------+
     | | :code:`FUEL_PROD_NEW_OPR_PRDS`                                        |
     |                                                                         |
@@ -136,7 +187,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     |                                                                         |
     | Indexed set that describes the project-vintages that could be           |
     | operational in each period based on the                                 |
-    | :code:`fuel_prod_new_lifetime_yrs`.                                     |
+    | :code:`fuel_prod_new_operational_lifetime_yrs`.                         |
     +-------------------------------------------------------------------------+
 
     |
@@ -158,7 +209,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | Determines how much fuel release capacity (in FuelUnitPerHour) of each  |
     | possible vintage is built at each fuel_prod_new project.                |
     +-------------------------------------------------------------------------+
-    | | :code:`FuelProdNew_Build_Stor_Cap_FuelUnitPerHour`                    |
+    | | :code:`FuelProdNew_Build_Stor_Cap_FuelUnit`                    |
     | | *Defined over*: :code:`FUEL_PROD_NEW_VNTS`                            |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
@@ -208,7 +259,25 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Required Params
     ###########################################################################
 
-    m.fuel_prod_new_lifetime_yrs = Param(m.FUEL_PROD_NEW_VNTS, within=NonNegativeReals)
+    m.fuel_prod_new_operational_lifetime_yrs = Param(
+        m.FUEL_PROD_NEW_VNTS, within=NonNegativeReals
+    )
+
+    m.fuel_prod_new_prod_fixed_cost_fuelunitperhour_yr = Param(
+        m.FUEL_PROD_NEW_VNTS, within=NonNegativeReals
+    )
+
+    m.fuel_prod_new_release_fixed_cost_fuelunitperhour_yr = Param(
+        m.FUEL_PROD_NEW_VNTS, within=NonNegativeReals
+    )
+
+    m.fuel_prod_new_storage_fixed_cost_fuelunit_yr = Param(
+        m.FUEL_PROD_NEW_VNTS, within=NonNegativeReals
+    )
+
+    m.fuel_prod_new_financial_lifetime_yrs = Param(
+        m.FUEL_PROD_NEW_VNTS, within=NonNegativeReals
+    )
 
     m.fuel_prod_new_prod_cost_fuelunitperhour_yr = Param(
         m.FUEL_PROD_NEW_VNTS, within=NonNegativeReals
@@ -237,6 +306,16 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.PERIODS, dimen=2, initialize=fuel_prod_new_vintages_operational_in_period
     )
 
+    m.FIN_PRDS_BY_FUEL_PROD_NEW_VINTAGE = Set(
+        m.FUEL_PROD_NEW_VNTS, initialize=financial_periods_by_vintage
+    )
+
+    m.FUEL_PROD_NEW_FIN_PRDS = Set(dimen=2, initialize=fuel_prod_new_financial_periods)
+
+    m.FUEL_PROD_NEW_VNTS_FIN_IN_PRD = Set(
+        m.PERIODS, dimen=2, initialize=fuel_prod_new_vintages_financial_in_period
+    )
+
     # Variable
     ###########################################################################
 
@@ -248,7 +327,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.FUEL_PROD_NEW_VNTS, within=NonNegativeReals
     )
 
-    m.FuelProdNew_Build_Stor_Cap_FuelUnitPerHour = Var(
+    m.FuelProdNew_Build_Stor_Cap_FuelUnit = Var(
         m.FUEL_PROD_NEW_VNTS, within=NonNegativeReals
     )
 
@@ -276,32 +355,63 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         "FUEL_PROD_NEW_OPR_PRDS",
     )
 
+    # Add to list of sets we'll join to get the final
+    # PRJ_FIN_PRDS set
+    getattr(d, capacity_type_financial_period_sets).append(
+        "FUEL_PROD_NEW_FIN_PRDS",
+    )
+
 
 # Set Rules
 ###############################################################################
 
 
 def operational_periods_by_vintage(mod, prj, v):
-    return operational_periods_by_project_vintage(
+    return relevant_periods_by_project_vintage(
         periods=getattr(mod, "PERIODS"),
         period_start_year=getattr(mod, "period_start_year"),
         period_end_year=getattr(mod, "period_end_year"),
         vintage=v,
-        lifetime_yrs=mod.fuel_prod_new_lifetime_yrs[prj, v],
+        lifetime_yrs=mod.fuel_prod_new_operational_lifetime_yrs[prj, v],
     )
 
 
 def fuel_prod_new_operational_periods(mod):
-    return project_operational_periods(
+    return project_relevant_periods(
         project_vintages_set=mod.FUEL_PROD_NEW_VNTS,
-        operational_periods_by_project_vintage_set=mod.OPR_PRDS_BY_FUEL_PROD_NEW_VINTAGE,
+        relevant_periods_by_project_vintage_set=mod.OPR_PRDS_BY_FUEL_PROD_NEW_VINTAGE,
     )
 
 
 def fuel_prod_new_vintages_operational_in_period(mod, p):
-    return project_vintages_operational_in_period(
+    return project_vintages_relevant_in_period(
         project_vintage_set=mod.FUEL_PROD_NEW_VNTS,
-        operational_periods_by_project_vintage_set=mod.OPR_PRDS_BY_FUEL_PROD_NEW_VINTAGE,
+        relevant_periods_by_project_vintage_set=mod.OPR_PRDS_BY_FUEL_PROD_NEW_VINTAGE,
+        period=p,
+    )
+
+
+def financial_periods_by_vintage(mod, prj, v):
+    return relevant_periods_by_project_vintage(
+        periods=getattr(mod, "PERIODS"),
+        period_start_year=getattr(mod, "period_start_year"),
+        period_end_year=getattr(mod, "period_end_year"),
+        vintage=v,
+        lifetime_yrs=mod.fuel_prod_new_financial_lifetime_yrs[prj, v],
+    )
+
+
+def fuel_prod_new_financial_periods(mod):
+    return project_relevant_periods(
+        project_vintages_set=mod.FUEL_PROD_NEW_VNTS,
+        relevant_periods_by_project_vintage_set=mod.FIN_PRDS_BY_FUEL_PROD_NEW_VINTAGE,
+    )
+
+
+def fuel_prod_new_vintages_financial_in_period(mod, p):
+    return project_vintages_relevant_in_period(
+        project_vintage_set=mod.FUEL_PROD_NEW_VNTS,
+        relevant_periods_by_project_vintage_set=mod.FIN_PRDS_BY_FUEL_PROD_NEW_VINTAGE,
         period=p,
     )
 
@@ -372,7 +482,7 @@ def storage_rule(mod, prj, prd):
     0 for the purposes of the objective function).
     """
     return sum(
-        mod.FuelProdNew_Build_Stor_Cap_FuelUnitPerHour[project, v]
+        mod.FuelProdNew_Build_Stor_Cap_FuelUnit[project, v]
         for (project, v) in mod.FUEL_PROD_NEW_VNTS_OPR_IN_PRD[prd]
         if project == prj
     )
@@ -414,8 +524,28 @@ def capacity_cost_rule(mod, prj, prd):
             * mod.fuel_prod_new_prod_cost_fuelunitperhour_yr[prj, v]
             + mod.FuelProdNew_Build_Rel_Cap_FuelUnitPerHour[prj, v]
             * mod.fuel_prod_new_release_cost_fuelunitperhour_yr[prj, v]
-            + mod.FuelProdNew_Build_Stor_Cap_FuelUnitPerHour[prj, v]
+            + mod.FuelProdNew_Build_Stor_Cap_FuelUnit[prj, v]
             * mod.fuel_prod_new_storage_cost_fuelunit_yr[prj, v]
+        )
+        for (project, v) in mod.FUEL_PROD_NEW_VNTS_FIN_IN_PRD[prd]
+        if project == prj
+    )
+
+
+def fixed_cost_rule(mod, prj, prd):
+    """
+    The fixed O&M cost for new-build generators in a given period is the
+    capacity-build of a particular vintage times the fixed cost for that vintage
+    summed over all vintages operational in the period.
+    """
+    return sum(
+        (
+            mod.FuelProdNew_Build_Prod_Cap_FuelUnitPerHour[prj, v]
+            * mod.fuel_prod_new_prod_fixed_cost_fuelunitperhour_yr[prj, v]
+            + mod.FuelProdNew_Build_Rel_Cap_FuelUnitPerHour[prj, v]
+            * mod.fuel_prod_new_release_fixed_cost_fuelunitperhour_yr[prj, v]
+            + mod.FuelProdNew_Build_Stor_Cap_FuelUnit[prj, v]
+            * mod.fuel_prod_new_storage_fixed_cost_fuelunit_yr[prj, v]
         )
         for (project, v) in mod.FUEL_PROD_NEW_VNTS_OPR_IN_PRD[prd]
         if project == prj
@@ -426,7 +556,17 @@ def capacity_cost_rule(mod, prj, prd):
 ###############################################################################
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
 
     :param m:
@@ -441,8 +581,11 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     _df = pd.read_csv(
         os.path.join(
             scenario_directory,
-            str(subproblem),
-            str(stage),
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
             "inputs",
             "projects.tab",
         ),
@@ -458,22 +601,27 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     ):
         if r[1] == "fuel_prod_new":
             fuel_prod_new_projects.append(r[0])
-        else:
-            pass
 
     data_portal.data()["FUEL_PROD_NEW"] = {None: fuel_prod_new_projects}
 
     data_portal.load(
         filename=os.path.join(
             scenario_directory,
-            str(subproblem),
-            str(stage),
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
             "inputs",
             "fuel_prod_new_vintage_costs.tab",
         ),
         index=m.FUEL_PROD_NEW_VNTS,
         param=(
-            m.fuel_prod_new_lifetime_yrs,
+            m.fuel_prod_new_operational_lifetime_yrs,
+            m.fuel_prod_new_prod_fixed_cost_fuelunitperhour_yr,
+            m.fuel_prod_new_release_fixed_cost_fuelunitperhour_yr,
+            m.fuel_prod_new_storage_fixed_cost_fuelunit_yr,
+            m.fuel_prod_new_financial_lifetime_yrs,
             m.fuel_prod_new_prod_cost_fuelunitperhour_yr,
             m.fuel_prod_new_release_cost_fuelunitperhour_yr,
             m.fuel_prod_new_storage_cost_fuelunit_yr,
@@ -481,7 +629,16 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     )
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def add_to_project_period_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
+):
     """
     Export new build storage results.
     :param scenario_directory:
@@ -491,44 +648,41 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "capacity_fuel_prod_new.csv",
-        ),
-        "w",
-        newline="",
-    ) as f:
-        writer = csv.writer(f)
-        writer.writerow(
-            [
-                "project",
-                "vintage",
-                "technology",
-                "load_zone",
-                "new_fuel_prod_capacity_fuelunitperhour",
-                "new_fuel_rel_capacity_fuelunitperhour",
-                "new_fuel_stor_capacity_fuelunitperhour",
-            ]
-        )
-        for (prj, v) in m.FUEL_PROD_NEW_VNTS:
-            writer.writerow(
-                [
-                    prj,
-                    v,
-                    m.technology[prj],
-                    m.load_zone[prj],
-                    value(m.FuelProdNew_Build_Prod_Cap_FuelUnitPerHour[prj, v]),
-                    value(m.FuelProdNew_Build_Prod_Cap_FuelUnitPerHour[prj, v]),
-                    value(m.FuelProdNew_Build_Stor_Cap_FuelUnitPerHour[prj, v]),
-                ]
-            )
+    results_columns = [
+        "new_fuel_prod_capacity_fuelunitperhour",
+        "new_fuel_rel_capacity_fuelunitperhour",
+        "new_fuel_stor_capacity_fuelunit",
+    ]
+    data = [
+        [
+            prj,
+            prd,
+            value(m.FuelProdNew_Build_Prod_Cap_FuelUnitPerHour[prj, prd]),
+            value(m.FuelProdNew_Build_Prod_Cap_FuelUnitPerHour[prj, prd]),
+            value(m.FuelProdNew_Build_Stor_Cap_FuelUnit[prj, prd]),
+        ]
+        for (prj, prd) in m.FUEL_PROD_NEW_VNTS
+    ]
+    captype_df = create_results_df(
+        index_columns=["project", "period"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    return results_columns, captype_df
 
 
-def summarize_results(scenario_directory, subproblem, stage, summary_results_file):
+# TODO: add capacity type to the results file, so that we can filter the
+#  consolidated results file for the summaries
+def summarize_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    summary_results_file,
+):
     """
     Summarize new build storage capacity results.
     :param scenario_directory:
@@ -539,47 +693,48 @@ def summarize_results(scenario_directory, subproblem, stage, summary_results_fil
     """
 
     # Get the results CSV as dataframe
-    capacity_results_df = pd.read_csv(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "capacity_fuel_prod_new.csv",
-        )
+    capacity_results_agg_df = read_results_file_generic(
+        scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        capacity_type=Path(__file__).stem,
     )
-
-    capacity_results_agg_df = capacity_results_df.groupby(
-        by=["load_zone", "technology", "vintage"], as_index=True
-    ).sum()
 
     # Get all technologies with new build production OR release OR energy capacity
     new_build_df = pd.DataFrame(
         capacity_results_agg_df[
             (capacity_results_agg_df["new_fuel_prod_capacity_fuelunitperhour"] > 0)
             | (capacity_results_agg_df["new_fuel_rel_capacity_fuelunitperhour"] > 0)
-            | (capacity_results_agg_df["new_fuel_stor_capacity_fuelunitperhour"] > 0)
+            | (capacity_results_agg_df["new_fuel_stor_capacity_fuelunit"] > 0)
         ][
             [
                 "new_fuel_prod_capacity_fuelunitperhour",
                 "new_fuel_rel_capacity_fuelunitperhour",
-                "new_fuel_stor_capacity_fuelunitperhour",
+                "new_fuel_stor_capacity_fuelunit",
             ]
         ]
     )
 
-    # Get the power and energy units from the units.csv file
-    units_df = pd.read_csv(
-        os.path.join(scenario_directory, "units.csv"), index_col="metric"
-    )
-    fuel_unit = units_df.loc["fuel_energy", "unit"]
+    # Get the units from the units.csv file
+    power_unit, energy_unit, fuel_unit = get_units(scenario_directory)
 
     # Rename column header
-    new_build_df.columns = [
+    columns = [
         "New Fuel Production Capacity ({} per hour)".format(fuel_unit),
         "New Fuel Release Capacity ({} per hour)".format(fuel_unit),
         "New Fuel Storage Capacity ({})".format(fuel_unit),
     ]
+
+    write_summary_results_generic(
+        results_df=new_build_df,
+        columns=columns,
+        summary_results_file=summary_results_file,
+        title="New Fuel Production, Release, and Storage Capacity",
+        empty_title="No new fuel production was built.",
+    )
 
     with open(summary_results_file, "a") as outfile:
         outfile.write("\n--> New Fuel Production, Release, and Storage Capacity <--\n")
@@ -594,7 +749,16 @@ def summarize_results(scenario_directory, subproblem, stage, summary_results_fil
 ###############################################################################
 
 
-def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_model_inputs_from_database(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -605,7 +769,11 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
     c = conn.cursor()
 
     costs = c.execute(
-        """SELECT project, vintage, lifetime_yrs,
+        """SELECT project, vintage, operational_lifetime_yrs,
+        fuel_production_capacity_fixed_cost_per_fuelunitperhour_yr,
+        fuel_release_capacity_fixed_cost_per_fuelunitperhour_yr,
+        fuel_storage_capacity_fixed_cost_per_fuelunit_yr,
+        financial_lifetime_yrs,
         fuel_production_capacity_cost_per_fuelunitperhour_yr,
         fuel_release_capacity_cost_per_fuelunitperhour_yr,
         fuel_storage_capacity_cost_per_fuelunit_yr
@@ -615,7 +783,11 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
         FROM inputs_temporal_periods
         WHERE temporal_scenario_id = {temporal_scenario_id}) as relevant_vintages
         INNER JOIN
-        (SELECT project, vintage, lifetime_yrs,
+        (SELECT project, vintage, operational_lifetime_yrs,
+        fuel_production_capacity_fixed_cost_per_fuelunitperhour_yr,
+        fuel_release_capacity_fixed_cost_per_fuelunitperhour_yr,
+        fuel_storage_capacity_fixed_cost_per_fuelunit_yr,
+        financial_lifetime_yrs,
         fuel_production_capacity_cost_per_fuelunitperhour_yr,
         fuel_release_capacity_cost_per_fuelunitperhour_yr,
         fuel_storage_capacity_cost_per_fuelunit_yr
@@ -634,7 +806,15 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     Get inputs from database and write out the model input
@@ -648,14 +828,24 @@ def write_model_inputs(
     """
 
     costs = get_model_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        conn,
     )
 
     with open(
         os.path.join(
             scenario_directory,
-            str(subproblem),
-            str(stage),
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
             "inputs",
             "fuel_prod_new_vintage_costs.tab",
         ),
@@ -669,7 +859,11 @@ def write_model_inputs(
             [
                 "project",
                 "vintage",
-                "lifetime_yrs",
+                "operational_lifetime_yrs",
+                "fuel_production_capacity_fixed_cost_per_fuelunitperhour_yr",
+                "fuel_release_capacity_fixed_cost_per_fuelunitperhour_yr",
+                "fuel_storage_capacity_fixed_cost_per_fuelunit_yr",
+                "financial_lifetime_yrs",
                 "fuel_production_capacity_cost_per_fuelunitperhour_yr",
                 "fuel_release_capacity_cost_per_fuelunitperhour_yr",
                 "fuel_storage_capacity_cost_per_fuelunit_yr",
@@ -681,40 +875,20 @@ def write_model_inputs(
             writer.writerow(replace_nulls)
 
 
-def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    """
-
-    :param scenario_id:
-    :param subproblem:
-    :param stage:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-    # Capacity results
-    if not quiet:
-        print("project new build storage")
-
-    update_capacity_results_table(
-        db=db,
-        c=c,
-        results_directory=results_directory,
-        scenario_id=scenario_id,
-        subproblem=subproblem,
-        stage=stage,
-        results_file="capacity_fuel_prod_new.csv",
-    )
-
-
 # Validation
 ###############################################################################
 
 
-def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -724,7 +898,14 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     :return:
     """
     new_stor_costs = get_model_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        conn,
     )
 
     projects = get_projects(
@@ -748,6 +929,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -762,6 +946,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -775,6 +962,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,

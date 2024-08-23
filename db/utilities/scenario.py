@@ -1,8 +1,26 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2023 Blue Marble Analytics LLC. All rights reserved.
 
 """
-This script contains functions for creating, updating, and deleting a
-scenario. You can create a single or multiple scenarios from a CSV.
+You can use the *gridpath_load_scenarios* command to create, update, or delete
+a scenario. You can create a single or multiple scenarios from a CSV.
+This command assumes that the user has already created the database file
+using the *gridpath_create_database* command and loaded input data for the
+scenario using the *gridpath_load_csvs* command.
+
+The *gridpath_load_scenarios* command takes several arguments. For usage info,
+run:
+
+>>> gridpath_load_scenarios --help
+
+The user must specify the GridPath database path using the *--database* flag
+and the path to the directory where the scenario CSV is located using the
+*--csv_path* flag.
+
+>>> gridpath_load_scenarios --database PATH/DO/DB --csv_path PATH/TO/SCENARIO/CSV
+
+To load a single scenario by name, use the *--scenario* flag. To delete a scenario from
+the database, specify the scenario name with the *--scenario* flag and use the
+*--delete* flag.
 """
 
 from argparse import ArgumentParser
@@ -414,8 +432,6 @@ def main(args=None):
                     load_scenario_from_df(
                         conn=db_conn, scenarios_df=csv_to_df, scenario_name=scenario
                     )
-                else:
-                    pass
 
 
 if __name__ == "__main__":

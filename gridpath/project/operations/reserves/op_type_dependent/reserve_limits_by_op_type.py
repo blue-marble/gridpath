@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import os.path
 import pandas as pd
 from pyomo.environ import Param, PercentFraction, Constraint
 
-from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file
+from gridpath.auxiliary.auxiliary import get_required_subtype_modules
 from gridpath.project.operations.common_functions import load_operational_type_modules
 import gridpath.project.operations.operational_types as op_type
 
@@ -29,6 +29,9 @@ def generic_add_model_components(
     m,
     d,
     scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
     reserve_projects_set,
@@ -66,8 +69,11 @@ def generic_add_model_components(
     )
 
     # Import needed operational modules
-    required_operational_modules = get_required_subtype_modules_from_projects_file(
+    required_operational_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         which_type="operational_type",
@@ -114,6 +120,9 @@ def generic_load_model_data(
     d,
     data_portal,
     scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
     subproblem,
     stage,
     ramp_rate_limit_column_name,
@@ -136,7 +145,14 @@ def generic_load_model_data(
     params_to_import = ()
     projects_file_header = pd.read_csv(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "projects.tab",
         ),
         sep="\t",
         header=None,
@@ -149,13 +165,18 @@ def generic_load_model_data(
     if ramp_rate_limit_column_name in projects_file_header:
         columns_to_import += (ramp_rate_limit_column_name,)
         params_to_import += (getattr(m, reserve_provision_ramp_rate_limit_param),)
-    else:
-        pass
 
     # Load the needed data
     data_portal.load(
         filename=os.path.join(
-            scenario_directory, subproblem, stage, "inputs", "projects.tab"
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "projects.tab",
         ),
         select=columns_to_import,
         param=params_to_import,

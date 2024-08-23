@@ -1,4 +1,4 @@
-# Copyright 2016-2021 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -36,11 +36,19 @@ from pyomo.environ import (
     value,
 )
 
-from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.db_interface import setup_results_import
+from gridpath.auxiliary.db_interface import import_csv, directories_to_db_values
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     The following Pyomo model components are defined in this module:
 
@@ -125,18 +133,20 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.SIM_FLOW_LMT_TMPS = Set(
         dimen=2,
-        initialize=lambda mod: list(
-            set(
-                (g, tmp)
-                for (g, p) in mod.SIM_FLOW_LMT_PRDS
-                for tmp in mod.TMPS_IN_PRD[p]
-            )
+        initialize=lambda mod: sorted(
+            list(
+                set(
+                    (g, tmp)
+                    for (g, p) in mod.SIM_FLOW_LMT_PRDS
+                    for tmp in mod.TMPS_IN_PRD[p]
+                )
+            ),
         ),
     )
 
     m.SIM_FLOW_LMTS = Set(
-        initialize=lambda mod: list(
-            set(limit for (limit, period) in mod.SIM_FLOW_LMT_PRDS)
+        initialize=lambda mod: sorted(
+            list(set(limit for (limit, period) in mod.SIM_FLOW_LMT_PRDS))
         )
     )
 
@@ -144,12 +154,14 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.TX_LINES_BY_SIM_FLOW_LMT = Set(
         m.SIM_FLOW_LMTS,
-        initialize=lambda mod, limit: list(
-            set(
-                tx_line
-                for (group, tx_line) in mod.SIM_FLOW_LMT_TX_LINES
-                if group == limit
-            )
+        initialize=lambda mod, limit: sorted(
+            list(
+                set(
+                    tx_line
+                    for (group, tx_line) in mod.SIM_FLOW_LMT_TX_LINES
+                    if group == limit
+                )
+            ),
         ),
     )
 
@@ -213,7 +225,17 @@ def sim_flow_constraint_rule(mod, g, tmp):
 ###############################################################################
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
 
     :param m:
@@ -227,8 +249,11 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     data_portal.load(
         filename=os.path.join(
             scenario_directory,
-            str(subproblem),
-            str(stage),
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
             "inputs",
             "transmission_simultaneous_flow_limits.tab",
         ),
@@ -240,8 +265,11 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     data_portal.load(
         filename=os.path.join(
             scenario_directory,
-            str(subproblem),
-            str(stage),
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
             "inputs",
             "transmission_simultaneous_flow_limit_lines.tab",
         ),
@@ -255,7 +283,16 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     )
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
+):
     """
     Export transmission operations
     :param scenario_directory:
@@ -268,10 +305,13 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     with open(
         os.path.join(
             scenario_directory,
-            str(subproblem),
-            str(stage),
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
             "results",
-            "transmission_simultaneous_flow_limits.csv",
+            "transmission_simultaneous_flows.csv",
         ),
         "w",
         newline="",
@@ -286,21 +326,43 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "simultaneous_flow_mw",
             ]
         )
-        for (g, tmp) in m.SIM_FLOW_LMT_TMPS:
+        for g, tmp in m.SIM_FLOW_LMT_TMPS:
             writer.writerow(
                 [g, tmp, m.period[tmp], m.tmp_weight[tmp], value(m.Sim_Flow_MW[g, tmp])]
             )
 
 
-def save_duals(m):
-    m.constraint_indices["Sim_Flow_Constraint"] = ["sim_flow_lmt", "timepoint", "dual"]
+def save_duals(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    instance,
+    dynamic_components,
+):
+    instance.constraint_indices["Sim_Flow_Constraint"] = [
+        "sim_flow_lmt",
+        "timepoint",
+        "dual",
+    ]
 
 
 # Database
 ###############################################################################
 
 
-def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -308,8 +370,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     :param conn: database connection
     :return:
     """
-    subproblem = 1 if subproblem == "" else subproblem
-    stage = 1 if stage == "" else stage
+
     c1 = conn.cursor()
     flow_limits = c1.execute(
         """SELECT transmission_simultaneous_flow_limit, period, max_flow_mw
@@ -355,7 +416,15 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     Get inputs from database and write out the model input
@@ -369,16 +438,36 @@ def write_model_inputs(
     :return:
     """
 
+    (
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+    ) = directories_to_db_values(
+        weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
+    )
+
     flow_limits, limit_lines = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+        conn,
     )
 
     # transmission_simultaneous_flow_limits.tab
     with open(
         os.path.join(
             scenario_directory,
-            str(subproblem),
-            str(stage),
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
             "inputs",
             "transmission_simultaneous_flow_limits.tab",
         ),
@@ -399,8 +488,11 @@ def write_model_inputs(
     with open(
         os.path.join(
             scenario_directory,
-            str(subproblem),
-            str(stage),
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
             "inputs",
             "transmission_simultaneous_flow_limit_lines.tab",
         ),
@@ -425,7 +517,16 @@ def write_model_inputs(
 
 
 def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    c,
+    db,
+    results_directory,
+    quiet,
 ):
     """
 
@@ -436,108 +537,35 @@ def import_results_into_database(
     :param quiet:
     :return:
     """
-    if not quiet:
-        print("sim flow limits")
-
-    # Delete prior results and create temporary import table for ordering
-    setup_results_import(
+    import_csv(
         conn=db,
         cursor=c,
-        table="results_transmission_simultaneous_flows",
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
+        quiet=quiet,
+        results_directory=results_directory,
+        which_results="transmission_simultaneous_flows",
     )
-
-    # Load results into the temporary table
-    results = []
-    with open(
-        os.path.join(results_directory, "transmission_simultaneous_flow_limits.csv"),
-        "r",
-    ) as f:
-        reader = csv.reader(f)
-
-        next(reader)  # skip header
-        for row in reader:
-            limit = row[0]
-            timepoint = row[1]
-            period = row[2]
-            timepoimt_weight = row[3]
-            flow = row[4]
-
-            results.append(
-                (
-                    scenario_id,
-                    limit,
-                    subproblem,
-                    stage,
-                    timepoint,
-                    timepoimt_weight,
-                    period,
-                    flow,
-                )
-            )
-
-        insert_temp_sql = """
-            INSERT INTO 
-            temp_results_transmission_simultaneous_flows{}
-            (scenario_id, transmission_simultaneous_flow_limit, 
-            subproblem_id, stage_id, timepoint, timepoint_weight, period, 
-            flow_mw)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?);
-            """.format(
-            scenario_id
-        )
-        spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
-
-        # Insert sorted results into permanent results table
-        insert_sql = """
-            INSERT INTO results_transmission_simultaneous_flows
-            (scenario_id, transmission_simultaneous_flow_limit, 
-            subproblem_id, stage_id, timepoint, timepoint_weight, period, 
-            flow_mw)
-            SELECT
-            scenario_id, transmission_simultaneous_flow_limit, 
-            subproblem_id, stage_id, timepoint, timepoint_weight, period, 
-            flow_mw
-            FROM temp_results_transmission_simultaneous_flows{}
-            ORDER BY scenario_id, transmission_simultaneous_flow_limit, 
-            subproblem_id, stage_id, timepoint;
-            """.format(
-            scenario_id
-        )
-        spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)
-
-        # Update duals
-        duals_results = []
-        with open(
-            os.path.join(results_directory, "Sim_Flow_Constraint.csv"), "r"
-        ) as duals_file:
-            reader = csv.reader(duals_file)
-
-            next(reader)  # skip header
-
-            for row in reader:
-                duals_results.append(
-                    (row[2], row[0], row[1], scenario_id, subproblem, stage)
-                )
-        duals_sql = """
-            UPDATE results_transmission_simultaneous_flows
-            SET dual = ?
-            WHERE transmission_simultaneous_flow_limit = ?
-            AND timepoint = ?
-            AND scenario_id = ?
-            AND subproblem_id = ?
-            AND stage_id = ?;
-            """
-        spin_on_database_lock(conn=db, cursor=c, sql=duals_sql, data=duals_results)
 
 
 # Validation
 ###############################################################################
 
 
-def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info

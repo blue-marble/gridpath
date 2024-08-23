@@ -1,4 +1,4 @@
-# Copyright 2016-2022 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,16 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pyomo.environ import Expression
+from pyomo.environ import Expression, value
 
-from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import (
-    get_required_subtype_modules_from_projects_file,
+    get_required_subtype_modules,
     load_subtype_modules,
 )
+from gridpath.common_functions import create_results_df
+from gridpath.project import PROJECT_TIMEPOINT_DF
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
 
     :param m:
@@ -29,8 +39,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     :return:
     """
     # Import needed availability type modules
-    required_availability_modules = get_required_subtype_modules_from_projects_file(
+    required_availability_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         which_type="availability_type",
@@ -43,7 +56,16 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     for op_m in required_availability_modules:
         imp_op_m = imported_availability_modules[op_m]
         if hasattr(imp_op_m, "add_model_components"):
-            imp_op_m.add_model_components(m, d, scenario_directory, subproblem, stage)
+            imp_op_m.add_model_components(
+                m,
+                d,
+                scenario_directory,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
+            )
 
     def availability_derate_cap_rule(mod, g, tmp):
         """
@@ -89,7 +111,15 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     :param scenario_directory: string, the scenario directory
@@ -116,13 +146,29 @@ def write_model_inputs(
     for op_m in required_availability_type_modules:
         if hasattr(imported_availability_type_modules[op_m], "write_model_inputs"):
             imported_availability_type_modules[op_m].write_model_inputs(
-                scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+                scenario_directory,
+                scenario_id,
+                subscenarios,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
+                conn,
             )
-        else:
-            pass
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
 
     :param m:
@@ -133,8 +179,11 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :param stage:
     :return:
     """
-    required_availability_modules = get_required_subtype_modules_from_projects_file(
+    required_availability_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         which_type="availability_type",
@@ -145,13 +194,28 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     for op_m in required_availability_modules:
         if hasattr(imported_availability_modules[op_m], "load_model_data"):
             imported_availability_modules[op_m].load_model_data(
-                m, d, data_portal, scenario_directory, subproblem, stage
+                m,
+                d,
+                data_portal,
+                scenario_directory,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
             )
-        else:
-            pass
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
+):
     """
     :param scenario_directory:
     :param subproblem:
@@ -163,9 +227,33 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     Export availability results.
     """
 
-    # Module-specific capacity results
-    required_availability_modules = get_required_subtype_modules_from_projects_file(
+    results_columns = [
+        "availability_derate",
+    ]
+    data = [
+        [
+            prj,
+            tmp,
+            value(m.Availability_Derate[prj, tmp]),
+        ]
+        for (prj, tmp) in m.PRJ_OPR_TMPS
+    ]
+    results_df = create_results_df(
+        index_columns=["project", "timepoint"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    for c in results_columns:
+        getattr(d, PROJECT_TIMEPOINT_DF)[c] = None
+    getattr(d, PROJECT_TIMEPOINT_DF).update(results_df)
+
+    # Module-specific availability results
+    required_availability_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         which_type="availability_type",
@@ -174,63 +262,35 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         required_availability_modules
     )
     for op_m in required_availability_modules:
-        if hasattr(imported_availability_modules[op_m], "export_results"):
-            imported_availability_modules[op_m].export_results(
-                scenario_directory, subproblem, stage, m, d
+        if hasattr(imported_availability_modules[op_m], "add_to_prj_tmp_results"):
+            op_m_results_columns, op_m_results_df = imported_availability_modules[
+                op_m
+            ].add_to_prj_tmp_results(
+                scenario_directory,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
+                m,
+                d,
             )
-        else:
-            pass
+            for c in op_m_results_columns:
+                getattr(d, PROJECT_TIMEPOINT_DF)[c] = None
+
+            getattr(d, PROJECT_TIMEPOINT_DF).update(op_m_results_df)
 
 
-def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
+def validate_inputs(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
-    """
-
-    :param scenario_id:
-    :param subproblem:
-    :param stage:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-
-    # Delete prior results for endogenous types
-    del_sql = """
-        DELETE FROM results_project_availability_endogenous 
-        WHERE scenario_id = ?
-        AND subproblem_id = ?
-        AND stage_id = ?;
-        """
-    spin_on_database_lock(
-        conn=db,
-        cursor=c,
-        sql=del_sql,
-        data=(scenario_id, subproblem, stage),
-        many=False,
-    )
-
-    # Load in the required availability type modules
-    required_availability_type_modules = get_required_availability_type_modules(
-        scenario_id, c
-    )
-    imported_availability_modules = load_availability_type_modules(
-        required_availability_type_modules
-    )
-
-    # Import module-specific results
-    for op_m in required_availability_type_modules:
-        if hasattr(imported_availability_modules[op_m], "import_results_into_database"):
-            imported_availability_modules[op_m].import_results_into_database(
-                scenario_id, subproblem, stage, c, db, results_directory, quiet
-            )
-        else:
-            pass
-
-
-def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
 
     :param subscenarios:
@@ -252,10 +312,15 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     for op_m in required_opchar_modules:
         if hasattr(imported_operational_modules[op_m], "validate_inputs"):
             imported_operational_modules[op_m].validate_inputs(
-                scenario_id, subscenarios, subproblem, stage, conn
+                scenario_id,
+                subscenarios,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
+                conn,
             )
-        else:
-            pass
 
 
 # TODO: this seems like a better place for this function than

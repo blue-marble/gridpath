@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import print_function
 
-from builtins import str
 from collections import OrderedDict
 from importlib import import_module
 import os.path
@@ -65,6 +63,9 @@ class TestDRNew(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
+            weather_iteration="",
+            hydro_iteration="",
+            availability_iteration="",
             subproblem="",
             stage="",
         )
@@ -78,6 +79,9 @@ class TestDRNew(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
+            weather_iteration="",
+            hydro_iteration="",
+            availability_iteration="",
             subproblem="",
             stage="",
         )
@@ -91,6 +95,9 @@ class TestDRNew(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
+            weather_iteration="",
+            hydro_iteration="",
+            availability_iteration="",
             subproblem="",
             stage="",
         )
@@ -100,6 +107,16 @@ class TestDRNew(unittest.TestCase):
         expected_projects = ["Shift_DR"]
         actual_projects = sorted([prj for prj in instance.DR_NEW])
         self.assertListEqual(expected_projects, actual_projects)
+
+        # Set: DR_NEW_OPR_PRDS
+        expected_opr_periods = [("Shift_DR", 2020), ("Shift_DR", 2030)]
+        actual_opr_periods = [(dr, prd) for (dr, prd) in instance.DR_NEW_OPR_PRDS]
+        self.assertListEqual(expected_opr_periods, actual_opr_periods)
+
+        # Set: DR_NEW_FIN_PRDS
+        expected_fin_periods = [("Shift_DR", 2020), ("Shift_DR", 2030)]
+        actual_fin_periods = [(dr, prd) for (dr, prd) in instance.DR_NEW_FIN_PRDS]
+        self.assertListEqual(expected_fin_periods, actual_fin_periods)
 
         # Param: dr_new_min_duration
         expected_duration = OrderedDict(sorted({"Shift_DR": 6}.items()))

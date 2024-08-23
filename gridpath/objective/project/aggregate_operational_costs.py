@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,7 +22,16 @@ from pyomo.environ import Expression
 from gridpath.auxiliary.dynamic_components import cost_components
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     :param m: the Pyomo abstract model object we are adding the components to
     :param d: the DynamicComponents class object we are adding components to
@@ -152,6 +161,42 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.Total_Curtailment_Cost = Expression(rule=total_curtailment_cost_rule)
 
+    def total_soc_penalty_cost_rule(mod):
+        """
+        Sum curtailment costs for the objective function term.
+        :param mod:
+        :return:
+        """
+        return sum(
+            mod.SOC_Penalty_Cost[g, tmp]
+            * mod.hrs_in_tmp[tmp]
+            * mod.tmp_weight[tmp]
+            * mod.number_years_represented[mod.period[tmp]]
+            * mod.discount_factor[mod.period[tmp]]
+            for (g, tmp) in mod.SOC_PENALTY_COST_PRJ_OPR_TMPS
+        )
+
+    m.Total_SOC_Penalty_Cost = Expression(rule=total_soc_penalty_cost_rule)
+
+    def total_soc_last_tmp_penalty_cost_rule(mod):
+        """
+        Sum last tmp penalty costs for the objective function term.
+        :param mod:
+        :return:
+        """
+        return sum(
+            mod.SOC_Penalty_Last_Tmp_Cost[g, tmp]
+            * mod.hrs_in_tmp[tmp]
+            * mod.tmp_weight[tmp]
+            * mod.number_years_represented[mod.period[tmp]]
+            * mod.discount_factor[mod.period[tmp]]
+            for (g, tmp) in mod.SOC_LAST_TMP_PENALTY_COST_PRJ_OPR_TMPS
+        )
+
+    m.Total_SOC_Penalty_Last_Tmp_Cost = Expression(
+        rule=total_soc_last_tmp_penalty_cost_rule
+    )
+
     record_dynamic_components(dynamic_components=d)
 
 
@@ -170,3 +215,7 @@ def record_dynamic_components(dynamic_components):
         "Total_Operational_Violation_Cost"
     )
     getattr(dynamic_components, cost_components).append("Total_Curtailment_Cost")
+    getattr(dynamic_components, cost_components).append("Total_SOC_Penalty_Cost")
+    getattr(dynamic_components, cost_components).append(
+        "Total_SOC_Penalty_Last_Tmp_Cost"
+    )

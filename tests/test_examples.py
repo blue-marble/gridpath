@@ -1,4 +1,4 @@
-# Copyright 2016-2022 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,18 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import ast
+import csv
 import logging
 import multiprocessing
 import os
+import pandas as pd
 import platform
 import sqlite3
 import unittest
 
-from gridpath import run_end_to_end, validate_inputs
+from gridpath import run_end_to_end, run_scenario, validate_inputs
 from db import create_database
 from db.common_functions import connect_to_database
 from db.utilities import port_csvs_to_db, scenario
-
 
 # Change directory to 'gridpath' directory, as that's what run_scenario.py
 # expects; the rest of the global variables are relative paths from there
@@ -31,27 +33,24 @@ os.chdir(os.path.join(os.path.dirname(__file__), "..", "gridpath"))
 EXAMPLES_DIRECTORY = os.path.join("..", "examples")
 DB_NAME = "unittest_examples"
 DB_PATH = os.path.join("../db", "{}.db".format(DB_NAME))
+DATA_DIRECTORY = "../db/data"
 CSV_PATH = "../db//csvs_test_examples"
 SCENARIOS_CSV = os.path.join(CSV_PATH, "scenarios.csv")
+TEST_SCENARIOS_CSV = "../tests/test_data/test_scenario_objective_function_values.csv"
 
-# Travis CI VM machines run on Ubuntu 16.04.7 LTS, which has an older
-# version of Cbc only (2.8.12) and gives slightly different results for some
-# tests
-UBUNTU_16 = (
-    True
-    if (platform.system() == "Linux" and platform.release() == "4.15.0-1098-gcp")
-    else False
-)
-
-# Windows check
-WINDOWS = True if os.name == "nt" else False
+# Platform check
+LINUX = True if platform.system() == "Linux" else False
+MACOS = True if platform.system() == "Darwin" else False
+WINDOWS = True if platform.system() == "Windows" else False
 
 
 class TestExamples(unittest.TestCase):
     """ """
 
-    def assertDictAlmostEqual(self, d1, d2, msg=None, places=7):
+    df = pd.read_csv(TEST_SCENARIOS_CSV, delimiter=",")
+    df.set_index("test_scenario", inplace=True)
 
+    def assertDictAlmostEqual(self, d1, d2, msg=None, places=7):
         # check if both inputs are dicts
         self.assertIsInstance(d1, dict, "First argument is not a dictionary")
         self.assertIsInstance(d2, dict, "Second argument is not a dictionary")
@@ -131,7 +130,7 @@ class TestExamples(unittest.TestCase):
         )
 
         # Check if we have a multiprocessing manager
-        # If so, convert the manager proxy dictionary to to a simple dictionary
+        # If so, convert the manager proxy dictionary to a simple dictionary
         # to avoid errors
         # Done via copies to avoid broken pipe error
         if hasattr(multiprocessing, "managers"):
@@ -151,6 +150,15 @@ class TestExamples(unittest.TestCase):
                 # Reset the objective to the new dictionary object
                 actual_objective = actual_objective_copy
 
+        # Uncomment this to save new objective function values
+        df = pd.read_csv(TEST_SCENARIOS_CSV, delimiter=",")
+        df.set_index("test_scenario", inplace=True)
+        # Set dtype to 'object' so that we can have floats and dictionaries
+        # in the column
+        df["actual_objective"] = df["actual_objective"].astype("object")
+        df.at[test, "actual_objective"] = actual_objective
+        df.to_csv(TEST_SCENARIOS_CSV, index=True)
+
         # Multi-subproblem and/or multi-stage scenarios return dict
         if isinstance(expected_objective, dict):
             self.assertDictAlmostEqual(expected_objective, actual_objective, places=1)
@@ -168,7 +176,9 @@ class TestExamples(unittest.TestCase):
         if os.path.exists(DB_PATH):
             os.remove(DB_PATH)
 
-        create_database.main(["--database", DB_PATH])
+        create_database.main(
+            ["--database", DB_PATH, "--data_directory", DATA_DIRECTORY]
+        )
 
         try:
             port_csvs_to_db.main(
@@ -194,14 +204,40 @@ class TestExamples(unittest.TestCase):
             logging.exception(e)
             os.remove(DB_PATH)
 
+    def validate_and_test_example_generic(
+        self, scenario_name, literal=False, skip_validation=False
+    ):
+        # Use the expected objective column by default
+        column_to_use = "expected_objective"
+        if MACOS and not pd.isnull(
+            self.df.loc[scenario_name]["expected_objective_darwin"]
+        ):
+            column_to_use = "expected_objective_darwin"
+        if WINDOWS and not pd.isnull(
+            self.df.loc[scenario_name]["expected_objective_windows"]
+        ):
+            column_to_use = "expected_objective_windows"
+
+        # For multi-subproblem and multi-stage problems, we need to evaluate
+        # the objective function as a literal (as it is in dictionary format
+        # stored as string in the CSV)
+        # For the rest of the problems, convert the objective function value
+        # from string to floating point data type
+        if literal:
+            objective = ast.literal_eval(self.df.loc[scenario_name][column_to_use])
+        else:
+            objective = float(self.df.loc[scenario_name][column_to_use])
+        if not skip_validation:
+            self.check_validation(scenario_name)
+        self.run_and_check_objective(scenario_name, objective)
+
     def test_example_test(self):
         """
         Check validation and objective function value of "test" example
         :return:
         """
-
-        self.check_validation("test")
-        self.run_and_check_objective("test", -3796309121478.12)
+        scenario_name = "test"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_test_no_overgen_allowed(self):
         """
@@ -210,8 +246,8 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
-        self.check_validation("test_no_overgen_allowed")
-        self.run_and_check_objective("test_no_overgen_allowed", -5256303226874.182)
+        scenario_name = "test_no_overgen_allowed"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_test_new_build_storage(self):
         """
@@ -220,8 +256,8 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
-        self.check_validation("test_new_build_storage")
-        self.run_and_check_objective("test_new_build_storage", -4484591199.92)
+        scenario_name = "test_new_build_storage"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_test_new_binary_build_storage(self):
         """
@@ -229,11 +265,8 @@ class TestExamples(unittest.TestCase):
         "test_new_binary_build_storage" example
         :return:
         """
-
-        self.check_validation("test_new_binary_build_storage")
-        self.run_and_check_objective(
-            "test_new_binary_build_storage", -4484591878.4800005
-        )
+        scenario_name = "test_new_binary_build_storage"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_test_new_build_storage_cumulative_min_max(self):
         """
@@ -241,11 +274,8 @@ class TestExamples(unittest.TestCase):
         "test_new_build_storage_cumulative_min_max" example
         :return:
         """
-
-        self.check_validation("test_new_build_storage_cumulative_min_max")
-        self.run_and_check_objective(
-            "test_new_build_storage_cumulative_min_max", -4561692383.87
-        )
+        scenario_name = "test_new_build_storage_cumulative_min_max"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_test_no_reserves(self):
         """
@@ -253,36 +283,32 @@ class TestExamples(unittest.TestCase):
         "test_no_reserves" example
         :return:
         """
-
-        self.check_validation("test_no_reserves")
-        self.run_and_check_objective("test_no_reserves", -233812049.889)
+        scenario_name = "test_no_reserves"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_test_w_hydro(self):
         """
         Check validation and objective function value of "test_w_hydro" example
         :return:
         """
-
-        self.check_validation("test_w_hydro")
-        self.run_and_check_objective("test_w_hydro", -214913823.36742803)
+        scenario_name = "test_w_hydro"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_test_w_storage(self):
         """
         Check validation and objective function value of "test_w_storage" example
         :return:
         """
-
-        self.check_validation("test_w_storage")
-        self.run_and_check_objective("test_w_storage", -237985313.88900003)
+        scenario_name = "test_w_storage"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_2horizons(self):
         """
         Check validation and objective function value of "2horizons" example
         :return:
         """
-
-        self.check_validation("2horizons")
-        self.run_and_check_objective("2horizons", -3796309121478.1226)
+        scenario_name = "2horizons"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_2horizons_w_hydro(self):
         """
@@ -290,9 +316,8 @@ class TestExamples(unittest.TestCase):
         "2horizons_w_hydro" example
         :return:
         """
-
-        self.check_validation("2horizons_w_hydro")
-        self.run_and_check_objective("2horizons_w_hydro", -219136981.90835398)
+        scenario_name = "2horizons_w_hydro"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_2horizons_w_hydro_and_nuclear_binary_availability(self):
         """
@@ -309,11 +334,8 @@ class TestExamples(unittest.TestCase):
 
         :return:
         """
-
-        self.check_validation("2horizons_w_hydro_and_nuclear_binary_availability")
-        self.run_and_check_objective(
-            "2horizons_w_hydro_and_nuclear_binary_availability", -179455911.23328674
-        )
+        scenario_name = "2horizons_w_hydro_and_nuclear_binary_availability"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_2horizons_w_hydro_w_balancing_types(self):
         """
@@ -325,28 +347,23 @@ class TestExamples(unittest.TestCase):
         longer.
         :return:
         """
-
-        self.check_validation("2horizons_w_hydro_w_balancing_types")
-        self.run_and_check_objective(
-            "2horizons_w_hydro_w_balancing_types", -214913823.367428
-        )
+        scenario_name = "2horizons_w_hydro_w_balancing_types"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_2periods(self):
         """
         Check validation and objective function value of "2periods" example
         :return:
         """
-
-        self.check_validation("2periods")
-        self.run_and_check_objective("2periods", -75926182429562.45)
+        scenario_name = "2periods"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_2periods_new_build(self):
         """
         Check validation and objective function value of "2periods_new_build" example
         """
-
-        self.check_validation("2periods_new_build")
-        self.run_and_check_objective("2periods_new_build", -10085845900.191605)
+        scenario_name = "2periods_new_build"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_2periods_new_build_2zones(self):
         """
@@ -354,10 +371,8 @@ class TestExamples(unittest.TestCase):
         "2periods_new_build_2zones" example
         :return:
         """
-        objective = -20171691806.955845 if UBUNTU_16 else -20171691798.193214
-
-        self.check_validation("2periods_new_build_2zones")
-        self.run_and_check_objective("2periods_new_build_2zones", objective)
+        scenario_name = "2periods_new_build_2zones"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_2periods_new_build_2zones_new_build_transmission(self):
         """
@@ -365,11 +380,8 @@ class TestExamples(unittest.TestCase):
         "2periods_new_build_2zones_new_build_transmission" example
         :return:
         """
-
-        self.check_validation("2periods_new_build_2zones_new_build_transmission")
-        self.run_and_check_objective(
-            "2periods_new_build_2zones_new_build_transmission", -7028494941419.333
-        )
+        scenario_name = "2periods_new_build_2zones_new_build_transmission"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_2periods_new_build_2zones_singleBA(self):
         """
@@ -378,11 +390,8 @@ class TestExamples(unittest.TestCase):
         example
         :return:
         """
-
-        objective = -20171691752.945038 if UBUNTU_16 else -20171691750.059643
-
-        self.check_validation("2periods_new_build_2zones_singleBA")
-        self.run_and_check_objective("2periods_new_build_2zones_singleBA", objective)
+        scenario_name = "2periods_new_build_2zones_singleBA"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_2periods_new_build_2zones_transmission(self):
         """
@@ -390,11 +399,8 @@ class TestExamples(unittest.TestCase):
         "2periods_new_build_2zones_transmission" example
         :return:
         """
-        objective = -220771078212324.8 if UBUNTU_16 else -220771078212311.7
-        self.check_validation("2periods_new_build_2zones_transmission")
-        self.run_and_check_objective(
-            "2periods_new_build_2zones_transmission", objective
-        )
+        scenario_name = "2periods_new_build_2zones_transmission"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_2periods_new_build_2zones_transmission_w_losses(self):
         """
@@ -402,12 +408,8 @@ class TestExamples(unittest.TestCase):
         "2periods_new_build_2zones_transmission_w_losses" example
         :return:
         """
-        objective = -238291078037124.8 if UBUNTU_16 else -238291078037111.7
-
-        self.check_validation("2periods_new_build_2zones_transmission_w_losses")
-        self.run_and_check_objective(
-            "2periods_new_build_2zones_transmission_w_losses", objective
-        )
+        scenario_name = "2periods_new_build_2zones_transmission_w_losses"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_2periods_new_build_2zones_transmission_w_losses_opp_dir(self):
         """
@@ -418,12 +420,8 @@ class TestExamples(unittest.TestCase):
         2periods_new_build_2zones_transmission_w_losses
         :return:
         """
-        objective = -238291078037124.8 if UBUNTU_16 else -238291078037111.7
-
-        self.check_validation("2periods_new_build_2zones_transmission_w_losses_opp_dir")
-        self.run_and_check_objective(
-            "2periods_new_build_2zones_transmission_w_losses_opp_dir", objective
-        )
+        scenario_name = "2periods_new_build_2zones_transmission_w_losses_opp_dir"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_2periods_new_build_rps(self):
         """
@@ -431,10 +429,8 @@ class TestExamples(unittest.TestCase):
         "2periods_new_build_rps" example
         :return:
         """
-        objective = -26966855745114.633 if UBUNTU_16 else -26966855745108.062
-
-        self.check_validation("2periods_new_build_rps")
-        self.run_and_check_objective("2periods_new_build_rps", objective)
+        scenario_name = "2periods_new_build_rps"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_2periods_new_build_rps_percent_target(self):
         """
@@ -445,10 +441,8 @@ class TestExamples(unittest.TestCase):
         but specified as percentage of load.
         :return:
         """
-        objective = -26966855745114.633 if UBUNTU_16 else -26966855745108.062
-
-        self.check_validation("2periods_new_build_rps_percent_target")
-        self.run_and_check_objective("2periods_new_build_rps_percent_target", objective)
+        scenario_name = "2periods_new_build_rps_percent_target"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_2periods_new_build_cumulative_min_max(self):
         """
@@ -456,11 +450,8 @@ class TestExamples(unittest.TestCase):
         "2periods_new_build_cumulative_min_max" example
         :return:
         """
-
-        self.check_validation("2periods_new_build_cumulative_min_max")
-        self.run_and_check_objective(
-            "2periods_new_build_cumulative_min_max", -27166044526940.195
-        )
+        scenario_name = "2periods_new_build_cumulative_min_max"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_single_stage_prod_cost(self):
         """
@@ -468,11 +459,9 @@ class TestExamples(unittest.TestCase):
         "single_stage_prod_cost" example
         :return:
         """
-
-        self.check_validation("single_stage_prod_cost")
-        self.run_and_check_objective(
-            "single_stage_prod_cost",
-            {1: -1265436373826.0408, 2: -1265436373826.0408, 3: -1265436373826.0408},
+        scenario_name = "single_stage_prod_cost"
+        self.validate_and_test_example_generic(
+            scenario_name=scenario_name, literal=True
         )
 
     def test_example_single_stage_prod_cost_linked_subproblems(self):
@@ -481,10 +470,20 @@ class TestExamples(unittest.TestCase):
         "single_stage_prod_cost_linked_subproblems" example
         :return:
         """
-        self.check_validation("single_stage_prod_cost_linked_subproblems")
-        self.run_and_check_objective(
-            "single_stage_prod_cost_linked_subproblems",
-            {1: -1265436373826.0408, 2: -1265436373826.0408, 3: -1265436373826.0408},
+        scenario_name = "single_stage_prod_cost_linked_subproblems"
+        self.validate_and_test_example_generic(
+            scenario_name=scenario_name, literal=True
+        )
+
+    def test_example_single_stage_prod_cost_linked_subproblems_w_hydro(self):
+        """
+        Check objective function values of
+        "single_stage_prod_cost_linked_subproblems" example
+        :return:
+        """
+        scenario_name = "single_stage_prod_cost_linked_subproblems_w_hydro"
+        self.validate_and_test_example_generic(
+            scenario_name=scenario_name, literal=True
         )
 
     def test_example_multi_stage_prod_cost(self):
@@ -493,27 +492,9 @@ class TestExamples(unittest.TestCase):
         "multi_stage_prod_cost" example
         :return:
         """
-
-        self.check_validation("multi_stage_prod_cost")
-        self.run_and_check_objective(
-            "multi_stage_prod_cost",
-            {
-                1: {
-                    1: -1265436373826.0408,
-                    2: -1265436373826.0408,
-                    3: -1265436373826.099,
-                },
-                2: {
-                    1: -1265436373826.0408,
-                    2: -1265436373826.0408,
-                    3: -1265436373826.099,
-                },
-                3: {
-                    1: -1265436373826.0408,
-                    2: -1265436373826.0408,
-                    3: -1265436373826.099,
-                },
-            },
+        scenario_name = "multi_stage_prod_cost"
+        self.validate_and_test_example_generic(
+            scenario_name=scenario_name, literal=True
         )
 
     def test_example_single_stage_prod_cost_cycle_select(self):
@@ -523,39 +504,37 @@ class TestExamples(unittest.TestCase):
         single_stage_prod_cost but the Coal and Gas_CCGT plants have mutually
         exclusive commitment in this example.
         """
-
-        self.check_validation("single_stage_prod_cost_cycle_select")
-        self.run_and_check_objective(
-            "single_stage_prod_cost_cycle_select",
-            {1: -7154084662888.654, 2: -7154084662888.654, 3: -7154084662888.654},
+        scenario_name = "single_stage_prod_cost_cycle_select"
+        self.validate_and_test_example_generic(
+            scenario_name=scenario_name, literal=True
         )
 
     def test_example_multi_stage_prod_cost_parallel(self):
         """
-        Check validation and objective function values of
-        "multi_stage_prod_cost" example running subproblems in parallel
+        Check "multi_stage_prod_cost" example running subproblems in parallel
+        (getting inputs and optimization)
         :return:
         """
-        self.run_and_check_objective(
-            "multi_stage_prod_cost",
-            {
-                1: {
-                    1: -1265436373826.0408,
-                    2: -1265436373826.0408,
-                    3: -1265436373826.099,
-                },
-                2: {
-                    1: -1265436373826.0408,
-                    2: -1265436373826.0408,
-                    3: -1265436373826.099,
-                },
-                3: {
-                    1: -1265436373826.0408,
-                    2: -1265436373826.0408,
-                    3: -1265436373826.099,
-                },
-            },
-            parallel=3,
+        run_end_to_end.main(
+            [
+                "--database",
+                DB_PATH,
+                "--scenario",
+                "multi_stage_prod_cost",
+                "--scenario_location",
+                EXAMPLES_DIRECTORY,
+                # "--log",
+                # "--write_solver_files_to_logs_dir",
+                # "--keepfiles",
+                # "--symbolic",
+                "--n_parallel_get_inputs",
+                "3",
+                "--n_parallel_solve",
+                "3",
+                "--quiet",
+                "--mute_solver_output",
+                "--testing",
+            ]
         )
 
     def test_example_multi_stage_prod_cost_w_hydro(self):
@@ -565,27 +544,9 @@ class TestExamples(unittest.TestCase):
         example
         :return:
         """
-
-        self.check_validation("multi_stage_prod_cost_w_hydro")
-        self.run_and_check_objective(
-            "multi_stage_prod_cost_w_hydro",
-            {
-                1: {
-                    1: -1411433910806.1167,
-                    2: -1411433910806.1167,
-                    3: -1411433910806.175,
-                },
-                2: {
-                    1: -1411433910806.1167,
-                    2: -1411433910806.1167,
-                    3: -1411433910806.175,
-                },
-                3: {
-                    1: -1411433910806.1167,
-                    2: -1411433910806.1167,
-                    3: -1411433910806.175,
-                },
-            },
+        scenario_name = "multi_stage_prod_cost_w_hydro"
+        self.validate_and_test_example_generic(
+            scenario_name=scenario_name, literal=True
         )
 
     def test_example_multi_stage_prod_cost_linked_subproblems(self):
@@ -594,26 +555,9 @@ class TestExamples(unittest.TestCase):
         "multi_stage_prod_cost_linked_subproblems" example
         :return:
         """
-        self.check_validation("multi_stage_prod_cost_linked_subproblems")
-        self.run_and_check_objective(
-            "multi_stage_prod_cost_linked_subproblems",
-            {
-                1: {
-                    1: -1265436373826.0408,
-                    2: -1265436373826.0408,
-                    3: -1265436372366.0408,
-                },
-                2: {
-                    1: -1265436373826.0408,
-                    2: -1265436373826.0408,
-                    3: -1265436372366.0408,
-                },
-                3: {
-                    1: -1265436373826.0408,
-                    2: -1265436373826.0408,
-                    3: -1265436372366.0408,
-                },
-            },
+        scenario_name = "multi_stage_prod_cost_linked_subproblems"
+        self.validate_and_test_example_generic(
+            scenario_name=scenario_name, literal=True
         )
 
     def test_example_2periods_gen_lin_econ_retirement(self):
@@ -623,11 +567,8 @@ class TestExamples(unittest.TestCase):
         example
         :return:
         """
-
-        self.check_validation("2periods_gen_lin_econ_retirement")
-        self.run_and_check_objective(
-            "2periods_gen_lin_econ_retirement", -75926125638846.83
-        )
+        scenario_name = "2periods_gen_lin_econ_retirement"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_2periods_gen_bin_econ_retirement(self):
         """
@@ -636,11 +577,8 @@ class TestExamples(unittest.TestCase):
         example
         :return:
         """
-
-        self.check_validation("2periods_gen_bin_econ_retirement")
-        self.run_and_check_objective(
-            "2periods_gen_bin_econ_retirement", -75926182429562.45
-        )
+        scenario_name = "2periods_gen_bin_econ_retirement"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_variable_gen_reserves(self):
         """
@@ -649,9 +587,8 @@ class TestExamples(unittest.TestCase):
         example; this example requires a non-linear solver
         :return:
         """
-
-        self.check_validation("test_variable_gen_reserves")
-        self.run_and_check_objective("test_variable_gen_reserves", -1343499590014.7651)
+        scenario_name = "test_variable_gen_reserves"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_2periods_new_build_rps_variable_reserves(self):
         """
@@ -659,11 +596,8 @@ class TestExamples(unittest.TestCase):
         "2periods_new_build_rps_variable_reserves" example
         :return:
         """
-
-        self.check_validation("2periods_new_build_rps_variable_reserves")
-        self.run_and_check_objective(
-            "2periods_new_build_rps_variable_reserves", -4980266823.194146
-        )
+        scenario_name = "2periods_new_build_rps_variable_reserves"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_2periods_new_build_rps_variable_reserves_subhourly_adj(self):
         """
@@ -671,11 +605,8 @@ class TestExamples(unittest.TestCase):
         "2periods_new_build_rps_variable_reserves_subhourly_adj" example
         :return:
         """
-
-        self.check_validation("2periods_new_build_rps_variable_reserves_subhourly_adj")
-        self.run_and_check_objective(
-            "2periods_new_build_rps_variable_reserves_subhourly_adj", -4980266823.194146
-        )
+        scenario_name = "2periods_new_build_rps_variable_reserves_subhourly_adj"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_test_ramp_up_constraints(self):
         """
@@ -683,9 +614,8 @@ class TestExamples(unittest.TestCase):
         "test_ramp_up_constraints" example
         :return:
         """
-
-        self.check_validation("test_ramp_up_constraints")
-        self.run_and_check_objective("test_ramp_up_constraints", -3796309121478.1226)
+        scenario_name = "test_ramp_up_constraints"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_test_ramp_up_and_down_constraints(self):
         """
@@ -694,11 +624,8 @@ class TestExamples(unittest.TestCase):
         example;
         :return:
         """
-
-        self.check_validation("test_ramp_up_and_down_constraints")
-        self.run_and_check_objective(
-            "test_ramp_up_and_down_constraints", -4730755816658.181
-        )
+        scenario_name = "test_ramp_up_and_down_constraints"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_2periods_new_build_rps_w_rps_ineligible_storage(self):
         """
@@ -706,11 +633,8 @@ class TestExamples(unittest.TestCase):
         "2periods_new_build_rps_w_rps_ineligible_storage" example
         :return:
         """
-
-        self.check_validation("2periods_new_build_rps_w_rps_ineligible_storage")
-        self.run_and_check_objective(
-            "2periods_new_build_rps_w_rps_ineligible_storage", -16980455713578.633
-        )
+        scenario_name = "2periods_new_build_rps_w_rps_ineligible_storage"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_2periods_new_build_rps_w_rps_eligible_storage(self):
         """
@@ -718,11 +642,8 @@ class TestExamples(unittest.TestCase):
         "2periods_new_build_rps_w_rps_eligible_storage" example
         :return:
         """
-
-        self.check_validation("2periods_new_build_rps_w_rps_eligible_storage")
-        self.run_and_check_objective(
-            "2periods_new_build_rps_w_rps_eligible_storage", -26966830249904.633
-        )
+        scenario_name = "2periods_new_build_rps_w_rps_eligible_storage"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_test_new_solar(self):
         """
@@ -730,9 +651,8 @@ class TestExamples(unittest.TestCase):
         "test_new_solar" example
         :return:
         """
-
-        self.check_validation("test_new_solar")
-        self.run_and_check_objective("test_new_solar", -3796301348838.3267)
+        scenario_name = "test_new_solar"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_test_new_binary_solar(self):
         """
@@ -740,9 +660,8 @@ class TestExamples(unittest.TestCase):
         "test_new_binary_solar" example
         :return:
         """
-
-        self.check_validation("test_new_binary_solar")
-        self.run_and_check_objective("test_new_binary_solar", -3796300848658.342)
+        scenario_name = "test_new_binary_solar"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_test_new_solar_carbon_cap(self):
         """
@@ -750,9 +669,8 @@ class TestExamples(unittest.TestCase):
         "test_new_solar_carbon_cap" example
         :return:
         """
-
-        self.check_validation("test_new_solar_carbon_cap")
-        self.run_and_check_objective("test_new_solar_carbon_cap", -58282515304521.79)
+        scenario_name = "test_new_solar_carbon_cap"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_test_new_solar_carbon_cap_2zones_tx(self):
         """
@@ -760,11 +678,8 @@ class TestExamples(unittest.TestCase):
         "test_new_solar_carbon_cap_2zones_tx" example
         :return:
         """
-
-        self.check_validation("test_new_solar_carbon_cap_2zones_tx")
-        self.run_and_check_objective(
-            "test_new_solar_carbon_cap_2zones_tx", -58248087935073.625
-        )
+        scenario_name = "test_new_solar_carbon_cap_2zones_tx"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_test_new_solar_carbon_cap_2zones_dont_count_tx(self):
         """
@@ -772,11 +687,8 @@ class TestExamples(unittest.TestCase):
         "test_new_solar_carbon_cap_2zones_dont_count_tx" example
         :return:
         """
-
-        self.check_validation("test_new_solar_carbon_cap_2zones_dont_count_tx")
-        self.run_and_check_objective(
-            "test_new_solar_carbon_cap_2zones_dont_count_tx", -56530649982951.8
-        )
+        scenario_name = "test_new_solar_carbon_cap_2zones_dont_count_tx"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_test_new_solar_carbon_tax(self):
         """
@@ -784,9 +696,8 @@ class TestExamples(unittest.TestCase):
         "test_new_solar_carbon_tax" example
         :return:
         """
-
-        self.check_validation("test_new_solar_carbon_tax")
-        self.run_and_check_objective("test_new_solar_carbon_tax", -3796369926691.2686)
+        scenario_name = "test_new_solar_carbon_tax"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_2periods_new_build_simple_prm(self):
         """
@@ -795,9 +706,28 @@ class TestExamples(unittest.TestCase):
         example
         :return:
         """
-        objective = -10153045886.999044 if UBUNTU_16 else -10153045900.191605
-        self.check_validation("2periods_new_build_simple_prm")
-        self.run_and_check_objective("2periods_new_build_simple_prm", objective)
+        scenario_name = "2periods_new_build_simple_prm"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_2periods_new_build_simple_prm_w_energy_only(self):
+        """
+        Check validation and objective function value of
+        "2periods_new_build_simple_prm"
+        example
+        :return:
+        """
+        scenario_name = "2periods_new_build_simple_prm_w_energy_only"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_2periods_new_build_simple_prm_w_energy_only_deliv_cap_limit(self):
+        """
+        Check validation and objective function value of
+        "2periods_new_build_simple_prm"
+        example
+        :return:
+        """
+        scenario_name = "2periods_new_build_simple_prm_w_energy_only_deliv_cap_limit"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_2periods_new_build_local_capacity(self):
         """
@@ -806,11 +736,8 @@ class TestExamples(unittest.TestCase):
         example
         :return:
         """
-
-        self.check_validation("2periods_new_build_local_capacity")
-        self.run_and_check_objective(
-            "2periods_new_build_local_capacity", -10087189902.382917
-        )
+        scenario_name = "2periods_new_build_local_capacity"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_test_tx_dcopf(self):
         """
@@ -818,9 +745,8 @@ class TestExamples(unittest.TestCase):
         "test_tx_dcopf" example
         :return:
         """
-
-        self.check_validation("test_tx_dcopf")
-        self.run_and_check_objective("test_tx_dcopf", -58248351050674.516)
+        scenario_name = "test_tx_dcopf"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_test_tx_simple(self):
         """
@@ -828,9 +754,8 @@ class TestExamples(unittest.TestCase):
         "test_tx_simple" example
         :return:
         """
-
-        self.check_validation("test_tx_simple")
-        self.run_and_check_objective("test_tx_simple", -58248338996673.625)
+        scenario_name = "test_tx_simple"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_test_startup_shutdown_rates(self):
         """
@@ -839,9 +764,8 @@ class TestExamples(unittest.TestCase):
         example
         :return:
         """
-
-        self.check_validation("test_startup_shutdown_rates")
-        self.run_and_check_objective("test_startup_shutdown_rates", -560795927282.9794)
+        scenario_name = "test_startup_shutdown_rates"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_no_fuels(self):
         """
@@ -849,9 +773,8 @@ class TestExamples(unittest.TestCase):
         example
         :return:
         """
-
-        self.check_validation("test_no_fuels")
-        self.run_and_check_objective("test_no_fuels", -3796000221920.0)
+        scenario_name = "test_no_fuels"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_variable_om_curves(self):
         """
@@ -860,9 +783,8 @@ class TestExamples(unittest.TestCase):
         example
         :return:
         """
-
-        self.check_validation("test_variable_om_curves")
-        self.run_and_check_objective("test_variable_om_curves", -3796309193923.3223)
+        scenario_name = "test_variable_om_curves"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_aux_cons(self):
         """
@@ -873,9 +795,8 @@ class TestExamples(unittest.TestCase):
         example because the auxiliary consumption results in less
         overgeneration and therefore lower overgeneration penalty.
         """
-
-        self.check_validation("test_aux_cons")
-        self.run_and_check_objective("test_aux_cons", -3664910801437.807)
+        scenario_name = "test_aux_cons"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_test_w_lf_down_percent_req(self):
         """
@@ -883,26 +804,23 @@ class TestExamples(unittest.TestCase):
         "test_w_lf_down_percent_req" example
         :return:
         """
-
-        self.check_validation("test_w_lf_down_percent_req")
-        self.run_and_check_objective("test_w_lf_down_percent_req", -6643312468674.122)
+        scenario_name = "test_w_lf_down_percent_req"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_2periods_new_build_capgroups(self):
         """
         Check validation and objective function value of "2periods_new_build" example
         """
-
-        self.check_validation("2periods_new_build_capgroups")
-        self.run_and_check_objective("2periods_new_build_capgroups", -5266183794340.191)
+        scenario_name = "2periods_new_build_capgroups"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_test_markets(self):
         """
         Check validation and objective function value of "test" example
         :return:
         """
-
-        self.check_validation("test_markets")
-        self.run_and_check_objective("test_markets", -3504300478278.3403)
+        scenario_name = "test_markets"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_2periods_new_build_horizon_energy_target(self):
         """
@@ -910,12 +828,8 @@ class TestExamples(unittest.TestCase):
         "test_example_2periods_new_build_horizon_energy_target" example
         :return:
         """
-        objective = -26966855745114.633 if UBUNTU_16 else -26966855745108.062
-
-        self.check_validation("2periods_new_build_horizon_energy_target")
-        self.run_and_check_objective(
-            "2periods_new_build_horizon_energy_target", objective
-        )
+        scenario_name = "2periods_new_build_horizon_energy_target"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_2periods_new_build_horizon_energy_target_halfyear(self):
         """
@@ -923,12 +837,8 @@ class TestExamples(unittest.TestCase):
         "2periods_new_build_horizon_energy_target_halfyear" example
         :return:
         """
-        objective = -101086984772727.86 if UBUNTU_16 else -101086984772721.28
-
-        self.check_validation("2periods_new_build_horizon_energy_target_halfyear")
-        self.run_and_check_objective(
-            "2periods_new_build_horizon_energy_target_halfyear", objective
-        )
+        scenario_name = "2periods_new_build_horizon_energy_target_halfyear"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_test_new_build_gen_var_stor_hyb(self):
         """
@@ -936,11 +846,8 @@ class TestExamples(unittest.TestCase):
         "2periods_new_build_horizon_energy_target_halfyear" example
         :return:
         """
-
-        self.check_validation("test_new_build_gen_var_stor_hyb")
-        self.run_and_check_objective(
-            "test_new_build_gen_var_stor_hyb", -5797066114.34292
-        )
+        scenario_name = "test_new_build_gen_var_stor_hyb"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_test_carbon_tax_allowance(self):
         """
@@ -948,9 +855,8 @@ class TestExamples(unittest.TestCase):
         "test_carbon_tax_allowance" example
         :return:
         """
-
-        self.check_validation("test_carbon_tax_allowance")
-        self.run_and_check_objective("test_carbon_tax_allowance", -3796303120157.2686)
+        scenario_name = "test_carbon_tax_allowance"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_test_min_max_build_trans(self):
         """
@@ -958,10 +864,8 @@ class TestExamples(unittest.TestCase):
         "test_min_max_build_trans" example
         :return:
         """
-        objective = -7028538202569.947 if UBUNTU_16 else -7028538202574.325
-
-        self.check_validation("test_min_max_build_trans")
-        self.run_and_check_objective("test_min_max_build_trans", objective)
+        scenario_name = "test_min_max_build_trans"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_2periods_new_build_2zones_transmission_Tx1halfavail(self):
         """
@@ -969,12 +873,8 @@ class TestExamples(unittest.TestCase):
         "2periods_new_build_2zones_transmission_Tx1halfavail" example
         :return:
         """
-        objective = -308370294932310.25 if UBUNTU_16 else -308370294932297.06
-
-        self.check_validation("2periods_new_build_2zones_transmission_Tx1halfavail")
-        self.run_and_check_objective(
-            "2periods_new_build_2zones_transmission_Tx1halfavail", objective
-        )
+        scenario_name = "2periods_new_build_2zones_transmission_Tx1halfavail"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_2periods_new_build_2zones_transmission_Tx1halfavailmonthly(self):
         """
@@ -982,26 +882,16 @@ class TestExamples(unittest.TestCase):
         "2periods_new_build_2zones_transmission_Tx1halfavail" example
         :return:
         """
-
-        objective = -308370294932310.25 if UBUNTU_16 else -308370294932297.06
-
-        self.check_validation(
-            "2periods_new_build_2zones_transmission_Tx1halfavailmonthly"
-        )
-        self.run_and_check_objective(
-            "2periods_new_build_2zones_transmission_Tx1halfavailmonthly", objective
-        )
+        scenario_name = "2periods_new_build_2zones_transmission_Tx1halfavailmonthly"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_test_cheap_fuel_blend(self):
         """
         Check validation and objective function value of "test_cheap_fuel_blend" example
         :return:
         """
-
-        objective = -3796255594374.1226
-
-        self.check_validation("test_cheap_fuel_blend")
-        self.run_and_check_objective("test_cheap_fuel_blend", objective)
+        scenario_name = "test_cheap_fuel_blend"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_test_new_solar_carbon_cap_2zones_tx_low_carbon_fuel_blend(self):
         """
@@ -1009,14 +899,8 @@ class TestExamples(unittest.TestCase):
         "test_new_solar_carbon_cap_2zones_tx_low_carbon_fuel_blend" example
         :return:
         """
-
-        self.check_validation(
-            "test_new_solar_carbon_cap_2zones_tx_low_carbon_fuel_blend"
-        )
-        self.run_and_check_objective(
-            "test_new_solar_carbon_cap_2zones_tx_low_carbon_fuel_blend",
-            -3504399050661.217,
-        )
+        scenario_name = "test_new_solar_carbon_cap_2zones_tx_low_carbon_fuel_blend"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_test_cheap_fuel_blend_w_limit(self):
         """
@@ -1024,11 +908,8 @@ class TestExamples(unittest.TestCase):
         "test_cheap_fuel_blend_w_limit" example
         :return:
         """
-
-        objective = -3796282357926.1226
-
-        self.check_validation("test_cheap_fuel_blend_w_limit")
-        self.run_and_check_objective("test_cheap_fuel_blend_w_limit", objective)
+        scenario_name = "test_cheap_fuel_blend_w_limit"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_test_new_solar_fuel_burn_limit(self):
         """
@@ -1037,11 +918,8 @@ class TestExamples(unittest.TestCase):
         be the same as the "test_new_solar_carbon_cap" example.
         :return:
         """
-
-        self.check_validation("test_new_solar_fuel_burn_limit")
-        self.run_and_check_objective(
-            "test_new_solar_fuel_burn_limit", -58282515304521.79
-        )
+        scenario_name = "test_new_solar_fuel_burn_limit"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_test_new_solar_fuel_burn_limit_relative(self):
         """
@@ -1050,20 +928,16 @@ class TestExamples(unittest.TestCase):
         should be the same as the "test_new_solar_fuel_burn_limit" example.
         :return:
         """
-
-        self.check_validation("test_new_solar_fuel_burn_limit_relative")
-        self.run_and_check_objective(
-            "test_new_solar_fuel_burn_limit_relative", -58282515304521.79
-        )
+        scenario_name = "test_new_solar_fuel_burn_limit_relative"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_test_w_solver_options(self):
         """
         Check validation and objective function value of "test_w_solver_options" example
         :return:
         """
-
-        self.check_validation("test_w_solver_options")
-        self.run_and_check_objective("test_w_solver_options", -3796309121478.12)
+        scenario_name = "test_w_solver_options"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_test_carbon_tax_allowance_with_different_fuel_groups(self):
         """
@@ -1071,20 +945,16 @@ class TestExamples(unittest.TestCase):
         "test_carbon_tax_allowance_with_different_fuel_groups" example
         :return:
         """
-
-        self.check_validation("test_carbon_tax_allowance_with_different_fuel_groups")
-        self.run_and_check_objective(
-            "test_carbon_tax_allowance_with_different_fuel_groups", -3796325179179.2686
-        )
+        scenario_name = "test_carbon_tax_allowance_with_different_fuel_groups"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_performance_standard(self):
         """
         Check validation and objective function value of "test_performance_standard" example
         :return:
         """
-
-        self.check_validation("test_performance_standard")
-        self.run_and_check_objective("test_performance_standard", -3592014754469.9077)
+        scenario_name = "test_performance_standard"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_tx_flow(self):
         """
@@ -1092,9 +962,8 @@ class TestExamples(unittest.TestCase):
         "test_tx_flow" example
         :return:
         """
-
-        self.check_validation("test_tx_flow")
-        self.run_and_check_objective("test_tx_flow", -59124336744013.484)
+        scenario_name = "test_tx_flow"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_test_new_solar_reserve_prj_contribution(self):
         """
@@ -1104,11 +973,8 @@ class TestExamples(unittest.TestCase):
         requirement ID
         :return:
         """
-
-        self.check_validation("test_new_solar_reserve_prj_contribution")
-        self.run_and_check_objective(
-            "test_new_solar_reserve_prj_contribution", -3796311064738.0493
-        )
+        scenario_name = "test_new_solar_reserve_prj_contribution"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_test_new_solar_carbon_cap_2zones_tx_hydrogen_prod(self):
         """
@@ -1118,11 +984,8 @@ class TestExamples(unittest.TestCase):
         requirement ID
         :return:
         """
-
-        self.check_validation("test_new_solar_carbon_cap_2zones_tx_hydrogen_prod")
-        self.run_and_check_objective(
-            "test_new_solar_carbon_cap_2zones_tx_hydrogen_prod", -186977669.6
-        )
+        scenario_name = "test_new_solar_carbon_cap_2zones_tx_hydrogen_prod"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_test_new_solar_carbon_cap_2zones_tx_hydrogen_prod_new(self):
         """
@@ -1132,11 +995,8 @@ class TestExamples(unittest.TestCase):
         requirement ID
         :return:
         """
-
-        self.check_validation("test_new_solar_carbon_cap_2zones_tx_hydrogen_prod_new")
-        self.run_and_check_objective(
-            "test_new_solar_carbon_cap_2zones_tx_hydrogen_prod_new", -186998077.6
-        )
+        scenario_name = "test_new_solar_carbon_cap_2zones_tx_hydrogen_prod_new"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_test_new_solar_carbon_cap_dac(self):
         """
@@ -1147,21 +1007,16 @@ class TestExamples(unittest.TestCase):
         objective function for this problem on Windows than on Mac.
         :return:
         """
-
-        self.check_validation("test_new_solar_carbon_cap_dac")
-        self.run_and_check_objective(
-            "test_new_solar_carbon_cap_dac",
-            -3504434601571.8643 if WINDOWS else -3504434601570.9893,
-        )
+        scenario_name = "test_new_solar_carbon_cap_dac"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_test_cap_factor_limits(self):
         """
         Check validation and objective function value of "test" example
         :return:
         """
-
-        self.check_validation("test_cap_factor_limits")
-        self.run_and_check_objective("test_cap_factor_limits", -5373102109974.298)
+        scenario_name = "test_cap_factor_limits"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_multi_stage_prod_cost_w_markets(self):
         """
@@ -1169,27 +1024,9 @@ class TestExamples(unittest.TestCase):
         "multi_stage_prod_cost_w_markets" example
         :return:
         """
-
-        self.check_validation("multi_stage_prod_cost_w_markets")
-        self.run_and_check_objective(
-            "multi_stage_prod_cost_w_markets",
-            {
-                1: {
-                    1: -1168100020726.1135,
-                    2: -1168100283039.4688,
-                    3: -1168100283039.5056,
-                },
-                2: {
-                    1: -1168100035326.1135,
-                    2: -1168100283039.4688,
-                    3: -1168100283039.5056,
-                },
-                3: {
-                    1: -1168100020726.1135,
-                    2: -1168100283039.4688,
-                    3: -1168100283039.5056,
-                },
-            },
+        scenario_name = "multi_stage_prod_cost_w_markets"
+        self.validate_and_test_example_generic(
+            scenario_name=scenario_name, literal=True
         )
 
     def test_example_test_supplemental_firing(self):
@@ -1197,9 +1034,8 @@ class TestExamples(unittest.TestCase):
         Check validation and objective function value of "test_supplemental_firing" example
         :return:
         """
-
-        self.check_validation("test_supplemental_firing")
-        self.run_and_check_objective("test_supplemental_firing", -4380327039279.8545)
+        scenario_name = "test_supplemental_firing"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_test_tx_capacity_groups(self):
         """
@@ -1207,9 +1043,317 @@ class TestExamples(unittest.TestCase):
         "test_tx_capacity_groups" example
         :return:
         """
+        scenario_name = "test_tx_capacity_groups"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
 
-        self.check_validation("test_tx_capacity_groups")
-        self.run_and_check_objective("test_tx_capacity_groups", -12284573611936.518)
+    def test_example_2periods_new_build_fin_lifetime(self):
+        """
+        Check validation and objective function value of
+        "2periods_new_build_fin_lifetime" example. Same as "2periods_new_build" but
+        with shorter financial lifetimes and some fixed costs. Cost is lower because
+        the same payment is made fewer times.
+        """
+        scenario_name = "2periods_new_build_fin_lifetime"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_2periods_new_build_cumulative_and_vintage_min_max(self):
+        """
+        Check validation and objective function value of
+        "2periods_new_build_cumulative_and_vintage_min_max" example. It is the same
+        as 2periods_new_build_cumulative_and_min_max but with a max in 2020 for the
+        CCGT to force early build and a min on the CT in 2030 to force more build.
+
+        :return:
+        """
+        scenario_name = "2periods_new_build_cumulative_and_vintage_min_max"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_w_storage_w_soc_penalty(self):
+        """
+        Check validation and objective function value of "test_w_storage_w_soc_penalty"
+        example
+        :return:
+        """
+        scenario_name = "test_w_storage_w_soc_penalty"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_w_storage_w_soc_last_tmp_penalty(self):
+        """
+        Check validation and objective function value of "test_w_storage_w_soc_penalty"
+        example
+        :return:
+        """
+        scenario_name = "test_w_storage_w_soc_last_tmp_penalty"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_new_solar_itc(self):
+        """
+        Check validation and objective function value of
+        "test_new_solar_itc" example
+        :return:
+        """
+        scenario_name = "test_new_solar_itc"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_new_build_storage_itc(self):
+        """
+        Check validation and objective function value of
+        "test_new_build_storage" example
+        :return:
+        """
+        scenario_name = "test_new_build_storage_itc"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_2periods_new_build_simple_prm_2loadzones(self):
+        """
+        Check validation and objective function value of
+        "2periods_new_build_simple_prm_2loadzones"
+        example
+        :return:
+        """
+        scenario_name = "2periods_new_build_simple_prm_2loadzones"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_2periods_new_build_simple_prm_2loadzones_newtx_w_transfers(self):
+        """
+        Check validation and objective function value of
+        "2periods_new_build_simple_prm_w_transfers"
+        example
+        :return:
+        """
+        scenario_name = "2periods_new_build_simple_prm_2loadzones_newtx_w_transfers"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_2periods_new_build_simple_prm_2loadzones_newtx_w_transfers_w_costs(
+        self,
+    ):
+        """
+        Check validation and objective function value of
+        "2periods_new_build_simple_prm_2loadzones_newtx_w_transfers_w_costs"
+        example
+        :return:
+        """
+        scenario_name = (
+            "2periods_new_build_simple_prm_2loadzones_newtx_w_transfers_w_costs"
+        )
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_w_flex_load(self):
+        """
+        Check validation and objective function value of "test_w_storage" example
+        :return:
+        """
+        scenario_name = "test_w_flex_load"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_new_solar_w_relative_capacity_instead_of_potential(self):
+        """
+        Check validation and objective function value of
+        "test_new_solar" example
+        :return:
+        """
+        scenario_name = "test_new_solar_w_relative_capacity_instead_of_potential"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_2periods_new_build_2zones_transmission_w_hurdle_rates(self):
+        """
+        Check validation and objective function value of
+        "2periods_new_build_2zones_transmission_w_hurdle_rates" example
+        :return:
+        """
+        scenario_name = "2periods_new_build_2zones_transmission_w_hurdle_rates"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_2periods_new_build_simple_prm_2loadzones_newtx_w_transfers_w_subsidies(
+        self,
+    ):
+        """
+        Check validation and objective function value of
+        "test_new_solar" example
+        :return:
+        """
+        scenario_name = (
+            "2periods_new_build_simple_prm_2loadzones_newtx_w_transfers_w_subsidies"
+        )
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_new_build_storage_itc_single_superperiod(self):
+        """
+        Check validation and objective function value of
+        "test_new_build_storage_itc_single_superperiodself" example
+        :return:
+        """
+        scenario_name = "test_new_build_storage_itc_single_superperiod"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_incomplete_only(self):
+        """
+        Check that the "incomplete only" functionality works with no errors.
+        :return:
+        """
+        actual_objective = run_scenario.main(
+            [
+                "--scenario",
+                "test",
+                "--scenario_location",
+                EXAMPLES_DIRECTORY,
+                "--quiet",
+                "--mute_solver_output",
+                "--incomplete_only",
+            ]
+        )
+
+    def test_example_test_w_storage_starting_soc(self):
+        """
+        Check validation and objective function value of
+        "test_w_storage_starting_soc" example
+        :return:
+        """
+        scenario_name = "test_w_storage_starting_soc"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_w_nonfuel_emissions(self):
+        """
+        Check validation and objective function value of "test" example
+        :return:
+        """
+        scenario_name = "test_w_nonfuel_emissions"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_new_solar_carbon_credits(self):
+        """
+        Check validation and objective function value of
+        "test_new_solar_carbon_credits" example
+        :return:
+        """
+        scenario_name = "test_new_solar_carbon_credits"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_performance_standard_carbon_credits(self):
+        """
+        Check validation and objective function value of "test_performance_standard" example
+        :return:
+        """
+        scenario_name = "test_performance_standard_carbon_credits"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_new_solar_carbon_tax_w_carbon_credits(self):
+        """
+        Check validation and objective function value of
+        "test_new_solar_carbon_tax_w_carbon_credits" example
+        :return:
+        """
+        scenario_name = "test_new_solar_carbon_tax_w_carbon_credits"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_new_solar_carbon_credits_w_sell(self):
+        """
+        Check validation and objective function value of
+        "test_new_solar_carbon_credits_w_sell" example
+        The carbon credit price must be set higher than the cost of USE in this
+        example to incentivize the project to not run and generate credits.
+        :return:
+        """
+        scenario_name = "test_new_solar_carbon_credits_w_sell"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_test_performance_standard_carbon_credits_w_cap_no_credits_mapping(self):
+        """
+        Check validation and objective function value of
+        "test_performance_standard_carbon_credits_w_cap_no_credits_mapping" example
+        :return:
+        """
+        scenario_name = (
+            "test_performance_standard_carbon_credits_w_cap_no_credits_mapping"
+        )
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_test_new_solar_carbon_credits_w_buy(self):
+        """
+        Check validation and objective function value of "test_new_solar_carbon_credits_w_buy" example
+        :return:
+        """
+        scenario_name = "test_new_solar_carbon_credits_w_buy"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_test_new_solar_carbon_credits_w_buy_and_sell(self):
+        """
+        Check validation and objective function value of "test_new_solar_carbon_credits_w_buy_and_sell" example
+        :return:
+        """
+        scenario_name = "test_new_solar_carbon_credits_w_buy_and_sell"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_single_stage_prod_cost_w_spinup_lookahead(self):
+        """
+        Check validation and objective function values of
+        "single_stage_prod_cost_w_spinup_lookahead" example
+        :return:
+        """
+        scenario_name = "single_stage_prod_cost_w_spinup_lookahead"
+        self.validate_and_test_example_generic(
+            scenario_name=scenario_name, literal=True
+        )
+
+    def test_example_test_tx_targets_max(self):
+        """
+        Check validation and objective function value of
+        "test_example_test_tx_targets_max"
+        example
+        :return:
+        """
+        scenario_name = "test_tx_targets_max"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_ra_toolkit_monte_carlo(self):
+        """
+        Check validation and objective function values of
+        "ra_toolkit_monte_carlo" example
+        :return:
+        """
+        scenario_name = "ra_toolkit_monte_carlo"
+        self.validate_and_test_example_generic(
+            scenario_name=scenario_name, literal=True, skip_validation=True
+        )
+
+    def test_example_ra_toolkit_sync(self):
+        """
+        Check validation and objective function values of
+        "ra_toolkit_sync" example
+        :return:
+        """
+        scenario_name = "ra_toolkit_sync"
+        self.validate_and_test_example_generic(
+            scenario_name=scenario_name, literal=True, skip_validation=True
+        )
+
+    def test_example_2periods_nuclear_var_cost_by_period_same(self):
+        """
+        Check validation and objective function value of "2periods_nuclear_var_cost_by_period_same" example
+        :return:
+        """
+        scenario_name = "2periods_nuclear_var_cost_by_period_same"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_2periods_nuclear_var_cost_by_period_diff(self):
+        """
+        Check validation and objective function value of
+        "2periods_nuclear_var_cost_by_period_diff" example
+        :return:
+        """
+        scenario_name = "2periods_nuclear_var_cost_by_period_diff"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_ra_toolkit_sync_single_year(self):
+        """
+        Check validation and objective function values of
+        "ra_toolkit_sync_single_year" example
+        :return:
+        """
+        scenario_name = "ra_toolkit_sync_single_year"
+        self.validate_and_test_example_generic(
+            scenario_name=scenario_name, literal=True, skip_validation=True
+        )
 
     @classmethod
     def tearDownClass(cls):

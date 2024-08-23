@@ -1,4 +1,4 @@
-# Copyright 2016-2022 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,12 +27,13 @@ from pyomo.environ import (
     Set,
     Var,
     Constraint,
+    Boolean,
     PercentFraction,
     value,
     NonNegativeReals,
 )
 
-from gridpath.auxiliary.auxiliary import cursor_to_df
+from gridpath.auxiliary.auxiliary import cursor_to_df, subset_init_by_set_membership
 from gridpath.auxiliary.validations import (
     write_validation_to_database,
     get_expected_dtypes,
@@ -40,6 +41,8 @@ from gridpath.auxiliary.validations import (
     validate_missing_inputs,
     validate_column_monotonicity,
 )
+from gridpath.common_functions import create_results_df
+from gridpath.project import PROJECT_TIMEPOINT_DF
 from gridpath.project.operations.operational_types.common_functions import (
     determine_relevant_timepoints,
 )
@@ -49,7 +52,16 @@ from gridpath.project.common_functions import (
 )
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     The following Pyomo model components are defined in this module:
 
@@ -81,6 +93,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
     | The number of hours the project must be unavailable per period.         |
+    +-------------------------------------------------------------------------+
+    | | :code:`avl_cont_unavl_hrs_per_prd_req_exact`                          |
+    | | *Defined over*: :code:`AVL_BIN`                                       |
+    | | *Within*: :code:`Boolean`                                             |
+    |                                                                         |
+    | Require exactly the number of hours the project must be unavailable per |
+    | period. If set to 0, the constraint is soft.                            |
     +-------------------------------------------------------------------------+
     | | :code:`avl_cont_min_unavl_hrs_per_event`                              |
     | | *Defined over*: :code:`AVL_CONT`                                      |
@@ -167,18 +186,16 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.AVL_CONT_OPR_PRDS = Set(
         dimen=2,
         within=m.PRJ_OPR_PRDS,
-        initialize=lambda mod: list(
-            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_PRDS if g in mod.AVL_CONT)
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod, superset="PRJ_OPR_PRDS", index=0, membership_set=mod.AVL_CONT
         ),
     )
 
-    # TODO: factor out this lambda rule, as it is used in all operational type
-    #  modules and availability type modules
     m.AVL_CONT_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: list(
-            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS if g in mod.AVL_CONT)
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod, superset="PRJ_OPR_TMPS", index=0, membership_set=mod.AVL_CONT
         ),
     )
 
@@ -186,6 +203,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     ###########################################################################
 
     m.avl_cont_unavl_hrs_per_prd = Param(m.AVL_CONT, within=NonNegativeReals)
+    m.avl_cont_unavl_hrs_per_prd_req_exact = Param(m.AVL_CONT, within=Boolean)
 
     m.avl_cont_min_unavl_hrs_per_event = Param(m.AVL_CONT, within=NonNegativeReals)
 
@@ -229,17 +247,18 @@ def total_scheduled_availability_per_period_rule(mod, g, p):
     **Constraint Name**: AvlCont_Tot_Sched_Unavl_per_Prd_Constraint
     **Enforced Over**: AVL_CONT_OPR_PRDS
 
-    The project must be down for avl_cont_unavl_hrs_per_prd in each period.
-    TODO: it's possible that solve time will be faster if we make this
-        constraint >= instead of ==, but then degeneracy could be an issue
+    The project must be down for avl_cont_unavl_hrs_per_prd in each period if
+    avl_cont_unavl_hrs_per_prd_req_exact is 1 or at least
+    avl_cont_unavl_hrs_per_prd otherwise.
     """
-    return (
-        sum(
-            mod.AvlCont_Unavailable[g, tmp] * mod.hrs_in_tmp[tmp] * mod.tmp_weight[tmp]
-            for tmp in mod.TMPS_IN_PRD[p]
-        )
-        == mod.avl_cont_unavl_hrs_per_prd[g]
+    lhs = sum(
+        mod.AvlCont_Unavailable[g, tmp] * mod.hrs_in_tmp[tmp] * mod.tmp_weight[tmp]
+        for tmp in mod.TMPS_IN_PRD[p]
     )
+    if mod.avl_cont_unavl_hrs_per_prd_req_exact:
+        return lhs == mod.avl_cont_unavl_hrs_per_prd[g]
+    else:
+        return lhs >= mod.avl_cont_unavl_hrs_per_prd[g]
 
 
 def unavailability_start_and_stop_rule(mod, g, tmp):
@@ -331,7 +350,17 @@ def availability_derate_hyb_stor_cap_rule(mod, g, tmp):
 ###############################################################################
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     :param m:
     :param data_portal:
@@ -343,6 +372,9 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     # Figure out which projects have this availability type
     project_subset = determine_project_subset(
         scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         column="availability_type",
@@ -353,14 +385,18 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     data_portal.data()["AVL_CONT"] = {None: project_subset}
 
     avl_cont_unavl_hrs_per_prd_dict = {}
+    avl_cont_unavl_hrs_per_prd_exact_dict = {}
     avl_cont_min_unavl_hrs_per_event_dict = {}
     avl_cont_min_avl_hrs_between_events_dict = {}
 
     with open(
         os.path.join(
             scenario_directory,
-            str(subproblem),
-            str(stage),
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
             "inputs",
             "project_availability_endogenous.tab",
         ),
@@ -372,10 +408,14 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         for row in reader:
             if row[0] in project_subset:
                 avl_cont_unavl_hrs_per_prd_dict[row[0]] = float(row[1])
-                avl_cont_min_unavl_hrs_per_event_dict[row[0]] = float(row[2])
-                avl_cont_min_avl_hrs_between_events_dict[row[0]] = float(row[3])
+                avl_cont_unavl_hrs_per_prd_exact_dict[row[0]] = int(float(row[2]))
+                avl_cont_min_unavl_hrs_per_event_dict[row[0]] = float(row[3])
+                avl_cont_min_avl_hrs_between_events_dict[row[0]] = float(row[4])
 
     data_portal.data()["avl_cont_unavl_hrs_per_prd"] = avl_cont_unavl_hrs_per_prd_dict
+    data_portal.data()[
+        "avl_cont_unavl_hrs_per_prd_req_exact"
+    ] = avl_cont_unavl_hrs_per_prd_exact_dict
     data_portal.data()[
         "avl_cont_min_unavl_hrs_per_event"
     ] = avl_cont_min_unavl_hrs_per_event_dict
@@ -384,7 +424,16 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     ] = avl_cont_min_avl_hrs_between_events_dict
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def add_to_prj_tmp_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
+):
     """
     Export operations results.
     :param scenario_directory:
@@ -395,62 +444,44 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return: Nothing
     """
 
-    with open(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "project_availability_endogenous_continuous.csv",
-        ),
-        "w",
-        newline="",
-    ) as f:
-        writer = csv.writer(f)
-        writer.writerow(
-            [
-                "project",
-                "period",
-                "subproblem_id",
-                "stage_id",
-                "availability_type",
-                "timepoint",
-                "timepoint_weight",
-                "number_of_hours_in_timepoint",
-                "load_zone",
-                "technology",
-                "unavailability_decision",
-                "start_unavailability",
-                "stop_unavailability",
-                "availability_derate",
-            ]
-        )
-        for (p, tmp) in m.AVL_CONT_OPR_TMPS:
-            writer.writerow(
-                [
-                    p,
-                    m.period[tmp],
-                    1 if subproblem == "" else subproblem,
-                    1 if stage == "" else stage,
-                    m.availability_type[p],
-                    tmp,
-                    m.tmp_weight[tmp],
-                    m.hrs_in_tmp[tmp],
-                    m.load_zone[p],
-                    m.technology[p],
-                    value(m.AvlCont_Unavailable[p, tmp]),
-                    value(m.AvlCont_Start_Unavailability[p, tmp]),
-                    value(m.AvlCont_Stop_Unavailability[p, tmp]),
-                    1 - value(m.AvlCont_Unavailable[p, tmp]),
-                ]
-            )
+    results_columns = [
+        "unavailability_decision",
+        "start_unavailability",
+        "stop_unavailability",
+    ]
+    data = [
+        [
+            prj,
+            tmp,
+            value(m.AvlCont_Unavailable[prj, tmp]),
+            value(m.AvlCont_Start_Unavailability[prj, tmp]),
+            value(m.AvlCont_Stop_Unavailability[prj, tmp]),
+        ]
+        for (prj, tmp) in m.AVL_CONT_OPR_TMPS
+    ]
+    results_df = create_results_df(
+        index_columns=["project", "timepoint"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    return results_columns, results_df
 
 
 # Database
 ###############################################################################
 
 
-def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     :param subscenarios:
     :param subproblem:
@@ -464,6 +495,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     availability_params = c.execute(
         """
             SELECT project, unavailable_hours_per_period, 
+            unavailable_hours_per_period_require_exact,
             unavailable_hours_per_event_min,
             available_hours_between_events_min
             FROM (
@@ -492,7 +524,15 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """
 
@@ -507,6 +547,9 @@ def write_model_inputs(
     endogenous_availability_params = get_inputs_from_database(
         scenario_id=scenario_id,
         subscenarios=subscenarios,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         conn=conn,
@@ -530,6 +573,7 @@ def write_model_inputs(
                 [
                     "project",
                     "unavailable_hours_per_period",
+                    "unavailable_hours_per_period_require_exact",
                     "unavailable_hours_per_event_min",
                     "available_hours_between_events_min",
                 ]
@@ -547,7 +591,16 @@ def write_model_inputs(
 ###############################################################################
 
 
-def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     :param subscenarios:
     :param subproblem:
@@ -557,7 +610,14 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
 
     params = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        conn,
     )
 
     df = cursor_to_df(params)
@@ -570,6 +630,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -588,6 +651,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -600,6 +666,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,

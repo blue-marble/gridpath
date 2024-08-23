@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
 # limitations under the License.
 
 
-from builtins import str
 from collections import OrderedDict
 from importlib import import_module
 import os.path
@@ -56,6 +55,9 @@ class TestHorizons(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
+            weather_iteration="",
+            hydro_iteration="",
+            availability_iteration="",
             subproblem="",
             stage="",
         )
@@ -68,6 +70,9 @@ class TestHorizons(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
+            weather_iteration="",
+            hydro_iteration="",
+            availability_iteration="",
             subproblem="",
             stage="",
         )
@@ -80,6 +85,9 @@ class TestHorizons(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
+            weather_iteration="",
+            hydro_iteration="",
+            availability_iteration="",
             subproblem="",
             stage="",
         )
@@ -238,7 +246,7 @@ class TestHorizons(unittest.TestCase):
         #  somewhere as opposed to figuring it out here
         expected_prev_tmp = dict()
         prev_tmp = None
-        for (horizon, balancing_type, tmp) in [
+        for horizon, balancing_type, tmp in [
             tuple(row) for row in timepoints_on_balancing_type_horizon_df.values
         ]:
             if tmp == expected_first_hrz_tmp[balancing_type, horizon]:
@@ -276,7 +284,7 @@ class TestHorizons(unittest.TestCase):
         # Testing for both horizons that 'circular' and 'linear'
         expected_next_tmp = dict()
         prev_tmp = None
-        for (horizon, balancing_type, tmp) in [
+        for horizon, balancing_type, tmp in [
             tuple(row) for row in timepoints_on_balancing_type_horizon_df.values
         ]:
             if prev_tmp is None:

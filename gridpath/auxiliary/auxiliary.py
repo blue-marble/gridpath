@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,24 +22,34 @@ import pandas as pd
 import traceback
 
 
-def get_required_subtype_modules_from_projects_file(
-    scenario_directory, subproblem, stage, which_type, prj_or_tx="project"
+def get_required_subtype_modules(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    which_type,
+    prj_or_tx="project",
 ):
     """
     Get a list of unique types from projects.tab.
     """
-    project_df = pd.read_csv(
+    df = pd.read_csv(
         os.path.join(
             scenario_directory,
-            str(subproblem),
-            str(stage),
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
             "inputs",
             "{}s.tab".format(prj_or_tx),
         ),
         sep="\t",
     )
 
-    required_modules = project_df[which_type].unique()
+    required_modules = df[which_type].unique()
 
     return required_modules
 
@@ -65,9 +75,7 @@ def load_subtype_modules(required_subtype_modules, package, required_attributes)
             imp_m = import_module("." + m, package=package)
             imported_subtype_modules[m] = imp_m
             for a in required_attributes:
-                if hasattr(imp_m, a):
-                    pass
-                else:
+                if not hasattr(imp_m, a):
                     raise Exception(
                         "ERROR! No "
                         + str(a)
@@ -112,16 +120,25 @@ def subset_init_by_param_value(mod, set_name, param_name, param_value):
     :param param_value:
     :return:
     """
-    return [
+    return list(
         i for i in getattr(mod, set_name) if getattr(mod, param_name)[i] == param_value
-    ]
+    )
+
+
+def subset_init_by_set_membership(mod, superset, index, membership_set):
+    """
+    Initialize subset based on membership in another set.
+    """
+    return list(
+        index_tuple
+        for index_tuple in getattr(mod, superset)
+        if index_tuple[index] in membership_set
+    )
 
 
 def check_list_has_single_item(l, error_msg):
     if len(l) > 1:
         raise ValueError(error_msg)
-    else:
-        pass
 
 
 def find_list_item_position(l, item):
@@ -186,6 +203,15 @@ def check_for_integer_subdirectories(main_directory):
     """
     subdirectories = sorted(
         [d for d in next(os.walk(main_directory))[1] if is_integer(d)], key=int
+    )
+
+    # There are subdirectories if the list isn't empty
+    return subdirectories
+
+
+def check_for_starting_string_subdirectories(main_directory, starting_string):
+    subdirectories = sorted(
+        [d for d in next(os.walk(main_directory))[1] if d.startswith(starting_string)],
     )
 
     # There are subdirectories if the list isn't empty

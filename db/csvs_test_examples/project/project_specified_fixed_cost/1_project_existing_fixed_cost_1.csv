@@ -1,4 +1,4 @@
-project,period,fixed_cost_per_mw_year,hyb_gen_fixed_cost_per_mw_yr,hyb_stor_fixed_cost_per_mw_yr,fixed_cost_per_mwh_year,fuel_production_capacity_fixed_cost_per_fuelunitperhour_yr,fuel_release_capacity_fixed_cost_per_fuelunitperhour_yr,fuel_storage_capacity_fixed_cost_per_fuelunit_yr
+project,period,fixed_cost_per_mw_yr,hyb_gen_fixed_cost_per_mw_yr,hyb_stor_fixed_cost_per_mw_yr,fixed_cost_per_mwh_year,fuel_production_capacity_fixed_cost_per_fuelunitperhour_yr,fuel_release_capacity_fixed_cost_per_fuelunitperhour_yr,fuel_storage_capacity_fixed_cost_per_fuelunit_yr
 Nuclear,2020,0,,,,,,
 Coal,2020,0,,,,,,
 Gas_CCGT,2020,0,,,,,,
@@ -36,3 +36,5 @@ Hydrogen_Prod,2030,,,,,0,0,0
 Hydrogen_Plant,2020,0,,,,,,
 DAC,2020,0,,,,,,
 DAC,2030,0,,,,,,
+Flex_Load,2020,0,,,,,,
+Flex_Load,2030,0,,,,,,

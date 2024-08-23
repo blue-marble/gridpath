@@ -1,0 +1,15 @@
+##### SUMMARY RESULTS FOR SCENARIO *ra_toolkit_monte_carlo* #####
+
+### CAPACITY RESULTS ###
+
+### OPERATIONAL RESULTS ###
+
+--> Energy Production <--
+                               Annual Energy (MWh)  % Total Power
+load_zone period technology                                      
+Zone1     2026   Batteries                  -76.25          -0.02
+                 Gas                    160,664.36          51.13
+                 Hybrid_Solar             1,239.36           0.39
+                 Hydro                   65,867.85          20.96
+                 Solar                   32,823.58          10.45
+                 Wind                    53,712.83          17.09

@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -36,22 +36,33 @@ consumption components respectively, and assigning a per unit cost for each
 load-balance violation type.
 """
 
-from __future__ import print_function
-
-from builtins import next
-import csv
 import os.path
+import pandas as pd
 from pyomo.environ import Var, Constraint, Expression, NonNegativeReals, value
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.auxiliary.dynamic_components import (
     load_balance_consumption_components,
     load_balance_production_components,
 )
+from gridpath.common_functions import (
+    create_results_df,
+    duals_wrapper,
+    none_dual_type_error_wrapper,
+)
+from gridpath.system.load_balance import LOAD_ZONE_TMP_DF
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     :param m: the Pyomo abstract model object we are adding the components to
     :param d: the DynamicComponents class object we are adding components to
@@ -83,7 +94,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         :param tmp:
         :return:
         """
-        return mod.allow_overgeneration[z] * mod.Overgeneration_MW[z, tmp]
+        if mod.allow_overgeneration[z]:
+            return mod.Overgeneration_MW[z, tmp]
+        else:
+            return 0
 
     m.Overgeneration_MW_Expression = Expression(
         m.LOAD_ZONES, m.TMPS, rule=overgeneration_expression_rule
@@ -97,7 +111,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         :param tmp:
         :return:
         """
-        return mod.allow_unserved_energy[z] * mod.Unserved_Energy_MW[z, tmp]
+        if mod.allow_unserved_energy[z]:
+            return mod.Unserved_Energy_MW[z, tmp]
+        else:
+            return 0
 
     m.Unserved_Energy_MW_Expression = Expression(
         m.LOAD_ZONES, m.TMPS, rule=unserved_energy_expression_rule
@@ -127,6 +144,31 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.Meet_Load_Constraint = Constraint(m.LOAD_ZONES, m.TMPS, rule=meet_load_rule)
 
+    def use_limit_constraint_rule(mod, lz):
+        return (
+            sum(
+                mod.Unserved_Energy_MW_Expression[lz, tmp]
+                * mod.hrs_in_tmp[tmp]
+                * mod.tmp_weight[tmp]
+                for tmp in mod.TMPS
+            )
+            <= mod.unserved_energy_limit_mwh[lz]
+        )
+
+    m.Total_USE_Limit_Constraint = Constraint(
+        m.LOAD_ZONES, rule=use_limit_constraint_rule
+    )
+
+    def max_unserved_load_limit_constraint_rule(mod, lz, tmp):
+        return (
+            mod.Unserved_Energy_MW_Expression[lz, tmp]
+            <= mod.max_unserved_load_limit_mw[lz]
+        )
+
+    m.Max_Unserved_Load_Limit_Constraint = Constraint(
+        m.LOAD_ZONES, m.TMPS, rule=max_unserved_load_limit_constraint_rule
+    )
+
 
 def record_dynamic_components(dynamic_components):
     """
@@ -144,7 +186,16 @@ def record_dynamic_components(dynamic_components):
     )
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
+):
     """
 
     :param scenario_directory:
@@ -154,184 +205,420 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "load_balance.csv",
-        ),
-        "w",
-        newline="",
-    ) as results_file:
-        writer = csv.writer(results_file)
-        writer.writerow(
-            [
-                "zone",
-                "period",
-                "timepoint",
-                "discount_factor",
-                "number_years_represented",
-                "timepoint_weight",
-                "number_of_hours_in_timepoint",
-                "load_mw",
-                "overgeneration_mw",
-                "unserved_energy_mw",
-            ]
-        )
-        for z in getattr(m, "LOAD_ZONES"):
-            for tmp in getattr(m, "TMPS"):
-                writer.writerow(
-                    [
-                        z,
-                        m.period[tmp],
-                        tmp,
-                        m.discount_factor[m.period[tmp]],
-                        m.number_years_represented[m.period[tmp]],
-                        m.tmp_weight[tmp],
-                        m.hrs_in_tmp[tmp],
-                        m.static_load_mw[z, tmp],
-                        value(m.Overgeneration_MW_Expression[z, tmp]),
-                        value(m.Unserved_Energy_MW_Expression[z, tmp]),
-                    ]
-                )
+
+    results_columns = [
+        "overgeneration_mw",
+        "unserved_energy_mw",
+        "load_balance_dual",
+        "load_balance_marginal_cost_per_mw",
+    ]
+    data = [
+        [
+            lz,
+            tmp,
+            value(m.Overgeneration_MW_Expression[lz, tmp]),
+            value(m.Unserved_Energy_MW_Expression[lz, tmp]),
+            duals_wrapper(m, getattr(m, "Meet_Load_Constraint")[lz, tmp]),
+            none_dual_type_error_wrapper(
+                duals_wrapper(m, getattr(m, "Meet_Load_Constraint")[lz, tmp]),
+                m.tmp_objective_coefficient[tmp],
+            ),
+        ]
+        for lz in getattr(m, "LOAD_ZONES")
+        for tmp in getattr(m, "TMPS")
+    ]
+    results_df = create_results_df(
+        index_columns=["load_zone", "timepoint"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    for c in results_columns:
+        getattr(d, LOAD_ZONE_TMP_DF)[c] = None
+    getattr(d, LOAD_ZONE_TMP_DF).update(results_df)
 
 
-def save_duals(m):
-    m.constraint_indices["Meet_Load_Constraint"] = ["zone", "timepoint", "dual"]
-
-
-def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
+def export_summary_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
 ):
     """
 
-    :param scenario_id:
-    :param c:
+    :param scenario_directory:
+    :param stage:
+    :param stage:
+    :param m:
+    :param d:
+    :return:
+    """
+
+    lz_tmp_df = pd.DataFrame(
+        columns=[
+            "load_zone",
+            "timepoint",
+            "period",
+            "month",
+            "day_of_month",
+            "hour_of_day",
+            "timepoint_weight",
+            "number_of_hours_in_timepoint",
+            "static_load_mw",
+            "unserved_energy_stats_threshold_mw",
+            "unserved_energy_mw",
+        ],
+        data=[
+            [
+                z,
+                tmp,
+                m.period[tmp],
+                m.month[tmp],
+                m.day_of_month[tmp],
+                m.hour_of_day[tmp],
+                m.tmp_weight[tmp],
+                m.hrs_in_tmp[tmp],
+                m.static_load_mw[z, tmp],
+                m.unserved_energy_stats_threshold_mw[z],
+                value(m.Unserved_Energy_MW_Expression[z, tmp]),
+            ]
+            for z in getattr(m, "LOAD_ZONES")
+            for tmp in getattr(m, "TMPS")
+            if value(m.Unserved_Energy_MW_Expression[z, tmp])
+            > m.unserved_energy_stats_threshold_mw[z]
+        ],
+    ).set_index(["load_zone", "timepoint"])
+
+    lz_tmp_df.sort_index(inplace=True)
+
+    lz_tmp_df.to_csv(
+        os.path.join(
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "results",
+            "system_load_zone_timepoint_loss_of_load_summary.csv",
+        ),
+        sep=",",
+        index=True,
+    )
+
+
+def process_results(db, c, scenario_id, subscenarios, quiet):
+    """
+    Aggregate capacity costs by load zone, and break out into
+    spinup_or_lookahead.
     :param db:
-    :param results_directory:
+    :param c:
+    :param subscenarios:
     :param quiet:
     :return:
     """
     if not quiet:
-        print("system load balance")
+        print("calculating loss of load timepoint summary")
 
-    # Delete prior results and create temporary import table for ordering
-    setup_results_import(
-        conn=db,
-        cursor=c,
-        table="results_system_load_balance",
-        scenario_id=scenario_id,
-        subproblem=subproblem,
-        stage=stage,
-    )
-
-    # Load results into the temporary table
-    results = []
-    with open(
-        os.path.join(results_directory, "load_balance.csv"), "r"
-    ) as load_balance_file:
-        reader = csv.reader(load_balance_file)
-
-        next(reader)  # skip header
-        for row in reader:
-            ba = row[0]
-            period = row[1]
-            timepoint = row[2]
-            discount_factor = row[3]
-            number_years = row[4]
-            timepoint_weight = row[5]
-            number_of_hours_in_timepoint = row[6]
-            load = row[7]
-            overgen = row[8]
-            unserved_energy = row[9]
-
-            results.append(
-                (
-                    scenario_id,
-                    ba,
-                    period,
-                    subproblem,
-                    stage,
-                    timepoint,
-                    discount_factor,
-                    number_years,
-                    timepoint_weight,
-                    number_of_hours_in_timepoint,
-                    load,
-                    overgen,
-                    unserved_energy,
-                )
-            )
-    insert_temp_sql = """
-        INSERT INTO 
-        temp_results_system_load_balance{}
-        (scenario_id, load_zone, period, subproblem_id, stage_id,
-        timepoint, discount_factor, number_years_represented,
-        timepoint_weight, number_of_hours_in_timepoint,
-        load_mw, overgeneration_mw, unserved_energy_mw)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-        """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
-
-    # Insert sorted results into permanent results table
-    insert_sql = """
-        INSERT INTO results_system_load_balance
-        (scenario_id, load_zone, period, subproblem_id, stage_id, 
-        timepoint, discount_factor, number_years_represented,
-        timepoint_weight, number_of_hours_in_timepoint,
-        load_mw, overgeneration_mw, unserved_energy_mw)
-        SELECT
-        scenario_id, load_zone, period, subproblem_id, stage_id, 
-        timepoint, discount_factor, number_years_represented,
-        timepoint_weight, number_of_hours_in_timepoint,
-        load_mw, overgeneration_mw, unserved_energy_mw
-        FROM temp_results_system_load_balance{}
-        ORDER BY scenario_id, load_zone, subproblem_id, stage_id, timepoint;
-        """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)
-
-    # Update duals
-    duals_results = []
-    with open(
-        os.path.join(results_directory, "Meet_Load_Constraint.csv"), "r"
-    ) as load_balance_duals_file:
-        reader = csv.reader(load_balance_duals_file)
-
-        next(reader)  # skip header
-
-        for row in reader:
-            duals_results.append(
-                (row[2], row[0], row[1], scenario_id, subproblem, stage)
-            )
-    duals_sql = """
-        UPDATE results_system_load_balance
-        SET dual = ?
-        WHERE load_zone = ?
-        AND timepoint = ?
-        AND scenario_id = ?
-        AND subproblem_id = ?
-        AND stage_id = ?;
-        """
-    spin_on_database_lock(conn=db, cursor=c, sql=duals_sql, data=duals_results)
-
-    # Calculate marginal cost per MW
-    mc_sql = """
-        UPDATE results_system_load_balance
-        SET marginal_price_per_mw = 
-        dual / (discount_factor * number_years_represented * timepoint_weight 
-        * number_of_hours_in_timepoint)
+    # results_system_timepoint_loss_of_load_summary
+    del_sql = """
+        DELETE FROM results_system_timepoint_loss_of_load_summary
         WHERE scenario_id = ?
-        AND subproblem_id = ?
-        AND stage_id = ?;
-        """.format(
-        scenario_id, subproblem, stage
-    )
+        """
     spin_on_database_lock(
-        conn=db, cursor=c, sql=mc_sql, data=(scenario_id, subproblem, stage), many=False
+        conn=db, cursor=c, sql=del_sql, data=(scenario_id,), many=False
     )
+
+    agg_sql = """
+        INSERT INTO results_system_timepoint_loss_of_load_summary
+        (scenario_id, weather_iteration, hydro_iteration, 
+        availability_iteration, subproblem_id, stage_id, timepoint, period, 
+        month, day_of_month, hour_of_day, timepoint_weight, 
+        number_of_hours_in_timepoint, 
+        spinup_or_lookahead, static_load_mw, unserved_energy_mw)
+        SELECT
+        scenario_id, weather_iteration, hydro_iteration, 
+        availability_iteration, subproblem_id, stage_id, timepoint, period, 
+        month, day_of_month, hour_of_day, timepoint_weight, 
+        number_of_hours_in_timepoint, spinup_or_lookahead,
+        SUM(static_load_mw) AS static_load_mw,
+        SUM(unserved_energy_mw) AS unserved_energy_mw
+        FROM results_system_load_zone_timepoint_loss_of_load_summary
+        WHERE scenario_id = ?
+        GROUP BY scenario_id, weather_iteration, hydro_iteration, 
+        availability_iteration, subproblem_id, stage_id, timepoint
+        ORDER BY scenario_id, weather_iteration, hydro_iteration, 
+        availability_iteration, subproblem_id, stage_id, timepoint;"""
+    spin_on_database_lock(
+        conn=db, cursor=c, sql=agg_sql, data=(scenario_id,), many=False
+    )
+
+    if not quiet:
+        print("calculating loss of load days summary")
+
+    # results_system_days_loss_of_load_summary
+    del_sql = """
+        DELETE FROM results_system_days_loss_of_load_summary
+        WHERE scenario_id = ?
+        """
+    spin_on_database_lock(
+        conn=db, cursor=c, sql=del_sql, data=(scenario_id,), many=False
+    )
+
+    agg_sql = """
+        INSERT INTO results_system_days_loss_of_load_summary
+        (scenario_id, weather_iteration, hydro_iteration, 
+        availability_iteration, subproblem_id, stage_id, period, month, 
+        day_of_month, max_unserved_energy_mw, total_unserved_energy_mw, 
+        duration_hours)
+        SELECT
+        scenario_id, weather_iteration, hydro_iteration, 
+        availability_iteration, subproblem_id, stage_id, period, month, 
+        day_of_month, MAX(unserved_energy_mw) as max_unserved_energy_mw, 
+        SUM(unserved_energy_mw * timepoint_weight * 
+        number_of_hours_in_timepoint) AS total_unserved_energy_mw,
+        SUM(number_of_hours_in_timepoint)
+        FROM results_system_timepoint_loss_of_load_summary
+        WHERE scenario_id = ?
+        GROUP BY scenario_id, weather_iteration, hydro_iteration, 
+        availability_iteration, subproblem_id, stage_id, period, month, 
+        day_of_month
+        ORDER BY scenario_id, weather_iteration, hydro_iteration, 
+        availability_iteration, subproblem_id, stage_id, period, month, 
+        day_of_month;"""
+    spin_on_database_lock(
+        conn=db, cursor=c, sql=agg_sql, data=(scenario_id,), many=False
+    )
+
+    if not quiet:
+        print("calculating loss of load metrics summary")
+
+    # results_system_loss_of_load_metrics_summary
+    del_sql = """
+        DELETE FROM results_system_loss_of_load_metrics_summary
+        WHERE scenario_id = ?
+        """
+    spin_on_database_lock(
+        conn=db, cursor=c, sql=del_sql, data=(scenario_id,), many=False
+    )
+
+    iter_combos = c.execute(
+        f"""
+        SELECT count(*)
+        FROM inputs_temporal_iterations
+        WHERE temporal_scenario_id = (
+            SELECT temporal_scenario_id
+            FROM scenarios WHERE scenario_id = {scenario_id}
+        )
+        """
+    ).fetchone()[0]
+
+    hrs_per_combo = c.execute(
+        f"""
+        SELECT SUM(number_of_hours_in_timepoint)
+        FROM inputs_temporal
+        WHERE temporal_scenario_id = (
+            SELECT temporal_scenario_id
+            FROM scenarios WHERE scenario_id = {scenario_id}
+        )
+        """
+    ).fetchone()[0]
+
+    hrs_per_year = 8760
+
+    n_years = iter_combos * hrs_per_combo / hrs_per_year
+
+    # Only calculate stats if we have iterations
+    if n_years != 0:
+        (total_loss_of_load_hours, total_use) = c.execute(
+            f"""
+            SELECT sum(number_of_hours_in_timepoint), sum(unserved_energy_mw * 
+            number_of_hours_in_timepoint)
+            FROM results_system_timepoint_loss_of_load_summary
+            WHERE scenario_id = {scenario_id}
+            """
+        ).fetchone()
+
+        total_loss_of_load_hours = (
+            0 if total_loss_of_load_hours is None else total_loss_of_load_hours
+        )
+        total_use = 0 if total_use is None else total_use
+
+        LOLH = total_loss_of_load_hours / n_years
+        EUE = total_use / n_years
+
+        total_loss_of_load_days = c.execute(
+            f"""
+            SELECT count(*)
+            FROM results_system_days_loss_of_load_summary
+            WHERE scenario_id = {scenario_id}
+            """
+        ).fetchone()[0]
+
+        total_loss_of_load_days = (
+            0 if total_loss_of_load_days is None else total_loss_of_load_days
+        )
+
+        LOLE = total_loss_of_load_days / n_years
+
+        years_with_lost_load = c.execute(
+            f"""
+            SELECT count(*)
+            FROM (
+                SELECT DISTINCT weather_iteration, hydro_iteration, 
+                availability_iteration
+                FROM results_system_days_loss_of_load_summary
+                WHERE scenario_id = {scenario_id}
+            );
+            """
+        ).fetchone()[0]
+
+        years_with_lost_load = (
+            0 if years_with_lost_load is None else years_with_lost_load
+        )
+
+        LOLP = years_with_lost_load / n_years
+
+        metrics_sql = f"""
+            INSERT INTO results_system_loss_of_load_metrics_summary
+            (scenario_id, LOLH_hrs_per_year, EUE_MWh_per_year, LOLE_days_per_year, 
+            LOLP_year_fraction_of_years)
+            VALUES ({scenario_id}, {LOLH}, {EUE}, {LOLE}, {LOLP});"""
+        spin_on_database_lock(conn=db, cursor=c, sql=metrics_sql, data=(), many=False)
+
+        # results_system_loss_of_load_month_hour_metrics_summary
+        # month-hour heat maps
+
+        del_sql = """
+            DELETE FROM results_system_loss_of_load_month_hour_metrics_summary
+            WHERE scenario_id = ?
+            """
+        spin_on_database_lock(
+            conn=db, cursor=c, sql=del_sql, data=(scenario_id,), many=False
+        )
+
+        nh_sql = f"""
+            INSERT INTO results_system_loss_of_load_month_hour_metrics_summary
+            (scenario_id, month, hour_of_day, LOLH, EUE)
+            SELECT scenario_id, month, hour_of_day, 
+            sum(number_of_hours_in_timepoint)/{n_years}, 
+            sum(unserved_energy_mw * number_of_hours_in_timepoint)/{n_years}
+            FROM results_system_timepoint_loss_of_load_summary
+            WHERE scenario_id = {scenario_id}
+            GROUP BY month, hour_of_day
+            ;
+            """
+
+        spin_on_database_lock(conn=db, cursor=c, sql=nh_sql, data=(), many=False)
+
+        # convergence
+        del_sql = """
+            DELETE FROM results_system_loss_of_load_metrics_convergence_summary
+            WHERE scenario_id = ?
+            """
+        spin_on_database_lock(
+            conn=db, cursor=c, sql=del_sql, data=(scenario_id,), many=False
+        )
+
+        iteration_combos = [
+            combo
+            for combo in c.execute(
+                f"""
+            SELECT weather_iteration, hydro_iteration, availability_iteration
+            FROM inputs_temporal_iterations
+            WHERE temporal_scenario_id = (
+                SELECT temporal_scenario_id
+                FROM scenarios
+                WHERE scenario_id = {scenario_id}
+            )
+            """
+            ).fetchall()
+        ]
+
+        n = 1
+        current_loss_of_load_hours = 0
+        current_use = 0
+        current_loss_of_load_days = 0
+        current_years_with_lost_load = 0
+        for iter_combo in iteration_combos:
+            (weather_iteration, hydro_iteration, availability_iteration) = iter_combo
+            current_n_years = n * hrs_per_combo / hrs_per_year
+
+            (iter_loss_of_load_hours, iter_use) = c.execute(
+                f"""
+                    SELECT sum(number_of_hours_in_timepoint), sum(unserved_energy_mw * 
+                    number_of_hours_in_timepoint)
+                    FROM results_system_timepoint_loss_of_load_summary
+                    WHERE scenario_id = {scenario_id}
+                    AND weather_iteration = {weather_iteration}
+                    AND hydro_iteration = {hydro_iteration}
+                    AND availability_iteration = {availability_iteration}
+                    ;
+                    """
+            ).fetchone()
+
+            current_loss_of_load_hours += (
+                iter_loss_of_load_hours if iter_loss_of_load_hours is not None else 0
+            )
+            current_use += iter_use if iter_use is not None else 0
+
+            current_LOLH = current_loss_of_load_hours / current_n_years
+            current_EUE = current_use / current_n_years
+
+            iter_loss_of_load_days = c.execute(
+                f"""
+                    SELECT count(*)
+                    FROM results_system_days_loss_of_load_summary
+                    WHERE scenario_id = {scenario_id}
+                    AND weather_iteration = {weather_iteration}
+                    AND hydro_iteration = {hydro_iteration}
+                    AND availability_iteration = {availability_iteration}
+                    """
+            ).fetchone()[0]
+
+            current_loss_of_load_days += (
+                iter_loss_of_load_days if iter_loss_of_load_days is not None else 0
+            )
+            current_LOLE = current_loss_of_load_days / current_n_years
+
+            iter_years_with_lost_load = c.execute(
+                f"""
+                    SELECT count(*)
+                    FROM (
+                        SELECT DISTINCT weather_iteration, hydro_iteration, 
+                        availability_iteration
+                        FROM results_system_days_loss_of_load_summary
+                        WHERE scenario_id = {scenario_id}
+                        AND weather_iteration = {weather_iteration}
+                        AND hydro_iteration = {hydro_iteration}
+                        AND availability_iteration = {availability_iteration}
+                    );
+                    """
+            ).fetchone()[0]
+
+            current_years_with_lost_load += (
+                iter_years_with_lost_load
+                if iter_years_with_lost_load is not None
+                else 0
+            )
+            current_LOLP = current_years_with_lost_load / current_n_years
+
+            convergence_sql = f"""
+                INSERT INTO results_system_loss_of_load_metrics_convergence_summary
+                (scenario_id, n_years, LOLH_hrs_per_year, EUE_MWh_per_year, 
+                LOLE_days_per_year, LOLP_year_fraction_of_years)
+                VALUES ({scenario_id}, 
+                {current_n_years}, {current_LOLH}, {current_EUE}, 
+                {current_LOLE}, {current_LOLP})
+                ;
+            """
+
+            spin_on_database_lock(
+                conn=db, cursor=c, sql=convergence_sql, data=(), many=False
+            )
+
+            n += 1

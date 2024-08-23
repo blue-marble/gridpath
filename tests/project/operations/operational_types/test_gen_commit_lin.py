@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import print_function
 
-from builtins import str
 from collections import OrderedDict
 from importlib import import_module
 import os.path
@@ -63,7 +61,6 @@ class TestGenCommitLin(unittest.TestCase):
     """ """
 
     def assertDictAlmostEqual(self, d1, d2, msg=None, places=7):
-
         # check if both inputs are dicts
         self.assertIsInstance(d1, dict, "First argument is not a dictionary")
         self.assertIsInstance(d2, dict, "Second argument is not a dictionary")
@@ -87,6 +84,9 @@ class TestGenCommitLin(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
+            weather_iteration="",
+            hydro_iteration="",
+            availability_iteration="",
             subproblem="",
             stage="",
         )
@@ -100,6 +100,9 @@ class TestGenCommitLin(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
+            weather_iteration="",
+            hydro_iteration="",
+            availability_iteration="",
             subproblem="",
             stage="",
         )
@@ -113,6 +116,9 @@ class TestGenCommitLin(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
+            weather_iteration="",
+            hydro_iteration="",
+            availability_iteration="",
             subproblem="",
             stage="",
         )
@@ -194,7 +200,7 @@ class TestGenCommitLin(unittest.TestCase):
         }
 
         expected_opr_tmps_str_types = list()
-        for (p, tmp) in expected_operational_timepoints_by_project:
+        for p, tmp in expected_operational_timepoints_by_project:
             st_types = expected_str_by_prj[p]
             for st in st_types:
                 expected_opr_tmps_str_types.append((p, tmp, st))
@@ -362,6 +368,18 @@ class TestGenCommitLin(unittest.TestCase):
         self.assertDictEqual(
             expected_down_time_cutoff_hours, actual_down_time_cutoff_hours
         )
+
+        # Param: gen_commit_lin_partial_availability_threshold
+        expected_threshold = {
+            "Disp_Cont_Commit": 0.01,
+            "Clunky_Old_Gen": 0.05,
+            "Clunky_Old_Gen2": 0.5,
+        }
+        actual_threshold = {
+            prj: instance.gen_commit_lin_partial_availability_threshold[prj]
+            for prj in instance.GEN_COMMIT_LIN
+        }
+        self.assertDictEqual(expected_threshold, actual_threshold)
 
 
 if __name__ == "__main__":

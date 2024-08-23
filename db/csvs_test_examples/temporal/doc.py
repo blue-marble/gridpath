@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -108,7 +108,7 @@ number of hours in the timepoint), its weight (the number of timepoints not
 explicitly modeled that this timepoint represents), the ID of the timepoint
 from the previous stage that this timepoint maps to (if any), whether this
 timepoint is part of a spinup or lookahead, the month of this timepoint, and
-the hour of day of this timepoint.
+the hour of day of this timepoint. Timepoint IDs must be unique.
 
 The :code:`inputs_temporal_horizon_timepoints` table describes how timeponts
 are organized into horizons for each temporal_scenario_id, subproblem_id, and

@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,14 +16,16 @@
 PRM projects and the zone they contribute to
 """
 
-from builtins import next
-from builtins import str
-from builtins import range
 import csv
 import os.path
 from pyomo.environ import Param, Set
 
-from gridpath.auxiliary.auxiliary import cursor_to_df, subset_init_by_param_value
+from gridpath.auxiliary.auxiliary import (
+    cursor_to_df,
+    subset_init_by_param_value,
+    subset_init_by_set_membership,
+)
+from gridpath.auxiliary.db_interface import directories_to_db_values
 from gridpath.auxiliary.validations import (
     write_validation_to_database,
     validate_idxs,
@@ -31,7 +33,16 @@ from gridpath.auxiliary.validations import (
 )
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
 
     :param m:
@@ -61,13 +72,23 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Get operational carbon cap projects - timepoints combinations
     m.PRM_PRJ_OPR_PRDS = Set(
         within=m.PRJ_OPR_PRDS,
-        initialize=lambda mod: [
-            (prj, p) for (prj, p) in mod.PRJ_OPR_PRDS if prj in mod.PRM_PROJECTS
-        ],
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod, superset="PRJ_OPR_PRDS", index=0, membership_set=mod.PRM_PROJECTS
+        ),
     )
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
 
     :param m:
@@ -80,7 +101,14 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
     data_portal.load(
         filename=os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "projects.tab",
         ),
         select=("project", "prm_zone", "prm_type"),
         param=(m.prm_zone, m.prm_type),
@@ -91,7 +119,16 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     }
 
 
-def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -99,8 +136,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     :param conn: database connection
     :return:
     """
-    subproblem = 1 if subproblem == "" else subproblem
-    stage = 1 if stage == "" else stage
+
     c = conn.cursor()
     project_zones = c.execute(
         """SELECT project, prm_zone, prm_type
@@ -108,37 +144,46 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         -- Get projects from portfolio only
         (SELECT project
             FROM inputs_project_portfolios
-            WHERE project_portfolio_scenario_id = {}
+            WHERE project_portfolio_scenario_id = {portfolio}
         ) as prj_tbl
             LEFT OUTER JOIN
         (SELECT project, prm_zone
         FROM inputs_project_prm_zones
-        WHERE project_prm_zone_scenario_id = {}) as prm_zone_tbl
+        WHERE project_prm_zone_scenario_id = {prj_prm_zone}) as prm_zone_tbl
         USING (project)
         LEFT OUTER JOIN
-        (SELECT project, prm_type
+        (SELECT DISTINCT project, prm_type -- make sure prm_type is the same in all prds
         FROM inputs_project_elcc_chars
-        WHERE project_elcc_chars_scenario_id = {}) as prm_type_tbl
+        WHERE project_elcc_chars_scenario_id = {prj_elcc}) as prm_type_tbl
         USING (project)
         -- Filter out projects whose PRM zone is not one included in our 
         -- prm_zone_sceenario_id
         WHERE prm_zone in (
                 SELECT prm_zone
                     FROM inputs_geography_prm_zones
-                    WHERE prm_zone_scenario_id = {}
+                    WHERE prm_zone_scenario_id = {prm_zone}
         );
         """.format(
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-            subscenarios.PROJECT_PRM_ZONE_SCENARIO_ID,
-            subscenarios.PROJECT_ELCC_CHARS_SCENARIO_ID,
-            subscenarios.PRM_ZONE_SCENARIO_ID,
+            portfolio=subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+            prj_prm_zone=subscenarios.PROJECT_PRM_ZONE_SCENARIO_ID,
+            prj_elcc=subscenarios.PROJECT_ELCC_CHARS_SCENARIO_ID,
+            prm_zone=subscenarios.PRM_ZONE_SCENARIO_ID,
         )
     )
 
     return project_zones
 
 
-def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -149,7 +194,14 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
 
     project_zones = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        conn,
     )
 
     # Convert input data into pandas DataFrame
@@ -173,6 +225,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -190,6 +245,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -200,7 +258,15 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     Get inputs from database and write out the model input
@@ -212,22 +278,47 @@ def write_model_inputs(
     :param conn: database connection
     :return:
     """
+
+    (
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+    ) = directories_to_db_values(
+        weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
+    )
+
     project_zones = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+        conn,
     )
 
     # Make a dict for easy access
     # Only assign a type to projects that contribute to a PRM zone in case
     # we have projects with missing zones here
     prj_zone_type_dict = dict()
-    for (prj, zone, prm_type) in project_zones:
+    for prj, zone, prm_type in project_zones:
         prj_zone_type_dict[str(prj)] = (
             (".", ".") if zone is None else (str(zone), str(prm_type))
         )
 
     with open(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "projects.tab",
         ),
         "r",
     ) as projects_file_in:
@@ -259,7 +350,14 @@ def write_model_inputs(
 
     with open(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "projects.tab",
         ),
         "w",
         newline="",

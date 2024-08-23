@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ stage and imports the commitment variables that were fixed in the previous
 stage.
 """
 
-from builtins import zip
 from csv import writer
 import os.path
 from pandas import read_csv
@@ -26,13 +25,23 @@ from pyomo.environ import Set, Param, NonNegativeReals, Expression
 
 
 from gridpath.auxiliary.auxiliary import (
-    get_required_subtype_modules_from_projects_file,
+    get_required_subtype_modules,
     check_for_integer_subdirectories,
+    subset_init_by_set_membership,
 )
 from gridpath.project.operations.common_functions import load_operational_type_modules
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     The following Pyomo model components are defined in this module:
 
@@ -94,8 +103,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     # Dynamic Inputs
 
-    required_operational_modules = get_required_subtype_modules_from_projects_file(
+    required_operational_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         which_type="operational_type",
@@ -114,15 +126,21 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.FNL_COMMIT_PRJ_OPR_TMPS = Set(
         dimen=2,
-        initialize=lambda mod: set(
-            (g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS if g in mod.FNL_COMMIT_PRJS
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod,
+            superset="PRJ_OPR_TMPS",
+            index=0,
+            membership_set=mod.FNL_COMMIT_PRJS,
         ),
     )
 
     m.FXD_COMMIT_PRJ_OPR_TMPS = Set(
         dimen=2,
-        initialize=lambda mod: set(
-            (g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS if g in mod.FXD_COMMIT_PRJS
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod,
+            superset="PRJ_OPR_TMPS",
+            index=0,
+            membership_set=mod.FXD_COMMIT_PRJS,
         ),
     )
 
@@ -149,7 +167,16 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 ###############################################################################
 
 
-def fix_variables(m, d, scenario_directory, subproblem, stage):
+def fix_variables(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     This function fixes the commitment of all fixed commitment projects by
     running the :code:`fix_commitment` function in the appropriate operational
@@ -162,9 +189,11 @@ def fix_variables(m, d, scenario_directory, subproblem, stage):
     :param stage:
     :return:
     """
-
-    required_operational_modules = get_required_subtype_modules_from_projects_file(
+    required_operational_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         which_type="operational_type",
@@ -186,7 +215,17 @@ def fix_variables(m, d, scenario_directory, subproblem, stage):
 ###############################################################################
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
 
     :param m:
@@ -199,12 +238,21 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
 
     stages = check_for_integer_subdirectories(
-        os.path.join(scenario_directory, subproblem)
+        os.path.join(
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+        )
     )
 
     fixed_commitment_df = read_csv(
         os.path.join(
             scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
             subproblem,
             "pass_through_inputs",
             "fixed_commitment.tab",
@@ -224,8 +272,11 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         df = read_csv(
             os.path.join(
                 scenario_directory,
-                str(subproblem),
-                str(stage),
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
                 "inputs",
                 "projects.tab",
             ),
@@ -239,14 +290,13 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                 pass
             elif s == stage or stages.index(s) < stages.index(stage):
                 fnl_commit_prjs.append(prj)
-            else:
-                pass
+
         return fnl_commit_prjs
 
     data_portal.data()["FNL_COMMIT_PRJS"] = {None: get_fnl_commit_prjs()}
 
     # FXD_COMMIT_PRJS
-    fxd_commit_prjs = list(set(fixed_commitment_df["project"].tolist()))
+    fxd_commit_prjs = sorted(list(set(fixed_commitment_df["project"].tolist())))
     # Load data only if we have projects that have already been committed
     # Otherwise, leave uninitialized
     if len(fxd_commit_prjs) > 0:
@@ -268,11 +318,17 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         data_portal.data()["FXD_COMMIT_PRJS"] = {None: fxd_commit_prjs}
         data_portal.data()["FXD_COMMIT_PRJ_OPR_TMPS"] = {None: projects_timepoints}
         data_portal.data()["fixed_commitment"] = fixed_commitment_dict
-    else:
-        pass
 
 
-def export_pass_through_inputs(scenario_directory, subproblem, stage, m):
+def export_pass_through_inputs(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+):
     """
     This function exports the commitment for all final commitment projects,
     i.e. projects for which the current stage or any of the previous stages
@@ -284,10 +340,16 @@ def export_pass_through_inputs(scenario_directory, subproblem, stage, m):
     :param m:
     :return:
     """
-
     df = read_csv(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "projects.tab",
         ),
         sep="\t",
         usecols=["project", "last_commitment_stage"],
@@ -298,6 +360,9 @@ def export_pass_through_inputs(scenario_directory, subproblem, stage, m):
     with open(
         os.path.join(
             scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
             subproblem,
             "pass_through_inputs",
             "fixed_commitment.tab",
@@ -307,7 +372,7 @@ def export_pass_through_inputs(scenario_directory, subproblem, stage, m):
         fixed_commitment_writer = writer(
             fixed_commitment_file, delimiter="\t", lineterminator="\n"
         )
-        for (g, tmp) in m.FNL_COMMIT_PRJ_OPR_TMPS:
+        for g, tmp in m.FNL_COMMIT_PRJ_OPR_TMPS:
             fixed_commitment_writer.writerow(
                 [
                     g,

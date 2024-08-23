@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,12 +19,10 @@ is either fully retired or not retired at all.
 
 """
 
-from __future__ import print_function
-
-from builtins import next
-from builtins import zip
 import csv
 import os.path
+from pathlib import Path
+
 import pandas as pd
 from pyomo.environ import Set, Param, Var, Constraint, NonNegativeReals, Binary, value
 
@@ -39,15 +37,27 @@ from gridpath.auxiliary.validations import (
     validate_idxs,
     validate_missing_inputs,
 )
+from gridpath.common_functions import create_results_df
 from gridpath.project.capacity.capacity_types.common_methods import (
     spec_get_inputs_from_database,
     spec_write_tab_file,
     spec_determine_inputs,
-    update_capacity_results_table,
+    read_results_file_generic,
+    write_summary_results_generic,
+    get_units,
 )
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     The following Pyomo model components are defined in this module:
 
@@ -126,17 +136,21 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.GEN_RET_BIN_OPR_PRDS = Set(dimen=2)
 
     m.GEN_RET_BIN = Set(
-        initialize=lambda mod: list(set(g for (g, p) in mod.GEN_RET_BIN_OPR_PRDS))
+        initialize=lambda mod: sorted(
+            list(set(g for (g, p) in mod.GEN_RET_BIN_OPR_PRDS))
+        )
     )
 
     m.OPR_PRDS_BY_GEN_RET_BIN = Set(
         m.GEN_RET_BIN,
-        initialize=lambda mod, prj: list(
-            set(
-                period
-                for (project, period) in mod.GEN_RET_BIN_OPR_PRDS
-                if project == prj
-            )
+        initialize=lambda mod, prj: sorted(
+            list(
+                set(
+                    period
+                    for (project, period) in mod.GEN_RET_BIN_OPR_PRDS
+                    if project == prj
+                )
+            ),
         ),
     )
 
@@ -215,9 +229,9 @@ def capacity_rule(mod, g, p):
     return mod.gen_ret_bin_capacity_mw[g, p] * (1 - mod.GenRetBin_Retire[g, p])
 
 
-def capacity_cost_rule(mod, g, p):
+def fixed_cost_rule(mod, g, p):
     """
-    The capacity cost of projects of the *gen_ret_bin* capacity type is its net
+    The fixed cost of projects of the *gen_ret_bin* capacity type is its net
     capacity (pre-specified capacity or zero if retired) times the per-mw
     fixed cost for each of the project's operational periods.
     """
@@ -232,7 +246,17 @@ def capacity_cost_rule(mod, g, p):
 ###############################################################################
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     :param m:
     :param data_portal:
@@ -244,6 +268,9 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 
     project_period_list, spec_params_dict = spec_determine_inputs(
         scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         capacity_type="gen_ret_bin",
@@ -260,7 +287,16 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     ]
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def add_to_project_period_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
+):
     """
     Export gen_ret_bin retirement results.
     :param scenario_directory:
@@ -270,44 +306,37 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "capacity_gen_ret_bin.csv",
-        ),
-        "w",
-        newline="",
-    ) as f:
-        writer = csv.writer(f)
-        writer.writerow(
-            [
-                "project",
-                "period",
-                "technology",
-                "load_zone",
-                "retired_mw",
-                "retired_binary",
-            ]
-        )
-        for (prj, p) in m.GEN_RET_BIN_OPR_PRDS:
-            writer.writerow(
-                [
-                    prj,
-                    p,
-                    m.technology[prj],
-                    m.load_zone[prj],
-                    value(
-                        m.GenRetBin_Retire[prj, p] * m.gen_ret_bin_capacity_mw[prj, p]
-                    ),
-                    value(m.GenRetBin_Retire[prj, p]),
-                ]
-            )
+    results_columns = [
+        "retired_mw",
+        "retired_binary",
+    ]
+    data = [
+        [
+            prj,
+            prd,
+            value(m.GenRetBin_Retire[prj, prd] * m.gen_ret_bin_capacity_mw[prj, prd]),
+            value(m.GenRetBin_Retire[prj, prd]),
+        ]
+        for (prj, prd) in m.GEN_RET_BIN_OPR_PRDS
+    ]
+    captype_df = create_results_df(
+        index_columns=["project", "period"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    return results_columns, captype_df
 
 
-def summarize_results(scenario_directory, subproblem, stage, summary_results_file):
+def summarize_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    summary_results_file,
+):
     """
     Summarize gen_ret_bin capacity results.
     :param scenario_directory:
@@ -318,48 +347,50 @@ def summarize_results(scenario_directory, subproblem, stage, summary_results_fil
     """
 
     # Get the results CSV as dataframe
-    capacity_results_df = pd.read_csv(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "capacity_gen_ret_bin.csv",
-        )
+    capacity_results_agg_df = read_results_file_generic(
+        scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        capacity_type=Path(__file__).stem,
     )
-
-    capacity_results_agg_df = capacity_results_df.groupby(
-        by=["load_zone", "technology", "period"], as_index=True
-    ).sum()
 
     # Get all technologies with the new build capacity
     bin_retirement_df = pd.DataFrame(
         capacity_results_agg_df[capacity_results_agg_df["retired_mw"] > 0]["retired_mw"]
     )
 
-    # Get the power units from the units.csv file
-    units_df = pd.read_csv(
-        os.path.join(scenario_directory, "units.csv"), index_col="metric"
-    )
-    power_unit = units_df.loc["power", "unit"]
+    # Get the units from the units.csv file
+    power_unit, energy_unit, fuel_unit = get_units(scenario_directory)
 
     # Rename column header
-    bin_retirement_df.columns = ["Retired Capacity ({})".format(power_unit)]
+    columns = ["Retired Capacity ({})".format(power_unit)]
 
-    with open(summary_results_file, "a") as outfile:
-        outfile.write("\n--> Retired Capacity <--\n")
-        if bin_retirement_df.empty:
-            outfile.write("No retirements.\n")
-        else:
-            bin_retirement_df.to_string(outfile, float_format="{:,.2f}".format)
-            outfile.write("\n")
+    write_summary_results_generic(
+        results_df=bin_retirement_df,
+        columns=columns,
+        summary_results_file=summary_results_file,
+        title="Retired Generation Capacity (Binary)",
+        empty_title="No (binary) generation retirements.",
+    )
 
 
 # Database
 ###############################################################################
 
 
-def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_model_inputs_from_database(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -374,7 +405,15 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     Get inputs from database and write out the model input
@@ -388,45 +427,26 @@ def write_model_inputs(
     """
 
     spec_project_params = get_model_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        conn,
     )
 
     # If spec_capacity_period_params.tab file already exists, append
     # rows to it
     spec_write_tab_file(
         scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         spec_project_params=spec_project_params,
-    )
-
-
-def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    """
-
-    :param scenario_id:
-    :param subproblem:
-    :param stage:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-    # New build capacity results
-    if not quiet:
-        print("project binary economic retirements")
-
-    update_capacity_results_table(
-        db=db,
-        c=c,
-        results_directory=results_directory,
-        scenario_id=scenario_id,
-        subproblem=subproblem,
-        stage=stage,
-        results_file="capacity_gen_ret_bin.csv",
     )
 
 
@@ -434,7 +454,16 @@ def import_results_into_database(
 ###############################################################################
 
 
-def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -445,7 +474,14 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
 
     gen_ret_bin_params = get_model_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        conn,
     )
 
     projects = get_projects(
@@ -470,6 +506,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -485,6 +524,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -499,6 +541,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -511,10 +556,13 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     )
 
     # Check for missing values (vs. missing row entries above)
-    cols = ["specified_capacity_mw", "fixed_cost_per_mw_year"]
+    cols = ["specified_capacity_mw", "fixed_cost_per_mw_yr"]
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,

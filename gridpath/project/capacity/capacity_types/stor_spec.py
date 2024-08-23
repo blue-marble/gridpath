@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,11 +14,11 @@
 
 """
 This capacity type describes the power (i.e. charging and discharging
-capacity) and energy capacity (i.e. duration) of storage projects that are
-available to the optimization without having to incur an investment cost.
-For example, it can be applied to existing storage projects or to
-storage projects that will be built in the future and whose capital costs we
-want to ignore (in the objective function).
+capacity) and energy capacity (i.e., duration -- see important note on interaction
+with discharge efficiency) of storage projects that are available to the optimization
+without having to incur an investment cost. For example, it can be applied to
+existing storage projects or to storage projects that will be built in the future and
+whose capital costs we want to ignore (in the objective function).
 
 It is not required to specify a capacity for all periods, i.e. a project can
 be operational in some periods but not in others with no restriction on the
@@ -26,6 +26,12 @@ order and combination of periods. The user may specify a fixed O&M cost for
 specified-storage projects, but this cost will be a fixed number in the
 objective function and will therefore not affect any of the optimization
 decisions.
+
+.. note:: Please note that to calculate the duration of the storage project, i.e.,
+    how long it can sustain discharging at its maximum output, you must adjust the
+    energy capacity by the discharge efficiency. For example, a 1 MW  with 1 MWh energy
+    capacity battery with discharging losses of 5% (discharging_loss_factor = 95%) would
+    have a duration of 1 MWh / (1 MW/0.95) or 0.95 hours rather than 1 hour.
 
 """
 
@@ -51,7 +57,16 @@ from gridpath.project.capacity.capacity_types.common_methods import (
 )
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
     The following Pyomo model components are defined in this module:
 
@@ -156,9 +171,9 @@ def energy_capacity_rule(mod, g, p):
     return mod.stor_spec_energy_capacity_mwh[g, p]
 
 
-def capacity_cost_rule(mod, g, p):
+def fixed_cost_rule(mod, g, p):
     """
-    The capacity cost of projects of the *stor_spec* capacity type is a
+    The fixed cost of projects of the *stor_spec* capacity type is a
     pre-specified number equal to the power capacity times the per-mw fixed
     cost plus the energy capacity times the per-mwh fixed cost for each of
     the project's operational periods.
@@ -174,9 +189,22 @@ def capacity_cost_rule(mod, g, p):
 ###############################################################################
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     project_period_list, spec_params_dict = spec_determine_inputs(
         scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         capacity_type="stor_spec",
@@ -205,7 +233,16 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 ###############################################################################
 
 
-def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_model_inputs_from_database(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -220,7 +257,15 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
 ):
     """
     Get inputs from database and write out the model input .tab file
@@ -233,13 +278,23 @@ def write_model_inputs(
     """
 
     spec_project_params = get_model_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        conn,
     )
 
     # If spec_capacity_period_params.tab file already exists, append
     # rows to it
     spec_write_tab_file(
         scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
         spec_project_params=spec_project_params,
@@ -250,7 +305,16 @@ def write_model_inputs(
 ###############################################################################
 
 
-def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -261,7 +325,14 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
 
     stor_spec_params = get_model_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+        scenario_id,
+        subscenarios,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        conn,
     )
 
     projects = get_projects(
@@ -286,6 +357,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -301,6 +375,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -315,6 +392,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -329,12 +409,15 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     # Check for missing values (vs. missing row entries above)
     cols = [
         "specified_capacity_mw",
-        "fixed_cost_per_mw_year",
+        "fixed_cost_per_mw_yr",
         "fixed_cost_per_mwh_year",
     ]
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
