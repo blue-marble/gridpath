@@ -38,7 +38,7 @@ from db.utilities.gridpath_data_toolkit.project.capacity_specified import (
     eia860_to_project_specified_capacity_input_csvs,
 )
 from db.utilities.gridpath_data_toolkit.project.fixed_cost import (
-    create_project_fixed_cost_input_csvs,
+    eia860_to_project_fixed_cost_input_csvs,
 )
 from db.utilities.gridpath_data_toolkit.project.availability import (
     eia860_to_project_availability_input_csvs,

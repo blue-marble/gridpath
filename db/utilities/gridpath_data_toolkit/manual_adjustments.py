@@ -28,7 +28,7 @@ from db.utilities.gridpath_data_toolkit.project.project_data_filters_common impo
 # Var profiles
 COPY_FROM_DICT = {"NEVP": "SPPC", "PGE": "BPAT", "SRP": "AZPS", "WAUW": "NWMT"}
 VAR_ID_DEFAULT = 1
-VAR_NAME_DEFAULT = "MANUAL"
+VAR_NAME_DEFAULT = "open_data"
 STAGE_ID_DEFAULT = 1
 
 # Storage durations
@@ -36,7 +36,7 @@ STORAGE_DURATION_DEFAULTS = {"BA": 1, "PS": 12}
 SPEC_CAP_ID_DEFAULT = 1
 SPEC_CAP_NAME_DEFAULT = "base"
 STUDY_YEAR_DEFAULT = 2026
-REGION_DEFAULT = 2026
+REGION_DEFAULT = "WECC"
 
 
 def parse_arguments(args):
@@ -52,7 +52,11 @@ def parse_arguments(args):
     parser.add_argument("-db", "--database", default="../../open_data_raw.db")
 
     # Missing variable generation profiles
-    parser.add_argument("-var_gen_dir", "--var_gen_profiles_directory")
+    parser.add_argument(
+        "-var_gen_dir",
+        "--var_gen_profiles_directory",
+        default="../../csvs_open_data/project/opchar/var_gen_profiles",
+    )
     parser.add_argument(
         "-id",
         "--variable_generator_profile_scenario_id",
@@ -73,10 +77,14 @@ def parse_arguments(args):
         default="../../csvs_open_data/project/capacity_specified",
     )
     parser.add_argument(
-        "-cap_id", "--project_specified_capacity_scenario_id", default=SPEC_CAP_ID_DEFAULT
+        "-cap_id",
+        "--project_specified_capacity_scenario_id",
+        default=SPEC_CAP_ID_DEFAULT,
     )
     parser.add_argument(
-        "-cap_name", "--project_specified_capacity_scenario_name", default=SPEC_CAP_NAME_DEFAULT
+        "-cap_name",
+        "--project_specified_capacity_scenario_name",
+        default=SPEC_CAP_NAME_DEFAULT,
     )
     parser.add_argument("-y", "--study_year", default=STUDY_YEAR_DEFAULT)
     parser.add_argument("-r", "--region", default=REGION_DEFAULT)
@@ -111,7 +119,7 @@ def parse_arguments(args):
 
 def make_copy_wind_profiles(csv_location, profile_id, profile_name, overwrite):
     for ba in COPY_FROM_DICT.keys():
-        copy_ba = copy_from_dict[ba]
+        copy_ba = COPY_FROM_DICT[ba]
 
         file_to_copy = os.path.join(
             csv_location,
