@@ -25,6 +25,8 @@ from db.utilities.gridpath_data_toolkit.project.project_data_filters_common impo
     DISAGG_PROJECT_NAME_STR,
 )
 
+# Var profiles
+COPY_FROM_DICT = {"NEVP": "SPPC", "PGE": "BPAT", "SRP": "AZPS", "WAUW": "NWMT"}
 VAR_ID_DEFAULT = 1
 VAR_NAME_DEFAULT = "MANUAL"
 STAGE_ID_DEFAULT = 1
@@ -104,9 +106,7 @@ def parse_arguments(args):
 
 
 def make_copy_wind_profiles(csv_location, profile_id, profile_name, overwrite):
-    copy_from_dict = {"NEVP": "SPPC", "PGE": "BPAT", "SRP": "AZPS", "WAUW": "NWMT"}
-
-    for ba in copy_from_dict.keys():
+    for ba in COPY_FROM_DICT.keys():
         copy_ba = copy_from_dict[ba]
 
         file_to_copy = os.path.join(
