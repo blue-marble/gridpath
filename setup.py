@@ -61,6 +61,7 @@ setup(
         "PyUtilib==6.0.0",  # used for solver temp file management
         "Jinja2==3.0.3",  # bokeh dependency; see #904
         "dill==0.3.7",  # pickling
+        "duckdb==1.0.0",  # data-handling
     ]
     + extras_ui,
     extras_require={

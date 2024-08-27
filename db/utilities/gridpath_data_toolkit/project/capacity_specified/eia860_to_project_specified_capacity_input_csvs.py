@@ -67,8 +67,6 @@ def parse_arguments(args):
     return parsed_arguments
 
 
-# TODO: battery durations are hardcoded right now for when not provided (1h
-#  for batteries/flywheels and 12 hours for pumped hydro)
 def get_project_capacity(
     conn,
     eia860_sql_filter_string,
@@ -90,17 +88,7 @@ def get_project_capacity(
         CASE 
             WHEN raw_data_eia860_generators.prime_mover_code NOT IN ('BA', 
             'ES', 'FW', 'PS') THEN NULL
-            ELSE 
-                CASE
-                    WHEN energy_storage_capacity_mwh IS NULL
-                    THEN 
-                        CASE
-                            WHEN raw_data_eia860_generators.prime_mover_code 
-                            = 'PS' THEN 12.0*capacity_mw
-                            ELSE capacity_mw
-                        END
-                    ELSE energy_storage_capacity_mwh
-                END
+            ELSE energy_storage_capacity_mwh
         END
             AS specified_capacity_mwh,
         NULL AS fuel_production_capacity_fuelunitperhour,
@@ -150,7 +138,7 @@ def main(args=None):
 
     parsed_args = parse_arguments(args=args)
 
-    os.makedirs(parsed_args.specified_capacity_csv_location, exist_ok=True)
+    os.makedirs(parsed_args.output_directory, exist_ok=True)
 
     conn = connect_to_database(db_path=parsed_args.database)
 
@@ -164,7 +152,7 @@ def main(args=None):
         hydro_filter_str=HYDRO_FILTER_STR,
         disagg_project_name_str=DISAGG_PROJECT_NAME_STR,
         agg_project_name_str=AGG_PROJECT_NAME_STR,
-        csv_location=parsed_args.specified_capacity_csv_location,
+        csv_location=parsed_args.output_directory,
         subscenario_id=parsed_args.project_specified_capacity_scenario_id,
         subscenario_name=parsed_args.project_specified_capacity_scenario_name,
     )

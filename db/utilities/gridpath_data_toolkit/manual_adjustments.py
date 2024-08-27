@@ -13,14 +13,24 @@
 # limitations under the License.
 
 from argparse import ArgumentParser
+import duckdb
 import os.path
 import shutil
 import sys
+import pandas as pd
 
+from db.common_functions import connect_to_database
+from db.utilities.gridpath_data_toolkit.project.project_data_filters_common import (
+    get_eia860_sql_filter_string,
+    DISAGG_PROJECT_NAME_STR,
+)
 
 VAR_ID_DEFAULT = 1
 VAR_NAME_DEFAULT = "MANUAL"
 STAGE_ID_DEFAULT = 1
+
+# Storage durations
+STORAGE_DURATION_DEFAULTS = {"BA": 1, "PS": 12}
 
 
 def parse_arguments(args):
@@ -33,7 +43,10 @@ def parse_arguments(args):
     """
     parser = ArgumentParser(add_help=True)
 
-    parser.add_argument("-out_dir", "--output_directory")
+    parser.add_argument("-db", "--database", default="../../open_data_raw.db")
+
+    # Missing variable generation profiles
+    parser.add_argument("-var_gen_dir", "--var_gen_profiles_directory")
     parser.add_argument(
         "-id",
         "--variable_generator_profile_scenario_id",
@@ -46,6 +59,35 @@ def parse_arguments(args):
         default=VAR_NAME_DEFAULT,
         help=f"Defaults to '{VAR_NAME_DEFAULT}'.",
     )
+
+    # Missing storage durations
+    parser.add_argument(
+        "-cap_dir",
+        "--capacity_specified_directory",
+        default="../../csvs_open_data/project/capacity_specified",
+    )
+    parser.add_argument(
+        "-cap_id", "--project_specified_capacity_scenario_id", default=1
+    )
+    parser.add_argument(
+        "-cap_name", "--project_specified_capacity_scenario_name", default="base"
+    )
+    parser.add_argument("-y", "--study_year", default=2026)
+    parser.add_argument("-r", "--region", default="WECC")
+    parser.add_argument(
+        "-ba_dur",
+        "--batter_duration",
+        default=STORAGE_DURATION_DEFAULTS["BA"],
+        help=f"Defaults to '{STORAGE_DURATION_DEFAULTS['PS']}'.",
+    )
+    parser.add_argument(
+        "-ps_dur",
+        "--pumped_storage_duration",
+        default=STORAGE_DURATION_DEFAULTS["PS"],
+        help=f"Defaults to '{STORAGE_DURATION_DEFAULTS['PS']}'.",
+    )
+
+    # Overwrite existing files
     parser.add_argument(
         "-o",
         "--overwrite",
@@ -61,23 +103,83 @@ def parse_arguments(args):
     return parsed_arguments
 
 
-def make_copy_wind_profiles(output_directory, profile_id, profile_name, overwrite):
+def make_copy_wind_profiles(csv_location, profile_id, profile_name, overwrite):
     copy_from_dict = {"NEVP": "SPPC", "PGE": "BPAT", "SRP": "AZPS", "WAUW": "NWMT"}
 
     for ba in copy_from_dict.keys():
         copy_ba = copy_from_dict[ba]
 
         file_to_copy = os.path.join(
-            output_directory,
+            csv_location,
             f"Wind_{copy_ba}-{profile_id}-{profile_name}.csv",
         )
 
         new_file = os.path.join(
-            output_directory,
+            csv_location,
             f"Wind_{ba}-{profile_id}-{profile_name}-MANUAL_copy_from_{copy_ba}.csv",
         )
 
         shutil.copyfile(file_to_copy, new_file)
+
+
+def add_battery_durations(
+    conn,
+    disagg_project_name_str,
+    study_year,
+    eia860_sql_filter_string,
+    csv_location,
+    subscenario_id,
+    subscenario_name,
+):
+    duckdb_conn = duckdb.connect(database=":memory:")
+    spec_cap_df = pd.read_csv(
+        os.path.join(csv_location, f"{subscenario_id}_" f"{subscenario_name}.csv")
+    )
+    spec_cap_updated_df = duckdb_conn.sql(
+        """CREATE TABLE spec_cap_table AS SELECT * FROM spec_cap_df;"""
+    )
+
+    for tech in STORAGE_DURATION_DEFAULTS.keys():
+        sql = f"""
+            SELECT {disagg_project_name_str} AS project, 
+            {study_year} as period
+            FROM raw_data_eia860_generators
+            JOIN user_defined_eia_gridpath_key ON
+                    raw_data_eia860_generators.prime_mover_code = 
+                    user_defined_eia_gridpath_key.prime_mover_code
+                    AND energy_source_code_1 = energy_source_code
+            WHERE 1 = 1
+            AND {eia860_sql_filter_string}
+            AND raw_data_eia860_generators.prime_mover_code = '{tech}'
+            ;
+        """
+        relevant_projects_df = pd.read_sql(sql, conn)
+
+        spec_cap_updated_df = duckdb_conn.sql(
+            f"""
+            CREATE TABLE {tech}_relevant_projects_table
+            AS SELECT * FROM relevant_projects_df
+            ;
+            --SELECT * FROM relevant_projects_table;
+            UPDATE spec_cap_table
+            SET specified_capacity_mwh = {STORAGE_DURATION_DEFAULTS[tech]}*specified_capacity_mw
+            WHERE (project, period) IN (SELECT (project, period) FROM {tech}_relevant_projects_table)
+            AND specified_capacity_mwh IS NULL
+            ;
+            """
+        )
+
+    spec_cap_updated_df = duckdb_conn.sql(
+        """
+        SELECT * FROM spec_cap_table
+        ;
+        """
+    ).df()
+
+    spec_cap_updated_df.to_csv(
+        os.path.join(csv_location, f"{subscenario_id}_" f"{subscenario_name}.csv"),
+        index=False,
+    )
 
 
 def main(args=None):
@@ -87,18 +189,25 @@ def main(args=None):
 
     parsed_args = parse_arguments(args)
 
-    os.makedirs(parsed_args.output_directory, exist_ok=True)
-
-    output_directory = parsed_args.output_directory
-    profile_id = parsed_args.variable_generator_profile_scenario_id
-    profile_name = parsed_args.variable_generator_profile_scenario_name
-    overwrite = parsed_args.overwrite
+    conn = connect_to_database(db_path=parsed_args.database)
 
     make_copy_wind_profiles(
-        output_directory=output_directory,
-        profile_id=profile_id,
-        profile_name=profile_name,
-        overwrite=overwrite,
+        csv_location=parsed_args.var_gen_profiles_directory,
+        profile_id=parsed_args.variable_generator_profile_scenario_id,
+        profile_name=parsed_args.variable_generator_profile_scenario_name,
+        overwrite=parsed_args.overwrite,
+    )
+
+    add_battery_durations(
+        conn=conn,
+        disagg_project_name_str=DISAGG_PROJECT_NAME_STR,
+        study_year=parsed_args.study_year,
+        eia860_sql_filter_string=get_eia860_sql_filter_string(
+            study_year=parsed_args.study_year, region=parsed_args.region
+        ),
+        csv_location=parsed_args.capacity_specified_directory,
+        subscenario_id=parsed_args.project_specified_capacity_scenario_id,
+        subscenario_name=parsed_args.project_specified_capacity_scenario_name,
     )
 
 

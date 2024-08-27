@@ -119,7 +119,7 @@ def main(args=None):
 
     parsed_args = parse_arguments(args=args)
 
-    os.makedirs(parsed_args.availability_csv_location, exist_ok=True)
+    os.makedirs(parsed_args.output_directory, exist_ok=True)
 
     conn = connect_to_database(db_path=parsed_args.database)
 
@@ -132,7 +132,7 @@ def main(args=None):
         hydro_filter_str=HYDRO_FILTER_STR,
         disagg_project_name_str=DISAGG_PROJECT_NAME_STR,
         agg_project_name_str=AGG_PROJECT_NAME_STR,
-        csv_location=parsed_args.availability_csv_location,
+        csv_location=parsed_args.output_directory,
         subscenario_id=parsed_args.project_availability_scenario_id,
         subscenario_name=parsed_args.project_availability_scenario_name,
     )

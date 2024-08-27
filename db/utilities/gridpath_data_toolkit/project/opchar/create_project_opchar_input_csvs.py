@@ -65,7 +65,6 @@ def parse_arguments(args):
 
 
 # TODO: hardcoded params
-# TODO: refactor queries to ensure consistency for which projects are selected
 def get_project_opchar(
     conn,
     eia860_sql_filter_string,
