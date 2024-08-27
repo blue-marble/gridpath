@@ -33,6 +33,10 @@ STAGE_ID_DEFAULT = 1
 
 # Storage durations
 STORAGE_DURATION_DEFAULTS = {"BA": 1, "PS": 12}
+SPEC_CAP_ID_DEFAULT = 1
+SPEC_CAP_NAME_DEFAULT = "base"
+STUDY_YEAR_DEFAULT = 2026
+REGION_DEFAULT = 2026
 
 
 def parse_arguments(args):
@@ -69,16 +73,16 @@ def parse_arguments(args):
         default="../../csvs_open_data/project/capacity_specified",
     )
     parser.add_argument(
-        "-cap_id", "--project_specified_capacity_scenario_id", default=1
+        "-cap_id", "--project_specified_capacity_scenario_id", default=SPEC_CAP_ID_DEFAULT
     )
     parser.add_argument(
-        "-cap_name", "--project_specified_capacity_scenario_name", default="base"
+        "-cap_name", "--project_specified_capacity_scenario_name", default=SPEC_CAP_NAME_DEFAULT
     )
-    parser.add_argument("-y", "--study_year", default=2026)
-    parser.add_argument("-r", "--region", default="WECC")
+    parser.add_argument("-y", "--study_year", default=STUDY_YEAR_DEFAULT)
+    parser.add_argument("-r", "--region", default=REGION_DEFAULT)
     parser.add_argument(
         "-ba_dur",
-        "--batter_duration",
+        "--battery_duration",
         default=STORAGE_DURATION_DEFAULTS["BA"],
         help=f"Defaults to '{STORAGE_DURATION_DEFAULTS['PS']}'.",
     )
