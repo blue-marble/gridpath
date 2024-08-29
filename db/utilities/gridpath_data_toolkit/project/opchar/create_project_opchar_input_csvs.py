@@ -31,6 +31,9 @@ from db.utilities.gridpath_data_toolkit.project.project_data_filters_common impo
 )
 
 
+# TODO: add var costs, startup and shutdown costs, and startup fuel use
+
+
 def parse_arguments(args):
     """
     :param args: the script arguments specified by the user
@@ -58,13 +61,17 @@ def parse_arguments(args):
         "--project_operational_chars_scenario_name",
         default="wecc_plants_opchar",
     )
+    parser.add_argument("-fuel_id", "--project_fuel_scenario_id", default=1)
+    parser.add_argument(
+        "-var_id", "--variable_generator_profile_scenario_id", default=1
+    )
+    parser.add_argument("-hy_id", "--hydro_operational_chars_scenario_id", default=1)
 
     parsed_arguments = parser.parse_known_args(args=args)[0]
 
     return parsed_arguments
 
 
-# TODO: hardcoded params
 def get_project_opchar(
     conn,
     eia860_sql_filter_string,
@@ -78,39 +85,44 @@ def get_project_opchar(
     csv_location,
     subscenario_id,
     subscenario_name,
+    fuel_id,
+    var_id,
+    hy_id,
 ):
     # Wind, offshore wind, and PV are aggregated, so treated separately since
     # they are aggregated, so here we make a UNION between tables filtering
     # based on var_gen_filter_str
 
     non_var_opchars_str = make_opchar_sql_str(
-        technology="'test'",
+        technology="gridpath_technology",
         operational_type="gridpath_operational_type",
-        balancing_type_project="'week'",
-        variable_om_cost_per_mwh="0",
-        project_fuel_scenario_id=f"""CASE WHEN {fuel_filter_str} THEN 1 ELSE NULL END""",
+        balancing_type_project="gridpath_balancing_type",
+        variable_om_cost_per_mwh="default_variable_om_cost_per_mwh",
+        project_fuel_scenario_id=f"""CASE WHEN {fuel_filter_str} THEN {fuel_id} ELSE 
+        NULL END""",
         heat_rate_curves_scenario_id=f"""CASE WHEN {heat_rate_filter_str} 
         THEN 1 ELSE NULL END""",
         min_stable_level_fraction=f"""CASE WHEN {heat_rate_filter_str} THEN min_load_fraction ELSE NULL END""",
-        storage_efficiency=f"""CASE WHEN {stor_filter_str} THEN 1 ELSE NULL END""",
-        charging_efficiency=f"""CASE WHEN {stor_filter_str} THEN 0.9 ELSE NULL END""",
-        discharging_efficiency=f"""CASE WHEN {stor_filter_str} THEN 0.9 ELSE NULL END""",
+        storage_efficiency=f"""CASE WHEN {stor_filter_str} THEN default_storage_efficiency ELSE NULL END""",
+        charging_efficiency=f"""CASE WHEN {stor_filter_str} THEN default_charging_efficiency ELSE NULL END""",
+        discharging_efficiency=f"""CASE WHEN {stor_filter_str} THEN 
+        default_discharging_efficiency ELSE NULL END""",
     )
 
     var_opchars_str = make_opchar_sql_str(
-        technology="'test'",
+        technology="gridpath_technology",
         operational_type="gridpath_operational_type",
-        balancing_type_project="'week'",
-        variable_om_cost_per_mwh="0",
-        variable_generator_profile_scenario_id="1",
+        balancing_type_project="gridpath_balancing_type",
+        variable_om_cost_per_mwh="default_variable_om_cost_per_mwh",
+        variable_generator_profile_scenario_id=f"{var_id}",
     )
 
     hydro_opchars_str = make_opchar_sql_str(
-        technology="'test'",
+        technology="gridpath_technology",
         operational_type="gridpath_operational_type",
-        balancing_type_project="'week'",
-        variable_om_cost_per_mwh="0",
-        hydro_operational_chars_scenario_id="1",
+        balancing_type_project="gridpath_balancing_type",
+        variable_om_cost_per_mwh="default_variable_om_cost_per_mwh",
+        hydro_operational_chars_scenario_id=f"{hy_id}",
     )
 
     sql = f"""
@@ -325,6 +337,9 @@ def main(args=None):
         csv_location=parsed_args.opchar_csv_location,
         subscenario_id=parsed_args.project_operational_chars_scenario_id,
         subscenario_name=parsed_args.project_operational_chars_scenario_name,
+        fuel_id=parsed_args.project_fuel_scenario_id,
+        var_id=parsed_args.variable_generator_profile_scenario_id,
+        hy_id=parsed_args.hydro_operational_chars_scenario_id,
     )
 
 

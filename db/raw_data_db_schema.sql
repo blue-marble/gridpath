@@ -196,19 +196,25 @@ CREATE TABLE user_defined_baa_key
 DROP TABLE IF EXISTS user_defined_eia_gridpath_key;
 CREATE TABLE user_defined_eia_gridpath_key
 (
-    prime_mover_code          TEXT,
-    prime_mover_label         TEXT,
-    energy_source_code        TEXT,
-    energy_source_label       TEXT,
-    fuel_type_eiaaeo          TEXT,
-    gridpath_generic_fuel     TEXT,
-    aeo_prices                INTEGER,
-    gridpath_capacity_type    TEXT,
-    gridpath_operational_type TEXT,
-    heat_rate_mmbtu_per_mwh   FLOAT,
-    min_load_fraction         FLOAT,
-    heat_rate_source          TEXT,
-    agg_project               TEXT,
+    prime_mover_code                 TEXT,
+    prime_mover_label                TEXT,
+    energy_source_code               TEXT,
+    energy_source_label              TEXT,
+    fuel_type_eiaaeo                 TEXT,
+    gridpath_generic_fuel            TEXT,
+    aeo_prices                       INTEGER,
+    gridpath_capacity_type           TEXT,
+    gridpath_operational_type        TEXT,
+    gridpath_technology              TEXT,
+    gridpath_balancing_type          TEXT,
+    default_variable_om_cost_per_mwh FLOAT,
+    default_storage_efficiency       FLOAT,
+    default_charging_efficiency      FLOAT,
+    default_discharging_efficiency   FLOAT,
+    heat_rate_mmbtu_per_mwh          FLOAT,
+    min_load_fraction                FLOAT,
+    heat_rate_source                 TEXT,
+    agg_project                      TEXT,
     PRIMARY KEY (prime_mover_code, energy_source_code)
 );
 
