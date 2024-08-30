@@ -32,7 +32,8 @@ from db.utilities import port_csvs_to_db, scenario
 os.chdir(os.path.join(os.path.dirname(__file__), "..", "gridpath"))
 EXAMPLES_DIRECTORY = os.path.join("..", "examples")
 DB_NAME = "unittest_examples"
-DB_PATH = os.path.join("../db", "{}.db".format(DB_NAME))
+DB_PATH = f"../db/{DB_NAME}.db"
+DB_SCHEMA = f"../db/db_schema.sql"
 DATA_DIRECTORY = "../db/data"
 CSV_PATH = "../db//csvs_test_examples"
 SCENARIOS_CSV = os.path.join(CSV_PATH, "scenarios.csv")
@@ -177,7 +178,14 @@ class TestExamples(unittest.TestCase):
             os.remove(DB_PATH)
 
         create_database.main(
-            ["--database", DB_PATH, "--data_directory", DATA_DIRECTORY]
+            [
+                "--database",
+                DB_PATH,
+                "--db_schema",
+                DB_SCHEMA,
+                "--data_directory",
+                DATA_DIRECTORY,
+            ]
         )
 
         try:

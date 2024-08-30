@@ -1,6 +1,6 @@
 ﻿script,setting,value
 create_database,database,../db/open_data_raw.db
-create_database,db_schema,raw_data_db_schema.sql
+create_database,db_schema,./raw_data_db_schema.sql
 create_database,omit_data,1
 load_raw_data,csv_location,../db/csvs_open_data/raw_data/
 load_raw_data,database,../db/open_data_raw.db

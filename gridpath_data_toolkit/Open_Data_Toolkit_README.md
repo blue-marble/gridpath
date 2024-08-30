@@ -36,7 +36,7 @@ GridLab RA Toolkit website and is currently stored on Blue Marble's Google Drive
 ## Processing the data with the Open Data Toolkit
 
 ```bash
-gridpath_run_open_data_toolkit
+gridpath_run_data_toolkit
 ```
 
 ## Load processed input data into GridPath IO database as usual

@@ -16,7 +16,7 @@ import os
 import pandas as pd
 import unittest
 
-from db.utilities.gridpath_data_toolkit import run_data_toolkit
+from gridpath_data_toolkit import run_data_toolkit
 
 SETTINGS_CSV = "../tests/test_data/ra_toolkit_settings.csv"
 SETTINGS_STEPS_CSV = "../tests/test_data/ra_toolkit_settings_steps.csv"

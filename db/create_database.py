@@ -20,7 +20,7 @@ The user may specify the name and location of the GridPath database path using t
 
 >>> gridpath_create_database --database PATH/DO/DB
 
-The default schema for the GridPath SQLite database is in db_schema.sql.
+The default schema for the GridPath SQLite database is in db/db_schema.sql.
 
 .. _database-structure-section-ref:
 
@@ -53,7 +53,7 @@ def parse_arguments(arguments):
     )
     parser.add_argument(
         "--db_schema",
-        default="db_schema.sql",
+        default="./db_schema.sql",
         help="Name of the SQL file containing the database "
         "schema. Assumed to be in same directory as"
         "create_database.py",
@@ -94,7 +94,7 @@ def create_database_schema(conn, parsed_arguments):
     :param parsed_arguments:
 
     """
-    schema_path = os.path.join(os.path.dirname(__file__), parsed_arguments.db_schema)
+    schema_path = os.path.join(os.getcwd(), parsed_arguments.db_schema)
 
     with open(schema_path, "r") as db_schema_script:
         schema = db_schema_script.read()
