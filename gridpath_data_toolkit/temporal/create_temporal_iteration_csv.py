@@ -43,7 +43,7 @@ def parse_arguments(args):
         default=N_PASSES_DEFAULT,
         help=f"Defaults to {N_PASSES_DEFAULT}.",
     )
-    parser.add_argument("-csv", "--csv_path")
+    parser.add_argument("-csv", "--iterations_csv_path")
 
     parser.add_argument("-o", "--output_directory")
 
@@ -61,6 +61,7 @@ def create_temporal_scenario_iterations_csv(n_passes, filepath, output_directory
             ["weather_iteration", "hydro_iteration", "availability_iteration"]
         )
 
+    # print(os.path.abspath(filepath))
     df = pd.read_csv(filepath)
 
     weather_df = df["weather"]
@@ -199,7 +200,7 @@ def main(args=None):
 
     create_temporal_scenario_iterations_csv(
         n_passes=int(parsed_args.n_passes),
-        filepath=parsed_args.csv_path,
+        filepath=parsed_args.iterations_csv_path,
         output_directory=parsed_args.output_directory,
     )
     sort_final_file(

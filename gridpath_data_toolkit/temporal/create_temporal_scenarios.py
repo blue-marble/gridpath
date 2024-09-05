@@ -11,13 +11,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-import sys
+import shutil
 from argparse import ArgumentParser
+import glob
 import os.path
 import pandas as pd
+import sys
 
 from gridpath_data_toolkit.temporal import create_temporal_iteration_csv
+
+
+# TODO: create CSVs based on user settings rather than just copying them over?
+# TODO: put RA toolkit base CSVs in raw directory and copy them over during
+#  testing
+def copy_base_csvs(base_csvs_directory, subscenario_directory):
+    for f in glob.glob(os.path.join(base_csvs_directory, "*.*")):
+        shutil.copyfile(f, os.path.join(subscenario_directory, os.path.basename(f)))
 
 
 def parse_arguments(args):
@@ -31,7 +40,7 @@ def parse_arguments(args):
 
     parser = ArgumentParser(add_help=True)
 
-    parser.add_argument("-csv", "--csv_path")
+    parser.add_argument("-csv", "--temporal_scenarios_csv_path")
 
     parser.add_argument("-q", "--quiet", default=False, action="store_true")
 
@@ -49,7 +58,7 @@ def main(args=None):
     if not parsed_args.quiet:
         print("Creating temporal scenarios...")
 
-    df = pd.read_csv(parsed_args.csv_path, delimiter=",")
+    df = pd.read_csv(parsed_args.temporal_scenarios_csv_path, delimiter=",")
 
     for index, row in df.iterrows():
         (
@@ -58,6 +67,7 @@ def main(args=None):
             temporal_scenario_name,
             n_passes,
             iterations_csv,
+            base_csvs_directory,
         ) = row
 
         if not parsed_args.quiet:
@@ -74,11 +84,16 @@ def main(args=None):
             [
                 "--n_passes",
                 str(n_passes),
-                "--csv_path",
+                "--iterations_csv_path",
                 iterations_csv,
                 "--output_directory",
                 subscenario_directory,
             ]
+        )
+
+        copy_base_csvs(
+            base_csvs_directory=base_csvs_directory,
+            subscenario_directory=subscenario_directory,
         )
 
 
