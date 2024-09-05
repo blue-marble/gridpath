@@ -40,8 +40,8 @@ def parse_arguments(args):
     parser.add_argument("-y", "--study_year", default=2026)
     parser.add_argument("-r", "--region", default="WECC")
     parser.add_argument(
-        "-fuels_csv",
-        "--fuels_csv_location",
+        "-o",
+        "--output_directory",
         default="../../csvs_open_data/project/opchar/fuels",
     )
     parser.add_argument("-fuel_id", "--project_fuel_scenario_id", default=1)
@@ -102,7 +102,7 @@ def main(args=None):
 
     parsed_args = parse_arguments(args=args)
 
-    os.makedirs(parsed_args.fuels_csv_location, exist_ok=True)
+    os.makedirs(parsed_args.output_directory, exist_ok=True)
 
     conn = connect_to_database(db_path=parsed_args.database)
 
@@ -113,7 +113,7 @@ def main(args=None):
         ),
         fuel_filter_str=FUEL_FILTER_STR,
         disagg_project_name_str=DISAGG_PROJECT_NAME_STR,
-        csv_location=parsed_args.fuels_csv_location,
+        csv_location=parsed_args.output_directory,
         subscenario_id=parsed_args.project_fuel_scenario_id,
         subscenario_name=parsed_args.project_fuel_scenario_name,
     )

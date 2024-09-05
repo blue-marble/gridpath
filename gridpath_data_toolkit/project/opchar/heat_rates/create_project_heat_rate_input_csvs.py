@@ -41,8 +41,8 @@ def parse_arguments(args):
     parser.add_argument("-r", "--region", default="WECC")
 
     parser.add_argument(
-        "-hr_csv",
-        "--hr_csv_location",
+        "-o",
+        "--output_directory",
         default="../../csvs_open_data/project/opchar/heat_rates",
     )
     parser.add_argument("-hr_id", "--project_hr_scenario_id", default=1)
@@ -122,7 +122,7 @@ def main(args=None):
 
     parsed_args = parse_arguments(args=args)
 
-    os.makedirs(parsed_args.hr_csv_location, exist_ok=True)
+    os.makedirs(parsed_args.output_directory, exist_ok=True)
 
     conn = connect_to_database(db_path=parsed_args.database)
 
@@ -133,7 +133,7 @@ def main(args=None):
         ),
         heat_rate_filter_str=HEAT_RATE_FILTER_STR,
         disagg_project_name_str=DISAGG_PROJECT_NAME_STR,
-        csv_location=parsed_args.hr_csv_location,
+        csv_location=parsed_args.output_directory,
         subscenario_id=parsed_args.project_hr_scenario_id,
         subscenario_name=parsed_args.project_hr_scenario_name,
     )
