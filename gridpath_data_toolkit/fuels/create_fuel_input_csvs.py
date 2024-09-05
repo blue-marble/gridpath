@@ -31,12 +31,12 @@ def parse_arguments(args):
     """
     parser = ArgumentParser(add_help=True)
 
-    parser.add_argument("-db", "--database", default="../../open_data.db")
+    parser.add_argument("-db", "--database", default="../../db/open_data_raw.db")
 
     parser.add_argument(
-        "-fuel_price_csv",
-        "--fuel_price_csv_location",
-        default="../../csvs_open_data/fuels/fuel_prices",
+        "-o",
+        "--output_directory",
+        default="../../db/csvs_open_data/fuels/fuel_prices",
     )
     parser.add_argument("-fuel_price_id", "--fuel_price_scenario_id", default=1)
     parser.add_argument(
@@ -52,7 +52,7 @@ def parse_arguments(args):
 
 
 def get_fuel_prices(
-    conn, csv_location, subscenario_id, subscenario_name, report_year, model_case
+    conn, output_directory, subscenario_id, subscenario_name, report_year, model_case
 ):
     """ """
 
@@ -82,25 +82,25 @@ def get_fuel_prices(
     final_df = pd.concat(month_df_list)
 
     final_df.to_csv(
-        os.path.join(csv_location, f"{subscenario_id}_" f"{subscenario_name}.csv"),
+        os.path.join(output_directory, f"{subscenario_id}_" f"{subscenario_name}.csv"),
         index=False,
     )
 
 
 def main(args=None):
-    print("Creating fuel prices")
+    print("Creating fuel prices...")
     if args is None:
         args = sys.argv[1:]
 
     parsed_args = parse_arguments(args=args)
 
-    os.makedirs(parsed_args.fuel_price_csv_location, exist_ok=True)
+    os.makedirs(parsed_args.output_directory, exist_ok=True)
 
     conn = connect_to_database(db_path=parsed_args.database)
 
     get_fuel_prices(
         conn=conn,
-        csv_location=parsed_args.fuel_price_csv_location,
+        output_directory=parsed_args.output_directory,
         subscenario_id=parsed_args.fuel_price_scenario_id,
         subscenario_name=parsed_args.model_case,
         report_year=parsed_args.report_year,

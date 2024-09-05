@@ -42,7 +42,7 @@ gridpath_run_data_toolkit
 ## Load processed input data into GridPath IO database as usual
 
 ```bash
-gridpath_create_database --database ./open_data.db
+gridpath_create_database --database ./open_data_raw.db
 ```
 
 ```bash

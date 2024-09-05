@@ -38,14 +38,14 @@ def parse_arguments(args):
     """
     parser = ArgumentParser(add_help=True)
 
-    parser.add_argument("-db", "--database", default="../../open_data.db")
+    parser.add_argument("-db", "--database", default="../../../db/open_data_raw.db")
     parser.add_argument("-rep", "--report_date", default="2023-01-01")
     parser.add_argument("-y", "--study_year", default=2026)
     parser.add_argument("-r", "--region", default="WECC")
     parser.add_argument(
-        "-fcost_csv",
-        "--fixed_cost_csv_location",
-        default="../../csvs_open_data/project/fixed_cost",
+        "-o",
+        "--output_directory",
+        default="../../../db/csvs_open_data/project/fixed_cost",
     )
     parser.add_argument("-fcost_id", "--project_fixed_cost_scenario_id", default=1)
     parser.add_argument(
@@ -65,7 +65,7 @@ def get_project_fixed_cost(
     disagg_project_name_str,
     agg_project_name_str,
     study_year,
-    csv_location,
+    output_directory,
     subscenario_id,
     subscenario_name,
 ):
@@ -119,7 +119,7 @@ def get_project_fixed_cost(
 
     df = pd.read_sql(sql, conn)
     df.to_csv(
-        os.path.join(csv_location, f"{subscenario_id}_" f"{subscenario_name}.csv"),
+        os.path.join(output_directory, f"{subscenario_id}_" f"{subscenario_name}.csv"),
         index=False,
     )
 
@@ -131,7 +131,7 @@ def main(args=None):
 
     parsed_args = parse_arguments(args=args)
 
-    os.makedirs(parsed_args.fixed_cost_csv_location, exist_ok=True)
+    os.makedirs(parsed_args.output_directory, exist_ok=True)
 
     conn = connect_to_database(db_path=parsed_args.database)
 
@@ -145,7 +145,7 @@ def main(args=None):
         hydro_filter_str=HYDRO_FILTER_STR,
         disagg_project_name_str=DISAGG_PROJECT_NAME_STR,
         agg_project_name_str=AGG_PROJECT_NAME_STR,
-        csv_location=parsed_args.fixed_cost_csv_location,
+        output_directory=parsed_args.output_directory,
         subscenario_id=parsed_args.project_fixed_cost_scenario_id,
         subscenario_name=parsed_args.project_fixed_cost_scenario_name,
     )

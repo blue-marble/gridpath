@@ -35,13 +35,13 @@ def parse_arguments(args):
     """
     parser = ArgumentParser(add_help=True)
 
-    parser.add_argument("-db", "--database", default="../../open_data.db")
+    parser.add_argument("-db", "--database", default="../../open_data_raw.db")
     parser.add_argument("-rep", "--report_date", default="2023-01-01")
     parser.add_argument("-y", "--study_year", default=2026)
     parser.add_argument("-r", "--region", default="WECC")
     parser.add_argument(
-        "-opchar_csv",
-        "--opchar_csv_location",
+        "-o",
+        "--output_directory",
         default="../../csvs_open_data/transmission/opchar",
     )
     parser.add_argument(
@@ -58,7 +58,7 @@ def parse_arguments(args):
     return parsed_arguments
 
 
-def get_tx_opchar(all_links, csv_location, subscenario_id, subscenario_name):
+def get_tx_opchar(all_links, output_directory, subscenario_id, subscenario_name):
     tx_lines = [f"{link[0]}_{link[1]}" for link in all_links]
     df = pd.DataFrame(tx_lines, columns=["transmission_line"])
     df["operational_type"] = "tx_simple"
@@ -66,7 +66,7 @@ def get_tx_opchar(all_links, csv_location, subscenario_id, subscenario_name):
     df["reactance_ohms"] = None
 
     df.to_csv(
-        os.path.join(csv_location, f"{subscenario_id}_{subscenario_name}.csv"),
+        os.path.join(output_directory, f"{subscenario_id}_{subscenario_name}.csv"),
         index=False,
     )
 
@@ -78,7 +78,7 @@ def main(args=None):
 
     parsed_args = parse_arguments(args=args)
 
-    os.makedirs(parsed_args.opchar_csv_location, exist_ok=True)
+    os.makedirs(parsed_args.output_directory, exist_ok=True)
 
     conn = connect_to_database(db_path=parsed_args.database)
 
@@ -88,7 +88,7 @@ def main(args=None):
 
     get_tx_opchar(
         all_links=all_links,
-        csv_location=parsed_args.opchar_csv_location,
+        output_directory=parsed_args.output_directory,
         subscenario_id=parsed_args.transmission_operational_chars_scenario_id,
         subscenario_name=parsed_args.transmission_operational_chars_scenario_name,
     )

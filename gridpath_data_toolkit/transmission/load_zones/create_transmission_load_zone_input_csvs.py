@@ -40,8 +40,8 @@ def parse_arguments(args):
     parser.add_argument("-y", "--study_year", default=2026)
     parser.add_argument("-r", "--region", default="WECC")
     parser.add_argument(
-        "-lz_csv",
-        "--load_zone_csv_location",
+        "-o",
+        "--output_directory",
         default="../../csvs_open_data/transmission/load_zones",
     )
     parser.add_argument("-lz_id", "--transmission_load_zone_scenario_id", default=1)
@@ -56,7 +56,7 @@ def parse_arguments(args):
 
 def get_tx_load_zones(
     all_links,
-    csv_location,
+    output_directory,
     subscenario_id,
     subscenario_name,
 ):
@@ -70,7 +70,7 @@ def get_tx_load_zones(
     df = pd.DataFrame(lz_dict)
 
     df.to_csv(
-        os.path.join(csv_location, f"{subscenario_id}_{subscenario_name}.csv"),
+        os.path.join(output_directory, f"{subscenario_id}_{subscenario_name}.csv"),
         index=False,
     )
 
@@ -82,7 +82,7 @@ def main(args=None):
 
     parsed_args = parse_arguments(args=args)
 
-    os.makedirs(parsed_args.load_zone_csv_location, exist_ok=True)
+    os.makedirs(parsed_args.output_directory, exist_ok=True)
 
     conn = connect_to_database(db_path=parsed_args.database)
 
@@ -92,7 +92,7 @@ def main(args=None):
 
     get_tx_load_zones(
         all_links=all_links,
-        csv_location=parsed_args.load_zone_csv_location,
+        output_directory=parsed_args.output_directory,
         subscenario_id=parsed_args.transmission_load_zone_scenario_id,
         subscenario_name=parsed_args.transmission_load_zone_scenario_name,
     )

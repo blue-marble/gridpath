@@ -45,7 +45,7 @@ def parse_arguments(args):
     )
     parser.add_argument("-csv", "--csv_path")
 
-    parser.add_argument("-out_dir", "--output_directory")
+    parser.add_argument("-o", "--output_directory")
 
     parser.add_argument("-q", "--quiet", default=False, action="store_true")
 

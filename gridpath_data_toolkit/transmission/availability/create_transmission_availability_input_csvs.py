@@ -35,14 +35,14 @@ def parse_arguments(args):
     """
     parser = ArgumentParser(add_help=True)
 
-    parser.add_argument("-db", "--database", default="../../open_data.db")
+    parser.add_argument("-db", "--database", default="../../open_data_raw.db")
     parser.add_argument("-rep", "--report_date", default="2023-01-01")
     parser.add_argument("-y", "--study_year", default=2026)
     parser.add_argument("-r", "--region", default="WECC")
 
     parser.add_argument(
-        "-avl_csv",
-        "--availability_csv_location",
+        "-o",
+        "--output_directory",
         default="../../csvs_open_data/transmission/availability",
     )
     parser.add_argument("-avl_id", "--transmission_availability_scenario_id", default=1)
@@ -57,7 +57,7 @@ def parse_arguments(args):
 
 def get_tx_availability(
     all_links,
-    csv_location,
+    output_directory,
     subscenario_id,
     subscenario_name,
 ):
@@ -69,7 +69,7 @@ def get_tx_availability(
     df["endogenous_availability_scenario_id"] = None
 
     df.to_csv(
-        os.path.join(csv_location, f"{subscenario_id}_{subscenario_name}.csv"),
+        os.path.join(output_directory, f"{subscenario_id}_{subscenario_name}.csv"),
         index=False,
     )
 
@@ -81,7 +81,7 @@ def main(args=None):
 
     parsed_args = parse_arguments(args=args)
 
-    os.makedirs(parsed_args.availability_csv_location, exist_ok=True)
+    os.makedirs(parsed_args.output_directory, exist_ok=True)
 
     conn = connect_to_database(db_path=parsed_args.database)
 
@@ -91,7 +91,7 @@ def main(args=None):
 
     get_tx_availability(
         all_links=all_links,
-        csv_location=parsed_args.availability_csv_location,
+        output_directory=parsed_args.output_directory,
         subscenario_id=parsed_args.transmission_availability_scenario_id,
         subscenario_name=parsed_args.transmission_availability_scenario_name,
     )

@@ -35,14 +35,14 @@ def parse_arguments(args):
     """
     parser = ArgumentParser(add_help=True)
 
-    parser.add_argument("-db", "--database", default="../../open_data.db")
+    parser.add_argument("-db", "--database", default="../../open_data_raw.db")
     parser.add_argument("-rep", "--report_date", default="2023-01-01")
     parser.add_argument("-y", "--study_year", default=2026)
     parser.add_argument("-r", "--region", default="WECC")
 
     parser.add_argument(
-        "-cap_csv",
-        "--specified_capacity_csv_location",
+        "-o",
+        "--output_directory",
         default="../../csvs_open_data/transmission/capacity_specified",
     )
     parser.add_argument(
@@ -63,7 +63,7 @@ def get_tx_capacities(
     period,
     cap,
     threshold,
-    csv_location,
+    output_directory,
     subscenario_id,
     subscenario_name,
 ):
@@ -138,7 +138,7 @@ def get_tx_capacities(
     # Concat the individual line dataframes for export
     df = pd.concat(df_list)
     df.to_csv(
-        os.path.join(csv_location, f"{subscenario_id}_{subscenario_name}.csv"),
+        os.path.join(output_directory, f"{subscenario_id}_{subscenario_name}.csv"),
         index=False,
     )
 
@@ -150,7 +150,7 @@ def main(args=None):
 
     parsed_args = parse_arguments(args=args)
 
-    os.makedirs(parsed_args.specified_capacity_csv_location, exist_ok=True)
+    os.makedirs(parsed_args.output_directory, exist_ok=True)
 
     conn = connect_to_database(db_path=parsed_args.database)
 
@@ -164,7 +164,7 @@ def main(args=None):
         period=2026,
         cap=19000,
         threshold=0.5,
-        csv_location=parsed_args.specified_capacity_csv_location,
+        output_directory=parsed_args.output_directory,
         subscenario_id=parsed_args.transmission_specified_capacity_scenario_id,
         subscenario_name=parsed_args.transmission_specified_capacity_scenario_name,
     )

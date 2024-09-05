@@ -45,14 +45,14 @@ def parse_arguments(args):
     """
     parser = ArgumentParser(add_help=True)
 
-    parser.add_argument("-db", "--database", default="../../open_data.db")
+    parser.add_argument("-db", "--database", default="../../../db/open_data_raw.db")
     parser.add_argument("-rep", "--report_date", default="2023-01-01")
     parser.add_argument("-y", "--study_year", default=2026)
     parser.add_argument("-r", "--region", default="WECC")
     parser.add_argument(
-        "-lz_csv",
-        "--load_zone_csv_location",
-        default="../../csvs_open_data/project/load_zones",
+        "-o",
+        "--output_directory",
+        default="../../../db/csvs_open_data/project/load_zones",
     )
     parser.add_argument("-lz_id", "--project_load_zone_scenario_id", default=1)
     parser.add_argument(
@@ -71,7 +71,7 @@ def get_project_load_zones(
     hydro_filter_str,
     disagg_project_name_str,
     agg_project_name_str,
-    csv_location,
+    output_directory,
     subscenario_id,
     subscenario_name,
 ):
@@ -101,7 +101,7 @@ def get_project_load_zones(
 
     df = pd.read_sql(sql, conn)
     df.to_csv(
-        os.path.join(csv_location, f"{subscenario_id}_" f"{subscenario_name}.csv"),
+        os.path.join(output_directory, f"{subscenario_id}_" f"{subscenario_name}.csv"),
         index=False,
     )
 
@@ -113,7 +113,7 @@ def main(args=None):
 
     parsed_args = parse_arguments(args=args)
 
-    os.makedirs(parsed_args.load_zone_csv_location, exist_ok=True)
+    os.makedirs(parsed_args.output_directory, exist_ok=True)
 
     conn = connect_to_database(db_path=parsed_args.database)
 
@@ -126,7 +126,7 @@ def main(args=None):
         hydro_filter_str=HYDRO_FILTER_STR,
         disagg_project_name_str=DISAGG_PROJECT_NAME_STR,
         agg_project_name_str=AGG_PROJECT_NAME_STR,
-        csv_location=parsed_args.load_zone_csv_location,
+        output_directory=parsed_args.output_directory,
         subscenario_id=parsed_args.project_load_zone_scenario_id,
         subscenario_name=parsed_args.project_load_zone_scenario_name,
     )
