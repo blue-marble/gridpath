@@ -122,7 +122,7 @@ class TestPerformanceStandard(unittest.TestCase):
         )
         self.assertListEqual(expected_ps_zone_periods, actual_ps_zone_periods)
 
-        # Param: performance_standard
+        # Param: performance_standard_tco2_per_mwh
         expected_ps = OrderedDict(
             sorted(
                 {
@@ -136,7 +136,7 @@ class TestPerformanceStandard(unittest.TestCase):
         actual_ps = OrderedDict(
             sorted(
                 {
-                    (z, p): instance.performance_standard[z, p]
+                    (z, p): instance.performance_standard_tco2_per_mwh[z, p]
                     for (
                         z,
                         p,
@@ -145,6 +145,30 @@ class TestPerformanceStandard(unittest.TestCase):
             )
         )
         self.assertDictEqual(expected_ps, actual_ps)
+
+        # Param: performance_standard_tco2_per_mw
+        expected_ps_mw = OrderedDict(
+            sorted(
+                {
+                    ("PS_Zone1", 2020): 876,
+                    ("PS_Zone1", 2030): 876,
+                    ("PS_Zone2", 2020): 876,
+                    ("PS_Zone2", 2030): 876,
+                }.items()
+            )
+        )
+        actual_ps_mw = OrderedDict(
+            sorted(
+                {
+                    (z, p): instance.performance_standard_tco2_per_mw[z, p]
+                    for (
+                        z,
+                        p,
+                    ) in instance.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD
+                }.items()
+            )
+        )
+        self.assertDictEqual(expected_ps_mw, actual_ps_mw)
 
 
 if __name__ == "__main__":

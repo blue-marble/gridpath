@@ -113,3 +113,5 @@ ra_toolkit_sync,"{('weather_iteration_2010', 'hydro_iteration_2010', 'availabili
 2periods_nuclear_var_cost_by_period_same,"{('', '', '', 1): {1: -75926182429562.45}}","{('', '', '', 1): {1: -75926182429562.45}}",,
 2periods_nuclear_var_cost_by_period_diff,"{('', '', '', 1): {1: -75926182955162.45}}","{('', '', '', 1): {1: -75926182955162.45}}",,
 ra_toolkit_sync_single_year,"{('weather_iteration_2010', 'hydro_iteration_2010', 'availability_iteration_1', 1): {1: -0.0}, ('weather_iteration_2010', 'hydro_iteration_2010', 'availability_iteration_1', 2): {1: -0.0}}","{('weather_iteration_2010', 'hydro_iteration_2010', 'availability_iteration_1', 1): {1: -0.0}, ('weather_iteration_2010', 'hydro_iteration_2010', 'availability_iteration_1', 2): {1: -0.0}}",,
+test_performance_standard_power,"{('', '', '', 1): {1: -3504414927375.9478}}","{('', '', '', 1): {1: -3504414927375.9478}}",,
+test_performance_standard_both,"{('', '', '', 1): {1: -3592014754469.9077}}","{('', '', '', 1): {1: -3592014754469.9077}}",,

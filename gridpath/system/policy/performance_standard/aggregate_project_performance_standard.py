@@ -69,8 +69,8 @@ def add_model_components(
 
     def total_performance_standard_energy_rule(mod, z, p):
         """
-        Calculate total emission allowance from all carbon tax projects in carbon
-        tax zone
+        Calculate total energy from all performance standard projects in performance
+        standard zone
         :param mod:
         :param z:
         :param p:
@@ -88,6 +88,29 @@ def add_model_components(
     m.Total_Performance_Standard_Project_Energy = Expression(
         m.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD,
         rule=total_performance_standard_energy_rule,
+    )
+
+    def total_performance_standard_capacity_rule(mod, z, p):
+        """
+        Calculate total capacity from all performance standard projects in performance
+        standard zone
+        :param mod:
+        :param z:
+        :param p:
+        :return:
+        """
+        return sum(
+            mod.Capacity_MW[prj, prd]
+            for (prj, prd) in mod.PERFORMANCE_STANDARD_OPR_PRDS
+            if prj in mod.PERFORMANCE_STANDARD_PRJS_BY_PERFORMANCE_STANDARD_ZONE[z]
+            and prd == p
+        )
+
+    # We'll multiply this by the standard in the balance constraint
+    # Note this is NOT added to the dynamic components
+    m.Total_Performance_Standard_Project_Capacity = Expression(
+        m.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD,
+        rule=total_performance_standard_capacity_rule,
     )
 
     record_dynamic_components(dynamic_components=d)
@@ -127,6 +150,7 @@ def export_results(
     results_columns = [
         "performance_standard_project_emissions_tco2",
         "performance_standard_project_energy_mwh",
+        "performance_standard_project_capacity_mw",
     ]
     data = [
         [
@@ -134,6 +158,7 @@ def export_results(
             p,
             value(m.Total_Performance_Standard_Project_Emissions[z, p]),
             value(m.Total_Performance_Standard_Project_Energy[z, p]),
+            value(m.Total_Performance_Standard_Project_Capacity[z, p]),
         ]
         for (z, p) in m.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD
     ]
