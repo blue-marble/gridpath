@@ -20,8 +20,10 @@ import sys
 import unittest
 
 from tests.common_functions import create_abstract_model, add_components_and_load_data
-from tests.project.operations.common_functions import get_project_operational_timepoints, \
-    get_project_operational_periods
+from tests.project.operations.common_functions import (
+    get_project_operational_timepoints,
+    get_project_operational_periods,
+)
 
 TEST_DATA_DIRECTORY = os.path.join(os.path.dirname(__file__), "..", "..", "test_data")
 
@@ -122,7 +124,13 @@ class TestProjectPerformanceStandard(unittest.TestCase):
         )
 
         actual_prj_zones = sorted(
-            [(prj, z) for (prj, z) in instance.PERFORMANCE_STANDARD_PRJS_PERFORMANCE_STANDARD_ZONES]
+            [
+                (prj, z)
+                for (
+                    prj,
+                    z,
+                ) in instance.PERFORMANCE_STANDARD_PRJS_PERFORMANCE_STANDARD_ZONES
+            ]
         )
 
         self.assertListEqual(expected_prj_zones, actual_prj_zones)

@@ -39,6 +39,7 @@ def add_model_components(
     Here, we aggregate total penalty costs for not meeting the performance standard
     constraint.
     """
+
     def total_penalty_costs_energy_rule(mod):
         return sum(
             mod.Performance_Standard_Energy_Unit_Overage_Expression[z, p]

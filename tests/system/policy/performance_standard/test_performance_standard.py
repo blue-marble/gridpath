@@ -162,9 +162,9 @@ class TestPerformanceStandard(unittest.TestCase):
                 {
                     (z, p): instance.performance_standard_tco2_per_mw[z, p]
                     for (
-                    z,
-                    p,
-                ) in instance.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD
+                        z,
+                        p,
+                    ) in instance.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD
                 }.items()
             )
         )

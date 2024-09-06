@@ -120,14 +120,20 @@ class TestPerformanceStandardZones(unittest.TestCase):
                 }.items()
             )
         )
-        self.assertDictEqual(expected_energy_allow_violation, actual_energy_allow_violation)
+        self.assertDictEqual(
+            expected_energy_allow_violation, actual_energy_allow_violation
+        )
 
         # Param: performance_standard_energy_violation_penalty_per_emission
-        expected_energy_penalty = OrderedDict(sorted({"PS_Zone1": 0, "PS_Zone2": 0}.items()))
+        expected_energy_penalty = OrderedDict(
+            sorted({"PS_Zone1": 0, "PS_Zone2": 0}.items())
+        )
         actual_energy_penalty = OrderedDict(
             sorted(
                 {
-                    z: instance.performance_standard_energy_violation_penalty_per_emission[z]
+                    z: instance.performance_standard_energy_violation_penalty_per_emission[
+                        z
+                    ]
                     for z in instance.PERFORMANCE_STANDARD_ZONES
                 }.items()
             )
@@ -146,14 +152,20 @@ class TestPerformanceStandardZones(unittest.TestCase):
                 }.items()
             )
         )
-        self.assertDictEqual(expected_power_allow_violation, actual_power_allow_violation)
+        self.assertDictEqual(
+            expected_power_allow_violation, actual_power_allow_violation
+        )
 
         # Param: performance_standard_power_violation_penalty_per_emission
-        expected_power_penalty = OrderedDict(sorted({"PS_Zone1": 0, "PS_Zone2": 0}.items()))
+        expected_power_penalty = OrderedDict(
+            sorted({"PS_Zone1": 0, "PS_Zone2": 0}.items())
+        )
         actual_power_penalty = OrderedDict(
             sorted(
                 {
-                    z: instance.performance_standard_power_violation_penalty_per_emission[z]
+                    z: instance.performance_standard_power_violation_penalty_per_emission[
+                        z
+                    ]
                     for z in instance.PERFORMANCE_STANDARD_ZONES
                 }.items()
             )

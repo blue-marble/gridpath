@@ -104,7 +104,15 @@ def add_model_components(
     m.PERFORMANCE_STANDARD_PRJS = Set(
         within=m.PROJECTS,
         initialize=lambda mod: list(
-            set([prj for (prj, z) in mod.PERFORMANCE_STANDARD_PRJS_PERFORMANCE_STANDARD_ZONES])
+            set(
+                [
+                    prj
+                    for (
+                        prj,
+                        z,
+                    ) in mod.PERFORMANCE_STANDARD_PRJS_PERFORMANCE_STANDARD_ZONES
+                ]
+            )
         ),
     )
 
@@ -112,7 +120,9 @@ def add_model_components(
         m.PERFORMANCE_STANDARD_ZONES,
         within=m.PROJECTS,
         initialize=lambda mod, ps_z: [
-            prj for (prj, z) in mod.PERFORMANCE_STANDARD_PRJS_PERFORMANCE_STANDARD_ZONES if ps_z == z
+            prj
+            for (prj, z) in mod.PERFORMANCE_STANDARD_PRJS_PERFORMANCE_STANDARD_ZONES
+            if ps_z == z
         ],
     )
 

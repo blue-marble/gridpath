@@ -94,13 +94,17 @@ def add_model_components(
             return Constraint.Skip
         else:
             return (
-                    mod.Total_Performance_Standard_Emissions_from_All_Sources_Expression[z, p]
-                    - mod.Performance_Standard_Energy_Unit_Overage_Expression[z, p]
-                    <= (
-                            mod.Total_Performance_Standard_Project_Energy[z, p]
-                            * mod.performance_standard_tco2_per_mwh[z, p]
-                    )
-                    + mod.Total_Performance_Standard_Credits_from_All_Sources_Expression[z, p]
+                mod.Total_Performance_Standard_Emissions_from_All_Sources_Expression[
+                    z, p
+                ]
+                - mod.Performance_Standard_Energy_Unit_Overage_Expression[z, p]
+                <= (
+                    mod.Total_Performance_Standard_Project_Energy[z, p]
+                    * mod.performance_standard_tco2_per_mwh[z, p]
+                )
+                + mod.Total_Performance_Standard_Credits_from_All_Sources_Expression[
+                    z, p
+                ]
             )
 
     m.Performance_Standard_Energy_Unit_Constraint = Constraint(
@@ -138,13 +142,17 @@ def add_model_components(
             return Constraint.Skip
         else:
             return (
-                    mod.Total_Performance_Standard_Emissions_from_All_Sources_Expression[z, p]
-                    - mod.Performance_Standard_Power_Unit_Overage_Expression[z, p]
-                    <= (
-                            mod.Total_Performance_Standard_Project_Capacity[z, p]
-                            * mod.performance_standard_tco2_per_mw[z, p]
-                    )
-                    + mod.Total_Performance_Standard_Credits_from_All_Sources_Expression[z, p]
+                mod.Total_Performance_Standard_Emissions_from_All_Sources_Expression[
+                    z, p
+                ]
+                - mod.Performance_Standard_Power_Unit_Overage_Expression[z, p]
+                <= (
+                    mod.Total_Performance_Standard_Project_Capacity[z, p]
+                    * mod.performance_standard_tco2_per_mw[z, p]
+                )
+                + mod.Total_Performance_Standard_Credits_from_All_Sources_Expression[
+                    z, p
+                ]
             )
 
     m.Performance_Standard_Power_Unit_Constraint = Constraint(

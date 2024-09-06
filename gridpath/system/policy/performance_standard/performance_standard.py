@@ -94,7 +94,7 @@ def load_model_data(
             "performance_standard.tab",
         ),
         index=m.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD,
-        param=(m.performance_standard_tco2_per_mwh, m.performance_standard_tco2_per_mw)
+        param=(m.performance_standard_tco2_per_mwh, m.performance_standard_tco2_per_mw),
     )
 
 
@@ -229,8 +229,12 @@ def write_model_inputs(
 
         # Write header
         writer.writerow(
-            ["performance_standard_zone", "period", "performance_standard_tco2_per_mwh",
-             "performance_standard_tco2_per_mw"]
+            [
+                "performance_standard_zone",
+                "period",
+                "performance_standard_tco2_per_mwh",
+                "performance_standard_tco2_per_mw",
+            ]
         )
         for row in performance_standard:
             row = ["." if i is None else i for i in row]
