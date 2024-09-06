@@ -43,10 +43,17 @@ def add_model_components(
 
     m.PERFORMANCE_STANDARD_ZONES = Set()
 
-    m.performance_standard_allow_violation = Param(
+    m.performance_standard_energy_allow_violation = Param(
         m.PERFORMANCE_STANDARD_ZONES, within=Boolean, default=0
     )
-    m.performance_standard_violation_penalty_per_emission = Param(
+    m.performance_standard_energy_violation_penalty_per_emission = Param(
+        m.PERFORMANCE_STANDARD_ZONES, within=NonNegativeReals, default=0
+    )
+
+    m.performance_standard_power_allow_violation = Param(
+        m.PERFORMANCE_STANDARD_ZONES, within=Boolean, default=0
+    )
+    m.performance_standard_power_violation_penalty_per_emission = Param(
         m.PERFORMANCE_STANDARD_ZONES, within=NonNegativeReals, default=0
     )
 
@@ -75,8 +82,10 @@ def load_model_data(
         ),
         index=m.PERFORMANCE_STANDARD_ZONES,
         param=(
-            m.performance_standard_allow_violation,
-            m.performance_standard_violation_penalty_per_emission,
+            m.performance_standard_energy_allow_violation,
+            m.performance_standard_energy_violation_penalty_per_emission,
+            m.performance_standard_power_allow_violation,
+            m.performance_standard_power_violation_penalty_per_emission,
         ),
     )
 
@@ -101,8 +110,8 @@ def get_inputs_from_database(
 
     c = conn.cursor()
     performance_standard_zone = c.execute(
-        """SELECT performance_standard_zone, allow_violation, 
-        violation_penalty_per_emission
+        """SELECT performance_standard_zone, energy_allow_violation, 
+        energy_violation_penalty_per_emission, power_allow_violation, power_violation_penalty_per_emission
         FROM inputs_geography_performance_standard_zones
         WHERE performance_standard_zone_scenario_id = {};
         """.format(
@@ -199,8 +208,10 @@ def write_model_inputs(
         writer.writerow(
             [
                 "performance_standard_zone",
-                "allow_violation",
-                "violation_penalty_per_emission",
+                "energy_allow_violation",
+                "energy_violation_penalty_per_emission",
+                "power_allow_violation",
+                "power_violation_penalty_per_emission",
             ]
         )
 

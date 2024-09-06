@@ -108,28 +108,54 @@ class TestPerformanceStandardZones(unittest.TestCase):
             expected_performance_standard_zones, actual_performance_standard_zones
         )
 
-        # Param: performance_standard_allow_violation
-        expected_allow_violation = OrderedDict(
+        # Param: performance_standard_energy_allow_violation
+        expected_energy_allow_violation = OrderedDict(
             sorted({"PS_Zone1": 0, "PS_Zone2": 0}.items())
         )
-        actual_allow_violation = OrderedDict(
+        actual_energy_allow_violation = OrderedDict(
             sorted(
                 {
-                    z: instance.performance_standard_allow_violation[z]
+                    z: instance.performance_standard_energy_allow_violation[z]
                     for z in instance.PERFORMANCE_STANDARD_ZONES
                 }.items()
             )
         )
-        self.assertDictEqual(expected_allow_violation, actual_allow_violation)
+        self.assertDictEqual(expected_energy_allow_violation, actual_energy_allow_violation)
 
-        # Param: performance_standard_violation_penalty_per_emission
-        expected_penalty = OrderedDict(sorted({"PS_Zone1": 0, "PS_Zone2": 0}.items()))
-        actual_penalty = OrderedDict(
+        # Param: performance_standard_energy_violation_penalty_per_emission
+        expected_energy_penalty = OrderedDict(sorted({"PS_Zone1": 0, "PS_Zone2": 0}.items()))
+        actual_energy_penalty = OrderedDict(
             sorted(
                 {
-                    z: instance.performance_standard_violation_penalty_per_emission[z]
+                    z: instance.performance_standard_energy_violation_penalty_per_emission[z]
                     for z in instance.PERFORMANCE_STANDARD_ZONES
                 }.items()
             )
         )
-        self.assertDictEqual(expected_penalty, actual_penalty)
+        self.assertDictEqual(expected_energy_penalty, actual_energy_penalty)
+
+        # Param: performance_standard_power_allow_violation
+        expected_power_allow_violation = OrderedDict(
+            sorted({"PS_Zone1": 0, "PS_Zone2": 0}.items())
+        )
+        actual_power_allow_violation = OrderedDict(
+            sorted(
+                {
+                    z: instance.performance_standard_power_allow_violation[z]
+                    for z in instance.PERFORMANCE_STANDARD_ZONES
+                }.items()
+            )
+        )
+        self.assertDictEqual(expected_power_allow_violation, actual_power_allow_violation)
+
+        # Param: performance_standard_power_violation_penalty_per_emission
+        expected_power_penalty = OrderedDict(sorted({"PS_Zone1": 0, "PS_Zone2": 0}.items()))
+        actual_power_penalty = OrderedDict(
+            sorted(
+                {
+                    z: instance.performance_standard_power_violation_penalty_per_emission[z]
+                    for z in instance.PERFORMANCE_STANDARD_ZONES
+                }.items()
+            )
+        )
+        self.assertDictEqual(expected_power_penalty, actual_power_penalty)

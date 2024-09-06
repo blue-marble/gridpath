@@ -26,6 +26,8 @@ from gridpath.auxiliary.dynamic_components import (
 from gridpath.common_functions import create_results_df
 from gridpath.system.policy.performance_standard import PERFORMANCE_STANDARD_Z_PRD_DF
 
+Infinity = float("inf")
+
 
 def add_model_components(
     m,
@@ -44,20 +46,21 @@ def add_model_components(
     :return:
     """
 
-    m.Performance_Standard_Overage = Var(
+    # Performance standard per energy unit
+    m.Performance_Standard_Energy_Unit_Overage = Var(
         m.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD,
         within=NonNegativeReals,
     )
 
-    def violation_expression_rule(mod, z, p):
-        if mod.performance_standard_allow_violation[z]:
-            return mod.Performance_Standard_Overage[z, p]
+    def violation_expression_energy_rule(mod, z, p):
+        if mod.performance_standard_energy_allow_violation[z]:
+            return mod.Performance_Standard_Energy_Unit_Overage[z, p]
         else:
             return 0
 
-    m.Performance_Standard_Overage_Expression = Expression(
+    m.Performance_Standard_Energy_Unit_Overage_Expression = Expression(
         m.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD,
-        rule=violation_expression_rule,
+        rule=violation_expression_energy_rule,
     )
 
     m.Total_Performance_Standard_Emissions_from_All_Sources_Expression = Expression(
@@ -78,7 +81,7 @@ def add_model_components(
         ),
     )
 
-    def performance_standard_rule(mod, z, p):
+    def performance_standard_energy_rule(mod, z, p):
         """
         Total carbon emitted must be less than performance standard
         :param mod:
@@ -86,19 +89,67 @@ def add_model_components(
         :param p:
         :return:
         """
-        return (
-            mod.Total_Performance_Standard_Emissions_from_All_Sources_Expression[z, p]
-            - mod.Performance_Standard_Overage_Expression[z, p]
-            <= (
-                mod.Total_Performance_Standard_Project_Energy[z, p]
-                * mod.performance_standard[z, p]
+        var = mod.performance_standard_tco2_per_mwh[z, p]
+        if var == Infinity:
+            return Constraint.Skip
+        else:
+            return (
+                    mod.Total_Performance_Standard_Emissions_from_All_Sources_Expression[z, p]
+                    - mod.Performance_Standard_Energy_Unit_Overage_Expression[z, p]
+                    <= (
+                            mod.Total_Performance_Standard_Project_Energy[z, p]
+                            * mod.performance_standard_tco2_per_mwh[z, p]
+                    )
+                    + mod.Total_Performance_Standard_Credits_from_All_Sources_Expression[z, p]
             )
-            + mod.Total_Performance_Standard_Credits_from_All_Sources_Expression[z, p]
-        )
 
-    m.Performance_Standard_Constraint = Constraint(
+    m.Performance_Standard_Energy_Unit_Constraint = Constraint(
         m.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD,
-        rule=performance_standard_rule,
+        rule=performance_standard_energy_rule,
+    )
+
+    # Performance standard per power unit
+    m.Performance_Standard_Power_Unit_Overage = Var(
+        m.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD,
+        within=NonNegativeReals,
+    )
+
+    def violation_expression_power_rule(mod, z, p):
+        if mod.performance_standard_power_allow_violation[z]:
+            return mod.Performance_Standard_Power_Unit_Overage[z, p]
+        else:
+            return 0
+
+    m.Performance_Standard_Power_Unit_Overage_Expression = Expression(
+        m.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD,
+        rule=violation_expression_power_rule,
+    )
+
+    def performance_standard_power_rule(mod, z, p):
+        """
+        Total carbon emitted must be less than performance standard
+        :param mod:
+        :param z:
+        :param p:
+        :return:
+        """
+        var = mod.performance_standard_tco2_per_mw[z, p]
+        if var == Infinity:
+            return Constraint.Skip
+        else:
+            return (
+                    mod.Total_Performance_Standard_Emissions_from_All_Sources_Expression[z, p]
+                    - mod.Performance_Standard_Power_Unit_Overage_Expression[z, p]
+                    <= (
+                            mod.Total_Performance_Standard_Project_Capacity[z, p]
+                            * mod.performance_standard_tco2_per_mw[z, p]
+                    )
+                    + mod.Total_Performance_Standard_Credits_from_All_Sources_Expression[z, p]
+            )
+
+    m.Performance_Standard_Power_Unit_Constraint = Constraint(
+        m.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD,
+        rule=performance_standard_power_rule,
     )
 
 
@@ -122,13 +173,15 @@ def export_results(
     :return:
     """
     results_columns = [
-        "performance_standard_overage_tco2",
+        "performance_standard_energy_overage_tco2",
+        "performance_standard_power_overage_tco2",
     ]
     data = [
         [
             z,
             p,
-            value(m.Performance_Standard_Overage_Expression[z, p]),
+            value(m.Performance_Standard_Energy_Unit_Overage_Expression[z, p]),
+            value(m.Performance_Standard_Power_Unit_Overage_Expression[z, p]),
         ]
         for (z, p) in m.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD
     ]
@@ -153,7 +206,12 @@ def save_duals(
     instance,
     dynamic_components,
 ):
-    instance.constraint_indices["Performance_Standard_Constraint"] = [
+    instance.constraint_indices["Performance_Standard_Energy_Unit_Constraint"] = [
+        "performance_standard_zone",
+        "period",
+        "dual",
+    ]
+    instance.constraint_indices["Performance_Standard_Power_Unit_Constraint"] = [
         "performance_standard_zone",
         "period",
         "dual",

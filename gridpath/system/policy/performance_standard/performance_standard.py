@@ -26,6 +26,8 @@ from gridpath.auxiliary.db_interface import directories_to_db_values
 from gridpath.common_functions import create_results_df
 from gridpath.system.policy.performance_standard import PERFORMANCE_STANDARD_Z_PRD_DF
 
+Infinity = float("inf")
+
 
 def add_model_components(
     m,
@@ -47,9 +49,15 @@ def add_model_components(
     m.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD = Set(
         dimen=2, within=m.PERFORMANCE_STANDARD_ZONES * m.PERIODS
     )
-    m.performance_standard = Param(
+    m.performance_standard_tco2_per_mwh = Param(
         m.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD,
         within=NonNegativeReals,
+        default=Infinity,
+    )
+    m.performance_standard_tco2_per_mw = Param(
+        m.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD,
+        within=NonNegativeReals,
+        default=Infinity,
     )
 
 
@@ -86,12 +94,7 @@ def load_model_data(
             "performance_standard.tab",
         ),
         index=m.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD,
-        param=m.performance_standard,
-        select=(
-            "performance_standard_zone",
-            "period",
-            "performance_standard_tco2_per_mwh",
-        ),
+        param=(m.performance_standard_tco2_per_mwh, m.performance_standard_tco2_per_mw)
     )
 
 
@@ -115,7 +118,7 @@ def get_inputs_from_database(
 
     c = conn.cursor()
     performance_standard = c.execute(
-        """SELECT performance_standard_zone, period, performance_standard_tco2_per_mwh
+        """SELECT performance_standard_zone, period, performance_standard_tco2_per_mwh, performance_standard_tco2_per_mw
         FROM inputs_system_performance_standard
         JOIN
         (SELECT period
@@ -226,10 +229,11 @@ def write_model_inputs(
 
         # Write header
         writer.writerow(
-            ["performance_standard_zone", "period", "performance_standard_tco2_per_mwh"]
+            ["performance_standard_zone", "period", "performance_standard_tco2_per_mwh",
+             "performance_standard_tco2_per_mw"]
         )
-
         for row in performance_standard:
+            row = ["." if i is None else i for i in row]
             writer.writerow(row)
 
 
@@ -254,12 +258,14 @@ def export_results(
     """
     results_columns = [
         "performance_standard_tco2_per_mwh",
+        "performance_standard_tco2_per_mw",
     ]
     data = [
         [
             z,
             p,
-            float(m.performance_standard[z, p]),
+            float(m.performance_standard_tco2_per_mwh[z, p]),
+            float(m.performance_standard_tco2_per_mw[z, p]),
         ]
         for (z, p) in m.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD
     ]
