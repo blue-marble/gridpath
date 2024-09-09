@@ -1,0 +1,262 @@
+# Copyright 2016-2024 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""
+Water nodes and connections for modeling cascading hydro systems.
+"""
+
+import csv
+import os.path
+from pyomo.environ import Set, Param, Boolean, NonNegativeReals, Var, Constraint
+
+from gridpath.auxiliary.db_interface import directories_to_db_values
+
+
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
+    """
+
+    :param m:
+    :param d:
+    :return:
+    """
+
+    m.WATER_RESERVOIRS = Set()
+    m.WATER_LINKS = Set()
+    m.water_reservoir_from = Param(m.WATER_LINKS, within=m.WATER_RESERVOIRS)
+    m.water_reservoir_to = Param(m.WATER_LINKS, within=m.WATER_RESERVOIRS)
+    m.water_link_flow_transport_time = Param(m.WATER_LINKS, default=0)
+
+    m.water_link_maximum_level_violation_penalty = Param(
+        m.WATER_RESERVOIRS, within=NonNegativeReals
+    )
+    m.water_link_maximum_level_violation_penalty = Param(
+        m.WATER_RESERVOIRS, within=NonNegativeReals
+    )
+
+    # KSFD: A volume of water equal to 1,000 cubic feet of water flowing past a point for an entire day
+    # TODO: move these params to system-level modules when in place
+    m.water_reservoir_exog_inflow = Param(m.WATER_RESERVOIRS, m.TIMEPOINTS)
+    # It's possible that these need to be based on elevation, which has a
+    # quadratic relationship to volume in Verene's spreadsheet
+    m.water_reservoir_maximum_volume = Param(m.WATER_RESERVOIRS, m.TIMEPOINTS)
+    m.water_reservoir_minimum_volume = Param(m.WATER_RESERVOIRS, m.TIMEPOINTS)
+
+    # TODO: convert from whatever base unit we choose to timepoint
+    m.water_link_min_flow_vol_per_tmp = Param(m.WATER_RESERVOIRS, m.TIMEPOINTS)
+    m.water_link_max_flow_vol_per_tmp = Param(m.WATER_RESERVOIRS, m.TIMEPOINTS)
+
+    # Hydro system variables and constraints; need to figure out where this
+    # module will be
+    m.Spill_Water = Var(m.WATER_RESERVOIRS, m.TIMEPOINTS, within=NonNegativeReals)
+
+    m.Water_Flow = Var(m.WATER_LINKS, m.TIMEPOINTS, within=NonNegativeReals)
+
+    def min_water_flow_on_link(mod, l, tmp):
+        return mod.Water_Flow(l, tmp) >= mod.water_link_min_flow_vol_per_tmp[
+            l, tmp]
+    def conservation_of_water_mass_constraint(mod, r, tmp):
+        pass
+
+    # TODO: move to operational type
+    # Hydro system generator operational type
+    m.water_link = Param(m.GEN_HYDRO_WATER_SYSTEM_PRJS, within=m.WATER_LINKS)
+    m.GenHydroWaterSystem_Power_MW = Var(
+        m.GEN_HYDRO_WATER_SYSTEM_OPR_TMPS, within=NonNegativeReals
+    )
+
+    def water_to_power_rule(mod, g, tmp):
+        """
+        Start with simple linear relationship; this actually will depend on
+        volume
+        """
+        return (
+            mod.GenHydroWaterSystem_Power_MW[g, tmp]
+            == mod.turbine_efficiency[g] * mod.Water_Flow[mod.water_link[g], tmp]
+        )
+
+    m.Water_to_Power_Constraint = Constraint(
+        m.GEN_HYDRO_WATER_SYSTEM_OPR_TMPS, rule=water_to_power_rule)
+
+
+def load_model_data(
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
+    data_portal.load(
+        filename=os.path.join(
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "water_reservoirs.tab",
+        ),
+        set=m.WATER_RESERVOIRS,
+    )
+
+    data_portal.load(
+        filename=os.path.join(
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "WATER_LINKs.tab",
+        ),
+        set=m.WATER_RESERVOIRS,
+    )
+
+
+def get_inputs_from_database(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
+    """
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+
+    c = conn.cursor()
+    carbon_cap_zone = c.execute(
+        """SELECT carbon_cap_zone, allow_violation, 
+        violation_penalty_per_emission
+        FROM inputs_geography_carbon_cap_zones
+        WHERE carbon_cap_zone_scenario_id = {};
+        """.format(
+            subscenarios.CARBON_CAP_ZONE_SCENARIO_ID
+        )
+    )
+
+    return carbon_cap_zone
+
+
+def validate_inputs(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
+    """
+    Get inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+    pass
+    # Validation to be added
+    # carbon_cap_zone = get_inputs_from_database(
+    #     scenario_id, subscenarios, subproblem, stage, conn)
+
+
+def write_model_inputs(
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
+    """
+    Get inputs from database and write out the model input
+    carbon_cap_zones.tab file.
+    :param scenario_directory: string, the scenario directory
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+
+    (
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+    ) = directories_to_db_values(
+        weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
+    )
+
+    carbon_cap_zone = get_inputs_from_database(
+        scenario_id,
+        subscenarios,
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+        conn,
+    )
+
+    with open(
+        os.path.join(
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "carbon_cap_zones.tab",
+        ),
+        "w",
+        newline="",
+    ) as carbon_cap_zones_file:
+        writer = csv.writer(carbon_cap_zones_file, delimiter="\t", lineterminator="\n")
+
+        # Write header
+        writer.writerow(
+            ["carbon_cap_zone", "allow_violation", "violation_penalty_per_emission"]
+        )
+
+        for row in carbon_cap_zone:
+            writer.writerow(row)
