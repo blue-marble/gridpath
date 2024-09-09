@@ -33,7 +33,7 @@ PREREQUISITE_MODULE_NAMES = [
     "geography.load_zones",
     "system.load_balance.static_load_requirement",
     "geography.energy_target_zones",
-    "system.policy.instantaneous_penetration.instantaneous_penetration_zones",
+    "system.policy.instantaneous_penetration.instantaneous_penetration_requirements",
     "project",
     "project.capacity.capacity",
     "project.availability.availability",
@@ -76,6 +76,9 @@ class TestInstPenBalance(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
+            weather_iteration="",
+            hydro_iteration="",
+            availability_iteration="",
             subproblem="",
             stage="",
         )
@@ -89,6 +92,9 @@ class TestInstPenBalance(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
+            weather_iteration="",
+            hydro_iteration="",
+            availability_iteration="",
             subproblem="",
             stage="",
         )
@@ -102,6 +108,9 @@ class TestInstPenBalance(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
+            weather_iteration="",
+            hydro_iteration="",
+            availability_iteration="",
             subproblem="",
             stage="",
         )
