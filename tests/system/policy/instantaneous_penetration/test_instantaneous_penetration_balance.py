@@ -31,9 +31,9 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.operations.horizons",
     "temporal.investment.periods",
     "geography.load_zones",
+    "geography.instantaneous_penetration_zones",
     "system.load_balance.static_load_requirement",
     "geography.energy_target_zones",
-    "system.policy.instantaneous_penetration.instantaneous_penetration_requirements",
     "project",
     "project.capacity.capacity",
     "project.availability.availability",
@@ -41,6 +41,7 @@ PREREQUISITE_MODULE_NAMES = [
     "project.operations",
     "project.operations.operational_types",
     "project.operations.power",
+    "system.policy.instantaneous_penetration.instantaneous_penetration_requirements",
     "project.operations.instantaneous_penetration_contributions",
     "system.policy.instantaneous_penetration.instantaneous_penetration_aggregation",
 ]

@@ -202,6 +202,25 @@ Feature modules for period-level targets include:
     :members:
 
 
+Instantaneous penetration
+-------------------------
+Whether or not to enforce an instantaneous penetration policy
+
+Feature modules for period-level targets include:
+.. automodule:: gridpath.geography.instantaneous_penetration_zones
+    :members:
+.. automodule:: gridpath.system.policy.instantaneous_penetration.instantaneous_penetration_requirements
+    :members:
+.. automodule:: gridpath.project.operations.instantaneous_penetration_contributions
+    :members:
+.. automodule:: gridpath.system.policy.instantaneous_penetration.instantaneous_penetration_aggregation
+    :members:
+.. automodule:: gridpath.system.policy.instantaneous_penetration.instantaneous_penetration_balance
+    :members:
+.. automodule:: objective.system.policy.aggregate_instantaneous_penetration_violation_penalties
+    :members:
+
+
 Carbon Emissions Cap
 --------------------
 Whether or not to enforce a carbon cap.

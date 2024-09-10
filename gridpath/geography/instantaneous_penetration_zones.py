@@ -24,7 +24,16 @@ from pyomo.environ import Set, Param, Boolean, NonNegativeReals
 from gridpath.auxiliary.db_interface import directories_to_db_values
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
     """
 
     :param m:
