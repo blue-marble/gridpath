@@ -23,7 +23,7 @@ def get_all_links_sql(region):
                         SELECT DISTINCT balancing_authority_code_eia as baa
                         FROM raw_data_eia930_hourly_interchange
                         UNION
-                        SELECT DISTINCT balancing_authority_code_adjacent_eia as ba
+                        SELECT DISTINCT balancing_authority_code_adjacent_eia as baa
                         FROM raw_data_eia930_hourly_interchange
                         )
                     )
@@ -39,7 +39,7 @@ def get_all_links_sql(region):
                         SELECT DISTINCT balancing_authority_code_eia as baa
                         FROM raw_data_eia930_hourly_interchange
                         UNION
-                        SELECT DISTINCT balancing_authority_code_adjacent_eia as ba
+                        SELECT DISTINCT balancing_authority_code_adjacent_eia as baa
                         FROM raw_data_eia930_hourly_interchange
                         )
                     )

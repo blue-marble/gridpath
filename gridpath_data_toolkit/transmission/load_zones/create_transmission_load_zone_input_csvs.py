@@ -35,9 +35,7 @@ def parse_arguments(args):
     """
     parser = ArgumentParser(add_help=True)
 
-    parser.add_argument("-db", "--database", default="../../open_data.db")
-    parser.add_argument("-rep", "--report_date", default="2023-01-01")
-    parser.add_argument("-y", "--study_year", default=2026)
+    parser.add_argument("-db", "--database", default="../../../db/open_data.db")
     parser.add_argument("-r", "--region", default="WECC")
     parser.add_argument(
         "-o",
@@ -46,7 +44,7 @@ def parse_arguments(args):
     )
     parser.add_argument("-lz_id", "--transmission_load_zone_scenario_id", default=1)
     parser.add_argument(
-        "-lz_name", "--transmission_load_zone_scenario_name", default="wecc_baas"
+        "-lz_name", "--transmission_load_zone_scenario_name", default="eia_wecc_baas"
     )
 
     parsed_arguments = parser.parse_known_args(args=args)[0]
@@ -88,7 +86,7 @@ def main(args=None):
 
     c = conn.cursor()
 
-    all_links = c.execute(get_all_links_sql(region="WECC")).fetchall()
+    all_links = c.execute(get_all_links_sql(region=parsed_args.region)).fetchall()
 
     get_tx_load_zones(
         all_links=all_links,
