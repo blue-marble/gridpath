@@ -58,15 +58,16 @@ def add_model_components(
 
 
 def load_model_data(
-        m,
-        d,
-        data_portal,
-        scenario_directory,
-        weather_iteration,
-        hydro_iteration,
-        availability_iteration,
-        subproblem,
-        stage):
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage
+):
     data_portal.load(
         filename=os.path.join(
             scenario_directory,
@@ -89,14 +90,14 @@ def load_model_data(
 
 
 def get_inputs_from_database(
-        scenario_id,
-        subscenarios,
-        subproblem,
-        weather_iteration,
-        hydro_iteration,
-        availability_iteration,
-        stage,
-        conn
+    scenario_id,
+    subscenarios,
+    subproblem,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    stage,
+    conn
 ):
     """
     :param subscenarios: SubScenarios object with all subscenario info
@@ -124,14 +125,14 @@ def get_inputs_from_database(
 
 
 def validate_inputs(
-        scenario_id,
-        subscenarios,
-        weather_iteration,
-        hydro_iteration,
-        availability_iteration,
-        subproblem,
-        stage,
-        conn
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn
 ):
     """
     Get inputs from database and validate the inputs
@@ -148,15 +149,15 @@ def validate_inputs(
 
 
 def write_model_inputs(
-        scenario_directory,
-        scenario_id,
-        subscenarios,
-        weather_iteration,
-        hydro_iteration,
-        availability_iteration,
-        subproblem,
-        stage,
-        conn
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn
 ):
     """
     Get inputs from database and write out the model input
@@ -187,7 +188,7 @@ def write_model_inputs(
         db_availability_iteration,
         db_subproblem,
         db_stage,
-        conn
+        conn,
     )
 
     with open(
@@ -205,19 +206,29 @@ def write_model_inputs(
         newline="",
     ) as instantaneous_penetration_zones_tab_file:
         writer = csv.writer(
-            instantaneous_penetration_zones_tab_file, delimiter="\t", lineterminator="\n"
+            instantaneous_penetration_zones_tab_file,
+            delimiter="\t",
+            lineterminator="\n"
         )
 
         # Write header
         writer.writerow(
-            ["instantaneous_penetration_zone",
-             "allow_violation_min_penetration",
-             "violation_penalty_min_penetration_per_mwh",
-             "allow_violation_max_penetration",
-             "violation_penalty_max_penetration_per_mwh"]
+            [
+                "instantaneous_penetration_zone",
+                "allow_violation_min_penetration",
+                "violation_penalty_min_penetration_per_mwh",
+                "allow_violation_max_penetration",
+                "violation_penalty_max_penetration_per_mwh"
+            ]
         )
 
-        for ipz, allow_min, vio_min, allow_max, vio_max in instantaneous_penetration_zones:
+        for (
+            ipz,
+            allow_min,
+            vio_min,
+            allow_max,
+            vio_max,
+        ) in instantaneous_penetration_zones:
             if allow_min is None:
                 allow_min = "."
             if vio_min is None:

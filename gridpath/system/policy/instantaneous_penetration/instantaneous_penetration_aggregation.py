@@ -24,7 +24,7 @@ def add_model_components(
     hydro_iteration,
     availability_iteration,
     subproblem,
-    stage
+    stage,
 ):
     """
 
@@ -34,8 +34,7 @@ def add_model_components(
     """
 
     m.INST_PEN_PRJ_OPERATIONAL_IN_TIMEPOINT = Set(
-        m.TMPS,
-        initialize=lambda mod, tmp: mod.INST_PEN_PRJS & mod.OPR_PRJS_IN_TMP[tmp]
+        m.TMPS, initialize=lambda mod, tmp: mod.INST_PEN_PRJS & mod.OPR_PRJS_IN_TMP[tmp]
     )
 
     # instantaneous penetration provision
@@ -55,6 +54,6 @@ def add_model_components(
 
     m.Total_Instantaneous_Penetration_Energy_MWh = Expression(
         m.INSTANTANEOUS_PENETRATION_ZONES * m.TMPS,
-        rule=total_instantaneous_penetration_rule
+        rule=total_instantaneous_penetration_rule,
     )
 

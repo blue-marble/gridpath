@@ -100,7 +100,9 @@ def add_model_components(
     # Input Params
     ###########################################################################
 
-    m.instantaneous_penetration_zone = Param(m.INST_PEN_PRJS, within=m.INSTANTANEOUS_PENETRATION_ZONES)
+    m.instantaneous_penetration_zone = Param(
+        m.INST_PEN_PRJS, within=m.INSTANTANEOUS_PENETRATION_ZONES
+    )
 
     # Derived Sets (requires input params)
     ###########################################################################
@@ -111,11 +113,15 @@ def add_model_components(
         initialize=determine_instantaneous_penetration_generators_by_instantaneous_penetration_zone,
     )
 
+
 # Set Rules
 ###############################################################################
 
 
-def determine_instantaneous_penetration_generators_by_instantaneous_penetration_zone(mod, instantaneous_penetration_z):
+def determine_instantaneous_penetration_generators_by_instantaneous_penetration_zone(
+    mod,
+    instantaneous_penetration_z
+):
     return [
         p
         for p in mod.INST_PEN_PRJS
@@ -157,7 +163,7 @@ def load_model_data(
             subproblem,
             stage,
             "inputs",
-            "projects.tab"
+            "projects.tab",
         ),
         select=("project", "instantaneous_penetration_zone"),
         param=(m.instantaneous_penetration_zone,),
@@ -176,7 +182,8 @@ def export_results(
     subproblem,
     stage,
     m,
-    d,):
+    d,
+):
     """
 
     :param scenario_directory:
@@ -398,6 +405,7 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
 
 # Validation
 ###############################################################################
+
 
 def validate_inputs(
     scenario_id,

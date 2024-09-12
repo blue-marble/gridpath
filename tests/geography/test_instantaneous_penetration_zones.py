@@ -85,15 +85,15 @@ class TestInstantaneousPenetrationZones(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: ENERGY_TARGET_ZONES
+        # Set: INSTANTANEOUS_PENETRATION_ZONES
         expected_energy_target_zones = sorted(["IPZone1"])
-        actual_energy_target_zones = sorted([z for z in instance.INSTANTANEOUS_PENETRATION_ZONES])
+        actual_energy_target_zones = sorted(
+            [z for z in instance.INSTANTANEOUS_PENETRATION_ZONES]
+        )
         self.assertListEqual(expected_energy_target_zones, actual_energy_target_zones)
 
         # Param: allow_violation
-        expected_allow_violation = OrderedDict(
-            sorted({"IPZone1": 0}.items())
-        )
+        expected_allow_violation = OrderedDict(sorted({"IPZone1": 0}.items()))
         actual_allow_violation = OrderedDict(
             sorted(
                 {
@@ -105,9 +105,7 @@ class TestInstantaneousPenetrationZones(unittest.TestCase):
         self.assertDictEqual(expected_allow_violation, actual_allow_violation)
 
         # Param: violation penalty
-        expected_penalty = OrderedDict(
-            sorted({"IPZone1": 0}.items())
-        )
+        expected_penalty = OrderedDict(sorted({"IPZone1": 0}.items()))
         actual_penalty = OrderedDict(
             sorted(
                 {
@@ -118,9 +116,7 @@ class TestInstantaneousPenetrationZones(unittest.TestCase):
         )
         self.assertDictEqual(expected_penalty, actual_penalty)
         # Param: allow_violation
-        expected_allow_violation = OrderedDict(
-            sorted({"IPZone1": 0}.items())
-        )
+        expected_allow_violation = OrderedDict(sorted({"IPZone1": 0}.items()))
         actual_allow_violation = OrderedDict(
             sorted(
                 {
@@ -132,9 +128,7 @@ class TestInstantaneousPenetrationZones(unittest.TestCase):
         self.assertDictEqual(expected_allow_violation, actual_allow_violation)
 
         # Param: violation penalty
-        expected_penalty = OrderedDict(
-            sorted({"IPZone1": 0}.items())
-        )
+        expected_penalty = OrderedDict(sorted({"IPZone1": 0}.items()))
         actual_penalty = OrderedDict(
             sorted(
                 {

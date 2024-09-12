@@ -42,7 +42,9 @@ PREREQUISITE_MODULE_NAMES = [
     "project.operations.power",
     "system.policy.instantaneous_penetration.instantaneous_penetration_requirements",
 ]
-NAME_OF_MODULE_BEING_TESTED = "project.operations.instantaneous_penetration_contributions"
+NAME_OF_MODULE_BEING_TESTED = (
+    "project.operations.instantaneous_penetration_contributions"
+)
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -112,17 +114,13 @@ class TestRECs(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: ENERGY_TARGET_PRJS
+        # Set: INST_PEN_PRJS
         expected_inst_pen_projects = sorted(["Wind"])
         actual_inst_pen_projects = sorted([p for p in instance.INST_PEN_PRJS])
-        self.assertListEqual(
-            expected_inst_pen_projects, actual_inst_pen_projects
-        )
+        self.assertListEqual(expected_inst_pen_projects, actual_inst_pen_projects)
 
         # Param: energy_target_zone
-        expected_inst_pen_zone_by_prj = OrderedDict(
-            sorted({"Wind": "IPZone1"}.items())
-        )
+        expected_inst_pen_zone_by_prj = OrderedDict(sorted({"Wind": "IPZone1"}.items()))
         actual_inst_pen_zone_by_prj = OrderedDict(
             sorted(
                 {
@@ -131,9 +129,7 @@ class TestRECs(unittest.TestCase):
                 }.items()
             )
         )
-        self.assertDictEqual(
-            expected_inst_pen_zone_by_prj, actual_inst_pen_zone_by_prj
-        )
+        self.assertDictEqual(expected_inst_pen_zone_by_prj, actual_inst_pen_zone_by_prj)
 
         # Set: ENERGY_TARGET_PRJ_OPR_TMPS
         expected_inst_pen_prj_op_tmp = sorted(
@@ -143,9 +139,7 @@ class TestRECs(unittest.TestCase):
         actual_inst_pen_prj_op_tmp = sorted(
             [(prj, tmp) for (prj, tmp) in instance.INST_PEN_PRJ_OPR_TMP]
         )
-        self.assertListEqual(
-            expected_inst_pen_prj_op_tmp, actual_inst_pen_prj_op_tmp
-        )
+        self.assertListEqual(expected_inst_pen_prj_op_tmp, actual_inst_pen_prj_op_tmp)
 
 
 if __name__ == "__main__":

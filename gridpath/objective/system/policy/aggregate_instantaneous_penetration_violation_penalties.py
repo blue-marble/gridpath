@@ -23,14 +23,14 @@ from gridpath.auxiliary.dynamic_components import cost_components
 
 
 def add_model_components(
-        m,
-        d,
-        scenario_directory,
-        weather_iteration,
-        hydro_iteration,
-        availability_iteration,
-        subproblem,
-        stage,
+    m,
+    d,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
 ):
     """
     :param m: the Pyomo abstract model object we are adding components to
@@ -41,10 +41,18 @@ def add_model_components(
 
     def total_penalty_costs_rule(mod):
         return sum(
-            ((mod.Instantaneous_Penetration_Shortage_MWh_Expression[z, tmp]
-              * mod.violation_penalty_min_penetration_per_mwh[z])
-             + ((mod.Instantaneous_Penetration_Overage_MWh_Expression[z, tmp]
-                * mod.violation_penalty_max_penetration_per_mwh[z])))
+            (
+                (
+                    mod.Instantaneous_Penetration_Shortage_MWh_Expression[z, tmp]
+                    * mod.violation_penalty_min_penetration_per_mwh[z]
+                )
+                + (
+                    (
+                        mod.Instantaneous_Penetration_Overage_MWh_Expression[z, tmp]
+                        * mod.violation_penalty_max_penetration_per_mwh[z]
+                    )
+                )
+            )
             * mod.hrs_in_tmp[tmp]
             * mod.tmp_weight[tmp]
             * mod.number_years_represented[mod.period[tmp]]

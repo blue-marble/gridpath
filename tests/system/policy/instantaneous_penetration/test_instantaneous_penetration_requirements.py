@@ -43,7 +43,9 @@ PREREQUISITE_MODULE_NAMES = [
     "project.operations.instantaneous_penetration_contributions",
     "system.load_balance.static_load_requirement",
 ]
-NAME_OF_MODULE_BEING_TESTED = "system.policy.instantaneous_penetration.instantaneous_penetration_requirements"
+NAME_OF_MODULE_BEING_TESTED = (
+    "system.policy.instantaneous_penetration.instantaneous_penetration_requirements"
+)
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -116,14 +118,21 @@ class TestPeriodEnergyTarget(unittest.TestCase):
         # Set: SPINNING_RESERVES_ZONE_TIMEPOINTS
         req_df = pd.read_csv(
             os.path.join(
-                TEST_DATA_DIRECTORY, "inputs", "instantaneous_penetration_tmp_requirement.tab"
+                TEST_DATA_DIRECTORY,
+                "inputs",
+                "instantaneous_penetration_tmp_requirement.tab",
             ),
             sep="\t",
         )
 
-        expected_ba_tmps = sorted(list(zip(req_df.instantaneous_penetration_zone, req_df.timepoint)))
+        expected_ba_tmps = sorted(
+            list(zip(req_df.instantaneous_penetration_zone, req_df.timepoint))
+        )
         actual_ba_tmps = sorted(
-            [(z, tmp) for (z, tmp) in instance.INSTANTANEOUS_PENETRATION_ZONES * instance.TMPS]
+            [
+                (z, tmp)
+                for (z, tmp) in instance.INSTANTANEOUS_PENETRATION_ZONES * instance.TMPS
+            ]
         )
 
         self.assertListEqual(expected_ba_tmps, actual_ba_tmps)
@@ -140,12 +149,12 @@ class TestPeriodEnergyTarget(unittest.TestCase):
             sorted(
                 {
                     (z, tmp): instance.min_instantaneous_penetration_mw[z, tmp]
-                    for (z, tmp) in instance.INSTANTANEOUS_PENETRATION_ZONES * instance.TMPS
+                    for (z, tmp) in instance.INSTANTANEOUS_PENETRATION_ZONES
+                    * instance.TMPS
                 }.items()
             )
         )
         self.assertDictEqual(expected_req, actual_req)
-
 
 
 if __name__ == "__main__":

@@ -43,8 +43,7 @@ def add_model_components(
     # will default to 0
     # set
     m.INST_PEN_ZONE_BLN_TYPE_TMP = Set(
-        dimen=2,
-        within=m.INSTANTANEOUS_PENETRATION_ZONES * m.TMPS
+        dimen=2, within=m.INSTANTANEOUS_PENETRATION_ZONES * m.TMPS
     )
 
     # param
@@ -62,8 +61,7 @@ def add_model_components(
     # Load zones included in the reserve percentage requirement
     # Set
     m.INST_PEN_ZONE_LZ = Set(
-        dimen=2,
-        within=m.INSTANTANEOUS_PENETRATION_ZONES * m.LOAD_ZONES
+        dimen=2, within=m.INSTANTANEOUS_PENETRATION_ZONES * m.LOAD_ZONES
     )
 
     # Requirement as percentage of load
@@ -83,8 +81,7 @@ def add_model_components(
     # and on capacity in the period
     # set
     m.INST_PEN_PRJ_CONTRIBUTION = Set(
-        dimen=2,
-        within=m.INSTANTANEOUS_PENETRATION_ZONES * m.PROJECTS
+        dimen=2, within=m.INSTANTANEOUS_PENETRATION_ZONES * m.PROJECTS
     )
 
     # param
@@ -116,7 +113,8 @@ def add_model_components(
             percentage_target = sum(
                 mod.inst_pen_min_percent_load[inst_pen_zone]
                 * mod.static_load_mw[lz, tmp]
-                for (_inst_pen_zone, lz) in mod.INSTANTANEOUS_PENETRATION_ZONES * mod.LOAD_ZONES
+                for (_inst_pen_zone, lz) in mod.INSTANTANEOUS_PENETRATION_ZONES
+                * mod.LOAD_ZONES
                 if _inst_pen_zone == inst_pen_zone
             )
         else:
@@ -148,15 +146,15 @@ def add_model_components(
             prj_cap_contribution = 0
 
         return (
-                mod.min_instantaneous_penetration_mw[inst_pen_zone, tmp]
-                + percentage_target
-                + prj_pwr_contribution
-                + prj_cap_contribution
+            mod.min_instantaneous_penetration_mw[inst_pen_zone, tmp]
+            + percentage_target
+            + prj_pwr_contribution
+            + prj_cap_contribution
         )
 
     m.Inst_Pen_Requirement_min = Expression(
         m.INSTANTANEOUS_PENETRATION_ZONES * m.TMPS,
-        rule=min_instantaneous_penetration_requirement_rule
+        rule=min_instantaneous_penetration_requirement_rule,
     )
 
     def max_instantaneous_penetration_requirement_rule(mod, inst_pen_zone, tmp):
@@ -166,7 +164,8 @@ def add_model_components(
             percentage_target = sum(
                 mod.inst_pen_max_percent_load[inst_pen_zone]
                 * mod.static_load_mw[lz, tmp]
-                for (_inst_pen_zone, lz) in mod.INSTANTANEOUS_PENETRATION_ZONES * mod.LOAD_ZONES
+                for (_inst_pen_zone, lz) in mod.INSTANTANEOUS_PENETRATION_ZONES
+                * mod.LOAD_ZONES
                 if _inst_pen_zone == inst_pen_zone
             )
         else:
@@ -198,16 +197,15 @@ def add_model_components(
             prj_cap_contribution = 0
 
         return (
-                # The entry only exist because there is a min limit.
-                mod.max_instantaneous_penetration_mw[inst_pen_zone, tmp]
-                + percentage_target
-                + prj_pwr_contribution
-                + prj_cap_contribution
+            mod.max_instantaneous_penetration_mw[inst_pen_zone, tmp]
+            + percentage_target
+            + prj_pwr_contribution
+            + prj_cap_contribution
         )
 
     m.Inst_Pen_Requirement_max = Expression(
         m.INSTANTANEOUS_PENETRATION_ZONES * m.TMPS,
-        rule=max_instantaneous_penetration_requirement_rule
+        rule=max_instantaneous_penetration_requirement_rule,
     )
 
 
@@ -223,12 +221,7 @@ def load_model_data(
     stage,
 ):
 
-    input_dir = os.path.join(
-        scenario_directory,
-        subproblem,
-        stage,
-        "inputs"
-    )
+    input_dir = os.path.join(scenario_directory, subproblem, stage, "inputs")
 
     # Load the targets by timpoint
     data_portal.load(
@@ -246,7 +239,7 @@ def load_model_data(
         param=(
             m.min_instantaneous_penetration_mw,
             m.max_instantaneous_penetration_mw,
-        )
+        ),
     )
 
     # If we have a RPS zone to load zone map input file, load it and the
@@ -258,12 +251,11 @@ def load_model_data(
         data_portal.load(filename=map_filename, set=m.INST_PEN_ZONE_LZ)
 
         data_portal.load(
-            filename=os.path.join(input_dir, "instantaneous_penetration_percent_requirement.tab"),
-            index=m.INSTANTANEOUS_PENETRATION_ZONES,
-            param=(
-                m.inst_pen_min_percent_load,
-                m.inst_pen_max_percent_load
+            filename=os.path.join(
+                input_dir, "instantaneous_penetration_percent_requirement.tab"
             ),
+            index=m.INSTANTANEOUS_PENETRATION_ZONES,
+            param=(m.inst_pen_min_percent_load, m.inst_pen_max_percent_load),
         )
 
     else:
@@ -281,7 +273,7 @@ def load_model_data(
                 m.inst_pen_min_ratio_power_req,
                 m.inst_pen_min_ratio_capacity_req,
                 m.inst_pen_max_ratio_power_req,
-                m.inst_pen_max_ratio_capacity_req
+                m.inst_pen_max_ratio_capacity_req,
             ),
         )
     else:
@@ -296,7 +288,7 @@ def get_inputs_from_database(
     availability_iteration,
     subproblem,
     stage,
-    conn
+    conn,
 ):
     """
     :param subscenarios: SubScenarios object with all subscenario info
@@ -417,7 +409,7 @@ def validate_inputs(
     availability_iteration,
     subproblem,
     stage,
-    conn
+    conn,
 ):
     """
     Get inputs from database and validate the inputs
@@ -483,20 +475,29 @@ def write_model_inputs(
         availability_iteration,
         subproblem,
         stage,
-        "inputs"
+        "inputs",
     )
 
     # Write the by-timepoint requirement file if by-tmp requirement specified
     timepoint_req = tmp_req.fetchall()
     if timepoint_req:
         with open(
-                os.path.join(inputs_dir, "instantaneous_penetration_tmp_requirement.tab"),
-                "w",
-                newline="",
+            os.path.join(
+                inputs_dir,
+                "instantaneous_penetration_tmp_requirement.tab"
+            ),
+            "w",
+            newline="",
         ) as tmp_req_file:
             writer = csv.writer(tmp_req_file, delimiter="\t", lineterminator="\n")
-            writer.writerow(["instantaneous_penetration_zone", "timepoint", "min_instantaneous_penetration_mw",
-                             "max_instantaneous_penetration_mw"])
+            writer.writerow(
+                [
+                    "instantaneous_penetration_zone",
+                    "timepoint",
+                    "min_instantaneous_penetration_mw",
+                    "max_instantaneous_penetration_mw",
+                ]
+            )
 
             for ipz, tmp, min_ip, max_ip in timepoint_req:
                 if min_ip is None:
@@ -510,14 +511,23 @@ def write_model_inputs(
 
     if lz_map_list:
         with open(
-                os.path.join(inputs_dir, "instantaneous_penetration_percent_requirement.tab"),
-                "w",
-                newline="",
+            os.path.join(
+                inputs_dir,
+                "instantaneous_penetration_percent_requirement.tab"
+            ),
+            "w",
+            newline="",
         ) as percent_req_file:
             writer = csv.writer(percent_req_file, delimiter="\t", lineterminator="\n")
 
             # Write header
-            writer.writerow(["instantaneous_penetration_zone", "min_percent_load", "max_percent_load"])
+            writer.writerow(
+                [
+                    "instantaneous_penetration_zone",
+                    "min_percent_load",
+                    "max_percent_load"
+                ]
+            )
             for ipz, min_ip, max_ip in percent_req:
                 if min_ip is None:
                     min_ip = "."
@@ -526,9 +536,12 @@ def write_model_inputs(
                 writer.writerow([ipz, min_ip, max_ip])
 
         with open(
-                os.path.join(inputs_dir, "instantaneous_penetration_percent_map.tab"),
-                "w",
-                newline="",
+            os.path.join(
+                inputs_dir,
+                "instantaneous_penetration_percent_map.tab"
+            ),
+            "w",
+            newline="",
         ) as percent_map_file:
             writer = csv.writer(percent_map_file, delimiter="\t", lineterminator="\n")
 
@@ -543,24 +556,35 @@ def write_model_inputs(
 
     prj_contributions = False
     for ip, prj, min_pwr, max_pwr, min_cap, max_cap in project_contributions:
-        if min_pwr is not None or max_pwr is not None or min_cap is not None or max_cap is not None:
+        if (
+            min_pwr is not None
+            or max_pwr is not None
+            or min_cap is not None
+            or max_cap is not None
+        ):
             prj_contributions = True
 
     if prj_contributions:
         with open(
-                os.path.join(
-                    inputs_dir,
-                    "instantaneous_penetration_requirement_project_contributions.tab",
-                ),
-                "w",
-                newline="",
+            os.path.join(
+                inputs_dir,
+                "instantaneous_penetration_requirement_project_contributions.tab",
+            ),
+            "w",
+            newline="",
         ) as prj_file:
             writer = csv.writer(prj_file, delimiter="\t", lineterminator="\n")
 
             # Write header
             writer.writerow(
-                ["instantaneous_penetration_zone", "project", "min_ratio_power_req", "min_ratio_capacity_req",
-                 "max_ratio_power_req", "max_ratio_capacity_req"]
+                [
+                    "instantaneous_penetration_zone",
+                    "project",
+                    "min_ratio_power_req",
+                    "min_ratio_capacity_req",
+                    "max_ratio_power_req",
+                    "max_ratio_capacity_req"
+                ]
             )
             for ip, prj, min_pwr, max_pwr, min_cap, max_cap in project_contributions:
                 if min_pwr is None:

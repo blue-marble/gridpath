@@ -29,7 +29,7 @@ def add_model_components(
     hydro_iteration,
     availability_iteration,
     subproblem,
-    stage
+    stage,
 ):
     """
 
@@ -61,7 +61,9 @@ def add_model_components(
             return 0
 
     def violation_expression_rule(mod, z, tmp):
-        return max_violation_expression_rule(mod, z, tmp) + min_violation_expression_rule(mod, z, tmp)
+        return max_violation_expression_rule(
+            mod, z, tmp
+        ) + min_violation_expression_rule(mod, z, tmp)
 
     m.Instantaneous_Penetration_Shortage_MWh_Expression = Expression(
         m.INSTANTANEOUS_PENETRATION_ZONES * m.TMPS,
@@ -224,17 +226,23 @@ def save_duals(
     subproblem,
     stage,
     instance,
-    dynamic_components
+    dynamic_components,
 ):
     """
 
     :param m:
     :return:
     """
-    instance.constraint_indices["Meet_Instantaneous_Penetration_min_Constraint"] = \
-        ["zone", "timepoint", "dual_instantaneous_penetration_min"]
-    instance.constraint_indices["Meet_Instantaneous_Penetration_max_Constraint"] = \
-        ["zone", "timepoint", "dual_instantaneous_penetration_min"]
+    instance.constraint_indices["Meet_Instantaneous_Penetration_min_Constraint"] = [
+        "zone",
+        "timepoint",
+        "dual_instantaneous_penetration_min"
+    ]
+    instance.constraint_indices["Meet_Instantaneous_Penetration_max_Constraint"] = [
+        "zone",
+        "timepoint",
+        "dual_instantaneous_penetration_min"
+    ]
 
 
 def import_results_into_database(
@@ -247,7 +255,7 @@ def import_results_into_database(
     c,
     db,
     results_directory,
-    quiet
+    quiet,
 ):
     """
 
