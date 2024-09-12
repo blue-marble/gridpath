@@ -797,43 +797,30 @@ def get_hydro_inputs_from_database(
 
     # TODO: figure out if this still works after hydro update in ra toolkit
     sql = f"""
-    SELECT project, prj_tbl.horizon, average_power_fraction, min_power_fraction,
-    max_power_fraction
-    FROM (
-        SELECT project, balancing_type_project, horizon, average_power_fraction, 
-        min_power_fraction, max_power_fraction
-        FROM inputs_project_hydro_operational_chars
-        -- Portfolio projects only
-        WHERE project in (
-            SELECT project
-            FROM inputs_project_portfolios
+        SELECT project, horizon, average_power_fraction, min_power_fraction,
+        max_power_fraction
+        FROM 
+            (SELECT project, stage_id, horizon
+            FROM project_operational_horizons
             WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
-            )
-        -- Get the right opchar
-        AND (project, hydro_operational_chars_scenario_id) in (
+            AND project_operational_chars_scenario_id = {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
+            AND temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+            AND (project_specified_capacity_scenario_id = {subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID}
+                 OR project_new_cost_scenario_id = {subscenarios.PROJECT_NEW_COST_SCENARIO_ID})
+            AND stage_id = {stage}
+            ) as projects_periods_timepoints_tbl
+        INNER JOIN (
             SELECT project, hydro_operational_chars_scenario_id
             FROM inputs_project_operational_chars
-            WHERE project_operational_chars_scenario_id
-             = {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
-        )
-        -- Get the relevant stage
-        AND stage_id = {stage}
-        -- Get the right iteration
-        AND hydro_iteration = {hydro_iteration}
-    ) as prj_tbl
-    -- Limit to bt-horizons from this temporal scenario ID
-    JOIN (
-        SELECT DISTINCT balancing_type_horizon, horizon
-        FROM inputs_temporal_horizon_timepoints
-        WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
-        AND subproblem_id = {subproblem}
-        AND stage_id = {stage}
-    ) as hrz_tbl
-    ON (
-        balancing_type_project = balancing_type_horizon
-        AND prj_tbl.horizon = hrz_tbl.horizon
-    )
-    ;    
+            WHERE project_operational_chars_scenario_id = {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
+            AND operational_type = '{op_type}'
+            ) AS hydro_char
+        USING (project)
+        LEFT OUTER JOIN
+            inputs_project_hydro_operational_chars
+        USING (hydro_operational_chars_scenario_id, project, stage_id, horizon)
+        WHERE hydro_iteration = {hydro_iteration}
+        ;
     """
 
     hydro_chars = c.execute(sql)
