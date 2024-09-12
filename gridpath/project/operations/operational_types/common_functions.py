@@ -797,7 +797,7 @@ def get_hydro_inputs_from_database(
 
     # TODO: figure out if this still works after hydro update in ra toolkit
     sql = f"""
-        SELECT project, horizon, average_power_fraction, min_power_fraction,
+        SELECT project, prj_tbl.horizon, average_power_fraction, min_power_fraction,
         max_power_fraction
         FROM 
             (SELECT project, stage_id, horizon
@@ -808,7 +808,7 @@ def get_hydro_inputs_from_database(
             AND (project_specified_capacity_scenario_id = {subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID}
                  OR project_new_cost_scenario_id = {subscenarios.PROJECT_NEW_COST_SCENARIO_ID})
             AND stage_id = {stage}
-            ) as projects_periods_timepoints_tbl
+            ) as prj_tbl
         INNER JOIN (
             SELECT project, hydro_operational_chars_scenario_id
             FROM inputs_project_operational_chars
@@ -819,6 +819,17 @@ def get_hydro_inputs_from_database(
         LEFT OUTER JOIN
             inputs_project_hydro_operational_chars
         USING (hydro_operational_chars_scenario_id, project, stage_id, horizon)
+        JOIN (
+            SELECT DISTINCT balancing_type_horizon, horizon
+            FROM inputs_temporal_horizon_timepoints
+            WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+            AND subproblem_id = {subproblem}
+            AND stage_id = {stage}
+        ) as hrz_tbl
+        ON (
+            balancing_type_project = balancing_type_horizon
+            AND prj_tbl.horizon = hrz_tbl.horizon
+        )
         WHERE hydro_iteration = {hydro_iteration}
         ;
     """
