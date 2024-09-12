@@ -587,36 +587,40 @@ def get_prj_tmp_opr_inputs_from_db(
     # use one of them, so filtering with OR is not 100% correct.
 
     sql = f"""
-        SELECT project, timepoint, {data_column}
-        --limit to portfolio projects
-        FROM (
-            SELECT project from inputs_project_portfolios
+        SELECT project, prj_tbl.timepoint, {data_column}
+        FROM 
+            (SELECT project, stage_id, timepoint
+            FROM project_operational_timepoints
             WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
-        ) as portfolio_projects
-        --limit to optype and get var profile opchar id
-        JOIN (
+            AND project_operational_chars_scenario_id = {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
+            AND temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+            AND (project_specified_capacity_scenario_id = {subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID}
+                 OR project_new_cost_scenario_id = {subscenarios.PROJECT_NEW_COST_SCENARIO_ID})
+            AND stage_id = {stage}
+            ) as prj_tbl
+        INNER JOIN (
             SELECT project, {subscenario_id_column}
             FROM inputs_project_operational_chars
             WHERE project_operational_chars_scenario_id = {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
             AND operational_type = '{op_type}'
-        ) as op_type_projects_with_btype_and_opchar_id
+            ) AS op_type_projects_with_btype_and_opchar_id
         USING (project)
-        -- Get the data
+        LEFT OUTER JOIN
+            {table}
+        USING ({subscenario_id_column}, project, stage_id, timepoint)
         JOIN (
-            SELECT project, {subscenario_id_column}, timepoint, {data_column}
-            FROM {table}
-            WHERE weather_iteration = {weather_iteration}
+            SELECT timepoint
+            FROM inputs_temporal
+            WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+            AND subproblem_id = {subproblem}
             AND stage_id = {stage}
+        ) as tmp_tbl
+        ON (
+            prj_tbl.timepoint = tmp_tbl.timepoint
         )
-        USING (project, {subscenario_id_column})
-        -- Limit to the current temporal scenario ID
-        WHERE (timepoint) IN (
-        SELECT timepoint
-        FROM inputs_temporal
-        WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
-        AND subproblem_id = {subproblem}
-    );
-        """
+        WHERE weather_iteration = {weather_iteration}
+        ;
+    """
 
     prj_tmp_data = c.execute(sql)
 
