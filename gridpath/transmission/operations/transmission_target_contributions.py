@@ -203,7 +203,7 @@ def add_model_components(
         else:
             return (
                 mod.Transmission_Target_Net_Energy_MW_Neg_Dir[tx, tmp]
-                == mod.Transmit_Power_MW[tx, tmp]
+                == -mod.Transmit_Power_MW[tx, tmp]
             )
 
     m.Transmission_Target_Net_Energy_MW_Neg_Dir_Constraint = Constraint(
