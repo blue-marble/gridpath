@@ -165,7 +165,7 @@ CREATE TABLE raw_data_eia930_hourly_interchange
 );
 
 --------------------------------------------------------------------------------
--- Auxiliary data (maps, etc.)
+-- Auxiliary user-defined data (maps, etc.)
 --------------------------------------------------------------------------------
 
 DROP TABLE IF EXISTS user_defined_load_zone_units;
@@ -226,6 +226,14 @@ CREATE TABLE user_defined_heat_rate_curve
     average_heat_rate_coefficient FLOAT
 );
 
+DROP TABLE IF EXISTS user_defined_generic_fuel_intensities;
+CREATE TABLE user_defined_generic_fuel_intensities
+(
+    gridpath_generic_fuel                    TEXT PRIMARY KEY,
+    co2_intensity_emissionsunit_per_fuelunit FLOAT,
+    units                                    TEXT,
+    source                                   TEXT
+);
 
 DROP TABLE IF EXISTS user_defined_weather_bins;
 CREATE TABLE user_defined_weather_bins

@@ -67,7 +67,10 @@ from gridpath_data_toolkit.project.opchar.var_profiles import (
 from gridpath_data_toolkit.project.opchar.hydro import (
     create_hydro_iteration_inputs,
 )
-from gridpath_data_toolkit.fuels import create_fuel_input_csvs
+from gridpath_data_toolkit.fuels import (
+    create_fuel_chars_input_csvs,
+    create_fuel_price_input_csvs,
+)
 from gridpath_data_toolkit.transmission.portfolios import (
     create_transmission_portfolio_input_csvs,
 )

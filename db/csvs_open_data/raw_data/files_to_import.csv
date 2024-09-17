@@ -13,3 +13,4 @@ import,filename,table
 1,user_defined_hydro_years.csv,raw_data_hydro_years
 1,user_defined_bt_horizons.csv,raw_data_balancing_type_horizons
 1,eia930_hourly_interchange.csv,raw_data_eia930_hourly_interchange
+1,user_defined_generic_fuel_intensities.csv,user_defined_generic_fuel_intensities
