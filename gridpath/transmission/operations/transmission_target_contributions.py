@@ -302,8 +302,16 @@ def export_results(
         [
             tx,
             tmp,
-            value(m.TxSimpleBinary_Transmit_Power_Positive_Direction_MW[tx, tmp]),
-            value(m.TxSimpleBinary_Transmit_Power_Negative_Direction_MW[tx, tmp]),
+            (
+                value(m.TxSimpleBinary_Transmit_Power_Positive_Direction_MW[tx, tmp])
+                if float(m.contributes_net_flow_to_tx_target[tx]) == 0
+                else value(m.TxSimple_Transmit_Power_MW[tx, tmp])
+            ),
+            (
+                value(m.TxSimpleBinary_Transmit_Power_Negative_Direction_MW[tx, tmp])
+                if float(m.contributes_net_flow_to_tx_target[tx]) == 0
+                else value(-m.TxSimple_Transmit_Power_MW[tx, tmp])
+            ),
             (
                 value(m.Transmission_Target_Energy_MW_Pos_Dir[tx, tmp])
                 if float(m.contributes_net_flow_to_tx_target[tx]) == 0
