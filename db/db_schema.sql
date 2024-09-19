@@ -1221,9 +1221,10 @@ DROP TABLE IF EXISTS subscenarios_project_relative_capacity_requirements_map;
 CREATE TABLE subscenarios_project_relative_capacity_requirements_map
 (
     project            VARCHAR(64),
-    prj_for_lim_map_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    prj_for_lim_map_id INTEGER ,
     name               VARCHAR(32),
-    description        VARCHAR(128)
+    description        VARCHAR(128),
+    PRIMARY KEY (project, prj_for_lim_map_id)
 );
 
 DROP TABLE IF EXISTS inputs_project_relative_capacity_requirements_map;
