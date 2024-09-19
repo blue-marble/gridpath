@@ -18,7 +18,15 @@ Water nodes and connections for modeling cascading hydro systems.
 
 import csv
 import os.path
-from pyomo.environ import Set, Param, Boolean, NonNegativeReals, Var, Constraint
+from pyomo.environ import (
+    Set,
+    Param,
+    Boolean,
+    NonNegativeReals,
+    Var,
+    Constraint,
+    Expression,
+)
 
 from gridpath.auxiliary.db_interface import directories_to_db_values
 
@@ -44,6 +52,8 @@ def add_model_components(
     m.WATER_LINKS = Set()
     m.water_reservoir_from = Param(m.WATER_LINKS, within=m.WATER_RESERVOIRS)
     m.water_reservoir_to = Param(m.WATER_LINKS, within=m.WATER_RESERVOIRS)
+
+    # Is this a function of flow
     m.water_link_flow_transport_time = Param(m.WATER_LINKS, default=0)
 
     m.water_link_maximum_level_violation_penalty = Param(
@@ -55,31 +65,110 @@ def add_model_components(
 
     # KSFD: A volume of water equal to 1,000 cubic feet of water flowing past a point for an entire day
     # TODO: move these params to system-level modules when in place
+    # Will this be hourly or daily?
     m.water_reservoir_exog_inflow = Param(m.WATER_RESERVOIRS, m.TIMEPOINTS)
-    # It's possible that these need to be based on elevation, which has a
-    # quadratic relationship to volume in Verene's spreadsheet
-    m.water_reservoir_maximum_volume = Param(m.WATER_RESERVOIRS, m.TIMEPOINTS)
-    m.water_reservoir_minimum_volume = Param(m.WATER_RESERVOIRS, m.TIMEPOINTS)
+    # by month?
+    m.evaporation_coefficient = Param(m.WATER_RESERVOIRS, m.MONTHS)
+
+    # Elevation bounds
+    # Max varies by season
+    m.water_reservoir_maximum_elevation = Param(m.WATER_RESERVOIRS, m.TIMEPOINTS)
+    # In CHEOPS, min elevation is a single value for each reservoir and does
+    # not vary over time
+    m.water_reservoir_minimum_elevation = Param(m.WATER_RESERVOIRS, m.TIMEPOINTS)
+
+    # Spill bound
+    # Max spill is a function of elevation, so this may be an expression
+    # This will constraint the Spill variable
+    m.max_spill = Param(m.WATER_RESERVOIRS, m.TIMEPOINTS)
 
     # TODO: convert from whatever base unit we choose to timepoint
-    m.water_link_min_flow_vol_per_tmp = Param(m.WATER_RESERVOIRS, m.TIMEPOINTS)
-    m.water_link_max_flow_vol_per_tmp = Param(m.WATER_RESERVOIRS, m.TIMEPOINTS)
+    m.water_link_min_bypass_flow_vol_per_tmp = Param(m.WATER_LINKS, m.TIMEPOINTS)
+    m.water_link_min_powerhouse_flow_vol_per_tmp = Param(m.WATER_LINKS, m.TIMEPOINTS)
+    m.water_link_min_total_flow_vol_per_tmp = Param(m.WATER_LINKS, m.TIMEPOINTS)
+
+    # Start with these as params BUT:
+    # These are probably not params but expressions with a non-linear
+    # relationship to elevation; most of the curves look they can be
+    # piecewise linear
+    # With tailwater curves, flow depends on elevation; or does max flow
+    # depend on elevation?
+    m.water_link_max_flow_vol_per_tmp = Param(m.WATER_LINKS, m.TIMEPOINTS)
 
     # Hydro system variables and constraints; need to figure out where this
     # module will be
-    m.Spill_Water = Var(m.WATER_RESERVOIRS, m.TIMEPOINTS, within=NonNegativeReals)
+    # Note elevation has a quadratic relationship to volume in Verene's
+    # spreadsheet
+    m.Reservoir_Elevation = Var(
+        Var(m.WATER_RESERVOIRS, m.TIMEPOINTS, within=NonNegativeReals)
+    )
+    m.Reservoir_Volume = Expression(
+        m.WATER_RESERVOIRS, m.TIMEPOINTS, within=NonNegativeReals
+    )
+    # Is a separate variable needed for spill vs valve release?
+    m.Release_Water = Var(m.WATER_RESERVOIRS, m.TIMEPOINTS, within=NonNegativeReals)
 
-    m.Water_Flow = Var(m.WATER_LINKS, m.TIMEPOINTS, within=NonNegativeReals)
+    # Flows on some links may be able/required to bypass the powerhouse
+    m.NonPowerhouse_Water_Flow = Var(m.WATER_LINKS, m.TIMEPOINTS, within=NonNegativeReals)
+    m.Powerhouse_Water_Flow = Var(m.WATER_LINKS, m.TIMEPOINTS, within=NonNegativeReals)
 
+    m.Total_Water_Flow = Expression(
+        m.WATER_LINKS,
+        m.TIMEPOINTS,
+        within=NonNegativeReals,
+        rule=lambda mod, wl, tmp: mod.NonPowerhouse_Water_Flow[wl, tmp]
+        + mod.Powerhouse_Water_Flow[wl, tmp],
+    )
+
+    # TODO: add total and bypass limits for each link; be careful to set
+    #  bypass flows to 0 where there's no bypass
     def min_water_flow_on_link(mod, l, tmp):
-        return mod.Water_Flow(l, tmp) >= mod.water_link_min_flow_vol_per_tmp[
-            l, tmp]
+        return (
+            mod.Powerhouse_Water_Flow(l, tmp)
+            >= mod.water_link_min_powerhouse_flow_vol_per_tmp[l, tmp]
+        )
+
     def conservation_of_water_mass_constraint(mod, r, tmp):
         pass
 
     # TODO: move to operational type
+    # This is unit dependent; different if we are using MW, kg/s (l/s) vs cfs,
+    # m vs ft; user must ensure consistent units
+    m.theoretical_power_coefficient = Param()
+
     # Hydro system generator operational type
     m.water_link = Param(m.GEN_HYDRO_WATER_SYSTEM_PRJS, within=m.WATER_LINKS)
+
+    # This can actually depend on flow
+    m.tailwater_elevation = Param(m.GEN_HYDRO_WATER_SYSTEM_PRJS)
+
+    # Depends on flow
+    m.headloss_coefficient = Param(m.GEN_HYDRO_WATER_SYSTEM_PRJS)
+
+    # TODO: turbine efficiency is a function of water flow through the turbine
+    m.turbine_efficiency = Param(m.GEN_HYDRO_WATER_SYSTEM_PRJS)
+
+    # TODO: generator efficiency; a function of power output
+    m.generator_efficiency = Param(m.GEN_HYDRO_WATER_SYSTEM_PRJS)
+
+    #
+    m.Gross_Head = Expression(
+        m.GEN_HYDRO_WATER_SYSTEM_OPR_TMPS,
+        within=NonNegativeReals,
+        rule=lambda mod, g, tmp: mod.Reservoir_Elevation[
+            mod.water_reservoir_from[mod.water_link[g]]
+        ]
+        - mod.tailwater_elevation[g],
+    )
+
+    #
+    m.Net_Head = Expression(
+        m.GEN_HYDRO_WATER_SYSTEM_OPR_TMPS,
+        within=NonNegativeReals,
+        rule=lambda mod, g, tmp: mod.Gross_Head[g, tmp]
+        * (1 - mod.headloss_coefficient[g]),
+    )
+
     m.GenHydroWaterSystem_Power_MW = Var(
         m.GEN_HYDRO_WATER_SYSTEM_OPR_TMPS, within=NonNegativeReals
     )
@@ -91,11 +180,16 @@ def add_model_components(
         """
         return (
             mod.GenHydroWaterSystem_Power_MW[g, tmp]
-            == mod.turbine_efficiency[g] * mod.Water_Flow[mod.water_link[g], tmp]
+            == mod.theoretical_power_coefficient
+            * mod.Water_Flow[mod.water_link[g], tmp]
+            * mod.Net_Head[g, tmp]
+            * mod.turbine_efficiency[g]
+            * mod.generator_efficiency[g]
         )
 
     m.Water_to_Power_Constraint = Constraint(
-        m.GEN_HYDRO_WATER_SYSTEM_OPR_TMPS, rule=water_to_power_rule)
+        m.GEN_HYDRO_WATER_SYSTEM_OPR_TMPS, rule=water_to_power_rule
+    )
 
 
 def load_model_data(
@@ -132,7 +226,7 @@ def load_model_data(
             subproblem,
             stage,
             "inputs",
-            "WATER_LINKs.tab",
+            "water_links.tab",
         ),
         set=m.WATER_RESERVOIRS,
     )
