@@ -119,8 +119,7 @@ def add_model_components(
 
 
 def determine_instantaneous_penetration_generators_by_instantaneous_penetration_zone(
-    mod,
-    instantaneous_penetration_z
+    mod, instantaneous_penetration_z
 ):
     return [
         p

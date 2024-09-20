@@ -236,12 +236,12 @@ def save_duals(
     instance.constraint_indices["Meet_Instantaneous_Penetration_min_Constraint"] = [
         "zone",
         "timepoint",
-        "dual_instantaneous_penetration_min"
+        "dual_instantaneous_penetration_min",
     ]
     instance.constraint_indices["Meet_Instantaneous_Penetration_max_Constraint"] = [
         "zone",
         "timepoint",
-        "dual_instantaneous_penetration_min"
+        "dual_instantaneous_penetration_min",
     ]
 
 

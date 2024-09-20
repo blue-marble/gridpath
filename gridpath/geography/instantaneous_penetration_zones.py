@@ -66,7 +66,7 @@ def load_model_data(
     hydro_iteration,
     availability_iteration,
     subproblem,
-    stage
+    stage,
 ):
     data_portal.load(
         filename=os.path.join(
@@ -97,7 +97,7 @@ def get_inputs_from_database(
     hydro_iteration,
     availability_iteration,
     stage,
-    conn
+    conn,
 ):
     """
     :param subscenarios: SubScenarios object with all subscenario info
@@ -132,7 +132,7 @@ def validate_inputs(
     availability_iteration,
     subproblem,
     stage,
-    conn
+    conn,
 ):
     """
     Get inputs from database and validate the inputs
@@ -157,7 +157,7 @@ def write_model_inputs(
     availability_iteration,
     subproblem,
     stage,
-    conn
+    conn,
 ):
     """
     Get inputs from database and write out the model input
@@ -208,7 +208,7 @@ def write_model_inputs(
         writer = csv.writer(
             instantaneous_penetration_zones_tab_file,
             delimiter="\t",
-            lineterminator="\n"
+            lineterminator="\n",
         )
 
         # Write header
@@ -218,7 +218,7 @@ def write_model_inputs(
                 "allow_violation_min_penetration",
                 "violation_penalty_min_penetration_per_mwh",
                 "allow_violation_max_penetration",
-                "violation_penalty_max_penetration_per_mwh"
+                "violation_penalty_max_penetration_per_mwh",
             ]
         )
 

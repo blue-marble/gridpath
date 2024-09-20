@@ -56,4 +56,3 @@ def add_model_components(
         m.INSTANTANEOUS_PENETRATION_ZONES * m.TMPS,
         rule=total_instantaneous_penetration_rule,
     )
-

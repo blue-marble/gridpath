@@ -482,10 +482,7 @@ def write_model_inputs(
     timepoint_req = tmp_req.fetchall()
     if timepoint_req:
         with open(
-            os.path.join(
-                inputs_dir,
-                "instantaneous_penetration_tmp_requirement.tab"
-            ),
+            os.path.join(inputs_dir, "instantaneous_penetration_tmp_requirement.tab"),
             "w",
             newline="",
         ) as tmp_req_file:
@@ -512,8 +509,7 @@ def write_model_inputs(
     if lz_map_list:
         with open(
             os.path.join(
-                inputs_dir,
-                "instantaneous_penetration_percent_requirement.tab"
+                inputs_dir, "instantaneous_penetration_percent_requirement.tab"
             ),
             "w",
             newline="",
@@ -525,7 +521,7 @@ def write_model_inputs(
                 [
                     "instantaneous_penetration_zone",
                     "min_percent_load",
-                    "max_percent_load"
+                    "max_percent_load",
                 ]
             )
             for ipz, min_ip, max_ip in percent_req:
@@ -536,10 +532,7 @@ def write_model_inputs(
                 writer.writerow([ipz, min_ip, max_ip])
 
         with open(
-            os.path.join(
-                inputs_dir,
-                "instantaneous_penetration_percent_map.tab"
-            ),
+            os.path.join(inputs_dir, "instantaneous_penetration_percent_map.tab"),
             "w",
             newline="",
         ) as percent_map_file:
@@ -583,7 +576,7 @@ def write_model_inputs(
                     "min_ratio_power_req",
                     "min_ratio_capacity_req",
                     "max_ratio_power_req",
-                    "max_ratio_capacity_req"
+                    "max_ratio_capacity_req",
                 ]
             )
             for ip, prj, min_pwr, max_pwr, min_cap, max_cap in project_contributions:
