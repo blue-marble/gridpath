@@ -6096,6 +6096,7 @@ SELECT project_portfolio_scenario_id,
        hydro_operational_chars_scenario_id,
        stage_id,
        project,
+       balancing_type_project,
        horizon
 -- Get all projects in the portfolio (with their opchars)
 FROM project_portfolio_opchars
