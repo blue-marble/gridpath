@@ -1,5 +1,5 @@
-performance_standard_zone	period	performance_standard_tco2_per_mwh
-PS_Zone1	2020	0.1
-PS_Zone1	2030	0.1
-PS_Zone2	2020	0.1
-PS_Zone2	2030	0.1
+performance_standard_zone	period	performance_standard_tco2_per_mwh	performance_standard_tco2_per_mw
+PS_Zone1	2020	0.1	876
+PS_Zone1	2030	0.1	876
+PS_Zone2	2020	0.1	876
+PS_Zone2	2030	0.1	876

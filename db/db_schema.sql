@@ -701,8 +701,10 @@ CREATE TABLE inputs_geography_performance_standard_zones
 (
     performance_standard_zone_scenario_id INTEGER,
     performance_standard_zone             VARCHAR(32),
-    allow_violation                       INTEGER DEFAULT 0, -- constraint is hard by default
-    violation_penalty_per_emission        FLOAT   DEFAULT 0,
+    energy_allow_violation                       INTEGER DEFAULT 0, -- constraint is hard by default
+    energy_violation_penalty_per_emission        FLOAT   DEFAULT 0,
+    power_allow_violation                        INTEGER DEFAULT 0, -- constraint is hard by default
+    power_violation_penalty_per_emission         FLOAT   DEFAULT 0,
     PRIMARY KEY (performance_standard_zone_scenario_id,
                  performance_standard_zone),
     FOREIGN KEY (performance_standard_zone_scenario_id) REFERENCES
@@ -1219,9 +1221,10 @@ DROP TABLE IF EXISTS subscenarios_project_relative_capacity_requirements_map;
 CREATE TABLE subscenarios_project_relative_capacity_requirements_map
 (
     project            VARCHAR(64),
-    prj_for_lim_map_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    prj_for_lim_map_id INTEGER ,
     name               VARCHAR(32),
-    description        VARCHAR(128)
+    description        VARCHAR(128),
+    PRIMARY KEY (project, prj_for_lim_map_id)
 );
 
 DROP TABLE IF EXISTS inputs_project_relative_capacity_requirements_map;
@@ -2104,6 +2107,7 @@ CREATE TABLE inputs_project_carbon_credits
 -- Depends on performance standard zone geography
 -- This table can include all project with NULLs for projects not
 -- contributing or just the contributing projects
+-- Projects can contribute to multiple performance standard zones
 DROP TABLE IF EXISTS subscenarios_project_performance_standard_zones;
 CREATE TABLE subscenarios_project_performance_standard_zones
 (
@@ -2118,7 +2122,7 @@ CREATE TABLE inputs_project_performance_standard_zones
     project_performance_standard_zone_scenario_id INTEGER,
     project                                       VARCHAR(64),
     performance_standard_zone                     VARCHAR(32),
-    PRIMARY KEY (project_performance_standard_zone_scenario_id, project),
+    PRIMARY KEY (project_performance_standard_zone_scenario_id, project, performance_standard_zone),
     FOREIGN KEY (project_performance_standard_zone_scenario_id) REFERENCES
         subscenarios_project_performance_standard_zones (project_performance_standard_zone_scenario_id)
 );
@@ -3655,6 +3659,7 @@ CREATE TABLE inputs_system_performance_standard
     subproblem_id                     INTEGER,
     stage_id                          INTEGER,
     performance_standard_tco2_per_mwh FLOAT,
+    performance_standard_tco2_per_mw  FLOAT,
     PRIMARY KEY (performance_standard_scenario_id, performance_standard_zone,
                  period,
                  subproblem_id, stage_id),
@@ -5356,10 +5361,13 @@ CREATE TABLE results_system_performance_standard
     discount_factor                             FLOAT,
     number_years_represented                    FLOAT,
     performance_standard_tco2_per_mwh           FLOAT,
+    performance_standard_tco2_per_mw            FLOAT,
     performance_standard_project_emissions_tco2 FLOAT,
     project_credits                             FLOAT,
     performance_standard_project_energy_mwh     FLOAT,
-    performance_standard_overage_tco2           FLOAT,
+    performance_standard_project_capacity_mw    FLOAT,
+    performance_standard_energy_overage_tco2    FLOAT,
+    performance_standard_power_overage_tco2     FLOAT,
     PRIMARY KEY (scenario_id, performance_standard_zone,
                  weather_iteration, hydro_iteration, availability_iteration,
                  subproblem_id, stage_id, period)
@@ -5611,54 +5619,55 @@ DROP TABLE IF EXISTS results_system_ra;
 DROP TABLE IF EXISTS results_system_costs;
 CREATE TABLE results_system_costs
 (
-    scenario_id                                       INTEGER,
+    scenario_id                                             INTEGER,
 --period INTEGER,
-    weather_iteration                                 INTEGER,
-    hydro_iteration                                   INTEGER,
-    availability_iteration                            INTEGER,
-    subproblem_id                                     INTEGER,
-    stage_id                                          INTEGER,
-    Total_Capacity_Costs                              Float,
-    Total_Fixed_Costs                                 FLOAT,
-    Total_Tx_Capacity_Costs                           Float,
-    Total_Tx_Fixed_Costs                              FLOAT,
-    Total_PRM_Deliverability_Group_Costs              FLOAT,
-    Total_Variable_OM_Cost                            Float,
-    Total_Fuel_Cost                                   Float,
-    Total_Startup_Cost                                Float,
-    Total_Shutdown_Cost                               Float,
-    Total_Operational_Violation_Cost                  FLOAT,
-    Total_Curtailment_Cost                            FLOAT,
-    Total_Hurdle_Cost                                 Float,
-    Total_Load_Balance_Penalty_Costs                  Float,
-    Frequency_Response_Penalty_Costs                  Float,
-    Frequency_Response_Partial_Penalty_Costs          FLOAT,
-    LF_Reserves_Down_Penalty_Costs                    Float,
-    LF_Reserves_Up_Penalty_Costs                      Float,
-    Regulation_Down_Penalty_Costs                     Float,
-    Regulation_Up_Penalty_Costs                       Float,
-    Spinning_Reserves_Penalty_Costs                   Float,
-    Total_PRM_Shortage_Penalty_Costs                  Float,
-    Total_Local_Capacity_Shortage_Penalty_Costs       Float,
-    Total_Carbon_Cap_Balance_Penalty_Costs            Float,
-    Total_Carbon_Tax_Cost                             FLOAT,
-    Total_Performance_Standard_Balance_Penalty_Costs  Float,
-    Total_Period_Energy_Target_Balance_Penalty_Costs  FLOAT,
-    Total_Horizon_Energy_Target_Balance_Penalty_Costs FLOAT,
-    Total_Transmission_Target_Balance_Penalty_Costs   FLOAT,
-    Total_Dynamic_ELCC_Tuning_Cost                    Float,
-    Total_Import_Carbon_Tuning_Cost                   Float,
-    Total_Market_Net_Cost                             FLOAT,
-    Total_Export_Penalty_Cost                         FLOAT,
-    Total_Horizon_Fuel_Burn_Min_Abs_Penalty_Costs     FLOAT,
-    Total_Horizon_Fuel_Burn_Max_Abs_Penalty_Costs     FLOAT,
-    Total_Horizon_Fuel_Burn_Max_Rel_Penalty_Costs     FLOAT,
-    Total_SOC_Penalty_Cost                            FLOAT,
-    Total_SOC_Penalty_Last_Tmp_Cost                   FLOAT,
-    Total_Subsidies                                   FLOAT,
-    Total_Capacity_Transfer_Costs                     FLOAT,
-    Total_Carbon_Credit_Revenue                       FLOAT,
-    Total_Carbon_Credit_Costs                         FLOAT,
+    weather_iteration                                       INTEGER,
+    hydro_iteration                                         INTEGER,
+    availability_iteration                                  INTEGER,
+    subproblem_id                                           INTEGER,
+    stage_id                                                INTEGER,
+    Total_Capacity_Costs                                    Float,
+    Total_Fixed_Costs                                       FLOAT,
+    Total_Tx_Capacity_Costs                                 Float,
+    Total_Tx_Fixed_Costs                                    FLOAT,
+    Total_PRM_Deliverability_Group_Costs                    FLOAT,
+    Total_Variable_OM_Cost                                  Float,
+    Total_Fuel_Cost                                         Float,
+    Total_Startup_Cost                                      Float,
+    Total_Shutdown_Cost                                     Float,
+    Total_Operational_Violation_Cost                        FLOAT,
+    Total_Curtailment_Cost                                  FLOAT,
+    Total_Hurdle_Cost                                       Float,
+    Total_Load_Balance_Penalty_Costs                        Float,
+    Frequency_Response_Penalty_Costs                        Float,
+    Frequency_Response_Partial_Penalty_Costs                FLOAT,
+    LF_Reserves_Down_Penalty_Costs                          Float,
+    LF_Reserves_Up_Penalty_Costs                            Float,
+    Regulation_Down_Penalty_Costs                           Float,
+    Regulation_Up_Penalty_Costs                             Float,
+    Spinning_Reserves_Penalty_Costs                         Float,
+    Total_PRM_Shortage_Penalty_Costs                        Float,
+    Total_Local_Capacity_Shortage_Penalty_Costs             Float,
+    Total_Carbon_Cap_Balance_Penalty_Costs                  Float,
+    Total_Carbon_Tax_Cost                                   FLOAT,
+    Total_Performance_Standard_Energy_Balance_Penalty_Costs Float,
+    Total_Performance_Standard_Power_Balance_Penalty_Costs  Float,
+    Total_Period_Energy_Target_Balance_Penalty_Costs        FLOAT,
+    Total_Horizon_Energy_Target_Balance_Penalty_Costs       FLOAT,
+    Total_Transmission_Target_Balance_Penalty_Costs         FLOAT,
+    Total_Dynamic_ELCC_Tuning_Cost                          Float,
+    Total_Import_Carbon_Tuning_Cost                         Float,
+    Total_Market_Net_Cost                                   FLOAT,
+    Total_Export_Penalty_Cost                               FLOAT,
+    Total_Horizon_Fuel_Burn_Min_Abs_Penalty_Costs           FLOAT,
+    Total_Horizon_Fuel_Burn_Max_Abs_Penalty_Costs           FLOAT,
+    Total_Horizon_Fuel_Burn_Max_Rel_Penalty_Costs           FLOAT,
+    Total_SOC_Penalty_Cost                                  FLOAT,
+    Total_SOC_Penalty_Last_Tmp_Cost                         FLOAT,
+    Total_Subsidies                                         FLOAT,
+    Total_Capacity_Transfer_Costs                           FLOAT,
+    Total_Carbon_Credit_Revenue                             FLOAT,
+    Total_Carbon_Credit_Costs                               FLOAT,
     PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
                  availability_iteration, subproblem_id, stage_id)
 );
@@ -6067,6 +6076,38 @@ FROM inputs_temporal
          INNER JOIN
      inputs_temporal_horizon_timepoints
      USING (temporal_scenario_id, stage_id, timepoint)
+;
+
+-- This view shows the possible operational horizons for each project based
+-- based on its operational periods (see project_operational_periods), its
+-- balancing type, and the periods-horizons mapping for that balancing type
+-- (see periods_horizons). It also includes the operational type and the
+-- hydro_operational_chars_scenario_id, since these are useful to slice out
+-- operational types of interest (namely hydro) and join the hydro inputs,
+-- which are indexed by project-horizon.
+DROP VIEW IF EXISTS project_operational_horizons;
+CREATE VIEW project_operational_horizons AS
+SELECT project_portfolio_scenario_id,
+       project_operational_chars_scenario_id,
+       project_specified_capacity_scenario_id,
+       project_new_cost_scenario_id,
+       temporal_scenario_id,
+       operational_type,
+       hydro_operational_chars_scenario_id,
+       stage_id,
+       project,
+       horizon
+-- Get all projects in the portfolio (with their opchars)
+FROM project_portfolio_opchars
+-- Add all the periods horizons for the matching balancing type
+         LEFT OUTER JOIN
+     periods_horizons
+     ON (project_portfolio_opchars.balancing_type_project
+         = periods_horizons.balancing_type_horizon)
+-- Only select horizons from the actual operational periods
+         INNER JOIN
+     project_operational_periods
+     USING (temporal_scenario_id, project, period)
 ;
 
 -- This view shows the possible operational timepoints for each project based

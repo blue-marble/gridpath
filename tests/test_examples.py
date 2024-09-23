@@ -1339,6 +1339,22 @@ class TestExamples(unittest.TestCase):
             scenario_name=scenario_name, skip_validation=True
         )
 
+    def test_test_performance_standard_power(self):
+        """
+        Check validation and objective function values of "test_performance_standard_power" example
+        :return:
+        """
+        scenario_name = "test_performance_standard_power"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_test_performance_standard_both(self):
+        """
+        Check validation and objective function values of "test_performance_standard_both" example
+        :return:
+        """
+        scenario_name = "test_performance_standard_both"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
     @classmethod
     def tearDownClass(cls):
         os.remove(DB_PATH)

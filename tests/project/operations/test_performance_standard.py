@@ -20,7 +20,10 @@ import sys
 import unittest
 
 from tests.common_functions import create_abstract_model, add_components_and_load_data
-from tests.project.operations.common_functions import get_project_operational_timepoints
+from tests.project.operations.common_functions import (
+    get_project_operational_timepoints,
+    get_project_operational_periods,
+)
 
 TEST_DATA_DIRECTORY = os.path.join(os.path.dirname(__file__), "..", "..", "test_data")
 
@@ -111,6 +114,27 @@ class TestProjectPerformanceStandard(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
+        # Set: PERFORMANCE_STANDARD_PRJS_PERFORMANCE_STANDARD_ZONES
+        expected_prj_zones = sorted(
+            [
+                ("Gas_CCGT", "PS_Zone1"),
+                ("Gas_CT", "PS_Zone2"),
+                ("Gas_CCGT", "PS_Zone2"),
+            ]
+        )
+
+        actual_prj_zones = sorted(
+            [
+                (prj, z)
+                for (
+                    prj,
+                    z,
+                ) in instance.PERFORMANCE_STANDARD_PRJS_PERFORMANCE_STANDARD_ZONES
+            ]
+        )
+
+        self.assertListEqual(expected_prj_zones, actual_prj_zones)
+
         # Set: PERFORMANCE_STANDARD_PRJS
         expected_performance_standard_projects = sorted(
             [
@@ -125,25 +149,6 @@ class TestProjectPerformanceStandard(unittest.TestCase):
             expected_performance_standard_projects, actual_performance_standard_projects
         )
 
-        # Param: performance_standard_zone
-        expected_ps_zone_by_prj = OrderedDict(
-            sorted(
-                {
-                    "Gas_CCGT": "PS_Zone1",
-                    "Gas_CT": "PS_Zone2",
-                }.items()
-            )
-        )
-        actual_ps_zone_by_prj = OrderedDict(
-            sorted(
-                {
-                    p: instance.performance_standard_zone[p]
-                    for p in instance.PERFORMANCE_STANDARD_PRJS
-                }.items()
-            )
-        )
-        self.assertDictEqual(expected_ps_zone_by_prj, actual_ps_zone_by_prj)
-
         # Set: PERFORMANCE_STANDARD_PRJS_BY_PERFORMANCE_STANDARD_ZONE
         expected_prj_by_zone = OrderedDict(
             sorted(
@@ -153,7 +158,7 @@ class TestProjectPerformanceStandard(unittest.TestCase):
                             "Gas_CCGT",
                         ]
                     ),
-                    "PS_Zone2": sorted(["Gas_CT"]),
+                    "PS_Zone2": sorted(["Gas_CT", "Gas_CCGT"]),
                 }.items()
             )
         )
@@ -183,6 +188,16 @@ class TestProjectPerformanceStandard(unittest.TestCase):
             [(prj, tmp) for (prj, tmp) in instance.PERFORMANCE_STANDARD_OPR_TMPS]
         )
         self.assertListEqual(expected_ps_prj_op_tmp, actual_ps_prj_op_tmp)
+
+        # Set: PERFORMANCE_STANDARD_OPR_PRDS
+        expected_ps_prj_op_prd = sorted(
+            get_project_operational_periods(expected_performance_standard_projects)
+        )
+
+        actual_ps_prj_op_prd = sorted(
+            [(prj, prd) for (prj, prd) in instance.PERFORMANCE_STANDARD_OPR_PRDS]
+        )
+        self.assertListEqual(expected_ps_prj_op_prd, actual_ps_prj_op_prd)
 
 
 if __name__ == "__main__":
