@@ -58,7 +58,9 @@ def get_fuel_prices(
     """ """
 
     sql = f"""
-    SELECT DISTINCT fuel, co2_intensity_emissionsunit_per_fuelunit FROM (
+    SELECT DISTINCT fuel, co2_intensity_emissionsunit_per_fuelunit AS 
+    co2_intensity_tons_per_mmbtu, NULL as fuel_group 
+    FROM (
         SELECT gridpath_generic_fuel || '_' || fuel_region as fuel, co2_intensity_emissionsunit_per_fuelunit
         FROM raw_data_fuel_prices
         JOIN (

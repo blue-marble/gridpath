@@ -26,7 +26,10 @@ from gridpath_data_toolkit.project.project_data_filters_common import (
 )
 
 # Var profiles
-COPY_FROM_DICT = {"NEVP": "SPPC", "PGE": "BPAT", "SRP": "AZPS", "WAUW": "NWMT"}
+COPY_FROM_DICT = {
+    "Wind": {"NEVP": "SPPC", "PGE": "BPAT", "SRP": "AZPS", "WAUW": "NWMT"},
+    "Solar": {"WAUW": "NWMT"}
+}
 VAR_ID_DEFAULT = 1
 VAR_NAME_DEFAULT = "open_data"
 STAGE_ID_DEFAULT = 1
@@ -117,21 +120,24 @@ def parse_arguments(args):
     return parsed_arguments
 
 
-def make_copy_wind_profiles(csv_location, profile_id, profile_name, overwrite):
-    for ba in COPY_FROM_DICT.keys():
-        copy_ba = COPY_FROM_DICT[ba]
+def make_copy_var_profiles(csv_location, profile_id, profile_name,
+                           overwrite):
+    for tech in COPY_FROM_DICT.keys():
+        for ba in COPY_FROM_DICT[tech].keys():
+            copy_ba = COPY_FROM_DICT[tech][ba]
 
-        file_to_copy = os.path.join(
-            csv_location,
-            f"Wind_{copy_ba}-{profile_id}-{profile_name}.csv",
-        )
+            file_to_copy = os.path.join(
+                csv_location,
+                f"{tech}_{copy_ba}-{profile_id}-{profile_name}.csv",
+            )
 
-        new_file = os.path.join(
-            csv_location,
-            f"Wind_{ba}-{profile_id}-{profile_name}-MANUAL_copy_from_{copy_ba}.csv",
-        )
+            new_file = os.path.join(
+                csv_location,
+                f"{tech}_{ba}-{profile_id}-{profile_name}_MANUAL_copy_from"
+                f"_{copy_ba}.csv",
+            )
 
-        shutil.copyfile(file_to_copy, new_file)
+            shutil.copyfile(file_to_copy, new_file)
 
 
 def add_battery_durations(
@@ -203,7 +209,7 @@ def main(args=None):
 
     conn = connect_to_database(db_path=parsed_args.database)
 
-    make_copy_wind_profiles(
+    make_copy_var_profiles(
         csv_location=parsed_args.var_gen_profiles_directory,
         profile_id=parsed_args.variable_generator_profile_scenario_id,
         profile_name=parsed_args.variable_generator_profile_scenario_name,

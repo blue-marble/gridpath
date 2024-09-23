@@ -25,7 +25,7 @@ create_sync_var_gen_input_csvs,variable_generator_profile_scenario_name,open_dat
 create_sync_var_gen_input_csvs,overwrite,1
 create_sync_var_gen_input_csvs,n_parallel_projects,24
 create_fuel_chars_input_csvs,database,../db/open_data_raw.db
-create_fuel_chars_input_csvs,output_directory,../db/csvs_open_data/fuels/fuel_prices
+create_fuel_chars_input_csvs,output_directory,../db/csvs_open_data/fuels/fuel_chars
 create_fuel_chars_input_csvs,fuel_scenario_id,1
 create_fuel_chars_input_csvs,fuel_scenario_name,generic
 create_fuel_chars_input_csvs,model_case,aeo2022
