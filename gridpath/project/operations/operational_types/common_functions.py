@@ -589,7 +589,9 @@ def get_prj_tmp_opr_inputs_from_db(
     sql = f"""
         SELECT project, prj_tbl.timepoint, {data_column}
         FROM 
-            (SELECT project, stage_id, timepoint
+        -- Use DISTINCT in case there are spinup/lookahead timepoints, 
+        -- which will show up more than once otherwise
+            (SELECT DISTINCT project, stage_id, timepoint
             FROM project_operational_timepoints
             WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
             AND project_operational_chars_scenario_id = {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
