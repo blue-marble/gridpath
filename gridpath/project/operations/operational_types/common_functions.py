@@ -723,7 +723,7 @@ def load_hydro_opchars(
     :return:
     """
 
-    project_horizons = list()
+    project_bt_horizons = list()
     avg = dict()
     min = dict()
     max = dict()
@@ -742,6 +742,7 @@ def load_hydro_opchars(
         sep="\t",
         usecols=[
             "project",
+            "balancing_type_project",
             "horizon",
             "average_power_fraction",
             "min_power_fraction",
@@ -750,19 +751,22 @@ def load_hydro_opchars(
     )
     for row in zip(
         prj_hor_opchar_df["project"],
+        prj_hor_opchar_df["balancing_type_project"],
         prj_hor_opchar_df["horizon"],
         prj_hor_opchar_df["average_power_fraction"],
         prj_hor_opchar_df["min_power_fraction"],
         prj_hor_opchar_df["max_power_fraction"],
     ):
         if row[0] in projects:
-            project_horizons.append((row[0], row[1]))
-            avg[(row[0], row[1])] = float(row[2])
-            min[(row[0], row[1])] = float(row[3])
-            max[(row[0], row[1])] = float(row[4])
+            project_bt_horizons.append((row[0], row[1], row[2]))
+            avg[(row[0], row[1], row[2])] = float(row[3])
+            min[(row[0], row[1], row[2])] = float(row[4])
+            max[(row[0], row[1], row[2])] = float(row[5])
 
     # Load data
-    data_portal.data()["{}_OPR_HRZS".format(op_type.upper())] = {None: project_horizons}
+    data_portal.data()["{}_OPR_BT_HRZS".format(op_type.upper())] = {
+        None: project_bt_horizons
+    }
     data_portal.data()["{}_average_power_fraction".format(op_type)] = avg
     data_portal.data()["{}_min_power_fraction".format(op_type)] = min
     data_portal.data()["{}_max_power_fraction".format(op_type)] = max
@@ -799,12 +803,15 @@ def get_hydro_inputs_from_database(
 
     c = conn.cursor()
 
-    # TODO: figure out if this still works after hydro update in ra toolkit
     sql = f"""
-        SELECT project, prj_tbl.horizon, average_power_fraction, min_power_fraction,
+        SELECT project, prj_tbl.balancing_type_project, prj_tbl.horizon, 
+        average_power_fraction, 
+        min_power_fraction,
         max_power_fraction
         FROM 
-            (SELECT project, stage_id, horizon
+        -- Get the relevant operatonal project / balancing type / horizons 
+        -- based on the portfolio, opchars, and temporal scenario ID 
+            (SELECT project, stage_id, balancing_type_project, horizon
             FROM project_operational_horizons
             WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
             AND project_operational_chars_scenario_id = {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
@@ -813,6 +820,8 @@ def get_hydro_inputs_from_database(
                  OR project_new_cost_scenario_id = {subscenarios.PROJECT_NEW_COST_SCENARIO_ID})
             AND stage_id = {stage}
             ) as prj_tbl
+        -- Find the opchars for this project from the opchar table and hydro 
+        -- opchar scenario ID
         INNER JOIN (
             SELECT project, hydro_operational_chars_scenario_id
             FROM inputs_project_operational_chars
@@ -822,17 +831,21 @@ def get_hydro_inputs_from_database(
         USING (project)
         LEFT OUTER JOIN
             inputs_project_hydro_operational_chars
-        USING (hydro_operational_chars_scenario_id, project, stage_id, horizon)
+        USING (hydro_operational_chars_scenario_id, project, stage_id, 
+        balancing_type_project, horizon)
+        -- Only select relevant balancing type / horizons based on the 
+        -- temporal scenario ID subproblem structure -- for that we need the 
+        -- horizon_timepoints table
         JOIN (
             SELECT DISTINCT balancing_type_horizon, horizon
             FROM inputs_temporal_horizon_timepoints
             WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
             AND subproblem_id = {subproblem}
             AND stage_id = {stage}
-        ) as hrz_tbl
+        ) as hrz_tmp_tbl
         ON (
-            balancing_type_project = balancing_type_horizon
-            AND prj_tbl.horizon = hrz_tbl.horizon
+            prj_tbl.balancing_type_project = balancing_type_horizon
+            AND prj_tbl.horizon = hrz_tmp_tbl.horizon
         )
         WHERE hydro_iteration = {hydro_iteration}
         ;
