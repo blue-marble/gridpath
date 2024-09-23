@@ -113,31 +113,38 @@ class TestGenHydro(unittest.TestCase):
         actual_projects = [p for p in instance.GEN_HYDRO]
         self.assertListEqual(expected_projects, actual_projects)
 
-        # Sets: GEN_HYDRO_OPR_HRZS
+        # Sets: GEN_HYDRO_OPR_BT_HRZS
         expected_operational_horizons = sorted(
-            [("Hydro", 202001), ("Hydro", 202002), ("Hydro", 203001), ("Hydro", 203002)]
+            [
+                ("Hydro", "day", 202001),
+                ("Hydro", "day", 202002),
+                ("Hydro", "day", 203001),
+                ("Hydro", "day", 203002),
+            ]
         )
-        actual_operational_horizons = sorted([p for p in instance.GEN_HYDRO_OPR_HRZS])
+        actual_operational_horizons = sorted(
+            [p for p in instance.GEN_HYDRO_OPR_BT_HRZS]
+        )
         self.assertListEqual(expected_operational_horizons, actual_operational_horizons)
 
         # Param: gen_hydro_average_power_fraction
         expected_average_power = OrderedDict(
             sorted(
                 {
-                    ("Hydro", 202001): 0.5,
-                    ("Hydro", 202002): 0.5,
-                    ("Hydro", 203001): 0.5,
-                    ("Hydro", 203002): 0.5,
+                    ("Hydro", "day", 202001): 0.5,
+                    ("Hydro", "day", 202002): 0.5,
+                    ("Hydro", "day", 203001): 0.5,
+                    ("Hydro", "day", 203002): 0.5,
                 }.items()
             )
         )
         actual_average_power = OrderedDict(
             sorted(
                 {
-                    (prj, horizon): instance.gen_hydro_average_power_fraction[
-                        prj, horizon
+                    (prj, bt, horizon): instance.gen_hydro_average_power_fraction[
+                        prj, bt, horizon
                     ]
-                    for (prj, horizon) in instance.GEN_HYDRO_OPR_HRZS
+                    for (prj, bt, horizon) in instance.GEN_HYDRO_OPR_BT_HRZS
                 }.items()
             )
         )
@@ -147,18 +154,20 @@ class TestGenHydro(unittest.TestCase):
         expected_min_power = OrderedDict(
             sorted(
                 {
-                    ("Hydro", 202001): 0.15,
-                    ("Hydro", 202002): 0.15,
-                    ("Hydro", 203001): 0.15,
-                    ("Hydro", 203002): 0.15,
+                    ("Hydro", "day", 202001): 0.15,
+                    ("Hydro", "day", 202002): 0.15,
+                    ("Hydro", "day", 203001): 0.15,
+                    ("Hydro", "day", 203002): 0.15,
                 }.items()
             )
         )
         actual_min_power = OrderedDict(
             sorted(
                 {
-                    (prj, horizon): instance.gen_hydro_min_power_fraction[prj, horizon]
-                    for (prj, horizon) in instance.GEN_HYDRO_OPR_HRZS
+                    (prj, bt, horizon): instance.gen_hydro_min_power_fraction[
+                        prj, bt, horizon
+                    ]
+                    for (prj, bt, horizon) in instance.GEN_HYDRO_OPR_BT_HRZS
                 }.items()
             )
         )
@@ -168,18 +177,20 @@ class TestGenHydro(unittest.TestCase):
         expected_max_power = OrderedDict(
             sorted(
                 {
-                    ("Hydro", 202001): 1,
-                    ("Hydro", 202002): 1,
-                    ("Hydro", 203001): 1,
-                    ("Hydro", 203002): 1,
+                    ("Hydro", "day", 202001): 1,
+                    ("Hydro", "day", 202002): 1,
+                    ("Hydro", "day", 203001): 1,
+                    ("Hydro", "day", 203002): 1,
                 }.items()
             )
         )
         actual_max_power = OrderedDict(
             sorted(
                 {
-                    (prj, horizon): instance.gen_hydro_max_power_fraction[prj, horizon]
-                    for (prj, horizon) in instance.GEN_HYDRO_OPR_HRZS
+                    (prj, bt, horizon): instance.gen_hydro_max_power_fraction[
+                        prj, bt, horizon
+                    ]
+                    for (prj, bt, horizon) in instance.GEN_HYDRO_OPR_BT_HRZS
                 }.items()
             )
         )

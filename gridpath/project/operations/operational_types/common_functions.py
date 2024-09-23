@@ -851,8 +851,6 @@ def get_hydro_inputs_from_database(
         ;
     """
 
-    print(sql)
-
     hydro_chars = c.execute(sql)
 
     return hydro_chars

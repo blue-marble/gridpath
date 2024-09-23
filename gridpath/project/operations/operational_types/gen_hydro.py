@@ -289,7 +289,7 @@ def add_model_components(
         ),
     )
 
-    m.GEN_HYDRO_OPR_BT_HRZS = Set(dimen=2)
+    m.GEN_HYDRO_OPR_BT_HRZS = Set(dimen=3)
 
     m.GEN_HYDRO_OPR_TMPS = Set(
         dimen=2,
