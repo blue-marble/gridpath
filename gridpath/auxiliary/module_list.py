@@ -53,6 +53,7 @@ def all_modules_list():
         "geography.frequency_response_balancing_areas",
         "geography.spinning_reserves_balancing_areas",
         "geography.energy_target_zones",
+        "geography.instantaneous_penetration_zones",
         "geography.transmission_target_zones",
         "geography.carbon_cap_zones",
         "geography.carbon_tax_zones",
@@ -67,6 +68,7 @@ def all_modules_list():
         "system.policy.energy_targets",
         "system.policy.energy_targets.period_energy_target",
         "system.policy.energy_targets.horizon_energy_target",
+        "system.policy.instantaneous_penetration",
         "system.policy.transmission_targets",
         "system.policy.transmission_targets.transmission_target",
         "system.policy.carbon_cap",
@@ -115,6 +117,7 @@ def all_modules_list():
         "project.operations.costs",
         "project.operations.tuning_costs",
         "project.operations.energy_target_contributions",
+        "project.operations.instantaneous_penetration_contributions",
         "project.operations.carbon_emissions",
         "project.operations.carbon_cap",
         "project.operations.carbon_tax",
@@ -153,6 +156,7 @@ def all_modules_list():
         "system.reserves.requirement.regulation_down",
         "system.reserves.requirement.frequency_response",
         "system.reserves.requirement.spinning_reserves",
+        "system.policy.instantaneous_penetration.instantaneous_penetration_requirements",
         "system.load_balance.aggregate_project_power",
         "system.load_balance.aggregate_transmission_power",
         "transmission.operations.export_penalty_costs",
@@ -178,6 +182,8 @@ def all_modules_list():
         "system.policy.energy_targets.period_energy_target_balance",
         "system.policy.energy_targets.horizon_energy_target_balance",
         "system.policy.energy_targets.consolidate_results",
+        "system.policy.instantaneous_penetration.instantaneous_penetration_aggregation",
+        "system.policy.instantaneous_penetration.instantaneous_penetration_balance",
         "system.policy.transmission_targets"
         ".aggregate_transmission_target_contributions",
         "system.policy.transmission_targets.transmission_target_balance",
@@ -232,6 +238,7 @@ def all_modules_list():
         "objective.system.policy"
         ".aggregate_horizon_energy_target_violation_penalties",
         "objective.system.policy.aggregate_transmission_target_violation_penalties",
+        "objective.system.policy.aggregate_instantaneous_penetration_violation_penalties",
         "objective.system.policy.aggregate_carbon_cap_violation_penalties",
         "objective.system.policy.aggregate_carbon_tax_costs",
         "objective.system.policy.aggregate_performance_standard_violation_penalties",
@@ -346,6 +353,14 @@ def optional_modules_list():
             "system.policy.energy_targets.horizon_energy_target_balance",
             "objective.system.policy"
             ".aggregate_horizon_energy_target_violation_penalties",
+        ],
+        "instantaneous_penetration": [
+            "geography.instantaneous_penetration_zones",
+            "system.policy.instantaneous_penetration.instantaneous_penetration_requirements",
+            "project.operations.instantaneous_penetration_contributions",
+            "system.policy.instantaneous_penetration.instantaneous_penetration_aggregation",
+            "system.policy.instantaneous_penetration.instantaneous_penetration_balance",
+            "objective.system.policy.aggregate_instantaneous_penetration_violation_penalties",
         ],
         "transmission_target": [
             "system.policy.transmission_targets.transmission_target",
