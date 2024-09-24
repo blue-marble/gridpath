@@ -58,6 +58,8 @@ Modules in this package define the geographic span and resolution of the model.
     :members:
 .. automodule:: gridpath.geography.spinning_reserves_balancing_areas
     :members:
+.. automodule:: gridpath.system.policy.instantaneous_penetration.instantaneous_penetration_requirements
+    :members:
 .. automodule:: gridpath.geography.energy_target_zones
     :members:
 .. automodule:: gridpath.geography.carbon_cap_zones
@@ -149,6 +151,8 @@ gen_hydro_must_take
 .. automodule:: gridpath.project.operations.reserves.frequency_response
     :members:
 .. automodule:: gridpath.project.operations.reserves.spinning_reserves
+    :members:
+.. automodule:: gridpath.project.operations.instantaneous_penetration_contributions
     :members:
 .. automodule:: gridpath.project.operations.reserves.subhourly_energy_adjustment
     :members:
@@ -300,6 +304,14 @@ Modules in this package define system-level parameters and constraints.
     :members:
 .. automodule:: gridpath.system.policy.energy_target.energy_target_balance
     :members:
+.. automodule:: gridpath.system.policy.instantaneous_penetration.__init__
+    :members:
+.. automodule:: gridpath.system.policy.instantaneous_penetration.instantaneous_penetration_requirements
+    :members:
+.. automodule:: gridpath.system.policy.instantaneous_penetration.instantaneous_penetration_aggregation
+    :members:
+.. automodule:: gridpath.system.policy.instantaneous_penetration.instantaneous_penetration_balance
+    :members:
 .. automodule:: gridpath.system.policy.carbon_cap.__init__
     :members:
 .. automodule:: gridpath.system.policy.carbon_cap.carbon_cap
@@ -364,6 +376,8 @@ frequency_response
     :members:
 .. automodule:: gridpath.objective.system.reserve_violation_penalties.
 spinning_reserves
+    :members:
+.. automodule:: objective.system.policy.aggregate_instantaneous_penetration_violation_penalties
     :members:
 .. automodule:: gridpath.objective.system.prm.__init__
     :members:

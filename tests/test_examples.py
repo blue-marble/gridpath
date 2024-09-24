@@ -1347,6 +1347,15 @@ class TestExamples(unittest.TestCase):
         scenario_name = "test_performance_standard_both"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
+    def test_test_new_instantaneous_penetration(self):
+        """
+        Check validation and objective function value of "test_new_instantaneous_penetration" example
+        :return:
+        """
+
+        scenario_name = "test_new_instantaneous_penetration"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
     @classmethod
     def tearDownClass(cls):
         os.remove(DB_PATH)

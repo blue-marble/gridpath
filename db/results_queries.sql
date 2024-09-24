@@ -1,13 +1,13 @@
 -- Cumulative generator newly build capacity by scenario, project, an period
 SELECT scenario_id, scenario_name, project, period, technology, load_zone,
-energy_target_zone, carbon_cap_zone, new_build_mw
+energy_target_zone, instantaneous_penetration_zone, carbon_cap_zone, new_build_mw
 FROM results_project_period
 JOIN scenarios USING (scenario_id)
 ;
 
 -- Cumulative storage newly build capacity by scenario, project, and period
 SELECT scenario_id, scenario_name, project, period, technology, load_zone,
-energy_target_zone, carbon_cap_zone, new_build_mw, new_build_mwh
+energy_target_zone, instantaneous_penetration_zone, carbon_cap_zone, new_build_mw, new_build_mwh
 FROM results_project_period
 JOIN scenarios USING (scenario_id)
 ;
@@ -243,6 +243,16 @@ delivered_energy_target_energy_mwh, curtailed_energy_target_energy_mwh, total_en
 fraction_of_energy_target_met, fraction_of_energy_target_energy_curtailed,
 dual
 from results_system_energy_target
+join scenarios
+using (scenario_id)
+order by scenario_id
+;
+
+-- instantaneous penetration
+select scenario_id, scenario_name, instantaneous_penetration_zone, period,
+min_instantaneous_penetration_mwh, max_instantaneous_penetration_mwh,
+total_instantaneous_penetration_energy_mwh, dual, instantaneous_penetration_marginal_cost_per_mwh
+from results_system_period_instantaneous_penetration
 join scenarios
 using (scenario_id)
 order by scenario_id
