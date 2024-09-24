@@ -113,12 +113,18 @@ class TestGenHydroMustTake(unittest.TestCase):
         actual_projects = [p for p in instance.GEN_HYDRO_MUST_TAKE]
         self.assertListEqual(expected_projects, actual_projects)
 
-        # Sets: GEN_HYDRO_MUST_TAKE_OPR_HRZS
+        # Sets: GEN_HYDRO_MUST_TAKE_OPR_BT_HRZS
         expected_operational_horizons = sorted(
-            [("Hydro_NonCurtailable", 2020), ("Hydro_NonCurtailable", 2030)]
+            [
+                ("Hydro_NonCurtailable", "year", 2020),
+                ("Hydro_NonCurtailable", "year", 2030),
+            ]
         )
         actual_operational_horizons = sorted(
-            [p for p in instance.GEN_HYDRO_MUST_TAKE_OPR_HRZS]
+            [
+                (prj, bt, hrz)
+                for (prj, bt, hrz) in instance.GEN_HYDRO_MUST_TAKE_OPR_BT_HRZS
+            ]
         )
         self.assertListEqual(expected_operational_horizons, actual_operational_horizons)
 
@@ -126,18 +132,18 @@ class TestGenHydroMustTake(unittest.TestCase):
         expected_average_power = OrderedDict(
             sorted(
                 {
-                    ("Hydro_NonCurtailable", 2020): 0.5,
-                    ("Hydro_NonCurtailable", 2030): 0.5,
+                    ("Hydro_NonCurtailable", "year", 2020): 0.5,
+                    ("Hydro_NonCurtailable", "year", 2030): 0.5,
                 }.items()
             )
         )
         actual_average_power = OrderedDict(
             sorted(
                 {
-                    (prj, period): instance.gen_hydro_must_take_average_power_fraction[
-                        prj, period
+                    (prj, bt, hrz): instance.gen_hydro_must_take_average_power_fraction[
+                        prj, bt, hrz
                     ]
-                    for (prj, period) in instance.GEN_HYDRO_MUST_TAKE_OPR_HRZS
+                    for (prj, bt, hrz) in instance.GEN_HYDRO_MUST_TAKE_OPR_BT_HRZS
                 }.items()
             )
         )
@@ -147,18 +153,18 @@ class TestGenHydroMustTake(unittest.TestCase):
         expected_min_power = OrderedDict(
             sorted(
                 {
-                    ("Hydro_NonCurtailable", 2020): 0.15,
-                    ("Hydro_NonCurtailable", 2030): 0.15,
+                    ("Hydro_NonCurtailable", "year", 2020): 0.15,
+                    ("Hydro_NonCurtailable", "year", 2030): 0.15,
                 }.items()
             )
         )
         actual_min_power = OrderedDict(
             sorted(
                 {
-                    (prj, period): instance.gen_hydro_must_take_min_power_fraction[
-                        prj, period
+                    (prj, bt, hrz): instance.gen_hydro_must_take_min_power_fraction[
+                        prj, bt, hrz
                     ]
-                    for (prj, period) in instance.GEN_HYDRO_MUST_TAKE_OPR_HRZS
+                    for (prj, bt, hrz) in instance.GEN_HYDRO_MUST_TAKE_OPR_BT_HRZS
                 }.items()
             )
         )
@@ -168,18 +174,18 @@ class TestGenHydroMustTake(unittest.TestCase):
         expected_max_power = OrderedDict(
             sorted(
                 {
-                    ("Hydro_NonCurtailable", 2020): 1,
-                    ("Hydro_NonCurtailable", 2030): 1,
+                    ("Hydro_NonCurtailable", "year", 2020): 1,
+                    ("Hydro_NonCurtailable", "year", 2030): 1,
                 }.items()
             )
         )
         actual_max_power = OrderedDict(
             sorted(
                 {
-                    (prj, period): instance.gen_hydro_must_take_max_power_fraction[
-                        prj, period
+                    (prj, bt, hrz): instance.gen_hydro_must_take_max_power_fraction[
+                        prj, bt, hrz
                     ]
-                    for (prj, period) in instance.GEN_HYDRO_MUST_TAKE_OPR_HRZS
+                    for (prj, bt, hrz) in instance.GEN_HYDRO_MUST_TAKE_OPR_BT_HRZS
                 }.items()
             )
         )

@@ -1245,9 +1245,10 @@ DROP TABLE IF EXISTS subscenarios_project_relative_capacity_requirements_map;
 CREATE TABLE subscenarios_project_relative_capacity_requirements_map
 (
     project            VARCHAR(64),
-    prj_for_lim_map_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    prj_for_lim_map_id INTEGER ,
     name               VARCHAR(32),
-    description        VARCHAR(128)
+    description        VARCHAR(128),
+    PRIMARY KEY (project, prj_for_lim_map_id)
 );
 
 DROP TABLE IF EXISTS inputs_project_relative_capacity_requirements_map;
@@ -6411,6 +6412,39 @@ FROM inputs_temporal
          INNER JOIN
      inputs_temporal_horizon_timepoints
      USING (temporal_scenario_id, stage_id, timepoint)
+;
+
+-- This view shows the possible operational horizons for each project based
+-- based on its operational periods (see project_operational_periods), its
+-- balancing type, and the periods-horizons mapping for that balancing type
+-- (see periods_horizons). It also includes the operational type and the
+-- hydro_operational_chars_scenario_id, since these are useful to slice out
+-- operational types of interest (namely hydro) and join the hydro inputs,
+-- which are indexed by project-horizon.
+DROP VIEW IF EXISTS project_operational_horizons;
+CREATE VIEW project_operational_horizons AS
+SELECT project_portfolio_scenario_id,
+       project_operational_chars_scenario_id,
+       project_specified_capacity_scenario_id,
+       project_new_cost_scenario_id,
+       temporal_scenario_id,
+       operational_type,
+       hydro_operational_chars_scenario_id,
+       stage_id,
+       project,
+       balancing_type_project,
+       horizon
+-- Get all projects in the portfolio (with their opchars)
+FROM project_portfolio_opchars
+-- Add all the periods horizons for the matching balancing type
+         LEFT OUTER JOIN
+     periods_horizons
+     ON (project_portfolio_opchars.balancing_type_project
+         = periods_horizons.balancing_type_horizon)
+-- Only select horizons from the actual operational periods
+         INNER JOIN
+     project_operational_periods
+     USING (temporal_scenario_id, project, period)
 ;
 
 -- This view shows the possible operational timepoints for each project based

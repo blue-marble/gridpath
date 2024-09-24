@@ -84,7 +84,7 @@ def add_model_components(
     |                                                                         |
     | The set of generators of the :code:`gen_hydro` operational type.        |
     +-------------------------------------------------------------------------+
-    | | :code:`GEN_HYDRO_OPR_HRZS`                                            |
+    | | :code:`GEN_HYDRO_OPR_BT_HRZS`                                            |
     |                                                                         |
     | Two-dimensional set with generators of the :code:`gen_hydro`            |
     | operational type and their operational horizons.                        |
@@ -106,21 +106,21 @@ def add_model_components(
     | Required Input Params                                                   |
     +=========================================================================+
     | | :code:`gen_hydro_max_power_fraction`                                  |
-    | | *Defined over*: :code:`GEN_HYDRO_OPR_HRZS`                            |
+    | | *Defined over*: :code:`GEN_HYDRO_OPR_BT_HRZS`                            |
     | | *Within*: :code:`Reals`                                               |
     |                                                                         |
     | The project's maximum power output in each operational horizon as a     |
     | fraction of its available capacity.                                     |
     +-------------------------------------------------------------------------+
     | | :code:`gen_hydro_min_power_fraction`                                  |
-    | | *Defined over*: :code:`GEN_HYDRO_OPR_HRZS`                            |
+    | | *Defined over*: :code:`GEN_HYDRO_OPR_BT_HRZS`                            |
     | | *Within*: :code:`Reals`                                               |
     |                                                                         |
     | The project's minimum power output in each operational horizon as a     |
     | fraction of its available capacity.                                     |
     +-------------------------------------------------------------------------+
     | | :code:`gen_hydro_average_power_fraction`                              |
-    | | *Defined over*: :code:`GEN_HYDRO_OPR_HRZS`                            |
+    | | *Defined over*: :code:`GEN_HYDRO_OPR_BT_HRZS`                            |
     | | *Within*: :code:`Reals`                                               |
     |                                                                         |
     | The project's avarage power output in each operational horizon as a     |
@@ -237,20 +237,20 @@ def add_model_components(
     | Power                                                                   |
     +-------------------------------------------------------------------------+
     | | :code:`GenHydro_Max_Power_Constraint`                                 |
-    | | *Defined over*: :code:`GEN_HYDRO_OPR_HRZS`                            |
+    | | *Defined over*: :code:`GEN_HYDRO_OPR_BT_HRZS`                            |
     |                                                                         |
     | Limits the power plus upward reserves based on the                      |
     | :code:`gen_hydro_max_power_fraction` and the available capacity.        |
     +-------------------------------------------------------------------------+
     | | :code:`GenHydro_Min_Power_Constraint`                                 |
-    | | *Defined over*: :code:`GEN_HYDRO_OPR_HRZS`                            |
+    | | *Defined over*: :code:`GEN_HYDRO_OPR_BT_HRZS`                            |
     |                                                                         |
     | Power provision minus downward reserves should exceed a certain level   |
     | based on the :code:`gen_hydro_min_power_fraction` and the available     |
     | capacity.                                                               |
     +-------------------------------------------------------------------------+
     | | :code:`GenHydro_Energy_Budget_Constraint`                             |
-    | | *Defined over*: :code:`GEN_HYDRO_OPR_HRZS`                            |
+    | | *Defined over*: :code:`GEN_HYDRO_OPR_BT_HRZS`                            |
     |                                                                         |
     | The project's average capacity factor in each operational horizon,      |
     | including curtailment, should match the specified                       |
@@ -289,7 +289,7 @@ def add_model_components(
         ),
     )
 
-    m.GEN_HYDRO_OPR_HRZS = Set(dimen=2)
+    m.GEN_HYDRO_OPR_BT_HRZS = Set(dimen=3)
 
     m.GEN_HYDRO_OPR_TMPS = Set(
         dimen=2,
@@ -304,11 +304,11 @@ def add_model_components(
     # Required Params
     ###########################################################################
 
-    m.gen_hydro_max_power_fraction = Param(m.GEN_HYDRO_OPR_HRZS, within=Reals)
+    m.gen_hydro_max_power_fraction = Param(m.GEN_HYDRO_OPR_BT_HRZS, within=Reals)
 
-    m.gen_hydro_min_power_fraction = Param(m.GEN_HYDRO_OPR_HRZS, within=Reals)
+    m.gen_hydro_min_power_fraction = Param(m.GEN_HYDRO_OPR_BT_HRZS, within=Reals)
 
-    m.gen_hydro_average_power_fraction = Param(m.GEN_HYDRO_OPR_HRZS, within=Reals)
+    m.gen_hydro_average_power_fraction = Param(m.GEN_HYDRO_OPR_BT_HRZS, within=Reals)
 
     # Optional Params
     ###########################################################################
@@ -399,7 +399,7 @@ def add_model_components(
     )
 
     m.GenHydro_Energy_Budget_Constraint = Constraint(
-        m.GEN_HYDRO_OPR_HRZS, rule=energy_budget_rule
+        m.GEN_HYDRO_OPR_BT_HRZS, rule=energy_budget_rule
     )
 
     m.GenHydro_Ramp_Up_Constraint = Constraint(m.GEN_HYDRO_OPR_TMPS, rule=ramp_up_rule)
@@ -420,7 +420,7 @@ def add_model_components(
 def max_power_rule(mod, g, tmp):
     """
     **Constraint Name**: GenHydro_Max_Power_Constraint
-    **Enforced Over**: GEN_HYDRO_OPR_HRZS
+    **Enforced Over**: GEN_HYDRO_OPR_BT_HRZS
 
     Power plus upward reserves shall not exceed the maximum power output.
     The maximum power output (fraction) is a user input that is specified
@@ -437,7 +437,9 @@ def max_power_rule(mod, g, tmp):
         - mod.GenHydro_Curtail_MW[g, tmp]
         + mod.GenHydro_Upwards_Reserves_MW[g, tmp]
         <= mod.gen_hydro_max_power_fraction[
-            g, mod.horizon[tmp, mod.balancing_type_project[g]]
+            g,
+            mod.balancing_type_project[g],
+            mod.horizon[tmp, mod.balancing_type_project[g]],
         ]
         * mod.Capacity_MW[g, mod.period[tmp]]
         * mod.Availability_Derate[g, tmp]
@@ -447,7 +449,7 @@ def max_power_rule(mod, g, tmp):
 def min_power_rule(mod, g, tmp):
     """
     **Constraint Name**: GenHydro_Min_Power_Constraint
-    **Enforced Over**: GEN_HYDRO_OPR_HRZS
+    **Enforced Over**: GEN_HYDRO_OPR_BT_HRZS
 
     Power minus downward reserves must exceed the minimum power output.
     The minimum power output (fraction) is a user input that is specified
@@ -464,17 +466,19 @@ def min_power_rule(mod, g, tmp):
         - mod.GenHydro_Curtail_MW[g, tmp]
         - mod.GenHydro_Downwards_Reserves_MW[g, tmp]
         >= mod.gen_hydro_min_power_fraction[
-            g, mod.horizon[tmp, mod.balancing_type_project[g]]
+            g,
+            mod.balancing_type_project[g],
+            mod.horizon[tmp, mod.balancing_type_project[g]],
         ]
         * mod.Capacity_MW[g, mod.period[tmp]]
         * mod.Availability_Derate[g, tmp]
     )
 
 
-def energy_budget_rule(mod, g, h):
+def energy_budget_rule(mod, g, bt, h):
     """
     **Constraint Name**: GenHydro_Energy_Budget_Constraint
-    **Enforced Over**: GEN_HYDRO_OPR_HRZS
+    **Enforced Over**: GEN_HYDRO_OPR_BT_HRZS
 
     The sum of hydro energy output within a horizon must match the horizon's
     hydro energy budget. The budget is calculated by multiplying the
@@ -499,13 +503,13 @@ def energy_budget_rule(mod, g, h):
     """
     return sum(
         mod.GenHydro_Gross_Power_MW[g, tmp] * mod.hrs_in_tmp[tmp]
-        for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[mod.balancing_type_project[g], h]
+        for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, h]
     ) == sum(
-        mod.gen_hydro_average_power_fraction[g, h]
+        mod.gen_hydro_average_power_fraction[g, bt, h]
         * mod.Capacity_MW[g, mod.period[tmp]]
         * mod.Availability_Derate[g, tmp]
         * mod.hrs_in_tmp[tmp]
-        for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[mod.balancing_type_project[g], h]
+        for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, h]
     )
 
 
