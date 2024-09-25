@@ -63,6 +63,7 @@ def all_modules_list():
         "geography.prm_zones",
         "geography.local_capacity_zones",
         "geography.markets",
+        "geography.water_network",
         "system.load_balance",
         "system.load_balance.static_load_requirement",
         "system.policy.energy_targets",
@@ -457,6 +458,9 @@ def optional_modules_list():
             "system.markets.volume",
             "system.load_balance.aggregate_market_participation",
             "objective.system.aggregate_market_revenue_and_costs",
+        ],
+        "water": [
+            "geography.water_network",
         ],
         "tuning": [
             "project.operations.tuning_costs",

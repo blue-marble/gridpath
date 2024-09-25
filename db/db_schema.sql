@@ -622,21 +622,22 @@ CREATE TABLE inputs_geography_energy_target_zones
 DROP TABLE IF EXISTS subscenarios_geography_instantaneous_penetration_zones;
 CREATE TABLE subscenarios_geography_instantaneous_penetration_zones
 (
-    instantaneous_penetration_zone_scenario_id  INTEGER PRIMARY KEY AUTOINCREMENT,
-    name                                        VARCHAR(32),
-    description                                 VARCHAR(128)
+    instantaneous_penetration_zone_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name                                       VARCHAR(32),
+    description                                VARCHAR(128)
 );
 
 DROP TABLE IF EXISTS inputs_geography_instantaneous_penetration_zones;
 CREATE TABLE inputs_geography_instantaneous_penetration_zones
 (
-    instantaneous_penetration_zone_scenario_id  INTEGER,
-    instantaneous_penetration_zone              VARCHAR(32),
-    allow_violation_min_penetration             INTEGER DEFAULT 0, -- constraint is hard by default
-    violation_penalty_min_penetration_per_mwh    FLOAT   DEFAULT 0,
-    allow_violation_max_penetration             INTEGER DEFAULT 0, -- constraint is hard by default
-    violation_penalty_max_penetration_per_mwh    FLOAT   DEFAULT 0,
-    PRIMARY KEY (instantaneous_penetration_zone_scenario_id, instantaneous_penetration_zone),
+    instantaneous_penetration_zone_scenario_id INTEGER,
+    instantaneous_penetration_zone             VARCHAR(32),
+    allow_violation_min_penetration            INTEGER DEFAULT 0, -- constraint is hard by default
+    violation_penalty_min_penetration_per_mwh  FLOAT   DEFAULT 0,
+    allow_violation_max_penetration            INTEGER DEFAULT 0, -- constraint is hard by default
+    violation_penalty_max_penetration_per_mwh  FLOAT   DEFAULT 0,
+    PRIMARY KEY (instantaneous_penetration_zone_scenario_id,
+                 instantaneous_penetration_zone),
     FOREIGN KEY (instantaneous_penetration_zone_scenario_id) REFERENCES
         subscenarios_geography_instantaneous_penetration_zones (instantaneous_penetration_zone_scenario_id)
 );
@@ -725,10 +726,10 @@ CREATE TABLE inputs_geography_performance_standard_zones
 (
     performance_standard_zone_scenario_id INTEGER,
     performance_standard_zone             VARCHAR(32),
-    energy_allow_violation                       INTEGER DEFAULT 0, -- constraint is hard by default
-    energy_violation_penalty_per_emission        FLOAT   DEFAULT 0,
-    power_allow_violation                        INTEGER DEFAULT 0, -- constraint is hard by default
-    power_violation_penalty_per_emission         FLOAT   DEFAULT 0,
+    energy_allow_violation                INTEGER DEFAULT 0, -- constraint is hard by default
+    energy_violation_penalty_per_emission FLOAT   DEFAULT 0,
+    power_allow_violation                 INTEGER DEFAULT 0, -- constraint is hard by default
+    power_violation_penalty_per_emission  FLOAT   DEFAULT 0,
     PRIMARY KEY (performance_standard_zone_scenario_id,
                  performance_standard_zone),
     FOREIGN KEY (performance_standard_zone_scenario_id) REFERENCES
@@ -993,6 +994,27 @@ CREATE TABLE inputs_geography_fuel_burn_limit_balancing_areas
 );
 
 
+-- Water network
+DROP TABLE IF EXISTS subscenarios_geography_water_network;
+CREATE TABLE subscenarios_geography_water_network
+(
+    water_network_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name                      VARCHAR(32),
+    description               VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_geography_water_network;
+CREATE TABLE inputs_geography_water_network
+(
+    water_network_scenario_id INTEGER,
+    water_link                TEXT,
+    water_node_from           TEXT,
+    water_node_to             TEXT,
+    PRIMARY KEY (water_network_scenario_id, water_link),
+    FOREIGN KEY (water_network_scenario_id) REFERENCES
+        subscenarios_geography_water_network (water_network_scenario_id)
+);
+
 -------------------
 -- -- PROJECT -- --
 -------------------
@@ -1245,7 +1267,7 @@ DROP TABLE IF EXISTS subscenarios_project_relative_capacity_requirements_map;
 CREATE TABLE subscenarios_project_relative_capacity_requirements_map
 (
     project            VARCHAR(64),
-    prj_for_lim_map_id INTEGER ,
+    prj_for_lim_map_id INTEGER,
     name               VARCHAR(32),
     description        VARCHAR(128),
     PRIMARY KEY (project, prj_for_lim_map_id)
@@ -2013,17 +2035,17 @@ CREATE TABLE inputs_project_energy_target_zones
 DROP TABLE IF EXISTS subscenarios_project_instantaneous_penetration_zones;
 CREATE TABLE subscenarios_project_instantaneous_penetration_zones
 (
-    project_instantaneous_penetration_zone_scenario_id  INTEGER PRIMARY KEY,
-    name                                                VARCHAR(32),
-    description                                         VARCHAR(128)
+    project_instantaneous_penetration_zone_scenario_id INTEGER PRIMARY KEY,
+    name                                               VARCHAR(32),
+    description                                        VARCHAR(128)
 );
 
 DROP TABLE IF EXISTS inputs_project_instantaneous_penetration_zones;
 CREATE TABLE inputs_project_instantaneous_penetration_zones
 (
-    project_instantaneous_penetration_zone_scenario_id  INTEGER,
-    project                                             VARCHAR(64),
-    instantaneous_penetration_zone                      VARCHAR(32),
+    project_instantaneous_penetration_zone_scenario_id INTEGER,
+    project                                            VARCHAR(64),
+    instantaneous_penetration_zone                     VARCHAR(32),
     PRIMARY KEY (project_instantaneous_penetration_zone_scenario_id, project),
     FOREIGN KEY (project_instantaneous_penetration_zone_scenario_id) REFERENCES
         subscenarios_project_instantaneous_penetration_zones (project_instantaneous_penetration_zone_scenario_id)
@@ -2169,7 +2191,8 @@ CREATE TABLE inputs_project_performance_standard_zones
     project_performance_standard_zone_scenario_id INTEGER,
     project                                       VARCHAR(64),
     performance_standard_zone                     VARCHAR(32),
-    PRIMARY KEY (project_performance_standard_zone_scenario_id, project, performance_standard_zone),
+    PRIMARY KEY (project_performance_standard_zone_scenario_id, project,
+                 performance_standard_zone),
     FOREIGN KEY (project_performance_standard_zone_scenario_id) REFERENCES
         subscenarios_project_performance_standard_zones (project_performance_standard_zone_scenario_id)
 );
@@ -3604,9 +3627,9 @@ CREATE TABLE inputs_system_horizon_energy_target_load_zone_map
 DROP TABLE IF EXISTS subscenarios_system_instantaneous_penetration;
 CREATE TABLE subscenarios_system_instantaneous_penetration
 (
-    instantaneous_penetration_scenario_id   INTEGER PRIMARY KEY AUTOINCREMENT,
-    name                                    VARCHAR(32),
-    description                             VARCHAR(128)
+    instantaneous_penetration_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name                                  VARCHAR(32),
+    description                           VARCHAR(128)
 );
 
 -- Can include timepoints and zones other than the ones in a scenario, as
@@ -3615,13 +3638,14 @@ CREATE TABLE subscenarios_system_instantaneous_penetration
 DROP TABLE IF EXISTS inputs_system_instantaneous_penetration;
 CREATE TABLE inputs_system_instantaneous_penetration
 (
-    instantaneous_penetration_scenario_id   INTEGER,
-    instantaneous_penetration_zone          VARCHAR(32),
-    stage_id                                INTEGER,
-    timepoint                               INTEGER,
-    min_instantaneous_penetration_mw        FLOAT,
-    max_instantaneous_penetration_mw        FLOAT,
-    PRIMARY KEY (instantaneous_penetration_scenario_id, instantaneous_penetration_zone, stage_id,
+    instantaneous_penetration_scenario_id INTEGER,
+    instantaneous_penetration_zone        VARCHAR(32),
+    stage_id                              INTEGER,
+    timepoint                             INTEGER,
+    min_instantaneous_penetration_mw      FLOAT,
+    max_instantaneous_penetration_mw      FLOAT,
+    PRIMARY KEY (instantaneous_penetration_scenario_id,
+                 instantaneous_penetration_zone, stage_id,
                  timepoint),
     FOREIGN KEY (instantaneous_penetration_scenario_id) REFERENCES
         subscenarios_system_instantaneous_penetration (instantaneous_penetration_scenario_id)
@@ -3634,21 +3658,23 @@ CREATE TABLE inputs_system_instantaneous_penetration
 DROP TABLE IF EXISTS inputs_system_instantaneous_penetration_percent;
 CREATE TABLE inputs_system_instantaneous_penetration_percent
 (
-    instantaneous_penetration_scenario_id   INTEGER,
-    instantaneous_penetration_zone          VARCHAR(32),
-    stage_id                                INTEGER,
-    min_percent_load                        FLOAT,
-    max_percent_load                        FLOAT,
-    PRIMARY KEY (instantaneous_penetration_scenario_id, instantaneous_penetration_zone, stage_id)
+    instantaneous_penetration_scenario_id INTEGER,
+    instantaneous_penetration_zone        VARCHAR(32),
+    stage_id                              INTEGER,
+    min_percent_load                      FLOAT,
+    max_percent_load                      FLOAT,
+    PRIMARY KEY (instantaneous_penetration_scenario_id,
+                 instantaneous_penetration_zone, stage_id)
 );
 
 DROP TABLE IF EXISTS inputs_system_instantaneous_penetration_percent_lz_map;
 CREATE TABLE inputs_system_instantaneous_penetration_percent_lz_map
 (
-    instantaneous_penetration_scenario_id   INTEGER,
-    instantaneous_penetration_zone          VARCHAR(32),
-    load_zone                               VARCHAR(32),
-    PRIMARY KEY (instantaneous_penetration_scenario_id, instantaneous_penetration_zone, load_zone)
+    instantaneous_penetration_scenario_id INTEGER,
+    instantaneous_penetration_zone        VARCHAR(32),
+    load_zone                             VARCHAR(32),
+    PRIMARY KEY (instantaneous_penetration_scenario_id,
+                 instantaneous_penetration_zone, load_zone)
 );
 
 -- Projects can also contribute to the requirement, specified as percent of their
@@ -3657,15 +3683,16 @@ CREATE TABLE inputs_system_instantaneous_penetration_percent_lz_map
 DROP TABLE IF EXISTS inputs_system_instantaneous_penetration_project;
 CREATE TABLE inputs_system_instantaneous_penetration_project
 (
-    instantaneous_penetration_scenario_id   INTEGER,
-    instantaneous_penetration_zone          VARCHAR(32),
-    stage_id                                INTEGER,
-    project                                 VARCHAR(64),
-    min_ratio_power_req                     FLOAT,
-    min_ratio_capacity_req                  FLOAT,
-    max_ratio_power_req                     FLOAT,
-    max_ratio_capacity_req                  FLOAT,
-    PRIMARY KEY (instantaneous_penetration_scenario_id, instantaneous_penetration_zone, stage_id,
+    instantaneous_penetration_scenario_id INTEGER,
+    instantaneous_penetration_zone        VARCHAR(32),
+    stage_id                              INTEGER,
+    project                               VARCHAR(64),
+    min_ratio_power_req                   FLOAT,
+    min_ratio_capacity_req                FLOAT,
+    max_ratio_power_req                   FLOAT,
+    max_ratio_capacity_req                FLOAT,
+    PRIMARY KEY (instantaneous_penetration_scenario_id,
+                 instantaneous_penetration_zone, stage_id,
                  project)
 );
 
@@ -3954,7 +3981,7 @@ CREATE TABLE scenarios
     of_period_energy_target                                     INTEGER,
     of_horizon_energy_target                                    INTEGER,
     of_transmission_target                                      INTEGER,
-    of_instantaneous_penetration                                 INTEGER,
+    of_instantaneous_penetration                                INTEGER,
     of_carbon_cap                                               INTEGER,
     of_track_carbon_imports                                     INTEGER,
     of_carbon_tax                                               INTEGER,
@@ -3968,6 +3995,7 @@ CREATE TABLE scenarios
     of_elcc_surface                                             INTEGER,
     of_local_capacity                                           INTEGER,
     of_markets                                                  INTEGER,
+    of_water                                                    INTEGER,
     of_tuning                                                   INTEGER,
     temporal_scenario_id                                        INTEGER,
     load_zone_scenario_id                                       INTEGER,
@@ -3992,6 +4020,7 @@ CREATE TABLE scenarios
     prm_zone_scenario_id                                        INTEGER,
     local_capacity_zone_scenario_id                             INTEGER,
     market_scenario_id                                          INTEGER,
+    water_network_scenario_id                                   INTEGER,
     project_portfolio_scenario_id                               INTEGER,
     project_operational_chars_scenario_id                       INTEGER,
     project_availability_scenario_id                            INTEGER,
@@ -4058,7 +4087,7 @@ CREATE TABLE scenarios
     spinning_reserves_scenario_id                               INTEGER,
     period_energy_target_scenario_id                            INTEGER,
     horizon_energy_target_scenario_id                           INTEGER,
-    instantaneous_penetration_scenario_id                   INTEGER,
+    instantaneous_penetration_scenario_id                       INTEGER,
     transmission_target_scenario_id                             INTEGER,
     carbon_cap_target_scenario_id                               INTEGER,
     carbon_tax_scenario_id                                      INTEGER,
@@ -4127,6 +4156,8 @@ CREATE TABLE scenarios
         subscenarios_geography_local_capacity_zones (local_capacity_zone_scenario_id),
     FOREIGN KEY (market_scenario_id) REFERENCES
         subscenarios_geography_markets (market_scenario_id),
+    FOREIGN KEY (water_network_scenario_id) REFERENCES
+        subscenarios_geography_water_network (water_network_scenario_id),
     FOREIGN KEY (project_portfolio_scenario_id) REFERENCES
         subscenarios_project_portfolios (project_portfolio_scenario_id),
     FOREIGN KEY (project_operational_chars_scenario_id) REFERENCES
@@ -4302,7 +4333,7 @@ CREATE TABLE scenarios
     FOREIGN KEY (instantaneous_penetration_scenario_id) REFERENCES
         subscenarios_system_instantaneous_penetration
             (instantaneous_penetration_scenario_id),
-   FOREIGN KEY (carbon_cap_target_scenario_id) REFERENCES
+    FOREIGN KEY (carbon_cap_target_scenario_id) REFERENCES
         subscenarios_system_carbon_cap_targets (carbon_cap_target_scenario_id),
     FOREIGN KEY (carbon_tax_scenario_id) REFERENCES
         subscenarios_system_carbon_tax (carbon_tax_scenario_id),
@@ -5772,7 +5803,8 @@ CREATE TABLE results_system_instantaneous_penetration
     instantaneous_penetration_min_marginal_price_per_mw FLOAT,
     dual_instantaneous_penetration_max                  FLOAT,
     instantaneous_penetration_max_marginal_price_per_mw FLOAT,
-    PRIMARY KEY (scenario_id, instantaneous_penetration_zone, subproblem_id, stage_id, timepoint)
+    PRIMARY KEY (scenario_id, instantaneous_penetration_zone, subproblem_id,
+                 stage_id, timepoint)
 );
 
 -- Transmission target balance
@@ -5945,54 +5977,54 @@ CREATE TABLE results_system_costs
 (
     scenario_id                                             INTEGER,
 --period INTEGER,
-    weather_iteration                                               INTEGER,
-    hydro_iteration                                                 INTEGER,
-    availability_iteration                                          INTEGER,
-    subproblem_id                                                   INTEGER,
-    stage_id                                                        INTEGER,
-    Total_Capacity_Costs                                            Float,
-    Total_Fixed_Costs                                               FLOAT,
-    Total_Tx_Capacity_Costs                                         Float,
-    Total_Tx_Fixed_Costs                                            FLOAT,
-    Total_PRM_Deliverability_Group_Costs                            FLOAT,
-    Total_Variable_OM_Cost                                          Float,
-    Total_Fuel_Cost                                                 Float,
-    Total_Startup_Cost                                              Float,
-    Total_Shutdown_Cost                                             Float,
-    Total_Operational_Violation_Cost                                FLOAT,
-    Total_Curtailment_Cost                                          FLOAT,
-    Total_Hurdle_Cost                                               Float,
-    Total_Load_Balance_Penalty_Costs                                Float,
-    Frequency_Response_Penalty_Costs                                Float,
-    Frequency_Response_Partial_Penalty_Costs                        FLOAT,
-    LF_Reserves_Down_Penalty_Costs                                  Float,
-    LF_Reserves_Up_Penalty_Costs                                    Float,
-    Regulation_Down_Penalty_Costs                                   Float,
-    Regulation_Up_Penalty_Costs                                     Float,
-    Spinning_Reserves_Penalty_Costs                                 Float,
-    Total_PRM_Shortage_Penalty_Costs                                Float,
-    Total_Local_Capacity_Shortage_Penalty_Costs                     Float,
-    Total_Carbon_Cap_Balance_Penalty_Costs                          Float,
-    Total_Carbon_Tax_Cost                                           FLOAT,
-    Total_Performance_Standard_Energy_Balance_Penalty_Costs         Float,
-    Total_Performance_Standard_Power_Balance_Penalty_Costs          Float,
-    Total_Period_Energy_Target_Balance_Penalty_Costs                FLOAT,
-    Total_Horizon_Energy_Target_Balance_Penalty_Costs               FLOAT,
-    Total_Instantaneous_Penetration_Balance_Penalty_Costs           FLOAT,
-    Total_Transmission_Target_Balance_Penalty_Costs                 FLOAT,
-    Total_Dynamic_ELCC_Tuning_Cost                                  Float,
-    Total_Import_Carbon_Tuning_Cost                                 Float,
-    Total_Market_Net_Cost                                           FLOAT,
-    Total_Export_Penalty_Cost                                       FLOAT,
-    Total_Horizon_Fuel_Burn_Min_Abs_Penalty_Costs                   FLOAT,
-    Total_Horizon_Fuel_Burn_Max_Abs_Penalty_Costs                   FLOAT,
-    Total_Horizon_Fuel_Burn_Max_Rel_Penalty_Costs                   FLOAT,
-    Total_SOC_Penalty_Cost                                          FLOAT,
-    Total_SOC_Penalty_Last_Tmp_Cost                                 FLOAT,
-    Total_Subsidies                                                 FLOAT,
-    Total_Capacity_Transfer_Costs                                   FLOAT,
-    Total_Carbon_Credit_Revenue                                     FLOAT,
-    Total_Carbon_Credit_Costs                                       FLOAT,
+    weather_iteration                                       INTEGER,
+    hydro_iteration                                         INTEGER,
+    availability_iteration                                  INTEGER,
+    subproblem_id                                           INTEGER,
+    stage_id                                                INTEGER,
+    Total_Capacity_Costs                                    Float,
+    Total_Fixed_Costs                                       FLOAT,
+    Total_Tx_Capacity_Costs                                 Float,
+    Total_Tx_Fixed_Costs                                    FLOAT,
+    Total_PRM_Deliverability_Group_Costs                    FLOAT,
+    Total_Variable_OM_Cost                                  Float,
+    Total_Fuel_Cost                                         Float,
+    Total_Startup_Cost                                      Float,
+    Total_Shutdown_Cost                                     Float,
+    Total_Operational_Violation_Cost                        FLOAT,
+    Total_Curtailment_Cost                                  FLOAT,
+    Total_Hurdle_Cost                                       Float,
+    Total_Load_Balance_Penalty_Costs                        Float,
+    Frequency_Response_Penalty_Costs                        Float,
+    Frequency_Response_Partial_Penalty_Costs                FLOAT,
+    LF_Reserves_Down_Penalty_Costs                          Float,
+    LF_Reserves_Up_Penalty_Costs                            Float,
+    Regulation_Down_Penalty_Costs                           Float,
+    Regulation_Up_Penalty_Costs                             Float,
+    Spinning_Reserves_Penalty_Costs                         Float,
+    Total_PRM_Shortage_Penalty_Costs                        Float,
+    Total_Local_Capacity_Shortage_Penalty_Costs             Float,
+    Total_Carbon_Cap_Balance_Penalty_Costs                  Float,
+    Total_Carbon_Tax_Cost                                   FLOAT,
+    Total_Performance_Standard_Energy_Balance_Penalty_Costs Float,
+    Total_Performance_Standard_Power_Balance_Penalty_Costs  Float,
+    Total_Period_Energy_Target_Balance_Penalty_Costs        FLOAT,
+    Total_Horizon_Energy_Target_Balance_Penalty_Costs       FLOAT,
+    Total_Instantaneous_Penetration_Balance_Penalty_Costs   FLOAT,
+    Total_Transmission_Target_Balance_Penalty_Costs         FLOAT,
+    Total_Dynamic_ELCC_Tuning_Cost                          Float,
+    Total_Import_Carbon_Tuning_Cost                         Float,
+    Total_Market_Net_Cost                                   FLOAT,
+    Total_Export_Penalty_Cost                               FLOAT,
+    Total_Horizon_Fuel_Burn_Min_Abs_Penalty_Costs           FLOAT,
+    Total_Horizon_Fuel_Burn_Max_Abs_Penalty_Costs           FLOAT,
+    Total_Horizon_Fuel_Burn_Max_Rel_Penalty_Costs           FLOAT,
+    Total_SOC_Penalty_Cost                                  FLOAT,
+    Total_SOC_Penalty_Last_Tmp_Cost                         FLOAT,
+    Total_Subsidies                                         FLOAT,
+    Total_Capacity_Transfer_Costs                           FLOAT,
+    Total_Carbon_Credit_Revenue                             FLOAT,
+    Total_Carbon_Credit_Costs                               FLOAT,
     PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
                  availability_iteration, subproblem_id, stage_id)
 );
@@ -6249,7 +6281,7 @@ FROM scenarios
          LEFT JOIN subscenarios_system_period_energy_targets USING
     (period_energy_target_scenario_id)
          LEFT JOIN subscenarios_system_period_energy_targets
-                    USING (instantaneous_penetration_scenario_id)
+                   USING (instantaneous_penetration_scenario_id)
          LEFT JOIN subscenarios_system_carbon_cap_targets
                    USING (carbon_cap_target_scenario_id)
          LEFT JOIN subscenarios_system_prm_requirement
