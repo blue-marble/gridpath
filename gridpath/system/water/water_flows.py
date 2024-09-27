@@ -30,6 +30,10 @@ from pyomo.environ import (
 )
 
 from gridpath.auxiliary.db_interface import directories_to_db_values
+from gridpath.project.common_functions import (
+    check_if_first_timepoint,
+    check_boundary_type,
+)
 
 
 def add_model_components(
@@ -48,21 +52,22 @@ def add_model_components(
     :param d:
     :return:
     """
+    # ### Parameters ###
+    m.water_link_flow_transport_time = Param(m.WATER_LINKS, default=0)
 
-    m.WATER_LINKS = Set()
-    m.water_node_from = Param(m.WATER_LINKS, within=Any)
-    m.water_node_to = Param(m.WATER_LINKS, within=Any)
+    # TODO: units!!!
 
-    m.WATER_NODES = Set(
-        initialize=lambda mod: list(
-            sorted(
-                set(
-                    [mod.water_node_from[wl] for wl in mod.WATER_LINKS]
-                    + [mod.water_node_to[wl] for wl in mod.WATER_LINKS]
-                )
-            )
-        )
+    # Start with these as params BUT:
+    # These are probably not params but expressions with a non-linear
+    # relationship to elevation; most of the curves look they can be
+    # piecewise linear
+    m.water_link_min_flow_vol_per_tmp = Param(
+        m.WATER_LINKS, m.TIMEPOINTS, within=m.NonNegativeReals
     )
+    m.water_link_max_flow_vol_per_tmp = Param(m.WATER_LINKS, m.TIMEPOINTS)
+
+    # ### Variables ### #
+    m.Waterway_Flow_in_Tmp = Var(m.WATER_LINKS, m.TIMEPOINTS)
 
 
 def load_model_data(
@@ -86,7 +91,7 @@ def load_model_data(
             subproblem,
             stage,
             "inputs",
-            "water_network.tab",
+            "water_reservoirs.tab",
         ),
         index=m.WATER_LINKS,
         param=(m.water_node_from, m.water_node_to),

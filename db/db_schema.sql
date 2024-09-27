@@ -1015,6 +1015,31 @@ CREATE TABLE inputs_geography_water_network
         subscenarios_geography_water_network (water_network_scenario_id)
 );
 
+DROP TABLE IF EXISTS subscenarios_geography_water_reservoirs;
+CREATE TABLE subscenarios_geography_water_reservoirs
+(
+    water_reservoir_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name                        VARCHAR(32),
+    description                 VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_geography_water_reservoirs;
+CREATE TABLE inputs_geography_water_reservoirs
+(
+    water_reservoir_scenario_id INTEGER,
+    reservoir                   TEXT,
+    reservoir_reservoir        TEXT,
+    balancing_type_reservoir    TEXT,
+    evaporation_coefficient_scenario_id INTEGER,
+    maximum_elevation_elevationunit_scenario_id INTEGER,
+    minimum_elevation FLOAT,
+    volume_to_elevation_conversion_coefficient FLOAT,
+    max_spill FLOAT,
+    PRIMARY KEY (water_reservoir_scenario_id, reservoir),
+    FOREIGN KEY (water_reservoir_scenario_id) REFERENCES
+        subscenarios_geography_water_reservoirs (water_reservoir_scenario_id)
+);
+
 -------------------
 -- -- PROJECT -- --
 -------------------
