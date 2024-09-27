@@ -311,23 +311,25 @@ def load_model_data(
             ),
         )
 
-    data_portal.load(
-        filename=os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "inputs",
-            "prm_transmission_lines.tab",
-        ),
-        index=m.PRM_TX_LINES,
-        param=(
-            m.prm_zone_from,
-            m.prm_zone_to,
-        ),
+    prm_transmission_lines_tab_file = os.path.join(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+        "prm_transmission_lines.tab",
     )
+    if os.path.exists(prm_transmission_lines_tab_file):
+        data_portal.load(
+            filename=prm_transmission_lines_tab_file,
+            index=m.PRM_TX_LINES,
+            param=(
+                m.prm_zone_from,
+                m.prm_zone_to,
+            ),
+        )
 
 
 # Database
@@ -358,9 +360,19 @@ def get_inputs_from_database(
         SELECT prm_zone, prm_capacity_transfer_zone, period, 
         min_transfer_powerunit, max_transfer_powerunit, capacity_transfer_cost_per_powerunit_yr
         FROM inputs_transmission_prm_capacity_transfer_params
+        JOIN
+        (SELECT prm_zone, prm_capacity_transfer_zone
+        FROM inputs_transmission_prm_capacity_transfers
+        WHERE prm_capacity_transfer_scenario_id = {subscenarios.PRM_CAPACITY_TRANSFER_SCENARIO_ID}) as relevant_zones
+        using (prm_zone, prm_capacity_transfer_zone)
         WHERE prm_capacity_transfer_params_scenario_id = 
         {subscenarios.PRM_CAPACITY_TRANSFER_PARAMS_SCENARIO_ID}
-        ;
+        AND prm_zone IN
+        (SELECT prm_zone FROM inputs_geography_prm_zones
+        WHERE prm_zone_scenario_id = {subscenarios.PRM_ZONE_SCENARIO_ID})
+        AND prm_capacity_transfer_zone IN
+        (SELECT prm_zone FROM inputs_geography_prm_zones
+        WHERE prm_zone_scenario_id = {subscenarios.PRM_ZONE_SCENARIO_ID});
         """
     )
 
@@ -371,9 +383,16 @@ def get_inputs_from_database(
             WHERE transmission_prm_zone_scenario_id = {prm_z}
         AND transmission_line IN
         (SELECT transmission_line FROM inputs_transmission_portfolios
-        WHERE transmission_portfolio_scenario_id = {portfolio});""".format(
+        WHERE transmission_portfolio_scenario_id = {portfolio})
+        AND prm_zone_from IN
+        (SELECT prm_zone FROM inputs_geography_prm_zones
+        WHERE prm_zone_scenario_id = {prm_zone})
+        AND prm_zone_to IN
+        (SELECT prm_zone FROM inputs_geography_prm_zones
+        WHERE prm_zone_scenario_id = {prm_zone});""".format(
             prm_z=subscenarios.TRANSMISSION_PRM_ZONE_SCENARIO_ID,
             portfolio=subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID,
+            prm_zone=subscenarios.PRM_ZONE_SCENARIO_ID,
         )
     )
 
@@ -463,36 +482,38 @@ def write_model_inputs(
                 replace_nulls = ["." if i is None else i for i in row]
                 writer.writerow(replace_nulls)
 
-    with open(
-        os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "inputs",
-            "prm_transmission_lines.tab",
-        ),
-        "w",
-        newline="",
-    ) as transmission_lines_tab_file:
-        writer = csv.writer(
-            transmission_lines_tab_file, delimiter="\t", lineterminator="\n"
-        )
+    transmission_lines = transmission_lines.fetchall()
+    if transmission_lines:
+        with open(
+            os.path.join(
+                scenario_directory,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
+                "inputs",
+                "prm_transmission_lines.tab",
+            ),
+            "w",
+            newline="",
+        ) as transmission_lines_tab_file:
+            writer = csv.writer(
+                transmission_lines_tab_file, delimiter="\t", lineterminator="\n"
+            )
 
-        # Write header
-        writer.writerow(
-            [
-                "transmission_line",
-                "prm_zone_from",
-                "prm_zone_to",
-            ]
-        )
+            # Write header
+            writer.writerow(
+                [
+                    "transmission_line",
+                    "prm_zone_from",
+                    "prm_zone_to",
+                ]
+            )
 
-        for row in transmission_lines:
-            replace_nulls = ["." if i is None else i for i in row]
-            writer.writerow(replace_nulls)
+            for row in transmission_lines:
+                replace_nulls = ["." if i is None else i for i in row]
+                writer.writerow(replace_nulls)
 
 
 def export_results(

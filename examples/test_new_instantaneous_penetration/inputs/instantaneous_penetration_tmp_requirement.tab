@@ -1,0 +1,3 @@
+instantaneous_penetration_zone	timepoint	min_instantaneous_penetration_mw	max_instantaneous_penetration_mw
+IPZone1	20200101	.	2.0
+IPZone1	20200102	.	3.0

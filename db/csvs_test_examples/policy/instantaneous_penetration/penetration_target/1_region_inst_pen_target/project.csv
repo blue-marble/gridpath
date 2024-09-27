@@ -1,0 +1,3 @@
+﻿instantaneous_penetration_zone,stage_id,project,min_ratio_power_req,min_ratio_capacity_req,max_ratio_power_req,max_ratio_capacity_req
+IPZone1,1,Nuclear,,,,1
+IPZone1,1,Gas_CT,,,1.5,

@@ -1,0 +1,20 @@
+##### SUMMARY RESULTS FOR SCENARIO *test_performance_standard_power* #####
+
+### CAPACITY RESULTS ###
+
+--> New Generation Capacity <--
+                             New Capacity (MW)
+load_zone technology period                   
+Zone1     Solar      2020                 2.00
+
+### OPERATIONAL RESULTS ###
+
+--> Energy Production <--
+                             Annual Energy (MWh)  % Total Power
+load_zone period technology                                    
+Zone1     2020   Coal                  18,688.00          13.93
+                 Gas                   41,419.95          30.88
+                 Nuclear               52,560.00          39.19
+                 Solar                  9,198.00           6.86
+                 Wind                  12,264.00           9.14
+Zone2     2020   Gas                   84,870.05         100.00

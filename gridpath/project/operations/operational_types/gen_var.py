@@ -25,17 +25,15 @@ Costs for this operational type include variable O&M costs.
 """
 
 
-import csv
-import os.path
 from pyomo.environ import (
     Param,
     Set,
     Var,
     Constraint,
+    Reals,
     NonNegativeReals,
     Expression,
     value,
-    Reals,
 )
 import warnings
 
@@ -120,6 +118,14 @@ def add_model_components(
     | Power provision in MW from this project in each timepoint in which the  |
     | project is operational (capacity exists and the project is available).  |
     +-------------------------------------------------------------------------+
+    | | :code:`GenVar_Scheduled_Curtailment_MW`                               |
+    | | *Defined over*: :code:`GEN_VAR_OPR_TMPS`                              |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | Curtailed power in MW from this project in each timepoint in which the  |
+    | project is operational (capacity exists and the project is available).  |
+    | This will be the available power minus what was actually provided.      |
+    +-------------------------------------------------------------------------+
 
     |
 
@@ -135,11 +141,6 @@ def add_model_components(
     | | *Defined over*: :code:`GEN_VAR_OPR_TMPS`                              |
     |                                                                         |
     | Sub-hourly energy delivered (in MW) from providing upward reserves.     |
-    +-------------------------------------------------------------------------+
-    | | :code:`GenVar_Scheduled_Curtailment_MW`                               |
-    | | *Defined over*: :code:`GEN_VAR_OPR_TMPS`                              |
-    |                                                                         |
-    | The available power minus what was actually provided (in MW).           |
     +-------------------------------------------------------------------------+
     | | :code:`GenVar_Total_Curtailment_MW`                                   |
     | | *Defined over*: :code:`GEN_VAR_OPR_TMPS`                              |
@@ -160,13 +161,21 @@ def add_model_components(
     | | :code:`GenVar_Max_Power_Constraint`                                   |
     | | *Defined over*: :code:`GEN_VAR_OPR_TMPS`                              |
     |                                                                         |
-    | Limits the power plus upward reserves in each timepoint based on the    |
+    | Limits the power plus scheduled curtailment in each timepoint to equal  |
+    | the available power.                                                    |
     | :code:`gen_var_cap_factor` and the available capacity.                  |
     +-------------------------------------------------------------------------+
-    | | :code:`GenVar_Min_Power_Constraint`                                   |
+    | | :code:`GenVar_Max_Upward_Reserves_Constraint`                         |
     | | *Defined over*: :code:`GEN_VAR_OPR_TMPS`                              |
     |                                                                         |
-    | Power provision minus downward reserves should exceed zero.             |
+    | Upward reserves cannot exceed curtailment.                              |
+    +-------------------------------------------------------------------------+
+    | | :code:`GenVar_Max_Downward_Reserves_Constraint`                       |
+    | | *Defined over*: :code:`GEN_VAR_OPR_TMPS`                              |
+    |                                                                         |
+    | Downward reserves cannot exceed power provision when the capacity       |
+    | factor is non-negative (power is non-negative); otherwise they are set  |
+    | to zero.                                                                |
     +-------------------------------------------------------------------------+
 
     """
@@ -196,7 +205,8 @@ def add_model_components(
     # Variables
     ###########################################################################
 
-    m.GenVar_Provide_Power_MW = Var(m.GEN_VAR_OPR_TMPS, within=NonNegativeReals)
+    m.GenVar_Provide_Power_MW = Var(m.GEN_VAR_OPR_TMPS, within=Reals)
+    m.GenVar_Scheduled_Curtailment_MW = Var(m.GEN_VAR_OPR_TMPS, within=NonNegativeReals)
 
     # Expressions
     ###########################################################################
@@ -251,10 +261,6 @@ def add_model_components(
         m.GEN_VAR_OPR_TMPS, rule=subhourly_delivered_energy_expression_rule
     )
 
-    m.GenVar_Scheduled_Curtailment_MW = Expression(
-        m.GEN_VAR_OPR_TMPS, rule=scheduled_curtailment_expression_rule
-    )
-
     m.GenVar_Total_Curtailment_MW = Expression(
         m.GEN_VAR_OPR_TMPS, rule=total_curtailment_expression_rule
     )
@@ -264,27 +270,17 @@ def add_model_components(
 
     m.GenVar_Max_Power_Constraint = Constraint(m.GEN_VAR_OPR_TMPS, rule=max_power_rule)
 
-    m.GenVar_Min_Power_Constraint = Constraint(m.GEN_VAR_OPR_TMPS, rule=min_power_rule)
+    m.GenVar_Max_Upward_Reserves_Constraint = Constraint(
+        m.GEN_VAR_OPR_TMPS, rule=max_upward_reserves_rule
+    )
+
+    m.GenVar_Max_Downward_Reserves_Constraint = Constraint(
+        m.GEN_VAR_OPR_TMPS, rule=max_downward_reserves_rule
+    )
 
 
 # Expression Methods
 ###############################################################################
-
-
-def scheduled_curtailment_expression_rule(mod, g, tmp):
-    """
-    **Expression Name**: GenVar_Scheduled_Curtailment_MW
-    **Defined Over**: GEN_VAR_OPR_TMPS
-
-    Scheduled curtailment is the available power minus what was actually
-    provided.
-    """
-    return (
-        mod.Capacity_MW[g, mod.period[tmp]]
-        * mod.Availability_Derate[g, tmp]
-        * mod.gen_var_cap_factor[g, tmp]
-        - mod.GenVar_Provide_Power_MW[g, tmp]
-    )
 
 
 def total_curtailment_expression_rule(mod, g, tmp):
@@ -308,8 +304,7 @@ def total_curtailment_expression_rule(mod, g, tmp):
     """
 
     return (
-        mod.Capacity_MW[g, mod.period[tmp]] * mod.gen_var_cap_factor[g, tmp]
-        - mod.GenVar_Provide_Power_MW[g, tmp]
+        mod.GenVar_Scheduled_Curtailment_MW[g, tmp]
         + mod.GenVar_Subhourly_Curtailment_MW[g, tmp]
         - mod.GenVar_Subhourly_Energy_Delivered_MW[g, tmp]
     )
@@ -324,28 +319,42 @@ def max_power_rule(mod, g, tmp):
     **Constraint Name**: GenVar_Max_Power_Constraint
     **Enforced Over**: GEN_VAR_OPR_TMPS
 
-    Power provision plus upward services cannot exceed available power, which
+    Power provision plus curtailment cannot exceed available power, which
     is equal to the available capacity multiplied by the capacity factor.
     """
     return (
-        mod.GenVar_Provide_Power_MW[g, tmp] + mod.GenVar_Upwards_Reserves_MW[g, tmp]
-        <= mod.Capacity_MW[g, mod.period[tmp]]
+        mod.GenVar_Provide_Power_MW[g, tmp]
+        + mod.GenVar_Scheduled_Curtailment_MW[g, tmp]
+        == mod.Capacity_MW[g, mod.period[tmp]]
         * mod.Availability_Derate[g, tmp]
         * mod.gen_var_cap_factor[g, tmp]
     )
 
 
-def min_power_rule(mod, g, tmp):
+def max_upward_reserves_rule(mod, g, tmp):
+    """
+    Upward reserves can't exceed curtailment
+    """
+    return (
+        mod.GenVar_Upwards_Reserves_MW[g, tmp]
+        <= mod.GenVar_Scheduled_Curtailment_MW[g, tmp]
+    )
+
+
+def max_downward_reserves_rule(mod, g, tmp):
     """
     **Constraint Name**: GenVar_Min_Power_Constraint
     **Enforced Over**: GEN_VAR_OPR_TMPS
 
-    Power provision minus downward services cannot be less than zero.
+    Downward reserves can't exceed power provision.
     """
-    return (
-        mod.GenVar_Provide_Power_MW[g, tmp] - mod.GenVar_Downwards_Reserves_MW[g, tmp]
-        >= 0
-    )
+    if mod.gen_var_cap_factor[g, tmp] >= 0:
+        return (
+            mod.GenVar_Downwards_Reserves_MW[g, tmp]
+            <= mod.GenVar_Provide_Power_MW[g, tmp]
+        )
+    else:
+        return mod.GenVar_Downwards_Reserves_MW[g, tmp] == 0
 
 
 # Operational Type Methods
