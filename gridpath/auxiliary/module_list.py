@@ -85,6 +85,7 @@ def all_modules_list():
         "system.reliability.local_capacity",
         "system.reliability.local_capacity.local_capacity_requirement",
         "system.markets.prices",
+        "system.water.reservoirs",
         "project",
         "project.capacity",
         "project.capacity.capacity_types",
@@ -461,6 +462,7 @@ def optional_modules_list():
         ],
         "water": [
             "geography.water_network",
+            "system.water.reservoirs",
         ],
         "tuning": [
             "project.operations.tuning_costs",

@@ -1015,30 +1015,97 @@ CREATE TABLE inputs_geography_water_network
         subscenarios_geography_water_network (water_network_scenario_id)
 );
 
-DROP TABLE IF EXISTS subscenarios_geography_water_reservoirs;
-CREATE TABLE subscenarios_geography_water_reservoirs
+DROP TABLE IF EXISTS subscenarios_system_water_reservoirs;
+CREATE TABLE subscenarios_system_water_reservoirs
 (
     water_reservoir_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
     name                        VARCHAR(32),
     description                 VARCHAR(128)
 );
 
-DROP TABLE IF EXISTS inputs_geography_water_reservoirs;
-CREATE TABLE inputs_geography_water_reservoirs
+DROP TABLE IF EXISTS inputs_system_water_reservoirs;
+CREATE TABLE inputs_system_water_reservoirs
 (
-    water_reservoir_scenario_id INTEGER,
-    reservoir                   TEXT,
-    reservoir_reservoir        TEXT,
-    balancing_type_reservoir    TEXT,
-    evaporation_coefficient_scenario_id INTEGER,
-    maximum_elevation_elevationunit_scenario_id INTEGER,
-    minimum_elevation FLOAT,
+    water_reservoir_scenario_id                INTEGER,
+    reservoir                                  TEXT,
+    water_node                                 TEXT,
+    balancing_type_reservoir                   TEXT,
+    target_elevation_scenario_id                  INTEGER,
+    minimum_elevation_elevationunit            FLOAT,
+    maximum_elevation_elevationunit            FLOAT,
     volume_to_elevation_conversion_coefficient FLOAT,
-    max_spill FLOAT,
+    max_spill                                  FLOAT,
+    evaporation_coefficient                    FLOAT,
     PRIMARY KEY (water_reservoir_scenario_id, reservoir),
     FOREIGN KEY (water_reservoir_scenario_id) REFERENCES
-        subscenarios_geography_water_reservoirs (water_reservoir_scenario_id)
+        subscenarios_system_water_reservoirs (water_reservoir_scenario_id),
+    FOREIGN KEY (reservoir, target_elevation_scenario_id) REFERENCES
+        inputs_system_water_reservoirs_target_elevations
+            (reservoir, target_elevation_scenario_id),
+    FOREIGN KEY (reservoir, target_elevation_scenario_id) REFERENCES
+        inputs_system_water_reservoirs_target_elevations
+            (reservoir, target_elevation_scenario_id)
+--     FOREIGN KEY (reservoir, evaporation_coefficient_scenario_id) REFERENCES
+--         inputs_system_water_reservoirs_evaporaton_coefficient
+--             (reservoir, evaporation_coefficient_scenario_id)
 );
+
+DROP TABLE IF EXISTS subscenarios_system_water_reservoirs_target_elevations;
+CREATE TABLE subscenarios_system_water_reservoirs_target_elevations
+(
+    reservoir                 TEXT,
+    target_elevation_scenario_id INTEGER,
+    name                      VARCHAR(32),
+    description               VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_system_water_reservoirs_target_elevations;
+CREATE TABLE inputs_system_water_reservoirs_target_elevations
+(
+    reservoir                 TEXT,
+    target_elevation_scenario_id INTEGER,
+    timepoint                 FLOAT,
+    reservoir_target_elevation   FLOAT,
+    PRIMARY KEY (reservoir, target_elevation_scenario_id)
+);
+
+-- DROP TABLE IF EXISTS subscenarios_system_water_reservoirs_maximum_elevation;
+-- CREATE TABLE subscenarios_system_water_reservoirs_maximum_elevation
+-- (
+--     reservoir                     TEXT,
+--     maximum_elevation_scenario_id INTEGER,
+--     name                          VARCHAR(32),
+--     description                   VARCHAR(128)
+-- );
+--
+-- DROP TABLE IF EXISTS inputs_system_water_reservoirs_maximum_elevation;
+-- CREATE TABLE inputs_system_water_reservoirs_maximum_elevation
+-- (
+--     reservoir                       TEXT,
+--     maximum_elevation_scenario_id   INTEGER,
+--     timepoint                       FLOAT,
+--     maximum_elevation_elevationunit FLOAT,
+--     PRIMARY KEY (reservoir, maximum_elevation_scenario_id)
+-- );
+--
+-- DROP TABLE IF EXISTS subscenarios_system_water_reservoirs_evaporaton_coefficient;
+-- CREATE TABLE subscenarios_system_water_reservoirs_evaporaton_coefficient
+-- (
+--     reservoir                     TEXT,
+--     evaporation_coefficient_scenario_id INTEGER,
+--     name                          VARCHAR(32),
+--     description                   VARCHAR(128)
+-- );
+--
+-- DROP TABLE IF EXISTS inputs_system_water_reservoirs_evaporaton_coefficient;
+-- CREATE TABLE inputs_system_water_reservoirs_evaporaton_coefficient
+-- (
+--     reservoir                           TEXT,
+--     evaporation_coefficient_scenario_id INTEGER,
+--     month                               FLOAT,
+--     evaporation_coefficient             FLOAT,
+--     PRIMARY KEY (reservoir, evaporation_coefficient_scenario_id)
+-- );
 
 -------------------
 -- -- PROJECT -- --
@@ -4124,6 +4191,7 @@ CREATE TABLE scenarios
     elcc_surface_scenario_id                                    INTEGER,
     market_price_scenario_id                                    INTEGER,
     market_volume_scenario_id                                   INTEGER,
+    water_reservoir_scenario_id                                 INTEGER,
     tuning_scenario_id                                          INTEGER,
     solver_options_id                                           INTEGER,
     FOREIGN KEY (validation_status_id) REFERENCES
@@ -4382,6 +4450,8 @@ CREATE TABLE scenarios
         subscenarios_market_prices (market_price_scenario_id),
     FOREIGN KEY (market_volume_scenario_id) REFERENCES
         subscenarios_market_volume (market_volume_scenario_id),
+    FOREIGN KEY (water_reservoir_scenario_id) REFERENCES
+        subscenarios_system_water_reservoirs (water_reservoir_scenario_id),
     FOREIGN KEY (tuning_scenario_id) REFERENCES
         subscenarios_tuning (tuning_scenario_id),
     FOREIGN KEY (solver_options_id)
@@ -6111,7 +6181,7 @@ SELECT scenario_id,
                                                                           AS feature_spinning_reserves,
        CASE WHEN of_period_energy_target THEN 'yes' ELSE 'no' END         AS
                                                                              feature_period_energy_target,
-       CASE WHEN of_of_instantaneous_penetration THEN 'yes' ELSE 'no' END
+       CASE WHEN of_instantaneous_penetration THEN 'yes' ELSE 'no' END
                                                                           AS feature_instantaneous_penetration,
        CASE WHEN of_carbon_cap THEN 'yes' ELSE 'no' END
                                                                           AS feature_carbon_cap,
@@ -6305,8 +6375,8 @@ FROM scenarios
                    USING (frequency_response_scenario_id)
          LEFT JOIN subscenarios_system_period_energy_targets USING
     (period_energy_target_scenario_id)
-         LEFT JOIN subscenarios_system_period_energy_targets
-                   USING (instantaneous_penetration_scenario_id)
+         LEFT JOIN subscenarios_system_instantaneous_penetration
+            USING (instantaneous_penetration_scenario_id)
          LEFT JOIN subscenarios_system_carbon_cap_targets
                    USING (carbon_cap_target_scenario_id)
          LEFT JOIN subscenarios_system_prm_requirement

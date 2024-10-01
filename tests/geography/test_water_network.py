@@ -46,7 +46,7 @@ except ImportError:
     print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED + " to test.")
 
 
-class TestMarkets(unittest.TestCase):
+class TestWaterNetwork(unittest.TestCase):
     """ """
 
     def test_add_model_components(self):
