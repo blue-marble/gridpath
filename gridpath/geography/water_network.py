@@ -52,6 +52,7 @@ def add_model_components(
     m.WATER_LINKS = Set()
     m.water_node_from = Param(m.WATER_LINKS, within=Any)
     m.water_node_to = Param(m.WATER_LINKS, within=Any)
+    m.water_link_flow_transport_time_hours = Param(m.WATER_LINKS, default=0)
 
     m.WATER_NODES = Set(
         initialize=lambda mod: list(
@@ -76,7 +77,6 @@ def load_model_data(
     subproblem,
     stage,
 ):
-
     data_portal.load(
         filename=os.path.join(
             scenario_directory,
@@ -89,7 +89,11 @@ def load_model_data(
             "water_network.tab",
         ),
         index=m.WATER_LINKS,
-        param=(m.water_node_from, m.water_node_to),
+        param=(
+            m.water_node_from,
+            m.water_node_to,
+            m.water_link_flow_transport_time_hours,
+        ),
     )
 
 
@@ -113,7 +117,8 @@ def get_inputs_from_database(
 
     c = conn.cursor()
     water_links = c.execute(
-        f"""SELECT water_link, water_node_from, water_node_to
+        f"""SELECT water_link, water_node_from, water_node_to,
+        water_link_flow_transport_time_hours
         FROM inputs_geography_water_network
         WHERE water_network_scenario_id = {subscenarios.WATER_NETWORK_SCENARIO_ID};
         """
@@ -206,7 +211,14 @@ def write_model_inputs(
         writer = csv.writer(f, delimiter="\t", lineterminator="\n")
 
         # Write header
-        writer.writerow(["water_link", "water_node_from", "water_node_to"])
+        writer.writerow(
+            [
+                "water_link",
+                "water_node_from",
+                "water_node_to",
+                "water_link_flow_transport_time_hours",
+            ]
+        )
 
         for row in carbon_cap_zone:
             writer.writerow(row)

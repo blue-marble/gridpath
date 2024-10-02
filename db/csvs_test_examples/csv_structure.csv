@@ -156,3 +156,7 @@ markets/geography_markets,markets,market_scenario_id,geography_markets,simple,,0
 markets/load_zone_markets,markets,load_zone_market_scenario_id,load_zone_markets,simple,,0,0,,,,
 markets/prices,markets,market_price_scenario_id,market_prices,simple,,0,0,,,,
 markets/volume,markets,market_volume_scenario_id,market_volume,simple,,0,0,,,,
+,water,water_network_scenario_id,geography_water_network,simple,,0,,,,,
+,water,target_elevation_scenario_id,system_water_reservoirs_target_elevations,simple,,1,reservoir,,,water_reservoir_scenario_id,system_water_reservoirs
+,water,water_reservoir_scenario_id,system_water_reservoirs,simple,,0,,,,,
+,water,water_flow_scenario_id,system_water_flows,simple,,0,,,,,

@@ -96,7 +96,7 @@ def add_model_components(
         return (
             mod.exogenous_water_node_inflow[wn, tmp]
             + sum(
-                mod.Waterway_Flow_in_Tmp[wl, tmp]
+                mod.Waterway_Flow_Vol_Per_Sec_in_Tmp[wl, tmp]
                 for wl in mod.WATER_LINKS_TO_BY_WATER_NODE[wn]
             )
             + sum(
@@ -104,7 +104,7 @@ def add_model_components(
                 for res in mod.RESERVOIRS_BY_NODE[wn]
             )
         ) == sum(
-            mod.Waterway_Flow_in_Tmp[wl, tmp]
+            mod.Waterway_Flow_Vol_Per_Sec_in_Tmp[wl, tmp]
             for wl in mod.WATER_LINKS_FROM_BY_WATER_NODE[wn]
         )
 

@@ -52,22 +52,41 @@ def add_model_components(
     :param d:
     :return:
     """
-    # ### Parameters ###
-    m.water_link_flow_transport_time = Param(m.WATER_LINKS, default=0)
-
     # TODO: units!!!
-
     # Start with these as params BUT:
     # These are probably not params but expressions with a non-linear
     # relationship to elevation; most of the curves look they can be
     # piecewise linear
-    m.water_link_min_flow_vol_per_tmp = Param(
-        m.WATER_LINKS, m.TIMEPOINTS, within=m.NonNegativeReals
+    m.min_flow_vol_per_second = Param(
+        m.WATER_LINKS, m.TMPS, within=NonNegativeReals, default=0
     )
-    m.water_link_max_flow_vol_per_tmp = Param(m.WATER_LINKS, m.TIMEPOINTS)
+    m.max_flow_vol_per_second = Param(m.WATER_LINKS, m.TMPS, default=float("inf"))
 
     # ### Variables ### #
-    m.Waterway_Flow_in_Tmp = Var(m.WATER_LINKS, m.TIMEPOINTS)
+    m.Water_Link_Flow_Vol_per_Sec_in_Tmp = Var(
+        m.WATER_LINKS, m.TMPS, within=NonNegativeReals
+    )
+
+    # ### Constraints ### #
+    def min_flow_rule(mod, wl, tmp):
+        return (
+            mod.Water_Link_Flow_Vol_per_Sec_in_Tmp[wl, tmp]
+            >= mod.min_flow_vol_per_second[wl, tmp]
+        )
+
+    m.Water_Link_Minimum_Flow_Constraint = Constraint(
+        m.WATER_LINKS, m.TMPS, rule=min_flow_rule
+    )
+
+    def max_flow_rule(mod, wl, tmp):
+        return (
+            mod.Water_Link_Flow_Vol_per_Sec_in_Tmp[wl, tmp]
+            <= mod.max_flow_vol_per_second[wl, tmp]
+        )
+
+    m.Water_Link_Maximum_Flow_Constraint = Constraint(
+        m.WATER_LINKS, m.TMPS, rule=max_flow_rule
+    )
 
 
 def load_model_data(
@@ -81,21 +100,21 @@ def load_model_data(
     subproblem,
     stage,
 ):
-
-    data_portal.load(
-        filename=os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "inputs",
-            "water_reservoirs.tab",
-        ),
-        index=m.WATER_LINKS,
-        param=(m.water_node_from, m.water_node_to),
+    fname = os.path.join(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+        "water_flow_bounds.tab",
     )
+    if os.path.exists(fname):
+        data_portal.load(
+            filename=fname,
+            param=(m.min_flow_vol_per_second, m.max_flow_vol_per_second),
+        )
 
 
 def get_inputs_from_database(
@@ -117,14 +136,23 @@ def get_inputs_from_database(
     """
 
     c = conn.cursor()
-    water_links = c.execute(
-        f"""SELECT water_link, water_node_from, water_node_to
-        FROM inputs_geography_water_network
-        WHERE water_network_scenario_id = {subscenarios.WATER_NETWORK_SCENARIO_ID};
-        """
+    water_flows = c.execute(
+        f"""SELECT water_link, timepoint, 
+            min_flow_vol_per_second, max_flow_vol_per_second
+            FROM inputs_system_water_flows
+            WHERE water_flow_scenario_id = 
+            {subscenarios.WATER_FLOW_SCENARIO_ID}
+            AND timepoint
+            IN (SELECT timepoint
+                FROM inputs_temporal
+                WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+                AND subproblem_id = {subproblem}
+                AND stage_id = {stage})
+            ;
+            """
     )
 
-    return water_links
+    return water_flows
 
 
 def validate_inputs(
@@ -164,7 +192,7 @@ def write_model_inputs(
 ):
     """
     Get inputs from database and write out the model input
-    water_network.tab file.
+    water_flow_bounds.tab file.
     :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -183,7 +211,7 @@ def write_model_inputs(
         weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
     )
 
-    carbon_cap_zone = get_inputs_from_database(
+    water_flows = get_inputs_from_database(
         scenario_id,
         subscenarios,
         db_weather_iteration,
@@ -194,24 +222,33 @@ def write_model_inputs(
         conn,
     )
 
-    with open(
-        os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "inputs",
-            "water_network.tab",
-        ),
-        "w",
-        newline="",
-    ) as f:
-        writer = csv.writer(f, delimiter="\t", lineterminator="\n")
+    water_flow_bounds_list = [row for row in water_flows]
+    if water_flow_bounds_list:
+        with open(
+            os.path.join(
+                scenario_directory,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
+                "inputs",
+                "water_flow_bounds.tab",
+            ),
+            "w",
+            newline="",
+        ) as f:
+            writer = csv.writer(f, delimiter="\t", lineterminator="\n")
 
-        # Write header
-        writer.writerow(["water_link", "water_node_from", "water_node_to"])
+            # Write header
+            writer.writerow(
+                [
+                    "water_link",
+                    "timepoint",
+                    "min_flow_vol_per_second",
+                    "max_flow_vol_per_second",
+                ]
+            )
 
-        for row in carbon_cap_zone:
-            writer.writerow(row)
+            for row in water_flow_bounds_list:
+                writer.writerow(row)

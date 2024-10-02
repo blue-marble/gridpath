@@ -15,20 +15,22 @@
 
 from importlib import import_module
 import os.path
+import pandas as pd
 import sys
 import unittest
 
 from tests.common_functions import create_abstract_model, add_components_and_load_data
 
-TEST_DATA_DIRECTORY = os.path.join(os.path.dirname(__file__), "..", "test_data")
+TEST_DATA_DIRECTORY = os.path.join(os.path.dirname(__file__), "..", "..", "test_data")
 
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
     "temporal.operations.timepoints",
     "temporal.operations.horizons",
     "temporal.investment.periods",
+    "geography.water_network",
 ]
-NAME_OF_MODULE_BEING_TESTED = "geography.water_network"
+NAME_OF_MODULE_BEING_TESTED = "system.water.water_flows"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -46,7 +48,7 @@ except ImportError:
     print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED + " to test.")
 
 
-class TestWaterNetwork(unittest.TestCase):
+class TestReservoirs(unittest.TestCase):
     """ """
 
     def test_add_model_components(self):
@@ -98,36 +100,42 @@ class TestWaterNetwork(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: WATER_LINKS
-        expected_wl = sorted(["Water_Link_12", "Water_Link_23"])
-        actual_wl = sorted([wl for wl in instance.WATER_LINKS])
-        self.assertListEqual(expected_wl, actual_wl)
+        # Param: min_flow_vol_per_second
+        df = pd.read_csv(
+            os.path.join(TEST_DATA_DIRECTORY, "inputs", "water_flow_bounds.tab"),
+            sep="\t",
+        )
 
-        # Param: water_node_from
-        expected_wn_from = {
-            "Water_Link_12": "Water_Node_1",
-            "Water_Link_23": "Water_Node_2",
-        }
-        actual_wn_from = {
-            wl: instance.water_node_from[wl] for wl in instance.WATER_LINKS
-        }
-        self.assertDictEqual(expected_wn_from, actual_wn_from)
+        # Check that no values are getting the default value of 0
+        df = df.replace(".", 0)
+        df["min_flow_vol_per_second"] = pd.to_numeric(df["min_flow_vol_per_second"])
 
-        # Param: water_node_to
-        expected_wn_to = {
-            "Water_Link_12": "Water_Node_2",
-            "Water_Link_23": "Water_Node_3",
-        }
-        actual_wn_to = {wl: instance.water_node_to[wl] for wl in instance.WATER_LINKS}
-        self.assertDictEqual(expected_wn_to, actual_wn_to)
-
-        # Param: water_link_flow_transport_time_hours
-        expected_tr_time = {
-            "Water_Link_12": 1,
-            "Water_Link_23": 2,
-        }
-        actual_tr_time = {
-            wl: instance.water_link_flow_transport_time_hours[wl]
+        expected_min_bound = df.set_index(["water_link", "timepoint"]).to_dict()[
+            "min_flow_vol_per_second"
+        ]
+        actual_min_bound = {
+            (wl, tmp): instance.min_flow_vol_per_second[wl, tmp]
             for wl in instance.WATER_LINKS
+            for tmp in instance.TMPS
         }
-        self.assertDictEqual(expected_tr_time, actual_tr_time)
+        self.assertDictEqual(expected_min_bound, actual_min_bound)
+
+        # Param: max_flow_vol_per_second
+        df = pd.read_csv(
+            os.path.join(TEST_DATA_DIRECTORY, "inputs", "water_flow_bounds.tab"),
+            sep="\t",
+        )
+
+        # Check that no values are getting the default value of infinity
+        df = df.replace(".", float("inf"))
+        df["max_flow_vol_per_second"] = pd.to_numeric(df["max_flow_vol_per_second"])
+
+        expected_max_bound = df.set_index(["water_link", "timepoint"]).to_dict()[
+            "max_flow_vol_per_second"
+        ]
+        actual_max_bound = {
+            (wl, tmp): instance.max_flow_vol_per_second[wl, tmp]
+            for wl in instance.WATER_LINKS
+            for tmp in instance.TMPS
+        }
+        self.assertDictEqual(expected_max_bound, actual_max_bound)

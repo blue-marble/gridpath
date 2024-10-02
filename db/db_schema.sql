@@ -1006,10 +1006,11 @@ CREATE TABLE subscenarios_geography_water_network
 DROP TABLE IF EXISTS inputs_geography_water_network;
 CREATE TABLE inputs_geography_water_network
 (
-    water_network_scenario_id INTEGER,
-    water_link                TEXT,
-    water_node_from           TEXT,
-    water_node_to             TEXT,
+    water_network_scenario_id            INTEGER,
+    water_link                           TEXT,
+    water_node_from                      TEXT,
+    water_node_to                        TEXT,
+    water_link_flow_transport_time_hours FLOAT,
     PRIMARY KEY (water_network_scenario_id, water_link),
     FOREIGN KEY (water_network_scenario_id) REFERENCES
         subscenarios_geography_water_network (water_network_scenario_id)
@@ -1030,7 +1031,7 @@ CREATE TABLE inputs_system_water_reservoirs
     reservoir                                  TEXT,
     water_node                                 TEXT,
     balancing_type_reservoir                   TEXT,
-    target_elevation_scenario_id                  INTEGER,
+    target_elevation_scenario_id               INTEGER,
     minimum_elevation_elevationunit            FLOAT,
     maximum_elevation_elevationunit            FLOAT,
     volume_to_elevation_conversion_coefficient FLOAT,
@@ -1053,18 +1054,18 @@ CREATE TABLE inputs_system_water_reservoirs
 DROP TABLE IF EXISTS subscenarios_system_water_reservoirs_target_elevations;
 CREATE TABLE subscenarios_system_water_reservoirs_target_elevations
 (
-    reservoir                 TEXT,
+    reservoir                    TEXT,
     target_elevation_scenario_id INTEGER,
-    name                      VARCHAR(32),
-    description               VARCHAR(128)
+    name                         VARCHAR(32),
+    description                  VARCHAR(128)
 );
 
 DROP TABLE IF EXISTS inputs_system_water_reservoirs_target_elevations;
 CREATE TABLE inputs_system_water_reservoirs_target_elevations
 (
-    reservoir                 TEXT,
+    reservoir                    TEXT,
     target_elevation_scenario_id INTEGER,
-    timepoint                 FLOAT,
+    timepoint                    FLOAT,
     reservoir_target_elevation   FLOAT,
     PRIMARY KEY (reservoir, target_elevation_scenario_id)
 );
@@ -1106,6 +1107,28 @@ CREATE TABLE inputs_system_water_reservoirs_target_elevations
 --     evaporation_coefficient             FLOAT,
 --     PRIMARY KEY (reservoir, evaporation_coefficient_scenario_id)
 -- );
+
+DROP TABLE IF EXISTS subscenarios_system_water_flows;
+CREATE TABLE subscenarios_system_water_flows
+(
+    water_flow_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name                   VARCHAR(32),
+    description            VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_system_water_flows;
+CREATE TABLE inputs_system_water_flows
+(
+    water_flow_scenario_id  INTEGER,
+    water_link              TEXT,
+    timepoint               FLOAT,
+    min_flow_vol_per_second TEXT,
+    max_flow_vol_per_second INTEGER,
+    PRIMARY KEY (water_flow_scenario_id, water_link, timepoint),
+    FOREIGN KEY (water_flow_scenario_id) REFERENCES
+        subscenarios_system_water_flows (water_flow_scenario_id)
+);
+
 
 -------------------
 -- -- PROJECT -- --
@@ -4192,6 +4215,7 @@ CREATE TABLE scenarios
     market_price_scenario_id                                    INTEGER,
     market_volume_scenario_id                                   INTEGER,
     water_reservoir_scenario_id                                 INTEGER,
+    water_flow_scenario_id                                      INTEGER,
     tuning_scenario_id                                          INTEGER,
     solver_options_id                                           INTEGER,
     FOREIGN KEY (validation_status_id) REFERENCES
@@ -4452,6 +4476,8 @@ CREATE TABLE scenarios
         subscenarios_market_volume (market_volume_scenario_id),
     FOREIGN KEY (water_reservoir_scenario_id) REFERENCES
         subscenarios_system_water_reservoirs (water_reservoir_scenario_id),
+    FOREIGN KEY (water_flow_scenario_id) REFERENCES
+        subscenarios_system_water_flows (water_flow_scenario_id),
     FOREIGN KEY (tuning_scenario_id) REFERENCES
         subscenarios_tuning (tuning_scenario_id),
     FOREIGN KEY (solver_options_id)
@@ -6376,7 +6402,7 @@ FROM scenarios
          LEFT JOIN subscenarios_system_period_energy_targets USING
     (period_energy_target_scenario_id)
          LEFT JOIN subscenarios_system_instantaneous_penetration
-            USING (instantaneous_penetration_scenario_id)
+                   USING (instantaneous_penetration_scenario_id)
          LEFT JOIN subscenarios_system_carbon_cap_targets
                    USING (carbon_cap_target_scenario_id)
          LEFT JOIN subscenarios_system_prm_requirement
