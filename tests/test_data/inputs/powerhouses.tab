@@ -1,0 +1,3 @@
+powerhouse	powerhouse_reservoir	theoretical_power_coefficient	tailwater_elevation	headloss_factor	turbine_efficiency	generator_efficiency
+Powerhouse1	Reservoir1	0.0847	800	0.05	0.9	0.95
+Powerhouse2	Reservoir2	0.0847	600	0.05	0.9	0.95

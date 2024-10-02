@@ -1142,13 +1142,38 @@ CREATE TABLE subscenarios_system_water_inflows
 DROP TABLE IF EXISTS inputs_system_water_inflows;
 CREATE TABLE inputs_system_water_inflows
 (
-    water_inflow_scenario_id INTEGER,
-    water_node               TEXT,
-    timepoint                FLOAT,
-    exogenous_water_inflow_vol_per_sec   TEXT,
+    water_inflow_scenario_id           INTEGER,
+    water_node                         TEXT,
+    timepoint                          FLOAT,
+    exogenous_water_inflow_vol_per_sec TEXT,
     PRIMARY KEY (water_inflow_scenario_id, water_node, timepoint),
     FOREIGN KEY (water_inflow_scenario_id) REFERENCES
         subscenarios_system_water_inflows (water_inflow_scenario_id)
+);
+
+-- water_powerhouses
+DROP TABLE IF EXISTS subscenarios_system_water_powerhouses;
+CREATE TABLE subscenarios_system_water_powerhouses
+(
+    water_powerhouse_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name                         VARCHAR(32),
+    description                  VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_system_water_powerhouses;
+CREATE TABLE inputs_system_water_powerhouses
+(
+    water_powerhouse_scenario_id  INTEGER,
+    powerhouse                    TEXT,
+    powerhouse_reservoir          TEXT,
+    theoretical_power_coefficient FLOAT,
+    tailwater_elevation           FLOAT,
+    headloss_factor               FLOAT,
+    turbine_efficiency            FLOAT,
+    generator_efficiency          FLOAT,
+    PRIMARY KEY (water_powerhouse_scenario_id, powerhouse),
+    FOREIGN KEY (water_powerhouse_scenario_id) REFERENCES
+        subscenarios_system_water_powerhouses (water_powerhouse_scenario_id)
 );
 
 
@@ -4239,6 +4264,7 @@ CREATE TABLE scenarios
     water_reservoir_scenario_id                                 INTEGER,
     water_flow_scenario_id                                      INTEGER,
     water_inflow_scenario_id                                    INTEGER,
+    water_powerhouse_scenario_id                                INTEGER,
     tuning_scenario_id                                          INTEGER,
     solver_options_id                                           INTEGER,
     FOREIGN KEY (validation_status_id) REFERENCES
@@ -4503,6 +4529,8 @@ CREATE TABLE scenarios
         subscenarios_system_water_flows (water_flow_scenario_id),
     FOREIGN KEY (water_inflow_scenario_id) REFERENCES
         subscenarios_system_water_inflows (water_inflow_scenario_id),
+    FOREIGN KEY (water_powerhouse_scenario_id) REFERENCES
+        subscenarios_system_water_powerhouses (water_powerhouse_scenario_id),
     FOREIGN KEY (tuning_scenario_id) REFERENCES
         subscenarios_tuning (tuning_scenario_id),
     FOREIGN KEY (solver_options_id)

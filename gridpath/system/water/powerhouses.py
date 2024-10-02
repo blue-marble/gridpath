@@ -27,9 +27,11 @@ from pyomo.environ import (
     Constraint,
     Expression,
     Any,
+    value,
 )
 
 from gridpath.auxiliary.db_interface import directories_to_db_values
+from gridpath.common_functions import create_results_df
 from gridpath.project.common_functions import (
     check_if_first_timepoint,
     check_boundary_type,
@@ -59,100 +61,340 @@ def add_model_components(
 
     m.powerhouse_reservoir = Param(m.POWERHOUSES, within=m.RESERVOIRS)
 
-    m.POWERHOUSE_GENERATORS = Set(dimen=2, within=m.POWERHOUSES * m.GEN_HYDRO_SYSTEM)
+    # TODO: move this to projects
+    # m.POWERHOUSE_GENERATORS = Set(dimen=2, within=m.POWERHOUSES * m.GEN_HYDRO_SYSTEM)
 
-    def generators_by_powerhouse_init(mod):
-        init_dict = {}
-        for p, g in mod.POWERHOUSE_GENERATORS:
-            if p not in mod.POWERHOUSE_GENERATORS:
-                init_dict[p] = [g]
-            else:
-                init_dict[p].append(g)
-
-        return init_dict
-
-    m.GENERATORS_BY_POWERHOUSE = Set(
-        m.POWERHOUSES,
-        within=m.GEN_HYDRO_SYSTEM,
-        initialize=generators_by_powerhouse_init,
-    )
+    # def generators_by_powerhouse_init(mod):
+    #     init_dict = {}
+    #     for p, g in mod.POWERHOUSE_GENERATORS:
+    #         if p not in mod.POWERHOUSE_GENERATORS:
+    #             init_dict[p] = [g]
+    #         else:
+    #             init_dict[p].append(g)
+    #
+    #     return init_dict
+    #
+    # m.GENERATORS_BY_POWERHOUSE = Set(
+    #     m.POWERHOUSES,
+    #     within=m.GEN_HYDRO_SYSTEM,
+    #     initialize=generators_by_powerhouse_init,
+    # )
 
     # TODO: move to a more central location?
     # This is unit dependent; different if we are using MW, kg/s (l/s) vs cfs,
     # m vs ft; user must ensure consistent units
-    m.theoretical_power_coefficient = Param()
+    m.theoretical_power_coefficient = Param(m.POWERHOUSES, within=NonNegativeReals)
 
     # This can actually depend on flow
-    m.tailwater_elevation = Param(m.POWERHOUSES)
+    m.tailwater_elevation = Param(m.POWERHOUSES, within=NonNegativeReals)
 
     # Depends on flow
-    m.headloss_coefficient = Param(m.POWERHOUSES)
+    m.headloss_factor = Param(m.POWERHOUSES, within=NonNegativeReals)
 
     # TODO: turbine efficiency is a function of water flow through the turbine
-    m.turbine_efficiency = Param(m.POWERHOUSES)
+    m.turbine_efficiency = Param(m.POWERHOUSES, within=NonNegativeReals)
 
     # TODO: generator efficiency; a function of power output
     # TODO: move to projects
-    m.generator_efficiency = Param(m.POWERHOUSES)
+    m.generator_efficiency = Param(m.POWERHOUSES, within=NonNegativeReals)
 
     def gross_head_expression_init(mod, p, tmp):
         return (
-            mod.Reservoir_Elevation[mod.powerhouse_reservoir[p], tmp]
+            mod.Reservoir_Starting_Elevation_ElevationUnit[
+                mod.powerhouse_reservoir[p], tmp
+            ]
             - mod.tailwater_elevation[p]
         )
 
     m.Gross_Head = Expression(
         m.POWERHOUSES,
-        m.TIMEPOINTS,
-        within=NonNegativeReals,
+        m.TMPS,
         rule=gross_head_expression_init,
     )
 
     def net_head_expression_init(mod, p, tmp):
-        return mod.Gross_Head[p, tmp] * (1 - mod.headloss_coefficient[p])
+        return mod.Gross_Head[p, tmp] * (1 - mod.headloss_factor[p])
 
     m.Net_Head = Expression(
-        m.GEN_HYDRO_WATER_SYSTEM_OPR_TMPS,
-        within=NonNegativeReals,
+        m.POWERHOUSES,
+        m.TMPS,
         rule=net_head_expression_init,
     )
 
-    # Allocate water to generators within the powerhouse
-    m.Generator_Allocated_Water_Flow = Var(
-        m.GEN_HYDRO_SYSTEM, m.TMPS, within=NonNegativeReals
+    # TODO: remove this temporary variable when projects are added
+    m.GenHydroWaterSystem_Power_MW_TEMP = Var(
+        m.POWERHOUSES, m.TMPS, within=NonNegativeReals
     )
+    # # Allocate water to generators within the powerhouse
+    # m.Generator_Allocated_Water_Flow = Var(
+    #     m.GEN_HYDRO_SYSTEM, m.TMPS, within=NonNegativeReals
+    # )
+    #
+    # def generator_water_allocation_constraint_rule(mod, p, tmp):
+    #     return (
+    #         sum(
+    #             mod.Generator_Allocated_Water_Flow[g, tmp]
+    #             for g in mod.GENERATORS_BY_POWERHOUSE[p]
+    #         )
+    #         == mod.Discharge_Water_to_Powerhouse[mod.powerhouse_reservoir[p], tmp]
+    #     )
+    #
+    # m.Generator_Water_Allocation_Constraint = Constraint(
+    #     m.POWERHOUSES, m.TMPS, rule=generator_water_allocation_constraint_rule
+    # )
+    #
+    # m.GenHydroWaterSystem_Power_MW = Var(
+    #     m.GEN_HYDRO_WATER_SYSTEM_OPR_TMPS, within=NonNegativeReals
+    # )
 
-    def generator_water_allocation_constraint_rule(mod, p, tmp):
-        return (
-            sum(
-                mod.Generator_Allocated_Water_Flow[g, tmp]
-                for g in mod.GENERATORS_BY_POWERHOUSE[p]
-            )
-            == mod.Discharge_Water_to_Powerhouse[mod.powerhouse_reservoir[p], tmp]
-        )
-
-    m.Generator_Water_Allocation_Constraint = Constraint(
-        m.POWERHOUSES, m.TMPS, rule=generator_water_allocation_constraint_rule
-    )
-
-    m.GenHydroWaterSystem_Power_MW = Var(
-        m.GEN_HYDRO_WATER_SYSTEM_OPR_TMPS, within=NonNegativeReals
-    )
-
-    def water_to_power_rule(mod, g, tmp):
+    def water_to_power_rule(mod, pwrh, tmp):
         """
         Start with simple linear relationship; this actually will depend on
         volume
         """
         return (
-            mod.GenHydroWaterSystem_Power_MW[g, tmp]
-            == mod.theoretical_power_coefficient
-            * mod.Generator_Allocated_Water_Flow[g, tmp]
-            * mod.Net_Head[g, tmp]
-            * mod.turbine_efficiency[g]
-            * mod.generator_efficiency[g]
+            mod.GenHydroWaterSystem_Power_MW_TEMP[pwrh, tmp]
+            == mod.theoretical_power_coefficient[pwrh]
+            * mod.Discharge_Water_to_Powerhouse[mod.powerhouse_reservoir[pwrh], tmp]
+            * mod.Net_Head[pwrh, tmp]
+            * mod.turbine_efficiency[pwrh]
+            * mod.generator_efficiency[pwrh]
         )
 
     m.Water_to_Power_Constraint = Constraint(
-        m.GEN_HYDRO_WATER_SYSTEM_OPR_TMPS, rule=water_to_power_rule
+        m.POWERHOUSES, m.TMPS, rule=water_to_power_rule
     )
+
+
+def load_model_data(
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
+    fname = os.path.join(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+        "powerhouses.tab",
+    )
+
+    data_portal.load(
+        filename=fname,
+        index=m.POWERHOUSES,
+        param=(
+            m.powerhouse_reservoir,
+            m.theoretical_power_coefficient,
+            m.tailwater_elevation,
+            m.headloss_factor,
+            m.turbine_efficiency,
+            m.generator_efficiency,
+        ),
+    )
+
+
+def get_inputs_from_database(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
+    """
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+
+    c = conn.cursor()
+    powerhouses = c.execute(
+        f"""SELECT powerhouse, powerhouse_reservoir, 
+            theoretical_power_coefficient, tailwater_elevation, headloss_factor,
+            turbine_efficiency, generator_efficiency
+            FROM inputs_system_water_powerhouses
+            WHERE water_powerhouse_scenario_id = 
+            {subscenarios.WATER_POWERHOUSE_SCENARIO_ID}
+            ;
+            """
+    )
+
+    return powerhouses
+
+
+def validate_inputs(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
+    """
+    Get inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+    pass
+    # Validation to be added
+    # carbon_cap_zone = get_inputs_from_database(
+    #     scenario_id, subscenarios, subproblem, stage, conn)
+
+
+def write_model_inputs(
+    scenario_directory,
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
+    """
+    Get inputs from database and write out the model input
+    water_flow_bounds.tab file.
+    :param scenario_directory: string, the scenario directory
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+
+    (
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+    ) = directories_to_db_values(
+        weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
+    )
+
+    powerhouses = get_inputs_from_database(
+        scenario_id,
+        subscenarios,
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+        conn,
+    )
+
+    with open(
+        os.path.join(
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "powerhouses.tab",
+        ),
+        "w",
+        newline="",
+    ) as f:
+        writer = csv.writer(f, delimiter="\t", lineterminator="\n")
+
+        # Write header
+        writer.writerow(
+            [
+                "powerhouse",
+                "powerhouse_reservoir",
+                "theoretical_power_coefficient",
+                "tailwater_elevation",
+                "headloss_factor",
+                "turbine_efficiency",
+                "generator_efficiency",
+            ]
+        )
+
+        for row in powerhouses:
+            writer.writerow(row)
+
+
+def export_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
+):
+    """
+
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :param m:
+    :param d:
+    :return:
+    """
+    # TODO: add results
+    results_columns = [
+        "reservoir",
+        "gross_head",
+        "net_head",
+        "water_discharge_to_powerhouse",
+        "power",
+    ]
+    data = [
+        [
+            p,
+            tmp,
+            m.powerhouse_reservoir[p],
+            value(m.Gross_Head[p, tmp]),
+            value(m.Net_Head[p, tmp]),
+            value(m.Discharge_Water_to_Powerhouse[m.powerhouse_reservoir[p], tmp]),
+            value(m.GenHydroWaterSystem_Power_MW_TEMP[p, tmp]),
+        ]
+        for p in m.POWERHOUSES
+        for tmp in m.TMPS
+    ]
+    results_df = create_results_df(
+        index_columns=["powerhouse", "timepoint"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    results_df.to_csv(
+        os.path.join(
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "results",
+            "powerhouse_timepoint.csv",
+        ),
+        sep=",",
+        index=True,
+    )
+
+
+# TODO: results import
