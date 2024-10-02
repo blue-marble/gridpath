@@ -87,6 +87,7 @@ def all_modules_list():
         "system.markets.prices",
         "system.water.reservoirs",
         "system.water.water_flows",
+        "system.water.water_node_balance",
         "project",
         "project.capacity",
         "project.capacity.capacity_types",
@@ -465,6 +466,7 @@ def optional_modules_list():
             "geography.water_network",
             "system.water.reservoirs",
             "system.water.water_flows",
+            "system.water.water_node_balance",
         ],
         "tuning": [
             "project.operations.tuning_costs",

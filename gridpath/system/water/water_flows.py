@@ -18,18 +18,20 @@ Water nodes and connections for modeling cascading hydro systems.
 
 import csv
 import os.path
+
 from pyomo.environ import (
     Set,
     Param,
-    Boolean,
     NonNegativeReals,
     Var,
     Constraint,
     Expression,
     Any,
+    value,
 )
 
 from gridpath.auxiliary.db_interface import directories_to_db_values
+from gridpath.common_functions import create_results_df
 from gridpath.project.common_functions import (
     check_if_first_timepoint,
     check_boundary_type,
@@ -252,3 +254,59 @@ def write_model_inputs(
 
             for row in water_flow_bounds_list:
                 writer.writerow(row)
+
+
+def export_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
+):
+    """
+
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :param m:
+    :param d:
+    :return:
+    """
+    results_columns = [
+        "water_flow",
+    ]
+    data = [
+        [
+            wl,
+            tmp,
+            value(m.Water_Link_Flow_Vol_per_Sec_in_Tmp[wl, tmp]),
+        ]
+        for wl in m.WATER_LINKS
+        for tmp in m.TMPS
+    ]
+    results_df = create_results_df(
+        index_columns=["water_link", "timepoint"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    results_df.to_csv(
+        os.path.join(
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "results",
+            "water_link_timepoint.csv",
+        ),
+        sep=",",
+        index=True,
+    )
+
+
+# TODO: results import

@@ -1108,6 +1108,7 @@ CREATE TABLE inputs_system_water_reservoirs_target_elevations
 --     PRIMARY KEY (reservoir, evaporation_coefficient_scenario_id)
 -- );
 
+-- Water flows
 DROP TABLE IF EXISTS subscenarios_system_water_flows;
 CREATE TABLE subscenarios_system_water_flows
 (
@@ -1127,6 +1128,27 @@ CREATE TABLE inputs_system_water_flows
     PRIMARY KEY (water_flow_scenario_id, water_link, timepoint),
     FOREIGN KEY (water_flow_scenario_id) REFERENCES
         subscenarios_system_water_flows (water_flow_scenario_id)
+);
+
+-- Water nodes
+DROP TABLE IF EXISTS subscenarios_system_water_inflows;
+CREATE TABLE subscenarios_system_water_inflows
+(
+    water_inflow_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name                     VARCHAR(32),
+    description              VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_system_water_inflows;
+CREATE TABLE inputs_system_water_inflows
+(
+    water_inflow_scenario_id INTEGER,
+    water_node               TEXT,
+    timepoint                FLOAT,
+    exogenous_water_inflow_vol_per_sec   TEXT,
+    PRIMARY KEY (water_inflow_scenario_id, water_node, timepoint),
+    FOREIGN KEY (water_inflow_scenario_id) REFERENCES
+        subscenarios_system_water_inflows (water_inflow_scenario_id)
 );
 
 
@@ -4216,6 +4238,7 @@ CREATE TABLE scenarios
     market_volume_scenario_id                                   INTEGER,
     water_reservoir_scenario_id                                 INTEGER,
     water_flow_scenario_id                                      INTEGER,
+    water_inflow_scenario_id                                    INTEGER,
     tuning_scenario_id                                          INTEGER,
     solver_options_id                                           INTEGER,
     FOREIGN KEY (validation_status_id) REFERENCES
@@ -4478,6 +4501,8 @@ CREATE TABLE scenarios
         subscenarios_system_water_reservoirs (water_reservoir_scenario_id),
     FOREIGN KEY (water_flow_scenario_id) REFERENCES
         subscenarios_system_water_flows (water_flow_scenario_id),
+    FOREIGN KEY (water_inflow_scenario_id) REFERENCES
+        subscenarios_system_water_inflows (water_inflow_scenario_id),
     FOREIGN KEY (tuning_scenario_id) REFERENCES
         subscenarios_tuning (tuning_scenario_id),
     FOREIGN KEY (solver_options_id)

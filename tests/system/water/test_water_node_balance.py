@@ -29,8 +29,10 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.operations.horizons",
     "temporal.investment.periods",
     "geography.water_network",
+    "system.water.reservoirs",
+    "system.water.water_flows",
 ]
-NAME_OF_MODULE_BEING_TESTED = "system.water.water_flows"
+NAME_OF_MODULE_BEING_TESTED = "system.water.water_node_balance"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -48,7 +50,7 @@ except ImportError:
     print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED + " to test.")
 
 
-class TestWaterFlows(unittest.TestCase):
+class TestWaterNodeBalance(unittest.TestCase):
     """ """
 
     def test_add_model_components(self):
@@ -100,42 +102,24 @@ class TestWaterFlows(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Param: min_flow_vol_per_second
+        # Param: exogenous_water_inflow_vol_per_sec
         df = pd.read_csv(
-            os.path.join(TEST_DATA_DIRECTORY, "inputs", "water_flow_bounds.tab"),
+            os.path.join(TEST_DATA_DIRECTORY, "inputs", "water_inflows.tab"),
             sep="\t",
         )
 
         # Check that no values are getting the default value of 0
         df = df.replace(".", 0)
-        df["min_flow_vol_per_second"] = pd.to_numeric(df["min_flow_vol_per_second"])
+        df["exogenous_water_inflow_vol_per_sec"] = pd.to_numeric(
+            df["exogenous_water_inflow_vol_per_sec"]
+        )
 
-        expected_min_bound = df.set_index(["water_link", "timepoint"]).to_dict()[
-            "min_flow_vol_per_second"
+        expected_min_bound = df.set_index(["water_node", "timepoint"]).to_dict()[
+            "exogenous_water_inflow_vol_per_sec"
         ]
         actual_min_bound = {
-            (wl, tmp): instance.min_flow_vol_per_second[wl, tmp]
-            for wl in instance.WATER_LINKS
+            (wl, tmp): instance.exogenous_water_inflow_vol_per_sec[wl, tmp]
+            for wl in instance.WATER_NODES
             for tmp in instance.TMPS
         }
         self.assertDictEqual(expected_min_bound, actual_min_bound)
-
-        # Param: max_flow_vol_per_second
-        df = pd.read_csv(
-            os.path.join(TEST_DATA_DIRECTORY, "inputs", "water_flow_bounds.tab"),
-            sep="\t",
-        )
-
-        # Check that no values are getting the default value of infinity
-        df = df.replace(".", float("inf"))
-        df["max_flow_vol_per_second"] = pd.to_numeric(df["max_flow_vol_per_second"])
-
-        expected_max_bound = df.set_index(["water_link", "timepoint"]).to_dict()[
-            "max_flow_vol_per_second"
-        ]
-        actual_max_bound = {
-            (wl, tmp): instance.max_flow_vol_per_second[wl, tmp]
-            for wl in instance.WATER_LINKS
-            for tmp in instance.TMPS
-        }
-        self.assertDictEqual(expected_max_bound, actual_max_bound)

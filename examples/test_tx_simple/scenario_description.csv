@@ -132,4 +132,5 @@ market_price_scenario_id,NULL
 market_volume_scenario_id,NULL
 water_reservoir_scenario_id,NULL
 water_flow_scenario_id,NULL
+water_inflow_scenario_id,NULL
 tuning_scenario_id,NULL
