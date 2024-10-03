@@ -29,7 +29,8 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.operations.horizons",
     "temporal.investment.periods",
     "geography.water_network",
-    "system.water.reservoirs",
+    "system.water.water_flows",
+    "system.water.water_node_balance",
 ]
 NAME_OF_MODULE_BEING_TESTED = "system.water.powerhouses"
 IMPORTED_PREREQ_MODULES = list()
@@ -101,12 +102,14 @@ class TestWaterNodeBalance(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Param: powerhouse_reservoir
+        # Param: powerhouse_water_node
         expected_res = {
-            "Powerhouse1": "Reservoir1",
-            "Powerhouse2": "Reservoir2",
+            "Powerhouse1": "Water_Node_1",
+            "Powerhouse2": "Water_Node_2",
         }
-        actual_res = {p: instance.powerhouse_reservoir[p] for p in instance.POWERHOUSES}
+        actual_res = {
+            p: instance.powerhouse_water_node[p] for p in instance.POWERHOUSES
+        }
         self.assertDictEqual(expected_res, actual_res)
 
         # Param: theoretical_power_coefficient

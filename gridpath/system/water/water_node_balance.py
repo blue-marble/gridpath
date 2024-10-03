@@ -252,7 +252,9 @@ def add_model_components(
         """ """
         # If no reservoir, simply set inflows equal to release
         if wn not in mod.WATER_NODES_W_RESERVOIRS:
-            return get_inflow_volunit_per_hour_in_tmp(mod, wn, tmp) == get_release_volunit_per_hour_in_tmp(mod, wn, tmp)
+            return get_inflow_volunit_per_hour_in_tmp(
+                mod, wn, tmp
+            ) == get_release_volunit_per_hour_in_tmp(mod, wn, tmp)
         # If the node does have a reservoir, we'll track the water in storage
         else:
             if check_if_first_timepoint(
@@ -687,7 +689,7 @@ def export_results(
             sum(
                 value(m.Water_Link_Flow_Vol_per_Sec_in_Tmp[wl, tmp])
                 for wl in m.WATER_LINKS_FROM_BY_WATER_NODE[wn]
-            )
+            ),
         ]
         for wn in m.WATER_NODES
         for tmp in m.TMPS

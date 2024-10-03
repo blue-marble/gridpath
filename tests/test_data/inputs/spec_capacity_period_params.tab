@@ -44,3 +44,5 @@ DAC	2020	1000							10
 DAC	2030	1000							10						
 Flex_Load	2020	10							0						
 Flex_Load	2030	20							0						
+Hydro_System_Gen1	2020	100							0						
+Hydro_System_Gen1	2030	100							0						

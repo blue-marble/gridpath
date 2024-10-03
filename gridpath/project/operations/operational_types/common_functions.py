@@ -1089,6 +1089,8 @@ def get_optype_inputs_from_db(scenario_id, subscenarios, conn, op_type):
         "aux_consumption_frac_power",
         "powerunithour_per_fuelunit",
         "partial_availability_threshold",
+        "powerhouse",
+        "generator_efficiency",
     ]
 
     sql = """SELECT {}

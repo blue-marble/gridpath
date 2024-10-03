@@ -94,10 +94,6 @@ def add_model_components(
     # TODO: turbine efficiency is a function of water flow through the turbine
     m.turbine_efficiency = Param(m.POWERHOUSES, within=NonNegativeReals)
 
-    # TODO: generator efficiency; a function of power output
-    # TODO: move to projects
-    m.generator_efficiency = Param(m.POWERHOUSES, within=NonNegativeReals)
-
     def gross_head_expression_init(mod, p, tmp):
         return (
             mod.Reservoir_Starting_Elevation_ElevationUnit[
@@ -121,10 +117,6 @@ def add_model_components(
         rule=net_head_expression_init,
     )
 
-    # TODO: remove this temporary variable when projects are added
-    m.GenHydroWaterSystem_Power_MW_TEMP = Var(
-        m.POWERHOUSES, m.TMPS, within=NonNegativeReals
-    )
     # # Allocate water to generators within the powerhouse
     # m.Generator_Allocated_Water_Flow = Var(
     #     m.GEN_HYDRO_SYSTEM, m.TMPS, within=NonNegativeReals
@@ -147,22 +139,20 @@ def add_model_components(
     #     m.GEN_HYDRO_WATER_SYSTEM_OPR_TMPS, within=NonNegativeReals
     # )
 
-    def water_to_power_rule(mod, pwrh, tmp):
+    def water_to_power_init(mod, pwrh, tmp):
         """
         Start with simple linear relationship; this actually will depend on
         volume
         """
         return (
-            mod.GenHydroWaterSystem_Power_MW_TEMP[pwrh, tmp]
-            == mod.theoretical_power_coefficient[pwrh]
+            mod.theoretical_power_coefficient[pwrh]
             * mod.Discharge_Water_to_Powerhouse[mod.powerhouse_water_node[pwrh], tmp]
             * mod.Net_Head[pwrh, tmp]
             * mod.turbine_efficiency[pwrh]
-            * mod.generator_efficiency[pwrh]
         )
 
-    m.Water_to_Power_Constraint = Constraint(
-        m.POWERHOUSES, m.TMPS, rule=water_to_power_rule
+    m.Powerhouse_Output_Single_Generator = Expression(
+        m.POWERHOUSES, m.TMPS, initialize=water_to_power_init
     )
 
 
@@ -197,7 +187,6 @@ def load_model_data(
             m.tailwater_elevation,
             m.headloss_factor,
             m.turbine_efficiency,
-            m.generator_efficiency,
         ),
     )
 
@@ -224,7 +213,7 @@ def get_inputs_from_database(
     powerhouses = c.execute(
         f"""SELECT powerhouse, powerhouse_water_node, 
             theoretical_power_coefficient, tailwater_elevation, headloss_factor,
-            turbine_efficiency, generator_efficiency
+            turbine_efficiency
             FROM inputs_system_water_powerhouses
             WHERE water_powerhouse_scenario_id = 
             {subscenarios.WATER_POWERHOUSE_SCENARIO_ID}
@@ -327,7 +316,6 @@ def write_model_inputs(
                 "tailwater_elevation",
                 "headloss_factor",
                 "turbine_efficiency",
-                "generator_efficiency",
             ]
         )
 
@@ -360,7 +348,6 @@ def export_results(
         "gross_head",
         "net_head",
         "water_discharge_to_powerhouse",
-        "power",
     ]
     data = [
         [
@@ -370,7 +357,6 @@ def export_results(
             value(m.Gross_Head[p, tmp]),
             value(m.Net_Head[p, tmp]),
             value(m.Discharge_Water_to_Powerhouse[m.powerhouse_water_node[p], tmp]),
-            value(m.GenHydroWaterSystem_Power_MW_TEMP[p, tmp]),
         ]
         for p in m.POWERHOUSES
         for tmp in m.TMPS

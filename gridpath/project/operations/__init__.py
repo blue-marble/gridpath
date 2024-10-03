@@ -925,7 +925,8 @@ def get_inputs_from_database(
         powerunithour_per_fuelunit, soc_penalty_cost_per_energyunit,
         soc_last_tmp_penalty_cost_per_energyunit,
         partial_availability_threshold,
-        nonfuel_carbon_emissions_per_mwh
+        nonfuel_carbon_emissions_per_mwh,
+        powerhouse, generator_efficiency
         -- Get only the subset of projects in the portfolio with their 
         -- capacity types based on the project_portfolio_scenario_id 
         FROM
@@ -1250,6 +1251,8 @@ def write_model_inputs(
         "soc_last_tmp_penalty_cost_per_energyunit",
         "partial_availability_threshold",
         "nonfuel_carbon_emissions_per_mwh",
+        "powerhouse",
+        "generator_efficiency",
     ]
 
     append_to_input_file(
@@ -1645,6 +1648,8 @@ def validate_inputs(
         "aux_consumption_frac_power",
         "partial_availability_threshold",
         "nonfuel_carbon_emissions_per_mwh",
+        "powerhouse",
+        "generator_efficiency",
     ]
 
     sql = """SELECT {}
