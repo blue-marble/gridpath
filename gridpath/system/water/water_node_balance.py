@@ -228,8 +228,9 @@ def add_model_components(
         rule=reservoir_elevation_max_bound_constraint_rule,
     )
 
-    def get_inflow_in_tmp(mod, wn, tmp):
-        # TODO: check and document multiplication by 3600
+    def get_inflow_volunit_per_hour_in_tmp(mod, wn, tmp):
+        # TODO: check and document multiplication by 3600 to get from per s
+        #  to per h
         inflow_in_tmp = (
             mod.exogenous_water_inflow_vol_per_sec[wn, tmp]
             + sum(
@@ -240,8 +241,9 @@ def add_model_components(
 
         return inflow_in_tmp
 
-    def get_release_in_tmp(mod, wn, tmp):
-        # TODO: check and document multiplication by 3600
+    def get_release_volunit_per_hour_in_tmp(mod, wn, tmp):
+        # TODO: check and document multiplication by 3600 to get from per s
+        #  to per h
         outflow_in_tmp = mod.Gross_Water_Node_Release[wn, tmp] * 3600
 
         return outflow_in_tmp
@@ -250,7 +252,7 @@ def add_model_components(
         """ """
         # If no reservoir, simply set inflows equal to release
         if wn not in mod.WATER_NODES_W_RESERVOIRS:
-            return get_inflow_in_tmp(mod, wn, tmp) == get_release_in_tmp(mod, wn, tmp)
+            return get_inflow_volunit_per_hour_in_tmp(mod, wn, tmp) == get_release_volunit_per_hour_in_tmp(mod, wn, tmp)
         # If the node does have a reservoir, we'll track the water in storage
         else:
             if check_if_first_timepoint(
@@ -296,11 +298,11 @@ def add_model_components(
 
                     # TODO: units; make clear net flows are per s
                     # Inflows and releases
-                    prev_tmp_inflow = get_inflow_in_tmp(
+                    prev_tmp_inflow = get_inflow_volunit_per_hour_in_tmp(
                         mod, wn, mod.prev_tmp[tmp, mod.balancing_type_reservoir[wn]]
                     )
 
-                    prev_tmp_release = get_release_in_tmp(
+                    prev_tmp_release = get_release_volunit_per_hour_in_tmp(
                         mod, wn, mod.prev_tmp[tmp, mod.balancing_type_reservoir[wn]]
                     )
 
@@ -314,22 +316,26 @@ def add_model_components(
                 )
 
     m.Water_Mass_Balance_Constraint = Constraint(
-        m.WATER_NODES_W_RESERVOIRS, m.TMPS, rule=water_mass_balance_constraint_rule
+        m.WATER_NODES, m.TMPS, rule=water_mass_balance_constraint_rule
     )
 
     # Set the sum of outflows from the node to be equal to discharge & spill
     def enforce_outflow_rule(mod, wn, tmp):
         """
         The sum of the flows on all links from this node must equal the gross
-        outflow from the node.
+        outflow from the node. Skip constraint for the last node in the
+        network with no out links.
         """
-        return (
-            sum(
-                mod.Water_Link_Flow_Vol_per_Sec_in_Tmp[wl, tmp]
-                for wl in mod.WATER_LINKS_FROM_BY_WATER_NODE[wn]
+        if [wl for wl in mod.WATER_LINKS_FROM_BY_WATER_NODE[wn]]:
+            return (
+                sum(
+                    mod.Water_Link_Flow_Vol_per_Sec_in_Tmp[wl, tmp]
+                    for wl in mod.WATER_LINKS_FROM_BY_WATER_NODE[wn]
+                )
+                == mod.Gross_Water_Node_Release[wn, tmp]
             )
-            == mod.Gross_Water_Node_Release[wn, tmp]
-        )
+        else:
+            return Constraint.Skip
 
     m.Water_Node_Outflow_Constraint = Constraint(
         m.WATER_NODES, m.TMPS, rule=enforce_outflow_rule
@@ -645,9 +651,12 @@ def export_results(
     results_columns = [
         "starting_elevation",
         "starting_volume",
-        "store_water",
+        "exogenous_water_inflows",
+        "endogenous_water_inflows",
         "discharge_water_to_powerhouse",
         "spill_water",
+        "evap_losses",
+        "endogenous_water_outflows",
     ]
     data = [
         [
@@ -663,6 +672,11 @@ def export_results(
                 if wn in m.WATER_NODES_W_RESERVOIRS
                 else None
             ),
+            m.exogenous_water_inflow_vol_per_sec[wn, tmp],
+            sum(
+                value(m.Water_Link_Flow_Vol_per_Sec_in_Tmp[wl, tmp])
+                for wl in m.WATER_LINKS_TO_BY_WATER_NODE[wn]
+            ),
             value(m.Discharge_Water_to_Powerhouse[wn, tmp]),
             value(m.Spill_Water[wn, tmp]),
             (
@@ -670,6 +684,10 @@ def export_results(
                 if wn in m.WATER_NODES_W_RESERVOIRS
                 else None
             ),
+            sum(
+                value(m.Water_Link_Flow_Vol_per_Sec_in_Tmp[wl, tmp])
+                for wl in m.WATER_LINKS_FROM_BY_WATER_NODE[wn]
+            )
         ]
         for wn in m.WATER_NODES
         for tmp in m.TMPS
