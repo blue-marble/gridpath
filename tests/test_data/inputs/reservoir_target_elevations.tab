@@ -1,4 +1,4 @@
 reservoir	timepoint	reservoir_target_elevation
-Reservoir1	20200101	1100
-Reservoir2	20200101	750
-Reservoir3	20200101	550
+Water_Node_1	20200101	1100
+Water_Node_2	20200101	750
+Water_Node_3	20200101	550

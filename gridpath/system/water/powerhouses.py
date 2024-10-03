@@ -59,7 +59,7 @@ def add_model_components(
 
     m.POWERHOUSES = Set(within=Any)
 
-    m.powerhouse_reservoir = Param(m.POWERHOUSES, within=m.RESERVOIRS)
+    m.powerhouse_water_node = Param(m.POWERHOUSES, within=m.WATER_NODES)
 
     # TODO: move this to projects
     # m.POWERHOUSE_GENERATORS = Set(dimen=2, within=m.POWERHOUSES * m.GEN_HYDRO_SYSTEM)
@@ -101,7 +101,7 @@ def add_model_components(
     def gross_head_expression_init(mod, p, tmp):
         return (
             mod.Reservoir_Starting_Elevation_ElevationUnit[
-                mod.powerhouse_reservoir[p], tmp
+                mod.powerhouse_water_node[p], tmp
             ]
             - mod.tailwater_elevation[p]
         )
@@ -136,7 +136,7 @@ def add_model_components(
     #             mod.Generator_Allocated_Water_Flow[g, tmp]
     #             for g in mod.GENERATORS_BY_POWERHOUSE[p]
     #         )
-    #         == mod.Discharge_Water_to_Powerhouse[mod.powerhouse_reservoir[p], tmp]
+    #         == mod.Discharge_Water_to_Powerhouse[mod.powerhouse_water_node[p], tmp]
     #     )
     #
     # m.Generator_Water_Allocation_Constraint = Constraint(
@@ -155,7 +155,7 @@ def add_model_components(
         return (
             mod.GenHydroWaterSystem_Power_MW_TEMP[pwrh, tmp]
             == mod.theoretical_power_coefficient[pwrh]
-            * mod.Discharge_Water_to_Powerhouse[mod.powerhouse_reservoir[pwrh], tmp]
+            * mod.Discharge_Water_to_Powerhouse[mod.powerhouse_water_node[pwrh], tmp]
             * mod.Net_Head[pwrh, tmp]
             * mod.turbine_efficiency[pwrh]
             * mod.generator_efficiency[pwrh]
@@ -192,7 +192,7 @@ def load_model_data(
         filename=fname,
         index=m.POWERHOUSES,
         param=(
-            m.powerhouse_reservoir,
+            m.powerhouse_water_node,
             m.theoretical_power_coefficient,
             m.tailwater_elevation,
             m.headloss_factor,
@@ -222,7 +222,7 @@ def get_inputs_from_database(
 
     c = conn.cursor()
     powerhouses = c.execute(
-        f"""SELECT powerhouse, powerhouse_reservoir, 
+        f"""SELECT powerhouse, powerhouse_water_node, 
             theoretical_power_coefficient, tailwater_elevation, headloss_factor,
             turbine_efficiency, generator_efficiency
             FROM inputs_system_water_powerhouses
@@ -322,7 +322,7 @@ def write_model_inputs(
         writer.writerow(
             [
                 "powerhouse",
-                "powerhouse_reservoir",
+                "powerhouse_water_node",
                 "theoretical_power_coefficient",
                 "tailwater_elevation",
                 "headloss_factor",
@@ -366,10 +366,10 @@ def export_results(
         [
             p,
             tmp,
-            m.powerhouse_reservoir[p],
+            m.powerhouse_water_node[p],
             value(m.Gross_Head[p, tmp]),
             value(m.Net_Head[p, tmp]),
-            value(m.Discharge_Water_to_Powerhouse[m.powerhouse_reservoir[p], tmp]),
+            value(m.Discharge_Water_to_Powerhouse[m.powerhouse_water_node[p], tmp]),
             value(m.GenHydroWaterSystem_Power_MW_TEMP[p, tmp]),
         ]
         for p in m.POWERHOUSES

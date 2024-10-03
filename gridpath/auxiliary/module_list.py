@@ -85,7 +85,6 @@ def all_modules_list():
         "system.reliability.local_capacity",
         "system.reliability.local_capacity.local_capacity_requirement",
         "system.markets.prices",
-        "system.water.reservoirs",
         "system.water.water_flows",
         "system.water.water_node_balance",
         "system.water.powerhouses",
@@ -465,9 +464,8 @@ def optional_modules_list():
         ],
         "water": [
             "geography.water_network",
-            "system.water.reservoirs",
-            "system.water.water_flows",
             "system.water.water_node_balance",
+            "system.water.water_flows",
             "system.water.powerhouses",
         ],
         "tuning": [
