@@ -9,6 +9,7 @@ with open("./version.py") as fp:
 extras_doc = [
     "Sphinx==7.2.6",
     "sphinx-argparse==0.4.0",
+    "df2img",
 ]
 extras_ui = [
     "eventlet==0.33.3",  # Async mode for SocketIO
@@ -52,7 +53,7 @@ setup(
     keywords=["energy", "electricity", "power", "renewables", "planning", "operations"],
     packages=find_packages(),
     install_requires=[
-        "Pyomo==6.7.1",  # Optimization modeling language
+        "Pyomo==6.8.0",  # Optimization modeling language
         "pandas==2.2.1",  # Data-processing
         "bokeh==2.2.3",  # Visualization library (required - see #779)
         "pscript==0.7.5",  # Python to JavaScript compiler (for viz)

@@ -1,0 +1,3 @@
+stage_id,balancing_type_horizon,horizon,tmp_start,tmp_start_spinup_or_lookahead,tmp_end,tmp_end_spinup_or_lookahead
+1,week,1,1,0,168,0
+1,week,2,169,0,336,0

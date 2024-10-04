@@ -27,6 +27,7 @@ from pyomo.environ import (
     Set,
     Var,
     Constraint,
+    Boolean,
     PercentFraction,
     value,
     NonNegativeReals,
@@ -92,6 +93,13 @@ def add_model_components(
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
     | The number of hours the project must be unavailable per period.         |
+    +-------------------------------------------------------------------------+
+    | | :code:`avl_cont_unavl_hrs_per_prd_req_exact`                          |
+    | | *Defined over*: :code:`AVL_BIN`                                       |
+    | | *Within*: :code:`Boolean`                                             |
+    |                                                                         |
+    | Require exactly the number of hours the project must be unavailable per |
+    | period. If set to 0, the constraint is soft.                            |
     +-------------------------------------------------------------------------+
     | | :code:`avl_cont_min_unavl_hrs_per_event`                              |
     | | *Defined over*: :code:`AVL_CONT`                                      |
@@ -195,6 +203,7 @@ def add_model_components(
     ###########################################################################
 
     m.avl_cont_unavl_hrs_per_prd = Param(m.AVL_CONT, within=NonNegativeReals)
+    m.avl_cont_unavl_hrs_per_prd_req_exact = Param(m.AVL_CONT, within=Boolean)
 
     m.avl_cont_min_unavl_hrs_per_event = Param(m.AVL_CONT, within=NonNegativeReals)
 
@@ -238,17 +247,18 @@ def total_scheduled_availability_per_period_rule(mod, g, p):
     **Constraint Name**: AvlCont_Tot_Sched_Unavl_per_Prd_Constraint
     **Enforced Over**: AVL_CONT_OPR_PRDS
 
-    The project must be down for avl_cont_unavl_hrs_per_prd in each period.
-    TODO: it's possible that solve time will be faster if we make this
-        constraint >= instead of ==, but then degeneracy could be an issue
+    The project must be down for avl_cont_unavl_hrs_per_prd in each period if
+    avl_cont_unavl_hrs_per_prd_req_exact is 1 or at least
+    avl_cont_unavl_hrs_per_prd otherwise.
     """
-    return (
-        sum(
-            mod.AvlCont_Unavailable[g, tmp] * mod.hrs_in_tmp[tmp] * mod.tmp_weight[tmp]
-            for tmp in mod.TMPS_IN_PRD[p]
-        )
-        == mod.avl_cont_unavl_hrs_per_prd[g]
+    lhs = sum(
+        mod.AvlCont_Unavailable[g, tmp] * mod.hrs_in_tmp[tmp] * mod.tmp_weight[tmp]
+        for tmp in mod.TMPS_IN_PRD[p]
     )
+    if mod.avl_cont_unavl_hrs_per_prd_req_exact:
+        return lhs == mod.avl_cont_unavl_hrs_per_prd[g]
+    else:
+        return lhs >= mod.avl_cont_unavl_hrs_per_prd[g]
 
 
 def unavailability_start_and_stop_rule(mod, g, tmp):
@@ -375,6 +385,7 @@ def load_model_data(
     data_portal.data()["AVL_CONT"] = {None: project_subset}
 
     avl_cont_unavl_hrs_per_prd_dict = {}
+    avl_cont_unavl_hrs_per_prd_exact_dict = {}
     avl_cont_min_unavl_hrs_per_event_dict = {}
     avl_cont_min_avl_hrs_between_events_dict = {}
 
@@ -397,10 +408,14 @@ def load_model_data(
         for row in reader:
             if row[0] in project_subset:
                 avl_cont_unavl_hrs_per_prd_dict[row[0]] = float(row[1])
-                avl_cont_min_unavl_hrs_per_event_dict[row[0]] = float(row[2])
-                avl_cont_min_avl_hrs_between_events_dict[row[0]] = float(row[3])
+                avl_cont_unavl_hrs_per_prd_exact_dict[row[0]] = int(float(row[2]))
+                avl_cont_min_unavl_hrs_per_event_dict[row[0]] = float(row[3])
+                avl_cont_min_avl_hrs_between_events_dict[row[0]] = float(row[4])
 
     data_portal.data()["avl_cont_unavl_hrs_per_prd"] = avl_cont_unavl_hrs_per_prd_dict
+    data_portal.data()[
+        "avl_cont_unavl_hrs_per_prd_req_exact"
+    ] = avl_cont_unavl_hrs_per_prd_exact_dict
     data_portal.data()[
         "avl_cont_min_unavl_hrs_per_event"
     ] = avl_cont_min_unavl_hrs_per_event_dict
@@ -480,6 +495,7 @@ def get_inputs_from_database(
     availability_params = c.execute(
         """
             SELECT project, unavailable_hours_per_period, 
+            unavailable_hours_per_period_require_exact,
             unavailable_hours_per_event_min,
             available_hours_between_events_min
             FROM (
@@ -557,6 +573,7 @@ def write_model_inputs(
                 [
                     "project",
                     "unavailable_hours_per_period",
+                    "unavailable_hours_per_period_require_exact",
                     "unavailable_hours_per_event_min",
                     "available_hours_between_events_min",
                 ]

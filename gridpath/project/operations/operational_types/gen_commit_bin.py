@@ -108,10 +108,12 @@ def online_capacity_rule(mod, g, tmp):
 
 def variable_om_cost_rule(mod, g, tmp):
     """
-    Variable O&M cost has two components which are additive:
+    Variable O&M cost has three components which are additive:
     1. A fixed variable O&M rate (cost/MWh) that doesn't change with loading
        levels: :code:`variable_om_cost_per_mwh`.
-    2. A variable variable O&M rate that changes with the loading level,
+    2. A fixed variable O&M rate by period (cost/MWh) that doesn't change with
+       loading levels: :code:`variable_om_cost_per_mwh_by_period`.
+    3. A variable variable O&M rate that changes with the loading level,
        similar to the heat rates. The idea is to represent higher variable cost
        rates at lower loading levels. This is captured in the
        :code:`GenCommitBin_Variable_OM_Cost_By_LL` decision variable. If no
@@ -128,6 +130,11 @@ def variable_om_cost_rule(mod, g, tmp):
     the gross power.
     """
     return gen_commit_unit_common.variable_om_cost_rule(mod, g, tmp, "Bin")
+
+
+def variable_om_by_period_cost_rule(mod, g, tmp):
+    """ """
+    return gen_commit_unit_common.variable_om_by_period_cost_rule(mod, g, tmp, "Lin")
 
 
 def variable_om_cost_by_ll_rule(mod, g, tmp, s):

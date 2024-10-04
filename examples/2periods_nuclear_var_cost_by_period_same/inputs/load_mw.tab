@@ -1,0 +1,5 @@
+LOAD_ZONES	timepoint	load_mw
+Zone1	20200101	10.0
+Zone1	20200102	20.0
+Zone1	20300101	10.0
+Zone1	20300102	20.0

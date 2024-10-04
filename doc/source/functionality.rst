@@ -152,10 +152,14 @@ Timepoints
 See :ref:`subproblems-sub-section-ref` and
 :ref:`stages-sub-section-ref` for more information.
 
+.. _horizons-sub-section-ref:
+
 Balancing Types and Horizons
 ----------------------------
 
 .. automodule:: gridpath.temporal.operations.horizons
+
+.. _periods-sub-section-ref:
 
 Periods
 -------
@@ -573,6 +577,26 @@ biomass plant will contribute its full capacity times the timepoint duration in 
 timepoint while a wind project will contribute its capacity factor times its capacity).
 The model aggregates all projects' contributions for each period and ensures
 that the RPS requirement is met in each RPS zone and period.
+
+Instantaneous Penetration
+---------------------------------------------------
+GridPath can optionally impose minimal and maximal constraints on the instantaneous
+penetration of eligible projects. The user must first define the zones with
+instantaneous penetration requirements. The instantaneous penetration requirement
+is a timepoint constraint. Each instantaneous penetration-eligible project must be
+assigned an instantaneous penetration zone, and the model aggregates all projects
+contributions for each timepoint ensuring that the total penetration respects the
+set minimum and maximum requirement. The minimum and maximum penetration requirements
+are set as the sum of:
+
+* Exogenously input power levels (MW) at a timepoint resolution.
+* A percentage of the load at every timepoint.
+* The capacity of other projects.
+* The Power output of other projects.
+
+As a default, all requirements are set at 0 except for the percentage of the load for
+the maximum penetration which is set to 100%.
+
 
 Carbon Cap or Carbon Cost
 -------------------------

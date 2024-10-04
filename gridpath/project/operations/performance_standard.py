@@ -49,23 +49,13 @@ def add_model_components(
     +-------------------------------------------------------------------------+
     | Sets                                                                    |
     +=========================================================================+
-    | | :code:`PERFORMANCE_STANDARD_PRJS`                                     |
-    | | *Within*: :code:`PROJECTS`                                            |
+    | | :code:`PERFORMANCE_STANDARD_PRJS_PERFORMANCE_STANDARD_ZONES`          |
+    | | *Within*: :code:`m.PROJECTS * m.PERFORMANCE_STANDARD_ZONES`           |
     |                                                                         |
     | set of projects we need to track for the performance standard.          |
-    +-------------------------------------------------------------------------+
-
-    |
-
-    +-------------------------------------------------------------------------+
-    | Required Input Params                                                   |
-    +=========================================================================+
-    | | :code:`performance_standard_zone`                                     |
-    | | *Defined over*: :code:`PERFORMANCE_STANDARD_PRJS`                     |
-    | | *Within*: :code:`PERFORMANCE_STANDARD_ZONES`                          |
-    |                                                                         |
-    | This param describes the performance standard zone for each             |
-    | performance standard project.                                           |
+    | Two-dimensional set of performance standard projects and the            |
+    | performance standard zones they contribute to. Projects can contribute  |
+    | to multiple performance standard zones.                                 |
     +-------------------------------------------------------------------------+
 
     |
@@ -73,6 +63,12 @@ def add_model_components(
     +-------------------------------------------------------------------------+
     | Derived Sets                                                            |
     +=========================================================================+
+    | | :code:`PERFORMANCE_STANDARD_PRJS`                                     |
+    | | *Within*: :code:`PROJECTS`                                            |
+    |                                                                         |
+    | Two set of performance standard projects we need to track for the       |
+    | performance standard.                                                   |
+    +-------------------------------------------------------------------------+
     | | :code:`PERFORMANCE_STANDARD_PRJS_BY_PERFORMANCE_STANDARD_ZONE`        |
     | | *Defined over*: :code:`PERFORMANCE_STANDARD_ZONES`                    |
     | | *Within*: :code:`PERFORMANCE_STANDARD_PRJS`                           |
@@ -86,30 +82,48 @@ def add_model_components(
     | Two-dimensional set that defines all project-timepoint combinations     |
     | when a performance standard project can be operational.                 |
     +-------------------------------------------------------------------------+
+    | | :code:`PERFORMANCE_STANDARD_OPR_PRDS`                                 |
+    | | *Within*: :code:`PRJ_OPR_PRDS`                                        |
+    |                                                                         |
+    | Two-dimensional set that defines all project-period combinations        |
+    | when a performance standard project can be operational.                 |
+    +-------------------------------------------------------------------------+
 
     """
 
     # Sets
     ###########################################################################
 
-    m.PERFORMANCE_STANDARD_PRJS = Set(within=m.PROJECTS)
-
-    # Input Params
-    ###########################################################################
-
-    m.performance_standard_zone = Param(
-        m.PERFORMANCE_STANDARD_PRJS, within=m.PERFORMANCE_STANDARD_ZONES
+    m.PERFORMANCE_STANDARD_PRJS_PERFORMANCE_STANDARD_ZONES = Set(
+        dimen=2, within=m.PROJECTS * m.PERFORMANCE_STANDARD_ZONES
     )
 
     # Derived Sets
     ###########################################################################
 
+    m.PERFORMANCE_STANDARD_PRJS = Set(
+        within=m.PROJECTS,
+        initialize=lambda mod: list(
+            set(
+                [
+                    prj
+                    for (
+                        prj,
+                        z,
+                    ) in mod.PERFORMANCE_STANDARD_PRJS_PERFORMANCE_STANDARD_ZONES
+                ]
+            )
+        ),
+    )
+
     m.PERFORMANCE_STANDARD_PRJS_BY_PERFORMANCE_STANDARD_ZONE = Set(
         m.PERFORMANCE_STANDARD_ZONES,
-        within=m.PERFORMANCE_STANDARD_PRJS,
-        initialize=lambda mod, ps_z: subset_init_by_param_value(
-            mod, "PERFORMANCE_STANDARD_PRJS", "performance_standard_zone", ps_z
-        ),
+        within=m.PROJECTS,
+        initialize=lambda mod, ps_z: [
+            prj
+            for (prj, z) in mod.PERFORMANCE_STANDARD_PRJS_PERFORMANCE_STANDARD_ZONES
+            if ps_z == z
+        ],
     )
 
     m.PERFORMANCE_STANDARD_OPR_TMPS = Set(
@@ -117,6 +131,15 @@ def add_model_components(
         initialize=lambda mod: subset_init_by_set_membership(
             mod=mod,
             superset="PRJ_OPR_TMPS",
+            index=0,
+            membership_set=mod.PERFORMANCE_STANDARD_PRJS,
+        ),
+    )
+    m.PERFORMANCE_STANDARD_OPR_PRDS = Set(
+        within=m.PRJ_OPR_PRDS,
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod,
+            superset="PRJ_OPR_PRDS",
             index=0,
             membership_set=mod.PERFORMANCE_STANDARD_PRJS,
         ),
@@ -157,15 +180,10 @@ def load_model_data(
             subproblem,
             stage,
             "inputs",
-            "projects.tab",
+            "project_performance_standard_zones.tab",
         ),
-        select=("project", "performance_standard_zone"),
-        param=(m.performance_standard_zone,),
+        set=m.PERFORMANCE_STANDARD_PRJS_PERFORMANCE_STANDARD_ZONES,
     )
-
-    data_portal.data()["PERFORMANCE_STANDARD_PRJS"] = {
-        None: list(data_portal.data()["performance_standard_zone"].keys())
-    }
 
 
 # Database
@@ -236,7 +254,7 @@ def write_model_inputs(
 ):
     """
     Get inputs from database and write out the model input
-    projects.tab file (to be precise, amend it).
+    in project_performance_standard_zones.tab file.
     :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -265,11 +283,6 @@ def write_model_inputs(
         conn,
     )
 
-    # Make a dict for easy access
-    prj_zone_dict = dict()
-    for prj, zone in project_zones:
-        prj_zone_dict[str(prj)] = "." if zone is None else str(zone)
-
     with open(
         os.path.join(
             scenario_directory,
@@ -279,46 +292,15 @@ def write_model_inputs(
             subproblem,
             stage,
             "inputs",
-            "projects.tab",
-        ),
-        "r",
-    ) as projects_file_in:
-        reader = csv.reader(projects_file_in, delimiter="\t", lineterminator="\n")
-
-        new_rows = list()
-
-        # Append column header
-        header = next(reader)
-        header.append("performance_standard_zone")
-        new_rows.append(header)
-
-        # Append correct values
-        for row in reader:
-            # If project specified, check if BA specified or not
-            if row[0] in list(prj_zone_dict.keys()):
-                row.append(prj_zone_dict[row[0]])
-                new_rows.append(row)
-            # If project not specified, specify no BA
-            else:
-                row.append(".")
-                new_rows.append(row)
-
-    with open(
-        os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "inputs",
-            "projects.tab",
+            "project_performance_standard_zones.tab",
         ),
         "w",
         newline="",
     ) as projects_file_out:
         writer = csv.writer(projects_file_out, delimiter="\t", lineterminator="\n")
-        writer.writerows(new_rows)
+        writer.writerow(["project", "performance_standard_zone"])
+        for row in project_zones.fetchall():
+            writer.writerow(list(row))
 
 
 def process_results(db, c, scenario_id, subscenarios, quiet):

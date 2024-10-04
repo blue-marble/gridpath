@@ -26,13 +26,19 @@ gridpath.temporal.operations
 
 gridpath.temporal.operations.timepoints
 ---------------------------------------
-.. automodule:: gridpath.temporal.operations.timepoints
-    :members: add_model_components
+
+Refer :ref:`timepoints-sub-section-ref`.
+
+.. currentmodule:: gridpath.temporal.operations.timepoints
+.. autofunction:: add_model_components
 
 gridpath.temporal.operations.horizons
 -------------------------------------
-.. automodule:: gridpath.temporal.operations.horizons
-    :members: add_model_components
+
+Refer :ref:`horizons-sub-section-ref`.
+
+.. currentmodule:: gridpath.temporal.operations.horizons
+.. autofunction:: add_model_components
 
 gridpath.temporal.investment
 ----------------------------
@@ -40,8 +46,11 @@ gridpath.temporal.investment
 
 gridpath.temporal.investment.periods
 ------------------------------------
-.. automodule:: gridpath.temporal.investment.periods
-    :members: add_model_components
+
+Refer :ref:`periods-sub-section-ref`.
+
+.. currentmodule:: gridpath.temporal.investment.periods
+.. autofunction:: add_model_components
 
 
 Geographic Setup
@@ -278,8 +287,11 @@ gridpath.system.load_balance.aggregate_project_power
 
 gridpath.system.load_balance.load_balance
 -----------------------------------------
-.. automodule:: gridpath.system.load_balance.load_balance
-    :members: add_model_components
+
+Refer :ref:`load-balance-section-ref`.
+
+.. currentmodule:: gridpath.system.load_balance.load_balance
+.. autofunction:: add_model_components
 
 
 Objective Function
@@ -307,8 +319,11 @@ gridpath.objective.system.aggregate_load_balance_penalties
 
 gridpath.objective.max_npv
 ---------------------------------
-.. automodule:: gridpath.objective.max_npv
-    :members: add_model_components
+
+Refer :ref:`objective-section-ref`.
+
+.. currentmodule:: gridpath.objective.max_npv
+.. autofunction:: add_model_components
 
 
 
@@ -441,16 +456,16 @@ portfolio standard requiring that a certain percentage of demand be met with
 renewable resources, and a carbon cap, requiring that total emissions be
 below a certain level.
 
-gridpath.system.policy.carbon_cap.carbon_cap
+gridpath.system.policy.carbon_cap
 --------------------------------------------
 
-.. automodule:: gridpath.system.policy.carbon_cap.carbon_cap
+.. automodule:: gridpath.system.policy.carbon_cap
 
 
-gridpath.system.policy.carbon_cap.carbon_tax
+gridpath.system.policy.carbon_tax
 --------------------------------------------
 
-.. automodule:: gridpath.system.policy.carbon_cap.carbon_tax
+.. automodule:: gridpath.system.policy.carbon_tax
 
 gridpath.system.policy.energy_targets.horizon_energy_target
 -----------------------------------------------------------
@@ -476,12 +491,12 @@ stream is required and projects are assumed to be price-takers. The market volum
 be constrained. In multi-stage modeling, the transactions from the previous stages
 can be fixed in the following stages.
 
-gridpath.system.policy.markets.prices
+gridpath.system.markets.prices
 -------------------------------------
 
-.. automodule:: gridpath.system.policy.markets.prices
+.. automodule:: gridpath.system.markets.prices
 
-gridpath.system.policy.markets.volume
+gridpath.system.markets.volume
 -------------------------------------
 
-.. automodule:: gridpath.system.policy.markets.volume
+.. automodule:: gridpath.system.markets.volume

@@ -501,6 +501,28 @@ def add_model_components(
     | The project's shutdown ramp rate in MW in the linked timepoints         |
     | (depends on timepoint duration.)                                        |
     +-------------------------------------------------------------------------+
+    | | :code:`gen_commit_bin_linked_pmin_mw`           |
+    | | *Defined over*: :code:`GEN_COMMIT_BIN_LINKED_TMPS`                    |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | | :code:`gen_commit_lin_linked_pmin_mw`           |
+    | | *Defined over*: :code:`GEN_COMMIT_LIN_LINKED_TMPS`                    |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's minimum power output (in MW), if the unit was committed,  |
+    | in the linked timepoints.                                               |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_commit_bin_linked_pmax_mw`           |
+    | | *Defined over*: :code:`GEN_COMMIT_BIN_LINKED_TMPS`                    |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | | :code:`gen_commit_lin_linked_pmax_mw`           |
+    | | *Defined over*: :code:`GEN_COMMIT_LIN_LINKED_TMPS`                    |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's maximum power output (in MW), if the unit was committed,  |
+    | in the linked timepoints.                                               |
+    +-------------------------------------------------------------------------+
 
     |
 
@@ -1382,6 +1404,24 @@ def add_model_components(
     setattr(
         m,
         "gen_commit_{}_linked_shutdown_ramp_rate_mw_per_tmp".format(bin_or_lin),
+        Param(
+            getattr(m, "GEN_COMMIT_{}_LINKED_TMPS".format(BIN_OR_LIN)),
+            within=NonNegativeReals,
+        ),
+    )
+
+    setattr(
+        m,
+        "gen_commit_{}_linked_pmin_mw".format(bin_or_lin),
+        Param(
+            getattr(m, "GEN_COMMIT_{}_LINKED_TMPS".format(BIN_OR_LIN)),
+            within=NonNegativeReals,
+        ),
+    )
+
+    setattr(
+        m,
+        "gen_commit_{}_linked_pmax_mw".format(bin_or_lin),
         Param(
             getattr(m, "GEN_COMMIT_{}_LINKED_TMPS".format(BIN_OR_LIN)),
             within=NonNegativeReals,
@@ -2836,7 +2876,8 @@ def add_model_components(
         **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS
 
         Shutdown power is 0 when the unit is committed and must be less than or
-        equal to the minimum stable level when not committed
+        equal to the minimum stable level when not committed. Shutdown power
+        must be explicitly allowed.
         """
 
         return (
@@ -2982,87 +3023,119 @@ def add_model_components(
         ),
     )
 
-    def power_during_shutdown_constraint_rule(mod, g, tmp):
+    def min_power_on_shutdown_constraint_rule(mod, g, tmp):
         """
         **Constraint Name**: GenCommitBin_Power_During_Shutdown_Constraint
         **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS
 
-        Power provision in the stop timepoint (i.e. the first timepoint the unit
-        is not committed after having been committed) is constrained by the
-        shutdown ramp rate (adjusted for timepoint duration).
+        This constraint ensures that power provision in the stop timepoint (
+        i.e. the first timepoint the unit is not committed after having been
+        committed) is constrained by the shutdown ramp rate (adjusted for
+        timepoint duration), i.e., the unit can't immediately go down to zero
+        when shutting down.
 
-        In other words, to provide 'committed' power in the stop timepoint, we
-        need to provide shutdown power in the next timepoint, which will in turn
-        set the whole shutdown trajectory based on the previous constraints.
+        When we are in not in the stop timepoint, the constraint simplifies
+        to Pcommitted[prev_tmp] + Upwared_Reserves[prev_tmp] <= Pmax[
+        prev_tmp]. In the stop timepoint, the constraint simplifies to
+        Pstopping[tmp] >= Power_Provision[prev_tmp] -  Shutdown_Ramp_Rate[prev_tmp]
 
-        When we are not in the stop timepoint, simply constrain power provision
-        by the capacity, which may not bind. To elaborate, when we are not in a
-        stop timepoint, t+1 could have:
-        1) the unit committed, meaning Pstopping[t+1]=0, resulting in
-        power provision <= capacity, or
-        2) the unit not committed, meaning that we are also not committed in t
-        i.e. power provision[t]=0, resulting in -Pstopping[t+1] <= capacity
+        .. note:: Note that the ramp rate (in MW per tmp) is set based on
+        availabilty in the previous timepoint.
 
-        (Commit[t] x Pmin + P_above_Pmin[t]) - Pstopping[t+1]
+        (Commit[t-1] x Pmin[t-1] + P_above_Pmin[t-1]) - Pstopping[t]
         <=
-        (1 - Stop[t+1]) x Pmax + Stop[t+1] x Shutdown_Ramp_Rate x Pmax
+        (1 - Stop[t]) x Pmax[t] + Stop[t] x shutdown_ramp_rate x Pmax[t-1]
+
         """
 
-        if check_if_last_timepoint(
-            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
-        ) and (
-            check_boundary_type(
-                mod=mod,
-                tmp=tmp,
-                balancing_type=mod.balancing_type_project[g],
-                boundary_type="linear",
-            )
-            or check_boundary_type(
-                mod=mod,
-                tmp=tmp,
-                balancing_type=mod.balancing_type_project[g],
-                boundary_type="linked",
-            )
+        if check_if_boundary_type_and_first_timepoint(
+            mod=mod,
+            tmp=tmp,
+            balancing_type=mod.balancing_type_project[g],
+            boundary_type="linked",
+        ):
+            prev_timepoint_commit = getattr(
+                mod, "gen_commit_{}_linked_commit".format(bin_or_lin)
+            )[g, 0]
+            prev_timepoint_power_above_pmin = getattr(
+                mod, "gen_commit_{}_linked_power_above_pmin".format(bin_or_lin)
+            )[g, 0]
+            prev_timepoint_upward_reserves = getattr(
+                mod, "gen_commit_{}_linked_upwards_reserves".format(bin_or_lin)
+            )[g, 0]
+            prev_timepoint_shutdown_ramp_rate = getattr(
+                mod,
+                "gen_commit_{}_linked_shutdown_ramp_rate_mw_per_tmp".format(bin_or_lin),
+            )[g, 0]
+            prev_timepoint_pmin = getattr(
+                mod,
+                "gen_commit_{}_linked_pmin_mw".format(bin_or_lin),
+            )[g, 0]
+            prev_timepoint_pmax = getattr(
+                mod,
+                "gen_commit_{}_linked_pmax_mw".format(bin_or_lin),
+            )[g, 0]
+        elif check_if_boundary_type_and_first_timepoint(
+            mod=mod,
+            tmp=tmp,
+            balancing_type=mod.balancing_type_project[g],
+            boundary_type="linear",
+        ):
+            prev_timepoint_commit = None
+            prev_timepoint_power_above_pmin = None
+            prev_timepoint_upward_reserves = None
+            prev_timepoint_shutdown_ramp_rate = None
+            prev_timepoint_pmin = None
+            prev_timepoint_pmax = None
+        else:
+            prev_timepoint_commit = getattr(
+                mod, "GenCommit{}_Commit".format(Bin_or_Lin)
+            )[g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
+            prev_timepoint_power_above_pmin = getattr(
+                mod, "GenCommit{}_Provide_Power_Above_Pmin_MW".format(Bin_or_Lin)
+            )[g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
+            prev_timepoint_upward_reserves = getattr(
+                mod, "GenCommit{}_Upwards_Reserves_MW".format(Bin_or_Lin)
+            )[g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
+            prev_timepoint_shutdown_ramp_rate = getattr(
+                mod, "GenCommit{}_Shutdown_Ramp_Rate_MW_Per_Tmp".format(Bin_or_Lin)
+            )[g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
+            prev_timepoint_pmin = getattr(
+                mod, "GenCommit{}_Pmin_MW".format(Bin_or_Lin)
+            )[g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
+            prev_timepoint_pmax = getattr(
+                mod, "GenCommit{}_Pmax_MW".format(Bin_or_Lin)
+            )[g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
+
+        if check_if_boundary_type_and_first_timepoint(
+            mod=mod,
+            tmp=tmp,
+            balancing_type=mod.balancing_type_project[g],
+            boundary_type="linear",
         ):
             return Constraint.Skip
         else:
             return (
-                getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[g, tmp]
-                * getattr(mod, "GenCommit{}_Pmin_MW".format(Bin_or_Lin))[g, tmp]
-                + getattr(
-                    mod, "GenCommit{}_Provide_Power_Above_Pmin_MW".format(Bin_or_Lin)
-                )[g, tmp]
-            ) + getattr(mod, "GenCommit{}_Upwards_Reserves_MW".format(Bin_or_Lin))[
-                g, tmp
-            ] - getattr(
+                prev_timepoint_commit * prev_timepoint_pmin
+                + prev_timepoint_power_above_pmin
+            ) + prev_timepoint_upward_reserves - getattr(
                 mod, "GenCommit{}_Provide_Power_Shutdown_MW".format(Bin_or_Lin)
             )[
-                g, mod.next_tmp[tmp, mod.balancing_type_project[g]]
+                g, tmp
             ] <= (
-                1
-                - getattr(mod, "GenCommit{}_Shutdown".format(Bin_or_Lin))[
-                    g, mod.next_tmp[tmp, mod.balancing_type_project[g]]
-                ]
-            ) * getattr(
-                mod, "GenCommit{}_Pmax_MW".format(Bin_or_Lin)
-            )[
-                g, mod.next_tmp[tmp, mod.balancing_type_project[g]]
-            ] + getattr(
+                1 - getattr(mod, "GenCommit{}_Shutdown".format(Bin_or_Lin))[g, tmp]
+            ) * prev_timepoint_pmax + getattr(
                 mod, "GenCommit{}_Shutdown".format(Bin_or_Lin)
             )[
-                g, mod.next_tmp[tmp, mod.balancing_type_project[g]]
-            ] * getattr(
-                mod, "GenCommit{}_Shutdown_Ramp_Rate_MW_Per_Tmp".format(Bin_or_Lin)
-            )[
                 g, tmp
-            ]
+            ] * prev_timepoint_shutdown_ramp_rate
 
     setattr(
         m,
         "GenCommit{}_Power_During_Shutdown_Constraint".format(Bin_or_Lin),
         Constraint(
             getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
-            rule=power_during_shutdown_constraint_rule,
+            rule=min_power_on_shutdown_constraint_rule,
         ),
     )
 
@@ -3128,6 +3201,14 @@ def variable_om_cost_rule(mod, g, tmp, Bin_or_Lin):
     return (
         getattr(mod, "GenCommit{}_Provide_Power_MW".format(Bin_or_Lin))[g, tmp]
         * mod.variable_om_cost_per_mwh[g]
+    )
+
+
+def variable_om_by_period_cost_rule(mod, g, tmp, Bin_or_Lin):
+    """ """
+    return (
+        getattr(mod, "GenCommit{}_Provide_Power_MW".format(Bin_or_Lin))[g, tmp]
+        * mod.variable_om_cost_per_mwh_by_period[g, mod.period[tmp]]
     )
 
 
@@ -3424,6 +3505,14 @@ def load_model_data(
                         bin_or_lin
                     ),
                 ),
+                getattr(
+                    mod,
+                    "gen_commit_{}_linked_pmin_mw".format(bin_or_lin),
+                ),
+                getattr(
+                    mod,
+                    "gen_commit_{}_linked_pmax_mw".format(bin_or_lin),
+                ),
             ),
         )
 
@@ -3603,6 +3692,8 @@ def export_linked_subproblem_inputs(
                     "linked_ramp_down_rate_mw_per_tmp",
                     "linked_provide_power_shutdown",
                     "linked_shutdown_ramp_rate_mw_per_tmp",
+                    "linked_pmin_mw",
+                    "linked_pmax_mw",
                 ]
             )
 
@@ -3722,6 +3813,24 @@ def export_linked_subproblem_inputs(
                                         "GenCommit{}_Shutdown_Ramp_Rate_MW_Per_Tmp".format(
                                             Bin_or_Lin
                                         ),
+                                    )[p, tmp]
+                                ),
+                                0,
+                            ),
+                            max(
+                                value(
+                                    getattr(
+                                        mod,
+                                        "GenCommit{}_Pmin_MW".format(Bin_or_Lin),
+                                    )[p, tmp]
+                                ),
+                                0,
+                            ),
+                            max(
+                                value(
+                                    getattr(
+                                        mod,
+                                        "GenCommit{}_Pmax_MW".format(Bin_or_Lin),
                                     )[p, tmp]
                                 ),
                                 0,

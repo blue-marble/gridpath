@@ -702,6 +702,14 @@ def variable_om_cost_rule(mod, g, tmp):
     return mod.Stor_Discharge_MW[g, tmp] * mod.variable_om_cost_per_mwh[g]
 
 
+def variable_om_by_period_cost_rule(mod, prj, tmp):
+    """ """
+    return (
+        mod.Stor_Discharge_MW[g, tmp]
+        * mod.variable_om_cost_per_mwh_by_period[prj, mod.period[tmp]]
+    )
+
+
 def power_delta_rule(mod, g, tmp):
     """
     This rule is only used in tuning costs, so fine to skip for linked

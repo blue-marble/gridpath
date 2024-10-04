@@ -9,10 +9,9 @@ This chapter describes the following:
 * :ref:`building-the-database-section-ref` : instructions on how to build the
   database
 * :ref:`database-testing-section-ref` : instructions on how to validate the
-  database inputs
+database inputs
 
 .. _database-section-ref:
-
 Database Structure
 ##################
 
@@ -20,7 +19,6 @@ Database Structure
 
 
 .. _building-the-database-section-ref:
-
 Building the Database
 #####################
 
@@ -35,12 +33,12 @@ Populating the Database
 ***********************
 
 Loading Input Data
-==================
+******************
 
 .. automodule:: db.utilities.port_csvs_to_db
 
 Creating Scenarios
-==================
+******************
 
 .. automodule:: db.utilities.scenario
 
@@ -455,4 +453,3 @@ To run the validation suite from the command line, navigate to the
 :code:`gridpath/gridpath` folder and type::
 
     validate_inputs.py --scenario SCENARIO_NAME --database PATH/TO/DATABASE
-

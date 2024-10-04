@@ -84,7 +84,7 @@ def create_problem(
         dynamic components class), instance (the problem instance), results
         (the optimization results)
 
-    This method creates the problem instance and solves it.
+    This method creates the problem instance.
 
     To create the problem, we use a Pyomo AbstractModel() class. We will add
     Pyomo optimization components to this class, will load data into the
@@ -102,9 +102,9 @@ def create_problem(
     method) and load the input data into its components (see
     *load_scenario_data*).
 
-    Finally, we compile and solve the problem (*create_problem_instance* and
-    *solve* methods respectively). If any variables need to be fixed,
-    this is done before solving (see the *fix_variables* method).
+    Finally, we compile the problem (see *create_problem_instance* method).
+    If any variables need to be fixed, this is done as the last step here
+    (see the *fix_variables* method).
     """
     # Create pyomo abstract model class
     model = AbstractModel()
@@ -198,7 +198,8 @@ def run_optimization_for_subproblem_stage(
 
     Log each run in the (sub)problem directory if requested by the user.
 
-    Create and solve the (sub)problem. See *create_and_solve_problem* method.
+    Create and solve the (sub)problem (See *create_problem* and
+    *solve_problem* methods respectively).
 
     Save results. See *save_results()* method.
 
@@ -543,16 +544,6 @@ def solve_sequentially(
                         parsed_arguments=parsed_arguments,
                         objective_values=objective_values,
                     )
-
-            # TODO: Should probably just remove this logic here and have a
-            # dictionary for all objective functions
-            if len(objective_values.keys()) == 1:
-                objective_values = objective_values[list(objective_values.keys())[0]]
-                if isinstance(objective_values, dict):
-                    if len(objective_values.keys()) == 1:
-                        objective_values = objective_values[
-                            list(objective_values.keys())[0]
-                        ]
 
     return objective_values
 

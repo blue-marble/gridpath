@@ -34,7 +34,7 @@ import pandas as pd
 import sqlite3
 import sys
 
-from db.common_functions import spin_on_database_lock
+from db.common_functions import spin_on_database_lock, spin_on_database_lock_generic
 
 
 def parse_arguments(arguments):
@@ -65,10 +65,15 @@ def parse_arguments(arguments):
         help="Create in-memory database. The database " "argument will be inactive.",
     )
     parser.add_argument(
+        "--data_directory",
+        default="./data",
+        help="Directory of model defaults data.",
+    )
+    parser.add_argument(
         "--omit_data",
         default=False,
         action="store_true",
-        help="Don't load the model defaults data from the " "data directory.",
+        help="Don't load the model defaults data from the data directory.",
     )
     parser.add_argument(
         "--custom_units",
@@ -96,185 +101,49 @@ def create_database_schema(conn, parsed_arguments):
         conn.executescript(schema)
 
 
-def load_data(conn, omit_data, custom_units):
+def load_data(conn, data_directory, omit_data, custom_units):
     """
     Load GridPath structural data (e.g. defaults, allowed modules, validation
     data, UI component data, etc.)
     :param conn: database connection
+    :param data_directory:
     :param omit_data:
     :param custom_units: Boolean, True if user-specified units
     :return:
     """
-    # TODO: refactor this
     if not omit_data:
         # General Model Data
-        load_mod_months(conn=conn)
-        load_mod_capacity_types(conn=conn)
-        load_mod_availability_types(conn=conn)
-        load_mod_operational_types(conn=conn)
-        load_mod_reserve_types(conn=conn)
-        load_mod_tx_capacity_types(conn=conn)
-        load_mod_tx_availability_types(conn=conn)
-        load_mod_tx_operational_types(conn=conn)
-        load_mod_prm_types(conn=conn)
-        load_mod_capacity_and_operational_type_invalid_combos(conn=conn)
-        load_mod_tx_capacity_and_tx_operational_type_invalid_combos(conn=conn)
-        load_mod_horizon_boundary_types(conn=conn)
-        load_mod_run_status_types(conn=conn)
-        load_mod_validation_status_types(conn=conn)
-        load_mod_features(conn=conn)
-        load_mod_feature_subscenarios(conn=conn)
-        load_mod_units(conn=conn, custom_units=custom_units)
+        expected_files = [
+            "mod_availability_types",
+            "mod_capacity_types",
+            "mod_features",
+            "mod_feature_subscenarios",
+            "mod_horizon_boundary_types",
+            "mod_months",
+            "mod_operational_types",
+            "mod_prm_types",
+            "mod_reserve_types",
+            "mod_run_status_types",
+            "mod_tx_availability_types",
+            "mod_tx_capacity_types",
+            "mod_tx_operational_types",
+            "mod_capacity_and_operational_type_invalid_combos",
+            "mod_tx_capacity_and_tx_operational_type_invalid_combos",
+            "mod_units",
+            "mod_validation_status_types",
+            "ui_scenario_detail_table_metadata",
+            "ui_scenario_detail_table_row_metadata",
+            "ui_scenario_results_plot_metadata",
+            "ui_scenario_results_table_metadata",
+            "viz_technologies",
+        ]
+        for f in expected_files:
+            load_aux_data(conn=conn, data_directory=data_directory, filename=f)
 
-        # Data required for the UI
-        load_ui_scenario_detail_table_metadata(conn=conn)
-        ui_scenario_detail_table_row_metadata(conn=conn)
-        load_ui_scenario_results_table_metadata(conn=conn)
-        load_ui_scenario_results_plot_metadata(conn=conn)
-
-        # Data for plotting
-        load_viz_technologies(conn=conn)
-
-
-def load_mod_months(conn):
-    sql = """
-        INSERT INTO mod_months
-        (month, description)
-        VALUES (?, ?);"""
-    load_aux_data(conn=conn, filename="mod_months.csv", sql=sql)
+        set_custom_units(conn=conn, custom_units=custom_units)
 
 
-def load_mod_capacity_types(conn):
-    sql = """
-        INSERT INTO mod_capacity_types
-        (capacity_type, description)
-        VALUES (?, ?);"""
-    load_aux_data(conn=conn, filename="mod_capacity_types.csv", sql=sql)
-
-
-def load_mod_availability_types(conn):
-    sql = """
-        INSERT INTO mod_availability_types
-        (availability_type, description)
-        VALUES (?, ?);"""
-    load_aux_data(conn=conn, filename="mod_availability_types.csv", sql=sql)
-
-
-def load_mod_operational_types(conn):
-    sql = """
-        INSERT INTO mod_operational_types
-        (operational_type, description)
-        VALUES (?, ?);"""
-    load_aux_data(conn=conn, filename="mod_operational_types.csv", sql=sql)
-
-
-def load_mod_reserve_types(conn):
-    sql = """
-        INSERT INTO mod_reserve_types
-        (reserve_type, description)
-        VALUES (?, ?);"""
-    load_aux_data(conn=conn, filename="mod_reserve_types.csv", sql=sql)
-
-
-def load_mod_tx_capacity_types(conn):
-    sql = """
-        INSERT INTO mod_tx_capacity_types
-        (capacity_type, description)
-        VALUES (?, ?);"""
-    load_aux_data(conn=conn, filename="mod_tx_capacity_types.csv", sql=sql)
-
-
-def load_mod_tx_availability_types(conn):
-    sql = """
-        INSERT INTO mod_tx_availability_types
-        (availability_type, description)
-        VALUES (?, ?);"""
-    load_aux_data(conn=conn, filename="mod_tx_availability_types.csv", sql=sql)
-
-
-def load_mod_tx_operational_types(conn):
-    sql = """
-        INSERT INTO mod_tx_operational_types
-        (operational_type, description)
-        VALUES (?, ?);"""
-    load_aux_data(conn=conn, filename="mod_tx_operational_types.csv", sql=sql)
-
-
-def load_mod_prm_types(conn):
-    sql = """
-        INSERT INTO mod_prm_types
-        (prm_type, description)
-        VALUES (?, ?);"""
-    load_aux_data(conn=conn, filename="mod_prm_types.csv", sql=sql)
-
-
-def load_mod_capacity_and_operational_type_invalid_combos(conn):
-    sql = """
-        INSERT INTO 
-        mod_capacity_and_operational_type_invalid_combos
-        (capacity_type, operational_type)
-        VALUES (?, ?);"""
-    load_aux_data(
-        conn=conn,
-        filename="mod_capacity_and_operational_type_invalid_combos.csv",
-        sql=sql,
-    )
-
-
-def load_mod_tx_capacity_and_tx_operational_type_invalid_combos(conn):
-    sql = """
-        INSERT INTO 
-        mod_tx_capacity_and_tx_operational_type_invalid_combos
-        (capacity_type, operational_type)
-        VALUES (?, ?);"""
-    load_aux_data(
-        conn=conn,
-        filename="mod_tx_capacity_and_tx_operational_type_invalid_combos.csv",
-        sql=sql,
-    )
-
-
-def load_mod_horizon_boundary_types(conn):
-    sql = """
-        INSERT INTO mod_horizon_boundary_types
-        (horizon_boundary_type, description)
-        VALUES (?, ?);"""
-    load_aux_data(conn=conn, filename="mod_horizon_boundary_types.csv", sql=sql)
-
-
-def load_mod_run_status_types(conn):
-    sql = """
-        INSERT INTO mod_run_status_types
-        (run_status_id, run_status_name)
-        VALUES (?, ?);"""
-    load_aux_data(conn=conn, filename="mod_run_status_types.csv", sql=sql)
-
-
-def load_mod_validation_status_types(conn):
-    sql = """
-        INSERT INTO mod_validation_status_types
-        (validation_status_id, validation_status_name)
-        VALUES (?, ?);"""
-    load_aux_data(conn=conn, filename="mod_validation_status_types.csv", sql=sql)
-
-
-def load_mod_features(conn):
-    sql = """
-        INSERT INTO mod_features
-        (feature, description)
-        VALUES (?, ?);"""
-    load_aux_data(conn=conn, filename="mod_features.csv", sql=sql)
-
-
-def load_mod_feature_subscenarios(conn):
-    sql = """
-        INSERT INTO mod_feature_subscenarios
-        (feature, subscenario_id)
-        VALUES (?, ?);"""
-    load_aux_data(conn=conn, filename="mod_feature_subscenarios.csv", sql=sql)
-
-
-def load_mod_units(conn, custom_units):
+def set_custom_units(conn, custom_units):
     """
     Load the units
     :param conn:
@@ -282,14 +151,6 @@ def load_mod_units(conn, custom_units):
     :return:
     """
     c = conn.cursor()
-
-    sql = """
-        INSERT INTO mod_units
-        (metric, type, numerator_core_units, denominator_core_units,
-        unit, description)
-        VALUES (?, ?, ?, ?, ?, ?);"""
-    load_aux_data(conn=conn, filename="mod_units.csv", sql=sql)
-
     if custom_units:
         # Retrieve settings from user
         power = input(
@@ -386,62 +247,10 @@ def load_mod_units(conn, custom_units):
         )
 
 
-def load_ui_scenario_detail_table_metadata(conn):
-    sql = """
-        INSERT INTO ui_scenario_detail_table_metadata
-        (ui_table, include, ui_table_caption)
-        VALUES (?, ?, ?);"""
-    load_aux_data(conn=conn, filename="ui_scenario_detail_table_metadata.csv", sql=sql)
-
-
-def ui_scenario_detail_table_row_metadata(conn):
-    sql = """
-        INSERT INTO ui_scenario_detail_table_row_metadata
-        (ui_table, ui_table_row, include, ui_row_caption,
-        ui_row_db_scenarios_view_column, 
-        ui_row_db_subscenario_table, 
-        ui_row_db_subscenario_table_id_column, 
-        ui_row_db_input_table)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?);
-        """
-    load_aux_data(
-        conn=conn, filename="ui_scenario_detail_table_row_metadata.csv", sql=sql
-    )
-
-
-def load_ui_scenario_results_table_metadata(conn):
-    sql = """
-        INSERT INTO ui_scenario_results_table_metadata
-        (results_table, include, caption)
-        VALUES (?, ?, ?);
-        """
-    load_aux_data(conn=conn, filename="ui_scenario_results_table_metadata.csv", sql=sql)
-
-
-def load_ui_scenario_results_plot_metadata(conn):
-    sql = """
-        INSERT INTO ui_scenario_results_plot_metadata
-        (results_plot, include, caption, load_zone_form_control,
-        energy_target_zone_form_control, carbon_cap_zone_form_control,
-        period_form_control, horizon_form_control,
-        start_timepoint_form_control, end_timepoint_form_control,
-        stage_form_control, project_form_control, commit_project_form_control)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-        """
-    load_aux_data(conn=conn, filename="ui_scenario_results_plot_metadata.csv", sql=sql)
-
-
-def load_viz_technologies(conn):
-    sql = """
-        INSERT INTO viz_technologies
-        (technology, color, plotting_order)
-        VALUES (?, ?, ?);"""
-    load_aux_data(conn=conn, filename="viz_technologies.csv", sql=sql)
-
-
-def load_aux_data(conn, filename, sql):
+def load_aux_data(conn, data_directory, filename):
     """
     :param conn:
+    :param data_directory:
     :param filename:
     :param sql:
     :return:
@@ -450,14 +259,16 @@ def load_aux_data(conn, filename, sql):
     data = []
     cursor = conn.cursor()
 
-    file_path = os.path.join(os.path.dirname(__file__), "data", filename)
-    with open(file_path, "r") as f:
-        reader = csv.reader(f, delimiter=",")
-        next(reader)
-        for row in reader:
-            data.append(tuple([row[i] for i in range(len(row))]))
-
-    spin_on_database_lock(conn=conn, cursor=cursor, sql=sql, data=data)
+    file_path = os.path.join(data_directory, f"{filename}.csv")
+    df = pd.read_csv(file_path, delimiter=",")
+    spin_on_database_lock_generic(
+        command=df.to_sql(
+            name=filename,
+            con=conn,
+            if_exists="append",
+            index=False,
+        )
+    )
 
 
 def main(args=None):
@@ -490,6 +301,7 @@ def main(args=None):
     load_data(
         conn=conn,
         omit_data=parsed_args.omit_data,
+        data_directory=parsed_args.data_directory,
         custom_units=parsed_args.custom_units,
     )
     # Close the database

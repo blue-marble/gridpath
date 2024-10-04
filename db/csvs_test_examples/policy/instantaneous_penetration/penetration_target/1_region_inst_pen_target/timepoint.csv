@@ -1,0 +1,7 @@
+instantaneous_penetration_zone,stage_id,timepoint,min_instantaneous_penetration_mw,max_instantaneous_penetration_mw
+IPZone1,1,20200101,,2
+IPZone1,1,20200102,,3
+IPZone1,1,20200201,,5
+IPZone1,1,20200202,,3
+IPZone1,1,20200301,,5
+IPZone1,1,20200302,,3

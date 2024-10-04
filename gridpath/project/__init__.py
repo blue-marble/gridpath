@@ -84,7 +84,7 @@ def add_model_components(
     | | *Within*: :code:`["dr", "gen_always_on", "gen_commit_bin",`           |
     | | :code:`"gen_commit_cap", "gen_commit_lin", "gen_hydro",`              |
     | | :code:`"gen_hydro_must_take", "gen_must_run", "gen_simple",`          |
-    | | :code:`"gen_var", "gen_var_must_take", "stor", "fuel_prod", "dac",    |
+    | | :code:`"gen_var", "gen_var_must_take", "stor", "fuel_prod", "dac",`   |
     | | :code:`"flex_load"]`                                                  |
     |                                                                         |
     | This param describes each project's operational type, which determines  |
@@ -117,8 +117,6 @@ def add_model_components(
     | purposes in the results.                                                |
     +-------------------------------------------------------------------------+
 
-    TODO: considering technology is only used on the results side, should we
-     keep it here?
     """
 
     # Sets
@@ -173,6 +171,8 @@ def add_model_components(
     )
     m.balancing_type_project = Param(m.PROJECTS, within=m.BLN_TYPES)
     m.technology = Param(m.PROJECTS, within=Any, default="unspecified")
+    # TODO: considering technology is only used on the results side, should we
+    # keep it here?
 
 
 # Input-Output
