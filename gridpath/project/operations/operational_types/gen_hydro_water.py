@@ -37,6 +37,7 @@ from pyomo.environ import (
     PercentFraction,
     value,
     Reals,
+    Any,
 )
 import warnings
 
@@ -198,9 +199,7 @@ def min_power_rule(mod, g, tmp):
 def enforce_powerhouse_based_power_output(mod, g, tmp):
     return (
         mod.GenHydroWater_Power_MW[g, tmp]
-        == mod.Powerhouse_Output_Single_Generator[
-            mod.gen_hydro_water_powerhouse[g], tmp
-        ]
+        == mod.Powerhouse_Output_by_Generator[mod.gen_hydro_water_powerhouse[g], g, tmp]
         * mod.gen_hydro_water_generator_efficiency[g]
     )
 

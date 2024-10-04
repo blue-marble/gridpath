@@ -102,6 +102,29 @@ class TestWaterNodeBalance(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
+        # Set: POWERHOUSES
+        expected_pwrh = sorted(["Powerhouse1", "Powerhouse2"])
+        actual_pwrh = sorted([n for n in instance.POWERHOUSES])
+
+        self.assertListEqual(expected_pwrh, actual_pwrh)
+
+        # Set: POWERHOUSE_GENERATORS
+        expected_pwrh_g = sorted([("Powerhouse1", "Hydro_System_Gen1")])
+        actual_pwrh_g = sorted([(p, g) for (p, g) in instance.POWERHOUSE_GENERATORS])
+
+        self.assertListEqual(expected_pwrh_g, actual_pwrh_g)
+
+        # Set: GENERATORS_BY_POWERHOUSE
+        expected_g_by_p = {
+            "Powerhouse1": ["Hydro_System_Gen1"],
+            "Powerhouse2": [],
+        }
+        actual_g_by_p = {
+            p: [g for g in instance.GENERATORS_BY_POWERHOUSE[p]]
+            for p in instance.POWERHOUSES
+        }
+        self.assertDictEqual(expected_g_by_p, actual_g_by_p)
+
         # Param: powerhouse_water_node
         expected_res = {
             "Powerhouse1": "Water_Node_1",

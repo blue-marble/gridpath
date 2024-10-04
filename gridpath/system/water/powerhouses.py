@@ -18,6 +18,8 @@ Water nodes and connections for modeling cascading hydro systems.
 
 import csv
 import os.path
+
+import pandas as pd
 from pyomo.environ import (
     Set,
     Param,
@@ -35,6 +37,9 @@ from gridpath.common_functions import create_results_df
 from gridpath.project.common_functions import (
     check_if_first_timepoint,
     check_boundary_type,
+)
+from gridpath.project.operations.operational_types.common_functions import (
+    get_optype_inputs_as_df,
 )
 
 
@@ -59,26 +64,23 @@ def add_model_components(
 
     m.POWERHOUSES = Set(within=Any)
 
+    m.POWERHOUSE_GENERATORS = Set(dimen=2)
+
+    def generators_by_powerhouse_set_init(mod, pwrh):
+        pwrh_g_list = list()
+        for p, g in mod.POWERHOUSE_GENERATORS:
+            if p == pwrh:
+                pwrh_g_list.append(g)
+
+        return pwrh_g_list
+
+    m.GENERATORS_BY_POWERHOUSE = Set(
+        m.POWERHOUSES,
+        initialize=generators_by_powerhouse_set_init,
+    )
+
+    # Params
     m.powerhouse_water_node = Param(m.POWERHOUSES, within=m.WATER_NODES)
-
-    # TODO: move this to projects
-    # m.POWERHOUSE_GENERATORS = Set(dimen=2, within=m.POWERHOUSES * m.GEN_HYDRO_SYSTEM)
-
-    # def generators_by_powerhouse_init(mod):
-    #     init_dict = {}
-    #     for p, g in mod.POWERHOUSE_GENERATORS:
-    #         if p not in mod.POWERHOUSE_GENERATORS:
-    #             init_dict[p] = [g]
-    #         else:
-    #             init_dict[p].append(g)
-    #
-    #     return init_dict
-    #
-    # m.GENERATORS_BY_POWERHOUSE = Set(
-    #     m.POWERHOUSES,
-    #     within=m.GEN_HYDRO_SYSTEM,
-    #     initialize=generators_by_powerhouse_init,
-    # )
 
     # TODO: move to a more central location?
     # This is unit dependent; different if we are using MW, kg/s (l/s) vs cfs,
@@ -117,42 +119,38 @@ def add_model_components(
         rule=net_head_expression_init,
     )
 
-    # # Allocate water to generators within the powerhouse
-    # m.Generator_Allocated_Water_Flow = Var(
-    #     m.GEN_HYDRO_SYSTEM, m.TMPS, within=NonNegativeReals
-    # )
-    #
-    # def generator_water_allocation_constraint_rule(mod, p, tmp):
-    #     return (
-    #         sum(
-    #             mod.Generator_Allocated_Water_Flow[g, tmp]
-    #             for g in mod.GENERATORS_BY_POWERHOUSE[p]
-    #         )
-    #         == mod.Discharge_Water_to_Powerhouse[mod.powerhouse_water_node[p], tmp]
-    #     )
-    #
-    # m.Generator_Water_Allocation_Constraint = Constraint(
-    #     m.POWERHOUSES, m.TMPS, rule=generator_water_allocation_constraint_rule
-    # )
-    #
-    # m.GenHydroWaterSystem_Power_MW = Var(
-    #     m.GEN_HYDRO_WATER_SYSTEM_OPR_TMPS, within=NonNegativeReals
-    # )
+    # Allocate water to generators within the powerhouse
+    m.Generator_Allocated_Water_Flow = Var(
+        m.POWERHOUSE_GENERATORS, m.TMPS, within=NonNegativeReals
+    )
 
-    def water_to_power_init(mod, pwrh, tmp):
+    def generator_water_allocation_constraint_rule(mod, pwrh, tmp):
+        return (
+            sum(
+                mod.Generator_Allocated_Water_Flow[pwrh, g, tmp]
+                for g in mod.GENERATORS_BY_POWERHOUSE[pwrh]
+            )
+            == mod.Discharge_Water_to_Powerhouse[mod.powerhouse_water_node[pwrh], tmp]
+        )
+
+    m.Generator_Water_Allocation_Constraint = Constraint(
+        m.POWERHOUSES, m.TMPS, rule=generator_water_allocation_constraint_rule
+    )
+
+    def water_to_power_coeff_gen_init(mod, pwrh, g, tmp):
         """
         Start with simple linear relationship; this actually will depend on
         volume
         """
         return (
             mod.theoretical_power_coefficient[pwrh]
-            * mod.Discharge_Water_to_Powerhouse[mod.powerhouse_water_node[pwrh], tmp]
+            * mod.Generator_Allocated_Water_Flow[pwrh, g, tmp]
             * mod.Net_Head[pwrh, tmp]
             * mod.turbine_efficiency[pwrh]
         )
 
-    m.Powerhouse_Output_Single_Generator = Expression(
-        m.POWERHOUSES, m.TMPS, initialize=water_to_power_init
+    m.Powerhouse_Output_by_Generator = Expression(
+        m.POWERHOUSE_GENERATORS, m.TMPS, initialize=water_to_power_coeff_gen_init
     )
 
 
@@ -189,6 +187,25 @@ def load_model_data(
             m.turbine_efficiency,
         ),
     )
+
+    df = get_optype_inputs_as_df(
+        scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        op_type="gen_hydro_water",
+        required_columns=["powerhouse"],
+        optional_columns=[],
+    )
+
+    powerhouse_project_list = list()
+    for row in zip(df["powerhouse"], df["project"]):
+        [pwrh, prj] = row
+        powerhouse_project_list.append((pwrh, prj))
+
+    data_portal.data()["POWERHOUSE_GENERATORS"] = powerhouse_project_list
 
 
 def get_inputs_from_database(
