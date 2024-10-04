@@ -6258,8 +6258,6 @@ SELECT scenario_id,
                                                                           AS feature_spinning_reserves,
        CASE WHEN of_period_energy_target THEN 'yes' ELSE 'no' END         AS
                                                                              feature_period_energy_target,
-       CASE WHEN of_instantaneous_penetration THEN 'yes' ELSE 'no' END
-                                                                          AS feature_instantaneous_penetration,
        CASE WHEN of_carbon_cap THEN 'yes' ELSE 'no' END
                                                                           AS feature_carbon_cap,
        CASE WHEN of_track_carbon_imports THEN 'yes' ELSE 'no' END
@@ -6280,7 +6278,6 @@ SELECT scenario_id,
        subscenarios_geography_spinning_reserves_bas.name                  AS geography_spin_bas,
        subscenarios_geography_frequency_response_bas.name                 AS geography_freq_resp_bas,
        subscenarios_geography_energy_target_zones.name                    AS geography_energy_target_areas,
-       subscenarios_geography_instantaneous_penetration_zones.name        AS geography_instantaneous_penetration_areas,
        subscenarios_geography_carbon_cap_zones.name                       AS carbon_cap_areas,
        subscenarios_geography_prm_zones.name                              AS prm_areas,
        subscenarios_geography_local_capacity_zones.name                   AS local_capacity_areas,
@@ -6297,7 +6294,6 @@ SELECT scenario_id,
        subscenarios_project_spinning_reserves_bas.name                    AS project_spin_bas,
        subscenarios_project_frequency_response_bas.name                   AS project_freq_resp_bas,
        subscenarios_project_energy_target_zones.name                      AS project_energy_target_areas,
-       subscenarios_project_instantaneous_penetration_zones.name          AS project_instantaneous_penetration_areas,
        subscenarios_project_carbon_cap_zones.name                         AS project_carbon_cap_areas,
        subscenarios_project_prm_zones.name                                AS project_prm_areas,
        subscenarios_project_elcc_chars.name                               AS project_elcc_chars,
@@ -6334,7 +6330,6 @@ SELECT scenario_id,
        subscenarios_system_spinning_reserves.name                         AS spinning_reserves_profile,
        subscenarios_system_frequency_response.name                        AS frequency_response_profile,
        subscenarios_system_period_energy_targets.name                     AS period_energy_target,
-       subscenarios_system_instantaneous_penetration.name                 AS instantaneous_penetration_profile,
        subscenarios_system_carbon_cap_targets.name                        AS carbon_cap,
        subscenarios_system_prm_requirement.name                           AS prm_requirement,
        subscenarios_system_prm_zone_elcc_surface.name                     AS elcc_surface,
@@ -6362,8 +6357,6 @@ FROM scenarios
                    USING (frequency_response_ba_scenario_id)
          LEFT JOIN subscenarios_geography_energy_target_zones
                    USING (energy_target_zone_scenario_id)
-         LEFT JOIN subscenarios_geography_instantaneous_penetration_zones
-                   USING (instantaneous_penetration_zone_scenario_id)
          LEFT JOIN subscenarios_geography_carbon_cap_zones
                    USING (carbon_cap_zone_scenario_id)
          LEFT JOIN subscenarios_geography_prm_zones USING (prm_zone_scenario_id)
@@ -6393,8 +6386,6 @@ FROM scenarios
                    USING (project_frequency_response_ba_scenario_id)
          LEFT JOIN subscenarios_project_energy_target_zones
                    USING (project_energy_target_zone_scenario_id)
-         LEFT JOIN subscenarios_project_instantaneous_penetration_zones
-                   USING (project_instantaneous_penetration_zone_scenario_id)
          LEFT JOIN subscenarios_project_carbon_cap_zones
                    USING (project_carbon_cap_zone_scenario_id)
          LEFT JOIN subscenarios_project_prm_zones
@@ -6450,10 +6441,8 @@ FROM scenarios
                    USING (spinning_reserves_scenario_id)
          LEFT JOIN subscenarios_system_frequency_response
                    USING (frequency_response_scenario_id)
-         LEFT JOIN subscenarios_system_period_energy_targets USING
-    (period_energy_target_scenario_id)
-         LEFT JOIN subscenarios_system_instantaneous_penetration
-                   USING (instantaneous_penetration_scenario_id)
+         LEFT JOIN subscenarios_system_period_energy_targets
+                   USING (period_energy_target_scenario_id)
          LEFT JOIN subscenarios_system_carbon_cap_targets
                    USING (carbon_cap_target_scenario_id)
          LEFT JOIN subscenarios_system_prm_requirement
