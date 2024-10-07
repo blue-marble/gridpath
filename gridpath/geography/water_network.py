@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-Water nodes and connections for modeling cascading hydro systems.
+Water nodes and water links for modeling hydro water systems.
 """
 
 import csv
@@ -22,10 +22,6 @@ from pyomo.environ import (
     Set,
     Param,
     Boolean,
-    NonNegativeReals,
-    Var,
-    Constraint,
-    Expression,
     Any,
 )
 

@@ -25,3 +25,9 @@ Hydrogen_Prod,Hydrogen_Prod,fuel_prod,day,0.5,,1,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 Hydrogen_Plant,Hydrogen,gen_commit_cap,day,2,,1,1,,,0.4,6,1,2,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 DAC,DAC,dac,day,0.01,,1,1,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 Flex_Load,Flex_Load,flex_load,day,0,,,,,,,,,,,,,,,,,,,,,,,,,0.8,0.8,,,,,1,,,,,,,,,,,,,,,,,,,,,,,,,,,
+Gen11,Hydro_Water,gen_hydro_water,day,0,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,Powerhouse1,0.95
+Gen12,Hydro_Water,gen_hydro_water,day,0,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,Powerhouse1,0.95
+Gen21,Hydro_Water,gen_hydro_water,day,0,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,Powerhouse2,0.95
+Gen22,Hydro_Water,gen_hydro_water,day,0,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,Powerhouse2,0.95
+Gen31,Hydro_Water,gen_hydro_water,day,0,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,Powerhouse3,0.95
+Gen32,Hydro_Water,gen_hydro_water,day,0,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,Powerhouse3,0.95

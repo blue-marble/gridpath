@@ -1,0 +1,4 @@
+﻿powerhouse,powerhouse_water_node,theoretical_power_coefficient,tailwater_elevation,headloss_factor,turbine_efficiency,generator_efficiency
+Powerhouse1,Water_Node_1,0.0847,800,0.05,0.9,0.95
+Powerhouse2,Water_Node_2,0.0847,400,0.05,0.9,0.95
+Powerhouse3,Water_Node_3,0.0847,100,0.05,0.9,0.95

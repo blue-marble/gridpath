@@ -1,0 +1,4 @@
+reservoir	timepoint	reservoir_target_elevation
+Water_Node_1	1.0	950.0
+Water_Node_2	1.0	600.0
+Water_Node_3	1.0	250.0

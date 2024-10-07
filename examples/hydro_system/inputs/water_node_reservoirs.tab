@@ -1,0 +1,4 @@
+water_node	balancing_type_reservoir	minimum_elevation_elevationunit	maximum_elevation_elevationunit	volume_to_elevation_conversion_coefficient	max_spill	evaporation_coefficient
+Water_Node_1	day	900.0	1000.0	4e-05	100.0	0.0
+Water_Node_2	day	500.0	700.0	0.0004	100.0	0.0
+Water_Node_3	day	200.0	300.0	0.004	100.0	0.0

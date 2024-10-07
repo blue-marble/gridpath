@@ -97,7 +97,9 @@ class TestExamples(unittest.TestCase):
 
         self.assertListEqual(expected_validations, actual_validations)
 
-    def run_and_check_objective(self, test, expected_objective, parallel=1):
+    def run_and_check_objective(
+        self, test, expected_objective, solver=None, parallel=1
+    ):
         """
 
         :param test: str, name of the test example
@@ -106,28 +108,30 @@ class TestExamples(unittest.TestCase):
             parallelization functionality
         :return:
         """
+        args_to_pass = [
+            "--database",
+            DB_PATH,
+            "--scenario",
+            test,
+            "--scenario_location",
+            EXAMPLES_DIRECTORY,
+            # "--log",
+            # "--write_solver_files_to_logs_dir",
+            # "--keepfiles",
+            # "--symbolic",
+            "--n_parallel_get_inputs",
+            str(parallel),
+            "--n_parallel_solve",
+            str(parallel),
+            "--quiet",
+            "--mute_solver_output",
+            "--testing",
+        ]
+        if solver is not None:
+            args_to_pass.append("--solver")
+            args_to_pass.append(solver)
 
-        actual_objective = run_end_to_end.main(
-            [
-                "--database",
-                DB_PATH,
-                "--scenario",
-                test,
-                "--scenario_location",
-                EXAMPLES_DIRECTORY,
-                # "--log",
-                # "--write_solver_files_to_logs_dir",
-                # "--keepfiles",
-                # "--symbolic",
-                "--n_parallel_get_inputs",
-                str(parallel),
-                "--n_parallel_solve",
-                str(parallel),
-                "--quiet",
-                "--mute_solver_output",
-                "--testing",
-            ]
-        )
+        actual_objective = run_end_to_end.main(args_to_pass)
 
         # Check if we have a multiprocessing manager
         # If so, convert the manager proxy dictionary to a simple dictionary
@@ -204,7 +208,9 @@ class TestExamples(unittest.TestCase):
             logging.exception(e)
             os.remove(DB_PATH)
 
-    def validate_and_test_example_generic(self, scenario_name, skip_validation=False):
+    def validate_and_test_example_generic(
+        self, scenario_name, solver=None, skip_validation=False
+    ):
         # Use the expected objective column by default
         column_to_use = "expected_objective"
         if MACOS and not pd.isnull(
@@ -223,7 +229,9 @@ class TestExamples(unittest.TestCase):
         objective = ast.literal_eval(self.df.loc[scenario_name][column_to_use])
         if not skip_validation:
             self.check_validation(scenario_name)
-        self.run_and_check_objective(scenario_name, objective)
+        self.run_and_check_objective(
+            test=scenario_name, solver=solver, expected_objective=objective
+        )
 
     def test_example_test(self):
         """
@@ -1355,6 +1363,17 @@ class TestExamples(unittest.TestCase):
 
         scenario_name = "test_new_instantaneous_penetration"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_hydro_system(self):
+        """
+        Check validation and objective function value of "hydro_system" example
+        :return:
+        """
+
+        scenario_name = "hydro_system"
+        self.validate_and_test_example_generic(
+            scenario_name=scenario_name, solver="ipopt"
+        )
 
     @classmethod
     def tearDownClass(cls):

@@ -13,29 +13,23 @@
 # limitations under the License.
 
 """
-Water nodes and connections for modeling cascading hydro systems.
+Flows across water links.
 """
 
 import csv
 import os.path
 
 from pyomo.environ import (
-    Set,
     Param,
     NonNegativeReals,
     Var,
     Constraint,
-    Expression,
     Any,
     value,
 )
 
 from gridpath.auxiliary.db_interface import directories_to_db_values
 from gridpath.common_functions import create_results_df
-from gridpath.project.common_functions import (
-    check_if_first_timepoint,
-    check_boundary_type,
-)
 
 
 def add_model_components(
