@@ -137,7 +137,6 @@ def add_model_components(
     )
 
     # ### Variables ### #
-    # TODO: elevation/volume relationship
     m.Reservoir_Starting_Volume_WaterVolumeUnit = Var(
         m.WATER_NODES_W_RESERVOIRS, m.TMPS, within=NonNegativeReals
     )
@@ -146,28 +145,23 @@ def add_model_components(
         m.WATER_NODES_W_RESERVOIRS, m.TMPS, within=NonNegativeReals
     )
 
-    # m.Reservoir_Starting_Elevation_ElevationUnit = Expression(
-    #     m.WATER_NODES_W_RESERVOIRS, m.TMPS, initialize=lambda mod, r,
-    #                                                           tmp:
-    #     mod.Reservoir_Starting_Volume_WaterVolumeUnit[r, tmp] * mod.volume_to_elevation_slope[r, 1]
-    # )
-
-    # def elevation_volume_curve_rule(mod, r, seg, tmp):
-    #     return (
-    #         mod.Reservoir_Starting_Elevation_ElevationUnit[r, tmp]
-    #         <= mod.volume_to_elevation_slope[r, seg]
-    #         * mod.Reservoir_Starting_Volume_WaterVolumeUnit[r, tmp]
-    #         + mod.volume_to_elevation_intercept[r, seg]
-    #     )
-    def elevation_volume_curve_rule(mod, r, tmp):
+    def elevation_volume_curve_rule(mod, r, seg, tmp):
+        """
+        This constraint behaves much better when dividing by slope instead of
+        multiplying
+        TODO: probably remove piecewise linear option and have elevation be
+        """
         return (
             mod.Reservoir_Starting_Elevation_ElevationUnit[r, tmp]
-            / mod.volume_to_elevation_slope[r, 1]
-            == mod.Reservoir_Starting_Volume_WaterVolumeUnit[r, tmp]
-        )
+            - mod.volume_to_elevation_intercept[r, seg]
+        ) / mod.volume_to_elevation_slope[
+            r, seg
+        ] == mod.Reservoir_Starting_Volume_WaterVolumeUnit[
+            r, tmp
+        ]
 
     m.Elevation_Volume_Relationship_Constraint = Constraint(
-        m.WATER_NODES_W_RESERVOIRS,
+        m.WATER_NODES_W_RESERVOIRS_SEGMENTS,
         m.TMPS,
         rule=elevation_volume_curve_rule,
     )

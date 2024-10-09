@@ -1372,7 +1372,7 @@ class TestExamples(unittest.TestCase):
 
         scenario_name = "hydro_system"
         self.validate_and_test_example_generic(
-            scenario_name=scenario_name, solver="ipopt"
+            scenario_name=scenario_name, solver="multistart"
         )
 
     @classmethod

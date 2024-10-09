@@ -1189,15 +1189,34 @@ def solve(instance, parsed_arguments):
                 "want to pass settings through GAMS."
             )
     else:
-        for opt in solver_options.keys():
-            optimizer.options[opt] = solver_options[opt]
-
-        results = optimizer.solve(
-            instance,
-            tee=not parsed_arguments.mute_solver_output,
-            keepfiles=parsed_arguments.keepfiles,
-            symbolic_solver_labels=parsed_arguments.symbolic,
-        )
+        if solver_name == "multistart":
+            # TODO: get this fully implemented
+            # See https://pyomo.readthedocs.io/en/latest/contributed_packages
+            # /multistart.html
+            results = optimizer.solve(
+                instance,
+                strategy="midpoint_guess_and_bound",
+                # solver=solver_options["solver"],
+                solver_args={
+                    "tee": not parsed_arguments.mute_solver_output,
+                    "keepfiles": parsed_arguments.keepfiles,
+                    "symbolic_solver_labels": parsed_arguments.symbolic,
+                },
+                iterations=2,
+                # solver_args={
+                #     o: solver_options[o] for o in solver_options.keys() if o != "solver"
+                # },
+                suppress_unbounded_warning=True,  # doesn't seem to work
+            )
+        else:
+            for opt in solver_options.keys():
+                optimizer.options[opt] = solver_options[opt]
+            results = optimizer.solve(
+                instance,
+                tee=not parsed_arguments.mute_solver_output,
+                keepfiles=parsed_arguments.keepfiles,
+                symbolic_solver_labels=parsed_arguments.symbolic,
+            )
 
     # Can optionally log infeasibilities but this has resulted in false
     # positives due to rounding errors larger than the default tolerance

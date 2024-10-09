@@ -1,0 +1,4 @@
+solver_name,solver_option_name,solver_option_value
+multistart,solver,ipopt
+multistart,tol,0.00000001
+multistart,max_iter,3000
