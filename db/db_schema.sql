@@ -1030,18 +1030,18 @@ CREATE TABLE inputs_system_water_node_reservoirs
     water_node_reservoir_scenario_id INTEGER,
     water_node                       TEXT,
     balancing_type_reservoir         TEXT,
-    target_elevation_scenario_id     INTEGER,
-    minimum_elevation_elevationunit  FLOAT,
-    maximum_elevation_elevationunit  FLOAT,
+    target_volume_scenario_id     INTEGER,
+    minimum_volume_volumeunit  FLOAT,
+    maximum_volume_volumeunit  FLOAT,
     volume_to_elevation_curve_id     INTEGER,
     max_spill                        FLOAT,
     evaporation_coefficient          FLOAT,
     PRIMARY KEY (water_node_reservoir_scenario_id, water_node),
     FOREIGN KEY (water_node_reservoir_scenario_id) REFERENCES
         subscenarios_system_water_node_reservoirs (water_node_reservoir_scenario_id),
-    FOREIGN KEY (water_node, target_elevation_scenario_id) REFERENCES
-        inputs_system_water_node_reservoirs_target_elevations
-            (water_node, target_elevation_scenario_id)
+    FOREIGN KEY (water_node, target_volume_scenario_id) REFERENCES
+        inputs_system_water_node_reservoirs_target_volumes
+            (water_node, target_volume_scenario_id)
 --     FOREIGN KEY (reservoir, evaporation_coefficient_scenario_id) REFERENCES
 --         inputs_system_water_node_reservoirs_evaporaton_coefficient
 --             (reservoir, evaporation_coefficient_scenario_id)
@@ -1073,23 +1073,23 @@ CREATE TABLE inputs_system_water_node_reservoir_volume_to_elevation_curves
             (water_node, volume_to_elevation_curve_id)
 );
 
-DROP TABLE IF EXISTS subscenarios_system_water_node_reservoirs_target_elevations;
-CREATE TABLE subscenarios_system_water_node_reservoirs_target_elevations
+DROP TABLE IF EXISTS subscenarios_system_water_node_reservoirs_target_volumes;
+CREATE TABLE subscenarios_system_water_node_reservoirs_target_volumes
 (
     water_node                   TEXT,
-    target_elevation_scenario_id INTEGER,
+    target_volume_scenario_id INTEGER,
     name                         VARCHAR(32),
     description                  VARCHAR(128)
 );
 
-DROP TABLE IF EXISTS inputs_system_water_node_reservoirs_target_elevations;
-CREATE TABLE inputs_system_water_node_reservoirs_target_elevations
+DROP TABLE IF EXISTS inputs_system_water_node_reservoirs_target_volumes;
+CREATE TABLE inputs_system_water_node_reservoirs_target_volumes
 (
     water_node                   TEXT,
-    target_elevation_scenario_id INTEGER,
+    target_volume_scenario_id INTEGER,
     timepoint                    FLOAT,
-    reservoir_target_elevation   DECIMAL,
-    PRIMARY KEY (water_node, target_elevation_scenario_id)
+    reservoir_target_volume   DECIMAL,
+    PRIMARY KEY (water_node, target_volume_scenario_id)
 );
 
 -- DROP TABLE IF EXISTS subscenarios_system_water_node_reservoirs_maximum_elevation;
@@ -1107,7 +1107,7 @@ CREATE TABLE inputs_system_water_node_reservoirs_target_elevations
 --     reservoir                       TEXT,
 --     maximum_elevation_scenario_id   INTEGER,
 --     timepoint                       FLOAT,
---     maximum_elevation_elevationunit FLOAT,
+--     maximum_volume_volumeunit FLOAT,
 --     PRIMARY KEY (reservoir, maximum_elevation_scenario_id)
 -- );
 --

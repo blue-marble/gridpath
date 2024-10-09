@@ -157,38 +157,38 @@ class TestReservoirs(unittest.TestCase):
         }
         self.assertDictEqual(expected_bt, actual_bt)
 
-        # Param: reservoir_target_elevation
+        # Param: reservoir_target_volume
         expected_te = {
             ("Water_Node_1", 20200101): 1100,
             ("Water_Node_2", 20200101): 750,
             ("Water_Node_3", 20200101): 550,
         }
         actual_te = {
-            (r, tmp): instance.reservoir_target_elevation[r, tmp]
+            (r, tmp): instance.reservoir_target_volume[r, tmp]
             for (r, tmp) in instance.WATER_NODE_RESERVOIR_TMPS_W_TARGET_ELEVATION
         }
         self.assertDictEqual(expected_te, actual_te)
 
-        # Param: maximum_elevation_elevationunit
+        # Param: maximum_volume_volumeunit
         expected_maxe = {
             "Water_Node_1": 1200,
             "Water_Node_2": 800,
             "Water_Node_3": 600,
         }
         actual_maxe = {
-            r: instance.maximum_elevation_elevationunit[r]
+            r: instance.maximum_volume_volumeunit[r]
             for r in instance.WATER_NODES_W_RESERVOIRS
         }
         self.assertDictEqual(expected_maxe, actual_maxe)
 
-        # Param: minimum_elevation_elevationunit
+        # Param: minimum_volume_volumeunit
         expected_mine = {
             "Water_Node_1": 1000,
             "Water_Node_2": 700,
             "Water_Node_3": 500,
         }
         actual_mine = {
-            r: instance.minimum_elevation_elevationunit[r]
+            r: instance.minimum_volume_volumeunit[r]
             for r in instance.WATER_NODES_W_RESERVOIRS
         }
         self.assertDictEqual(expected_mine, actual_mine)
@@ -201,11 +201,7 @@ class TestReservoirs(unittest.TestCase):
         ]
 
         actual_r_seg = sorted(
-            [
-                (r, seg)
-                for (r, seg) in
-                instance.WATER_NODES_W_RESERVOIRS_SEGMENTS
-            ]
+            [(r, seg) for (r, seg) in instance.WATER_NODES_W_RESERVOIRS_SEGMENTS]
         )
 
         self.assertListEqual(expected_r_seg, actual_r_seg)

@@ -1,4 +1,4 @@
 reservoir	segment	volume_to_elevation_slope	volume_to_elevation_intercept
-Water_Node_1	1	4e-05	0.0
-Water_Node_2	1	0.0004	0.0
-Water_Node_3	1	0.004	0.0
+Water_Node_1	1	0.04	0.0
+Water_Node_2	1	0.4	0.0
+Water_Node_3	1	4.0	0.0

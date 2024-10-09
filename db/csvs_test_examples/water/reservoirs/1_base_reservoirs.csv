@@ -1,4 +1,4 @@
-﻿water_node,balancing_type_reservoir,target_elevation_scenario_id,minimum_elevation_elevationunit,maximum_elevation_elevationunit,volume_to_elevation_curve_id,max_spill,evaporation_coefficient
-Water_Node_1,day,1,900,1000,1,100,0
-Water_Node_2,day,1,500,700,1,100,0
-Water_Node_3,day,1,200,300,1,100,0
+﻿water_node,balancing_type_reservoir,target_volume_scenario_id,minimum_volume_volumeunit,maximum_volume_volumeunit,volume_to_elevation_curve_id,max_spill,evaporation_coefficient
+Water_Node_1,day,1,22500,25000,1,0.1,0
+Water_Node_2,day,1,1250,1750,1,0.1,0
+Water_Node_3,day,1,50,75,1,0.1,0

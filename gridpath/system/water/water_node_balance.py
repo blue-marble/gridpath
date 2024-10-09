@@ -98,18 +98,18 @@ def add_model_components(
     m.balancing_type_reservoir = Param(m.WATER_NODES_W_RESERVOIRS, within=m.BLN_TYPES)
 
     # Elevation targets
-    m.reservoir_target_elevation = Param(
+    m.reservoir_target_volume = Param(
         m.WATER_NODE_RESERVOIR_TMPS_W_TARGET_ELEVATION, within=NonNegativeReals
     )
     # Elevation bounds
     # Max varies by season
     # TODO: add time varying
-    m.maximum_elevation_elevationunit = Param(
+    m.maximum_volume_volumeunit = Param(
         m.WATER_NODES_W_RESERVOIRS, within=NonNegativeReals
     )
     # In CHEOPS, min elevation is a single value for each reservoir and does
     # not vary over time
-    m.minimum_elevation_elevationunit = Param(
+    m.minimum_volume_volumeunit = Param(
         m.WATER_NODES_W_RESERVOIRS, within=NonNegativeReals
     )
 
@@ -138,9 +138,19 @@ def add_model_components(
 
     # ### Variables ### #
     # TODO: elevation/volume relationship
+    m.Reservoir_Starting_Volume_WaterVolumeUnit = Var(
+        m.WATER_NODES_W_RESERVOIRS, m.TMPS, within=NonNegativeReals
+    )
+
     m.Reservoir_Starting_Elevation_ElevationUnit = Var(
         m.WATER_NODES_W_RESERVOIRS, m.TMPS, within=NonNegativeReals
     )
+
+    # m.Reservoir_Starting_Elevation_ElevationUnit = Expression(
+    #     m.WATER_NODES_W_RESERVOIRS, m.TMPS, initialize=lambda mod, r,
+    #                                                           tmp:
+    #     mod.Reservoir_Starting_Volume_WaterVolumeUnit[r, tmp] * mod.volume_to_elevation_slope[r, 1]
+    # )
 
     # def elevation_volume_curve_rule(mod, r, seg, tmp):
     #     return (
@@ -151,14 +161,10 @@ def add_model_components(
     #     )
     def elevation_volume_curve_rule(mod, r, tmp):
         return (
-            mod.Reservoir_Starting_Elevation_ElevationUnit[r, tmp] /
-            mod.volume_to_elevation_slope[r, 1] ==
-            mod.Reservoir_Starting_Volume_WaterVolumeUnit[r, tmp]
+            mod.Reservoir_Starting_Elevation_ElevationUnit[r, tmp]
+            / mod.volume_to_elevation_slope[r, 1]
+            == mod.Reservoir_Starting_Volume_WaterVolumeUnit[r, tmp]
         )
-
-    m.Reservoir_Starting_Volume_WaterVolumeUnit = Var(
-        m.WATER_NODES_W_RESERVOIRS, m.TMPS, within=NonNegativeReals
-    )
 
     m.Elevation_Volume_Relationship_Constraint = Constraint(
         m.WATER_NODES_W_RESERVOIRS,
@@ -214,56 +220,40 @@ def add_model_components(
 
     # ### Constraints ### #
 
-    # def reservoir_target_elevation_constraint_rule(mod, wn_w_r, tmp):
-    #     return (
-    #         mod.Reservoir_Starting_Elevation_ElevationUnit[wn_w_r, tmp]
-    #         == mod.reservoir_target_elevation[wn_w_r, tmp]
-    #     )
-
-    def reservoir_target_elevation_constraint_rule(mod, wn_w_r, tmp):
-        """
-        This constraint is extremely sensitive to formulation, e.g. dividing
-        target elevation by the coefficient works whereas multiplying volume
-        by the coefficient results in an infeasibility
-        TODO: reformulate in terms of volume only
-        """
+    def reservoir_target_storage_constraint_rule(mod, wn_w_r, tmp):
+        """ """
         return (
-
-            mod.reservoir_target_elevation[wn_w_r, tmp] / mod.volume_to_elevation_slope[wn_w_r, 1]
-            == mod.Reservoir_Starting_Volume_WaterVolumeUnit[wn_w_r, tmp]
+            mod.Reservoir_Starting_Volume_WaterVolumeUnit[wn_w_r, tmp]
+            == mod.reservoir_target_volume[wn_w_r, tmp]
         )
 
-    m.Reservoir_Target_Elevation_Constraint = Constraint(
+    m.Reservoir_Target_Storage_Constraint = Constraint(
         m.WATER_NODE_RESERVOIR_TMPS_W_TARGET_ELEVATION,
-        rule=reservoir_target_elevation_constraint_rule,
+        rule=reservoir_target_storage_constraint_rule,
     )
 
-    def reservoir_elevation_min_bound_constraint_rule(mod, r, tmp):
-        # TODO: reformulate in terms of volume/storage, so that elevation can
-        #  be a param more easily
+    def reservoir_storage_min_bound_constraint_rule(mod, r, tmp):
         return (
-            mod.Reservoir_Starting_Elevation_ElevationUnit[r, tmp]
-            >= mod.minimum_elevation_elevationunit[r]
+            mod.Reservoir_Starting_Volume_WaterVolumeUnit[r, tmp]
+            >= mod.minimum_volume_volumeunit[r]
         )
 
-    m.Minimum_Elevation_Constraint = Constraint(
+    m.Minimum_Water_Storage_Constraint = Constraint(
         m.WATER_NODES_W_RESERVOIRS,
         m.TMPS,
-        rule=reservoir_elevation_min_bound_constraint_rule,
+        rule=reservoir_storage_min_bound_constraint_rule,
     )
 
-    def reservoir_elevation_max_bound_constraint_rule(mod, r, tmp):
-        # TODO: reformulate in terms of volume/storage, so that elevation can
-        #  be a param more easily
+    def reservoir_storage_max_bound_constraint_rule(mod, r, tmp):
         return (
-            mod.Reservoir_Starting_Elevation_ElevationUnit[r, tmp]
-            <= mod.maximum_elevation_elevationunit[r]
+            mod.Reservoir_Starting_Volume_WaterVolumeUnit[r, tmp]
+            <= mod.maximum_volume_volumeunit[r]
         )
 
-    m.Maximum_Elevation_Constraint = Constraint(
+    m.Maximum_Water_Storage_Constraint = Constraint(
         m.WATER_NODES_W_RESERVOIRS,
         m.TMPS,
-        rule=reservoir_elevation_max_bound_constraint_rule,
+        rule=reservoir_storage_max_bound_constraint_rule,
     )
 
     def get_inflow_volunit_per_hour_in_tmp(mod, wn, tmp):
@@ -422,8 +412,8 @@ def load_model_data(
         index=m.WATER_NODES_W_RESERVOIRS,
         param=(
             m.balancing_type_reservoir,
-            m.minimum_elevation_elevationunit,
-            m.maximum_elevation_elevationunit,
+            m.minimum_volume_volumeunit,
+            m.maximum_volume_volumeunit,
             m.max_spill,
             m.evaporation_coefficient,
         ),
@@ -436,28 +426,28 @@ def load_model_data(
         subproblem,
         stage,
         "inputs",
-        "reservoir_target_elevations.tab",
+        "reservoir_target_volumes.tab",
     )
     if os.path.exists(fname):
         data_portal.load(
             filename=fname,
             index=m.WATER_NODE_RESERVOIR_TMPS_W_TARGET_ELEVATION,
-            param=m.reservoir_target_elevation,
+            param=m.reservoir_target_volume,
         )
 
     data_portal.load(
         filename=os.path.join(
-        scenario_directory,
-        weather_iteration,
-        hydro_iteration,
-        availability_iteration,
-        subproblem,
-        stage,
-        "inputs",
-        "reservoir_volume_to_elevation_curves.tab",
-    ),
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "reservoir_volume_to_elevation_curves.tab",
+        ),
         index=m.WATER_NODES_W_RESERVOIRS_SEGMENTS,
-        param=(m.volume_to_elevation_slope, m.volume_to_elevation_intercept)
+        param=(m.volume_to_elevation_slope, m.volume_to_elevation_intercept),
     )
 
 
@@ -498,8 +488,8 @@ def get_inputs_from_database(
     c2 = conn.cursor()
     reservoirs = c2.execute(
         f"""SELECT water_node, balancing_type_reservoir,
-            minimum_elevation_elevationunit,
-            maximum_elevation_elevationunit,
+            minimum_volume_volumeunit,
+            maximum_volume_volumeunit,
             max_spill,
             evaporation_coefficient
         FROM inputs_system_water_node_reservoirs
@@ -509,11 +499,11 @@ def get_inputs_from_database(
     )
 
     c3 = conn.cursor()
-    target_elevations = c3.execute(
-        f"""SELECT water_node, timepoint, reservoir_target_elevation
-        FROM inputs_system_water_node_reservoirs_target_elevations
-        WHERE (water_node, target_elevation_scenario_id)
-        IN (SELECT water_node, target_elevation_scenario_id
+    target_volumes = c3.execute(
+        f"""SELECT water_node, timepoint, reservoir_target_volume
+        FROM inputs_system_water_node_reservoirs_target_volumes
+        WHERE (water_node, target_volume_scenario_id)
+        IN (SELECT water_node, target_volume_scenario_id
             FROM inputs_system_water_node_reservoirs
             WHERE water_node_reservoir_scenario_id = 
             {subscenarios.WATER_NODE_RESERVOIR_SCENARIO_ID}
@@ -540,7 +530,7 @@ def get_inputs_from_database(
         """
     )
 
-    return water_inflows, reservoirs, target_elevations, volume_to_elevation_curves
+    return water_inflows, reservoirs, target_volumes, volume_to_elevation_curves
 
 
 def validate_inputs(
@@ -599,15 +589,17 @@ def write_model_inputs(
         weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
     )
 
-    inflows, reservoirs, target_elevations, volume_to_elevation_curves = get_inputs_from_database(
-        scenario_id,
-        subscenarios,
-        db_weather_iteration,
-        db_hydro_iteration,
-        db_availability_iteration,
-        db_subproblem,
-        db_stage,
-        conn,
+    inflows, reservoirs, target_volumes, volume_to_elevation_curves = (
+        get_inputs_from_database(
+            scenario_id,
+            subscenarios,
+            db_weather_iteration,
+            db_hydro_iteration,
+            db_availability_iteration,
+            db_subproblem,
+            db_stage,
+            conn,
+        )
     )
 
     with open(
@@ -659,8 +651,8 @@ def write_model_inputs(
             [
                 "water_node",
                 "balancing_type_reservoir",
-                "minimum_elevation_elevationunit",
-                "maximum_elevation_elevationunit",
+                "minimum_volume_volumeunit",
+                "maximum_volume_volumeunit",
                 "max_spill",
                 "evaporation_coefficient",
             ]
@@ -669,7 +661,7 @@ def write_model_inputs(
         for row in reservoirs:
             writer.writerow(row)
 
-    target_volumes_list = [row for row in target_elevations]
+    target_volumes_list = [row for row in target_volumes]
     if target_volumes_list:
         with open(
             os.path.join(
@@ -680,7 +672,7 @@ def write_model_inputs(
                 subproblem,
                 stage,
                 "inputs",
-                "reservoir_target_elevations.tab",
+                "reservoir_target_volumes.tab",
             ),
             "w",
             newline="",
@@ -688,34 +680,41 @@ def write_model_inputs(
             writer = csv.writer(f, delimiter="\t", lineterminator="\n")
 
             # Write header
-            writer.writerow(["reservoir", "timepoint", "reservoir_target_elevation"])
+            writer.writerow(["reservoir", "timepoint", "reservoir_target_volume"])
 
             for row in target_volumes_list:
                 writer.writerow(row)
 
     # Volume to elevation curves
     with open(
-            os.path.join(
-                scenario_directory,
-                weather_iteration,
-                hydro_iteration,
-                availability_iteration,
-                subproblem,
-                stage,
-                "inputs",
-                "reservoir_volume_to_elevation_curves.tab",
-            ),
-            "w",
-            newline="",
+        os.path.join(
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "reservoir_volume_to_elevation_curves.tab",
+        ),
+        "w",
+        newline="",
     ) as f:
         writer = csv.writer(f, delimiter="\t", lineterminator="\n")
 
         # Write header
         writer.writerow(
-            ["reservoir", "segment", "volume_to_elevation_slope", "volume_to_elevation_intercept"])
+            [
+                "reservoir",
+                "segment",
+                "volume_to_elevation_slope",
+                "volume_to_elevation_intercept",
+            ]
+        )
 
         for row in volume_to_elevation_curves:
             writer.writerow(row)
+
 
 def export_results(
     scenario_directory,
