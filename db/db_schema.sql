@@ -1020,22 +1020,22 @@ DROP TABLE IF EXISTS subscenarios_system_water_node_reservoirs;
 CREATE TABLE subscenarios_system_water_node_reservoirs
 (
     water_node_reservoir_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name                        VARCHAR(32),
-    description                 VARCHAR(128)
+    name                             VARCHAR(32),
+    description                      VARCHAR(128)
 );
 
 DROP TABLE IF EXISTS inputs_system_water_node_reservoirs;
 CREATE TABLE inputs_system_water_node_reservoirs
 (
-    water_node_reservoir_scenario_id           INTEGER,
-    water_node                                 TEXT,
-    balancing_type_reservoir                   TEXT,
-    target_elevation_scenario_id               INTEGER,
-    minimum_elevation_elevationunit            FLOAT,
-    maximum_elevation_elevationunit            FLOAT,
-    volume_to_elevation_conversion_coefficient FLOAT,
-    max_spill                                  FLOAT,
-    evaporation_coefficient                    FLOAT,
+    water_node_reservoir_scenario_id INTEGER,
+    water_node                       TEXT,
+    balancing_type_reservoir         TEXT,
+    target_elevation_scenario_id     INTEGER,
+    minimum_elevation_elevationunit  FLOAT,
+    maximum_elevation_elevationunit  FLOAT,
+    volume_to_elevation_curve_id     INTEGER,
+    max_spill                        FLOAT,
+    evaporation_coefficient          FLOAT,
     PRIMARY KEY (water_node_reservoir_scenario_id, water_node),
     FOREIGN KEY (water_node_reservoir_scenario_id) REFERENCES
         subscenarios_system_water_node_reservoirs (water_node_reservoir_scenario_id),
@@ -1047,10 +1047,36 @@ CREATE TABLE inputs_system_water_node_reservoirs
 --             (reservoir, evaporation_coefficient_scenario_id)
 );
 
+DROP TABLE IF EXISTS
+    subscenarios_system_water_node_reservoir_volume_to_elevation_curves;
+CREATE TABLE subscenarios_system_water_node_reservoir_volume_to_elevation_curves
+(
+    water_node                   VARCHAR(32),
+    volume_to_elevation_curve_id INTEGER,
+    name                         VARCHAR(32),
+    description                  VARCHAR(128),
+    PRIMARY KEY (water_node, volume_to_elevation_curve_id)
+);
+
+DROP TABLE IF EXISTS
+    inputs_system_water_node_reservoir_volume_to_elevation_curves;
+CREATE TABLE inputs_system_water_node_reservoir_volume_to_elevation_curves
+(
+    water_node                      VARCHAR(64),
+    volume_to_elevation_curve_id    INTEGER,
+    segment                         INTEGER,
+    volume_to_elevation_slope FLOAT,
+    volume_to_elevation_intercept FLOAT,
+    PRIMARY KEY (water_node, volume_to_elevation_curve_id, segment),
+    FOREIGN KEY (water_node, volume_to_elevation_curve_id) REFERENCES
+        subscenarios_system_water_node_reservoir_volume_to_elevation_curves
+            (water_node, volume_to_elevation_curve_id)
+);
+
 DROP TABLE IF EXISTS subscenarios_system_water_node_reservoirs_target_elevations;
 CREATE TABLE subscenarios_system_water_node_reservoirs_target_elevations
 (
-    water_node                    TEXT,
+    water_node                   TEXT,
     target_elevation_scenario_id INTEGER,
     name                         VARCHAR(32),
     description                  VARCHAR(128)
@@ -1062,7 +1088,7 @@ CREATE TABLE inputs_system_water_node_reservoirs_target_elevations
     water_node                   TEXT,
     target_elevation_scenario_id INTEGER,
     timepoint                    FLOAT,
-    reservoir_target_elevation   FLOAT,
+    reservoir_target_elevation   DECIMAL,
     PRIMARY KEY (water_node, target_elevation_scenario_id)
 );
 
@@ -1161,7 +1187,7 @@ CREATE TABLE inputs_system_water_powerhouses
 (
     water_powerhouse_scenario_id  INTEGER,
     powerhouse                    TEXT,
-    powerhouse_water_node          TEXT,
+    powerhouse_water_node         TEXT,
     theoretical_power_coefficient FLOAT,
     tailwater_elevation           FLOAT,
     headloss_factor               FLOAT,
@@ -1544,7 +1570,7 @@ CREATE TABLE inputs_project_operational_chars
     partial_availability_threshold           FLOAT,
     stor_exog_state_of_charge_scenario_id    INTEGER, -- determines storage SOC
     nonfuel_carbon_emissions_per_mwh         FLOAT,
-    powerhouse	                             TEXT,
+    powerhouse                               TEXT,
     generator_efficiency                     FLOAT,
     PRIMARY KEY (project_operational_chars_scenario_id, project),
     FOREIGN KEY (project_operational_chars_scenario_id) REFERENCES
@@ -4259,7 +4285,7 @@ CREATE TABLE scenarios
     elcc_surface_scenario_id                                    INTEGER,
     market_price_scenario_id                                    INTEGER,
     market_volume_scenario_id                                   INTEGER,
-    water_node_reservoir_scenario_id                                 INTEGER,
+    water_node_reservoir_scenario_id                            INTEGER,
     water_flow_scenario_id                                      INTEGER,
     water_inflow_scenario_id                                    INTEGER,
     water_powerhouse_scenario_id                                INTEGER,

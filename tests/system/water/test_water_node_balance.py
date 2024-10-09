@@ -193,17 +193,46 @@ class TestReservoirs(unittest.TestCase):
         }
         self.assertDictEqual(expected_mine, actual_mine)
 
-        # Param: volume_to_elevation_conversion_coefficient
-        expected_vtoe = {
-            "Water_Node_1": 0.01,
-            "Water_Node_2": 0.1,
-            "Water_Node_3": 0.15,
+        # Set: WATER_NODES_W_RESERVOIRS_SEGMENTS
+        expected_r_seg = [
+            ("Water_Node_1", 1),
+            ("Water_Node_2", 1),
+            ("Water_Node_3", 1),
+        ]
+
+        actual_r_seg = sorted(
+            [
+                (r, seg)
+                for (r, seg) in
+                instance.WATER_NODES_W_RESERVOIRS_SEGMENTS
+            ]
+        )
+
+        self.assertListEqual(expected_r_seg, actual_r_seg)
+
+        # Param: volume_to_elevation_slope
+        expected_vtoes = {
+            ("Water_Node_1", 1): 0.01,
+            ("Water_Node_2", 1): 0.1,
+            ("Water_Node_3", 1): 0.15,
         }
-        actual_vtoe = {
-            r: instance.volume_to_elevation_conversion_coefficient[r]
-            for r in instance.WATER_NODES_W_RESERVOIRS
+        actual_vtoes = {
+            (r, seg): instance.volume_to_elevation_slope[r, seg]
+            for (r, seg) in instance.WATER_NODES_W_RESERVOIRS_SEGMENTS
         }
-        self.assertDictEqual(expected_vtoe, actual_vtoe)
+        self.assertDictEqual(expected_vtoes, actual_vtoes)
+
+        # Param: volume_to_elevation_intercept
+        expected_vtoei = {
+            ("Water_Node_1", 1): 0,
+            ("Water_Node_2", 1): 0,
+            ("Water_Node_3", 1): 0,
+        }
+        actual_vtoei = {
+            (r, seg): instance.volume_to_elevation_intercept[r, seg]
+            for (r, seg) in instance.WATER_NODES_W_RESERVOIRS_SEGMENTS
+        }
+        self.assertDictEqual(expected_vtoei, actual_vtoei)
 
         # Param: max_spill
         expected_maxspill = {
