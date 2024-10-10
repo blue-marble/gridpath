@@ -39,6 +39,7 @@ PREREQUISITE_MODULE_NAMES = [
     "geography.water_network",
     "system.water.water_flows",
     "system.water.water_node_balance",
+    "system.water.reservoir_elevation_variable",
     "system.water.powerhouses",
 ]
 NAME_OF_MODULE_BEING_TESTED = "project.operations.operational_types.gen_hydro_water"

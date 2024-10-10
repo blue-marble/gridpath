@@ -87,6 +87,7 @@ def all_modules_list():
         "system.markets.prices",
         "system.water.water_flows",
         "system.water.water_node_balance",
+        "system.water.reservoir_elevation_variable",
         "system.water.powerhouses",
         "project",
         "project.capacity",
@@ -465,6 +466,7 @@ def optional_modules_list():
         "water": [
             "geography.water_network",
             "system.water.water_node_balance",
+            "system.water.reservoir_elevation_variable",
             "system.water.water_flows",
             "system.water.powerhouses",
         ],

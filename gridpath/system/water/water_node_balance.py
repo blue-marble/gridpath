@@ -113,19 +113,6 @@ def add_model_components(
         m.WATER_NODES_W_RESERVOIRS, within=NonNegativeReals
     )
 
-    # Volume-elevation relationship
-    m.WATER_NODES_W_RESERVOIRS_SEGMENTS = Set(
-        within=m.WATER_NODES_W_RESERVOIRS * NonNegativeIntegers
-    )
-
-    m.volume_to_elevation_slope = Param(
-        m.WATER_NODES_W_RESERVOIRS_SEGMENTS, within=NonNegativeReals
-    )
-
-    m.volume_to_elevation_intercept = Param(
-        m.WATER_NODES_W_RESERVOIRS_SEGMENTS, within=NonNegativeReals
-    )
-
     # Spill bound
     # TODO: make max spill a function of elevation
     m.max_spill = Param(m.WATER_NODES_W_RESERVOIRS, within=NonNegativeReals)
@@ -139,31 +126,6 @@ def add_model_components(
     # ### Variables ### #
     m.Reservoir_Starting_Volume_WaterVolumeUnit = Var(
         m.WATER_NODES_W_RESERVOIRS, m.TMPS, within=NonNegativeReals
-    )
-
-    m.Reservoir_Starting_Elevation_ElevationUnit = Var(
-        m.WATER_NODES_W_RESERVOIRS, m.TMPS, within=NonNegativeReals
-    )
-
-    def elevation_volume_curve_rule(mod, r, seg, tmp):
-        """
-        This constraint behaves much better when dividing by slope instead of
-        multiplying
-        TODO: probably remove piecewise linear option and have elevation be
-        """
-        return (
-            mod.Reservoir_Starting_Elevation_ElevationUnit[r, tmp]
-            - mod.volume_to_elevation_intercept[r, seg]
-        ) / mod.volume_to_elevation_slope[
-            r, seg
-        ] == mod.Reservoir_Starting_Volume_WaterVolumeUnit[
-            r, tmp
-        ]
-
-    m.Elevation_Volume_Relationship_Constraint = Constraint(
-        m.WATER_NODES_W_RESERVOIRS_SEGMENTS,
-        m.TMPS,
-        rule=elevation_volume_curve_rule,
     )
 
     # Controls
@@ -429,21 +391,6 @@ def load_model_data(
             param=m.reservoir_target_volume,
         )
 
-    data_portal.load(
-        filename=os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "inputs",
-            "reservoir_volume_to_elevation_curves.tab",
-        ),
-        index=m.WATER_NODES_W_RESERVOIRS_SEGMENTS,
-        param=(m.volume_to_elevation_slope, m.volume_to_elevation_intercept),
-    )
-
 
 def get_inputs_from_database(
     scenario_id,
@@ -511,20 +458,7 @@ def get_inputs_from_database(
         """
     )
 
-    c4 = conn.cursor()
-    volume_to_elevation_curves = c4.execute(
-        f"""SELECT water_node, segment, volume_to_elevation_slope, volume_to_elevation_intercept
-        FROM inputs_system_water_node_reservoir_volume_to_elevation_curves
-        WHERE (water_node, volume_to_elevation_curve_id)
-        IN (SELECT water_node, volume_to_elevation_curve_id
-            FROM inputs_system_water_node_reservoirs
-            WHERE water_node_reservoir_scenario_id = 
-            {subscenarios.WATER_NODE_RESERVOIR_SCENARIO_ID}
-        );
-        """
-    )
-
-    return water_inflows, reservoirs, target_volumes, volume_to_elevation_curves
+    return water_inflows, reservoirs, target_volumes
 
 
 def validate_inputs(
@@ -583,17 +517,15 @@ def write_model_inputs(
         weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
     )
 
-    inflows, reservoirs, target_volumes, volume_to_elevation_curves = (
-        get_inputs_from_database(
-            scenario_id,
-            subscenarios,
-            db_weather_iteration,
-            db_hydro_iteration,
-            db_availability_iteration,
-            db_subproblem,
-            db_stage,
-            conn,
-        )
+    inflows, reservoirs, target_volumes = get_inputs_from_database(
+        scenario_id,
+        subscenarios,
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+        conn,
     )
 
     with open(
@@ -678,36 +610,6 @@ def write_model_inputs(
 
             for row in target_volumes_list:
                 writer.writerow(row)
-
-    # Volume to elevation curves
-    with open(
-        os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "inputs",
-            "reservoir_volume_to_elevation_curves.tab",
-        ),
-        "w",
-        newline="",
-    ) as f:
-        writer = csv.writer(f, delimiter="\t", lineterminator="\n")
-
-        # Write header
-        writer.writerow(
-            [
-                "reservoir",
-                "segment",
-                "volume_to_elevation_slope",
-                "volume_to_elevation_intercept",
-            ]
-        )
-
-        for row in volume_to_elevation_curves:
-            writer.writerow(row)
 
 
 def export_results(
