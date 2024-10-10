@@ -40,8 +40,9 @@ PREREQUISITE_MODULE_NAMES = [
     "project.operations.reserves.lf_reserves_down",
     "geography.water_network",
     "system.water.water_flows",
+    "system.water.water_nodes",
+    "system.water.reservoirs",
     "system.water.water_node_balance",
-    "system.water.reservoir_elevation_variable",
     "system.water.powerhouses",
     "project.operations.operational_types",
 ]

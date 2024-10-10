@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-Water nodes and connections for modeling cascading hydro systems.
+Reservoir operation.
 """
 
 import csv
@@ -57,158 +57,123 @@ def add_model_components(
     :param d:
     :return:
     """
+
+    # ### Reservoirs ### #
+    m.WATER_NODES_W_RESERVOIRS = Set(within=m.WATER_NODES)
+
+    m.WATER_NODE_RESERVOIR_TMPS_W_TARGET_ELEVATION = Set(
+        within=m.WATER_NODES_W_RESERVOIRS * m.TMPS
+    )
+
+    # ### Parameters ###
+    m.balancing_type_reservoir = Param(m.WATER_NODES_W_RESERVOIRS, within=m.BLN_TYPES)
+
+    # Elevation targets
+    m.reservoir_target_volume = Param(
+        m.WATER_NODE_RESERVOIR_TMPS_W_TARGET_ELEVATION, within=NonNegativeReals
+    )
+    # Elevation bounds
+    # Max varies by season
+    # TODO: add time varying
+    m.maximum_volume_volumeunit = Param(
+        m.WATER_NODES_W_RESERVOIRS, within=NonNegativeReals
+    )
+    # In CHEOPS, min elevation is a single value for each reservoir and does
+    # not vary over time
+    m.minimum_volume_volumeunit = Param(
+        m.WATER_NODES_W_RESERVOIRS, within=NonNegativeReals
+    )
+
+    # Spill bound
+    # TODO: make max spill a function of elevation
+    m.max_spill = Param(m.WATER_NODES_W_RESERVOIRS, within=NonNegativeReals)
+
+    # Losses
+    # TODO: by month
+    m.evaporation_coefficient = Param(
+        m.WATER_NODES_W_RESERVOIRS, within=NonNegativeReals
+    )
+
     # ### Variables ### #
-    # Controls
-    # TODO: need upper bounds on discharge / spill
-    m.Discharge_Water_to_Powerhouse = Var(
-        m.WATER_NODES, m.TMPS, within=NonNegativeReals
+    m.Reservoir_Starting_Volume_WaterVolumeUnit = Var(
+        m.WATER_NODES_W_RESERVOIRS, m.TMPS, within=NonNegativeReals
     )
-    m.Spill_Water = Var(m.WATER_NODES, m.TMPS, within=NonNegativeReals)
-
-    # ### Expressions ### #
-    def gross_node_inflow(mod, wn, tmp):
-        return mod.exogenous_water_inflow_vol_per_sec[wn, tmp] + sum(
-            mod.Water_Link_Flow_Vol_per_Sec_in_Tmp[wl, tmp]
-            for wl in mod.WATER_LINKS_TO_BY_WATER_NODE[wn]
-        )
-
-    m.Gross_Water_Node_Inflow = Expression(
-        m.WATER_NODES,
+    # TODO: implement the correct calculation; depends on area, which depends
+    #  on elevation
+    # Losses
+    m.Evaporative_Losses = Expression(
+        m.WATER_NODES_W_RESERVOIRS,
         m.TMPS,
-        initialize=gross_node_inflow,
-    )
-
-    def gross_node_release(mod, wn, tmp):
-        return (
-            mod.Discharge_Water_to_Powerhouse[wn, tmp]
-            + mod.Spill_Water[wn, tmp]
-            + (
-                mod.Evaporative_Losses[wn, tmp]
-                if wn in mod.WATER_NODES_W_RESERVOIRS
-                else 0
-            )
-        )
-
-    m.Gross_Water_Node_Release = Expression(
-        m.WATER_NODES,
-        m.TMPS,
-        initialize=gross_node_release,
+        initialize=lambda mod, r, tmp: mod.evaporation_coefficient[r],
     )
 
     # ### Constraints ### #
-    def get_inflow_volunit_per_hour_in_tmp(mod, wn, tmp):
-        # TODO: check and document multiplication by 3600 to get from per s
-        #  to per h
-        inflow_in_tmp = (
-            mod.exogenous_water_inflow_vol_per_sec[wn, tmp]
-            + sum(
-                mod.Water_Link_Flow_Vol_per_Sec_in_Tmp[wl, tmp]
-                for wl in mod.WATER_LINKS_TO_BY_WATER_NODE[wn]
-            )
-        ) * 3600
 
-        return inflow_in_tmp
-
-    def get_release_volunit_per_hour_in_tmp(mod, wn, tmp):
-        # TODO: check and document multiplication by 3600 to get from per s
-        #  to per h
-        outflow_in_tmp = mod.Gross_Water_Node_Release[wn, tmp] * 3600
-
-        return outflow_in_tmp
-
-    def water_mass_balance_constraint_rule(mod, wn, tmp):
+    def reservoir_target_storage_constraint_rule(mod, wn_w_r, tmp):
         """ """
-        # If no reservoir, simply set inflows equal to release
-        if wn not in mod.WATER_NODES_W_RESERVOIRS:
-            return get_inflow_volunit_per_hour_in_tmp(
-                mod, wn, tmp
-            ) == get_release_volunit_per_hour_in_tmp(mod, wn, tmp)
-        # If the node does have a reservoir, we'll track the water in storage
-        else:
-            if check_if_first_timepoint(
-                mod=mod, tmp=tmp, balancing_type=mod.balancing_type_reservoir[wn]
-            ) and check_boundary_type(
-                mod=mod,
-                tmp=tmp,
-                balancing_type=mod.balancing_type_reservoir[wn],
-                boundary_type="linear",
-            ):
-                return Constraint.Skip
-            else:
-                if check_if_first_timepoint(
-                    mod=mod, tmp=tmp, balancing_type=mod.balancing_type_reservoir[wn]
-                ) and check_boundary_type(
-                    mod=mod,
-                    tmp=tmp,
-                    balancing_type=mod.balancing_type_reservoir[wn],
-                    boundary_type="linked",
-                ):
-                    # TODO: add linked later
-                    prev_tmp_hrs_in_tmp = None
-                    current_tmp_starting_water_volume = None
-                    prev_tmp_starting_water_volume = None
+        return (
+            mod.Reservoir_Starting_Volume_WaterVolumeUnit[wn_w_r, tmp]
+            == mod.reservoir_target_volume[wn_w_r, tmp]
+        )
 
-                    # TODO: units; make clear net flows are per s
-                    # Inflows and releases
-                    prev_tmp_inflow = None
-
-                    prev_tmp_release = None
-                else:
-                    prev_tmp_hrs_in_tmp = mod.hrs_in_tmp[
-                        mod.prev_tmp[tmp, mod.balancing_type_reservoir[wn]]
-                    ]
-                    current_tmp_starting_water_volume = (
-                        mod.Reservoir_Starting_Volume_WaterVolumeUnit[wn, tmp]
-                    )
-                    prev_tmp_starting_water_volume = (
-                        mod.Reservoir_Starting_Volume_WaterVolumeUnit[
-                            wn, mod.prev_tmp[tmp, mod.balancing_type_reservoir[wn]]
-                        ]
-                    )
-
-                    # TODO: units; make clear net flows are per s
-                    # Inflows and releases
-                    prev_tmp_inflow = get_inflow_volunit_per_hour_in_tmp(
-                        mod, wn, mod.prev_tmp[tmp, mod.balancing_type_reservoir[wn]]
-                    )
-
-                    prev_tmp_release = get_release_volunit_per_hour_in_tmp(
-                        mod, wn, mod.prev_tmp[tmp, mod.balancing_type_reservoir[wn]]
-                    )
-
-                    # TODO: CRITICAL, units requirements to get multiplication by
-                    #  hours in timepoint to work
-
-                return current_tmp_starting_water_volume == (
-                    prev_tmp_starting_water_volume
-                    + prev_tmp_inflow * prev_tmp_hrs_in_tmp
-                    - prev_tmp_release * prev_tmp_hrs_in_tmp
-                )
-
-    m.Water_Mass_Balance_Constraint = Constraint(
-        m.WATER_NODES, m.TMPS, rule=water_mass_balance_constraint_rule
+    m.Reservoir_Target_Storage_Constraint = Constraint(
+        m.WATER_NODE_RESERVOIR_TMPS_W_TARGET_ELEVATION,
+        rule=reservoir_target_storage_constraint_rule,
     )
 
-    # Set the sum of outflows from the node to be equal to discharge & spill
-    def enforce_outflow_rule(mod, wn, tmp):
-        """
-        The sum of the flows on all links from this node must equal the gross
-        outflow from the node. Skip constraint for the last node in the
-        network with no out links.
-        """
-        if [wl for wl in mod.WATER_LINKS_FROM_BY_WATER_NODE[wn]]:
-            return (
-                sum(
-                    mod.Water_Link_Flow_Vol_per_Sec_in_Tmp[wl, tmp]
-                    for wl in mod.WATER_LINKS_FROM_BY_WATER_NODE[wn]
-                )
-                == mod.Gross_Water_Node_Release[wn, tmp]
-            )
-        else:
-            return Constraint.Skip
+    def reservoir_storage_min_bound_constraint_rule(mod, r, tmp):
+        return (
+            mod.Reservoir_Starting_Volume_WaterVolumeUnit[r, tmp]
+            >= mod.minimum_volume_volumeunit[r]
+        )
 
-    m.Water_Node_Outflow_Constraint = Constraint(
-        m.WATER_NODES, m.TMPS, rule=enforce_outflow_rule
+    m.Minimum_Water_Storage_Constraint = Constraint(
+        m.WATER_NODES_W_RESERVOIRS,
+        m.TMPS,
+        rule=reservoir_storage_min_bound_constraint_rule,
+    )
+
+    def reservoir_storage_max_bound_constraint_rule(mod, r, tmp):
+        return (
+            mod.Reservoir_Starting_Volume_WaterVolumeUnit[r, tmp]
+            <= mod.maximum_volume_volumeunit[r]
+        )
+
+    m.Maximum_Water_Storage_Constraint = Constraint(
+        m.WATER_NODES_W_RESERVOIRS,
+        m.TMPS,
+        rule=reservoir_storage_max_bound_constraint_rule,
+    )
+
+    # Elevation
+
+    # TODO: add other modules
+    from gridpath.system.water.elevation_types.endogenous import add_model_components
+
+    add_model_components(
+        m,
+        d,
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+    )
+
+    def elevation_rule(mod, r, tmp):
+        # elevation_type = mod.elevation_type[r]
+
+        from gridpath.system.water.elevation_types.endogenous import elevation_rule
+
+        # return imported_elevation_modules[elevation_type].elevation_rule(
+        #     mod, r, tmp
+        # )
+
+        return elevation_rule(mod, r, tmp)
+
+    m.Reservoir_Starting_Elevation_ElevationUnit = Expression(
+        m.WATER_NODES_W_RESERVOIRS, m.TMPS, rule=elevation_rule
     )
 
 
@@ -223,21 +188,6 @@ def load_model_data(
     subproblem,
     stage,
 ):
-
-    data_portal.load(
-        filename=os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "inputs",
-            "water_inflows.tab",
-        ),
-        param=m.exogenous_water_inflow_vol_per_sec,
-    )
-
     data_portal.load(
         filename=os.path.join(
             scenario_directory,
@@ -275,6 +225,23 @@ def load_model_data(
             param=m.reservoir_target_volume,
         )
 
+    # TODO: add elevation modules
+    from gridpath.system.water.elevation_types.endogenous import (
+        load_model_data as endogenous_load_model_data,
+    )
+
+    endogenous_load_model_data(
+        m,
+        d,
+        data_portal,
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+    )
+
 
 def get_inputs_from_database(
     scenario_id,
@@ -293,22 +260,6 @@ def get_inputs_from_database(
     :param conn: database connection
     :return:
     """
-
-    c = conn.cursor()
-    water_inflows = c.execute(
-        f"""SELECT water_node, timepoint, exogenous_water_inflow_vol_per_sec
-                FROM inputs_system_water_inflows
-                WHERE water_inflow_scenario_id = 
-                {subscenarios.WATER_INFLOW_SCENARIO_ID}
-                AND timepoint
-                IN (SELECT timepoint
-                    FROM inputs_temporal
-                    WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
-                    AND subproblem_id = {subproblem}
-                    AND stage_id = {stage})
-                ;
-                """
-    )
 
     c2 = conn.cursor()
     reservoirs = c2.execute(
@@ -342,7 +293,22 @@ def get_inputs_from_database(
         """
     )
 
-    return water_inflows, reservoirs, target_volumes
+    from gridpath.system.water.elevation_types.endogenous import (
+        get_inputs_from_database as endogenous_get_inputs_from_database,
+    )
+
+    endogenous_get_inputs_from_database(
+        scenario_id,
+        subscenarios,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        conn,
+    )
+
+    return reservoirs, target_volumes
 
 
 def validate_inputs(
@@ -401,7 +367,7 @@ def write_model_inputs(
         weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
     )
 
-    inflows, reservoirs, target_volumes = get_inputs_from_database(
+    reservoirs, target_volumes = get_inputs_from_database(
         scenario_id,
         subscenarios,
         db_weather_iteration,
@@ -411,34 +377,6 @@ def write_model_inputs(
         db_stage,
         conn,
     )
-
-    with open(
-        os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "inputs",
-            "water_inflows.tab",
-        ),
-        "w",
-        newline="",
-    ) as f:
-        writer = csv.writer(f, delimiter="\t", lineterminator="\n")
-
-        # Write header
-        writer.writerow(
-            [
-                "water_node",
-                "timepoint",
-                "exogenous_water_inflow_vol_per_sec",
-            ]
-        )
-
-        for row in inflows:
-            writer.writerow(row)
 
     with open(
         os.path.join(
@@ -494,6 +432,22 @@ def write_model_inputs(
 
             for row in target_volumes_list:
                 writer.writerow(row)
+
+    from gridpath.system.water.elevation_types.endogenous import (
+        write_model_inputs as endogenous_write_model_inputs,
+    )
+
+    endogenous_write_model_inputs(
+        scenario_directory,
+        scenario_id,
+        subscenarios,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        conn,
+    )
 
 
 def export_results(

@@ -58,44 +58,33 @@ def add_model_components(
     :return:
     """
 
-    # Volume-elevation relationship
-    m.WATER_NODES_W_RESERVOIRS_SEGMENTS = Set(
-        within=m.WATER_NODES_W_RESERVOIRS * NonNegativeIntegers
+    # TODO: units
+    m.exogenous_water_inflow_vol_per_sec = Param(
+        m.WATER_NODES, m.TMPS, default=0, within=NonNegativeReals
     )
 
-    m.volume_to_elevation_slope = Param(
-        m.WATER_NODES_W_RESERVOIRS_SEGMENTS, within=NonNegativeReals
+    def water_links_to_by_water_node_rule(mod, wn):
+        wl_list = []
+        for wl in mod.WATER_LINKS:
+            if mod.water_node_to[wl] == wn:
+                wl_list.append(wl)
+
+        return wl_list
+
+    def water_links_from_by_water_node_rule(mod, wn):
+        wl_list = []
+        for wl in mod.WATER_LINKS:
+            if mod.water_node_from[wl] == wn:
+                wl_list.append(wl)
+
+        return wl_list
+
+    m.WATER_LINKS_TO_BY_WATER_NODE = Set(
+        m.WATER_NODES, initialize=water_links_to_by_water_node_rule
     )
 
-    m.volume_to_elevation_intercept = Param(
-        m.WATER_NODES_W_RESERVOIRS_SEGMENTS, within=NonNegativeReals
-    )
-
-    # ### Variables ### #
-
-    m.Reservoir_Starting_Elevation_ElevationUnit = Var(
-        m.WATER_NODES_W_RESERVOIRS, m.TMPS, within=NonNegativeReals
-    )
-
-    def elevation_volume_curve_rule(mod, r, seg, tmp):
-        """
-        This constraint behaves much better when dividing by slope instead of
-        multiplying
-        TODO: probably remove piecewise linear option and have elevation be
-        """
-        return (
-            mod.Reservoir_Starting_Elevation_ElevationUnit[r, tmp]
-            - mod.volume_to_elevation_intercept[r, seg]
-        ) / mod.volume_to_elevation_slope[
-            r, seg
-        ] == mod.Reservoir_Starting_Volume_WaterVolumeUnit[
-            r, tmp
-        ]
-
-    m.Elevation_Volume_Relationship_Constraint = Constraint(
-        m.WATER_NODES_W_RESERVOIRS_SEGMENTS,
-        m.TMPS,
-        rule=elevation_volume_curve_rule,
+    m.WATER_LINKS_FROM_BY_WATER_NODE = Set(
+        m.WATER_NODES, initialize=water_links_from_by_water_node_rule
     )
 
 
@@ -120,10 +109,9 @@ def load_model_data(
             subproblem,
             stage,
             "inputs",
-            "reservoir_volume_to_elevation_curves.tab",
+            "water_inflows.tab",
         ),
-        index=m.WATER_NODES_W_RESERVOIRS_SEGMENTS,
-        param=(m.volume_to_elevation_slope, m.volume_to_elevation_intercept),
+        param=m.exogenous_water_inflow_vol_per_sec,
     )
 
 
@@ -144,20 +132,23 @@ def get_inputs_from_database(
     :param conn: database connection
     :return:
     """
-    c = conn.cursor()
-    volume_to_elevation_curves = c.execute(
-        f"""SELECT water_node, segment, volume_to_elevation_slope, volume_to_elevation_intercept
-        FROM inputs_system_water_node_reservoir_volume_to_elevation_curves
-        WHERE (water_node, volume_to_elevation_curve_id)
-        IN (SELECT water_node, volume_to_elevation_curve_id
-            FROM inputs_system_water_node_reservoirs
-            WHERE water_node_reservoir_scenario_id = 
-            {subscenarios.WATER_NODE_RESERVOIR_SCENARIO_ID}
-        );
-        """
-    )
 
-    return volume_to_elevation_curves
+    c = conn.cursor()
+    water_inflows = c.execute(
+        f"""SELECT water_node, timepoint, exogenous_water_inflow_vol_per_sec
+                FROM inputs_system_water_inflows
+                WHERE water_inflow_scenario_id = 
+                {subscenarios.WATER_INFLOW_SCENARIO_ID}
+                AND timepoint
+                IN (SELECT timepoint
+                    FROM inputs_temporal
+                    WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+                    AND subproblem_id = {subproblem}
+                    AND stage_id = {stage})
+                ;
+                """
+    )
+    return water_inflows
 
 
 def validate_inputs(
@@ -205,6 +196,7 @@ def write_model_inputs(
     :param conn: database connection
     :return:
     """
+
     (
         db_weather_iteration,
         db_hydro_iteration,
@@ -215,7 +207,7 @@ def write_model_inputs(
         weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
     )
 
-    volume_to_elevation_curves = get_inputs_from_database(
+    inflows = get_inputs_from_database(
         scenario_id,
         subscenarios,
         db_weather_iteration,
@@ -226,7 +218,6 @@ def write_model_inputs(
         conn,
     )
 
-    # Volume to elevation curves
     with open(
         os.path.join(
             scenario_directory,
@@ -236,7 +227,7 @@ def write_model_inputs(
             subproblem,
             stage,
             "inputs",
-            "reservoir_volume_to_elevation_curves.tab",
+            "water_inflows.tab",
         ),
         "w",
         newline="",
@@ -246,38 +237,11 @@ def write_model_inputs(
         # Write header
         writer.writerow(
             [
-                "reservoir",
-                "segment",
-                "volume_to_elevation_slope",
-                "volume_to_elevation_intercept",
+                "water_node",
+                "timepoint",
+                "exogenous_water_inflow_vol_per_sec",
             ]
         )
 
-        for row in volume_to_elevation_curves:
+        for row in inflows:
             writer.writerow(row)
-
-
-def export_results(
-    scenario_directory,
-    weather_iteration,
-    hydro_iteration,
-    availability_iteration,
-    subproblem,
-    stage,
-    m,
-    d,
-):
-    """
-
-    :param scenario_directory:
-    :param subproblem:
-    :param stage:
-    :param m:
-    :param d:
-    :return:
-    """
-    # TODO: export elevation here
-    pass
-
-
-# TODO: results import
