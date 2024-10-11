@@ -1030,12 +1030,14 @@ CREATE TABLE inputs_system_water_node_reservoirs
     water_node_reservoir_scenario_id INTEGER,
     water_node                       TEXT,
     balancing_type_reservoir         TEXT,
-    target_volume_scenario_id     INTEGER,
-    minimum_volume_volumeunit  FLOAT,
-    maximum_volume_volumeunit  FLOAT,
-    volume_to_elevation_curve_id     INTEGER,
+    target_volume_scenario_id        INTEGER,
+    minimum_volume_volumeunit        FLOAT,
+    maximum_volume_volumeunit        FLOAT,
     max_spill                        FLOAT,
     evaporation_coefficient          FLOAT,
+    elevation_type                   TEXT,
+    exogenous_elevation_id           INTEGER,
+    volume_to_elevation_curve_id     INTEGER,
     PRIMARY KEY (water_node_reservoir_scenario_id, water_node),
     FOREIGN KEY (water_node_reservoir_scenario_id) REFERENCES
         subscenarios_system_water_node_reservoirs (water_node_reservoir_scenario_id),
@@ -1045,6 +1047,32 @@ CREATE TABLE inputs_system_water_node_reservoirs
 --     FOREIGN KEY (reservoir, evaporation_coefficient_scenario_id) REFERENCES
 --         inputs_system_water_node_reservoirs_evaporaton_coefficient
 --             (reservoir, evaporation_coefficient_scenario_id)
+);
+
+
+DROP TABLE IF EXISTS
+    subscenarios_system_water_node_reservoir_exogenous_elevations;
+CREATE TABLE subscenarios_system_water_node_reservoir_exogenous_elevations
+(
+    water_node             VARCHAR(32),
+    exogenous_elevation_id INTEGER,
+    name                   VARCHAR(32),
+    description            VARCHAR(128),
+    PRIMARY KEY (water_node, exogenous_elevation_id)
+);
+
+DROP TABLE IF EXISTS
+    inputs_system_water_node_reservoir_exogenous_elevations;
+CREATE TABLE inputs_system_water_node_reservoir_exogenous_elevations
+(
+    water_node                    VARCHAR(64),
+    exogenous_elevation_id        INTEGER,
+    timepoint                     INTEGER,
+    reservoir_exogenous_elevation INTEGER,
+    PRIMARY KEY (water_node, exogenous_elevation_id, timepoint),
+    FOREIGN KEY (water_node, exogenous_elevation_id) REFERENCES
+        subscenarios_system_water_node_reservoir_exogenous_elevations
+            (water_node, exogenous_elevation_id)
 );
 
 DROP TABLE IF EXISTS
@@ -1062,10 +1090,10 @@ DROP TABLE IF EXISTS
     inputs_system_water_node_reservoir_volume_to_elevation_curves;
 CREATE TABLE inputs_system_water_node_reservoir_volume_to_elevation_curves
 (
-    water_node                      VARCHAR(64),
-    volume_to_elevation_curve_id    INTEGER,
-    segment                         INTEGER,
-    volume_to_elevation_slope FLOAT,
+    water_node                    VARCHAR(64),
+    volume_to_elevation_curve_id  INTEGER,
+    segment                       INTEGER,
+    volume_to_elevation_slope     FLOAT,
     volume_to_elevation_intercept FLOAT,
     PRIMARY KEY (water_node, volume_to_elevation_curve_id, segment),
     FOREIGN KEY (water_node, volume_to_elevation_curve_id) REFERENCES
@@ -1076,18 +1104,18 @@ CREATE TABLE inputs_system_water_node_reservoir_volume_to_elevation_curves
 DROP TABLE IF EXISTS subscenarios_system_water_node_reservoirs_target_volumes;
 CREATE TABLE subscenarios_system_water_node_reservoirs_target_volumes
 (
-    water_node                   TEXT,
+    water_node                TEXT,
     target_volume_scenario_id INTEGER,
-    name                         VARCHAR(32),
-    description                  VARCHAR(128)
+    name                      VARCHAR(32),
+    description               VARCHAR(128)
 );
 
 DROP TABLE IF EXISTS inputs_system_water_node_reservoirs_target_volumes;
 CREATE TABLE inputs_system_water_node_reservoirs_target_volumes
 (
-    water_node                   TEXT,
+    water_node                TEXT,
     target_volume_scenario_id INTEGER,
-    timepoint                    FLOAT,
+    timepoint                 FLOAT,
     reservoir_target_volume   DECIMAL,
     PRIMARY KEY (water_node, target_volume_scenario_id)
 );

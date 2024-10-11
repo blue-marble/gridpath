@@ -238,43 +238,6 @@ def load_model_data(
         param=m.exogenous_water_inflow_vol_per_sec,
     )
 
-    data_portal.load(
-        filename=os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "inputs",
-            "water_node_reservoirs.tab",
-        ),
-        index=m.WATER_NODES_W_RESERVOIRS,
-        param=(
-            m.balancing_type_reservoir,
-            m.minimum_volume_volumeunit,
-            m.maximum_volume_volumeunit,
-            m.max_spill,
-            m.evaporation_coefficient,
-        ),
-    )
-    fname = os.path.join(
-        scenario_directory,
-        weather_iteration,
-        hydro_iteration,
-        availability_iteration,
-        subproblem,
-        stage,
-        "inputs",
-        "reservoir_target_volumes.tab",
-    )
-    if os.path.exists(fname):
-        data_portal.load(
-            filename=fname,
-            index=m.WATER_NODE_RESERVOIR_TMPS_W_TARGET_ELEVATION,
-            param=m.reservoir_target_volume,
-        )
-
 
 def get_inputs_from_database(
     scenario_id,
@@ -310,39 +273,7 @@ def get_inputs_from_database(
                 """
     )
 
-    c2 = conn.cursor()
-    reservoirs = c2.execute(
-        f"""SELECT water_node, balancing_type_reservoir,
-            minimum_volume_volumeunit,
-            maximum_volume_volumeunit,
-            max_spill,
-            evaporation_coefficient
-        FROM inputs_system_water_node_reservoirs
-        WHERE water_node_reservoir_scenario_id = 
-        {subscenarios.WATER_NODE_RESERVOIR_SCENARIO_ID};
-        """
-    )
-
-    c3 = conn.cursor()
-    target_volumes = c3.execute(
-        f"""SELECT water_node, timepoint, reservoir_target_volume
-        FROM inputs_system_water_node_reservoirs_target_volumes
-        WHERE (water_node, target_volume_scenario_id)
-        IN (SELECT water_node, target_volume_scenario_id
-            FROM inputs_system_water_node_reservoirs
-            WHERE water_node_reservoir_scenario_id = 
-            {subscenarios.WATER_NODE_RESERVOIR_SCENARIO_ID}
-        )
-        AND timepoint
-        IN (SELECT timepoint
-            FROM inputs_temporal
-            WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
-            AND subproblem_id = {subproblem}
-            AND stage_id = {stage});
-        """
-    )
-
-    return water_inflows, reservoirs, target_volumes
+    return water_inflows
 
 
 def validate_inputs(
@@ -401,7 +332,7 @@ def write_model_inputs(
         weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
     )
 
-    inflows, reservoirs, target_volumes = get_inputs_from_database(
+    inflows = get_inputs_from_database(
         scenario_id,
         subscenarios,
         db_weather_iteration,
@@ -439,61 +370,6 @@ def write_model_inputs(
 
         for row in inflows:
             writer.writerow(row)
-
-    with open(
-        os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "inputs",
-            "water_node_reservoirs.tab",
-        ),
-        "w",
-        newline="",
-    ) as f:
-        writer = csv.writer(f, delimiter="\t", lineterminator="\n")
-
-        # Write header
-        writer.writerow(
-            [
-                "water_node",
-                "balancing_type_reservoir",
-                "minimum_volume_volumeunit",
-                "maximum_volume_volumeunit",
-                "max_spill",
-                "evaporation_coefficient",
-            ]
-        )
-
-        for row in reservoirs:
-            writer.writerow(row)
-
-    target_volumes_list = [row for row in target_volumes]
-    if target_volumes_list:
-        with open(
-            os.path.join(
-                scenario_directory,
-                weather_iteration,
-                hydro_iteration,
-                availability_iteration,
-                subproblem,
-                stage,
-                "inputs",
-                "reservoir_target_volumes.tab",
-            ),
-            "w",
-            newline="",
-        ) as f:
-            writer = csv.writer(f, delimiter="\t", lineterminator="\n")
-
-            # Write header
-            writer.writerow(["reservoir", "timepoint", "reservoir_target_volume"])
-
-            for row in target_volumes_list:
-                writer.writerow(row)
 
 
 def export_results(

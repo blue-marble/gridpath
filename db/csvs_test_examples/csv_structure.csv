@@ -159,6 +159,7 @@ markets/volume,markets,market_volume_scenario_id,market_volume,simple,,0,,,,,
 water/water_network,water,water_network_scenario_id,geography_water_network,simple,,0,,,,,
 water/inflows,water,water_inflow_scenario_id,system_water_inflows,simple,,0,,,,,
 water/reservoirs/target_volumes,water,target_volume_scenario_id,system_water_node_reservoirs_target_volumes,simple,,1,water_node,,,water_reservoir_scenario_id,system_water_reservoirs
+water/reservoirs/exogenous_elevation,water,exogenous_elevation_id,system_water_node_reservoir_exogenous_elevations,simple,,1,water_node,,,water_reservoir_scenario_id,system_water_reservoirs
 water/reservoirs/volume_to_elevation_curves,water,volume_to_elevation_curve_id,system_water_node_reservoir_volume_to_elevation_curves,simple,,1,water_node,,,water_reservoir_scenario_id,system_water_reservoirs
 water/reservoirs,water,water_node_reservoir_scenario_id,system_water_node_reservoirs,simple,,0,,,,,
 water/flows,water,water_flow_scenario_id,system_water_flows,simple,,0,,,,,

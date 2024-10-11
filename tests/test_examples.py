@@ -1375,6 +1375,15 @@ class TestExamples(unittest.TestCase):
             scenario_name=scenario_name, solver="multistart"
         )
 
+    def test_hydro_system_exog_elev(self):
+        """
+        Check validation and objective function value of "hydro_system" example
+        :return:
+        """
+
+        scenario_name = "hydro_system_exog_elev"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
     @classmethod
     def tearDownClass(cls):
         os.remove(DB_PATH)

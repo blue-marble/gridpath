@@ -31,6 +31,10 @@ from pyomo.environ import (
     value,
 )
 
+from gridpath.auxiliary.auxiliary import (
+    get_required_subtype_modules,
+    load_subtype_modules,
+)
 from gridpath.auxiliary.db_interface import directories_to_db_values
 from gridpath.common_functions import (
     create_results_df,
@@ -68,7 +72,7 @@ def add_model_components(
     # ### Parameters ###
     m.balancing_type_reservoir = Param(m.WATER_NODES_W_RESERVOIRS, within=m.BLN_TYPES)
 
-    # Elevation targets
+    # Volume targets
     m.reservoir_target_volume = Param(
         m.WATER_NODE_RESERVOIR_TMPS_W_TARGET_ELEVATION, within=NonNegativeReals
     )
@@ -146,31 +150,47 @@ def add_model_components(
     )
 
     # Elevation
-
-    # TODO: add other modules
-    from gridpath.system.water.elevation_types.endogenous import add_model_components
-
-    add_model_components(
-        m,
-        d,
-        scenario_directory,
-        weather_iteration,
-        hydro_iteration,
-        availability_iteration,
-        subproblem,
-        stage,
+    # TODO: move within clause to a central location
+    m.elevation_type = Param(
+        m.WATER_NODES_W_RESERVOIRS, within=["exogenous", "endogenous"]
     )
 
+    # Import needed elevation modules
+    required_elevation_modules = get_required_subtype_modules(
+        scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        which_type="elevation_type",
+        filename="water_node_reservoirs",
+    )
+
+    imported_elevation_modules = load_subtype_modules(
+        required_subtype_modules=required_elevation_modules,
+        package="gridpath.system.water.elevation_types",
+        required_attributes=[],
+    )
+
+    # Add any components specific to the operational modules
+    for op_m in required_elevation_modules:
+        imp_op_m = imported_elevation_modules[op_m]
+        if hasattr(imp_op_m, "add_model_components"):
+            imp_op_m.add_model_components(
+                m,
+                d,
+                scenario_directory,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
+            )
+
     def elevation_rule(mod, r, tmp):
-        # elevation_type = mod.elevation_type[r]
-
-        from gridpath.system.water.elevation_types.endogenous import elevation_rule
-
-        # return imported_elevation_modules[elevation_type].elevation_rule(
-        #     mod, r, tmp
-        # )
-
-        return elevation_rule(mod, r, tmp)
+        elevation_type = mod.elevation_type[r]
+        return imported_elevation_modules[elevation_type].elevation_rule(mod, r, tmp)
 
     m.Reservoir_Starting_Elevation_ElevationUnit = Expression(
         m.WATER_NODES_W_RESERVOIRS, m.TMPS, rule=elevation_rule
@@ -206,6 +226,7 @@ def load_model_data(
             m.maximum_volume_volumeunit,
             m.max_spill,
             m.evaporation_coefficient,
+            m.elevation_type,
         ),
     )
     fname = os.path.join(
@@ -225,22 +246,40 @@ def load_model_data(
             param=m.reservoir_target_volume,
         )
 
-    # TODO: add elevation modules
-    from gridpath.system.water.elevation_types.endogenous import (
-        load_model_data as endogenous_load_model_data,
+    # TODO: refactor
+    # Import needed elevation modules
+    required_elevation_modules = get_required_subtype_modules(
+        scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        which_type="elevation_type",
+        filename="water_node_reservoirs",
     )
 
-    endogenous_load_model_data(
-        m,
-        d,
-        data_portal,
-        scenario_directory,
-        weather_iteration,
-        hydro_iteration,
-        availability_iteration,
-        subproblem,
-        stage,
+    imported_elevation_modules = load_subtype_modules(
+        required_subtype_modules=required_elevation_modules,
+        package="gridpath.system.water.elevation_types",
+        required_attributes=[],
     )
+
+    # Add any components specific to the operational modules
+    for op_m in required_elevation_modules:
+        imp_op_m = imported_elevation_modules[op_m]
+        if hasattr(imp_op_m, "load_model_data"):
+            imp_op_m.load_model_data(
+                m,
+                d,
+                data_portal,
+                scenario_directory,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
+            )
 
 
 def get_inputs_from_database(
@@ -261,21 +300,22 @@ def get_inputs_from_database(
     :return:
     """
 
-    c2 = conn.cursor()
-    reservoirs = c2.execute(
+    c = conn.cursor()
+    reservoirs = c.execute(
         f"""SELECT water_node, balancing_type_reservoir,
             minimum_volume_volumeunit,
             maximum_volume_volumeunit,
             max_spill,
-            evaporation_coefficient
+            evaporation_coefficient,
+            elevation_type
         FROM inputs_system_water_node_reservoirs
         WHERE water_node_reservoir_scenario_id = 
         {subscenarios.WATER_NODE_RESERVOIR_SCENARIO_ID};
         """
     )
 
-    c3 = conn.cursor()
-    target_volumes = c3.execute(
+    c1 = conn.cursor()
+    target_volumes = c1.execute(
         f"""SELECT water_node, timepoint, reservoir_target_volume
         FROM inputs_system_water_node_reservoirs_target_volumes
         WHERE (water_node, target_volume_scenario_id)
@@ -291,21 +331,6 @@ def get_inputs_from_database(
             AND subproblem_id = {subproblem}
             AND stage_id = {stage});
         """
-    )
-
-    from gridpath.system.water.elevation_types.endogenous import (
-        get_inputs_from_database as endogenous_get_inputs_from_database,
-    )
-
-    endogenous_get_inputs_from_database(
-        scenario_id,
-        subscenarios,
-        weather_iteration,
-        hydro_iteration,
-        availability_iteration,
-        subproblem,
-        stage,
-        conn,
     )
 
     return reservoirs, target_volumes
@@ -403,6 +428,7 @@ def write_model_inputs(
                 "maximum_volume_volumeunit",
                 "max_spill",
                 "evaporation_coefficient",
+                "elevation_type",
             ]
         )
 
@@ -433,21 +459,40 @@ def write_model_inputs(
             for row in target_volumes_list:
                 writer.writerow(row)
 
-    from gridpath.system.water.elevation_types.endogenous import (
-        write_model_inputs as endogenous_write_model_inputs,
+    # TODO: refactor
+    # Import needed elevation modules
+    required_elevation_modules = get_required_subtype_modules(
+        scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        which_type="elevation_type",
+        filename="water_node_reservoirs",
     )
 
-    endogenous_write_model_inputs(
-        scenario_directory,
-        scenario_id,
-        subscenarios,
-        weather_iteration,
-        hydro_iteration,
-        availability_iteration,
-        subproblem,
-        stage,
-        conn,
+    imported_elevation_modules = load_subtype_modules(
+        required_subtype_modules=required_elevation_modules,
+        package="gridpath.system.water.elevation_types",
+        required_attributes=[],
     )
+
+    # Add any components specific to the operational modules
+    for op_m in required_elevation_modules:
+        imp_op_m = imported_elevation_modules[op_m]
+        if hasattr(imp_op_m, "write_model_inputs"):
+            imp_op_m.write_model_inputs(
+                scenario_directory,
+                scenario_id,
+                subscenarios,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
+                conn,
+            )
 
 
 def export_results(
