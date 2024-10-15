@@ -118,7 +118,14 @@ def get_inputs_from_database(
             WHERE water_node_reservoir_scenario_id = 
             {subscenarios.WATER_NODE_RESERVOIR_SCENARIO_ID}
             AND elevation_type = 'exogenous'
-        );
+        )
+        AND timepoint
+                IN (SELECT timepoint
+                    FROM inputs_temporal
+                    WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+                    AND subproblem_id = {subproblem}
+                    AND stage_id = {stage})
+        ;
         """
     )
 
