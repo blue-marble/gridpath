@@ -102,6 +102,11 @@ def add_model_components(
     m.Reservoir_Starting_Volume_WaterVolumeUnit = Var(
         m.WATER_NODES_W_RESERVOIRS, m.TMPS, within=NonNegativeReals
     )
+
+    m.Discharge_Water_to_Powerhouse = Var(
+        m.WATER_NODES_W_RESERVOIRS, m.TMPS, within=NonNegativeReals
+    )
+
     # TODO: implement the correct calculation; depends on area, which depends
     #  on elevation
     # Losses
@@ -543,7 +548,11 @@ def export_results(
                 value(m.Water_Link_Flow_Vol_per_Sec_in_Tmp[wl, tmp])
                 for wl in m.WATER_LINKS_TO_BY_WATER_NODE[wn]
             ),
-            value(m.Discharge_Water_to_Powerhouse[wn, tmp]),
+            (
+                value(m.Discharge_Water_to_Powerhouse[wn, tmp])
+                if wn in m.WATER_NODES_W_RESERVOIRS
+                else None
+            ),
             value(m.Spill_Water[wn, tmp]),
             (
                 value(m.Evaporative_Losses[wn, tmp])

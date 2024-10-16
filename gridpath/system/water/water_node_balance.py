@@ -60,9 +60,6 @@ def add_model_components(
     # ### Variables ### #
     # Controls
     # TODO: need upper bounds on discharge / spill
-    m.Discharge_Water_to_Powerhouse = Var(
-        m.WATER_NODES, m.TMPS, within=NonNegativeReals
-    )
     m.Spill_Water = Var(m.WATER_NODES, m.TMPS, within=NonNegativeReals)
 
     # ### Expressions ### #
@@ -80,7 +77,11 @@ def add_model_components(
 
     def gross_node_release(mod, wn, tmp):
         return (
-            mod.Discharge_Water_to_Powerhouse[wn, tmp]
+            (
+                mod.Discharge_Water_to_Powerhouse[wn, tmp]
+                if wn in mod.WATER_NODES_W_RESERVOIRS
+                else 0
+            )
             + mod.Spill_Water[wn, tmp]
             + (
                 mod.Evaporative_Losses[wn, tmp]
@@ -420,7 +421,11 @@ def export_results(
                 value(m.Water_Link_Flow_Vol_per_Sec_in_Tmp[wl, tmp])
                 for wl in m.WATER_LINKS_TO_BY_WATER_NODE[wn]
             ),
-            value(m.Discharge_Water_to_Powerhouse[wn, tmp]),
+            value(
+                m.Discharge_Water_to_Powerhouse[wn, tmp]
+                if wn in m.WATER_NODES_W_RESERVOIRS
+                else None
+            ),
             value(m.Spill_Water[wn, tmp]),
             (
                 value(m.Evaporative_Losses[wn, tmp])
