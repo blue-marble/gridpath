@@ -60,6 +60,8 @@ def add_model_components(
     # ### Variables ### #
     # Controls
     # TODO: need upper bounds on discharge / spill
+    # TODO: move spill to reservoirs and add a pass-through variable for
+    #  nodes with no reservoirs only
     m.Spill_Water = Var(m.WATER_NODES, m.TMPS, within=NonNegativeReals)
 
     # ### Expressions ### #
@@ -97,9 +99,11 @@ def add_model_components(
     )
 
     # ### Constraints ### #
+
     def get_inflow_volunit_per_hour_in_tmp(mod, wn, tmp):
         # TODO: check and document multiplication by 3600 to get from per s
         #  to per h
+        # TODO: multiply by hours in timepoint
         inflow_in_tmp = (
             mod.exogenous_water_inflow_vol_per_sec[wn, tmp]
             + sum(
@@ -258,8 +262,8 @@ def get_inputs_from_database(
     :return:
     """
 
-    c = conn.cursor()
-    water_inflows = c.execute(
+    c1 = conn.cursor()
+    water_inflows = c1.execute(
         f"""SELECT water_node, timepoint, exogenous_water_inflow_vol_per_sec
                 FROM inputs_system_water_inflows
                 WHERE water_inflow_scenario_id = 

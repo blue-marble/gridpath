@@ -1031,6 +1031,7 @@ CREATE TABLE inputs_system_water_node_reservoirs
     water_node                       TEXT,
     balancing_type_reservoir         TEXT,
     target_volume_scenario_id        INTEGER,
+    target_release_scenario_id        INTEGER,
     minimum_volume_volumeunit        FLOAT,
     maximum_volume_volumeunit        FLOAT,
     max_spill                        FLOAT,
@@ -1042,10 +1043,13 @@ CREATE TABLE inputs_system_water_node_reservoirs
     FOREIGN KEY (water_node_reservoir_scenario_id) REFERENCES
         subscenarios_system_water_node_reservoirs (water_node_reservoir_scenario_id),
     FOREIGN KEY (water_node, target_volume_scenario_id) REFERENCES
-        inputs_system_water_node_reservoirs_target_volumes
-            (water_node, target_volume_scenario_id)
+        subscenarios_system_water_node_reservoirs_target_volumes
+            (water_node, target_volume_scenario_id),
+    FOREIGN KEY (water_node, target_release_scenario_id) REFERENCES
+        subscenarios_system_water_node_reservoirs_target_releases
+            (water_node, target_release_scenario_id)
 --     FOREIGN KEY (reservoir, evaporation_coefficient_scenario_id) REFERENCES
---         inputs_system_water_node_reservoirs_evaporaton_coefficient
+--         subscenarios_system_water_node_reservoirs_evaporaton_coefficient
 --             (reservoir, evaporation_coefficient_scenario_id)
 );
 
@@ -1107,7 +1111,8 @@ CREATE TABLE subscenarios_system_water_node_reservoirs_target_volumes
     water_node                TEXT,
     target_volume_scenario_id INTEGER,
     name                      VARCHAR(32),
-    description               VARCHAR(128)
+    description               VARCHAR(128),
+    PRIMARY KEY (water_node, target_volume_scenario_id)
 );
 
 DROP TABLE IF EXISTS inputs_system_water_node_reservoirs_target_volumes;
@@ -1117,8 +1122,40 @@ CREATE TABLE inputs_system_water_node_reservoirs_target_volumes
     target_volume_scenario_id INTEGER,
     timepoint                 FLOAT,
     reservoir_target_volume   DECIMAL,
-    PRIMARY KEY (water_node, target_volume_scenario_id)
+    PRIMARY KEY (water_node, target_volume_scenario_id ,timepoint),
+    FOREIGN KEY (water_node, target_volume_scenario_id) REFERENCES
+        subscenarios_system_water_node_reservoirs_target_volumes
+            (water_node, target_volume_scenario_id)
 );
+
+
+DROP TABLE IF EXISTS subscenarios_system_water_node_reservoirs_target_releases;
+CREATE TABLE subscenarios_system_water_node_reservoirs_target_releases
+(
+    water_node                 TEXT,
+    target_release_scenario_id INTEGER,
+    name                       VARCHAR(32),
+    description                VARCHAR(128),
+    PRIMARY KEY (water_node, target_release_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_system_water_node_reservoirs_target_releases;
+CREATE TABLE inputs_system_water_node_reservoirs_target_releases
+(
+    water_node                 TEXT,
+    target_release_scenario_id INTEGER,
+    balancing_type             TEXT,
+    horizon                    INTEGER,
+    reservoir_target_release DECIMAL,
+    PRIMARY KEY (water_node, target_release_scenario_id, balancing_type,
+                 horizon),
+    FOREIGN KEY (water_node, target_release_scenario_id) REFERENCES
+        subscenarios_system_water_node_reservoirs_target_releases
+            (water_node, target_release_scenario_id)
+
+);
+
+
 
 -- DROP TABLE IF EXISTS subscenarios_system_water_node_reservoirs_maximum_elevation;
 -- CREATE TABLE subscenarios_system_water_node_reservoirs_maximum_elevation
