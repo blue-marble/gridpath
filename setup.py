@@ -86,13 +86,12 @@ setup(
             "gridpath_load_csvs = db.utilities.port_csvs_to_db:main",
             "gridpath_load_scenarios = db.utilities.scenario:main",
             "gridpath_get_pudl_data = "
-            "gridpath_data_toolkit.raw_data.pudl.download_data_from_pudl:main",
+            "data_toolkit.raw_data.pudl.download_data_from_pudl:main",
             "gridpath_pudl_to_gridpath_raw = "
-            "gridpath_data_toolkit.raw_data.pudl.pudl_to_gridpath_raw_data:main",
+            "data_toolkit.raw_data.pudl.pudl_to_gridpath_raw_data:main",
             "gridpath_get_ra_toolkit_data_raw = "
-            "gridpath_data_toolkit.raw_data.ra_toolkit.get_ra_toolkit_data:main",
-            "gridpath_run_data_toolkit = "
-            "gridpath_data_toolkit.run_data_toolkit:main",
+            "data_toolkit.raw_data.ra_toolkit.get_ra_toolkit_data:main",
+            "gridpath_run_data_toolkit = " "data_toolkit.run_data_toolkit:main",
         ]
     },
 )
