@@ -40,7 +40,7 @@ def parse_arguments(args):
 
     parser = ArgumentParser(add_help=True)
 
-    parser.add_argument("-csv", "--temporal_scenarios_csv_path")
+    parser.add_argument("-csv", "--csv_path")
 
     parser.add_argument("-q", "--quiet", default=False, action="store_true")
 
@@ -58,7 +58,7 @@ def main(args=None):
     if not parsed_args.quiet:
         print("Creating temporal scenarios...")
 
-    df = pd.read_csv(parsed_args.temporal_scenarios_csv_path, delimiter=",")
+    df = pd.read_csv(parsed_args.csv_path, delimiter=",")
 
     for index, row in df.iterrows():
         (

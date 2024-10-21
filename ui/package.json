@@ -1,6 +1,6 @@
 {
   "name": "gridpath-ui",
-  "version": "2024.1.0",
+  "version": "2024.2.0",
   "main": "src/electron-main.js",
   "scripts": {
     "ng": "ng",

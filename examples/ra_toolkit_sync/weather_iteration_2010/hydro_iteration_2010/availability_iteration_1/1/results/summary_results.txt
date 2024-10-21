@@ -7,9 +7,9 @@
 --> Energy Production <--
                                Annual Energy (MWh)  % Total Power
 load_zone period technology                                      
-Zone1     2026   Batteries                  -96.06          -0.03
-                 Gas                    160,215.62          49.87
-                 Hybrid_Solar             2,647.58           0.82
-                 Hydro                   65,867.85          20.50
-                 Solar                   35,138.66          10.94
-                 Wind                    57,510.50          17.90
+Zone1     2026   Batteries                  -68.11          -0.02
+                 Gas                    143,995.32          46.81
+                 Hybrid_Solar             5,181.36           1.68
+                 Hydro                   65,867.85          21.41
+                 Solar                   35,138.66          11.42
+                 Wind                    57,510.50          18.69

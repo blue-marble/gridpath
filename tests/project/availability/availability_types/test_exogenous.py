@@ -185,6 +185,39 @@ class TestExogenousAvailabilityType(unittest.TestCase):
 
         self.assertDictEqual(expected_availability_derate, actual_availability_derate)
 
+        # Param: availability_derate_weather
+        availability_df_w = pd.read_csv(
+            os.path.join(
+                TEST_DATA_DIRECTORY,
+                "inputs",
+                "project_availability_exogenous_weather.tab",
+            ),
+            sep="\t",
+        )
+        defaults = {(p, tmp): 1 for (p, tmp) in instance.AVL_EXOG_OPR_TMPS}
+        derates = {
+            (p, tmp): avail
+            for p, tmp, avail in zip(
+                availability_df_w.project,
+                availability_df_w.timepoint,
+                availability_df_w.availability_derate_weather,
+            )
+        }
+        expected_availability_derate_w = dict()
+        for p, tmp in defaults.keys():
+            if (p, tmp) in derates.keys():
+                expected_availability_derate_w[p, tmp] = derates[p, tmp]
+            else:
+                expected_availability_derate_w[p, tmp] = defaults[p, tmp]
+        actual_availability_derate_w = {
+            (prj, tmp): instance.avl_exog_cap_derate_weather[prj, tmp]
+            for (prj, tmp) in instance.AVL_EXOG_OPR_TMPS
+        }
+
+        self.assertDictEqual(
+            expected_availability_derate_w, actual_availability_derate_w
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

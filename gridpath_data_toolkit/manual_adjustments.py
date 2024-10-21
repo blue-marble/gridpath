@@ -28,7 +28,7 @@ from gridpath_data_toolkit.project.project_data_filters_common import (
 # Var profiles
 COPY_FROM_DICT = {
     "Wind": {"NEVP": "SPPC", "PGE": "BPAT", "SRP": "AZPS", "WAUW": "NWMT"},
-    "Solar": {"WAUW": "NWMT"}
+    "Solar": {"WAUW": "NWMT"},
 }
 VAR_ID_DEFAULT = 1
 VAR_NAME_DEFAULT = "open_data"
@@ -120,8 +120,7 @@ def parse_arguments(args):
     return parsed_arguments
 
 
-def make_copy_var_profiles(csv_location, profile_id, profile_name,
-                           overwrite):
+def make_copy_var_profiles(csv_location, profile_id, profile_name, overwrite):
     for tech in COPY_FROM_DICT.keys():
         for ba in COPY_FROM_DICT[tech].keys():
             copy_ba = COPY_FROM_DICT[tech][ba]

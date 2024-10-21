@@ -27,7 +27,6 @@ Running GridPath requires a Python 3 installation. GridPath is `tested nightly
 Python 3.9, 3.10, and 3.11. You can get Python `here <https://www.python.org/downloads/>`__.
 
 .. _python-virtual-env-section-ref:
-
 Python Virtual Environment
 --------------------------
 You must set up a Python virtual environment for GridPath to ensure
@@ -83,8 +82,8 @@ instructions for Windows `here <https://www.java.com/en/download/help/path
 Installing GridPath
 ===================
 
-Before installing, **make sure to activate your :ref:`GridPath virtual environment
-<python-virtual-env-section-ref>`**.
+Before installing, make sure to activate your
+:ref:`GridPath Python virtual environment<python-virtual-env-section-ref>`.
 
 Installation from PyPi
 ----------------------
@@ -162,4 +161,5 @@ We recommend `SQLite Studio <https://sqlitestudio.pl/index.rvt>`_ as an SQLite
 database GUI.
 
 We have implemented various tools to help you build your database. See the
-:ref:`database-section-ref` section of the documentation for more information.
+:ref:`building-the-database-section-ref` section of the documentation
+for more information.
