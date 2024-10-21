@@ -103,5 +103,5 @@ manual_adjustments,capacity_specified_directory,../db/csvs_open_data/project/cap
 manual_adjustments,project_specified_capacity_scenario_id,1
 manual_adjustments,project_specified_capacity_scenario_name,base
 create_temporal_scenarios,database,../db/open_data_raw.db
-create_temporal_scenarios,temporal_scenarios_csv_path,../db/csvs_open_data/raw_data/user_defined_temporal_scenarios.csv
-create_temporal_scenarios,base_csvs_directory,../db/csvs_open_data/raw_data/user_defined_temporal
+create_temporal_scenarios,csv_path,../db/csvs_open_data/raw_data/user_defined_temporal_scenarios.csv
+create_temporal_scenarios,base_csvs_directory,../db/csvs_open_data
