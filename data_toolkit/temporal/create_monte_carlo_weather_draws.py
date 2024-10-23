@@ -1,4 +1,4 @@
-# Copyright 2016-2023 Blue Marble Analytics LLC.
+# Copyright 2016-2024 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,6 +18,47 @@
 # Modifications Copyright 2024 Blue Marble Analytics LLC. Licensed under the
 # Apache License, Version 2.0.
 
+"""
+.. _monte-carlo-draws-section-ref:
+Monte Carlo Weather Iteration Draws
+***********************************
+
+The Monte Carlo approach employed in the GridPath RA Toolkit study synthesizes
+multiple years of plausible hourly load, wind availability, solar availability,
+and temperature-driven thermal derate data over which the system operations can
+be simulated. Synthetic days are built by combining load, wind, solar, and
+temperature derate shapes from different but similar days in the historical
+record. For a detailed description of the methodology, see Appendix B of the
+report available at
+https://gridlab.org/wp-content/uploads/2022/10/GridLab_RA-Toolkit-Report-10-12-22.pdf.
+
+=====
+Usage
+=====
+
+>>> gridpath_run_data_toolkit --single_step create_monte_carlo_load_input_csvs --settings_csv PATH/TO/SETTINGS/CSV
+
+===================
+Input prerequisites
+===================
+
+This module assumes the following raw input database tables have been populated:
+    * user_defined_weather_bins
+    * user_defined_data_availability
+    * user_defined_monte_carlo_timeseries
+
+=========
+Settings
+=========
+    * database
+    * weather_bins_id
+    * weather_draws_id
+    * weather_draws_seed
+    * n_iterations
+    * study_year
+    * iterations_seed
+
+"""
 
 import sys
 from argparse import ArgumentParser

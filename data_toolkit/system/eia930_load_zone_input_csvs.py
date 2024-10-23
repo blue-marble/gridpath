@@ -12,6 +12,46 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+EIA 930 BAs
+***********
+
+Create GridPath load_zone inputs (load_zone_scenario_id) based on BAs in Form
+EIA 930.
+
+=====
+Usage
+=====
+
+>>> gridpath_run_data_toolkit --single_step eia930_load_zone_input_csvs --settings_csv PATH/TO/SETTINGS/CSV
+
+===================
+Input prerequisites
+===================
+
+This script depends on having loaded the Form EIA 930 hourly interchange data
+and to have defined a region for each BA in the user_defined_baa_key table (
+in order to filter BAs if needed). It assumes the following raw input
+database tables have been populated:
+    * raw_data_eia930_hourly_interchange
+    * user_defined_baa_key
+
+=========
+Settings
+=========
+    * database
+    * output_directory
+    * load_zone_scenario_id
+    * load_zone_scenario_name
+    * allow_overgeneration
+    * overgeneration_penalty_per_mw
+    * allow_unserved_energy
+    * unserved_energy_penalty_per_mwh
+    * max_unserved_load_penalty_per_mw
+    * export_penalty_cost_per_mwh
+    * unserved_energy_stats_threshold_mw
+
+"""
 
 from argparse import ArgumentParser
 import os.path
@@ -19,10 +59,6 @@ import pandas as pd
 import sys
 
 from db.common_functions import connect_to_database
-from data_toolkit.transmission.transmission_data_filters_common import (
-    get_all_links_sql,
-)
-
 
 def parse_arguments(args):
     """

@@ -12,11 +12,47 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+Monte Carlo Loads
+*****************
+
+Create GridPath Monte Carlo load profile inputs. Before running this module,
+you will need to create weather draws with the ``create_monte_carlo_draws``
+module (see :ref:`monte-carlo-draws-section-ref`).
+
+=====
+Usage
+=====
+
+>>> gridpath_run_data_toolkit --single_step create_monte_carlo_load_input_csvs --settings_csv PATH/TO/SETTINGS/CSV
+
+===================
+Input prerequisites
+===================
+
+This module assumes the following raw input database tables have been populated:
+    * raw_data_system_load
+    * user_defined_load_zone_units
+    * aux_weather_iterations (see the ``create_monte_carlo_draws`` step for how to create synthetic weather years and populate this table)
+
+=========
+Settings
+=========
+    * database
+    * output_directory
+    * load_scenario_id
+    * load_scenario_name
+    * stage_id
+    * overwrite
+    * weather_bins_id
+    * weather_draws_id
+
+"""
+
 import sys
 from argparse import ArgumentParser
 import os.path
 import pandas as pd
-import sqlite3
 
 from db.common_functions import connect_to_database
 
@@ -104,6 +140,11 @@ def create_load_profile_csv(
     stage_id,
     overwrite,
 ):
+    """
+    This module will create load profiles for each synthetic weather
+    iteration created with the ``create_monte_carlo_draws`` GridPath Data
+    Toolkit module (based on the weather_bins_id and weather_draws_id).
+    """
     c = conn.cursor()
 
     # Get load zone units

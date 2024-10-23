@@ -13,6 +13,10 @@
 # limitations under the License.
 
 """
+Load data into the GridPath raw data database. See the documentation of each
+GridPath Data Toolkit module for data prerequisites. Use the
+files_to_import.csv file to tell GridPath which CSV files should be loaded
+into which database table.
 
 """
 

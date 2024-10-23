@@ -12,11 +12,41 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+Sync Loads
+**********
+
+Create GridPath sync load profile inputs.
+
+=====
+Usage
+=====
+
+>>> gridpath_run_data_toolkit --single_step create_sync_load_input_csvs --settings_csv PATH/TO/SETTINGS/CSV
+
+===================
+Input prerequisites
+===================
+
+This module assumes the following raw input database tables have been populated:
+    * raw_data_system_load
+    * user_defined_load_zone_units
+
+=========
+Settings
+=========
+    * database
+    * output_directory
+    * load_scenario_id
+    * load_scenario_name
+    * overwrite
+
+"""
+
 import sys
 from argparse import ArgumentParser
 import os.path
 import pandas as pd
-import sqlite3
 
 from db.common_functions import connect_to_database
 
@@ -82,8 +112,10 @@ def create_load_profile_csv(
     overwrite,
 ):
     """
-    Create load profile CSVs from the raw data
-    Assumes timepoints will be 1 through 8760 for each year
+    This module currenlty assumes timepoint IDs will be 1 through 8760 for
+    each year. The query will aggregate loads based on the aggregations and
+    weights defined in the user_defined_load_zone_units
+    table.
     """
 
     query = f"""
