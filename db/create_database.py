@@ -24,6 +24,10 @@ The default schema for the GridPath SQLite database is in db/db_schema.sql.
 
 .. _database-structure-section-ref:
 
+To create a database for GridPath raw data, point to the schema in
+./data_toolkit/raw_data_db_schema.sql instead and also specify the
+--omit_data flag.
+
 """
 
 
