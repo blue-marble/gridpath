@@ -60,6 +60,11 @@ Load Zone Inputs
 
 .. automodule:: data_toolkit.system.eia930_load_zone_input_csvs
 
+***************
+Temporal Inputs
+***************
+
+.. automodule:: data_toolkit.temporal.create_monte_carlo_weather_draws
 
 ***********
 Load Inputs
@@ -70,9 +75,11 @@ Load Inputs
 .. automodule:: data_toolkit.system.create_monte_carlo_load_input_csvs
 .. automodule:: data_toolkit.system.create_monte_carlo_load_input_csvs.create_load_profile_csv
 
+**************
+Project Inputs
+**************
 
-***************
-Temporal Inputs
-***************
-
-.. automodule:: data_toolkit.temporal.create_monte_carlo_weather_draws
+.. automodule:: data_toolkit.project.portfolios.eia860_to_project_portfolio_input_csvs
+.. automodule:: data_toolkit.project.load_zones.eia860_to_project_load_zone_input_csvs
+.. automodule:: data_toolkit.project.capacity_specified.eia860_to_project_specified_capacity_input_csvs
+.. automodule:: data_toolkit.project.fixed_cost.eia860_to_project_fixed_cost_input_csvs

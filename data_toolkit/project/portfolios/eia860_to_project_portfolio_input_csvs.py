@@ -13,21 +13,49 @@
 # limitations under the License.
 
 """
-Create project portfolios from EIA860 data.
+Form EIA 860 Project Portfolios
+*******************************
+
+This module creates project portfolios from EIA 860 data.
 
 The project capacity_types will be based on the data in the
 user_defined_eia_gridpath_key table.
 
 Wind, solar, and hydro are aggregated to the BA level.
 
-.. note:: Hybrids are currently not treated separately. Their renewable
-generation components are lumped with wind/solar, and the storage components
-show up as individual units.
+.. note:: Hybrid projects are currently not treated separately by this module.
+    Their renewable generation components are lumped with wind/solar, and the
+    storage components show up as individual units.
 
 Project portfolios are created based on the data from a particula report
 date. The user selects the region (determines subset of generators to use)
 and the study date (determines which generators are operational, i.e.,
 after their online date and before their retirement date in the EIA data.)
+
+=====
+Usage
+=====
+
+>>> gridpath_run_data_toolkit --single_step eia860_to_project_portfolio_input_csvs --settings_csv PATH/TO/SETTINGS/CSV
+
+===================
+Input prerequisites
+===================
+
+This module assumes the following raw input database tables have been populated:
+    * raw_data_eia860_generators
+    * user_defined_eia_gridpath_key
+
+=========
+Settings
+=========
+    * database
+    * output_directory
+    * report_date
+    * study_year
+    * region
+    * project_portfolio_scenario_id
+    * project_portfolio_scenario_name
 
 TODO: disaggregate the hybrids out of the wind/solar project and combine
      with their battery components

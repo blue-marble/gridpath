@@ -12,6 +12,43 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+Form EIA 860 Projects -- Create CSV with Fixed Costs Set to Zero
+****************************************************************
+
+Create fixed cost CSV for a EIA860-based project portfolio **with fixed costs
+set to zero** as fixed cost data are not available at this time. The CSV is
+necessary to create since fixed costs are currently a required GridPath input.
+
+.. note:: The query in this module is consistent with the project selection
+    from ``eia860_to_project_portfolio_input_csvs``.
+
+=====
+Usage
+=====
+
+>>> gridpath_run_data_toolkit --single_step eia860_to_project_fixed_cost_input_csvs --settings_csv PATH/TO/SETTINGS/CSV
+
+===================
+Input prerequisites
+===================
+
+This module assumes the following raw input database tables have been populated:
+    * raw_data_eia860_generators
+    * user_defined_eia_gridpath_key
+
+=========
+Settings
+=========
+    * database
+    * output_directory
+    * report_date
+    * study_year
+    * region
+    * project_fixed_cost_scenario_id
+    * project_fixed_cost_scenario_name
+
+"""
 
 from argparse import ArgumentParser
 import os.path
