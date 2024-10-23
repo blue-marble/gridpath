@@ -52,7 +52,7 @@ from data_toolkit.project.availability.weather_derates import (
     create_monte_carlo_gen_weather_derate_input_csvs,
 )
 from data_toolkit.project.opchar import (
-    create_project_opchar_input_csvs,
+    eia860_to_project_opchar_input_csvs,
 )
 from data_toolkit.project.opchar.fuels import (
     create_project_fuel_input_csvs,

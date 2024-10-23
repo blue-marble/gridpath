@@ -83,3 +83,4 @@ Project Inputs
 .. automodule:: data_toolkit.project.load_zones.eia860_to_project_load_zone_input_csvs
 .. automodule:: data_toolkit.project.capacity_specified.eia860_to_project_specified_capacity_input_csvs
 .. automodule:: data_toolkit.project.fixed_cost.eia860_to_project_fixed_cost_input_csvs
+.. automodule:: data_toolkit.project.opchar.eia860_to_project_opchar_input_csvs

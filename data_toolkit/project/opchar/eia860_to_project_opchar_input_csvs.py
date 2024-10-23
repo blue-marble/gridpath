@@ -13,6 +13,48 @@
 # limitations under the License.
 
 
+"""
+Form EIA 860 Projects User-Defined Operating Characteristics
+************************************************************
+
+Create opchar CSV for a EIA860-based project portfolio. Note that most of
+operating characteristics are user-defined in the
+user_defined_eia_gridpath_key table and will take default values until more
+detailed data are available.
+
+.. note:: The query in this module is consistent with the project selection
+    from ``eia860_to_project_portfolio_input_csvs``.
+
+=====
+Usage
+=====
+
+>>> gridpath_run_data_toolkit --single_step eia860_to_project_opchar_input_csvs --settings_csv PATH/TO/SETTINGS/CSV
+
+===================
+Input prerequisites
+===================
+
+This module assumes the following raw input database tables have been populated:
+    * raw_data_eia860_generators
+    * user_defined_eia_gridpath_key
+
+=========
+Settings
+=========
+    * database
+    * output_directory
+    * report_date
+    * study_year
+    * region
+    * project_operational_chars_scenario_id
+    * project_operational_chars_scenario_name
+    * project_fuel_scenario_id
+    * variable_generator_profile_scenario_id
+    * hydro_operational_chars_scenario_id
+
+"""
+
 from argparse import ArgumentParser
 import os.path
 import pandas as pd
