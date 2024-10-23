@@ -14,7 +14,24 @@
 
 
 """
-Download RA Toolkit data from Google Drive.
+You can use the ``gridpath_get_ra_toolkit_data_raw`` command to obtain the
+load data and hydro data from the RA Toolkit, two datasets that are not yet
+available on PUDL:
+    * WECC BA projected 2026 hourly load profiles for weather years 2006-2020: see the study for how profiles were created and note the study was conducted in 2022
+    * WECC BA monthly hydro energy, Pmin, and Pmax for years 2001-2020: see the study for how data were derived
+
+
+Note that these are the same datasets as what is
+available for download on GridLab RA Toolkit website but in a modified format
+for easier processing.
+
+
+Running this command will download the following files:
+    * ra_toolkit_load.csv
+    * ra_toolkit_hydro.csv
+
+For options, including download location, see the ``--help`` menu.
+
 """
 from argparse import ArgumentParser
 import gdown

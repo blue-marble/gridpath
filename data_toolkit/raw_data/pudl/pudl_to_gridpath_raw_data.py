@@ -13,7 +13,28 @@
 # limitations under the License.
 
 """
-Get a subset of the PUDL data and convert to GridPath raw format.
+GridPath can currenlty utilize a subset of the downloaded PUDL data,
+including:
+    * `Form EIA-860 <https://www.eia.gov/electricity/data/eia860/>`__: generator-level specific information about existing and planned generators
+    * `Form EIA-930 <https://www.eia.gov/electricity/gridmonitor/about>`__: hourly operating data about the high-voltage bulk electric power grid in the Lower 48 states collected from the electricity balancing authorities (BAs) that operate the grid
+    * `EIA AEO <https://www.eia.gov/outlooks/aeo/>`__ Table 54 (Electric Power Projections by Electricity Market Module Region): fuel price forecasts
+    * `GridPath RA Toolkit <https://gridlab.org/gridpathratoolkit/>`__ variable generation profiles created for the 2026 Western RA Study: these include hourly wind profiles by WECC BA based on assumed 2026 wind buildout for weather years 2007-2014 and hourly solar profiles by WECC BA based on assumed 2026 buildout for weather years 1998-2019; see the study for how profiles were created and note the study was conducted in 2022.
+
+First, the data must be converted to the GridPath raw data CSV format. For the
+purpose, use the ``gridpath_pudl_to_gridpath_raw`` command.
+
+This will query the PUDL database and process the Parquet files
+downloaded in the previous step in order to create the following
+files in the user-specified raw data directory.
+    * pudl_eia860_generators.csv
+    * pudl_eia930_hourly_interchange.csv
+    * pudl_eiaaeo_fuel_prices.csv
+    * pudl_ra_toolkit_var_profiles.csv
+
+For options, including the download and raw data directories as well query
+filters see the --help menu. By default, we currently use 2023-01-01 as the
+EIA860 reporting data and "western_electricity_coordinating_council" as the
+EIA AEO electricity market to get data for.
 """
 
 from argparse import ArgumentParser
@@ -28,7 +49,7 @@ from db.utilities.common_functions import confirm
 DOWNLOAD_DIRECTORY_DEFAULT = "./pudl_download"
 RAW_DATA_DIRECTORY_DEFAULT = "./raw_data"
 EIA860_DEFAULT_REPORT_DATE = "2023-01-01"
-EIAAEO_DEFUALT_ELECTRICITY_MARKET = "western_electricity_coordinating_council"
+EIAAEO_DEFAULT_ELECTRICITY_MARKET = "western_electricity_coordinating_council"
 
 
 def parse_arguments(args):
@@ -71,8 +92,8 @@ def parse_arguments(args):
     parser.add_argument(
         "-fr",
         "--eiaaeo_electricity_market_region",
-        default=EIAAEO_DEFUALT_ELECTRICITY_MARKET,
-        help=f"Defaults to {EIAAEO_DEFUALT_ELECTRICITY_MARKET}",
+        default=EIAAEO_DEFAULT_ELECTRICITY_MARKET,
+        help=f"Defaults to {EIAAEO_DEFAULT_ELECTRICITY_MARKET}",
     )
 
     parsed_arguments = parser.parse_known_args(args=args)[0]

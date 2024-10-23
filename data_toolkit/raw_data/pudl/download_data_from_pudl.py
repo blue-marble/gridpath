@@ -14,7 +14,11 @@
 
 
 """
-Download data from PUDL.
+To download data from PUDL, use the ``gridpath_get_pudl_data`` command.
+This will download the *pudl.sqlite* database as well as the RA Toolkit
+wind and solar profiles Parquet file, and the EIA930 hourly interchange
+data Parquet file. See *--help* menu for options and defaults, e.g., download
+location, the Zenodo record number for each dataset, skipping datasets, etc.
 """
 
 ZENODO_PUDL_SQLITE_DEFAULT = 13346011
