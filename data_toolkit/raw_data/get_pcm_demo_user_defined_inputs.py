@@ -14,21 +14,8 @@
 
 
 """
-You can use the ``gridpath_get_ra_toolkit_data_raw`` command to obtain the
-load data and hydro data from the RA Toolkit, two datasets that are not yet
-available on PUDL:
-    * WECC BA projected 2026 hourly load profiles for weather years 2006-2020: see the study for how profiles were created and note the study was conducted in 2022
-    * WECC BA monthly hydro energy, Pmin, and Pmax for years 2001-2020: see the study for how data were derived
-
-
-Note that these are the same datasets as what is
-available for download on GridLab RA Toolkit website but in a modified format
-for easier processing.
-
-
-Running this command will download the following files:
-    * ra_toolkit_load.csv
-    * ra_toolkit_hydro.csv
+You can use the ``gridpath_get_pcm_demo_inputs`` command to obtain these demo
+mappings and inputs.
 
 For options, including download location, see the ``--help`` menu.
 
@@ -37,9 +24,10 @@ from argparse import ArgumentParser
 import os.path
 import sys
 
-from data_toolkit.raw_data.common_functions import download_file_from_gdrive
+from data_toolkit.raw_data.common_functions import download_file_from_gdrive,\
+    unzip_file
 
-RAW_DATA_DIRECTORY_DEFAULT = "./raw_data"
+RAW_DATA_DIRECTORY_DEFAULT = "."
 
 
 def parse_arguments(args):
@@ -72,16 +60,28 @@ def main(args=None):
 
     os.makedirs(parsed_args.raw_data_directory, exist_ok=True)
 
-    file_dict = {
-        "ra_toolkit_hydro.csv": "1k5FtwE44avnicAXSHbo1twR7zwh2hjo9",
-        "ra_toolkit_load.csv": "1k4JdsUhMyZg_OQR5rvteg-tg-s2kS8Za",
-    }
-    for filename in file_dict.keys():
-        download_file_from_gdrive(
-            download_directory=parsed_args.raw_data_directory,
-            filename=filename,
-            gdrive_file_id=file_dict[filename],
-        )
+    raw_data_directory = parsed_args.raw_data_directory
+    filename = "pcm_demo_user_defined.zip"
+    zipfile_path = os.path.join(raw_data_directory, filename)
+    # Download zipped file
+    download_file_from_gdrive(
+        download_directory=parsed_args.raw_data_directory,
+        filename=filename,
+        gdrive_file_id="1DbxWdRgbCt1ODmHtgcAd05rB2ekn_OH_",
+    )
+
+    # Unzip
+    unzip_file(zipfile_path=zipfile_path, output_directory=raw_data_directory)
+
+    # Delete zipped file
+    print(f"Deleting {zipfile_path}")
+    os.remove(zipfile_path)
+
+
+
+
+
+
 
 
 if __name__ == "__main__":

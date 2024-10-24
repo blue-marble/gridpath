@@ -71,7 +71,7 @@ def parse_arguments(args):
 
     parser.add_argument("-db", "--database", default="../../open_data_raw.db")
     parser.add_argument("-r", "--region", default="WECC")
-    parser.add_argument("-l", "tx_simple_loss_factor", default=0.02)
+    parser.add_argument("-l", "--tx_simple_loss_factor", default=0.02)
     parser.add_argument(
         "-o",
         "--output_directory",

@@ -89,6 +89,8 @@ setup(
             "data_toolkit.raw_data.pudl.download_data_from_pudl:main",
             "gridpath_pudl_to_gridpath_raw = "
             "data_toolkit.raw_data.pudl.pudl_to_gridpath_raw_data:main",
+            "gridpath_get_pcm_demo_inputs = "
+            "data_toolkit.raw_data.get_pcm_demo_user_defined_inputs:main",
             "gridpath_get_ra_toolkit_data_raw = "
             "data_toolkit.raw_data.ra_toolkit.get_ra_toolkit_data:main",
             "gridpath_run_data_toolkit = " "data_toolkit.run_data_toolkit:main",
