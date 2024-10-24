@@ -55,10 +55,10 @@ from data_toolkit.project.opchar import (
     eia860_to_project_opchar_input_csvs,
 )
 from data_toolkit.project.opchar.fuels import (
-    create_project_fuel_input_csvs,
+    eia860_to_project_fuel_input_csvs,
 )
 from data_toolkit.project.opchar.heat_rates import (
-    create_project_heat_rate_input_csvs,
+    eia860_to_project_heat_rate_input_csvs,
 )
 from data_toolkit.project.opchar.var_profiles import (
     create_monte_carlo_var_gen_input_csvs,

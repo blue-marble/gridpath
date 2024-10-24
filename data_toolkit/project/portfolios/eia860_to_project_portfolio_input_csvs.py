@@ -27,7 +27,7 @@ Wind, solar, and hydro are aggregated to the BA level.
     Their renewable generation components are lumped with wind/solar, and the
     storage components show up as individual units.
 
-Project portfolios are created based on the data from a particula report
+Project portfolios are created based on the data from a particular report
 date. The user selects the region (determines subset of generators to use)
 and the study date (determines which generators are operational, i.e.,
 after their online date and before their retirement date in the EIA data.)
