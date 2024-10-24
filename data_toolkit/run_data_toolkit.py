@@ -72,19 +72,19 @@ from data_toolkit.fuels import (
     eiaaeo_fuel_price_input_csvs,
 )
 from data_toolkit.transmission.portfolios import (
-    create_transmission_portfolio_input_csvs,
+    eia930_to_transmission_portfolio_input_csvs,
 )
 from data_toolkit.transmission.load_zones import (
-    create_transmission_load_zone_input_csvs,
+    eia930_to_transmission_load_zone_input_csvs,
 )
 from data_toolkit.transmission.capacity_specified import (
-    create_transmission_specified_capacity_input_csvs,
+    eia930_to_transmission_specified_capacity_input_csvs,
 )
 from data_toolkit.transmission.availability import (
-    create_transmission_availability_input_csvs,
+    eia930_to_transmission_availability_input_csvs,
 )
 from data_toolkit.transmission.opchar import (
-    create_transmission_opchar_input_csvs,
+    eia930_to_transmission_opchar_input_csvs,
 )
 from data_toolkit import manual_adjustments
 
