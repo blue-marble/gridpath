@@ -107,7 +107,7 @@ Create the GridPath CSVs for load and variable generator profiles with
 
 
 ### Hydro Iterations
-Run *gridpath_run_ra_toolkit -step create_hydro_iteration_inputs* to create hydro iteration inputs from year-month inputs.
+Run *gridpath_run_ra_toolkit -step create_hydro_iteration_input_csvs* to create hydro iteration inputs from year-month inputs.
 
 ### Availability Iterations
 

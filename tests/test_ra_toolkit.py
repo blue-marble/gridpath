@@ -50,7 +50,7 @@ class TestRAToolkit(unittest.TestCase):
             "create_monte_carlo_weather_draws",
             "create_monte_carlo_load_input_csvs",
             "create_monte_carlo_var_gen_input_csvs",
-            "create_hydro_iteration_inputs",
+            "create_hydro_iteration_input_csvs",
             "create_availability_iteration_inputs",
             "create_sync_gen_weather_derate_input_csvs",
             "create_monte_carlo_gen_weather_derate_input_csvs",

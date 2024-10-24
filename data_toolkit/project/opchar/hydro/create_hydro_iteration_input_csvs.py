@@ -13,8 +13,37 @@
 # limitations under the License.
 
 """
-Create hydro iteration input CSVs for year/month data.
+Hydro Gen Inputs
+****************
+
+Create hydro iteration input CSVs from year/month data.
+
+=====
+Usage
+=====
+
+>>> gridpath_run_data_toolkit --single_step create_hydro_iteration_input_csvs --settings_csv PATH/TO/SETTINGS/CSV
+
+===================
+Input prerequisites
+===================
+
+This module assumes the following raw input database tables have been populated:
+    * raw_data_project_hydro_opchars_by_year_month
+    * raw_data_hydro_years
+    * user_defined_balancing_type_horizons
+
+=========
+Settings
+=========
+    * database
+    * output_directory
+    * hydro_operational_chars_scenario_id
+    * hydro_operational_chars_scenario_name
+    * overwrite
+    * n_parallel_projects
 """
+
 from argparse import ArgumentParser
 from multiprocessing import get_context
 import os.path

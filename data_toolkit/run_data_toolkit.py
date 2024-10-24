@@ -65,7 +65,7 @@ from data_toolkit.project.opchar.var_profiles import (
     create_sync_var_gen_input_csvs,
 )
 from data_toolkit.project.opchar.hydro import (
-    create_hydro_iteration_inputs,
+    create_hydro_iteration_input_csvs,
 )
 from data_toolkit.fuels import (
     create_fuel_chars_input_csvs,
@@ -117,7 +117,7 @@ def parse_arguments(args):
             "create_monte_carlo_weather_draws",
             "create_monte_carlo_load_input_csvs",
             "create_monte_carlo_var_gen_input_csvs",
-            "create_hydro_iteration_inputs",
+            "create_hydro_iteration_input_csvs",
             "create_availability_iteration_inputs",
             "create_sync_gen_weather_derate_input_csvs",
             "create_monte_carlo_gen_weather_derate_input_csvs",
