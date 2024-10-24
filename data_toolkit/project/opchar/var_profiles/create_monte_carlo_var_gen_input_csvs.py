@@ -12,6 +12,43 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+Variable Gen Profiles (Monte Carlo)
+***********************************
+
+Create GridPath Monte Carlo variable generation profile inputs. Before running
+this module,you will need to create weather draws with the
+``create_monte_carlo_draws`` module (see :ref:`monte-carlo-draws-section-ref`).
+
+=====
+Usage
+=====
+
+>>> gridpath_run_data_toolkit --single_step create_monte_carlo_var_gen_input_csvs --settings_csv PATH/TO/SETTINGS/CSV
+
+===================
+Input prerequisites
+===================
+
+This module assumes the following raw input database tables have been populated:
+    * raw_data_project_variable_profiles
+    * raw_data_var_project_units
+    * aux_weather_iterations (see the ``create_monte_carlo_draws`` step for how to create synthetic weather years and populate this table)
+
+=========
+Settings
+=========
+    * database
+    * output_directory
+    * variable_generator_profile_scenario_id
+    * variable_generator_profile_scenario_name
+    * overwrite
+    * n_parallel_projects
+    * weather_bins_id
+    * weather_draws_id
+
+"""
+
 from argparse import ArgumentParser
 import os.path
 import sys

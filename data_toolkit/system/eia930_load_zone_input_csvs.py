@@ -60,6 +60,7 @@ import sys
 
 from db.common_functions import connect_to_database
 
+
 def parse_arguments(args):
     """
     :param args: the script arguments specified by the user

@@ -86,3 +86,5 @@ Project Inputs
 .. automodule:: data_toolkit.project.opchar.eia860_to_project_opchar_input_csvs
 .. automodule:: data_toolkit.project.opchar.fuels.eia860_to_project_fuel_input_csvs
 .. automodule:: data_toolkit.project.opchar.heat_rates.eia860_to_project_heat_rate_input_csvs
+.. automodule:: data_toolkit.project.opchar.var_profiles.create_sync_var_gen_input_csvs
+.. automodule:: data_toolkit.project.opchar.var_profiles.create_monte_carlo_var_gen_input_csvs

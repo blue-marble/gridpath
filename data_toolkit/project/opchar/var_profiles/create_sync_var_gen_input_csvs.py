@@ -12,6 +12,38 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+Variable Gen Profiles (Sync)
+****************************
+
+Create GridPath sync variable generation profile inputs.
+
+=====
+Usage
+=====
+
+>>> gridpath_run_data_toolkit --single_step create_sync_var_gen_input_csvs --settings_csv PATH/TO/SETTINGS/CSV
+
+===================
+Input prerequisites
+===================
+
+This module assumes the following raw input database tables have been populated:
+    * raw_data_project_variable_profiles
+    * raw_data_var_project_units
+
+=========
+Settings
+=========
+    * database
+    * output_directory
+    * variable_generator_profile_scenario_id
+    * variable_generator_profile_scenario_name
+    * overwrite
+    * n_parallel_projects
+
+"""
+
 
 from argparse import ArgumentParser
 from multiprocessing import get_context
