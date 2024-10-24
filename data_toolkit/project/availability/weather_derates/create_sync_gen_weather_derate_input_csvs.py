@@ -13,6 +13,38 @@
 # limitations under the License.
 
 
+"""
+Weather Derates (Sync)
+**********************
+
+Create GridPath sync weather iteration availability inputs.
+
+=====
+Usage
+=====
+
+>>> gridpath_run_data_toolkit --single_step create_sync_gen_weather_derate_input_csvs --settings_csv PATH/TO/SETTINGS/CSV
+
+===================
+Input prerequisites
+===================
+
+This module assumes the following raw input database tables have been populated:
+    * raw_data_unit_availability_weather_derates
+    * raw_data_unit_availability_params
+
+=========
+Settings
+=========
+    * database
+    * output_directory
+    * exogenous_availability_weather_scenario_id
+    * exogenous_availability_weather_scenario_name
+    * overwrite
+    * n_parallel_projects
+
+"""
+
 from argparse import ArgumentParser
 from multiprocessing import get_context
 import os.path

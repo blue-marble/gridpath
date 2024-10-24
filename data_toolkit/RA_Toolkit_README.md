@@ -111,7 +111,7 @@ Run *gridpath_run_ra_toolkit -step create_hydro_iteration_input_csvs* to create 
 
 ### Availability Iterations
 
-Run *gridpath_run_ra_toolkit -step create_availability_iteration_inputs* to create 
+Run *gridpath_run_ra_toolkit -step create_availability_iteration_input_csvs* to create 
 weather-independent availability inputs from outage probability inputs. Use 
 *gridpath_run_ra_toolkit -step 
 create_monte_carlo_gen_weather_derate_input_csvs* and *gridpath_run_ra_toolkit -step create_sync_gen_weather_derate_input_csvs* to create weather-dependent 

@@ -13,11 +13,41 @@
 # limitations under the License.
 
 """
-Create availability type CSV for a EIA860-based project portfolio. Availability
-types are set to 'exogenous' for all projects .
+Form EIA 860 Project Availability
+*********************************
 
-.. note:: The query in this script is kept consistent with the project
-selection from eia860_to_project_portfolio_input_csvs.py.
+Create availability type CSV for a EIA860-based project portfolio. Availability
+types are set to 'exogenous' for all projects with no exogenous profiles
+specified (i.e., always available).
+
+.. note:: The query in this module is consistent with the project selection
+    from ``eia860_to_project_portfolio_input_csvs``.
+
+=====
+Usage
+=====
+
+>>> gridpath_run_data_toolkit --single_step eia860_to_project_availability_input_csvs --settings_csv PATH/TO/SETTINGS/CSV
+
+===================
+Input prerequisites
+===================
+
+This module assumes the following raw input database tables have been populated:
+    * raw_data_eia860_generators
+    * user_defined_eia_gridpath_key
+
+=========
+Settings
+=========
+    * database
+    * output_directory
+    * report_date
+    * study_year
+    * region
+    * project_availability_scenario_id
+    * project_availability_scenario_name
+
 """
 
 from argparse import ArgumentParser

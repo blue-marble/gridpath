@@ -19,8 +19,37 @@
 # Apache License, Version 2.0.
 
 """
+Availability Iteration Inputs
+*****************************
+
+Run unit outage simulation and create availability iteration inputs.
+
+=====
+Usage
+=====
+
+>>> gridpath_run_data_toolkit --single_step create_availability_iteration_input_csvs --settings_csv PATH/TO/SETTINGS/CSV
+
+===================
+Input prerequisites
+===================
+
+This module assumes the following raw input database tables have been populated:
+    * raw_data_unit_availability_params
+    * raw_data_var_project_units
+
+=========
+Settings
+=========
+    * database
+    * output_directory
+    * project_availability_scenario_id
+    * project_availability_scenario_name
+    * overwrite
+    * n_parallel_projects
 
 """
+
 from argparse import ArgumentParser
 import csv
 from multiprocessing import get_context

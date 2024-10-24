@@ -45,7 +45,7 @@ from data_toolkit.project.availability import (
     eia860_to_project_availability_input_csvs,
 )
 from data_toolkit.project.availability.outages import (
-    create_availability_iteration_inputs,
+    create_availability_iteration_input_csvs,
 )
 from data_toolkit.project.availability.weather_derates import (
     create_sync_gen_weather_derate_input_csvs,
@@ -118,7 +118,7 @@ def parse_arguments(args):
             "create_monte_carlo_load_input_csvs",
             "create_monte_carlo_var_gen_input_csvs",
             "create_hydro_iteration_input_csvs",
-            "create_availability_iteration_inputs",
+            "create_availability_iteration_input_csvs",
             "create_sync_gen_weather_derate_input_csvs",
             "create_monte_carlo_gen_weather_derate_input_csvs",
             "create_temporal_scenarios",
