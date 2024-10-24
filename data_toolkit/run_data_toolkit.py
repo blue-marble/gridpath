@@ -68,8 +68,8 @@ from data_toolkit.project.opchar.hydro import (
     create_hydro_iteration_input_csvs,
 )
 from data_toolkit.fuels import (
-    create_fuel_chars_input_csvs,
-    create_fuel_price_input_csvs,
+    eiaaeo_to_fuel_chars_input_csvs,
+    eiaaeo_fuel_price_input_csvs,
 )
 from data_toolkit.transmission.portfolios import (
     create_transmission_portfolio_input_csvs,

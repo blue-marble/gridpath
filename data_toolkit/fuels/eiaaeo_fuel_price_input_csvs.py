@@ -12,6 +12,41 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+EIA AEO Fuel Prices
+*******************
+
+Create GridPath fuel price inputs (fuel_scenario_id) based on the EIA AEO.
+
+.. warning:: The user is reponsible for ensuring that all prices and costs in
+    their model are in a consistent real currency year.
+
+=====
+Usage
+=====
+
+>>> gridpath_run_data_toolkit --single_step eiaaeo_fuel_price_input_csvs --settings_csv PATH/TO/SETTINGS/CSV
+
+===================
+Input prerequisites
+===================
+
+Thios module assumes the following raw input database tables have been
+populated:
+    * raw_data_eiaaeo_fuel_prices
+    * user_defined_eiaaeo_region_key
+
+=========
+Settings
+=========
+    * database
+    * output_directory
+    * model_case
+    * report_year
+    * fuel_price_id
+
+"""
+
 import csv
 from argparse import ArgumentParser
 import os.path
@@ -59,7 +94,7 @@ def get_fuel_prices(
     sql = f"""
     SELECT gridpath_generic_fuel || '_' || fuel_region as fuel, projection_year as period, 
     fuel_cost_real_per_mmbtu_eiaaeo as fuel_price_per_mmbtu
-    FROM raw_data_fuel_prices
+    FROM raw_data_eiaaeo_fuel_prices
     JOIN (SELECT DISTINCT gridpath_generic_fuel, fuel_type_eiaaeo FROM user_defined_eia_gridpath_key) USING (fuel_type_eiaaeo)
     JOIN user_defined_eiaaeo_region_key using (
     electricity_market_module_region_eiaaeo)

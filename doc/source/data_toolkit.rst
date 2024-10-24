@@ -89,3 +89,10 @@ Project Inputs
 .. automodule:: data_toolkit.project.opchar.var_profiles.create_sync_var_gen_input_csvs
 .. automodule:: data_toolkit.project.opchar.var_profiles.create_monte_carlo_var_gen_input_csvs
 .. automodule:: data_toolkit.project.opchar.hydro.create_hydro_iteration_input_csvs
+
+
+***********
+Fuel Inputs
+***********
+.. automodule:: data_toolkit.fuels.eiaaeo_to_fuel_chars_input_csvs
+.. automodule:: data_toolkit.fuels.eiaaeo_fuel_price_input_csvs

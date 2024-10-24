@@ -12,6 +12,44 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
+"""
+EIA AEO Fuel Chars (User-Defined)
+*********************************
+
+Create GridPath fuel chars inputs (fuel_scenario_id) for fuels in the EIA
+AEO. The fuel characteristics are user-defined.
+
+=====
+Usage
+=====
+
+>>> gridpath_run_data_toolkit --single_step eiaaeo_to_fuel_chars_input_csvs --settings_csv PATH/TO/SETTINGS/CSV
+
+===================
+Input prerequisites
+===================
+
+Thios module assumes the following raw input database tables have been
+populated:
+    * raw_data_eiaaeo_fuel_prices
+    * user_defined_eia_gridpath_key
+    * user_defined_generic_fuel_intensities
+    * user_defined_eiaaeo_region_key
+
+
+=========
+Settings
+=========
+    * database
+    * output_directory
+    * model_case
+    * report_year
+    * fuel_scenario_id
+    * fuel_scenario_name
+
+"""
+
 import csv
 from argparse import ArgumentParser
 import os.path
@@ -62,7 +100,7 @@ def get_fuel_prices(
     co2_intensity_tons_per_mmbtu, NULL as fuel_group 
     FROM (
         SELECT gridpath_generic_fuel || '_' || fuel_region as fuel, co2_intensity_emissionsunit_per_fuelunit
-        FROM raw_data_fuel_prices
+        FROM raw_data_eiaaeo_fuel_prices
         JOIN (
             SELECT DISTINCT gridpath_generic_fuel, fuel_type_eiaaeo, co2_intensity_emissionsunit_per_fuelunit
             FROM user_defined_eia_gridpath_key

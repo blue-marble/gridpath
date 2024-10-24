@@ -112,8 +112,8 @@ CREATE TABLE raw_data_unit_availability_weather_derates
     PRIMARY KEY (year, month, day_of_month, hour_of_day, unit)
 );
 
-DROP TABLE IF EXISTS raw_data_fuel_prices;
-CREATE TABLE raw_data_fuel_prices
+DROP TABLE IF EXISTS raw_data_eiaaeo_fuel_prices;
+CREATE TABLE raw_data_eiaaeo_fuel_prices
 (
     report_year                             INTEGER,
     electricity_market_module_region_eiaaeo TEXT,
