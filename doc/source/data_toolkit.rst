@@ -65,6 +65,7 @@ Temporal Inputs
 ***************
 
 .. automodule:: data_toolkit.temporal.create_monte_carlo_weather_draws
+.. automodule:: data_toolkit.temporal.create_temporal_scenarios
 
 ***********
 Load Inputs

@@ -13,7 +13,8 @@
 # limitations under the License.
 
 """
-Does not cover all possible cases yet.
+Create temporal iterations CSV from user-defined params. Does not cover all
+possible cases yet.
 """
 
 import sys

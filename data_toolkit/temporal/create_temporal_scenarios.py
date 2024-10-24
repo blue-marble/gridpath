@@ -11,6 +11,29 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""
+Temporal Scenarios
+******************
+
+This is a very basic module that copies over the base CSVs created by the user
+and calls the temporal iterations method to create the iterations.csv file if
+needed. The location of the base CSVs and the iterations description CSV are
+specified in a settings file you can point to with the ``--csv_path`` argument.
+
+=====
+Usage
+=====
+
+>>> gridpath_run_data_toolkit --single_step create_temporal_scenarios --settings_csv PATH/TO/SETTINGS/CSV
+
+=========
+Settings
+=========
+    * csv_path
+
+"""
+
 import shutil
 from argparse import ArgumentParser
 import glob
@@ -19,7 +42,6 @@ import pandas as pd
 import sys
 
 from data_toolkit.temporal import create_temporal_iteration_csv
-
 
 # TODO: create CSVs based on user settings rather than just copying them over?
 # TODO: put RA toolkit base CSVs in raw directory and copy them over during
