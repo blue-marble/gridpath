@@ -12,6 +12,39 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+Form EIA 930 Tranmission Load Zones
+***********************************
+
+Create load zone input CSV for a EIA930-based transmission portfolio.
+
+.. note:: The query in this module is consistent with the transmission selection
+    from ``eia930_to_transmission_portfolio_input_csvs``.
+
+
+=====
+Usage
+=====
+
+>>> gridpath_run_data_toolkit --single_step eia930_to_transmission_load_zone_input_csvs --settings_csv PATH/TO/SETTINGS/CSV
+
+===================
+Input prerequisites
+===================
+
+This module assumes the following raw input database tables have been populated:
+    * raw_data_eia930_hourly_interchange
+
+=========
+Settings
+=========
+    * database
+    * output_directory
+    * region
+    * transmission_load_zone_scenario_id
+    * transmission_load_zone_scenario_name
+
+"""
 
 from argparse import ArgumentParser
 import numpy as np

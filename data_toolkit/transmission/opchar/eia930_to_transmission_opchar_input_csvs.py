@@ -13,6 +13,40 @@
 # limitations under the License.
 
 
+"""
+Form EIA 930 Transmission Opchar
+********************************
+
+This module creates transmission opchar input CSV for an EIA930-based
+transmission portfolio. The transmission operational type is set to
+"tx_simple" and the losses are set to 2% by default.
+
+=====
+Usage
+=====
+
+>>> gridpath_run_data_toolkit --single_step eia930_to_transmission_ochar_input_csvs --settings_csv PATH/TO/SETTINGS/CSV
+
+===================
+Input prerequisites
+===================
+
+This module assumes the following raw input database tables have been populated:
+    * raw_data_eia930_hourly_interchange
+
+=========
+Settings
+=========
+    * database
+    * output_directory
+    * tx_simple_loss_factor
+    * region
+    * transmission_operational_chars_scenario_id
+    * transmission_operational_chars_scenario_name
+
+"""
+
+
 from argparse import ArgumentParser
 import numpy as np
 import os.path
@@ -36,9 +70,8 @@ def parse_arguments(args):
     parser = ArgumentParser(add_help=True)
 
     parser.add_argument("-db", "--database", default="../../open_data_raw.db")
-    parser.add_argument("-rep", "--report_date", default="2023-01-01")
-    parser.add_argument("-y", "--study_year", default=2026)
     parser.add_argument("-r", "--region", default="WECC")
+    parser.add_argument("-l", "tx_simple_loss_factor", default=0.02)
     parser.add_argument(
         "-o",
         "--output_directory",
@@ -58,11 +91,13 @@ def parse_arguments(args):
     return parsed_arguments
 
 
-def get_tx_opchar(all_links, output_directory, subscenario_id, subscenario_name):
+def get_tx_opchar(
+    all_links, tx_simple_loss_factor, output_directory, subscenario_id, subscenario_name
+):
     tx_lines = [f"{link[0]}_{link[1]}" for link in all_links]
     df = pd.DataFrame(tx_lines, columns=["transmission_line"])
     df["operational_type"] = "tx_simple"
-    df["tx_simple_loss_factor"] = 0.02
+    df["tx_simple_loss_factor"] = tx_simple_loss_factor
     df["reactance_ohms"] = None
 
     df.to_csv(
@@ -84,10 +119,11 @@ def main(args=None):
 
     c = conn.cursor()
 
-    all_links = c.execute(get_all_links_sql(region="WECC")).fetchall()
+    all_links = c.execute(get_all_links_sql(region=parsed_args.region)).fetchall()
 
     get_tx_opchar(
         all_links=all_links,
+        tx_simple_loss_factor=parsed_args.tx_simple_loss_factor,
         output_directory=parsed_args.output_directory,
         subscenario_id=parsed_args.transmission_operational_chars_scenario_id,
         subscenario_name=parsed_args.transmission_operational_chars_scenario_name,

@@ -13,6 +13,44 @@
 # limitations under the License.
 
 
+"""
+Form EIA 930 Transmission Capacity
+**********************************
+
+Create specified capacity CSV for a EIA930-based transmission portfolio.
+
+.. note:: The query in this module is consistent with the transmission selection
+    from ``eia930_to_transmission_portfolio_input_csvs``.
+
+.. warning:: Only minimal, manual data cleaning has been conducted on this
+    dataset. More robust processing is required for usability past the demo
+    stage.
+
+=====
+Usage
+=====
+
+>>> gridpath_run_data_toolkit --single_step eia930_to_transmission_specified_capacity_input_csvs --settings_csv PATH/TO/SETTINGS/CSV
+
+===================
+Input prerequisites
+===================
+
+This module assumes the following raw input database tables have been populated:
+    * raw_data_eia930_hourly_interchange
+
+=========
+Settings
+=========
+    * database
+    * output_directory
+    * study_year
+    * region
+    * transmission_specified_capacity_scenario_id
+    * transmission_specified_capacity_scenario_name
+
+"""
+
 from argparse import ArgumentParser
 import numpy as np
 import os.path
@@ -36,7 +74,6 @@ def parse_arguments(args):
     parser = ArgumentParser(add_help=True)
 
     parser.add_argument("-db", "--database", default="../../open_data_raw.db")
-    parser.add_argument("-rep", "--report_date", default="2023-01-01")
     parser.add_argument("-y", "--study_year", default=2026)
     parser.add_argument("-r", "--region", default="WECC")
 
@@ -156,12 +193,12 @@ def main(args=None):
 
     c = conn.cursor()
 
-    all_links = c.execute(get_all_links_sql(region="WECC")).fetchall()
+    all_links = c.execute(get_all_links_sql(region=parsed_args.region)).fetchall()
 
     get_tx_capacities(
         conn=conn,
         all_links=all_links,
-        period=2026,
+        period=parsed_args.study_year,
         cap=19000,
         threshold=0.5,
         output_directory=parsed_args.output_directory,

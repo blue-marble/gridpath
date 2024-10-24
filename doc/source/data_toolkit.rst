@@ -79,20 +79,20 @@ Load Inputs
 Project Inputs
 **************
 
-.. automodule:: data_toolkit.project.portfolios.eia860_to_project_portfolio_input_csvs
-.. automodule:: data_toolkit.project.load_zones.eia860_to_project_load_zone_input_csvs
-.. automodule:: data_toolkit.project.availability.eia860_to_project_availability_input_csvs
-.. automodule:: data_toolkit.project.availability.outages.create_availability_iteration_input_csvs
-.. automodule:: data_toolkit.project.availability.weather_derates.create_sync_gen_weather_derate_input_csvs
-.. automodule:: data_toolkit.project.availability.weather_derates.create_monte_carlo_gen_weather_derate_input_csvs
-.. automodule:: data_toolkit.project.capacity_specified.eia860_to_project_specified_capacity_input_csvs
-.. automodule:: data_toolkit.project.fixed_cost.eia860_to_project_fixed_cost_input_csvs
-.. automodule:: data_toolkit.project.opchar.eia860_to_project_opchar_input_csvs
-.. automodule:: data_toolkit.project.opchar.fuels.eia860_to_project_fuel_input_csvs
-.. automodule:: data_toolkit.project.opchar.heat_rates.eia860_to_project_heat_rate_input_csvs
-.. automodule:: data_toolkit.project.opchar.var_profiles.create_sync_var_gen_input_csvs
-.. automodule:: data_toolkit.project.opchar.var_profiles.create_monte_carlo_var_gen_input_csvs
-.. automodule:: data_toolkit.project.opchar.hydro.create_hydro_iteration_input_csvs
+.. automodule:: data_toolkit.transmission.portfolios.eia860_to_transmission_portfolio_input_csvs
+.. automodule:: data_toolkit.transmission.load_zones.eia860_to_transmission_load_zone_input_csvs
+.. automodule:: data_toolkit.transmission.availability.eia860_to_transmission_availability_input_csvs
+.. automodule:: data_toolkit.transmission.availability.outages.create_availability_iteration_input_csvs
+.. automodule:: data_toolkit.transmission.availability.weather_derates.create_sync_gen_weather_derate_input_csvs
+.. automodule:: data_toolkit.transmission.availability.weather_derates.create_monte_carlo_gen_weather_derate_input_csvs
+.. automodule:: data_toolkit.transmission.capacity_specified.eia860_to_transmission_specified_capacity_input_csvs
+.. automodule:: data_toolkit.transmission.fixed_cost.eia860_to_transmission_fixed_cost_input_csvs
+.. automodule:: data_toolkit.transmission.opchar.eia860_to_transmission_opchar_input_csvs
+.. automodule:: data_toolkit.transmission.opchar.fuels.eia860_to_transmission_fuel_input_csvs
+.. automodule:: data_toolkit.transmission.opchar.heat_rates.eia860_to_transmission_heat_rate_input_csvs
+.. automodule:: data_toolkit.transmission.opchar.var_profiles.create_sync_var_gen_input_csvs
+.. automodule:: data_toolkit.transmission.opchar.var_profiles.create_monte_carlo_var_gen_input_csvs
+.. automodule:: data_toolkit.transmission.opchar.hydro.create_hydro_iteration_input_csvs
 
 
 ***********
@@ -108,6 +108,7 @@ Transmission Inputs
 
 .. automodule:: data_toolkit.transmission.portfolios.eia930_to_transmission_portfolio_input_csvs
 .. automodule:: data_toolkit.transmission.load_zones.eia930_to_transmission_load_zone_input_csvs
+.. automodule:: data_toolkit.transmission.availability.eia930_to_transmission_availability_input_csvs
 .. automodule:: data_toolkit.transmission.capacity_specified.eia930_to_transmission_specified_capacity_input_csvs
 .. automodule:: data_toolkit.transmission.fixed_cost.eia930_to_transmission_fixed_cost_input_csvs
 .. automodule:: data_toolkit.transmission.opchar.eia930_to_transmission_opchar_input_csvs

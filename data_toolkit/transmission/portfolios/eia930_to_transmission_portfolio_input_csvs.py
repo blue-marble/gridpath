@@ -12,9 +12,39 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+Form EIA 930 Transmission Portfolio
+***********************************
+
+This module creates a transmission line portfolio input CSV for an EIA930-based
+transmission portfolio. The transmission capacity type is set "tx_spec" for
+all lines.
+
+=====
+Usage
+=====
+
+>>> gridpath_run_data_toolkit --single_step eia930_to_transmission_portfolio_input_csvs --settings_csv PATH/TO/SETTINGS/CSV
+
+===================
+Input prerequisites
+===================
+
+This module assumes the following raw input database tables have been populated:
+    * raw_data_eia930_hourly_interchange
+
+=========
+Settings
+=========
+    * database
+    * output_directory
+    * region
+    * transmission_portfolio_scenario_id
+    * transmission_portfolio_scenario_name
+
+"""
 
 from argparse import ArgumentParser
-import numpy as np
 import os.path
 import pandas as pd
 import sys
@@ -36,8 +66,6 @@ def parse_arguments(args):
     parser = ArgumentParser(add_help=True)
 
     parser.add_argument("-db", "--database", default="../../open_data_raw.db")
-    parser.add_argument("-rep", "--report_date", default="2023-01-01")
-    parser.add_argument("-y", "--study_year", default=2026)
     parser.add_argument("-r", "--region", default="WECC")
     parser.add_argument(
         "-o",
@@ -84,7 +112,7 @@ def main(args=None):
 
     c = conn.cursor()
 
-    all_links = c.execute(get_all_links_sql(region="WECC")).fetchall()
+    all_links = c.execute(get_all_links_sql(region=parsed_args.region)).fetchall()
 
     get_tx_portfolio_for_region(
         all_links=all_links,
