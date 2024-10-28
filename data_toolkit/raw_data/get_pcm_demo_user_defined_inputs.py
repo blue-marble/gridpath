@@ -67,7 +67,7 @@ def main(args=None):
     download_file_from_gdrive(
         download_directory=parsed_args.raw_data_directory,
         filename=filename,
-        gdrive_file_id="1DbxWdRgbCt1ODmHtgcAd05rB2ekn_OH_",
+        gdrive_file_id="1Dod9btojXK1aVbvdFaSHFMpfodjXGFAR",
     )
 
     # Unzip

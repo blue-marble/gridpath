@@ -26,13 +26,21 @@ from data_toolkit.project.project_data_filters_common import (
 )
 
 # Var profiles
-COPY_FROM_DICT = {
+VAR_GEN_COPY_FROM_DICT = {
     "Wind": {"NEVP": "SPPC", "PGE": "BPAT", "SRP": "AZPS", "WAUW": "NWMT"},
     "Solar": {"WAUW": "NWMT"},
 }
 VAR_ID_DEFAULT = 1
 VAR_NAME_DEFAULT = "open_data"
 STAGE_ID_DEFAULT = 1
+
+# Hydro chars
+HYDRO_GEN_COPY_FROM_DICT = {
+    "Hydro": {"CISO": "CIPV", "IPCO": "IPFE", "NEVP": "AZPS", "PACE": "PAWY"}
+}
+HYD_ID_DEFAULT = 1
+HYD_NAME_DEFAULT = "ra_toolkit"
+
 
 # Storage durations
 STORAGE_DURATION_DEFAULTS = {"BA": 1, "PS": 12}
@@ -58,19 +66,38 @@ def parse_arguments(args):
     parser.add_argument(
         "-var_gen_dir",
         "--var_gen_profiles_directory",
-        default="../../csvs_open_data/project/opchar/var_gen_profiles",
+        default="../db/csvs_open_data/project/opchar/var_gen_profiles",
     )
     parser.add_argument(
-        "-id",
+        "-vid",
         "--variable_generator_profile_scenario_id",
         default=VAR_ID_DEFAULT,
         help=f"Defaults to {VAR_ID_DEFAULT}.",
     )
     parser.add_argument(
-        "-name",
+        "-vname",
         "--variable_generator_profile_scenario_name",
         default=VAR_NAME_DEFAULT,
         help=f"Defaults to '{VAR_NAME_DEFAULT}'.",
+    )
+    
+    # Missing hydro chars
+    parser.add_argument(
+        "-hydro_dir",
+        "--hydro_directory",
+        default="../db/csvs_open_data/project/opchar/hydro",
+    )
+    parser.add_argument(
+        "-hid",
+        "--hydro_operational_chars_scenario_id",
+        default=HYD_ID_DEFAULT,
+        help=f"Defaults to {HYD_ID_DEFAULT}.",
+    )
+    parser.add_argument(
+        "-hname",
+        "--hydro_operational_chars_scenario_name",
+        default=HYD_NAME_DEFAULT,
+        help=f"Defaults to '{HYD_NAME_DEFAULT}'.",
     )
 
     # Missing storage durations
@@ -120,19 +147,20 @@ def parse_arguments(args):
     return parsed_arguments
 
 
-def make_copy_var_profiles(csv_location, profile_id, profile_name, overwrite):
-    for tech in COPY_FROM_DICT.keys():
-        for ba in COPY_FROM_DICT[tech].keys():
-            copy_ba = COPY_FROM_DICT[tech][ba]
+def make_copy_files(project_dict, csv_location, project_subscenario_id, 
+                    project_subscenario_name, overwrite):
+    for tech in project_dict.keys():
+        for ba in project_dict[tech].keys():
+            copy_ba = project_dict[tech][ba]
 
             file_to_copy = os.path.join(
                 csv_location,
-                f"{tech}_{copy_ba}-{profile_id}-{profile_name}.csv",
+                f"{tech}_{copy_ba}-{project_subscenario_id}-{project_subscenario_name}.csv",
             )
 
             new_file = os.path.join(
                 csv_location,
-                f"{tech}_{ba}-{profile_id}-{profile_name}_MANUAL_copy_from"
+                f"{tech}_{ba}-{project_subscenario_id}-{project_subscenario_name}_MANUAL_copy_from"
                 f"_{copy_ba}.csv",
             )
 
@@ -208,10 +236,21 @@ def main(args=None):
 
     conn = connect_to_database(db_path=parsed_args.database)
 
-    make_copy_var_profiles(
+    # Add missing variable gen profiles
+    make_copy_files(
+        project_dict=VAR_GEN_COPY_FROM_DICT,
         csv_location=parsed_args.var_gen_profiles_directory,
-        profile_id=parsed_args.variable_generator_profile_scenario_id,
-        profile_name=parsed_args.variable_generator_profile_scenario_name,
+        project_subscenario_id=parsed_args.variable_generator_profile_scenario_id,
+        project_subscenario_name=parsed_args.variable_generator_profile_scenario_name,
+        overwrite=parsed_args.overwrite,
+    )
+    
+    # Add missing hydro profiles
+    make_copy_files(
+        project_dict=HYDRO_GEN_COPY_FROM_DICT,
+        csv_location=parsed_args.hydro_directory,
+        project_subscenario_id=parsed_args.hydro_operational_chars_scenario_id,
+        project_subscenario_name=parsed_args.hydro_operational_chars_scenario_name,
         overwrite=parsed_args.overwrite,
     )
 

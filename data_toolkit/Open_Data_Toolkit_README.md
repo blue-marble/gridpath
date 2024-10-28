@@ -3,7 +3,6 @@ mkdir csvs_open_data
 cd csvs_open_data
 
 ## Get demo user-defined inputs first
-gridpath_get_pcm_demo_inputs
 
 ```bash
 gridpath_get_pcm_demo_inputs
@@ -70,6 +69,8 @@ gridpath_load_csvs --database ./open_data.db --csv_location ./csvs_open_data
 ```bash
 gridpath_load_scenarios --database ./open_data.db --csv_path ./csvs_open_data/scenarios.csv
 ```
+
+This assumes running from root directory
 
 ```bash
 gridpath_run_e2e --database ./db/open_data.db --log --n_parallel_get_inputs 24 --n_parallel_solve 24 --scenario_location ./scenarios --scenario test_w_tx_days
