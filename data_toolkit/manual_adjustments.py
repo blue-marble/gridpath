@@ -80,7 +80,7 @@ def parse_arguments(args):
         default=VAR_NAME_DEFAULT,
         help=f"Defaults to '{VAR_NAME_DEFAULT}'.",
     )
-    
+
     # Missing hydro chars
     parser.add_argument(
         "-hydro_dir",
@@ -147,8 +147,13 @@ def parse_arguments(args):
     return parsed_arguments
 
 
-def make_copy_files(project_dict, csv_location, project_subscenario_id, 
-                    project_subscenario_name, overwrite):
+def make_copy_files(
+    project_dict,
+    csv_location,
+    project_subscenario_id,
+    project_subscenario_name,
+    overwrite,
+):
     for tech in project_dict.keys():
         for ba in project_dict[tech].keys():
             copy_ba = project_dict[tech][ba]
@@ -244,7 +249,7 @@ def main(args=None):
         project_subscenario_name=parsed_args.variable_generator_profile_scenario_name,
         overwrite=parsed_args.overwrite,
     )
-    
+
     # Add missing hydro profiles
     make_copy_files(
         project_dict=HYDRO_GEN_COPY_FROM_DICT,

@@ -37,5 +37,5 @@ def download_file_from_gdrive(gdrive_file_id, filename, download_directory):
 
 def unzip_file(zipfile_path, output_directory):
     print(f"Unzipping {zipfile_path}")
-    with zipfile.ZipFile(zipfile_path, 'r') as zip_ref:
+    with zipfile.ZipFile(zipfile_path, "r") as zip_ref:
         zip_ref.extractall(output_directory)

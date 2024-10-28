@@ -24,8 +24,7 @@ from argparse import ArgumentParser
 import os.path
 import sys
 
-from data_toolkit.raw_data.common_functions import download_file_from_gdrive,\
-    unzip_file
+from data_toolkit.raw_data.common_functions import download_file_from_gdrive, unzip_file
 
 RAW_DATA_DIRECTORY_DEFAULT = "."
 
@@ -76,12 +75,6 @@ def main(args=None):
     # Delete zipped file
     print(f"Deleting {zipfile_path}")
     os.remove(zipfile_path)
-
-
-
-
-
-
 
 
 if __name__ == "__main__":
