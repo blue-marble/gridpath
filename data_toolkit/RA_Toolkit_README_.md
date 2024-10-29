@@ -31,7 +31,7 @@ following name for our base directory: *ra_toolkit_base*
 ### 2. Put the base CSVs in this directory
 The csvs will be in: *ra_toolkit_base/csvs_test_examples*. You can download the 
 CSVs from *db/csvs_test_examples* for use in this step. The raw data used by 
-the RA toolkit is in *db/csvs_test_examples/raw_data_ra_toolkit* and other 
+the RA toolkit is in *db/csvs_test_examples/raw_data* and other 
 inputs are also used to create the RA scenarios below.
 
 ### 3. Create your ra_toolkit_settings file is in the base directory
