@@ -44,7 +44,6 @@ Settings
 =========
     * database
     * output_directory
-    * report_date
     * study_year
     * region
     * project_operational_chars_scenario_id
@@ -87,7 +86,6 @@ def parse_arguments(args):
     parser = ArgumentParser(add_help=True)
 
     parser.add_argument("-db", "--database", default="../../open_data_raw.db")
-    parser.add_argument("-rep", "--report_date", default="2023-01-01")
     parser.add_argument("-y", "--study_year", default=2026)
     parser.add_argument("-r", "--region", default="WECC")
     parser.add_argument(
@@ -104,6 +102,7 @@ def parse_arguments(args):
         default="wecc_plants_opchar",
     )
     parser.add_argument("-fuel_id", "--project_fuel_scenario_id", default=1)
+    parser.add_argument("-hr_id", "--project_heat_rate_scenario_id", default=1)
     parser.add_argument(
         "-var_id", "--variable_generator_profile_scenario_id", default=1
     )
@@ -128,6 +127,7 @@ def get_project_opchar(
     subscenario_id,
     subscenario_name,
     fuel_id,
+    hr_id,
     var_id,
     hy_id,
 ):
@@ -143,7 +143,7 @@ def get_project_opchar(
         project_fuel_scenario_id=f"""CASE WHEN {fuel_filter_str} THEN {fuel_id} ELSE 
         NULL END""",
         heat_rate_curves_scenario_id=f"""CASE WHEN {heat_rate_filter_str} 
-        THEN 1 ELSE NULL END""",
+        THEN {hr_id} ELSE NULL END""",
         min_stable_level_fraction=f"""CASE WHEN {heat_rate_filter_str} THEN min_load_fraction ELSE NULL END""",
         storage_efficiency=f"""CASE WHEN {stor_filter_str} THEN default_storage_efficiency ELSE NULL END""",
         charging_efficiency=f"""CASE WHEN {stor_filter_str} THEN default_charging_efficiency ELSE NULL END""",
@@ -380,6 +380,7 @@ def main(args=None):
         subscenario_id=parsed_args.project_operational_chars_scenario_id,
         subscenario_name=parsed_args.project_operational_chars_scenario_name,
         fuel_id=parsed_args.project_fuel_scenario_id,
+        hr_id=parsed_args.project_heat_rate_scenario_id,
         var_id=parsed_args.variable_generator_profile_scenario_id,
         hy_id=parsed_args.hydro_operational_chars_scenario_id,
     )
