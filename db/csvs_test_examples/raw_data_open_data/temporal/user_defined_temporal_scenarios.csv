@@ -1,0 +1,2 @@
+﻿output_directory,temporal_scenario_id,temporal_scenario_name,n_passes,iterations_csv,base_csvs_directory
+./csvs_test_examples/temporal,20,open_data,1,./csvs_test_examples/raw_data_open_data/temporal/iterations/iterations.csv,./csvs_test_examples/raw_data_open_data/temporal/base_csvs

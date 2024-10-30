@@ -1,4 +1,0 @@
-eia860_to_project_portfolio_input_csvs,database,./ra_toolkit_test_steps_temp.db
-eia860_to_project_portfolio_input_csvs,output_directory,.../csvs_test_examples/project/project_portfolios
-eia860_to_project_portfolio_input_csvs,project_portfolio_scenario_id,24
-eia860_to_project_portfolio_input_csvs,project_portfolio_scenario_name,data_toolkit

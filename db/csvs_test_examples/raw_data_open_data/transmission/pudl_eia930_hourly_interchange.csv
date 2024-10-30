@@ -1,0 +1,3 @@
+datetime_utc,balancing_authority_code_eia,balancing_authority_code_adjacent_eia,interchange_reported_mwh,datetime_pst,year,month,day_of_month,hour_of_day
+7/1/15 6:00,Zone1,Zone2,100,6/30/15 22:00,2015,6,30,22
+7/1/15 7:00,Zone1,Zone2,200,6/30/15 23:00,2015,6,30,23

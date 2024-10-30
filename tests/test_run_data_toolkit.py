@@ -18,8 +18,9 @@ import unittest
 
 from data_toolkit import run_data_toolkit
 
-SETTINGS_CSV = "../tests/test_data/ra_toolkit_settings.csv"
-SETTINGS_STEPS_CSV = "../tests/test_data/ra_toolkit_settings_steps.csv"
+RA_SETTINGS_CSV = "../tests/test_data/data_toolkit_ra_settings.csv"
+RA_SETTINGS_STEPS_CSV = "../tests/test_data/data_toolkit_ra_settings_steps.csv"
+OPEN_DATA_SETTINGS_CSV = "../tests/test_data/data_toolkit_open_data_settings" ".csv"
 
 
 class TestRAToolkit(unittest.TestCase):
@@ -40,7 +41,7 @@ class TestRAToolkit(unittest.TestCase):
             if os.path.exists(p):
                 os.remove(p)
 
-    def test_ra_toolkit_steps(self):
+    def test_data_toolkit_ra_steps(self):
         os.chdir(os.path.join(os.path.dirname(__file__), "..", "db"))
         for step in [
             "create_database",
@@ -59,16 +60,20 @@ class TestRAToolkit(unittest.TestCase):
             run_data_toolkit.main(
                 [
                     "--settings_csv",
-                    SETTINGS_STEPS_CSV,
+                    RA_SETTINGS_STEPS_CSV,
                     "--quiet",
                     "--single_step_only",
                     step,
                 ]
             )
 
-    def test_ra_toolkit(self):
+    def test_data_toolkit_ra(self):
         os.chdir(os.path.join(os.path.dirname(__file__), "..", "db"))
-        run_data_toolkit.main(["--settings_csv", SETTINGS_CSV, "--quiet"])
+        run_data_toolkit.main(["--settings_csv", RA_SETTINGS_CSV, "--quiet"])
+
+    def test_data_toolkit_open_data(self):
+        os.chdir(os.path.join(os.path.dirname(__file__), "..", "db"))
+        run_data_toolkit.main(["--settings_csv", OPEN_DATA_SETTINGS_CSV, "--quiet"])
 
     @classmethod
     def tearDownClass(cls):
@@ -84,23 +89,35 @@ class TestRAToolkit(unittest.TestCase):
 
 
 def get_temp_db_paths():
-    settings_df = pd.read_csv(SETTINGS_CSV)
-    settings_df.set_index(["script", "setting"])
+    ra_settings_df = pd.read_csv(RA_SETTINGS_CSV)
+    ra_settings_df.set_index(["script", "setting"])
     settings_db_path = os.path.join(
         os.getcwd(),
-        run_data_toolkit.get_setting(settings_df, "create_database", "database"),
+        run_data_toolkit.get_setting(ra_settings_df, "create_database", "database"),
     )
 
-    settings_steps_df = pd.read_csv(SETTINGS_STEPS_CSV)
-    settings_steps_df.set_index(["script", "setting"])
+    ra_settings_steps_df = pd.read_csv(RA_SETTINGS_STEPS_CSV)
+    ra_settings_steps_df.set_index(["script", "setting"])
     settings_steps_db_path = os.path.join(
         os.getcwd(),
-        run_data_toolkit.get_setting(settings_steps_df, "create_database", "database"),
+        run_data_toolkit.get_setting(
+            ra_settings_steps_df, "create_database", "database"
+        ),
+    )
+
+    open_data_settings_df = pd.read_csv(OPEN_DATA_SETTINGS_CSV)
+    open_data_settings_df.set_index(["script", "setting"])
+    open_data_settings_db_path = os.path.join(
+        os.getcwd(),
+        run_data_toolkit.get_setting(
+            open_data_settings_df, "create_database", "database"
+        ),
     )
 
     temp_db_paths = [
         settings_db_path,
         settings_steps_db_path,
+        open_data_settings_db_path,
     ]
 
     return temp_db_paths
