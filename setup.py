@@ -62,6 +62,7 @@ setup(
         "Jinja2==3.0.3",  # bokeh dependency; see #904
         "dill==0.3.7",  # pickling
         "duckdb==1.0.0",  # data-handling
+        "sqlite3>=3.38",  # needed for use of UNIXEPOCH
     ]
     + extras_ui,
     extras_require={
