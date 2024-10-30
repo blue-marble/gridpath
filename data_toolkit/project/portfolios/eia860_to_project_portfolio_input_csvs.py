@@ -52,7 +52,6 @@ Settings
 =========
     * database
     * output_directory
-    * report_date
     * study_year
     * region
     * project_portfolio_scenario_id
@@ -88,7 +87,6 @@ def parse_arguments(args):
     parser = ArgumentParser(add_help=True)
 
     parser.add_argument("-db", "--database", default="../../open_data_raw.db")
-    parser.add_argument("-rep", "--report_date", default="2023-01-01")
     parser.add_argument("-y", "--study_year", default=2026)
     parser.add_argument("-r", "--region", default="WECC")
     parser.add_argument(
@@ -154,8 +152,6 @@ def get_project_portfolio_for_region(
     ;
     """
 
-    print(sql)
-
     df = pd.read_sql(sql, conn)
     df.to_csv(
         os.path.join(csv_location, f"{subscenario_id}_{subscenario_name}.csv"),
@@ -169,8 +165,6 @@ def main(args=None):
         args = sys.argv[1:]
 
     parsed_args = parse_arguments(args=args)
-
-    print(parsed_args)
 
     os.makedirs(parsed_args.output_directory, exist_ok=True)
 
