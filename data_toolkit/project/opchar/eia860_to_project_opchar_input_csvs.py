@@ -102,7 +102,7 @@ def parse_arguments(args):
         default="wecc_plants_opchar",
     )
     parser.add_argument("-fuel_id", "--project_fuel_scenario_id", default=1)
-    parser.add_argument("-hr_id", "--project_heat_rate_scenario_id", default=1)
+    parser.add_argument("-hr_id", "--heat_rate_curves_scenario_id", default=1)
     parser.add_argument(
         "-var_id", "--variable_generator_profile_scenario_id", default=1
     )
@@ -380,7 +380,7 @@ def main(args=None):
         subscenario_id=parsed_args.project_operational_chars_scenario_id,
         subscenario_name=parsed_args.project_operational_chars_scenario_name,
         fuel_id=parsed_args.project_fuel_scenario_id,
-        hr_id=parsed_args.project_heat_rate_scenario_id,
+        hr_id=parsed_args.heat_rate_curves_scenario_id,
         var_id=parsed_args.variable_generator_profile_scenario_id,
         hy_id=parsed_args.hydro_operational_chars_scenario_id,
     )

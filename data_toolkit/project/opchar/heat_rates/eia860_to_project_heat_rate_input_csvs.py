@@ -39,13 +39,13 @@ Input prerequisites
 This module assumes the following raw input database tables have been populated:
     * raw_data_eia860_generators
     * user_defined_eia_gridpath_key
+    * user_defined_heat_rate_curve
 
 =========
 Settings
 =========
     * database
     * output_directory
-    * report_date
     * study_year
     * region
     * project_hr_scenario_id
@@ -77,7 +77,6 @@ def parse_arguments(args):
     parser = ArgumentParser(add_help=True)
 
     parser.add_argument("-db", "--database", default="../../open_data_raw.db")
-    parser.add_argument("-rep", "--report_date", default="2023-01-01")
     parser.add_argument("-y", "--study_year", default=2026)
     parser.add_argument("-r", "--region", default="WECC")
 
