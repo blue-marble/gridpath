@@ -1,0 +1,7 @@
+version_num,plant_id_eia,generator_id,balancing_authority_code_eia,capacity_mw,summer_capacity_mw,winter_capacity_mw,energy_storage_capacity_mwh,prime_mover_code,energy_source_code_1,current_planned_generator_operating_date,generator_retirement_date
+1,1,Batteries,Zone1,,,,,BA,MWH,,
+1,1,Gas,Zone1,,,,,CT,NG,,
+1,1,Hybrid,Zone1,,,,,PV_HYB,SUN,,
+1,1,Hydro,Zone1,,,,,HY,WAT,,
+1,1,Solar,Zone1,,,,,PV,SUN,,
+1,1,Wind,Zone1,,,,,WT,WND,,

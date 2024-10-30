@@ -105,7 +105,7 @@ def parse_arguments(args):
         "-s", "--settings_csv", default="./open_data_toolkit_settings_sample.csv"
     )
     parser.add_argument("-q", "--quiet", default=False, action="store_true")
-    # Run only a single RA Toolkit step
+    # Run only a single Data Toolkit step
     parser.add_argument(
         "-step",
         "--single_step_only",
@@ -125,6 +125,7 @@ def parse_arguments(args):
             "create_project_input_csvs",
             "create_transmission_input_csvs",
             "create_fuel_input_csvs",
+            "eia860_to_project_portfolio_input_csvs",
         ],
         help="Run only the specified GridPath Data Toolkit step. All others "
         "will be skipped. If not specified, all steps in the settings "

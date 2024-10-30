@@ -45,6 +45,7 @@ Input prerequisites
 This module assumes the following raw input database tables have been populated:
     * raw_data_eia860_generators
     * user_defined_eia_gridpath_key
+    * user_defined_baa_key
 
 =========
 Settings
@@ -153,6 +154,8 @@ def get_project_portfolio_for_region(
     ;
     """
 
+    print(sql)
+
     df = pd.read_sql(sql, conn)
     df.to_csv(
         os.path.join(csv_location, f"{subscenario_id}_{subscenario_name}.csv"),
@@ -166,6 +169,8 @@ def main(args=None):
         args = sys.argv[1:]
 
     parsed_args = parse_arguments(args=args)
+
+    print(parsed_args)
 
     os.makedirs(parsed_args.output_directory, exist_ok=True)
 
