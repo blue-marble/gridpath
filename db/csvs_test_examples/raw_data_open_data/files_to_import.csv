@@ -11,3 +11,6 @@ import,filename,table
 1,./project/hydro/ra_toolkit_hydro.csv,raw_data_project_hydro_opchars_by_year_month
 1,./project/hydro/user_defined_hydro_years.csv,raw_data_hydro_years
 1,./project/hydro/user_defined_bt_horizons.csv,user_defined_balancing_type_horizons
+1,./fuels/pudl_eiaaeo_fuel_prices.csv,raw_data_eiaaeo_fuel_prices
+1,./fuels/user_defined_generic_fuel_intensities.csv,user_defined_generic_fuel_intensities
+1,./fuels/user_defined_eiaaeo_region_key.csv,user_defined_eiaaeo_region_key
