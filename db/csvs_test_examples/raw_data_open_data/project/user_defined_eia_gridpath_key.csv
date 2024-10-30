@@ -2,7 +2,5 @@
 WT,wind_onshore,WND,wind,,,,gen_spec,gen_var_must_take,Wind,day,0,,,,,,,Wind
 HY,hydraulic_turbine,WAT,water,,,,gen_spec,gen_hydro_must_take,Hydro,day,0,,,,,,,Hydro
 CT,combined_cycle_combustion_turbine,NG,natural_gas,natural_gas,Gas,1,gen_spec,gen_commit_lin,Gas,day,0,,,,7.596,0.5,https://www.eia.gov/electricity/annual/html/epa_08_02.html,
-BA,battery_storage,MWH,electricity_storage,,,,stor_spec,stor,Batteries,day,0,1,0.92,0.92,0.8464,,,
+BA,battery_storage,MWH,electricity_storage,,,,stor_spec,stor,Batteries,day,0,1,0.92,0.92,,,,
 PV,solar_pv,SUN,solar,,,,gen_spec,gen_var_must_take,Solar,day,0,,,,,,,Solar
-PV_HYB,solar_pv,SUN,solar,,,,gen_spec,gen_var_must_take,Solar,day,0,,,,,,,Solar
-,,,,,,,gen_stor_hyb_spec,gen_var_stor_hyb,Solar,day,0,,,,,,,Solar
