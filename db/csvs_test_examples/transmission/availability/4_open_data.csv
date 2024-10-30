@@ -1,0 +1,3 @@
+transmission_line,availability_type,exogenous_availability_scenario_id,endogenous_availability_scenario_id
+Zone1_Zone2,exogenous,,
+Zone2_Zone1,exogenous,,

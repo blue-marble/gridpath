@@ -1,0 +1,3 @@
+transmission_line,operational_type,tx_simple_loss_factor,reactance_ohms
+Zone1_Zone2,tx_simple,0.02,
+Zone2_Zone1,tx_simple,0.02,
