@@ -56,6 +56,7 @@ import sys
 from db.common_functions import connect_to_database
 from data_toolkit.transmission.transmission_data_filters_common import (
     get_all_links_sql,
+    get_unique_tx_lines,
 )
 
 
@@ -92,10 +93,13 @@ def parse_arguments(args):
 
 
 def get_tx_opchar(
-    all_links, tx_simple_loss_factor, output_directory, subscenario_id, subscenario_name
+    unique_tx_lines,
+    tx_simple_loss_factor,
+    output_directory,
+    subscenario_id,
+    subscenario_name,
 ):
-    tx_lines = [f"{link[0]}_{link[1]}" for link in all_links]
-    df = pd.DataFrame(tx_lines, columns=["transmission_line"])
+    df = pd.DataFrame(unique_tx_lines, columns=["transmission_line"])
     df["operational_type"] = "tx_simple"
     df["tx_simple_loss_factor"] = tx_simple_loss_factor
     df["reactance_ohms"] = None
@@ -120,9 +124,10 @@ def main(args=None):
     c = conn.cursor()
 
     all_links = c.execute(get_all_links_sql(region=parsed_args.region)).fetchall()
+    unique_tx_lines = get_unique_tx_lines(all_links=all_links)
 
     get_tx_opchar(
-        all_links=all_links,
+        unique_tx_lines=unique_tx_lines,
         tx_simple_loss_factor=parsed_args.tx_simple_loss_factor,
         output_directory=parsed_args.output_directory,
         subscenario_id=parsed_args.transmission_operational_chars_scenario_id,

@@ -92,11 +92,12 @@ def get_tx_load_zones(
     subscenario_name,
 ):
     """ """
-    lz_dict = {
-        "transmission_line": [f"{link[0]}_{link[1]}" for link in all_links],
-        "load_zone_from": [link[0] for link in all_links],
-        "load_zone_to": [link[1] for link in all_links],
-    }
+    lz_dict = {"transmission_line": [], "load_zone_from": [], "load_zone_to": []}
+    for link in all_links:
+        if f"{link[1]}_{link[0]}" not in lz_dict["transmission_line"]:
+            lz_dict["transmission_line"].append(f"{link[0]}_{link[1]}")
+            lz_dict["load_zone_from"].append(link[0])
+            lz_dict["load_zone_to"].append(link[1])
 
     df = pd.DataFrame(lz_dict)
 

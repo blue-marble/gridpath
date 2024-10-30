@@ -52,3 +52,12 @@ def get_all_links_sql(region):
                 """
 
     return all_links_sql
+
+
+def get_unique_tx_lines(all_links):
+    unique_tx_lines = []
+    for link in all_links:
+        if f"{link[1]}_{link[0]}" not in unique_tx_lines:
+            unique_tx_lines.append(f"{link[0]}_{link[1]}")
+
+    return unique_tx_lines

@@ -58,6 +58,7 @@ import sys
 from db.common_functions import connect_to_database
 from data_toolkit.transmission.transmission_data_filters_common import (
     get_all_links_sql,
+    get_unique_tx_lines,
 )
 
 
@@ -90,14 +91,13 @@ def parse_arguments(args):
 
 
 def get_tx_availability(
-    all_links,
+    unique_tx_lines,
     output_directory,
     subscenario_id,
     subscenario_name,
 ):
     """ """
-    tx_lines = [f"{link[0]}_{link[1]}" for link in all_links]
-    df = pd.DataFrame(tx_lines, columns=["transmission_line"])
+    df = pd.DataFrame(unique_tx_lines, columns=["transmission_line"])
     df["availability_type"] = "exogenous"
     df["exogenous_availability_scenario_id"] = None
     df["endogenous_availability_scenario_id"] = None
@@ -122,9 +122,10 @@ def main(args=None):
     c = conn.cursor()
 
     all_links = c.execute(get_all_links_sql(region=parsed_args.region)).fetchall()
+    unique_tx_lines = get_unique_tx_lines(all_links=all_links)
 
     get_tx_availability(
-        all_links=all_links,
+        unique_tx_lines=unique_tx_lines,
         output_directory=parsed_args.output_directory,
         subscenario_id=parsed_args.transmission_availability_scenario_id,
         subscenario_name=parsed_args.transmission_availability_scenario_name,
