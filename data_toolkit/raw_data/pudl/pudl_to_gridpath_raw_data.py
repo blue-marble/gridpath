@@ -173,8 +173,6 @@ def get_eiaaeo_fuel_data_from_pudl_datasette(
                 model_case_eiaaeo, fuel_type_eiaaeo, projection_year
             """
 
-        print(query)
-
         # Query pudl.sqlite and save to CSV
         fuel_prices_df = pd.read_sql(query, pudl_conn)
 

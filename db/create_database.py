@@ -25,7 +25,7 @@ The default schema for the GridPath SQLite database is in db/db_schema.sql.
 .. _database-structure-section-ref:
 
 To create a database for GridPath raw data, point to the schema in
-./data_toolkit/raw_data_db_schema.sql instead and also specify the
+../data_toolkit/raw_data_db_schema.sql instead and also specify the
 --omit_data flag.
 
 """
@@ -98,7 +98,7 @@ def create_database_schema(conn, parsed_arguments):
     :param parsed_arguments:
 
     """
-    schema_path = os.path.join(os.getcwd(), parsed_arguments.db_schema)
+    schema_path = os.path.join(os.path.dirname(__file__), parsed_arguments.db_schema)
 
     with open(schema_path, "r") as db_schema_script:
         schema = db_schema_script.read()
@@ -116,9 +116,30 @@ def load_data(conn, data_directory, custom_units):
     :param omit_data:
     :return:
     """
-
-    df = pd.read_csv(os.path.join(data_directory, "expected_files.csv"))
-    expected_files = df["expected_files"].tolist()
+    expected_files = [
+        "mod_availability_types",
+        "mod_capacity_types",
+        "mod_features",
+        "mod_feature_subscenarios",
+        "mod_horizon_boundary_types",
+        "mod_months",
+        "mod_operational_types",
+        "mod_prm_types",
+        "mod_reserve_types",
+        "mod_run_status_types",
+        "mod_tx_availability_types",
+        "mod_tx_capacity_types",
+        "mod_tx_operational_types",
+        "mod_tx_capacity_and_tx_operational_type_invalid_combos",
+        "mod_capacity_and_operational_type_invalid_combos",
+        "mod_units",
+        "mod_validation_status_types",
+        "ui_scenario_detail_table_metadata",
+        "ui_scenario_detail_table_row_metadata",
+        "ui_scenario_results_plot_metadata",
+        "ui_scenario_results_table_metadata",
+        "viz_technologies",
+    ]
     for f in expected_files:
         load_aux_data(conn=conn, data_directory=data_directory, filename=f)
 
@@ -241,7 +262,9 @@ def load_aux_data(conn, data_directory, filename):
     data = []
     cursor = conn.cursor()
 
-    file_path = os.path.join(data_directory, f"{filename}.csv")
+    file_path = os.path.join(
+        os.path.dirname(__file__), data_directory, f"{filename}.csv"
+    )
     df = pd.read_csv(file_path, delimiter=",")
     spin_on_database_lock_generic(
         command=df.to_sql(
