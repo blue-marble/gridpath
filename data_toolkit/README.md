@@ -59,7 +59,7 @@ GridLab RA Toolkit website and is currently stored on Blue Marble's Google Drive
 * ra_toolkit_hydro.csv
 
 
-### Processing the data with the Open Data Toolkit
+### Process the data with the GridPath Data Toolkit
 
 ```bash
 gridpath_run_data_toolkit --settings_csv PATH/TO/SETTINGS
