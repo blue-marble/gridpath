@@ -87,6 +87,8 @@ def parse_arguments(args):
         "-avl_name", "--project_availability_scenario_name", default="no_derates"
     )
 
+    parser.add_argument("-q", "--quiet", default=False, action="store_true")
+
     parsed_arguments = parser.parse_known_args(args=args)[0]
 
     return parsed_arguments
@@ -141,11 +143,13 @@ def get_project_availability(
 
 
 def main(args=None):
-    print("Creating project availability inputs")
     if args is None:
         args = sys.argv[1:]
 
     parsed_args = parse_arguments(args=args)
+
+    if not parsed_args.quiet:
+        print("Creating project availability inputs")
 
     os.makedirs(parsed_args.output_directory, exist_ok=True)
 

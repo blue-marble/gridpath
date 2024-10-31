@@ -108,6 +108,8 @@ def parse_arguments(args):
     )
     parser.add_argument("-hy_id", "--hydro_operational_chars_scenario_id", default=1)
 
+    parser.add_argument("-q", "--quiet", default=False, action="store_true")
+
     parsed_arguments = parser.parse_known_args(args=args)[0]
 
     return parsed_arguments
@@ -354,11 +356,13 @@ def make_opchar_sql_str(
 
 
 def main(args=None):
-    print("Creating project opchar inputs")
     if args is None:
         args = sys.argv[1:]
 
     parsed_args = parse_arguments(args=args)
+
+    if not parsed_args.quiet:
+        print("Creating project opchar inputs")
 
     os.makedirs(parsed_args.output_directory, exist_ok=True)
 

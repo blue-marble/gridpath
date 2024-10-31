@@ -81,6 +81,8 @@ def parse_arguments(args):
     )
     parser.add_argument("-r_yr", "--report_year", default=2023)
 
+    parser.add_argument("-q", "--quiet", default=False, action="store_true")
+
     parsed_arguments = parser.parse_known_args(args=args)[0]
 
     return parsed_arguments
@@ -123,11 +125,13 @@ def get_fuel_prices(
 
 
 def main(args=None):
-    print("Creating fuel prices...")
     if args is None:
         args = sys.argv[1:]
 
     parsed_args = parse_arguments(args=args)
+
+    if not parsed_args.quiet:
+        print("Creating fuel prices...")
 
     os.makedirs(parsed_args.output_directory, exist_ok=True)
 

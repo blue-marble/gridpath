@@ -87,6 +87,8 @@ def parse_arguments(args):
         default="wecc_tx_opchar",
     )
 
+    parser.add_argument("-q", "--quiet", default=False, action="store_true")
+
     parsed_arguments = parser.parse_known_args(args=args)[0]
 
     return parsed_arguments
@@ -111,11 +113,13 @@ def get_tx_opchar(
 
 
 def main(args=None):
-    print("Creating transmission opchar inputs")
     if args is None:
         args = sys.argv[1:]
 
     parsed_args = parse_arguments(args=args)
+
+    if not parsed_args.quiet:
+        print("Creating transmission opchar inputs")
 
     os.makedirs(parsed_args.output_directory, exist_ok=True)
 

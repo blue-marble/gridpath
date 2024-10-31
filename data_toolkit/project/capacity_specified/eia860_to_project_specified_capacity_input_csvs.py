@@ -90,6 +90,8 @@ def parse_arguments(args):
         "-cap_name", "--project_specified_capacity_scenario_name", default="base"
     )
 
+    parser.add_argument("-q", "--quiet", default=False, action="store_true")
+
     parsed_arguments = parser.parse_known_args(args=args)[0]
 
     return parsed_arguments
@@ -160,11 +162,13 @@ def get_project_capacity(
 
 
 def main(args=None):
-    print("Creating project specified capacity input CSVs")
     if args is None:
         args = sys.argv[1:]
 
     parsed_args = parse_arguments(args=args)
+
+    if not parsed_args.quiet:
+        print("Creating project specified capacity input CSVs")
 
     os.makedirs(parsed_args.output_directory, exist_ok=True)
 

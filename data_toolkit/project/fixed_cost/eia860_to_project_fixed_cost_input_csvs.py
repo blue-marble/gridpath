@@ -87,6 +87,8 @@ def parse_arguments(args):
         "-fcost_name", "--project_fixed_cost_scenario_name", default="base"
     )
 
+    parser.add_argument("-q", "--quiet", default=False, action="store_true")
+
     parsed_arguments = parser.parse_known_args(args=args)[0]
 
     return parsed_arguments
@@ -160,11 +162,13 @@ def get_project_fixed_cost(
 
 
 def main(args=None):
-    print("Creating project fixed cost inputs")
     if args is None:
         args = sys.argv[1:]
 
     parsed_args = parse_arguments(args=args)
+
+    if not parsed_args.quiet:
+        print("Creating project fixed cost inputs")
 
     os.makedirs(parsed_args.output_directory, exist_ok=True)
 
