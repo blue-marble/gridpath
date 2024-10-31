@@ -25,22 +25,6 @@ from data_toolkit.project.project_data_filters_common import (
     DISAGG_PROJECT_NAME_STR,
 )
 
-# Var profiles
-VAR_GEN_COPY_FROM_DICT = {
-    "Wind": {"NEVP": "SPPC", "PGE": "BPAT", "SRP": "AZPS", "WAUW": "NWMT"},
-    "Solar": {"WAUW": "NWMT"},
-}
-VAR_ID_DEFAULT = 1
-VAR_NAME_DEFAULT = "open_data"
-STAGE_ID_DEFAULT = 1
-
-# Hydro chars
-HYDRO_GEN_COPY_FROM_DICT = {
-    "Hydro": {"CISO": "CIPV", "IPCO": "IPFE", "NEVP": "AZPS", "PACE": "PAWY"}
-}
-HYD_ID_DEFAULT = 1
-HYD_NAME_DEFAULT = "ra_toolkit"
-
 
 # Storage durations
 STORAGE_DURATION_DEFAULTS = {"BA": 1, "PS": 12}
@@ -62,42 +46,12 @@ def parse_arguments(args):
 
     parser.add_argument("-db", "--database", default="../../open_data_raw.db")
 
-    # Missing variable generation profiles
+    # Missing storage durations
     parser.add_argument(
-        "-var_gen_dir",
-        "--var_gen_profiles_directory",
-        default="../db/csvs_open_data/project/opchar/var_gen_profiles",
-    )
-    parser.add_argument(
-        "-vid",
-        "--variable_generator_profile_scenario_id",
-        default=VAR_ID_DEFAULT,
-        help=f"Defaults to {VAR_ID_DEFAULT}.",
-    )
-    parser.add_argument(
-        "-vname",
-        "--variable_generator_profile_scenario_name",
-        default=VAR_NAME_DEFAULT,
-        help=f"Defaults to '{VAR_NAME_DEFAULT}'.",
-    )
-
-    # Missing hydro chars
-    parser.add_argument(
-        "-hydro_dir",
-        "--hydro_directory",
-        default="../db/csvs_open_data/project/opchar/hydro",
-    )
-    parser.add_argument(
-        "-hid",
-        "--hydro_operational_chars_scenario_id",
-        default=HYD_ID_DEFAULT,
-        help=f"Defaults to {HYD_ID_DEFAULT}.",
-    )
-    parser.add_argument(
-        "-hname",
-        "--hydro_operational_chars_scenario_name",
-        default=HYD_NAME_DEFAULT,
-        help=f"Defaults to '{HYD_NAME_DEFAULT}'.",
+        "-copy",
+        "--files_to_copy_csv",
+        default="../db/csvs_open_data/raw_data"
+        "/user_defined_manual_adjustments_copy_files.csv",
     )
 
     # Missing storage durations
@@ -148,28 +102,28 @@ def parse_arguments(args):
 
 
 def make_copy_files(
-    project_dict,
-    csv_location,
-    project_subscenario_id,
-    project_subscenario_name,
-    overwrite,
+    new_file_directory,
+    new_project,
+    new_project_scenario_id,
+    new_project_scenario_name,
+    file_to_copy_directory,
+    copy_project,
+    copy_project_scenario_id,
+    copy_project_scenario_name,
 ):
-    for tech in project_dict.keys():
-        for ba in project_dict[tech].keys():
-            copy_ba = project_dict[tech][ba]
 
-            file_to_copy = os.path.join(
-                csv_location,
-                f"{tech}_{copy_ba}-{project_subscenario_id}-{project_subscenario_name}.csv",
-            )
+    file_to_copy = os.path.join(
+        file_to_copy_directory,
+        f"{copy_project}-{copy_project_scenario_id}-{copy_project_scenario_name}.csv",
+    )
 
-            new_file = os.path.join(
-                csv_location,
-                f"{tech}_{ba}-{project_subscenario_id}-{project_subscenario_name}_MANUAL_copy_from"
-                f"_{copy_ba}.csv",
-            )
+    new_file = os.path.join(
+        new_file_directory,
+        f"{new_project}-{new_project_scenario_id}-{new_project_scenario_name}_MANUAL_copy_from"
+        f"_{copy_project}_{copy_project_scenario_id}.csv",
+    )
 
-            shutil.copyfile(file_to_copy, new_file)
+    shutil.copyfile(file_to_copy, new_file)
 
 
 def add_battery_durations(
@@ -180,16 +134,18 @@ def add_battery_durations(
     csv_location,
     subscenario_id,
     subscenario_name,
+    tech_dur_dict,
 ):
     duckdb_conn = duckdb.connect(database=":memory:")
     spec_cap_df = pd.read_csv(
         os.path.join(csv_location, f"{subscenario_id}_" f"{subscenario_name}.csv")
     )
+
     spec_cap_updated_df = duckdb_conn.sql(
         """CREATE TABLE spec_cap_table AS SELECT * FROM spec_cap_df;"""
     )
 
-    for tech in STORAGE_DURATION_DEFAULTS.keys():
+    for tech in tech_dur_dict.keys():
         sql = f"""
             SELECT {disagg_project_name_str} AS project, 
             {study_year} as period
@@ -205,19 +161,20 @@ def add_battery_durations(
         """
         relevant_projects_df = pd.read_sql(sql, conn)
 
-        spec_cap_updated_df = duckdb_conn.sql(
-            f"""
-            CREATE TABLE {tech}_relevant_projects_table
-            AS SELECT * FROM relevant_projects_df
-            ;
-            --SELECT * FROM relevant_projects_table;
-            UPDATE spec_cap_table
-            SET specified_capacity_mwh = {STORAGE_DURATION_DEFAULTS[tech]}*specified_capacity_mw
-            WHERE (project, period) IN (SELECT (project, period) FROM {tech}_relevant_projects_table)
-            AND specified_capacity_mwh IS NULL
-            ;
-            """
-        )
+        if not relevant_projects_df.empty:
+            spec_cap_updated_df = duckdb_conn.sql(
+                f"""
+                CREATE TABLE {tech}_relevant_projects_table
+                AS SELECT * FROM relevant_projects_df
+                ;
+                --SELECT * FROM relevant_projects_table;
+                UPDATE spec_cap_table
+                SET specified_capacity_mwh = {tech_dur_dict[tech]}*specified_capacity_mw
+                WHERE (project, period) IN (SELECT (project, period) FROM {tech}_relevant_projects_table)
+                AND specified_capacity_mwh IS NULL
+                ;
+                """
+            )
 
     spec_cap_updated_df = duckdb_conn.sql(
         """
@@ -233,31 +190,35 @@ def add_battery_durations(
 
 
 def main(args=None):
-    print("Making manual adjustments")
     if args is None:
         args = sys.argv[1:]
 
     parsed_args = parse_arguments(args)
 
+    if not parsed_args.quiet:
+        print("Making manual adjustments")
+
     conn = connect_to_database(db_path=parsed_args.database)
 
-    # Add missing variable gen profiles
-    make_copy_files(
-        project_dict=VAR_GEN_COPY_FROM_DICT,
-        csv_location=parsed_args.var_gen_profiles_directory,
-        project_subscenario_id=parsed_args.variable_generator_profile_scenario_id,
-        project_subscenario_name=parsed_args.variable_generator_profile_scenario_name,
-        overwrite=parsed_args.overwrite,
-    )
+    # Add missing project files
+    copy_files_df = pd.read_csv(parsed_args.files_to_copy_csv, index_col=False)
+    for index, row in copy_files_df.iterrows():
+        make_copy_files(
+            new_file_directory=row["new_file_directory"],
+            new_project=row["new_project"],
+            new_project_scenario_id=row["new_project_scenario_id"],
+            new_project_scenario_name=row["new_project_scenario_name"],
+            file_to_copy_directory=row["file_to_copy_directory"],
+            copy_project=row["copy_project"],
+            copy_project_scenario_id=row["copy_project_scenario_id"],
+            copy_project_scenario_name=row["copy_project_scenario_name"],
+        )
 
-    # Add missing hydro profiles
-    make_copy_files(
-        project_dict=HYDRO_GEN_COPY_FROM_DICT,
-        csv_location=parsed_args.hydro_directory,
-        project_subscenario_id=parsed_args.hydro_operational_chars_scenario_id,
-        project_subscenario_name=parsed_args.hydro_operational_chars_scenario_name,
-        overwrite=parsed_args.overwrite,
-    )
+    # Add missing storage durations
+    tech_dur_dict = {
+        "BA": parsed_args.battery_duration,
+        "PS": parsed_args.pumped_storage_duration,
+    }
 
     add_battery_durations(
         conn=conn,
@@ -269,6 +230,7 @@ def main(args=None):
         csv_location=parsed_args.capacity_specified_directory,
         subscenario_id=parsed_args.project_specified_capacity_scenario_id,
         subscenario_name=parsed_args.project_specified_capacity_scenario_name,
+        tech_dur_dict=tech_dur_dict,
     )
 
 
