@@ -154,14 +154,14 @@ CREATE TABLE raw_data_eia930_hourly_interchange
     balancing_authority_code_eia          TEXT,
     balancing_authority_code_adjacent_eia TEXT,
     interchange_reported_mwh              FLOAT,
-    datetime_pst                          DATETIME,
+    datetime_pst_he                       DATETIME,
     year                                  INTEGER,
     month                                 INTEGER,
     day_of_month                          INTEGER,
     hour_of_day                           INTEGER,
     PRIMARY KEY (balancing_authority_code_eia,
                  balancing_authority_code_adjacent_eia,
-                 datetime_pst)
+                 datetime_pst_he)
 );
 
 --------------------------------------------------------------------------------

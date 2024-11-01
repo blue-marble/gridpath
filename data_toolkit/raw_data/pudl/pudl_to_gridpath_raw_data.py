@@ -182,6 +182,7 @@ def get_eiaaeo_fuel_data_from_pudl_datasette(
         )
 
 
+# TODO: confirm hour-ending vs hour-starting with Catalyst
 def convert_ra_toolkit_profiles_to_csv(raw_data_directory, pudl_download_directory):
     """ """
 
@@ -196,17 +197,43 @@ def convert_ra_toolkit_profiles_to_csv(raw_data_directory, pudl_download_directo
             engine="fastparquet",
         )
 
-        df["datetime_pst"] = df["datetime_utc"] - pd.Timedelta(hours=8)
-        df["year"] = pd.DatetimeIndex(df["datetime_pst"]).year
-        df["month"] = pd.DatetimeIndex(df["datetime_pst"]).month
-        df["day_of_month"] = pd.DatetimeIndex(df["datetime_pst"]).day
-        df["hour_of_day"] = pd.DatetimeIndex(df["datetime_pst"]).hour
+        df["datetime_pst_he"] = df["datetime_utc"] - pd.Timedelta(hours=8)
+        df["year_he"] = pd.DatetimeIndex(df["datetime_pst_he"]).year
+        df["month_he"] = pd.DatetimeIndex(df["datetime_pst_he"]).month
+        df["day_of_month_he"] = pd.DatetimeIndex(df["datetime_pst_he"]).day
+        df["hour_of_day_he"] = pd.DatetimeIndex(df["datetime_pst_he"]).hour
+
+        df["datetime_pst_hs"] = df["datetime_utc"] - pd.Timedelta(hours=9)
+        df["year_hs"] = pd.DatetimeIndex(df["datetime_pst_hs"]).year
+        df["month_hs"] = pd.DatetimeIndex(df["datetime_pst_hs"]).month
+        df["day_of_month_hs"] = pd.DatetimeIndex(df["datetime_pst_hs"]).day
+        df["hour_of_day_hs"] = pd.DatetimeIndex(df["datetime_pst_hs"]).hour
+
+        # Populate initial values based on HE
+        df["year"] = df["year_he"]
+        df["month"] = df["month_he"]
+        df["day_of_month"] = df["day_of_month_he"]
+        df["hour_of_day"] = df["hour_of_day_he"]
+
+        # Go from HE timestamps to 1-24 timepoint indexing
+        df.loc[
+            df["hour_of_day"] == 0,
+            ["year", "month", "day_of_month", "hour_of_day"],
+        ] = pd.DataFrame(
+            {
+                "year": df["year_hs"],
+                "month": df["month_hs"],
+                "day_of_month": df["day_of_month_hs"],
+                "hour_of_day": 24,
+            },
+            index=df.index,
+        )
 
         df = df.rename(
             columns={"aggregation_group": "unit", "capacity_factor": "cap_factor"}
         )
         cols = df.columns.tolist()
-        cols = cols[4:8] + cols[1:3]
+        cols = cols[13:17] + cols[1:3]
         df = df[cols]
 
         df.to_csv(
@@ -231,11 +258,43 @@ def convert_eia930_hourly_interchange_to_csv(
             engine="fastparquet",
         )
 
-        df["datetime_pst"] = df["datetime_utc"] - pd.Timedelta(hours=8)
-        df["year"] = pd.DatetimeIndex(df["datetime_pst"]).year
-        df["month"] = pd.DatetimeIndex(df["datetime_pst"]).month
-        df["day_of_month"] = pd.DatetimeIndex(df["datetime_pst"]).day
-        df["hour_of_day"] = pd.DatetimeIndex(df["datetime_pst"]).hour
+        df["datetime_pst_he"] = df["datetime_utc"] - pd.Timedelta(hours=8)
+        df["year_he"] = pd.DatetimeIndex(df["datetime_pst_he"]).year
+        df["month_he"] = pd.DatetimeIndex(df["datetime_pst_he"]).month
+        df["day_of_month_he"] = pd.DatetimeIndex(df["datetime_pst_he"]).day
+        df["hour_of_day_he"] = pd.DatetimeIndex(df["datetime_pst_he"]).hour
+
+        df["datetime_pst_hs"] = df["datetime_utc"] - pd.Timedelta(hours=9)
+        df["year_hs"] = pd.DatetimeIndex(df["datetime_pst_hs"]).year
+        df["month_hs"] = pd.DatetimeIndex(df["datetime_pst_hs"]).month
+        df["day_of_month_hs"] = pd.DatetimeIndex(df["datetime_pst_hs"]).day
+        df["hour_of_day_hs"] = pd.DatetimeIndex(df["datetime_pst_hs"]).hour
+
+        # Populate initial values based on HE
+        df["year"] = df["year_he"]
+        df["month"] = df["month_he"]
+        df["day_of_month"] = df["day_of_month_he"]
+        df["hour_of_day"] = df["hour_of_day_he"]
+
+        # Go from HE timestamps to 1-24 timepoint indexing
+        df.loc[
+            df["hour_of_day"] == 0,
+            ["year", "month", "day_of_month", "hour_of_day"],
+        ] = pd.DataFrame(
+            {
+                "year": df["year_hs"],
+                "month": df["month_hs"],
+                "day_of_month": df["day_of_month_hs"],
+                "hour_of_day": 24,
+            },
+            index=df.index,
+        )
+
+        cols = df.columns.tolist()
+        print(cols)
+        cols = cols[0:5] + cols[14:18]
+        print(cols)
+        df = df[cols]
 
         df.to_csv(
             filepath,
@@ -263,7 +322,7 @@ def main(args=None):
 
     os.makedirs(parsed_args.raw_data_directory, exist_ok=True)
 
-    # ### Get only the data we need from pudl.sqlite ### #
+    ### Get only the data we need from pudl.sqlite ### #
     # Generator list
     get_eia_generator_data_from_pudl_sqlite(
         raw_data_directory=parsed_args.raw_data_directory,
