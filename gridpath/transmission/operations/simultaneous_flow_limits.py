@@ -319,16 +319,16 @@ def export_results(
         writer = csv.writer(tx_op_results_file)
         writer.writerow(
             [
-                "simultaneous_flow_limit",
+                "transmission_simultaneous_flow_limit",
                 "timepoint",
-                "period",
                 "timepoint_weight",
+                "period",
                 "simultaneous_flow_mw",
             ]
         )
         for g, tmp in m.SIM_FLOW_LMT_TMPS:
             writer.writerow(
-                [g, tmp, m.period[tmp], m.tmp_weight[tmp], value(m.Sim_Flow_MW[g, tmp])]
+                [g, tmp, m.tmp_weight[tmp], m.period[tmp], value(m.Sim_Flow_MW[g, tmp])]
             )
 
 

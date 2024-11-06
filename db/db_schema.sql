@@ -5539,7 +5539,7 @@ CREATE TABLE results_transmission_simultaneous_flows
     timepoint                            INTEGER,
     timepoint_weight                     FLOAT,
     period                               FLOAT,
-    flow_mw                              FLOAT,
+    simultaneous_flow_mw                 FLOAT,
     dual                                 FLOAT,
     PRIMARY KEY (scenario_id, transmission_simultaneous_flow_limit,
                  weather_iteration, hydro_iteration, availability_iteration,
