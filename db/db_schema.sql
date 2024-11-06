@@ -1232,7 +1232,7 @@ CREATE TABLE inputs_system_water_inflows
     water_inflow_scenario_id           INTEGER,
     water_node                         TEXT,
     timepoint                          FLOAT,
-    exogenous_water_inflow_vol_per_sec TEXT,
+    exogenous_water_inflow_rate_vol_per_sec TEXT,
     PRIMARY KEY (water_inflow_scenario_id, water_node, timepoint),
     FOREIGN KEY (water_inflow_scenario_id) REFERENCES
         subscenarios_system_water_inflows (water_inflow_scenario_id)

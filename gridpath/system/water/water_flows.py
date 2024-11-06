@@ -59,14 +59,14 @@ def add_model_components(
     m.max_flow_vol_per_second = Param(m.WATER_LINKS, m.TMPS, default=float("inf"))
 
     # ### Variables ### #
-    m.Water_Link_Flow_Vol_per_Sec_in_Tmp = Var(
+    m.Water_Link_Flow_Rate_Vol_per_Sec = Var(
         m.WATER_LINKS, m.TMPS, within=NonNegativeReals
     )
 
     # ### Constraints ### #
     def min_flow_rule(mod, wl, tmp):
         return (
-            mod.Water_Link_Flow_Vol_per_Sec_in_Tmp[wl, tmp]
+            mod.Water_Link_Flow_Rate_Vol_per_Sec[wl, tmp]
             >= mod.min_flow_vol_per_second[wl, tmp]
         )
 
@@ -76,7 +76,7 @@ def add_model_components(
 
     def max_flow_rule(mod, wl, tmp):
         return (
-            mod.Water_Link_Flow_Vol_per_Sec_in_Tmp[wl, tmp]
+            mod.Water_Link_Flow_Rate_Vol_per_Sec[wl, tmp]
             <= mod.max_flow_vol_per_second[wl, tmp]
         )
 
@@ -276,7 +276,7 @@ def export_results(
         [
             wl,
             tmp,
-            value(m.Water_Link_Flow_Vol_per_Sec_in_Tmp[wl, tmp]),
+            value(m.Water_Link_Flow_Rate_Vol_per_Sec[wl, tmp]),
         ]
         for wl in m.WATER_LINKS
         for tmp in m.TMPS

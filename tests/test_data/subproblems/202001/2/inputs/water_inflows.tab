@@ -1,4 +1,4 @@
-water_node	timepoint	exogenous_water_inflow_vol_per_sec
+water_node	timepoint	exogenous_water_inflow_rate_vol_per_sec
 Water_Node_1	20200101	.
 Water_Node_1	20200102	3
 Water_Node_1	20200103	2

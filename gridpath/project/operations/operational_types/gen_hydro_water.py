@@ -34,33 +34,23 @@ from pyomo.environ import (
     Constraint,
     Expression,
     NonNegativeReals,
-    PercentFraction,
     value,
     Reals,
     Any,
 )
-import warnings
 
-from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import (
     subset_init_by_param_value,
     subset_init_by_set_membership,
 )
-from gridpath.auxiliary.db_interface import directories_to_db_values
 from gridpath.auxiliary.dynamic_components import headroom_variables, footroom_variables
 from gridpath.project.common_functions import (
-    check_if_boundary_type_and_first_timepoint,
     check_if_first_timepoint,
     check_boundary_type,
 )
 from gridpath.project.operations.operational_types.common_functions import (
     load_optype_model_data,
-    load_hydro_opchars,
-    get_hydro_inputs_from_database,
-    write_tab_file_model_inputs,
     check_for_tmps_to_link,
-    validate_opchars,
-    validate_hydro_opchars,
 )
 from gridpath.common_functions import create_results_df
 
@@ -104,7 +94,8 @@ def add_model_components(
 
     m.gen_hydro_water_powerhouse = Param(m.GEN_HYDRO_WATER, within=m.POWERHOUSES)
 
-    # TODO: generator efficiency; a function of power output
+    # Generator efficiency is a constant here, but is actually a function of
+    # power output
     m.gen_hydro_water_generator_efficiency = Param(
         m.GEN_HYDRO_WATER, within=NonNegativeReals
     )

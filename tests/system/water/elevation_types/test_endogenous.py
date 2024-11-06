@@ -113,8 +113,7 @@ class TestEndogenousElevationType(unittest.TestCase):
         ]
 
         actual_r_seg = sorted(
-            [(r, seg) for (r, seg) in
-             instance.WATER_NODES_W_RESERVOIRS_SEGMENTS]
+            [(r, seg) for (r, seg) in instance.WATER_NODES_W_RESERVOIRS_SEGMENTS]
         )
 
         self.assertListEqual(expected_r_seg, actual_r_seg)

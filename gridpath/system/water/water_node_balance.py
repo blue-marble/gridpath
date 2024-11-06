@@ -13,18 +13,16 @@
 # limitations under the License.
 
 """
-Water nodes and connections for modeling cascading hydro systems.
+Defines the mass balance at each node. For nodes with no reservoirs,
+total inflows equal total outflows. For nodes with reservoirs, total inflows
+minus total inflows equals the change in reservoir volume between timepoints.
 """
 
 import csv
 import os.path
 from pyomo.environ import (
-    Set,
-    Param,
     Boolean,
-    NonNegativeReals,
     NonNegativeIntegers,
-    Var,
     Constraint,
     Expression,
     Any,
@@ -56,74 +54,82 @@ def add_model_components(
     :param m:
     :param d:
     :return:
+
+
     """
 
     # ### Expressions ### #
     def gross_node_inflow(mod, wn, tmp):
-        return mod.exogenous_water_inflow_vol_per_sec[wn, tmp] + sum(
-            mod.Water_Link_Flow_Vol_per_Sec_in_Tmp[wl, tmp]
+        return mod.exogenous_water_inflow_rate_vol_per_sec[wn, tmp] + sum(
+            mod.Water_Link_Flow_Rate_Vol_per_Sec[wl, tmp]
             for wl in mod.WATER_LINKS_TO_BY_WATER_NODE[wn]
         )
 
-    m.Gross_Water_Node_Inflow = Expression(
+    m.Gross_Water_Node_Inflow_Rate_Vol_Per_Sec = Expression(
         m.WATER_NODES,
         m.TMPS,
         initialize=gross_node_inflow,
     )
 
-    def gross_node_release(mod, wn, tmp):
+    def gross_node_release_rate_vol_per_sec(mod, wn, tmp):
         # If we have e reservoir, this is controlled by the reservoir
-        # variables; otherwise, set it to inflow for the mass balance
+        # variables; otherwise, just set it to inflow for the mass balance
         return (
-            mod.Gross_Reservoir_Release[wn, tmp]
+            mod.Gross_Reservoir_Release_Rate_Vol_Per_Sec[wn, tmp]
             if wn in mod.WATER_NODES_W_RESERVOIRS
             else 0
         ) + (
-            mod.Gross_Water_Node_Inflow[wn, tmp]
+            mod.Gross_Water_Node_Inflow_Rate_Vol_Per_Sec[wn, tmp]
             if wn not in mod.WATER_NODES_W_RESERVOIRS
             else 0
         )
 
-    m.Gross_Water_Node_Release = Expression(
+    m.Gross_Water_Node_Release_Rate_Vol_per_Sec = Expression(
         m.WATER_NODES,
         m.TMPS,
-        initialize=gross_node_release,
+        initialize=gross_node_release_rate_vol_per_sec,
     )
 
     # ### Constraints ### #
-
-    def get_inflow_volunit_per_hour_in_tmp(mod, wn, tmp):
-        # TODO: check and document multiplication by 3600 to get from per s
-        #  to per h
-        # TODO: multiply by hours in timepoint
+    def get_total_inflow_volunit(mod, wn, tmp):
+        """
+        Total inflow is exogenous inflow at node plus sum of endogenous
+        inflow from all links to node
+        """
         inflow_in_tmp = (
-            mod.exogenous_water_inflow_vol_per_sec[wn, tmp]
-            + sum(
-                mod.Water_Link_Flow_Vol_per_Sec_in_Tmp[wl, tmp]
-                for wl in mod.WATER_LINKS_TO_BY_WATER_NODE[wn]
+            (
+                mod.exogenous_water_inflow_rate_vol_per_sec[wn, tmp]
+                + sum(
+                    mod.Water_Link_Flow_Rate_Vol_per_Sec[wl, tmp]
+                    for wl in mod.WATER_LINKS_TO_BY_WATER_NODE[wn]
+                )
             )
-        ) * 3600
+            * 3600
+            * mod.hrs_in_tmp[tmp]
+        )
 
         return inflow_in_tmp
 
-    def get_release_volunit_per_hour_in_tmp(mod, wn, tmp):
-        # TODO: check and document multiplication by 3600 to get from per s
-        #  to per h
-        outflow_in_tmp = mod.Gross_Water_Node_Release[wn, tmp] * 3600
+    def get_total_release_volunit(mod, wn, tmp):
+        outflow_in_tmp = (
+            mod.Gross_Water_Node_Release_Rate_Vol_per_Sec[wn, tmp]
+            * 3600
+            * mod.hrs_in_tmp[tmp]
+        )
 
         return outflow_in_tmp
 
     def water_mass_balance_constraint_rule(mod, wn, tmp):
         """ """
-        # If no reservoir, simply set inflows equal to release
-        # TODO: this if may not be needed anymore with outflow set to inflow
-        #  for non-reservoir nodes
+        # If no reservoir, simply set total inflow equal to total release
         if wn not in mod.WATER_NODES_W_RESERVOIRS:
-            return get_inflow_volunit_per_hour_in_tmp(
+            return get_total_inflow_volunit(mod, wn, tmp) == get_total_release_volunit(
                 mod, wn, tmp
-            ) == get_release_volunit_per_hour_in_tmp(mod, wn, tmp)
+            )
         # If the node does have a reservoir, we'll track the water in storage
         else:
+            # No constraint in the first timepoint of a linear horizon (no
+            # previous timepoint for tracking)
             if check_if_first_timepoint(
                 mod=mod, tmp=tmp, balancing_type=mod.balancing_type_reservoir[wn]
             ) and check_boundary_type(
@@ -134,6 +140,7 @@ def add_model_components(
             ):
                 return Constraint.Skip
             else:
+                # TODO: add linked horizons
                 if check_if_first_timepoint(
                     mod=mod, tmp=tmp, balancing_type=mod.balancing_type_reservoir[wn]
                 ) and check_boundary_type(
@@ -142,20 +149,19 @@ def add_model_components(
                     balancing_type=mod.balancing_type_reservoir[wn],
                     boundary_type="linked",
                 ):
-                    # TODO: add linked later
-                    prev_tmp_hrs_in_tmp = None
                     current_tmp_starting_water_volume = None
                     prev_tmp_starting_water_volume = None
 
-                    # TODO: units; make clear net flows are per s
                     # Inflows and releases
                     prev_tmp_inflow = None
-
                     prev_tmp_release = None
+                    raise (
+                        UserWarning(
+                            "Linked horizons have not been implemented for "
+                            "water system feature."
+                        )
+                    )
                 else:
-                    prev_tmp_hrs_in_tmp = mod.hrs_in_tmp[
-                        mod.prev_tmp[tmp, mod.balancing_type_reservoir[wn]]
-                    ]
                     current_tmp_starting_water_volume = (
                         mod.Reservoir_Starting_Volume_WaterVolumeUnit[wn, tmp]
                     )
@@ -165,23 +171,18 @@ def add_model_components(
                         ]
                     )
 
-                    # TODO: units; make clear net flows are per s
-                    # Inflows and releases
-                    prev_tmp_inflow = get_inflow_volunit_per_hour_in_tmp(
+                    # Inflows and releases; these are already calculated
+                    # based on per sec flows and hours in the timepoint
+                    prev_tmp_inflow = get_total_inflow_volunit(
                         mod, wn, mod.prev_tmp[tmp, mod.balancing_type_reservoir[wn]]
                     )
 
-                    prev_tmp_release = get_release_volunit_per_hour_in_tmp(
+                    prev_tmp_release = get_total_release_volunit(
                         mod, wn, mod.prev_tmp[tmp, mod.balancing_type_reservoir[wn]]
                     )
-
-                    # TODO: CRITICAL, units requirements to get multiplication by
-                    #  hours in timepoint to work
 
                 return current_tmp_starting_water_volume == (
-                    prev_tmp_starting_water_volume
-                    + prev_tmp_inflow * prev_tmp_hrs_in_tmp
-                    - prev_tmp_release * prev_tmp_hrs_in_tmp
+                    prev_tmp_starting_water_volume + prev_tmp_inflow - prev_tmp_release
                 )
 
     m.Water_Mass_Balance_Constraint = Constraint(
@@ -198,10 +199,10 @@ def add_model_components(
         if [wl for wl in mod.WATER_LINKS_FROM_BY_WATER_NODE[wn]]:
             return (
                 sum(
-                    mod.Water_Link_Flow_Vol_per_Sec_in_Tmp[wl, tmp]
+                    mod.Water_Link_Flow_Rate_Vol_per_Sec[wl, tmp]
                     for wl in mod.WATER_LINKS_FROM_BY_WATER_NODE[wn]
                 )
-                == mod.Gross_Water_Node_Release[wn, tmp]
+                == mod.Gross_Water_Node_Release_Rate_Vol_per_Sec[wn, tmp]
             )
         else:
             return Constraint.Skip
@@ -234,7 +235,7 @@ def load_model_data(
             "inputs",
             "water_inflows.tab",
         ),
-        param=m.exogenous_water_inflow_vol_per_sec,
+        param=m.exogenous_water_inflow_rate_vol_per_sec,
     )
 
 
@@ -258,7 +259,7 @@ def get_inputs_from_database(
 
     c1 = conn.cursor()
     water_inflows = c1.execute(
-        f"""SELECT water_node, timepoint, exogenous_water_inflow_vol_per_sec
+        f"""SELECT water_node, timepoint, exogenous_water_inflow_rate_vol_per_sec
                 FROM inputs_system_water_inflows
                 WHERE water_inflow_scenario_id = 
                 {subscenarios.WATER_INFLOW_SCENARIO_ID}
@@ -363,7 +364,7 @@ def write_model_inputs(
             [
                 "water_node",
                 "timepoint",
-                "exogenous_water_inflow_vol_per_sec",
+                "exogenous_water_inflow_rate_vol_per_sec",
             ]
         )
 
@@ -382,7 +383,6 @@ def export_results(
     d,
 ):
     """
-
     :param scenario_directory:
     :param subproblem:
     :param stage:
@@ -390,7 +390,6 @@ def export_results(
     :param d:
     :return:
     """
-    # TODO: move reservoir variables to reservoirs module
     results_columns = [
         "starting_elevation",
         "starting_volume",
@@ -415,9 +414,9 @@ def export_results(
                 if wn in m.WATER_NODES_W_RESERVOIRS
                 else None
             ),
-            m.exogenous_water_inflow_vol_per_sec[wn, tmp],
+            m.exogenous_water_inflow_rate_vol_per_sec[wn, tmp],
             sum(
-                value(m.Water_Link_Flow_Vol_per_Sec_in_Tmp[wl, tmp])
+                value(m.Water_Link_Flow_Rate_Vol_per_Sec[wl, tmp])
                 for wl in m.WATER_LINKS_TO_BY_WATER_NODE[wn]
             ),
             value(
@@ -436,7 +435,7 @@ def export_results(
                 else None
             ),
             sum(
-                value(m.Water_Link_Flow_Vol_per_Sec_in_Tmp[wl, tmp])
+                value(m.Water_Link_Flow_Rate_Vol_per_Sec[wl, tmp])
                 for wl in m.WATER_LINKS_FROM_BY_WATER_NODE[wn]
             ),
         ]

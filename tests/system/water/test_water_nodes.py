@@ -100,7 +100,12 @@ class TestWaterNodes(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Param: exogenous_water_inflow_vol_per_sec
+        # Set: WATER_NODES
+        expected_wn = sorted(["Water_Node_1", "Water_Node_2", "Water_Node_3"])
+        actual_wn = sorted([wn for wn in instance.WATER_NODES])
+        self.assertListEqual(expected_wn, actual_wn)
+
+        # Param: exogenous_water_inflow_rate_vol_per_sec
         df = pd.read_csv(
             os.path.join(TEST_DATA_DIRECTORY, "inputs", "water_inflows.tab"),
             sep="\t",
@@ -108,15 +113,15 @@ class TestWaterNodes(unittest.TestCase):
 
         # Check that no values are getting the default value of 0
         df = df.replace(".", 0)
-        df["exogenous_water_inflow_vol_per_sec"] = pd.to_numeric(
-            df["exogenous_water_inflow_vol_per_sec"]
+        df["exogenous_water_inflow_rate_vol_per_sec"] = pd.to_numeric(
+            df["exogenous_water_inflow_rate_vol_per_sec"]
         )
 
         expected_min_bound = df.set_index(["water_node", "timepoint"]).to_dict()[
-            "exogenous_water_inflow_vol_per_sec"
+            "exogenous_water_inflow_rate_vol_per_sec"
         ]
         actual_min_bound = {
-            (wl, tmp): instance.exogenous_water_inflow_vol_per_sec[wl, tmp]
+            (wl, tmp): instance.exogenous_water_inflow_rate_vol_per_sec[wl, tmp]
             for wl in instance.WATER_NODES
             for tmp in instance.TMPS
         }

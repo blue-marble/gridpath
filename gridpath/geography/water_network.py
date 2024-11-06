@@ -13,7 +13,8 @@
 # limitations under the License.
 
 """
-Water nodes and water links for modeling hydro water systems.
+Water links for modeling hydro water systems. Water nodes are derived based
+on the link definition.
 """
 
 import csv
@@ -21,7 +22,7 @@ import os.path
 from pyomo.environ import (
     Set,
     Param,
-    Boolean,
+    NonNegativeReals,
     Any,
 )
 
@@ -39,26 +40,56 @@ def add_model_components(
     stage,
 ):
     """
-
     :param m:
     :param d:
     :return:
+
+    The module adds the *WATER_LINKS* set to the model formulation.
+    WATER_NODES are determined based on the start and end points of the
+    WATER_LINKS. Each water link is associated with a flow transport time
+    water_link_flow_transport_time_hours, which defaults to 0.
+
+    +-------------------------------------------------------------------------+
+    | Sets                                                                    |
+    +=========================================================================+
+    | | :code:`WATER_LINKS`                                                   |
+    |                                                                         |
+    | Links on which water flows between water nodes.                         |
+    +-------------------------------------------------------------------------+
+    | | :code:`WATER_NODES`                                                   |
+    |                                                                         |
+    | Derived from end points of WATER_LINKS.                                 |
+    +-------------------------------------------------------------------------+
+
+    +-------------------------------------------------------------------------+
+    | Params                                                                  |
+    +=========================================================================+
+    | | :code:`water_node_from`                                               |
+    | | *Defined over*: :code:`WATER_LINKS`                                   |
+    | | *Within*: :code:`Any`                                                 |
+    |                                                                         |
+    | Starting node of link (water flows from this node).                     |
+    +-------------------------------------------------------------------------+
+    | | :code:`water_node_to`                                                 |
+    | | *Defined over*: :code:`WATER_LINKS`                                   |
+    | | *Within*: :code:`Any`                                                 |
+    |                                                                         |
+    | Ending node of link (water to from this node).                          |
+    +-------------------------------------------------------------------------+
+    | | :code:`water_link_flow_transport_time_hours`                          |
+    | | *Defined over*: :code:`WATER_LINKS`                                   |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | Water transport time (in hours) across the link.                        |
+    +-------------------------------------------------------------------------+
     """
 
     m.WATER_LINKS = Set()
     m.water_node_from = Param(m.WATER_LINKS, within=Any)
     m.water_node_to = Param(m.WATER_LINKS, within=Any)
-    m.water_link_flow_transport_time_hours = Param(m.WATER_LINKS, default=0)
-
-    m.WATER_NODES = Set(
-        initialize=lambda mod: list(
-            sorted(
-                set(
-                    [mod.water_node_from[wl] for wl in mod.WATER_LINKS]
-                    + [mod.water_node_to[wl] for wl in mod.WATER_LINKS]
-                )
-            )
-        )
+    m.water_link_flow_transport_time_hours = Param(
+        m.WATER_LINKS, within=NonNegativeReals, default=0
     )
 
 

@@ -13,7 +13,8 @@
 # limitations under the License.
 
 """
-Reservoir operation.
+This module defines the reservoir operation for water nodes that have
+reservoirs.
 """
 
 import csv
@@ -52,17 +53,56 @@ def add_model_components(
     stage,
 ):
     """
-
     :param m:
     :param d:
     :return:
+
+    +-------------------------------------------------------------------------+
+    | Sets                                                                    |
+    +=========================================================================+
+    | | :code:`WATER_NODES_W_RESERVOIRS`                                      |
+    | | *Within*: :code:`WATER_NODES`                                         |
+    |                                                                         |
+    | A subset of water nodes that have reservoirs.                           |
+    +-------------------------------------------------------------------------+
+    | | :code:`WATER_NODE_RESERVOIR_TMPS_W_TARGET_VOLUME`                     |
+    | | *Within*: :code:`WATER_NODES * TMPS`                                  |
+    |                                                                         |
+    | Derived based on  WATER_LINKS set.                                      |
+    +-------------------------------------------------------------------------+
+    | | :code:`WATER_LINKS_FROM_BY_WATER_NODE`                                |
+    | | *Defined over*: :code:`WATER_NODES`                                   |
+    | | *Within*: :code:`WATER_LINKS`                                         |
+    |                                                                         |
+    | Derived based on  WATER_LINKS set.                                      |
+    +-------------------------------------------------------------------------+
+
+    +-------------------------------------------------------------------------+
+    | Params                                                                  |
+    +=========================================================================+
+    | | :code:`exogenous_water_inflow_rate_vol_per_sec`                       |
+    | | *Defined over*: :code:`WATER_NODES, TMPS`                             |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | Water inflow rate at the node at each timepoint. Note this must be      |
+    | defined in volume units per second. The total inflow in the timepoint   |
+    | will be calculated based on the number of hours in the timepoint. This  |
+    | parameter defaults to 0.                                                |
+    +-------------------------------------------------------------------------+
     """
 
-    # ### Reservoirs ### #
+    # ### Sets ### #
     m.WATER_NODES_W_RESERVOIRS = Set(within=m.WATER_NODES)
 
+    # Target volume node-timepoints
     m.WATER_NODE_RESERVOIR_TMPS_W_TARGET_VOLUME = Set(
         within=m.WATER_NODES_W_RESERVOIRS * m.TMPS
+    )
+
+    # Target release node-bt_horizons
+    m.WATER_NODE_RESERVOIR_BT_HRZS_WITH_TOTAL_RELEASE_REQUIREMENTS = Set(
+        within=m.WATER_NODES * m.BLN_TYPE_HRZS
     )
 
     # ### Parameters ###
@@ -72,33 +112,22 @@ def add_model_components(
     m.reservoir_target_volume = Param(
         m.WATER_NODE_RESERVOIR_TMPS_W_TARGET_VOLUME, within=NonNegativeReals
     )
-    # Elevation bounds
-    # Max varies by season
-    # TODO: add time varying
+    # Volume bounds
     m.maximum_volume_volumeunit = Param(
         m.WATER_NODES_W_RESERVOIRS, within=NonNegativeReals
     )
-    # In CHEOPS, min elevation is a single value for each reservoir and does
-    # not vary over time
+
     m.minimum_volume_volumeunit = Param(
         m.WATER_NODES_W_RESERVOIRS, within=NonNegativeReals
     )
 
-    # Sets and params
     # Release targets
-    # Total release requirements
-    m.WATER_NODE_RESERVOIR_BT_HRZS_WITH_TOTAL_RELEASE_REQUIREMENTS = Set(
-        within=m.WATER_NODES * m.BLN_TYPE_HRZS
-    )
     m.reservoir_target_release = Param(
         m.WATER_NODE_RESERVOIR_BT_HRZS_WITH_TOTAL_RELEASE_REQUIREMENTS,
         within=NonNegativeReals,
     )
 
     # Spill bound
-    # TODO: make max spill a function of elevation
-    # TODO: move to all nodes
-    # TODO: where should the spill variable be
     m.max_spill = Param(m.WATER_NODES_W_RESERVOIRS, within=NonNegativeReals)
 
     # Losses
@@ -134,7 +163,7 @@ def add_model_components(
             + mod.Evaporative_Losses[wn_w_r, tmp]
         )
 
-    m.Gross_Reservoir_Release = Expression(
+    m.Gross_Reservoir_Release_Rate_Vol_Per_Sec = Expression(
         m.WATER_NODES_W_RESERVOIRS,
         m.TMPS,
         initialize=gross_reservoir_release,
@@ -179,12 +208,13 @@ def add_model_components(
     )
 
     # Target releases
-    # TODO: check multiplication by 3600 and hrs_in_tmp
     def reservoir_target_release_constraint_rule(mod, wn, bt, hrz):
         """ """
         return (
             sum(
-                mod.Gross_Reservoir_Release[wn, tmp] * 3600 * mod.hrs_in_tmp[tmp]
+                mod.Gross_Reservoir_Release_Rate_Vol_Per_Sec[wn, tmp]
+                * 3600
+                * mod.hrs_in_tmp[tmp]
                 for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
             )
             == mod.reservoir_target_release[wn, bt, hrz]
@@ -196,7 +226,6 @@ def add_model_components(
     )
 
     # ### Elevation ### #
-    # TODO: move within clause to a central location
     m.elevation_type = Param(
         m.WATER_NODES_W_RESERVOIRS, within=["exogenous", "endogenous"]
     )
@@ -601,99 +630,6 @@ def write_model_inputs(
                 stage,
                 conn,
             )
-
-
-def export_results(
-    scenario_directory,
-    weather_iteration,
-    hydro_iteration,
-    availability_iteration,
-    subproblem,
-    stage,
-    m,
-    d,
-):
-    """
-
-    :param scenario_directory:
-    :param subproblem:
-    :param stage:
-    :param m:
-    :param d:
-    :return:
-    """
-    results_columns = [
-        "starting_elevation",
-        "starting_volume",
-        "exogenous_water_inflows",
-        "endogenous_water_inflows",
-        "discharge_water_to_powerhouse",
-        "spill_water",
-        "evap_losses",
-        "endogenous_water_outflows",
-    ]
-    data = [
-        [
-            wn,
-            tmp,
-            (
-                value(m.Reservoir_Starting_Elevation_ElevationUnit[wn, tmp])
-                if wn in m.WATER_NODES_W_RESERVOIRS
-                else None
-            ),
-            (
-                value(m.Reservoir_Starting_Volume_WaterVolumeUnit[wn, tmp])
-                if wn in m.WATER_NODES_W_RESERVOIRS
-                else None
-            ),
-            m.exogenous_water_inflow_vol_per_sec[wn, tmp],
-            sum(
-                value(m.Water_Link_Flow_Vol_per_Sec_in_Tmp[wl, tmp])
-                for wl in m.WATER_LINKS_TO_BY_WATER_NODE[wn]
-            ),
-            (
-                value(m.Discharge_Water_to_Powerhouse[wn, tmp])
-                if wn in m.WATER_NODES_W_RESERVOIRS
-                else None
-            ),
-            (
-                value(m.Spill_Water[wn, tmp])
-                if wn in m.WATER_NODES_W_RESERVOIRS
-                else None
-            ),
-            (
-                value(m.Evaporative_Losses[wn, tmp])
-                if wn in m.WATER_NODES_W_RESERVOIRS
-                else None
-            ),
-            sum(
-                value(m.Water_Link_Flow_Vol_per_Sec_in_Tmp[wl, tmp])
-                for wl in m.WATER_LINKS_FROM_BY_WATER_NODE[wn]
-            ),
-        ]
-        for wn in m.WATER_NODES
-        for tmp in m.TMPS
-    ]
-    results_df = create_results_df(
-        index_columns=["water_node", "timepoint"],
-        results_columns=results_columns,
-        data=data,
-    )
-
-    results_df.to_csv(
-        os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "results",
-            "water_node_timepoint.csv",
-        ),
-        sep=",",
-        index=True,
-    )
 
 
 # TODO: results import

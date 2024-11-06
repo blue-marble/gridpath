@@ -1,4 +1,4 @@
-﻿water_node,timepoint,exogenous_water_inflow_vol_per_sec
+﻿water_node,timepoint,exogenous_water_inflow_rate_vol_per_sec
 Water_Node_1,1,0.003
 Water_Node_1,2,0.003
 Water_Node_1,3,0.003

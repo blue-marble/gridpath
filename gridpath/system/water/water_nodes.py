@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-Water nodes and connections for modeling cascading hydro systems.
+Water nodes and inflow rate parameters.
 """
 
 import csv
@@ -41,17 +41,64 @@ def add_model_components(
     stage,
 ):
     """
-
     :param m:
     :param d:
     :return:
+
+    +-------------------------------------------------------------------------+
+    | Sets                                                                    |
+    +=========================================================================+
+    | | :code:`WATER_NODES`                                                   |
+    |                                                                         |
+    | Derived from end points of WATER_LINKS.                                 |
+    +-------------------------------------------------------------------------+
+    | | :code:`WATER_LINKS_TO_BY_WATER_NODE`                                  |
+    | | *Defined over*: :code:`WATER_NODES`                                   |
+    | | *Within*: :code:`WATER_LINKS`                                         |
+    |                                                                         |
+    | Derived based on  WATER_LINKS set.                                      |
+    +-------------------------------------------------------------------------+
+    | | :code:`WATER_LINKS_FROM_BY_WATER_NODE`                                |
+    | | *Defined over*: :code:`WATER_NODES`                                   |
+    | | *Within*: :code:`WATER_LINKS`                                         |
+    |                                                                         |
+    | Derived based on  WATER_LINKS set.                                      |
+    +-------------------------------------------------------------------------+
+
+    +-------------------------------------------------------------------------+
+    | Params                                                                  |
+    +=========================================================================+
+    | | :code:`exogenous_water_inflow_rate_vol_per_sec`                       |
+    | | *Defined over*: :code:`WATER_NODES, TMPS`                             |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | Water inflow rate at the node at each timepoint. Note this must be      |
+    | defined in volume units per second. The total inflow in the timepoint   |
+    | will be calculated based on the number of hours in the timepoint. This  |
+    | parameter defaults to 0.                                                |
+    +-------------------------------------------------------------------------+
     """
 
-    # TODO: units
-    m.exogenous_water_inflow_vol_per_sec = Param(
+    # #### Sets #### #
+    m.WATER_NODES = Set(
+        initialize=lambda mod: list(
+            sorted(
+                set(
+                    [mod.water_node_from[wl] for wl in mod.WATER_LINKS]
+                    + [mod.water_node_to[wl] for wl in mod.WATER_LINKS]
+                )
+            )
+        )
+    )
+
+    # #### Parameters #### #
+    # Inflow rate, defined in volume units per second
+    m.exogenous_water_inflow_rate_vol_per_sec = Param(
         m.WATER_NODES, m.TMPS, default=0, within=NonNegativeReals
     )
 
+    # ### Derived Sets ### #
     def water_links_to_by_water_node_rule(mod, wn):
         wl_list = []
         for wl in mod.WATER_LINKS:
@@ -100,7 +147,7 @@ def load_model_data(
             "inputs",
             "water_inflows.tab",
         ),
-        param=m.exogenous_water_inflow_vol_per_sec,
+        param=m.exogenous_water_inflow_rate_vol_per_sec,
     )
 
 
@@ -124,7 +171,7 @@ def get_inputs_from_database(
 
     c = conn.cursor()
     water_inflows = c.execute(
-        f"""SELECT water_node, timepoint, exogenous_water_inflow_vol_per_sec
+        f"""SELECT water_node, timepoint, exogenous_water_inflow_rate_vol_per_sec
                 FROM inputs_system_water_inflows
                 WHERE water_inflow_scenario_id = 
                 {subscenarios.WATER_INFLOW_SCENARIO_ID}
@@ -228,7 +275,7 @@ def write_model_inputs(
             [
                 "water_node",
                 "timepoint",
-                "exogenous_water_inflow_vol_per_sec",
+                "exogenous_water_inflow_rate_vol_per_sec",
             ]
         )
 
