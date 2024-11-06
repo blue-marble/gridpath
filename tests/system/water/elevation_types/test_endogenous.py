@@ -21,7 +21,9 @@ import unittest
 
 from tests.common_functions import create_abstract_model, add_components_and_load_data
 
-TEST_DATA_DIRECTORY = os.path.join(os.path.dirname(__file__), "..", "..", "test_data")
+TEST_DATA_DIRECTORY = os.path.join(
+    os.path.dirname(__file__), "..", "..", "..", "test_data"
+)
 
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
@@ -29,9 +31,11 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.operations.horizons",
     "temporal.investment.periods",
     "geography.water_network",
-    "system.water.water_flows",
+    "system.water.water_nodes",
+    # "system.water.reservoirs",
 ]
-NAME_OF_MODULE_BEING_TESTED = "system.water.water_node_balance"
+# Components added based on elevation_type by system.water.reservoirs module
+NAME_OF_MODULE_BEING_TESTED = "system.water.reservoirs"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -49,7 +53,7 @@ except ImportError:
     print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED + " to test.")
 
 
-class TestWaterNodeBalance(unittest.TestCase):
+class TestEndogenousElevationType(unittest.TestCase):
     """ """
 
     def test_add_model_components(self):
@@ -100,3 +104,41 @@ class TestWaterNodeBalance(unittest.TestCase):
             stage="",
         )
         instance = m.create_instance(data)
+
+        # Set: WATER_NODES_W_RESERVOIRS_SEGMENTS
+        expected_r_seg = [
+            ("Water_Node_1", 1),
+            ("Water_Node_2", 1),
+            ("Water_Node_3", 1),
+        ]
+
+        actual_r_seg = sorted(
+            [(r, seg) for (r, seg) in
+             instance.WATER_NODES_W_RESERVOIRS_SEGMENTS]
+        )
+
+        self.assertListEqual(expected_r_seg, actual_r_seg)
+
+        # Param: volume_to_elevation_slope
+        expected_vtoes = {
+            ("Water_Node_1", 1): 0.01,
+            ("Water_Node_2", 1): 0.1,
+            ("Water_Node_3", 1): 0.15,
+        }
+        actual_vtoes = {
+            (r, seg): instance.volume_to_elevation_slope[r, seg]
+            for (r, seg) in instance.WATER_NODES_W_RESERVOIRS_SEGMENTS
+        }
+        self.assertDictEqual(expected_vtoes, actual_vtoes)
+
+        # Param: volume_to_elevation_intercept
+        expected_vtoei = {
+            ("Water_Node_1", 1): 0,
+            ("Water_Node_2", 1): 0,
+            ("Water_Node_3", 1): 0,
+        }
+        actual_vtoei = {
+            (r, seg): instance.volume_to_elevation_intercept[r, seg]
+            for (r, seg) in instance.WATER_NODES_W_RESERVOIRS_SEGMENTS
+        }
+        self.assertDictEqual(expected_vtoei, actual_vtoei)

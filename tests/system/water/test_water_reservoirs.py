@@ -187,10 +187,6 @@ class TestReservoirs(unittest.TestCase):
         }
         self.assertDictEqual(expected_mine, actual_mine)
 
-        # Set: WATER_NODE_RESERVOIR_BT_HRZS_WITH_TOTAL_RELEASE_REQUIREMENTS
-
-        # Param: total_water_release_target
-
         # Param: max_spill
         expected_maxspill = {
             "Water_Node_1": 100000,

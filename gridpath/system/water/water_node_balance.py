@@ -57,11 +57,6 @@ def add_model_components(
     :param d:
     :return:
     """
-    # ### Variables ### #
-    # Controls
-    # TODO: need upper bounds on discharge / spill
-    # TODO: move spill to reservoirs and add a pass-through variable for
-    #  nodes with no reservoirs only
 
     # ### Expressions ### #
     def gross_node_inflow(mod, wn, tmp):
@@ -77,6 +72,8 @@ def add_model_components(
     )
 
     def gross_node_release(mod, wn, tmp):
+        # If we have e reservoir, this is controlled by the reservoir
+        # variables; otherwise, set it to inflow for the mass balance
         return (
             mod.Gross_Reservoir_Release[wn, tmp]
             if wn in mod.WATER_NODES_W_RESERVOIRS
@@ -119,6 +116,8 @@ def add_model_components(
     def water_mass_balance_constraint_rule(mod, wn, tmp):
         """ """
         # If no reservoir, simply set inflows equal to release
+        # TODO: this if may not be needed anymore with outflow set to inflow
+        #  for non-reservoir nodes
         if wn not in mod.WATER_NODES_W_RESERVOIRS:
             return get_inflow_volunit_per_hour_in_tmp(
                 mod, wn, tmp
