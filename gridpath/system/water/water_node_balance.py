@@ -62,7 +62,6 @@ def add_model_components(
     # TODO: need upper bounds on discharge / spill
     # TODO: move spill to reservoirs and add a pass-through variable for
     #  nodes with no reservoirs only
-    m.Spill_Water = Var(m.WATER_NODES, m.TMPS, within=NonNegativeReals)
 
     # ### Expressions ### #
     def gross_node_inflow(mod, wn, tmp):
@@ -79,17 +78,13 @@ def add_model_components(
 
     def gross_node_release(mod, wn, tmp):
         return (
-            (
-                mod.Discharge_Water_to_Powerhouse[wn, tmp]
-                if wn in mod.WATER_NODES_W_RESERVOIRS
-                else 0
-            )
-            + mod.Spill_Water[wn, tmp]
-            + (
-                mod.Evaporative_Losses[wn, tmp]
-                if wn in mod.WATER_NODES_W_RESERVOIRS
-                else 0
-            )
+            mod.Gross_Reservoir_Release[wn, tmp]
+            if wn in mod.WATER_NODES_W_RESERVOIRS
+            else 0
+        ) + (
+            mod.Gross_Water_Node_Inflow[wn, tmp]
+            if wn not in mod.WATER_NODES_W_RESERVOIRS
+            else 0
         )
 
     m.Gross_Water_Node_Release = Expression(
@@ -396,6 +391,7 @@ def export_results(
     :param d:
     :return:
     """
+    # TODO: move reservoir variables to reservoirs module
     results_columns = [
         "starting_elevation",
         "starting_volume",
@@ -430,7 +426,11 @@ def export_results(
                 if wn in m.WATER_NODES_W_RESERVOIRS
                 else None
             ),
-            value(m.Spill_Water[wn, tmp]),
+            (
+                value(m.Spill_Water[wn, tmp])
+                if wn in m.WATER_NODES_W_RESERVOIRS
+                else None
+            ),
             (
                 value(m.Evaporative_Losses[wn, tmp])
                 if wn in m.WATER_NODES_W_RESERVOIRS

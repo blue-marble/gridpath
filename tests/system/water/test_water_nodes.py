@@ -29,9 +29,8 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.operations.horizons",
     "temporal.investment.periods",
     "geography.water_network",
-    "system.water.water_flows",
 ]
-NAME_OF_MODULE_BEING_TESTED = "system.water.water_node_balance"
+NAME_OF_MODULE_BEING_TESTED = "system.water.water_nodes"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -49,7 +48,7 @@ except ImportError:
     print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED + " to test.")
 
 
-class TestWaterNodeBalance(unittest.TestCase):
+class TestWaterNodes(unittest.TestCase):
     """ """
 
     def test_add_model_components(self):
@@ -101,62 +100,48 @@ class TestWaterNodeBalance(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: WATER_NODES_W_RESERVOIRS_SEGMENTS
-        expected_r_seg = [
-            ("Water_Node_1", 1),
-            ("Water_Node_2", 1),
-            ("Water_Node_3", 1),
-        ]
-
-        actual_r_seg = sorted(
-            [(r, seg) for (r, seg) in instance.WATER_NODES_W_RESERVOIRS_SEGMENTS]
+        # Param: exogenous_water_inflow_vol_per_sec
+        df = pd.read_csv(
+            os.path.join(TEST_DATA_DIRECTORY, "inputs", "water_inflows.tab"),
+            sep="\t",
         )
 
-        self.assertListEqual(expected_r_seg, actual_r_seg)
+        # Check that no values are getting the default value of 0
+        df = df.replace(".", 0)
+        df["exogenous_water_inflow_vol_per_sec"] = pd.to_numeric(
+            df["exogenous_water_inflow_vol_per_sec"]
+        )
 
-        # Param: volume_to_elevation_slope
-        expected_vtoes = {
-            ("Water_Node_1", 1): 0.01,
-            ("Water_Node_2", 1): 0.1,
-            ("Water_Node_3", 1): 0.15,
+        expected_min_bound = df.set_index(["water_node", "timepoint"]).to_dict()[
+            "exogenous_water_inflow_vol_per_sec"
+        ]
+        actual_min_bound = {
+            (wl, tmp): instance.exogenous_water_inflow_vol_per_sec[wl, tmp]
+            for wl in instance.WATER_NODES
+            for tmp in instance.TMPS
         }
-        actual_vtoes = {
-            (r, seg): instance.volume_to_elevation_slope[r, seg]
-            for (r, seg) in instance.WATER_NODES_W_RESERVOIRS_SEGMENTS
-        }
-        self.assertDictEqual(expected_vtoes, actual_vtoes)
+        self.assertDictEqual(expected_min_bound, actual_min_bound)
 
-        # Param: volume_to_elevation_intercept
-        expected_vtoei = {
-            ("Water_Node_1", 1): 0,
-            ("Water_Node_2", 1): 0,
-            ("Water_Node_3", 1): 0,
+        # Set: WATER_LINKS_TO_BY_WATER_NODE
+        expected_l = {
+            "Water_Node_1": [],
+            "Water_Node_2": ["Water_Link_12"],
+            "Water_Node_3": ["Water_Link_23"],
         }
-        actual_vtoei = {
-            (r, seg): instance.volume_to_elevation_intercept[r, seg]
-            for (r, seg) in instance.WATER_NODES_W_RESERVOIRS_SEGMENTS
+        actual_l = {
+            wn: instance.WATER_LINKS_TO_BY_WATER_NODE[wn]
+            for wn in instance.WATER_LINKS_TO_BY_WATER_NODE.keys()
         }
-        self.assertDictEqual(expected_vtoei, actual_vtoei)
+        self.assertDictEqual(expected_l, actual_l)
 
-        # Param: max_spill
-        expected_maxspill = {
-            "Water_Node_1": 100000,
-            "Water_Node_2": 100000,
-            "Water_Node_3": 100000,
+        # Set: WATER_LINKS_FROM_BY_WATER_NODE
+        expected_l = {
+            "Water_Node_1": ["Water_Link_12"],
+            "Water_Node_2": ["Water_Link_23"],
+            "Water_Node_3": [],
         }
-        actual_maxspill = {
-            r: instance.max_spill[r] for r in instance.WATER_NODES_W_RESERVOIRS
+        actual_l = {
+            wn: instance.WATER_LINKS_FROM_BY_WATER_NODE[wn]
+            for wn in instance.WATER_LINKS_FROM_BY_WATER_NODE.keys()
         }
-        self.assertDictEqual(expected_maxspill, actual_maxspill)
-
-        # Param: evaporation_coefficient
-        expected_evap = {
-            "Water_Node_1": 0.1,
-            "Water_Node_2": 0.1,
-            "Water_Node_3": 0.1,
-        }
-        actual_evap = {
-            r: instance.evaporation_coefficient[r]
-            for r in instance.WATER_NODES_W_RESERVOIRS
-        }
-        self.assertDictEqual(expected_evap, actual_evap)
+        self.assertDictEqual(expected_l, actual_l)

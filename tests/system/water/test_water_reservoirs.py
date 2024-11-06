@@ -29,9 +29,9 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.operations.horizons",
     "temporal.investment.periods",
     "geography.water_network",
-    "system.water.water_flows",
+    "system.water.water_nodes",
 ]
-NAME_OF_MODULE_BEING_TESTED = "system.water.water_node_balance"
+NAME_OF_MODULE_BEING_TESTED = "system.water.reservoirs"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -49,7 +49,7 @@ except ImportError:
     print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED + " to test.")
 
 
-class TestWaterNodeBalance(unittest.TestCase):
+class TestReservoirs(unittest.TestCase):
     """ """
 
     def test_add_model_components(self):
@@ -101,42 +101,95 @@ class TestWaterNodeBalance(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: WATER_NODES_W_RESERVOIRS_SEGMENTS
-        expected_r_seg = [
-            ("Water_Node_1", 1),
-            ("Water_Node_2", 1),
-            ("Water_Node_3", 1),
+        # Set: WATER_NODES_W_RESERVOIRS
+        expected_r_n = sorted(["Water_Node_1", "Water_Node_2", "Water_Node_3"])
+        actual_r_n = sorted([n for n in instance.WATER_NODES_W_RESERVOIRS])
+
+        self.assertListEqual(expected_r_n, actual_r_n)
+
+        # Set: WATER_NODE_WATER_NODE_RESERVOIR_TMPS_W_TARGET_VOLUME
+        expected_r_tmp = [
+            ("Water_Node_1", 20200101),
+            ("Water_Node_2", 20200101),
+            ("Water_Node_3", 20200101),
         ]
 
-        actual_r_seg = sorted(
-            [(r, seg) for (r, seg) in instance.WATER_NODES_W_RESERVOIRS_SEGMENTS]
+        actual_r_tmp = sorted(
+            [
+                (r, tmp)
+                for (r, tmp) in instance.WATER_NODE_RESERVOIR_TMPS_W_TARGET_VOLUME
+            ]
         )
 
-        self.assertListEqual(expected_r_seg, actual_r_seg)
+        self.assertListEqual(expected_r_tmp, actual_r_tmp)
 
-        # Param: volume_to_elevation_slope
-        expected_vtoes = {
-            ("Water_Node_1", 1): 0.01,
-            ("Water_Node_2", 1): 0.1,
-            ("Water_Node_3", 1): 0.15,
+        # Param: balancing_type_reservoir
+        expected_bt = {
+            "Water_Node_1": "day",
+            "Water_Node_2": "day",
+            "Water_Node_3": "day",
         }
-        actual_vtoes = {
-            (r, seg): instance.volume_to_elevation_slope[r, seg]
-            for (r, seg) in instance.WATER_NODES_W_RESERVOIRS_SEGMENTS
+        actual_bt = {
+            r: instance.balancing_type_reservoir[r]
+            for r in instance.WATER_NODES_W_RESERVOIRS
         }
-        self.assertDictEqual(expected_vtoes, actual_vtoes)
+        self.assertDictEqual(expected_bt, actual_bt)
 
-        # Param: volume_to_elevation_intercept
-        expected_vtoei = {
-            ("Water_Node_1", 1): 0,
-            ("Water_Node_2", 1): 0,
-            ("Water_Node_3", 1): 0,
+        # Param: reservoir_target_volume
+        expected_te = {
+            ("Water_Node_1", 20200101): 110000,
+            ("Water_Node_2", 20200101): 7500,
+            ("Water_Node_3", 20200101): 3600,
         }
-        actual_vtoei = {
-            (r, seg): instance.volume_to_elevation_intercept[r, seg]
-            for (r, seg) in instance.WATER_NODES_W_RESERVOIRS_SEGMENTS
+        actual_te = {
+            (r, tmp): instance.reservoir_target_volume[r, tmp]
+            for (r, tmp) in instance.WATER_NODE_RESERVOIR_TMPS_W_TARGET_VOLUME
         }
-        self.assertDictEqual(expected_vtoei, actual_vtoei)
+        self.assertDictEqual(expected_te, actual_te)
+
+        # Param: reservoir_target_release
+        expected_rt = {
+            ("Water_Node_1", "day", 202001): 200,
+            ("Water_Node_2", "day", 202001): 200,
+            ("Water_Node_3", "day", 202001): 200,
+        }
+        actual_rt = {
+            (r, bt, hrz): instance.reservoir_target_release[r, bt, hrz]
+            for (
+                r,
+                bt,
+                hrz,
+            ) in instance.WATER_NODE_RESERVOIR_BT_HRZS_WITH_TOTAL_RELEASE_REQUIREMENTS
+        }
+        self.assertDictEqual(expected_rt, actual_rt)
+
+        # Param: maximum_volume_volumeunit
+        expected_maxe = {
+            "Water_Node_1": 1200,
+            "Water_Node_2": 800,
+            "Water_Node_3": 600,
+        }
+        actual_maxe = {
+            r: instance.maximum_volume_volumeunit[r]
+            for r in instance.WATER_NODES_W_RESERVOIRS
+        }
+        self.assertDictEqual(expected_maxe, actual_maxe)
+
+        # Param: minimum_volume_volumeunit
+        expected_mine = {
+            "Water_Node_1": 1000,
+            "Water_Node_2": 700,
+            "Water_Node_3": 500,
+        }
+        actual_mine = {
+            r: instance.minimum_volume_volumeunit[r]
+            for r in instance.WATER_NODES_W_RESERVOIRS
+        }
+        self.assertDictEqual(expected_mine, actual_mine)
+
+        # Set: WATER_NODE_RESERVOIR_BT_HRZS_WITH_TOTAL_RELEASE_REQUIREMENTS
+
+        # Param: total_water_release_target
 
         # Param: max_spill
         expected_maxspill = {

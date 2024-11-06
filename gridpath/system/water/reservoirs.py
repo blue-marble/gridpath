@@ -39,10 +39,6 @@ from gridpath.auxiliary.db_interface import directories_to_db_values
 from gridpath.common_functions import (
     create_results_df,
 )
-from gridpath.project.common_functions import (
-    check_if_first_timepoint,
-    check_boundary_type,
-)
 
 
 def add_model_components(
@@ -65,7 +61,7 @@ def add_model_components(
     # ### Reservoirs ### #
     m.WATER_NODES_W_RESERVOIRS = Set(within=m.WATER_NODES)
 
-    m.WATER_NODE_RESERVOIR_TMPS_W_TARGET_ELEVATION = Set(
+    m.WATER_NODE_RESERVOIR_TMPS_W_TARGET_VOLUME = Set(
         within=m.WATER_NODES_W_RESERVOIRS * m.TMPS
     )
 
@@ -74,7 +70,7 @@ def add_model_components(
 
     # Volume targets
     m.reservoir_target_volume = Param(
-        m.WATER_NODE_RESERVOIR_TMPS_W_TARGET_ELEVATION, within=NonNegativeReals
+        m.WATER_NODE_RESERVOIR_TMPS_W_TARGET_VOLUME, within=NonNegativeReals
     )
     # Elevation bounds
     # Max varies by season
@@ -94,7 +90,7 @@ def add_model_components(
     m.WATER_NODE_RESERVOIR_BT_HRZS_WITH_TOTAL_RELEASE_REQUIREMENTS = Set(
         within=m.WATER_NODES * m.BLN_TYPE_HRZS
     )
-    m.total_water_release_target = Param(
+    m.reservoir_target_release = Param(
         m.WATER_NODE_RESERVOIR_BT_HRZS_WITH_TOTAL_RELEASE_REQUIREMENTS,
         within=NonNegativeReals,
     )
@@ -120,6 +116,8 @@ def add_model_components(
         m.WATER_NODES_W_RESERVOIRS, m.TMPS, within=NonNegativeReals
     )
 
+    m.Spill_Water = Var(m.WATER_NODES_W_RESERVOIRS, m.TMPS, within=NonNegativeReals)
+
     # TODO: implement the correct calculation; depends on area, which depends
     #  on elevation
     # Losses
@@ -127,6 +125,19 @@ def add_model_components(
         m.WATER_NODES_W_RESERVOIRS,
         m.TMPS,
         initialize=lambda mod, r, tmp: mod.evaporation_coefficient[r],
+    )
+
+    def gross_reservoir_release(mod, wn_w_r, tmp):
+        return (
+            mod.Discharge_Water_to_Powerhouse[wn_w_r, tmp]
+            + mod.Spill_Water[wn_w_r, tmp]
+            + mod.Evaporative_Losses[wn_w_r, tmp]
+        )
+
+    m.Gross_Reservoir_Release = Expression(
+        m.WATER_NODES_W_RESERVOIRS,
+        m.TMPS,
+        initialize=gross_reservoir_release,
     )
 
     # ### Constraints ### #
@@ -139,7 +150,7 @@ def add_model_components(
         )
 
     m.Reservoir_Target_Storage_Constraint = Constraint(
-        m.WATER_NODE_RESERVOIR_TMPS_W_TARGET_ELEVATION,
+        m.WATER_NODE_RESERVOIR_TMPS_W_TARGET_VOLUME,
         rule=reservoir_target_storage_constraint_rule,
     )
 
@@ -173,10 +184,10 @@ def add_model_components(
         """ """
         return (
             sum(
-                mod.Gross_Water_Node_Release[wn, tmp] * 3600 * mod.hrs_in_tmp[tmp]
+                mod.Gross_Reservoir_Release[wn, tmp] * 3600 * mod.hrs_in_tmp[tmp]
                 for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
             )
-            == mod.total_water_release_target[wn, bt, hrz]
+            == mod.reservoir_target_release[wn, bt, hrz]
         )
 
     m.Water_Node_Target_Release_Constraint = Constraint(
@@ -277,7 +288,7 @@ def load_model_data(
     if os.path.exists(fname):
         data_portal.load(
             filename=fname,
-            index=m.WATER_NODE_RESERVOIR_TMPS_W_TARGET_ELEVATION,
+            index=m.WATER_NODE_RESERVOIR_TMPS_W_TARGET_VOLUME,
             param=m.reservoir_target_volume,
         )
 
@@ -645,7 +656,11 @@ def export_results(
                 if wn in m.WATER_NODES_W_RESERVOIRS
                 else None
             ),
-            value(m.Spill_Water[wn, tmp]),
+            (
+                value(m.Spill_Water[wn, tmp])
+                if wn in m.WATER_NODES_W_RESERVOIRS
+                else None
+            ),
             (
                 value(m.Evaporative_Losses[wn, tmp])
                 if wn in m.WATER_NODES_W_RESERVOIRS

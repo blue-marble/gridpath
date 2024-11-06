@@ -1,0 +1,4 @@
+reservoir	balancing_type	horizon	release_target
+Water_Node_1	day	202001	200
+Water_Node_2	day	202001	200
+Water_Node_3	day	202001	200
