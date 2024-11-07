@@ -1373,6 +1373,15 @@ class TestExamples(unittest.TestCase):
         scenario_name = "hydro_system_exog_elev"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
+    def test_hydro_system_exog_elev_w_travel_time(self):
+        """
+        Check validation and objective function value of "hydro_system" example
+        :return:
+        """
+
+        scenario_name = "hydro_system_exog_elev_w_travel_time"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
     def test_test_tx_flow_w_simflow(self):
         """
         Check validation and objective function value of "test_tx_flow_w_simflow" example

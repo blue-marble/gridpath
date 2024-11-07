@@ -6265,11 +6265,12 @@ CREATE TABLE results_system_water_link_timepoint
     subproblem_id          INTEGER,
     stage_id               INTEGER,
     water_link             VARCHAR(32),
-    timepoint              INTEGER,
+    departure_timepoint    INTEGER,
+    arrival_timepoint      INTEGER,
     water_flow_vol_per_sec FLOAT,
     PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
                  availability_iteration, subproblem_id, stage_id, water_link,
-                 timepoint)
+                 departure_timepoint)
 );
 
 DROP TABLE IF EXISTS results_system_water_node_timepoint;

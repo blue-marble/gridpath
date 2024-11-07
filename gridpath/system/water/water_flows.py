@@ -68,9 +68,12 @@ def add_model_components(
         for wl in mod.WATER_LINKS:
             for departure_tmp in mod.TMPS:
                 arrival_tmp = determine_arrival_timepoint(
-                    mod, departure_tmp, mod.water_link_flow_transport_time_hours[wl]
+                    mod=mod,
+                    tmp=departure_tmp,
+                    travel_time_hours=mod.water_link_flow_transport_time_hours[wl],
                 )
-                wl_dep_arr_tmp.append((wl, departure_tmp, arrival_tmp))
+                if arrival_tmp is not None:
+                    wl_dep_arr_tmp.append((wl, departure_tmp, arrival_tmp))
 
         return wl_dep_arr_tmp
 
@@ -82,81 +85,102 @@ def add_model_components(
 
     # ### Variables ### #
     m.Water_Link_Flow_Rate_Vol_per_Sec = Var(
-        m.WATER_LINKS, m.TMPS, within=NonNegativeReals
+        m.WATER_LINK_DEPARTURE_ARRIVAL_TMPS, within=NonNegativeReals
     )
 
     # ### Constraints ### #
-    def min_flow_rule(mod, wl, tmp):
+    def min_flow_rule(mod, wl, dep_tmp, arr_tmp):
         return (
-            mod.Water_Link_Flow_Rate_Vol_per_Sec[wl, tmp]
-            >= mod.min_flow_vol_per_second[wl, tmp]
+            mod.Water_Link_Flow_Rate_Vol_per_Sec[wl, dep_tmp, arr_tmp]
+            >= mod.min_flow_vol_per_second[wl, dep_tmp]
         )
 
     m.Water_Link_Minimum_Flow_Constraint = Constraint(
-        m.WATER_LINKS, m.TMPS, rule=min_flow_rule
+        m.WATER_LINK_DEPARTURE_ARRIVAL_TMPS, rule=min_flow_rule
     )
 
-    def max_flow_rule(mod, wl, tmp):
+    def max_flow_rule(mod, wl, dep_tmp, arr_tmp):
         return (
-            mod.Water_Link_Flow_Rate_Vol_per_Sec[wl, tmp]
-            <= mod.max_flow_vol_per_second[wl, tmp]
+            mod.Water_Link_Flow_Rate_Vol_per_Sec[wl, dep_tmp, arr_tmp]
+            <= mod.max_flow_vol_per_second[wl, dep_tmp]
         )
 
     m.Water_Link_Maximum_Flow_Constraint = Constraint(
-        m.WATER_LINKS, m.TMPS, rule=max_flow_rule
+        m.WATER_LINK_DEPARTURE_ARRIVAL_TMPS, rule=max_flow_rule
     )
 
 
 def determine_arrival_timepoint(mod, tmp, travel_time_hours):
-    current_tmp = tmp
-    hours_from_departure_tmp = 0
-    while hours_from_departure_tmp < travel_time_hours:
-        # If we haven't exceeded the travel time yet, we move on to the next tmp
-        # In a 'linear' horizon setting, once we reach the last
-        # timepoint of the horizon, we break out of the loop since there
-        # are no more timepoints to consider
-        if check_if_boundary_type_and_last_timepoint(
-            mod=mod,
-            tmp=current_tmp,
-            balancing_type=mod.water_system_balancing_type,
-            boundary_type="linear",
-        ):
-            break
-        # In a 'circular' horizon setting, once we reach timepoint *t*,
-        # we break out of the loop since there are no more timepoints to
-        # consider (we have already checked all horizon timepoints)
-        elif (
-            check_boundary_type(
+    # If this is the last timepoint of a linear horizon, there are no
+    # timepoints to check
+    if check_if_boundary_type_and_last_timepoint(
+        mod=mod,
+        tmp=tmp,
+        balancing_type=mod.water_system_balancing_type,
+        boundary_type="linear",
+    ):
+        tmp_to_check = None
+    elif check_if_boundary_type_and_last_timepoint(
+        mod=mod,
+        tmp=tmp,
+        balancing_type=mod.water_system_balancing_type,
+        boundary_type="linked",
+    ):
+        # TODO: add linked
+        tmp_to_check = None
+    # Otherwise, we can start searching
+    else:
+        # First we'll check the next timepoint of the starting timepoint and
+        # start with the duration of the starting timepoint
+        tmp_to_check = mod.next_tmp[tmp, mod.water_system_balancing_type]
+        hours_from_departure_tmp = mod.hrs_in_tmp[tmp]
+        while hours_from_departure_tmp < travel_time_hours:
+            # If we haven't exceeded the travel time yet, we move on to the next tmp
+            # In a 'linear' horizon setting, once we reach the last
+            # timepoint of the horizon, we break out of the loop since there
+            # are no more timepoints to consider
+            if check_if_boundary_type_and_last_timepoint(
                 mod=mod,
-                tmp=tmp,
+                tmp=tmp_to_check,
                 balancing_type=mod.water_system_balancing_type,
-                boundary_type="circular",
-            )
-            and current_tmp == tmp
-        ):
-            break
-        # TODO: only allow the first horizon of a subproblem to have
-        #  linked timepoints
-        # In a 'linked' horizon setting, once we reach the first
-        # timepoint of the horizon, we'll start adding the linked
-        # timepoints until we reach the target min time
-        elif check_if_boundary_type_and_last_timepoint(
-            mod=mod,
-            tmp=current_tmp,
-            balancing_type=mod.water_system_balancing_type,
-            boundary_type="linked",
-        ):
-            # TODO: add linked
-            break
-        # Otherwise, we move on to the next timepoint and will add that
-        # timepoint's duration to hours_from_departure_tmp
-        else:
-            hours_from_departure_tmp += mod.hrs_in_tmp[
-                mod.next_tmp[current_tmp, mod.water_system_balancing_type]
-            ]
-            current_tmp = mod.next_tmp[current_tmp, mod.water_system_balancing_type]
+                boundary_type="linear",
+            ):
+                break
+            # In a 'circular' horizon setting, once we reach timepoint *t*,
+            # we break out of the loop since there are no more timepoints to
+            # consider (we have already checked all horizon timepoints)
+            elif (
+                check_boundary_type(
+                    mod=mod,
+                    tmp=tmp,
+                    balancing_type=mod.water_system_balancing_type,
+                    boundary_type="circular",
+                )
+                and tmp_to_check == tmp
+            ):
+                break
+            # TODO: only allow the first horizon of a subproblem to have
+            #  linked timepoints
+            # In a 'linked' horizon setting, once we reach the first
+            # timepoint of the horizon, we'll start adding the linked
+            # timepoints until we reach the target min time
+            elif check_if_boundary_type_and_last_timepoint(
+                mod=mod,
+                tmp=tmp_to_check,
+                balancing_type=mod.water_system_balancing_type,
+                boundary_type="linked",
+            ):
+                # TODO: add linked
+                break
+            # Otherwise, we move on to the next timepoint and will add that
+            # timepoint's duration to hours_from_departure_tmp
+            else:
+                hours_from_departure_tmp += mod.hrs_in_tmp[tmp_to_check]
+                tmp_to_check = mod.next_tmp[
+                    tmp_to_check, mod.water_system_balancing_type
+                ]
 
-    return current_tmp
+    return tmp_to_check
 
 
 def load_model_data(
@@ -349,14 +373,14 @@ def export_results(
     data = [
         [
             wl,
-            tmp,
-            value(m.Water_Link_Flow_Rate_Vol_per_Sec[wl, tmp]),
+            dep_tmp,
+            arr_tmp,
+            value(m.Water_Link_Flow_Rate_Vol_per_Sec[wl, dep_tmp, arr_tmp]),
         ]
-        for wl in m.WATER_LINKS
-        for tmp in m.TMPS
+        for (wl, dep_tmp, arr_tmp) in m.WATER_LINK_DEPARTURE_ARRIVAL_TMPS
     ]
     results_df = create_results_df(
-        index_columns=["water_link", "timepoint"],
+        index_columns=["water_link", "departure_timepoint", "arrival_timepoint"],
         results_columns=results_columns,
         data=data,
     )
