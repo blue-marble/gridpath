@@ -29,7 +29,7 @@ from pyomo.environ import (
     value,
 )
 
-from gridpath.auxiliary.db_interface import directories_to_db_values
+from gridpath.auxiliary.db_interface import directories_to_db_values, import_csv
 from gridpath.common_functions import (
     create_results_df,
 )
@@ -393,12 +393,12 @@ def export_results(
     results_columns = [
         "starting_elevation",
         "starting_volume",
-        "exogenous_water_inflows",
-        "endogenous_water_inflows",
-        "discharge_water_to_powerhouse",
-        "spill_water",
-        "evap_losses",
-        "endogenous_water_outflows",
+        "exogenous_water_inflow_rate_vol_per_sec",
+        "endogenous_water_inflow_rate_vol_per_sec",
+        "discharge_water_to_powerhouse_rate_vol_per_sec",
+        "spill_water_rate_vol_per_sec",
+        "evap_losses_NOT_IMPLEMENTED",
+        "endogenous_water_outflows_rate_vol_per_sec",
     ]
     data = [
         [
@@ -420,12 +420,12 @@ def export_results(
                 for wl in m.WATER_LINKS_TO_BY_WATER_NODE[wn]
             ),
             value(
-                m.Discharge_Water_to_Powerhouse[wn, tmp]
+                m.Discharge_Water_to_Powerhouse_Rate_Vol_Per_Sec[wn, tmp]
                 if wn in m.WATER_NODES_W_RESERVOIRS
                 else None
             ),
             (
-                value(m.Spill_Water[wn, tmp])
+                value(m.Spill_Water_Rate_Vol_Per_Sec[wn, tmp])
                 if wn in m.WATER_NODES_W_RESERVOIRS
                 else None
             ),
@@ -457,11 +457,35 @@ def export_results(
             subproblem,
             stage,
             "results",
-            "water_node_timepoint.csv",
+            "system_water_node_timepoint.csv",
         ),
         sep=",",
         index=True,
     )
 
 
-# TODO: results import
+def import_results_into_database(
+    scenario_id,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    c,
+    db,
+    results_directory,
+    quiet,
+):
+    import_csv(
+        conn=db,
+        cursor=c,
+        scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        quiet=quiet,
+        results_directory=results_directory,
+        which_results="system_water_node_timepoint",
+    )

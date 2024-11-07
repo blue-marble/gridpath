@@ -32,7 +32,7 @@ from pyomo.environ import (
     value,
 )
 
-from gridpath.auxiliary.db_interface import directories_to_db_values
+from gridpath.auxiliary.db_interface import directories_to_db_values, import_csv
 from gridpath.common_functions import create_results_df
 from gridpath.project.operations.operational_types.common_functions import (
     get_optype_inputs_as_df,
@@ -122,7 +122,9 @@ def add_model_components(
                 mod.Generator_Allocated_Water_Flow[pwrh, g, tmp]
                 for g in mod.GENERATORS_BY_POWERHOUSE[pwrh]
             )
-            == mod.Discharge_Water_to_Powerhouse[mod.powerhouse_water_node[pwrh], tmp]
+            == mod.Discharge_Water_to_Powerhouse_Rate_Vol_Per_Sec[
+                mod.powerhouse_water_node[pwrh], tmp
+            ]
         )
 
     # ### Constraints ### #
@@ -349,12 +351,11 @@ def export_results(
     :param d:
     :return:
     """
-    # TODO: add results
     results_columns = [
-        "reservoir",
+        "water_node",
         "gross_head",
         "net_head",
-        "water_discharge_to_powerhouse",
+        "water_discharge_to_powerhouse_rate_vol_per_sec",
     ]
     data = [
         [
@@ -363,7 +364,11 @@ def export_results(
             m.powerhouse_water_node[p],
             value(m.Gross_Head[p, tmp]),
             value(m.Net_Head[p, tmp]),
-            value(m.Discharge_Water_to_Powerhouse[m.powerhouse_water_node[p], tmp]),
+            value(
+                m.Discharge_Water_to_Powerhouse_Rate_Vol_Per_Sec[
+                    m.powerhouse_water_node[p], tmp
+                ]
+            ),
         ]
         for p in m.POWERHOUSES
         for tmp in m.TMPS
@@ -383,11 +388,35 @@ def export_results(
             subproblem,
             stage,
             "results",
-            "powerhouse_timepoint.csv",
+            "system_water_powerhouse_timepoint.csv",
         ),
         sep=",",
         index=True,
     )
 
 
-# TODO: results import
+def import_results_into_database(
+    scenario_id,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    c,
+    db,
+    results_directory,
+    quiet,
+):
+    import_csv(
+        conn=db,
+        cursor=c,
+        scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        quiet=quiet,
+        results_directory=results_directory,
+        which_results="system_water_powerhouse_timepoint",
+    )

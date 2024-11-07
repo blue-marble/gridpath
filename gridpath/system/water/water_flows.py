@@ -29,7 +29,7 @@ from pyomo.environ import (
     value,
 )
 
-from gridpath.auxiliary.db_interface import directories_to_db_values
+from gridpath.auxiliary.db_interface import directories_to_db_values, import_csv
 from gridpath.common_functions import create_results_df
 from gridpath.project.common_functions import (
     check_if_boundary_type_and_last_timepoint,
@@ -344,7 +344,7 @@ def export_results(
     :return:
     """
     results_columns = [
-        "water_flow",
+        "water_flow_vol_per_sec",
     ]
     data = [
         [
@@ -370,11 +370,35 @@ def export_results(
             subproblem,
             stage,
             "results",
-            "water_link_timepoint.csv",
+            "system_water_link_timepoint.csv",
         ),
         sep=",",
         index=True,
     )
 
 
-# TODO: results import
+def import_results_into_database(
+    scenario_id,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    c,
+    db,
+    results_directory,
+    quiet,
+):
+    import_csv(
+        conn=db,
+        cursor=c,
+        scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        quiet=quiet,
+        results_directory=results_directory,
+        which_results="system_water_link_timepoint",
+    )

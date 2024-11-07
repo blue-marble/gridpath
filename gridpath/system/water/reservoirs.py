@@ -139,11 +139,13 @@ def add_model_components(
         m.WATER_NODES_W_RESERVOIRS, m.TMPS, within=NonNegativeReals
     )
 
-    m.Discharge_Water_to_Powerhouse = Var(
+    m.Discharge_Water_to_Powerhouse_Rate_Vol_Per_Sec = Var(
         m.WATER_NODES_W_RESERVOIRS, m.TMPS, within=NonNegativeReals
     )
 
-    m.Spill_Water = Var(m.WATER_NODES_W_RESERVOIRS, m.TMPS, within=NonNegativeReals)
+    m.Spill_Water_Rate_Vol_Per_Sec = Var(
+        m.WATER_NODES_W_RESERVOIRS, m.TMPS, within=NonNegativeReals
+    )
 
     # TODO: implement the correct calculation; depends on area, which depends
     #  on elevation
@@ -154,11 +156,11 @@ def add_model_components(
         initialize=lambda mod, r, tmp: mod.evaporation_coefficient[r],
     )
 
+    # TODO: add evaporative losses
     def gross_reservoir_release(mod, wn_w_r, tmp):
         return (
-            mod.Discharge_Water_to_Powerhouse[wn_w_r, tmp]
-            + mod.Spill_Water[wn_w_r, tmp]
-            + mod.Evaporative_Losses[wn_w_r, tmp]
+            mod.Discharge_Water_to_Powerhouse_Rate_Vol_Per_Sec[wn_w_r, tmp]
+            + mod.Spill_Water_Rate_Vol_Per_Sec[wn_w_r, tmp]
         )
 
     m.Gross_Reservoir_Release_Rate_Vol_Per_Sec = Expression(
