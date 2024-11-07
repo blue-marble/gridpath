@@ -34,6 +34,7 @@ PREREQUISITE_MODULE_NAMES = [
     "system.load_balance.static_load_requirement",
     "geography.instantaneous_penetration_zones",
     "geography.water_network",
+    "system.water.water_system_params",
     "system.water.water_flows",
     "system.water.water_nodes",
     "system.water.reservoirs",

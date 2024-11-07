@@ -33,6 +33,7 @@ PREREQUISITE_MODULE_NAMES = [
     "geography.fuel_burn_limit_balancing_areas",
     "system.policy.fuel_burn_limits.fuel_burn_limits",
     "geography.water_network",
+    "system.water.water_system_params",
     "system.water.water_flows",
     "system.water.water_nodes",
     "system.water.reservoirs",

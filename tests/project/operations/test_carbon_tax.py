@@ -34,6 +34,7 @@ PREREQUISITE_MODULE_NAMES = [
     "geography.carbon_tax_zones",
     "system.policy.carbon_tax.carbon_tax",
     "geography.water_network",
+    "system.water.water_system_params",
     "system.water.water_flows",
     "system.water.water_nodes",
     "system.water.reservoirs",

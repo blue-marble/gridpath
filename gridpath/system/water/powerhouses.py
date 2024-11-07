@@ -76,11 +76,6 @@ def add_model_components(
     # ### Params ### #
     m.powerhouse_water_node = Param(m.POWERHOUSES, within=m.WATER_NODES)
 
-    # TODO: move to a more central location?
-    # This is unit dependent; different if we are using MW, kg/s (l/s) vs cfs,
-    # m vs ft; user must ensure consistent units
-    m.theoretical_power_coefficient = Param(m.POWERHOUSES, within=NonNegativeReals)
-
     # Tailwater assumed constant for now, but actually depends on flow
     m.tailwater_elevation = Param(m.POWERHOUSES, within=NonNegativeReals)
 
@@ -141,7 +136,7 @@ def add_model_components(
         volume
         """
         return (
-            mod.theoretical_power_coefficient[pwrh]
+            mod.theoretical_power_coefficient
             * mod.Generator_Allocated_Water_Flow[pwrh, g, tmp]
             * mod.Net_Head[pwrh, tmp]
             * mod.turbine_efficiency[pwrh]
@@ -179,7 +174,6 @@ def load_model_data(
         index=m.POWERHOUSES,
         param=(
             m.powerhouse_water_node,
-            m.theoretical_power_coefficient,
             m.tailwater_elevation,
             m.headloss_factor,
             m.turbine_efficiency,
@@ -226,9 +220,8 @@ def get_inputs_from_database(
 
     c = conn.cursor()
     powerhouses = c.execute(
-        f"""SELECT powerhouse, powerhouse_water_node, 
-            theoretical_power_coefficient, tailwater_elevation, headloss_factor,
-            turbine_efficiency
+        f"""SELECT powerhouse, powerhouse_water_node, tailwater_elevation, 
+            headloss_factor, turbine_efficiency
             FROM inputs_system_water_powerhouses
             WHERE water_powerhouse_scenario_id = 
             {subscenarios.WATER_POWERHOUSE_SCENARIO_ID}
@@ -327,7 +320,6 @@ def write_model_inputs(
             [
                 "powerhouse",
                 "powerhouse_water_node",
-                "theoretical_power_coefficient",
                 "tailwater_elevation",
                 "headloss_factor",
                 "turbine_efficiency",

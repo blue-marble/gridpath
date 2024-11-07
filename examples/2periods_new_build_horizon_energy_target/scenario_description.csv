@@ -51,6 +51,7 @@ fuel_burn_limit_ba_scenario_id,NULL
 prm_zone_scenario_id,NULL
 local_capacity_zone_scenario_id,NULL
 market_scenario_id,NULL
+water_system_params_scenario_id,NULL
 water_network_scenario_id,NULL
 project_portfolio_scenario_id,13
 project_operational_chars_scenario_id,1

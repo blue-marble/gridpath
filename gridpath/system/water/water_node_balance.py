@@ -131,22 +131,22 @@ def add_model_components(
             # No constraint in the first timepoint of a linear horizon (no
             # previous timepoint for tracking)
             if check_if_first_timepoint(
-                mod=mod, tmp=tmp, balancing_type=mod.balancing_type_reservoir[wn]
+                mod=mod, tmp=tmp, balancing_type=mod.water_system_balancing_type
             ) and check_boundary_type(
                 mod=mod,
                 tmp=tmp,
-                balancing_type=mod.balancing_type_reservoir[wn],
+                balancing_type=mod.water_system_balancing_type,
                 boundary_type="linear",
             ):
                 return Constraint.Skip
             else:
                 # TODO: add linked horizons
                 if check_if_first_timepoint(
-                    mod=mod, tmp=tmp, balancing_type=mod.balancing_type_reservoir[wn]
+                    mod=mod, tmp=tmp, balancing_type=mod.water_system_balancing_type
                 ) and check_boundary_type(
                     mod=mod,
                     tmp=tmp,
-                    balancing_type=mod.balancing_type_reservoir[wn],
+                    balancing_type=mod.water_system_balancing_type,
                     boundary_type="linked",
                 ):
                     current_tmp_starting_water_volume = None
@@ -167,18 +167,18 @@ def add_model_components(
                     )
                     prev_tmp_starting_water_volume = (
                         mod.Reservoir_Starting_Volume_WaterVolumeUnit[
-                            wn, mod.prev_tmp[tmp, mod.balancing_type_reservoir[wn]]
+                            wn, mod.prev_tmp[tmp, mod.water_system_balancing_type]
                         ]
                     )
 
                     # Inflows and releases; these are already calculated
                     # based on per sec flows and hours in the timepoint
                     prev_tmp_inflow = get_total_inflow_volunit(
-                        mod, wn, mod.prev_tmp[tmp, mod.balancing_type_reservoir[wn]]
+                        mod, wn, mod.prev_tmp[tmp, mod.water_system_balancing_type]
                     )
 
                     prev_tmp_release = get_total_release_volunit(
-                        mod, wn, mod.prev_tmp[tmp, mod.balancing_type_reservoir[wn]]
+                        mod, wn, mod.prev_tmp[tmp, mod.water_system_balancing_type]
                     )
 
                 return current_tmp_starting_water_volume == (

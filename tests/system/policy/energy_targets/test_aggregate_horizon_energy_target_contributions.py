@@ -35,6 +35,7 @@ PREREQUISITE_MODULE_NAMES = [
     "geography.energy_target_zones",
     "system.policy.energy_targets.horizon_energy_target",
     "geography.water_network",
+    "system.water.water_system_params",
     "system.water.water_flows",
     "system.water.water_nodes",
     "system.water.reservoirs",

@@ -20,6 +20,7 @@ import csv
 import os.path
 
 from pyomo.environ import (
+    Set,
     Param,
     NonNegativeReals,
     Var,
@@ -30,6 +31,10 @@ from pyomo.environ import (
 
 from gridpath.auxiliary.db_interface import directories_to_db_values
 from gridpath.common_functions import create_results_df
+from gridpath.project.common_functions import (
+    check_if_boundary_type_and_last_timepoint,
+    check_boundary_type,
+)
 
 
 def add_model_components(
@@ -48,7 +53,6 @@ def add_model_components(
     :param d:
     :return:
     """
-    # TODO: units!!!
     # Start with these as params BUT:
     # These are probably not params but expressions with a non-linear
     # relationship to elevation; most of the curves look they can be
@@ -57,6 +61,24 @@ def add_model_components(
         m.WATER_LINKS, m.TMPS, within=NonNegativeReals, default=0
     )
     m.max_flow_vol_per_second = Param(m.WATER_LINKS, m.TMPS, default=float("inf"))
+
+    # Set WATER_LINK_DEPARTURE_ARRIVAL_TMPS
+    def water_link_departure_arrival_tmp_init(mod):
+        wl_dep_arr_tmp = []
+        for wl in mod.WATER_LINKS:
+            for departure_tmp in mod.TMPS:
+                arrival_tmp = determine_arrival_timepoint(
+                    mod, departure_tmp, mod.water_link_flow_transport_time_hours[wl]
+                )
+                wl_dep_arr_tmp.append((wl, departure_tmp, arrival_tmp))
+
+        return wl_dep_arr_tmp
+
+    m.WATER_LINK_DEPARTURE_ARRIVAL_TMPS = Set(
+        dimen=3,
+        within=m.WATER_LINKS * m.TMPS * m.TMPS,
+        initialize=water_link_departure_arrival_tmp_init,
+    )
 
     # ### Variables ### #
     m.Water_Link_Flow_Rate_Vol_per_Sec = Var(
@@ -83,6 +105,58 @@ def add_model_components(
     m.Water_Link_Maximum_Flow_Constraint = Constraint(
         m.WATER_LINKS, m.TMPS, rule=max_flow_rule
     )
+
+
+def determine_arrival_timepoint(mod, tmp, travel_time_hours):
+    current_tmp = tmp
+    hours_from_departure_tmp = 0
+    while hours_from_departure_tmp < travel_time_hours:
+        # If we haven't exceeded the travel time yet, we move on to the next tmp
+        # In a 'linear' horizon setting, once we reach the last
+        # timepoint of the horizon, we break out of the loop since there
+        # are no more timepoints to consider
+        if check_if_boundary_type_and_last_timepoint(
+            mod=mod,
+            tmp=current_tmp,
+            balancing_type=mod.water_system_balancing_type,
+            boundary_type="linear",
+        ):
+            break
+        # In a 'circular' horizon setting, once we reach timepoint *t*,
+        # we break out of the loop since there are no more timepoints to
+        # consider (we have already checked all horizon timepoints)
+        elif (
+            check_boundary_type(
+                mod=mod,
+                tmp=tmp,
+                balancing_type=mod.water_system_balancing_type,
+                boundary_type="circular",
+            )
+            and current_tmp == tmp
+        ):
+            break
+        # TODO: only allow the first horizon of a subproblem to have
+        #  linked timepoints
+        # In a 'linked' horizon setting, once we reach the first
+        # timepoint of the horizon, we'll start adding the linked
+        # timepoints until we reach the target min time
+        elif check_if_boundary_type_and_last_timepoint(
+            mod=mod,
+            tmp=current_tmp,
+            balancing_type=mod.water_system_balancing_type,
+            boundary_type="linked",
+        ):
+            # TODO: add linked
+            break
+        # Otherwise, we move on to the next timepoint and will add that
+        # timepoint's duration to hours_from_departure_tmp
+        else:
+            hours_from_departure_tmp += mod.hrs_in_tmp[
+                mod.next_tmp[current_tmp, mod.water_system_balancing_type]
+            ]
+            current_tmp = mod.next_tmp[current_tmp, mod.water_system_balancing_type]
+
+    return current_tmp
 
 
 def load_model_data(

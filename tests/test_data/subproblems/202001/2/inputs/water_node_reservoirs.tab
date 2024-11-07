@@ -1,4 +1,4 @@
-water_node	balancing_type_reservoir	minimum_elevation_elevationunit	maximum_elevation_elevationunit	max_spill	evaporation_coefficient	elevation_type
-Water_Node_1	day	1000	1200	100000	0.1	endogenous
-Water_Node_2	day	700	800	100000	0.1	endogenous
-Water_Node_3	day	500	600	100000	0.1	endogenous
+water_node	minimum_elevation_elevationunit	maximum_elevation_elevationunit	max_spill	evaporation_coefficient	elevation_type
+Water_Node_1	1000	1200	100000	0.1	endogenous
+Water_Node_2	700	800	100000	0.1	endogenous
+Water_Node_3	500	600	100000	0.1	endogenous

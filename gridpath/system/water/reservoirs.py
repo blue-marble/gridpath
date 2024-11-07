@@ -106,8 +106,6 @@ def add_model_components(
     )
 
     # ### Parameters ###
-    m.balancing_type_reservoir = Param(m.WATER_NODES_W_RESERVOIRS, within=m.BLN_TYPES)
-
     # Volume targets
     m.reservoir_target_volume = Param(
         m.WATER_NODE_RESERVOIR_TMPS_W_TARGET_VOLUME, within=NonNegativeReals
@@ -296,7 +294,6 @@ def load_model_data(
         ),
         index=m.WATER_NODES_W_RESERVOIRS,
         param=(
-            m.balancing_type_reservoir,
             m.minimum_volume_volumeunit,
             m.maximum_volume_volumeunit,
             m.max_spill,
@@ -394,7 +391,7 @@ def get_inputs_from_database(
 
     c = conn.cursor()
     reservoirs = c.execute(
-        f"""SELECT water_node, balancing_type_reservoir,
+        f"""SELECT water_node,
             minimum_volume_volumeunit,
             maximum_volume_volumeunit,
             max_spill,
@@ -534,7 +531,6 @@ def write_model_inputs(
         writer.writerow(
             [
                 "water_node",
-                "balancing_type_reservoir",
                 "minimum_volume_volumeunit",
                 "maximum_volume_volumeunit",
                 "max_spill",

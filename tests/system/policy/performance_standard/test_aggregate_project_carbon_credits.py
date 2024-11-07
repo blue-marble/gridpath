@@ -33,6 +33,7 @@ PREREQUISITE_MODULE_NAMES = [
     "geography.performance_standard_zones",
     "geography.carbon_credits_zones",
     "geography.water_network",
+    "system.water.water_system_params",
     "system.water.water_flows",
     "system.water.water_nodes",
     "system.water.reservoirs",

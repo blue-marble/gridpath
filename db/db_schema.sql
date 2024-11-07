@@ -994,6 +994,25 @@ CREATE TABLE inputs_geography_fuel_burn_limit_balancing_areas
 );
 
 
+-- Water system
+DROP TABLE IF EXISTS subscenarios_system_water_system_params;
+CREATE TABLE subscenarios_system_water_system_params
+(
+    water_system_params_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name                            VARCHAR(32),
+    description                     VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_system_water_system_params;
+CREATE TABLE inputs_system_water_system_params
+(
+    water_system_params_scenario_id INTEGER PRIMARY KEY,
+    water_system_balancing_type     TEXT,
+    theoretical_power_coefficient   FLOAT,
+    FOREIGN KEY (water_system_params_scenario_id) REFERENCES
+        subscenarios_system_water_system_params (water_system_params_scenario_id)
+);
+
 -- Water network
 DROP TABLE IF EXISTS subscenarios_geography_water_network;
 CREATE TABLE subscenarios_geography_water_network
@@ -1029,9 +1048,8 @@ CREATE TABLE inputs_system_water_node_reservoirs
 (
     water_node_reservoir_scenario_id INTEGER,
     water_node                       TEXT,
-    balancing_type_reservoir         TEXT,
     target_volume_scenario_id        INTEGER,
-    target_release_scenario_id        INTEGER,
+    target_release_scenario_id       INTEGER,
     minimum_volume_volumeunit        FLOAT,
     maximum_volume_volumeunit        FLOAT,
     max_spill                        FLOAT,
@@ -1122,7 +1140,7 @@ CREATE TABLE inputs_system_water_node_reservoirs_target_volumes
     target_volume_scenario_id INTEGER,
     timepoint                 FLOAT,
     reservoir_target_volume   DECIMAL,
-    PRIMARY KEY (water_node, target_volume_scenario_id ,timepoint),
+    PRIMARY KEY (water_node, target_volume_scenario_id, timepoint),
     FOREIGN KEY (water_node, target_volume_scenario_id) REFERENCES
         subscenarios_system_water_node_reservoirs_target_volumes
             (water_node, target_volume_scenario_id)
@@ -1146,7 +1164,7 @@ CREATE TABLE inputs_system_water_node_reservoirs_target_releases
     target_release_scenario_id INTEGER,
     balancing_type             TEXT,
     horizon                    INTEGER,
-    reservoir_target_release DECIMAL,
+    reservoir_target_release   DECIMAL,
     PRIMARY KEY (water_node, target_release_scenario_id, balancing_type,
                  horizon),
     FOREIGN KEY (water_node, target_release_scenario_id) REFERENCES
@@ -1229,9 +1247,9 @@ CREATE TABLE subscenarios_system_water_inflows
 DROP TABLE IF EXISTS inputs_system_water_inflows;
 CREATE TABLE inputs_system_water_inflows
 (
-    water_inflow_scenario_id           INTEGER,
-    water_node                         TEXT,
-    timepoint                          FLOAT,
+    water_inflow_scenario_id                INTEGER,
+    water_node                              TEXT,
+    timepoint                               FLOAT,
     exogenous_water_inflow_rate_vol_per_sec TEXT,
     PRIMARY KEY (water_inflow_scenario_id, water_node, timepoint),
     FOREIGN KEY (water_inflow_scenario_id) REFERENCES
@@ -1253,7 +1271,6 @@ CREATE TABLE inputs_system_water_powerhouses
     water_powerhouse_scenario_id  INTEGER,
     powerhouse                    TEXT,
     powerhouse_water_node         TEXT,
-    theoretical_power_coefficient FLOAT,
     tailwater_elevation           FLOAT,
     headloss_factor               FLOAT,
     turbine_efficiency            FLOAT,
@@ -4271,6 +4288,7 @@ CREATE TABLE scenarios
     prm_zone_scenario_id                                        INTEGER,
     local_capacity_zone_scenario_id                             INTEGER,
     market_scenario_id                                          INTEGER,
+    water_system_params_scenario_id                             INTEGER,
     water_network_scenario_id                                   INTEGER,
     project_portfolio_scenario_id                               INTEGER,
     project_operational_chars_scenario_id                       INTEGER,
@@ -4411,6 +4429,8 @@ CREATE TABLE scenarios
         subscenarios_geography_local_capacity_zones (local_capacity_zone_scenario_id),
     FOREIGN KEY (market_scenario_id) REFERENCES
         subscenarios_geography_markets (market_scenario_id),
+    FOREIGN KEY (water_system_params_scenario_id) REFERENCES
+        subscenarios_system_water_system_params (water_system_params_scenario_id),
     FOREIGN KEY (water_network_scenario_id) REFERENCES
         subscenarios_geography_water_network (water_network_scenario_id),
     FOREIGN KEY (project_portfolio_scenario_id) REFERENCES
