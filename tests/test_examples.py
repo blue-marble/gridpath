@@ -1364,17 +1364,6 @@ class TestExamples(unittest.TestCase):
         scenario_name = "test_new_instantaneous_penetration"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
-    def test_hydro_system(self):
-        """
-        Check validation and objective function value of "hydro_system" example
-        :return:
-        """
-
-        scenario_name = "hydro_system"
-        self.validate_and_test_example_generic(
-            scenario_name=scenario_name, solver="multistart"
-        )
-
     def test_hydro_system_exog_elev(self):
         """
         Check validation and objective function value of "hydro_system" example

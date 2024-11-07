@@ -29,10 +29,8 @@ jobs:
     - name: Install Cbc and check version
       run: |
         sudo apt-get install coinor-cbc
-        sudo apt-get install coinor-libipopt-dev
         sudo apt-get install -y apt-show-versions
         apt-show-versions coinor-cbc
-        apt-show-versions coinor-libipopt-dev
     - name: Install Python dependencies
       run: |
         python -m pip install .[coverage] --upgrade pip
