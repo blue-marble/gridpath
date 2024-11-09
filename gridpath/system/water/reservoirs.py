@@ -420,7 +420,9 @@ def get_inputs_from_database(
             FROM inputs_temporal
             WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
             AND subproblem_id = {subproblem}
-            AND stage_id = {stage});
+            AND stage_id = {stage})
+        AND hydro_iteration = {hydro_iteration}    
+        ;
         """
     )
 
@@ -439,6 +441,7 @@ def get_inputs_from_database(
                 FROM inputs_temporal_horizons
                 WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
             )
+            AND hydro_iteration = {hydro_iteration}
             ;
             """
     )

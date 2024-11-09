@@ -1089,9 +1089,10 @@ CREATE TABLE inputs_system_water_node_reservoir_exogenous_elevations
 (
     water_node                    VARCHAR(64),
     exogenous_elevation_id        INTEGER,
+    hydro_iteration               INTEGER DEFAULT 0 NOT NULL,
     timepoint                     INTEGER,
     reservoir_exogenous_elevation INTEGER,
-    PRIMARY KEY (water_node, exogenous_elevation_id, timepoint),
+    PRIMARY KEY (water_node, exogenous_elevation_id, timepoint, hydro_iteration),
     FOREIGN KEY (water_node, exogenous_elevation_id) REFERENCES
         subscenarios_system_water_node_reservoir_exogenous_elevations
             (water_node, exogenous_elevation_id)
@@ -1138,9 +1139,10 @@ CREATE TABLE inputs_system_water_node_reservoirs_target_volumes
 (
     water_node                TEXT,
     target_volume_scenario_id INTEGER,
+    hydro_iteration           INTEGER DEFAULT 0 NOT NULL,
     timepoint                 FLOAT,
     reservoir_target_volume   DECIMAL,
-    PRIMARY KEY (water_node, target_volume_scenario_id, timepoint),
+    PRIMARY KEY (water_node, target_volume_scenario_id, timepoint, hydro_iteration),
     FOREIGN KEY (water_node, target_volume_scenario_id) REFERENCES
         subscenarios_system_water_node_reservoirs_target_volumes
             (water_node, target_volume_scenario_id)
@@ -1162,11 +1164,12 @@ CREATE TABLE inputs_system_water_node_reservoirs_target_releases
 (
     water_node                 TEXT,
     target_release_scenario_id INTEGER,
+    hydro_iteration            INTEGER DEFAULT 0 NOT NULL,
     balancing_type             TEXT,
     horizon                    INTEGER,
     reservoir_target_release   DECIMAL,
-    PRIMARY KEY (water_node, target_release_scenario_id, balancing_type,
-                 horizon),
+    PRIMARY KEY (water_node, target_release_scenario_id, hydro_iteration,
+                 balancing_type, horizon),
     FOREIGN KEY (water_node, target_release_scenario_id) REFERENCES
         subscenarios_system_water_node_reservoirs_target_releases
             (water_node, target_release_scenario_id)
@@ -1227,10 +1230,11 @@ CREATE TABLE inputs_system_water_flows
 (
     water_flow_scenario_id  INTEGER,
     water_link              TEXT,
+    hydro_iteration         INTEGER DEFAULT 0 NOT NULL,
     timepoint               FLOAT,
     min_flow_vol_per_second TEXT,
     max_flow_vol_per_second INTEGER,
-    PRIMARY KEY (water_flow_scenario_id, water_link, timepoint),
+    PRIMARY KEY (water_flow_scenario_id, water_link, timepoint, hydro_iteration),
     FOREIGN KEY (water_flow_scenario_id) REFERENCES
         subscenarios_system_water_flows (water_flow_scenario_id)
 );
@@ -1249,9 +1253,10 @@ CREATE TABLE inputs_system_water_inflows
 (
     water_inflow_scenario_id                INTEGER,
     water_node                              TEXT,
+    hydro_iteration                         INTEGER DEFAULT 0 NOT NULL,
     timepoint                               FLOAT,
     exogenous_water_inflow_rate_vol_per_sec TEXT,
-    PRIMARY KEY (water_inflow_scenario_id, water_node, timepoint),
+    PRIMARY KEY (water_inflow_scenario_id, water_node, timepoint, hydro_iteration),
     FOREIGN KEY (water_inflow_scenario_id) REFERENCES
         subscenarios_system_water_inflows (water_inflow_scenario_id)
 );

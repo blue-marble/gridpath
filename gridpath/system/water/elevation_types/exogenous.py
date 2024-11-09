@@ -125,6 +125,7 @@ def get_inputs_from_database(
                     WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
                     AND subproblem_id = {subproblem}
                     AND stage_id = {stage})
+        AND hydro_iteration = {hydro_iteration}
         ;
         """
     )

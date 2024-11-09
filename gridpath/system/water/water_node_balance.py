@@ -239,43 +239,6 @@ def load_model_data(
     )
 
 
-def get_inputs_from_database(
-    scenario_id,
-    subscenarios,
-    weather_iteration,
-    hydro_iteration,
-    availability_iteration,
-    subproblem,
-    stage,
-    conn,
-):
-    """
-    :param subscenarios: SubScenarios object with all subscenario info
-    :param subproblem:
-    :param stage:
-    :param conn: database connection
-    :return:
-    """
-
-    c1 = conn.cursor()
-    water_inflows = c1.execute(
-        f"""SELECT water_node, timepoint, exogenous_water_inflow_rate_vol_per_sec
-                FROM inputs_system_water_inflows
-                WHERE water_inflow_scenario_id = 
-                {subscenarios.WATER_INFLOW_SCENARIO_ID}
-                AND timepoint
-                IN (SELECT timepoint
-                    FROM inputs_temporal
-                    WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
-                    AND subproblem_id = {subproblem}
-                    AND stage_id = {stage})
-                ;
-                """
-    )
-
-    return water_inflows
-
-
 def validate_inputs(
     scenario_id,
     subscenarios,
@@ -298,78 +261,6 @@ def validate_inputs(
     # Validation to be added
     # carbon_cap_zone = get_inputs_from_database(
     #     scenario_id, subscenarios, subproblem, stage, conn)
-
-
-def write_model_inputs(
-    scenario_directory,
-    scenario_id,
-    subscenarios,
-    weather_iteration,
-    hydro_iteration,
-    availability_iteration,
-    subproblem,
-    stage,
-    conn,
-):
-    """
-    Get inputs from database and write out the model input
-    water_network.tab file.
-    :param scenario_directory: string, the scenario directory
-    :param subscenarios: SubScenarios object with all subscenario info
-    :param subproblem:
-    :param stage:
-    :param conn: database connection
-    :return:
-    """
-
-    (
-        db_weather_iteration,
-        db_hydro_iteration,
-        db_availability_iteration,
-        db_subproblem,
-        db_stage,
-    ) = directories_to_db_values(
-        weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
-    )
-
-    inflows = get_inputs_from_database(
-        scenario_id,
-        subscenarios,
-        db_weather_iteration,
-        db_hydro_iteration,
-        db_availability_iteration,
-        db_subproblem,
-        db_stage,
-        conn,
-    )
-
-    with open(
-        os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "inputs",
-            "water_inflows.tab",
-        ),
-        "w",
-        newline="",
-    ) as f:
-        writer = csv.writer(f, delimiter="\t", lineterminator="\n")
-
-        # Write header
-        writer.writerow(
-            [
-                "water_node",
-                "timepoint",
-                "exogenous_water_inflow_rate_vol_per_sec",
-            ]
-        )
-
-        for row in inflows:
-            writer.writerow(row)
 
 
 def export_results(
