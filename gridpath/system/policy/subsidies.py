@@ -78,7 +78,7 @@ def add_model_components(
             subproblem=subproblem,
             stage=stage,
             which_type="tx_capacity_type",
-            prj_or_tx="transmission_line",
+            filename="transmission_lines",
         )
         if include_tx_lines
         else []

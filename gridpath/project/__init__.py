@@ -164,6 +164,7 @@ def add_model_components(
             "fuel_prod",
             "dac",
             "flex_load",
+            "gen_hydro_water",
         ],
     )
     m.availability_type = Param(

@@ -29,7 +29,7 @@ import db.utilities.custom_functions as custom
 # ### Functions for converting CSVs to lists of tuples for DB insertion ### #
 
 
-def get_subscenario_info(dir_subsc, inputs_dir, csv_file, project_flag):
+def get_subscenario_info(dir_subsc, inputs_dir, csv_file, sub_input_flag):
     """
     :param dir_subsc: boolean; whether this is a directory-based
         subscenario; changes whether we use the inputs_dir or csv_file to
@@ -41,7 +41,7 @@ def get_subscenario_info(dir_subsc, inputs_dir, csv_file, project_flag):
         description file
     :param csv_file: string; the name of the CSV file, which we'll use to
         determine the scenario info if this is a CSV-based subscenario
-    :param project_flag: boolean; whether the CSV file contains project
+    :param sub_input_flag: boolean; whether the CSV file contains project
         level data
     :return: tuple; (subscenario_id, subscenario_name,
         subscenario_description)
@@ -79,7 +79,7 @@ def get_subscenario_info(dir_subsc, inputs_dir, csv_file, project_flag):
         )
 
     # Get the subscenario ID and name
-    if not project_flag:
+    if not sub_input_flag:
         if dir_subsc:
             basename = os.path.basename(inputs_dir)
         else:
@@ -140,13 +140,13 @@ def get_subscenario_data(csv_file, cols_to_exclude_str, **kwargs):
 
 
 def csv_to_subscenario_for_insertion(
-    dir_subsc, inputs_dir, csv_file, project_flag, cols_to_exclude_str
+    dir_subsc, inputs_dir, csv_file, sub_input_flag, cols_to_exclude_str
 ):
     """
     :param dir_subsc: boolean;
     :param inputs_dir: string; the directory where the CSV is located
     :param csv_file: string; the name of the CSV file
-    :param project_flag: boolean; whether this is a project-level subscenario
+    :param sub_input_flag: boolean; whether this is a project-level subscenario
     :return: list of tuples (the subscenario info), list of tuples (the
         subscenario data), list of strings (the CSV headers)
 
@@ -158,7 +158,7 @@ def csv_to_subscenario_for_insertion(
     """
 
     # Get the subscenario info
-    subsc_tuples = get_subscenario_info(dir_subsc, inputs_dir, csv_file, project_flag)
+    subsc_tuples = get_subscenario_info(dir_subsc, inputs_dir, csv_file, sub_input_flag)
 
     # Get the data from the CSV if a CSV file name is passed (if not,
     # we're expecting the object to not be a string and to be 'nan')
@@ -169,7 +169,7 @@ def csv_to_subscenario_for_insertion(
         # Get the CSV headers (for later validation) and subscenario data
         csv_file_path = os.path.join(inputs_dir, csv_file)
 
-        if not project_flag:
+        if not sub_input_flag:
             # We only need the subscenario ID as keyword argument to
             # get_subscenario_data()
             subscenario_id = subsc_tuples[0][0]
@@ -228,7 +228,7 @@ def get_subscenario_data_and_insert_into_db(
     inputs_dir,
     csv_file,
     use_project_method,
-    project_is_tx,
+    sub_input_column,
     skip_subscenario_info,
     skip_subscenario_data,
     cols_to_exclude_str,
@@ -258,7 +258,7 @@ def get_subscenario_data_and_insert_into_db(
         dir_subsc=dir_subsc,
         inputs_dir=inputs_dir,
         csv_file=csv_file,
-        project_flag=use_project_method,
+        sub_input_flag=use_project_method,
         cols_to_exclude_str=cols_to_exclude_str,
     )
 
@@ -268,8 +268,8 @@ def get_subscenario_data_and_insert_into_db(
         table=table,
         subscenario_data=subscenario_tuples,
         inputs_data=inputs_tuples,
-        project_flag=use_project_method,
-        project_is_tx=project_is_tx,
+        sub_input_flag=use_project_method,
+        sub_input_column=sub_input_column,
         csv_headers=csv_headers,
         skip_subscenario_info=skip_subscenario_info,
         skip_subscenario_data=skip_subscenario_data,
@@ -292,7 +292,7 @@ def read_all_csv_subscenarios_from_dir_and_insert_into_db(
     table,
     inputs_dir,
     use_project_method,
-    project_is_tx,
+    sub_input_column,
     cols_to_exclude_str,
     custom_method,
 ):
@@ -303,7 +303,7 @@ def read_all_csv_subscenarios_from_dir_and_insert_into_db(
     :param table: string
     :param inputs_dir: string
     :param use_project_method: boolean
-    :param project_is_tx: boolean
+    :param sub_input_column: string
     :param cols_to_exclude_str: string
     :param custom_method: string
 
@@ -334,7 +334,7 @@ def read_all_csv_subscenarios_from_dir_and_insert_into_db(
             inputs_dir=inputs_dir,
             csv_file=csv_file,
             use_project_method=use_project_method,
-            project_is_tx=project_is_tx,
+            sub_input_column=sub_input_column,
             skip_subscenario_info=False,
             skip_subscenario_data=False,
             cols_to_exclude_str=cols_to_exclude_str,
@@ -417,7 +417,7 @@ def read_all_dir_subscenarios_from_dir_and_insert_into_db(
             inputs_dir=subscenario_directory,
             csv_file=filename,
             use_project_method=False,
-            project_is_tx=False,
+            sub_input_column=False,
             skip_subscenario_info=skip_subscenario_info,
             skip_subscenario_data=skip_subscenario_data,
             cols_to_exclude_str=cols_to_exclude_str,
@@ -476,8 +476,8 @@ def generic_insert_subscenario(
     table,
     subscenario_data,
     inputs_data,
-    project_flag,
-    project_is_tx,
+    sub_input_flag,
+    sub_input_column,
     skip_subscenario_info,
     skip_subscenario_data,
     csv_headers=None,
@@ -488,7 +488,7 @@ def generic_insert_subscenario(
     :param table: str
     :param subscenario_data: list of tuples
     :param inputs_data: list of tuples
-    :param project_flag: boolean
+    :param sub_input_flag: boolean
     :param skip_subscenario_info: boolean
     :param skip_subscenario_data: boolean
     :param csv_headers: list of strings
@@ -503,7 +503,7 @@ def generic_insert_subscenario(
     # Load in the subscenario name and description
     if not skip_subscenario_info:
         generic_insert_subscenario_info(
-            conn, subscenario, table, subscenario_data, project_flag, project_is_tx
+            conn, subscenario, table, subscenario_data, sub_input_flag, sub_input_column
         )
 
     # Insert the subscenario data
@@ -513,8 +513,8 @@ def generic_insert_subscenario(
             subscenario,
             table,
             inputs_data,
-            project_flag,
-            project_is_tx,
+            sub_input_flag,
+            sub_input_column,
             csv_headers,
         )
 
@@ -523,7 +523,7 @@ def determine_tables_to_delete_from(csv_structure, subscenario):
     """
     :param csv_structure: Pandas DataFrame
     :param subscenario: str;
-    :return: subscenario_table, input_tables, project_flag, project_is_tx,
+    :return: subscenario_table, input_tables, sub_input_flag, sub_input_column,
         base_table, base_subscenario
 
     Determine the relevant tables from which to delete prior data.
@@ -534,10 +534,10 @@ def determine_tables_to_delete_from(csv_structure, subscenario):
     # Determine the relevant tables for this subscenario
     subscenario_table = None
     input_tables = list()
-    project_flag = False
+    sub_input_flag = False
     base_table = None
     base_subscenario = None
-    project_is_tx = False
+    sub_input_column = False
 
     for index, row in subscenario_df.iterrows():
         # The subscenario table name will be based on the
@@ -554,12 +554,12 @@ def determine_tables_to_delete_from(csv_structure, subscenario):
         ):
             input_tables.append("inputs_{}".format(row["table"]))
         # Add base table/subscenario for project-level inputs
-        if int(row["project_input"]):
-            project_flag = True
+        if int(row["sub_input"]):
+            sub_input_flag = True
             base_table = row["base_table"]
             base_subscenario = row["base_subscenario"]
-        if int(row["project_is_tx"]):
-            project_is_tx = True
+
+            sub_input_column = row["sub_input_column"]
 
     # If we're loading a temporal_scenario_id, we'll hard code the
     # tables instead, as the structure is quite different / we load with
@@ -582,8 +582,8 @@ def determine_tables_to_delete_from(csv_structure, subscenario):
     return (
         subscenario_table,
         input_tables,
-        project_flag,
-        project_is_tx,
+        sub_input_flag,
+        sub_input_column,
         base_table,
         base_subscenario,
     )
@@ -591,8 +591,8 @@ def determine_tables_to_delete_from(csv_structure, subscenario):
 
 def confirm_and_temp_update_affected_tables(
     conn,
-    project_flag,
-    project_is_tx,
+    sub_input_flag,
+    sub_input_column,
     subscenario,
     subscenario_id,
     project,
@@ -601,8 +601,8 @@ def confirm_and_temp_update_affected_tables(
 ):
     """
     :param conn:
-    :param project_flag: boolean
-    :param project_flag: project_is_tx
+    :param sub_input_flag: boolean
+    :param sub_input_flag: sub_input_column
     :param subscenario: str
     :param subscenario_id: int
     :param project: str
@@ -618,9 +618,9 @@ def confirm_and_temp_update_affected_tables(
 
     For project-level data, also NULLify
     """
-    # Verify project-project_flag alignmnet
-    verify_project_flag_project_alignment(
-        project=project, project_flag=project_flag, subscenario=subscenario
+    # Verify project-sub_input_flag alignmnet
+    verify_sub_input_flag_project_alignment(
+        project=project, sub_input_flag=sub_input_flag, subscenario=subscenario
     )
 
     c = conn.cursor()
@@ -630,16 +630,12 @@ def confirm_and_temp_update_affected_tables(
 
     # For project-level data, we first check whether this
     # project-subscenario_id is used in the base table
-    if project_flag:
-        if project_is_tx:
-            project_type = "transmission_line"
-        else:
-            project_type = "project"
+    if sub_input_flag:
         # Check if this project-subscenario ID exists in the base table
         base_subscenario_ids_sql = """
             SELECT {} FROM {} WHERE {} = ? and {} = ?
             """.format(
-            base_subscenario, base_table, project_type, subscenario
+            base_subscenario, base_table, sub_input_column, subscenario
         )
         base_subscenario_ids_tuples = c.execute(
             base_subscenario_ids_sql, (project, subscenario_id)
@@ -726,7 +722,7 @@ def confirm_and_temp_update_affected_tables(
         scenario_update_sql = """
             UPDATE scenarios SET {} = NULL WHERE scenario_id = ?
         """.format(
-            base_subscenario if project_flag else subscenario
+            base_subscenario if sub_input_flag else subscenario
         )
         spin_on_database_lock(
             conn=conn, cursor=c, sql=scenario_update_sql, data=scenarios_tuples
@@ -734,7 +730,7 @@ def confirm_and_temp_update_affected_tables(
 
         # Next, update the base table with NULLs where this
         # project-subscenario ID is used if this is a project-level input
-        if project_flag:
+        if sub_input_flag:
             base_subscenario_ids_project_tuples = [
                 base + (project,) for base in base_subscenario_ids_tuples
             ]
@@ -766,8 +762,8 @@ def confirm_and_temp_update_affected_tables(
 
 def repopulate_tables(
     conn,
-    project_flag,
-    project_is_tx,
+    sub_input_flag,
+    sub_input_column,
     subscenario,
     subscenario_id,
     project,
@@ -779,8 +775,8 @@ def repopulate_tables(
 ):
     """
     :param conn:
-    :param project_flag: boolean
-    :param project_is_tx: boolean
+    :param sub_input_flag: boolean
+    :param sub_input_column: string
     :param subscenario: str
     :param subscenario_id: int
     :param project: str
@@ -798,11 +794,7 @@ def repopulate_tables(
     c = conn.cursor()
 
     # Update the base table if project-level if there's any update data
-    if project_flag and base_subscenario_ids_data:
-        if project_is_tx:
-            project_type = "transmission_line"
-        else:
-            project_type = "project"
+    if sub_input_flag and base_subscenario_ids_data:
         base_subscenario_reupdate_sql = """
             UPDATE {} SET {} = ? WHERE {} in ({}) AND {} = ?
             """.format(
@@ -810,7 +802,7 @@ def repopulate_tables(
             subscenario,
             base_subscenario,
             base_subscenario_ids_str,
-            project_type,
+            sub_input_column,
         )
         base_subscenario_update_tuple = (
             (int(subscenario_id),) + tuple(base_subscenario_ids_data) + (project,)
@@ -828,7 +820,7 @@ def repopulate_tables(
         scenario_reupdate_sql = """
             UPDATE scenarios SET {} = ? WHERE scenario_id = ?
         """.format(
-            base_subscenario if project_flag else subscenario
+            base_subscenario if sub_input_flag else subscenario
         )
 
         spin_on_database_lock(
@@ -848,8 +840,8 @@ def generic_delete_subscenario(
     project,
     subscenario_table,
     input_tables,
-    project_flag,
-    project_is_tx,
+    sub_input_flag,
+    sub_input_column,
 ):
     """
     :param conn:
@@ -858,8 +850,8 @@ def generic_delete_subscenario(
     :param project: str
     :param subscenario_table: str
     :param input_tables: list of strings
-    :param project_flag: boolean
-    :param project_is_tx: boolean
+    :param sub_input_flag: boolean
+    :param sub_input_column: string
 
     Delete prior data for a particular subscenario and subscenario ID. Some
     subscenarios have more than one input table associated with them,
@@ -870,7 +862,7 @@ def generic_delete_subscenario(
 
     # Create the SQL delete statements for the subscenario info and input
     # tables
-    if not project_flag:
+    if not sub_input_flag:
         delete_data = (subscenario_id,)
         del_inputs_sql_list = [
             """
@@ -888,10 +880,6 @@ def generic_delete_subscenario(
             subscenario_table, subscenario
         )
     else:
-        if project_is_tx:
-            project_type = "transmission_line"
-        else:
-            project_type = "project"
         delete_data = (
             project,
             subscenario_id,
@@ -902,7 +890,7 @@ def generic_delete_subscenario(
             WHERE {} = ?
             AND {} = ?;
             """.format(
-                table, project_type, subscenario
+                table, sub_input_column, subscenario
             )
             for table in input_tables
         ]
@@ -927,15 +915,15 @@ def generic_delete_subscenario(
 
 
 def generic_insert_subscenario_info(
-    conn, subscenario, table, subscenario_data, project_flag, project_is_tx
+    conn, subscenario, table, subscenario_data, sub_input_flag, sub_input_column
 ):
     """
     :param conn: the database connection object
     :param subscenario: str
     :param table: str
     :param subscenario_data: list of tuples
-    :param project_flag: boolean
-    :param project_is_tx: boolean
+    :param sub_input_flag: boolean
+    :param sub_input_column: string
 
     Generic function that loads subscenario info for a
     particular subscenario. The subscenario_data are given as lists of
@@ -944,7 +932,7 @@ def generic_insert_subscenario_info(
     c = conn.cursor()
 
     # Load in the subscenario name and description
-    if not project_flag:
+    if not sub_input_flag:
         subs_sql = """
             INSERT INTO subscenarios_{}
             ({}, name, description)
@@ -953,16 +941,12 @@ def generic_insert_subscenario_info(
             table, subscenario
         )
     else:
-        if project_is_tx:
-            project_type = "transmission_line"
-        else:
-            project_type = "project"
         subs_sql = """
             INSERT INTO subscenarios_{table}
             ({project}, {subscenario_id}, name, description)
             VALUES (?, ?, ?, ?);
             """.format(
-            table=table, project=project_type, subscenario_id=subscenario
+            table=table, project=sub_input_column, subscenario_id=subscenario
         )
 
     spin_on_database_lock(conn=conn, cursor=c, sql=subs_sql, data=subscenario_data)
@@ -975,8 +959,8 @@ def generic_insert_subscenario_data(
     subscenario,
     table,
     inputs_data,
-    project_flag,
-    project_is_tx,
+    sub_input_flag,
+    sub_input_column,
     csv_headers=None,
 ):
     """
@@ -984,8 +968,8 @@ def generic_insert_subscenario_data(
     :param subscenario: str
     :param table: str
     :param inputs_data: list of tuples
-    :param project_flag: boolean
-    :param project_is_tx: boolean
+    :param sub_input_flag: boolean
+    :param sub_input_column: string
     :param csv_headers: list of strings
 
     Generic function that loads subscenario info and inputs data for a
@@ -1004,9 +988,9 @@ def generic_insert_subscenario_data(
     column_names = [s[0] for s in table_data_query.description]
 
     if csv_headers is not None:
-        if project_flag:
+        if sub_input_flag:
             headers_for_validation = [
-                "transmission_line" if project_is_tx else "project",
+                sub_input_column,
                 subscenario,
             ] + csv_headers
         else:
@@ -1044,8 +1028,8 @@ def load_all_subscenario_ids_from_dir_to_subscenario_table(
     subscenario,
     table,
     subscenario_type,
-    project_flag,
-    project_is_tx,
+    sub_input_flag,
+    sub_input_column,
     cols_to_exclude_str,
     custom_method,
     inputs_dir,
@@ -1057,8 +1041,8 @@ def load_all_subscenario_ids_from_dir_to_subscenario_table(
     :param subscenario: str; the subscenario (e.g. 'temporal_scenario_id')
     :param table: str; the subscenario table name
     :param subscenario_type: str; determines which CSV-to-DB functions to use
-    :param project_flag: boolean
-    :param project_is_tx: boolean
+    :param sub_input_flag: boolean
+    :param sub_input_column: string
     :param cols_to_exclude_str:
     :param custom_method: str
     :param inputs_dir: str
@@ -1076,8 +1060,8 @@ def load_all_subscenario_ids_from_dir_to_subscenario_table(
             subscenario=subscenario,
             table=table,
             inputs_dir=inputs_dir,
-            use_project_method=project_flag,
-            project_is_tx=project_is_tx,
+            use_project_method=sub_input_flag,
+            sub_input_column=sub_input_column,
             cols_to_exclude_str=cols_to_exclude_str,
             custom_method=custom_method,
         )
@@ -1107,8 +1091,8 @@ def load_single_subscenario_id_from_dir_to_subscenario_table(
     subscenario,
     table,
     subscenario_type,
-    project_flag,
-    project_is_tx,
+    sub_input_flag,
+    sub_input_column,
     cols_to_exclude_str,
     custom_method,
     inputs_dir,
@@ -1122,8 +1106,8 @@ def load_single_subscenario_id_from_dir_to_subscenario_table(
     :param subscenario: str; the subscenario (e.g. 'temporal_scenario_id')
     :param table: str; the subscenario table name
     :param subscenario_type: str; determines which CSV-to-DB functions to use
-    :param project_flag: boolean
-    :param project_is_tx: boolean
+    :param sub_input_flag: boolean
+    :param sub_input_column: string
     :param cols_to_exclude_str:
     :param custom_method: str
     :param inputs_dir: str
@@ -1136,13 +1120,13 @@ def load_single_subscenario_id_from_dir_to_subscenario_table(
     Load data for a particular (project-)subscenario ID from a directory.
     """
 
-    # Verify project-project_flag alignment
-    verify_project_flag_project_alignment(
-        project=project, project_flag=project_flag, subscenario=subscenario
+    # Verify project-sub_input_flag alignment
+    verify_sub_input_flag_project_alignment(
+        project=project, sub_input_flag=sub_input_flag, subscenario=subscenario
     )
 
     if subscenario_type == "simple":
-        if not project_flag:
+        if not sub_input_flag:
             file_startswith = str(subscenario_id_to_load)
             description_delimiter = "_"
         else:
@@ -1175,8 +1159,8 @@ def load_single_subscenario_id_from_dir_to_subscenario_table(
             dir_subsc=False,
             inputs_dir=inputs_dir,
             csv_file=csv_file,
-            use_project_method=project_flag,
-            project_is_tx=project_is_tx,
+            use_project_method=sub_input_flag,
+            sub_input_column=sub_input_column,
             skip_subscenario_info=False,
             skip_subscenario_data=False,
             cols_to_exclude_str=cols_to_exclude_str,
@@ -1212,7 +1196,7 @@ def load_single_subscenario_id_from_dir_to_subscenario_table(
             inputs_dir=os.path.join(inputs_dir, subscenario_directory),
             csv_file=filename,
             use_project_method=False,
-            project_is_tx=False,
+            sub_input_column=False,
             skip_subscenario_info=skip_subscenario_info,
             skip_subscenario_data=skip_subscenario_data,
             cols_to_exclude_str=cols_to_exclude_str,
@@ -1271,10 +1255,10 @@ def confirm(prompt=None, resp=False):
             return False
 
 
-def verify_project_flag_project_alignment(project, project_flag, subscenario):
+def verify_sub_input_flag_project_alignment(project, sub_input_flag, subscenario):
     """
     :param project: str
-    :param project_flag: boolean
+    :param sub_input_flag: boolean
     :param subscenario: str
 
     Check that the if a project is specified, this is a project-level
@@ -1283,13 +1267,13 @@ def verify_project_flag_project_alignment(project, project_flag, subscenario):
     Check that if a project is not specified, this is not a project-level
     subscenario.
     """
-    if project is not None and not project_flag:
+    if project is not None and not sub_input_flag:
         raise ValueError(
             "The {} is not a project-level input but you have specified "
             "project {}.".format(subscenario, project)
         )
 
-    if project is None and project_flag:
+    if project is None and sub_input_flag:
         raise ValueError(
             "Please specify which project you'd like to import data for "
             "in addition to the {}.".format(subscenario)

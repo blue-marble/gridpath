@@ -82,7 +82,7 @@ def add_model_components(
         subproblem=subproblem,
         stage=stage,
         which_type="tx_operational_type",
-        prj_or_tx="transmission_line",
+        filename="transmission_lines",
     )
 
     imported_tx_operational_modules = load_tx_operational_type_modules(
@@ -184,7 +184,7 @@ def export_results(
         subproblem=subproblem,
         stage=stage,
         which_type="tx_operational_type",
-        prj_or_tx="transmission_line",
+        filename="transmission_lines",
     )
 
     imported_operational_modules = load_tx_operational_type_modules(

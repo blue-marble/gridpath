@@ -26,6 +26,7 @@ of_deliverability,
 of_elcc_surface,
 of_local_capacity,
 of_markets,
+of_water,
 of_tuning,
 temporal_scenario_id,1
 load_zone_scenario_id,1
@@ -50,6 +51,8 @@ fuel_burn_limit_ba_scenario_id,NULL
 prm_zone_scenario_id,NULL
 local_capacity_zone_scenario_id,NULL
 market_scenario_id,NULL
+water_system_params_scenario_id,NULL
+water_network_scenario_id,NULL
 project_portfolio_scenario_id,4
 project_operational_chars_scenario_id,15
 project_availability_scenario_id,1
@@ -128,4 +131,8 @@ local_capacity_requirement_scenario_id,NULL
 elcc_surface_scenario_id,NULL
 market_price_scenario_id,NULL
 market_volume_scenario_id,NULL
+water_node_reservoir_scenario_id,NULL
+water_flow_scenario_id,NULL
+water_inflow_scenario_id,NULL
+water_powerhouse_scenario_id,NULL
 tuning_scenario_id,NULL

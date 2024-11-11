@@ -38,6 +38,13 @@ PREREQUISITE_MODULE_NAMES = [
     "project.fuels",
     "project.operations",
     "project.operations.reserves.regulation_up",
+    "geography.water_network",
+    "system.water.water_system_params",
+    "system.water.water_flows",
+    "system.water.water_nodes",
+    "system.water.reservoirs",
+    "system.water.water_node_balance",
+    "system.water.powerhouses",
     "project.operations.operational_types",
 ]
 NAME_OF_MODULE_BEING_TESTED = (

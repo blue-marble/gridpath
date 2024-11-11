@@ -1,4 +1,4 @@
-# Copyright 2016-2023 Blue Marble Analytics LLC.
+# Copyright 2016-2024 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -63,6 +63,7 @@ def all_modules_list():
         "geography.prm_zones",
         "geography.local_capacity_zones",
         "geography.markets",
+        "geography.water_network",
         "system.load_balance",
         "system.load_balance.static_load_requirement",
         "system.policy.energy_targets",
@@ -84,6 +85,12 @@ def all_modules_list():
         "system.reliability.local_capacity",
         "system.reliability.local_capacity.local_capacity_requirement",
         "system.markets.prices",
+        "system.water.water_system_params",
+        "system.water.water_flows",
+        "system.water.water_nodes",
+        "system.water.reservoirs",
+        "system.water.water_node_balance",
+        "system.water.powerhouses",
         "project",
         "project.capacity",
         "project.capacity.capacity_types",
@@ -457,6 +464,15 @@ def optional_modules_list():
             "system.markets.volume",
             "system.load_balance.aggregate_market_participation",
             "objective.system.aggregate_market_revenue_and_costs",
+        ],
+        "water": [
+            "geography.water_network",
+            "system.water.water_system_params",
+            "system.water.water_nodes",
+            "system.water.reservoirs",
+            "system.water.water_node_balance",
+            "system.water.water_flows",
+            "system.water.powerhouses",
         ],
         "tuning": [
             "project.operations.tuning_costs",

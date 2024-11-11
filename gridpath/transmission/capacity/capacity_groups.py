@@ -138,7 +138,7 @@ def add_model_components(
         availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
-        prj_or_tx="transmission_line",
+        filename="transmission_lines",
         which_type="tx_capacity_type",
     )
 

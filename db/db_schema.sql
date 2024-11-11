@@ -994,6 +994,298 @@ CREATE TABLE inputs_geography_fuel_burn_limit_balancing_areas
 );
 
 
+-- Water system
+DROP TABLE IF EXISTS subscenarios_system_water_system_params;
+CREATE TABLE subscenarios_system_water_system_params
+(
+    water_system_params_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name                            VARCHAR(32),
+    description                     VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_system_water_system_params;
+CREATE TABLE inputs_system_water_system_params
+(
+    water_system_params_scenario_id INTEGER PRIMARY KEY,
+    water_system_balancing_type     TEXT,
+    theoretical_power_coefficient   FLOAT,
+    FOREIGN KEY (water_system_params_scenario_id) REFERENCES
+        subscenarios_system_water_system_params (water_system_params_scenario_id)
+);
+
+-- Water network
+DROP TABLE IF EXISTS subscenarios_geography_water_network;
+CREATE TABLE subscenarios_geography_water_network
+(
+    water_network_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name                      VARCHAR(32),
+    description               VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_geography_water_network;
+CREATE TABLE inputs_geography_water_network
+(
+    water_network_scenario_id            INTEGER,
+    water_link                           TEXT,
+    water_node_from                      TEXT,
+    water_node_to                        TEXT,
+    water_link_flow_transport_time_hours FLOAT,
+    PRIMARY KEY (water_network_scenario_id, water_link),
+    FOREIGN KEY (water_network_scenario_id) REFERENCES
+        subscenarios_geography_water_network (water_network_scenario_id)
+);
+
+DROP TABLE IF EXISTS subscenarios_system_water_node_reservoirs;
+CREATE TABLE subscenarios_system_water_node_reservoirs
+(
+    water_node_reservoir_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name                             VARCHAR(32),
+    description                      VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_system_water_node_reservoirs;
+CREATE TABLE inputs_system_water_node_reservoirs
+(
+    water_node_reservoir_scenario_id INTEGER,
+    water_node                       TEXT,
+    target_volume_scenario_id        INTEGER,
+    target_release_scenario_id       INTEGER,
+    minimum_volume_volumeunit        FLOAT,
+    maximum_volume_volumeunit        FLOAT,
+    max_spill                        FLOAT,
+    evaporation_coefficient          FLOAT,
+    elevation_type                   TEXT,
+    exogenous_elevation_id           INTEGER,
+    volume_to_elevation_curve_id     INTEGER,
+    PRIMARY KEY (water_node_reservoir_scenario_id, water_node),
+    FOREIGN KEY (water_node_reservoir_scenario_id) REFERENCES
+        subscenarios_system_water_node_reservoirs (water_node_reservoir_scenario_id),
+    FOREIGN KEY (water_node, target_volume_scenario_id) REFERENCES
+        subscenarios_system_water_node_reservoirs_target_volumes
+            (water_node, target_volume_scenario_id),
+    FOREIGN KEY (water_node, target_release_scenario_id) REFERENCES
+        subscenarios_system_water_node_reservoirs_target_releases
+            (water_node, target_release_scenario_id)
+--     FOREIGN KEY (reservoir, evaporation_coefficient_scenario_id) REFERENCES
+--         subscenarios_system_water_node_reservoirs_evaporaton_coefficient
+--             (reservoir, evaporation_coefficient_scenario_id)
+);
+
+
+DROP TABLE IF EXISTS
+    subscenarios_system_water_node_reservoir_exogenous_elevations;
+CREATE TABLE subscenarios_system_water_node_reservoir_exogenous_elevations
+(
+    water_node             VARCHAR(32),
+    exogenous_elevation_id INTEGER,
+    name                   VARCHAR(32),
+    description            VARCHAR(128),
+    PRIMARY KEY (water_node, exogenous_elevation_id)
+);
+
+DROP TABLE IF EXISTS
+    inputs_system_water_node_reservoir_exogenous_elevations;
+CREATE TABLE inputs_system_water_node_reservoir_exogenous_elevations
+(
+    water_node                    VARCHAR(64),
+    exogenous_elevation_id        INTEGER,
+    hydro_iteration               INTEGER DEFAULT 0 NOT NULL,
+    timepoint                     INTEGER,
+    reservoir_exogenous_elevation INTEGER,
+    PRIMARY KEY (water_node, exogenous_elevation_id, timepoint, hydro_iteration),
+    FOREIGN KEY (water_node, exogenous_elevation_id) REFERENCES
+        subscenarios_system_water_node_reservoir_exogenous_elevations
+            (water_node, exogenous_elevation_id)
+);
+
+DROP TABLE IF EXISTS
+    subscenarios_system_water_node_reservoir_volume_to_elevation_curves;
+CREATE TABLE subscenarios_system_water_node_reservoir_volume_to_elevation_curves
+(
+    water_node                   VARCHAR(32),
+    volume_to_elevation_curve_id INTEGER,
+    name                         VARCHAR(32),
+    description                  VARCHAR(128),
+    PRIMARY KEY (water_node, volume_to_elevation_curve_id)
+);
+
+DROP TABLE IF EXISTS
+    inputs_system_water_node_reservoir_volume_to_elevation_curves;
+CREATE TABLE inputs_system_water_node_reservoir_volume_to_elevation_curves
+(
+    water_node                    VARCHAR(64),
+    volume_to_elevation_curve_id  INTEGER,
+    segment                       INTEGER,
+    volume_to_elevation_slope     FLOAT,
+    volume_to_elevation_intercept FLOAT,
+    PRIMARY KEY (water_node, volume_to_elevation_curve_id, segment),
+    FOREIGN KEY (water_node, volume_to_elevation_curve_id) REFERENCES
+        subscenarios_system_water_node_reservoir_volume_to_elevation_curves
+            (water_node, volume_to_elevation_curve_id)
+);
+
+DROP TABLE IF EXISTS subscenarios_system_water_node_reservoirs_target_volumes;
+CREATE TABLE subscenarios_system_water_node_reservoirs_target_volumes
+(
+    water_node                TEXT,
+    target_volume_scenario_id INTEGER,
+    name                      VARCHAR(32),
+    description               VARCHAR(128),
+    PRIMARY KEY (water_node, target_volume_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_system_water_node_reservoirs_target_volumes;
+CREATE TABLE inputs_system_water_node_reservoirs_target_volumes
+(
+    water_node                TEXT,
+    target_volume_scenario_id INTEGER,
+    hydro_iteration           INTEGER DEFAULT 0 NOT NULL,
+    timepoint                 FLOAT,
+    reservoir_target_volume   DECIMAL,
+    PRIMARY KEY (water_node, target_volume_scenario_id, timepoint, hydro_iteration),
+    FOREIGN KEY (water_node, target_volume_scenario_id) REFERENCES
+        subscenarios_system_water_node_reservoirs_target_volumes
+            (water_node, target_volume_scenario_id)
+);
+
+
+DROP TABLE IF EXISTS subscenarios_system_water_node_reservoirs_target_releases;
+CREATE TABLE subscenarios_system_water_node_reservoirs_target_releases
+(
+    water_node                 TEXT,
+    target_release_scenario_id INTEGER,
+    name                       VARCHAR(32),
+    description                VARCHAR(128),
+    PRIMARY KEY (water_node, target_release_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_system_water_node_reservoirs_target_releases;
+CREATE TABLE inputs_system_water_node_reservoirs_target_releases
+(
+    water_node                 TEXT,
+    target_release_scenario_id INTEGER,
+    hydro_iteration            INTEGER DEFAULT 0 NOT NULL,
+    balancing_type             TEXT,
+    horizon                    INTEGER,
+    reservoir_target_release   DECIMAL,
+    PRIMARY KEY (water_node, target_release_scenario_id, hydro_iteration,
+                 balancing_type, horizon),
+    FOREIGN KEY (water_node, target_release_scenario_id) REFERENCES
+        subscenarios_system_water_node_reservoirs_target_releases
+            (water_node, target_release_scenario_id)
+
+);
+
+
+
+-- DROP TABLE IF EXISTS subscenarios_system_water_node_reservoirs_maximum_elevation;
+-- CREATE TABLE subscenarios_system_water_node_reservoirs_maximum_elevation
+-- (
+--     reservoir                     TEXT,
+--     maximum_elevation_scenario_id INTEGER,
+--     name                          VARCHAR(32),
+--     description                   VARCHAR(128)
+-- );
+--
+-- DROP TABLE IF EXISTS inputs_system_water_node_reservoirs_maximum_elevation;
+-- CREATE TABLE inputs_system_water_node_reservoirs_maximum_elevation
+-- (
+--     reservoir                       TEXT,
+--     maximum_elevation_scenario_id   INTEGER,
+--     timepoint                       FLOAT,
+--     maximum_volume_volumeunit FLOAT,
+--     PRIMARY KEY (reservoir, maximum_elevation_scenario_id)
+-- );
+--
+-- DROP TABLE IF EXISTS subscenarios_system_water_node_reservoirs_evaporaton_coefficient;
+-- CREATE TABLE subscenarios_system_water_node_reservoirs_evaporaton_coefficient
+-- (
+--     reservoir                     TEXT,
+--     evaporation_coefficient_scenario_id INTEGER,
+--     name                          VARCHAR(32),
+--     description                   VARCHAR(128)
+-- );
+--
+-- DROP TABLE IF EXISTS inputs_system_water_node_reservoirs_evaporaton_coefficient;
+-- CREATE TABLE inputs_system_water_node_reservoirs_evaporaton_coefficient
+-- (
+--     reservoir                           TEXT,
+--     evaporation_coefficient_scenario_id INTEGER,
+--     month                               FLOAT,
+--     evaporation_coefficient             FLOAT,
+--     PRIMARY KEY (reservoir, evaporation_coefficient_scenario_id)
+-- );
+
+-- Water flows
+DROP TABLE IF EXISTS subscenarios_system_water_flows;
+CREATE TABLE subscenarios_system_water_flows
+(
+    water_flow_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name                   VARCHAR(32),
+    description            VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_system_water_flows;
+CREATE TABLE inputs_system_water_flows
+(
+    water_flow_scenario_id  INTEGER,
+    water_link              TEXT,
+    hydro_iteration         INTEGER DEFAULT 0 NOT NULL,
+    timepoint               FLOAT,
+    min_flow_vol_per_second TEXT,
+    max_flow_vol_per_second INTEGER,
+    PRIMARY KEY (water_flow_scenario_id, water_link, timepoint, hydro_iteration),
+    FOREIGN KEY (water_flow_scenario_id) REFERENCES
+        subscenarios_system_water_flows (water_flow_scenario_id)
+);
+
+-- Water nodes
+DROP TABLE IF EXISTS subscenarios_system_water_inflows;
+CREATE TABLE subscenarios_system_water_inflows
+(
+    water_inflow_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name                     VARCHAR(32),
+    description              VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_system_water_inflows;
+CREATE TABLE inputs_system_water_inflows
+(
+    water_inflow_scenario_id                INTEGER,
+    water_node                              TEXT,
+    hydro_iteration                         INTEGER DEFAULT 0 NOT NULL,
+    timepoint                               FLOAT,
+    exogenous_water_inflow_rate_vol_per_sec TEXT,
+    PRIMARY KEY (water_inflow_scenario_id, water_node, timepoint, hydro_iteration),
+    FOREIGN KEY (water_inflow_scenario_id) REFERENCES
+        subscenarios_system_water_inflows (water_inflow_scenario_id)
+);
+
+-- water_powerhouses
+DROP TABLE IF EXISTS subscenarios_system_water_powerhouses;
+CREATE TABLE subscenarios_system_water_powerhouses
+(
+    water_powerhouse_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name                         VARCHAR(32),
+    description                  VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_system_water_powerhouses;
+CREATE TABLE inputs_system_water_powerhouses
+(
+    water_powerhouse_scenario_id INTEGER,
+    powerhouse                   TEXT,
+    powerhouse_water_node        TEXT,
+    tailwater_elevation          FLOAT,
+    headloss_factor              FLOAT,
+    turbine_efficiency           FLOAT,
+    generator_efficiency         FLOAT,
+    PRIMARY KEY (water_powerhouse_scenario_id, powerhouse),
+    FOREIGN KEY (water_powerhouse_scenario_id) REFERENCES
+        subscenarios_system_water_powerhouses (water_powerhouse_scenario_id)
+);
+
+
 -------------------
 -- -- PROJECT -- --
 -------------------
@@ -1365,6 +1657,8 @@ CREATE TABLE inputs_project_operational_chars
     partial_availability_threshold           FLOAT,
     stor_exog_state_of_charge_scenario_id    INTEGER, -- determines storage SOC
     nonfuel_carbon_emissions_per_mwh         FLOAT,
+    powerhouse                               TEXT,
+    generator_efficiency                     FLOAT,
     PRIMARY KEY (project_operational_chars_scenario_id, project),
     FOREIGN KEY (project_operational_chars_scenario_id) REFERENCES
         subscenarios_project_operational_chars (project_operational_chars_scenario_id),
@@ -3974,6 +4268,7 @@ CREATE TABLE scenarios
     of_elcc_surface                                             INTEGER,
     of_local_capacity                                           INTEGER,
     of_markets                                                  INTEGER,
+    of_water                                                    INTEGER,
     of_tuning                                                   INTEGER,
     temporal_scenario_id                                        INTEGER,
     load_zone_scenario_id                                       INTEGER,
@@ -3998,6 +4293,8 @@ CREATE TABLE scenarios
     prm_zone_scenario_id                                        INTEGER,
     local_capacity_zone_scenario_id                             INTEGER,
     market_scenario_id                                          INTEGER,
+    water_system_params_scenario_id                             INTEGER,
+    water_network_scenario_id                                   INTEGER,
     project_portfolio_scenario_id                               INTEGER,
     project_operational_chars_scenario_id                       INTEGER,
     project_availability_scenario_id                            INTEGER,
@@ -4076,6 +4373,10 @@ CREATE TABLE scenarios
     elcc_surface_scenario_id                                    INTEGER,
     market_price_scenario_id                                    INTEGER,
     market_volume_scenario_id                                   INTEGER,
+    water_node_reservoir_scenario_id                            INTEGER,
+    water_flow_scenario_id                                      INTEGER,
+    water_inflow_scenario_id                                    INTEGER,
+    water_powerhouse_scenario_id                                INTEGER,
     tuning_scenario_id                                          INTEGER,
     solver_options_id                                           INTEGER,
     FOREIGN KEY (validation_status_id) REFERENCES
@@ -4133,6 +4434,10 @@ CREATE TABLE scenarios
         subscenarios_geography_local_capacity_zones (local_capacity_zone_scenario_id),
     FOREIGN KEY (market_scenario_id) REFERENCES
         subscenarios_geography_markets (market_scenario_id),
+    FOREIGN KEY (water_system_params_scenario_id) REFERENCES
+        subscenarios_system_water_system_params (water_system_params_scenario_id),
+    FOREIGN KEY (water_network_scenario_id) REFERENCES
+        subscenarios_geography_water_network (water_network_scenario_id),
     FOREIGN KEY (project_portfolio_scenario_id) REFERENCES
         subscenarios_project_portfolios (project_portfolio_scenario_id),
     FOREIGN KEY (project_operational_chars_scenario_id) REFERENCES
@@ -4332,6 +4637,14 @@ CREATE TABLE scenarios
         subscenarios_market_prices (market_price_scenario_id),
     FOREIGN KEY (market_volume_scenario_id) REFERENCES
         subscenarios_market_volume (market_volume_scenario_id),
+    FOREIGN KEY (water_node_reservoir_scenario_id) REFERENCES
+        subscenarios_system_water_node_reservoirs (water_node_reservoir_scenario_id),
+    FOREIGN KEY (water_flow_scenario_id) REFERENCES
+        subscenarios_system_water_flows (water_flow_scenario_id),
+    FOREIGN KEY (water_inflow_scenario_id) REFERENCES
+        subscenarios_system_water_inflows (water_inflow_scenario_id),
+    FOREIGN KEY (water_powerhouse_scenario_id) REFERENCES
+        subscenarios_system_water_powerhouses (water_powerhouse_scenario_id),
     FOREIGN KEY (tuning_scenario_id) REFERENCES
         subscenarios_tuning (tuning_scenario_id),
     FOREIGN KEY (solver_options_id)
@@ -5945,6 +6258,69 @@ CREATE TABLE results_system_local_capacity
 -- RA
 DROP TABLE IF EXISTS results_system_ra;
 
+
+-- Water system
+DROP TABLE IF EXISTS results_system_water_link_timepoint;
+CREATE TABLE results_system_water_link_timepoint
+(
+    scenario_id            INTEGER,
+    weather_iteration      INTEGER,
+    hydro_iteration        INTEGER,
+    availability_iteration INTEGER,
+    subproblem_id          INTEGER,
+    stage_id               INTEGER,
+    water_link             VARCHAR(32),
+    departure_timepoint    INTEGER,
+    arrival_timepoint      INTEGER,
+    water_flow_vol_per_sec FLOAT,
+    PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
+                 availability_iteration, subproblem_id, stage_id, water_link,
+                 departure_timepoint)
+);
+
+DROP TABLE IF EXISTS results_system_water_node_timepoint;
+CREATE TABLE results_system_water_node_timepoint
+(
+    scenario_id                                    INTEGER,
+    weather_iteration                              INTEGER,
+    hydro_iteration                                INTEGER,
+    availability_iteration                         INTEGER,
+    subproblem_id                                  INTEGER,
+    stage_id                                       INTEGER,
+    water_node                                     VARCHAR(32),
+    timepoint                                      INTEGER,
+    starting_elevation                             FLOAT,
+    starting_volume                                FLOAT,
+    exogenous_water_inflow_rate_vol_per_sec        FLOAT,
+    endogenous_water_inflow_rate_vol_per_sec       FLOAT,
+    discharge_water_to_powerhouse_rate_vol_per_sec FLOAT,
+    spill_water_rate_vol_per_sec                   FLOAT,
+    evap_losses_NOT_IMPLEMENTED                    FLOAT,
+    endogenous_water_outflows_rate_vol_per_sec     FLOAT,
+    PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
+                 availability_iteration, subproblem_id, stage_id, water_node,
+                 timepoint)
+);
+
+DROP TABLE IF EXISTS results_system_water_powerhouse_timepoint;
+CREATE TABLE results_system_water_powerhouse_timepoint
+(
+    scenario_id                                    INTEGER,
+    weather_iteration                              INTEGER,
+    hydro_iteration                                INTEGER,
+    availability_iteration                         INTEGER,
+    subproblem_id                                  INTEGER,
+    stage_id                                       INTEGER,
+    powerhouse                                     VARCHAR(32),
+    timepoint                                      INTEGER,
+    water_node                                     VARCHAR(32),
+    gross_head                                     FLOAT,
+    net_head                                       FLOAT,
+    water_discharge_to_powerhouse_rate_vol_per_sec FLOAT,
+    PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
+                 availability_iteration, subproblem_id, stage_id, powerhouse,
+                 timepoint)
+);
 
 -- Total Costs
 DROP TABLE IF EXISTS results_system_costs;

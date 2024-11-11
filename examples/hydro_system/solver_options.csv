@@ -1,0 +1,4 @@
+solver_name,multistart
+max_iter,3000.0
+solver,ipopt
+tol,1e-08
