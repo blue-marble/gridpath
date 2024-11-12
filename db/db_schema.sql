@@ -1092,7 +1092,8 @@ CREATE TABLE inputs_system_water_node_reservoir_exogenous_elevations
     hydro_iteration               INTEGER DEFAULT 0 NOT NULL,
     timepoint                     INTEGER,
     reservoir_exogenous_elevation INTEGER,
-    PRIMARY KEY (water_node, exogenous_elevation_id, timepoint, hydro_iteration),
+    PRIMARY KEY (water_node, exogenous_elevation_id, timepoint,
+                 hydro_iteration),
     FOREIGN KEY (water_node, exogenous_elevation_id) REFERENCES
         subscenarios_system_water_node_reservoir_exogenous_elevations
             (water_node, exogenous_elevation_id)
@@ -1142,7 +1143,8 @@ CREATE TABLE inputs_system_water_node_reservoirs_target_volumes
     hydro_iteration           INTEGER DEFAULT 0 NOT NULL,
     timepoint                 FLOAT,
     reservoir_target_volume   DECIMAL,
-    PRIMARY KEY (water_node, target_volume_scenario_id, timepoint, hydro_iteration),
+    PRIMARY KEY (water_node, target_volume_scenario_id, timepoint,
+                 hydro_iteration),
     FOREIGN KEY (water_node, target_volume_scenario_id) REFERENCES
         subscenarios_system_water_node_reservoirs_target_volumes
             (water_node, target_volume_scenario_id)
@@ -1234,7 +1236,8 @@ CREATE TABLE inputs_system_water_flows
     timepoint               FLOAT,
     min_flow_vol_per_second TEXT,
     max_flow_vol_per_second INTEGER,
-    PRIMARY KEY (water_flow_scenario_id, water_link, timepoint, hydro_iteration),
+    PRIMARY KEY (water_flow_scenario_id, water_link, timepoint,
+                 hydro_iteration),
     FOREIGN KEY (water_flow_scenario_id) REFERENCES
         subscenarios_system_water_flows (water_flow_scenario_id)
 );
@@ -1256,7 +1259,8 @@ CREATE TABLE inputs_system_water_inflows
     hydro_iteration                         INTEGER DEFAULT 0 NOT NULL,
     timepoint                               FLOAT,
     exogenous_water_inflow_rate_vol_per_sec TEXT,
-    PRIMARY KEY (water_inflow_scenario_id, water_node, timepoint, hydro_iteration),
+    PRIMARY KEY (water_inflow_scenario_id, water_node, timepoint,
+                 hydro_iteration),
     FOREIGN KEY (water_inflow_scenario_id) REFERENCES
         subscenarios_system_water_inflows (water_inflow_scenario_id)
 );
@@ -3373,22 +3377,62 @@ CREATE TABLE subscenarios_system_load
     description      VARCHAR(128)
 );
 
--- Can include timepoints and zones other than the ones in a scenario, as
--- correct timepoints and zones will be pulled depending on
--- temporal_scenario_id and load_zone_scenario_id
 DROP TABLE IF EXISTS inputs_system_load;
 CREATE TABLE inputs_system_load
 (
-    load_scenario_id  INTEGER,
-    load_zone         VARCHAR(32),
-    weather_iteration INTEGER,
-    stage_id          INTEGER,
-    timepoint         INTEGER,
-    load_mw           FLOAT,
-    PRIMARY KEY (load_scenario_id, load_zone, weather_iteration, stage_id,
-                 timepoint),
+    load_scenario_id            INTEGER,
+    load_components_scenario_id INTEGER,
+    load_levels_scenario_id     INTEGER,
+    PRIMARY KEY (load_scenario_id, load_components_scenario_id,
+                 load_levels_scenario_id),
     FOREIGN KEY (load_scenario_id) REFERENCES subscenarios_system_load
         (load_scenario_id)
+);
+
+-- Can include timepoints and zones other than the ones in a scenario, as
+-- correct timepoints and zones will be pulled depending on
+-- temporal_scenario_id and load_zone_scenario_id
+DROP TABLE IF EXISTS subscenarios_system_load_components;
+CREATE TABLE subscenarios_system_load_components
+(
+    load_components_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name                        VARCHAR(32),
+    description                 VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_system_load_components;
+CREATE TABLE inputs_system_load_components
+(
+    load_components_scenario_id INTEGER,
+    load_zone                   VARCHAR(32),
+    load_component              TEXT,
+    PRIMARY KEY (load_components_scenario_id, load_zone, load_component)
+);
+
+-- Can include timepoints and zones other than the ones in a scenario, as
+-- correct timepoints and zones will be pulled depending on
+-- temporal_scenario_id and load_zone_scenario_id
+DROP TABLE IF EXISTS subscenarios_system_load_levels;
+CREATE TABLE subscenarios_system_load_levels
+(
+    load_levels_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name                    VARCHAR(32),
+    description             VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_system_load_levels;
+CREATE TABLE inputs_system_load_levels
+(
+    load_levels_scenario_id INTEGER,
+    load_zone               VARCHAR(32),
+    weather_iteration       INTEGER,
+    stage_id                INTEGER,
+    timepoint               INTEGER,
+    load_component          TEXT,
+    load_mw                 FLOAT,
+    PRIMARY KEY (load_levels_scenario_id, load_zone, weather_iteration,
+                 stage_id,
+                 timepoint, load_component)
 );
 
 
