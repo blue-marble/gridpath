@@ -282,7 +282,7 @@ def export_summary_results(
                 m.hour_of_day[tmp],
                 m.tmp_weight[tmp],
                 m.hrs_in_tmp[tmp],
-                m.static_load_mw[z, tmp],
+                m.Static_Load_MW[z, tmp],
                 m.unserved_energy_stats_threshold_mw[z],
                 value(m.Unserved_Energy_MW_Expression[z, tmp]),
             ]

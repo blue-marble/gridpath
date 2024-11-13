@@ -184,10 +184,10 @@ def main(args=None):
     # Sync load
     if not skip_create_sync_load_input_csvs:
         sync_load_scenario_id = get_setting(
-            settings_df, "create_sync_load_input_csvs", "load_scenario_id"
+            settings_df, "create_sync_load_input_csvs", "load_levels_scenario_id"
         )
         sync_load_scenario_name = get_setting(
-            settings_df, "create_sync_load_input_csvs", "load_scenario_name"
+            settings_df, "create_sync_load_input_csvs", "load_levels_scenario_name"
         )
         sync_load_output_directory = os.path.join(
             os.getcwd(),
@@ -201,9 +201,9 @@ def main(args=None):
             [
                 "--database",
                 db_path,
-                "--load_scenario_id",
+                "--load_levels_scenario_id",
                 sync_load_scenario_id,
-                "--load_scenario_name",
+                "--load_levels_scenario_name",
                 sync_load_scenario_name,
                 "--stage_id",
                 stage_id,
@@ -292,10 +292,12 @@ def main(args=None):
     # Monte Carlo load
     if not skip_create_monte_carlo_load_input_csvs:
         mc_load_scenario_id = get_setting(
-            settings_df, "create_monte_carlo_load_input_csvs", "load_scenario_id"
+            settings_df, "create_monte_carlo_load_input_csvs", "load_levels_scenario_id"
         )
         mc_load_scenario_name = get_setting(
-            settings_df, "create_monte_carlo_load_input_csvs", "load_scenario_name"
+            settings_df,
+            "create_monte_carlo_load_input_csvs",
+            "load_levels_scenario_name",
         )
         mc_load_output_directory = os.path.join(
             os.getcwd(),
@@ -311,9 +313,9 @@ def main(args=None):
             [
                 "--database",
                 db_path,
-                "--load_scenario_id",
+                "--load_levels_scenario_id",
                 mc_load_scenario_id,
-                "--load_scenario_name",
+                "--load_levels_scenario_name",
                 mc_load_scenario_name,
                 "--stage_id",
                 stage_id,

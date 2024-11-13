@@ -19,7 +19,7 @@ load requirement to the load-balance constraint.
 
 import csv
 import os.path
-from pyomo.environ import Param, NonNegativeReals
+from pyomo.environ import Set, Param, Any, NonNegativeReals, Expression
 
 from gridpath.auxiliary.db_interface import directories_to_db_values
 from gridpath.auxiliary.dynamic_components import load_balance_consumption_components
@@ -34,7 +34,7 @@ def record_dynamic_components(dynamic_components):
     This method adds the static load to the load balance dynamic components.
     """
     getattr(dynamic_components, load_balance_consumption_components).append(
-        "static_load_mw"
+        "Static_Load_MW"
     )
 
 
@@ -60,7 +60,21 @@ def add_model_components(
     """
 
     # Static load
-    m.static_load_mw = Param(m.LOAD_ZONES, m.TMPS, within=NonNegativeReals)
+    m.LOAD_ZONE_TMP_LOAD_CMPNTS = Set(within=m.LOAD_ZONES * m.TMPS * Any)
+    m.component_static_load_mw = Param(
+        m.LOAD_ZONE_TMP_LOAD_CMPNTS, within=NonNegativeReals
+    )
+
+    def total_static_load_from_components_init(mod, lz, tmp):
+        return sum(
+            mod.component_static_load_mw[load_zone, timepoint, component]
+            for (load_zone, timepoint, component) in mod.LOAD_ZONE_TMP_LOAD_CMPNTS
+            if (load_zone == lz and timepoint == tmp)
+        )
+
+    m.Static_Load_MW = Expression(
+        m.LOAD_ZONES, m.TMPS, initialize=total_static_load_from_components_init
+    )
 
     record_dynamic_components(dynamic_components=d)
 
@@ -97,7 +111,8 @@ def load_model_data(
             "inputs",
             "load_mw.tab",
         ),
-        param=m.static_load_mw,
+        index=m.LOAD_ZONE_TMP_LOAD_CMPNTS,
+        param=m.component_static_load_mw,
     )
 
 
@@ -125,10 +140,10 @@ def get_inputs_from_database(
     # Select only profiles of load_zones that are part of the correct
     # load_zone_scenario
     # Select only profiles for the correct load_scenario
-    loads = c.execute(
-        f"""SELECT load_zone, timepoint, load_mw
-        FROM inputs_system_load
+    sql = f"""SELECT load_zone, timepoint, load_component, load_mw
+        FROM inputs_system_load_levels
         INNER JOIN
+        -- Get only relevant timepionts
         (SELECT timepoint
         FROM inputs_temporal
         WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
@@ -136,15 +151,32 @@ def get_inputs_from_database(
         AND stage_id = {stage}) as relevant_timepoints
         USING (timepoint)
         INNER JOIN
+        -- Get only relevant load zones
         (SELECT load_zone
         FROM inputs_geography_load_zones
         WHERE load_zone_scenario_id = {subscenarios.LOAD_ZONE_SCENARIO_ID}) as relevant_load_zones
         USING (load_zone)
-        WHERE load_scenario_id = {subscenarios.LOAD_SCENARIO_ID}
+        -- Get the relevant subscenario
+        WHERE load_levels_scenario_id = (
+            SELECT load_levels_scenario_id
+            FROM inputs_system_load
+            WHERE load_scenario_id = {subscenarios.LOAD_SCENARIO_ID}
+            )
+        AND (load_zone, load_component) in (
+            SELECT load_zone, load_component
+            FROM inputs_system_load_components
+            WHERE load_components_scenario_id = (
+                SELECT load_components_scenario_id
+                FROM inputs_system_load
+                WHERE load_scenario_id = {subscenarios.LOAD_SCENARIO_ID}
+                )
+            )
+        -- Get the relevant weather iteration and stage
         AND weather_iteration = {weather_iteration}
         AND stage_id = {stage}
         """
-    )
+
+    loads = c.execute(sql)
 
     return loads
 
@@ -233,7 +265,7 @@ def write_model_inputs(
         writer = csv.writer(load_tab_file, delimiter="\t", lineterminator="\n")
 
         # Write header
-        writer.writerow(["LOAD_ZONES", "timepoint", "load_mw"])
+        writer.writerow(["LOAD_ZONES", "timepoint", "load_component", "load_mw"])
 
         for row in loads:
             writer.writerow(row)
@@ -266,7 +298,7 @@ def export_results(
         [
             lz,
             tmp,
-            m.static_load_mw[lz, tmp],
+            m.Static_Load_MW[lz, tmp],
         ]
         for lz in getattr(m, "LOAD_ZONES")
         for tmp in getattr(m, "TMPS")

@@ -1,5 +1,5 @@
-LOAD_ZONES	timepoint	load_mw
-Zone1	20200101	50.0
-Zone1	20200102	30.0
-Zone1	20300101	30.0
-Zone1	20300102	50.0
+LOAD_ZONES	timepoint	load_component	load_mw
+Zone1	20200101	all	50.0
+Zone1	20200102	all	30.0
+Zone1	20300101	all	30.0
+Zone1	20300102	all	50.0
