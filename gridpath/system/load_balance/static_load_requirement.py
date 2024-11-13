@@ -52,15 +52,54 @@ def add_model_components(
     :param m: the Pyomo abstract model object we are adding the components to
     :param d: the DynamicComponents class object we are adding components to
 
-    Here, we add the *static_load_mw* parameter -- the load requirement --
-    defined for each load zone *z* and timepoint *tmp*, and add it to the
-    dynamic load-balance consumption components that will go into the load
-    balance constraint in the *load_balance* module (i.e. the constraint's
-    rhs).
+    Here, we add the *component_static_load_mw* parameter -- profiles for the
+    various load components defined for each load zone *z* and timepoint
+    *tmp*. These profiles are summed into the *Static_Load_MW* expression,
+    which in turn is added to the dynamic load-balance consumption components
+    that will go into the load balance constraint in the *load_balance*
+    module (i.e. the constraint's RHS).
+
+    The following Pyomo model components are defined in this module:
+
+    +-------------------------------------------------------------------------+
+    | Sets                                                                    |
+    +=========================================================================+
+    | | :code:`LOAD_ZONE_TMP_LOAD_CMPNTS`                                     |
+    |                                                                         |
+    | Three-dimensional set of load_zone-timepoint-load_component             |
+    | for which load will be defined.                                         |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Required Input Params                                                   |
+    +=========================================================================+
+    | | :code:`component_static_load_mw`                                      |
+    | | *Defined over*: :code:`LOAD_ZONE_TMP_LOAD_CMPNTS`                     |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The amount of load for each load zone and timepoint for each load       |
+    | component.                                                              |
+    +-------------------------------------------------------------------------+
+
+    |
+    
+    +-------------------------------------------------------------------------+
+    | Expressions                                                             |
+    +=========================================================================+
+    | | :code:`Static_Load_MW`                                                |
+    | | *Defined over*: :code:`LOAD_ZONES, TMPS`                              |
+    |                                                                         |
+    | The total load (sum of all load components) for this load zone and      |
+    | timepoint.                                                              |
+    +-------------------------------------------------------------------------+
+
+
     """
 
     # Static load
-    m.LOAD_ZONE_TMP_LOAD_CMPNTS = Set(within=m.LOAD_ZONES * m.TMPS * Any)
+    m.LOAD_ZONE_TMP_LOAD_CMPNTS = Set(dimen=3, within=m.LOAD_ZONES * m.TMPS * Any)
     m.component_static_load_mw = Param(
         m.LOAD_ZONE_TMP_LOAD_CMPNTS, within=NonNegativeReals
     )
