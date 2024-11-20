@@ -933,11 +933,12 @@ DROP TABLE IF EXISTS inputs_market_prices;
 CREATE TABLE inputs_market_prices
 (
     market_price_scenario_id INTEGER,
-    market                   VARCHAR(32),
+    hydro_iteration          INTEGER NOT NULL,
     stage_id                 INTEGER,
     timepoint                INTEGER,
+    market                   VARCHAR(32),
     market_price             FLOAT,
-    PRIMARY KEY (market_price_scenario_id, market, stage_id, timepoint),
+    PRIMARY KEY (market_price_scenario_id, hydro_iteration, stage_id, timepoint, market),
     FOREIGN KEY (market_price_scenario_id) REFERENCES
         subscenarios_market_prices (market_price_scenario_id)
 );

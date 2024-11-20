@@ -86,36 +86,30 @@ def get_inputs_from_database(
     c = conn.cursor()
 
     prices = c.execute(
-        """
+        f"""
         SELECT market, timepoint, market_price
         -- Get prices for included markets only
         FROM (
             SELECT market
             FROM inputs_geography_markets
-            WHERE market_scenario_id = ?
+            WHERE market_scenario_id = {subscenarios.MARKET_SCENARIO_ID}
         ) as market_tbl
         -- Get prices for included timepoints only
         CROSS JOIN (
             SELECT stage_id, timepoint from inputs_temporal
-            WHERE temporal_scenario_id = ?
-            AND subproblem_id = ?
-            AND stage_id = ?
+            WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+            AND subproblem_id = {subproblem}
+            AND stage_id = {stage}
         ) as tmp_tbl
         LEFT OUTER JOIN (
             SELECT market, stage_id, timepoint, market_price
             FROM inputs_market_prices
-            WHERE market_price_scenario_id = ?
+            WHERE market_price_scenario_id = {subscenarios.MARKET_PRICE_SCENARIO_ID}
+            AND hydro_iteration = {hydro_iteration}
         ) as price_tbl
         USING (market, stage_id, timepoint)
         ;
-        """,
-        (
-            subscenarios.MARKET_SCENARIO_ID,
-            subscenarios.TEMPORAL_SCENARIO_ID,
-            subproblem,
-            stage,
-            subscenarios.MARKET_PRICE_SCENARIO_ID,
-        ),
+        """
     )
 
     return prices
