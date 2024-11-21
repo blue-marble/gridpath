@@ -13,6 +13,7 @@
 # limitations under the License.
 
 
+# TODO: make it easier to include or exclude proposed
 def get_eia860_sql_filter_string(study_year, region):
     eia860_sql_filter_string = f"""
     (unixepoch(current_planned_generator_operating_date) < unixepoch(
@@ -23,6 +24,7 @@ def get_eia860_sql_filter_string(study_year, region):
          FROM user_defined_baa_key
          WHERE region = '{region}'
      )
+     AND operational_status_code in ('OP', 'CO')
     """
 
     return eia860_sql_filter_string

@@ -32,7 +32,7 @@ files in the user-specified raw data directory.
     * pudl_ra_toolkit_var_profiles.csv
 
 For options, including the download and raw data directories as well query
-filters see the --help menu. By default, we currently use 2023-01-01 as the
+filters see the --help menu. By default, we currently use 2024-01-01 as the
 EIA860 reporting data and "western_electricity_coordinating_council" as the
 EIA AEO electricity market to get data for.
 """
@@ -48,7 +48,7 @@ from db.utilities.common_functions import confirm
 
 DOWNLOAD_DIRECTORY_DEFAULT = "./pudl_download"
 RAW_DATA_DIRECTORY_DEFAULT = "./raw_data"
-EIA860_DEFAULT_REPORT_DATE = "2023-01-01"
+EIA860_DEFAULT_REPORT_DATE = "2024-01-01"
 EIAAEO_DEFAULT_ELECTRICITY_MARKET = "western_electricity_coordinating_council"
 
 
@@ -128,6 +128,8 @@ def get_eia_generator_data_from_pudl_sqlite(
                 version_num,
                 plant_id_eia,
                 generator_id,
+                operational_status_code,
+                operational_status,
                 balancing_authority_code_eia,
                 capacity_mw,
                 summer_capacity_mw,
@@ -291,9 +293,7 @@ def convert_eia930_hourly_interchange_to_csv(
         )
 
         cols = df.columns.tolist()
-        print(cols)
         cols = cols[0:5] + cols[14:18]
-        print(cols)
         df = df[cols]
 
         df.to_csv(

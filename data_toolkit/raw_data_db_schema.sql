@@ -135,6 +135,8 @@ CREATE TABLE raw_data_eia860_generators
     report_date                              DATETIME,
     plant_id_eia                             INTEGER,
     generator_id                             TEXT,
+    operational_status_code                  TEXT,
+    operational_status                       TEXT,
     balancing_authority_code_eia             TEXT,
     capacity_mw                              REAL,
     summer_capacity_mw                       REAL,
