@@ -932,15 +932,36 @@ CREATE TABLE subscenarios_market_prices
 DROP TABLE IF EXISTS inputs_market_prices;
 CREATE TABLE inputs_market_prices
 (
-    market_price_scenario_id INTEGER,
-    hydro_iteration          INTEGER NOT NULL,
-    stage_id                 INTEGER,
-    timepoint                INTEGER,
-    market                   VARCHAR(32),
-    market_price             FLOAT,
-    PRIMARY KEY (market_price_scenario_id, hydro_iteration, stage_id, timepoint, market),
+    market_price_scenario_id         INTEGER,
+    market_price_profile_scenario_id INTEGER,
+    varies_by_weather_iteration      INTEGER,
+    varies_by_hydro_iteration        INTEGER,
+    PRIMARY KEY (market_price_scenario_id, market_price_profile_scenario_id),
     FOREIGN KEY (market_price_scenario_id) REFERENCES
         subscenarios_market_prices (market_price_scenario_id)
+);
+
+DROP TABLE IF EXISTS subscenarios_market_price_profiles;
+CREATE TABLE subscenarios_market_price_profiles
+(
+    market_price_profile_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name                             VARCHAR(32),
+    description                      VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_market_price_profiles;
+CREATE TABLE inputs_market_price_profiles
+(
+    market_price_profile_scenario_id INTEGER,
+    weather_iteration                INTEGER NOT NULL,
+    hydro_iteration                  INTEGER NOT NULL,
+    stage_id                         INTEGER,
+    timepoint                        INTEGER,
+    market                           VARCHAR(32),
+    market_price                     FLOAT,
+    PRIMARY KEY (market_price_profile_scenario_id, weather_iteration,
+                 hydro_iteration, stage_id, timepoint,
+                 market)
 );
 
 DROP TABLE IF EXISTS subscenarios_market_volume;
@@ -1093,7 +1114,8 @@ CREATE TABLE inputs_system_water_node_reservoir_exogenous_elevations
     hydro_iteration               INTEGER DEFAULT 0 NOT NULL,
     timepoint                     INTEGER,
     reservoir_exogenous_elevation INTEGER,
-    PRIMARY KEY (water_node, exogenous_elevation_id, timepoint, hydro_iteration),
+    PRIMARY KEY (water_node, exogenous_elevation_id, timepoint,
+                 hydro_iteration),
     FOREIGN KEY (water_node, exogenous_elevation_id) REFERENCES
         subscenarios_system_water_node_reservoir_exogenous_elevations
             (water_node, exogenous_elevation_id)
@@ -1143,7 +1165,8 @@ CREATE TABLE inputs_system_water_node_reservoirs_target_volumes
     hydro_iteration           INTEGER DEFAULT 0 NOT NULL,
     timepoint                 FLOAT,
     reservoir_target_volume   DECIMAL,
-    PRIMARY KEY (water_node, target_volume_scenario_id, timepoint, hydro_iteration),
+    PRIMARY KEY (water_node, target_volume_scenario_id, timepoint,
+                 hydro_iteration),
     FOREIGN KEY (water_node, target_volume_scenario_id) REFERENCES
         subscenarios_system_water_node_reservoirs_target_volumes
             (water_node, target_volume_scenario_id)
@@ -1235,7 +1258,8 @@ CREATE TABLE inputs_system_water_flows
     timepoint               FLOAT,
     min_flow_vol_per_second TEXT,
     max_flow_vol_per_second INTEGER,
-    PRIMARY KEY (water_flow_scenario_id, water_link, timepoint, hydro_iteration),
+    PRIMARY KEY (water_flow_scenario_id, water_link, timepoint,
+                 hydro_iteration),
     FOREIGN KEY (water_flow_scenario_id) REFERENCES
         subscenarios_system_water_flows (water_flow_scenario_id)
 );
@@ -1257,7 +1281,8 @@ CREATE TABLE inputs_system_water_inflows
     hydro_iteration                         INTEGER DEFAULT 0 NOT NULL,
     timepoint                               FLOAT,
     exogenous_water_inflow_rate_vol_per_sec TEXT,
-    PRIMARY KEY (water_inflow_scenario_id, water_node, timepoint, hydro_iteration),
+    PRIMARY KEY (water_inflow_scenario_id, water_node, timepoint,
+                 hydro_iteration),
     FOREIGN KEY (water_inflow_scenario_id) REFERENCES
         subscenarios_system_water_inflows (water_inflow_scenario_id)
 );

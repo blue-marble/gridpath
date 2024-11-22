@@ -85,7 +85,19 @@ def get_inputs_from_database(
 
     c = conn.cursor()
 
-    prices = c.execute(
+    (varies_by_weather_iteration, varies_by_hydro_iteration) = c.execute(
+        f"""
+        SELECT varies_by_weather_iteration, varies_by_hydro_iteration
+        FROM inputs_market_prices
+        WHERE market_price_scenario_id = {subscenarios.MARKET_PRICE_SCENARIO_ID} 
+        """
+    ).fetchone()
+
+    weather_iteration_to_use = weather_iteration if varies_by_weather_iteration else 0
+    hydro_iteration_to_use = hydro_iteration if varies_by_hydro_iteration else 0
+
+    c1 = conn.cursor()
+    prices = c1.execute(
         f"""
         SELECT market, timepoint, market_price
         -- Get prices for included markets only
@@ -103,9 +115,14 @@ def get_inputs_from_database(
         ) as tmp_tbl
         LEFT OUTER JOIN (
             SELECT market, stage_id, timepoint, market_price
+            FROM inputs_market_price_profiles
+            WHERE market_price_profile_scenario_id = (
+            SELECT market_price_profile_scenario_id
             FROM inputs_market_prices
             WHERE market_price_scenario_id = {subscenarios.MARKET_PRICE_SCENARIO_ID}
-            AND hydro_iteration = {hydro_iteration}
+            AND hydro_iteration = {hydro_iteration_to_use}
+            AND weather_iteration = {weather_iteration_to_use}
+            ) 
         ) as price_tbl
         USING (market, stage_id, timepoint)
         ;
