@@ -933,10 +933,12 @@ DROP TABLE IF EXISTS inputs_market_prices;
 CREATE TABLE inputs_market_prices
 (
     market_price_scenario_id         INTEGER,
+    market                           TEXT,
     market_price_profile_scenario_id INTEGER,
     varies_by_weather_iteration      INTEGER,
     varies_by_hydro_iteration        INTEGER,
-    PRIMARY KEY (market_price_scenario_id, market_price_profile_scenario_id),
+    PRIMARY KEY (market_price_scenario_id, market,
+                 market_price_profile_scenario_id),
     FOREIGN KEY (market_price_scenario_id) REFERENCES
         subscenarios_market_prices (market_price_scenario_id)
 );
@@ -944,24 +946,25 @@ CREATE TABLE inputs_market_prices
 DROP TABLE IF EXISTS subscenarios_market_price_profiles;
 CREATE TABLE subscenarios_market_price_profiles
 (
-    market_price_profile_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    market                           TEXT,
+    market_price_profile_scenario_id INTEGER,
     name                             VARCHAR(32),
-    description                      VARCHAR(128)
+    description                      VARCHAR(128),
+    PRIMARY KEY (market, market_price_profile_scenario_id)
 );
 
 DROP TABLE IF EXISTS inputs_market_price_profiles;
 CREATE TABLE inputs_market_price_profiles
 (
+    market                           TEXT,
     market_price_profile_scenario_id INTEGER,
     weather_iteration                INTEGER NOT NULL,
     hydro_iteration                  INTEGER NOT NULL,
     stage_id                         INTEGER,
     timepoint                        INTEGER,
-    market                           VARCHAR(32),
     market_price                     FLOAT,
-    PRIMARY KEY (market_price_profile_scenario_id, weather_iteration,
-                 hydro_iteration, stage_id, timepoint,
-                 market)
+    PRIMARY KEY (market, market_price_profile_scenario_id, weather_iteration,
+                 hydro_iteration, stage_id, timepoint)
 );
 
 DROP TABLE IF EXISTS subscenarios_market_volume;
