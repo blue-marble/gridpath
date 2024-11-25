@@ -36,7 +36,7 @@ def create_profile_csvs(
     # get the UNION of these tables, and then find the project cap factor
     # with SUM and GROUP BY
     query = f"""
-        SELECT year AS weather_iteration,
+        SELECT year AS weather_iteration, 0 AS hydro_iteration,
         {stage_id} AS stage_id, 
         hour_of_year as timepoint, sum(weighted_{param_name}) as {param_name}
             FROM (
