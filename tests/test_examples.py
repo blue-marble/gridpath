@@ -1391,7 +1391,9 @@ class TestExamples(unittest.TestCase):
         scenario_name = "test_tx_flow_w_simflow"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
-    def test_example_ra_toolkit_sync_single_year_w_hydro_instead_of_weather_profile(self):
+    def test_example_ra_toolkit_sync_single_year_w_hydro_instead_of_weather_profile(
+        self,
+    ):
         """
         Check validation and objective function values of
         "ra_toolkit_sync_single_year_w_hydro_instead_of_weather_profile" example

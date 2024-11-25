@@ -596,7 +596,7 @@ def get_prj_tmp_opr_inputs_from_db(
         varies_by_weather_iteration=0,
         varies_by_hydro_iteration=0,
         weather_iteration=weather_iteration,
-        hydro_iteration=hydro_iteration
+        hydro_iteration=hydro_iteration,
     )
     all_projects_sql += no_iterations_project_sql
 
@@ -616,7 +616,7 @@ def get_prj_tmp_opr_inputs_from_db(
         varies_by_weather_iteration=1,
         varies_by_hydro_iteration=0,
         weather_iteration=weather_iteration,
-        hydro_iteration=hydro_iteration
+        hydro_iteration=hydro_iteration,
     )
     all_projects_sql += weather_iterations_project_sql
 
@@ -635,7 +635,7 @@ def get_prj_tmp_opr_inputs_from_db(
         varies_by_weather_iteration=0,
         varies_by_hydro_iteration=1,
         weather_iteration=weather_iteration,
-        hydro_iteration=hydro_iteration
+        hydro_iteration=hydro_iteration,
     )
     all_projects_sql += hydro_iterations_project_sql
 
@@ -654,7 +654,7 @@ def get_prj_tmp_opr_inputs_from_db(
         varies_by_weather_iteration=1,
         varies_by_hydro_iteration=1,
         weather_iteration=weather_iteration,
-        hydro_iteration=hydro_iteration
+        hydro_iteration=hydro_iteration,
     )
     all_projects_sql += weather_and_hydro_iterations_project_sql
 
