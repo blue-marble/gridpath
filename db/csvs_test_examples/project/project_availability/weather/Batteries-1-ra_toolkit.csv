@@ -1,1 +1,1 @@
-weather_iteration,stage_id,timepoint,availability_derate_weather
+weather_iteration,hydro_iteration,stage_id,timepoint,availability_derate_weather

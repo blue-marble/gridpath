@@ -1935,6 +1935,7 @@ CREATE TABLE inputs_project_flex_load_static_profiles
 -- assigned to variable projects in the project_operational_chars table and
 -- be passed to scenarios via the project_operational_chars_scenario_id
 -- perhaps a better name is needed for this table
+
 DROP TABLE IF EXISTS subscenarios_project_variable_generator_profiles;
 CREATE TABLE subscenarios_project_variable_generator_profiles
 (
@@ -1955,14 +1956,36 @@ CREATE TABLE inputs_project_variable_generator_profiles
     project                                VARCHAR(64),
     variable_generator_profile_scenario_id INTEGER,
     weather_iteration                      INTEGER,
+    hydro_iteration                        INTEGER,
     stage_id                               INTEGER,
     timepoint                              INTEGER,
     cap_factor                             FLOAT,
     PRIMARY KEY (project, variable_generator_profile_scenario_id,
-                 weather_iteration, stage_id, timepoint),
+                 weather_iteration, hydro_iteration, stage_id, timepoint),
     FOREIGN KEY (project, variable_generator_profile_scenario_id) REFERENCES
         subscenarios_project_variable_generator_profiles
             (project, variable_generator_profile_scenario_id)
+);
+
+DROP TABLE IF EXISTS
+    subscenarios_project_variable_generator_profiles_iterations;
+CREATE TABLE subscenarios_project_variable_generator_profiles_iterations
+(
+    project                                VARCHAR(64),
+    variable_generator_profile_scenario_id INTEGER,
+    name                                   VARCHAR(32),
+    description                            VARCHAR(128),
+    PRIMARY KEY (project, variable_generator_profile_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_variable_generator_profiles_iterations;
+CREATE TABLE inputs_project_variable_generator_profiles_iterations
+(
+    project                                TEXT,
+    variable_generator_profile_scenario_id INTEGER,
+    varies_by_weather_iteration            INTEGER,
+    varies_by_hydro_iteration              INTEGER,
+    PRIMARY KEY (project, variable_generator_profile_scenario_id)
 );
 
 -- Hydro operational characteristics
@@ -2014,14 +2037,36 @@ CREATE TABLE inputs_project_stor_exog_state_of_charge
     project                               VARCHAR(64),
     stor_exog_state_of_charge_scenario_id INTEGER,
     weather_iteration                     INTEGER,
+    hydro_iteration                       INTEGER,
     stage_id                              INTEGER,
     timepoint                             INTEGER,
     exog_state_of_charge_mwh              FLOAT,
     PRIMARY KEY (project, stor_exog_state_of_charge_scenario_id,
-                 weather_iteration, stage_id, timepoint),
+                 weather_iteration, hydro_iteration, stage_id, timepoint),
     FOREIGN KEY (project, stor_exog_state_of_charge_scenario_id) REFERENCES
         subscenarios_project_stor_exog_state_of_charge
             (project, stor_exog_state_of_charge_scenario_id)
+);
+
+DROP TABLE IF EXISTS
+    subscenarios_project_stor_exog_state_of_charge_iterations;
+CREATE TABLE subscenarios_project_stor_exog_state_of_charge_iterations
+(
+    project                               VARCHAR(64),
+    stor_exog_state_of_charge_scenario_id INTEGER,
+    name                                  VARCHAR(32),
+    description                           VARCHAR(128),
+    PRIMARY KEY (project, stor_exog_state_of_charge_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_stor_exog_state_of_charge_iterations;
+CREATE TABLE inputs_project_stor_exog_state_of_charge_iterations
+(
+    project                               TEXT,
+    stor_exog_state_of_charge_scenario_id INTEGER,
+    varies_by_weather_iteration           INTEGER,
+    varies_by_hydro_iteration             INTEGER,
+    PRIMARY KEY (project, stor_exog_state_of_charge_scenario_id)
 );
 
 -- Cap factor limits
@@ -2119,15 +2164,39 @@ CREATE TABLE inputs_project_availability_exogenous_weather
     project                                    VARCHAR(64),
     exogenous_availability_weather_scenario_id INTEGER,
     weather_iteration                          INTEGER,
+    hydro_iteration                            INTEGER,
     stage_id                                   INTEGER,
     timepoint                                  INTEGER,
     availability_derate_weather                FLOAT,
     PRIMARY KEY (project, exogenous_availability_weather_scenario_id,
-                 weather_iteration, stage_id, timepoint),
+                 weather_iteration, hydro_iteration, stage_id, timepoint),
     FOREIGN KEY (project, exogenous_availability_weather_scenario_id)
         REFERENCES subscenarios_project_availability_exogenous_weather
             (project, exogenous_availability_weather_scenario_id)
 );
+
+-- TODO: remove no iterations param and consolidate here
+DROP TABLE IF EXISTS
+    subscenarios_project_availability_exogenous_weather_iterations;
+CREATE TABLE subscenarios_project_availability_exogenous_weather_iterations
+(
+    project                                    VARCHAR(64),
+    exogenous_availability_weather_scenario_id INTEGER,
+    name                                       VARCHAR(32),
+    description                                VARCHAR(128),
+    PRIMARY KEY (project, exogenous_availability_weather_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_availability_exogenous_weather_iterations;
+CREATE TABLE inputs_project_availability_exogenous_weather_iterations
+(
+    project                                    TEXT,
+    exogenous_availability_weather_scenario_id INTEGER,
+    varies_by_weather_iteration                INTEGER,
+    varies_by_hydro_iteration                  INTEGER,
+    PRIMARY KEY (project, exogenous_availability_weather_scenario_id)
+);
+
 
 DROP TABLE IF EXISTS subscenarios_project_availability_endogenous;
 CREATE TABLE subscenarios_project_availability_endogenous

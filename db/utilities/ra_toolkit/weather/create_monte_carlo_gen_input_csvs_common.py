@@ -165,6 +165,7 @@ def create_project_csv(
         project_query = (
             f"""
                 SELECT {weather_iteration} AS weather_iteration, 
+                0 AS hydro_iteration,
                 {stage_id} AS stage_id,
                 ({draw_number}-1)*24+hour_of_day AS timepoint, 
                 sum(weighted_{param_name}) as {param_name}
