@@ -468,7 +468,7 @@ def rel_cap_rule(mod, prj, prd):
 
 def storage_rule(mod, prj, prd):
     """
-    **Expression Name**: FuelProdNew_Energy_Capacity_MWh
+    **Expression Name**: FuelProdNew_Energy_Storage_Capacity_MWh
     **Defined Over**: FUEL_PROD_NEW_OPR_PRDS
 
     The storage capacity of a new  project in a given operational period is equal to

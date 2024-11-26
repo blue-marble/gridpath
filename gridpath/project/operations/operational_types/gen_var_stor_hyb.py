@@ -642,7 +642,8 @@ def max_energy_in_storage_rule(mod, s, tmp):
     """
     return (
         mod.GenVarStorHyb_Starting_Energy_in_Storage_MWh[s, tmp]
-        <= mod.Energy_Capacity_MWh[s, mod.period[tmp]] * mod.Availability_Derate[s, tmp]
+        <= mod.Energy_Storage_Capacity_MWh[s, mod.period[tmp]]
+        * mod.Availability_Derate[s, tmp]
     )
 
 

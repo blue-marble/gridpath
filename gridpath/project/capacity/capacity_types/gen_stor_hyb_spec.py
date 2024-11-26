@@ -216,7 +216,7 @@ def hyb_stor_capacity_rule(mod, prj, prd):
     return mod.gen_stor_hyb_spec_hyb_stor_capacity_mw[prj, prd]
 
 
-def energy_capacity_rule(mod, prj, prd):
+def energy_stor_capacity_rule(mod, prj, prd):
     """ """
     return mod.gen_stor_hyb_spec_capacity_mwh[prj, prd]
 

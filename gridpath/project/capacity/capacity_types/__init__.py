@@ -135,7 +135,7 @@ def hyb_stor_capacity_rule(mod, prj, prd):
     return 0
 
 
-def energy_capacity_rule(mod, prj, prd):
+def energy_stor_capacity_rule(mod, prj, prd):
     """ """
     return 0
 

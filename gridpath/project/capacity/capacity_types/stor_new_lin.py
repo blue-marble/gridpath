@@ -265,7 +265,7 @@ def add_model_components(
     | operational period is equal to the sum of all capacity-build of         |
     | vintages operational in that period.                                    |
     +-------------------------------------------------------------------------+
-    | | :code:`StorNewLin_Energy_Capacity_MWh`                                |
+    | | :code:`StorNewLin_Energy_Storage_Capacity_MWh`                        |
     | | *Defined over*: :code:`STOR_NEW_LIN_OPR_PRDS`                         |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
@@ -370,7 +370,7 @@ def add_model_components(
         m.STOR_NEW_LIN_OPR_PRDS, rule=power_rule
     )
 
-    m.StorNewLin_Energy_Capacity_MWh = Expression(
+    m.StorNewLin_Energy_Storage_Capacity_MWh = Expression(
         m.STOR_NEW_LIN_OPR_PRDS, rule=energy_rule
     )
 
@@ -485,7 +485,7 @@ def power_rule(mod, g, p):
 
 def energy_rule(mod, g, p):
     """
-    **Expression Name**: StorNewLin_Energy_Capacity_MWh
+    **Expression Name**: StorNewLin_Energy_Storage_Capacity_MWh
     **Defined Over**: STOR_NEW_LIN_OPR_PRDS
 
     The energy capacity of a new storage project in a given operational
@@ -520,7 +520,7 @@ def min_duration_rule(mod, g, p):
     operational period.
     """
     return (
-        mod.StorNewLin_Energy_Capacity_MWh[g, p]
+        mod.StorNewLin_Energy_Storage_Capacity_MWh[g, p]
         >= mod.StorNewLin_Power_Capacity_MW[g, p] * mod.stor_new_lin_min_duration_hrs[g]
     )
 
@@ -534,7 +534,7 @@ def max_duration_rule(mod, g, p):
     operational period.
     """
     return (
-        mod.StorNewLin_Energy_Capacity_MWh[g, p]
+        mod.StorNewLin_Energy_Storage_Capacity_MWh[g, p]
         <= mod.StorNewLin_Power_Capacity_MW[g, p] * mod.stor_new_lin_max_duration_hrs[g]
     )
 
@@ -551,12 +551,12 @@ def capacity_rule(mod, g, p):
     return mod.StorNewLin_Power_Capacity_MW[g, p]
 
 
-def energy_capacity_rule(mod, g, p):
+def energy_stor_capacity_rule(mod, g, p):
     """
     The energy capacity in a period is the sum of the new energy capacity of
     all vintages operational in the that period.
     """
-    return mod.StorNewLin_Energy_Capacity_MWh[g, p]
+    return mod.StorNewLin_Energy_Storage_Capacity_MWh[g, p]
 
 
 def capacity_cost_rule(mod, g, p):
@@ -606,7 +606,7 @@ def new_capacity_rule(mod, g, p):
     return mod.StorNewLin_Build_MW[g, p] if (g, p) in mod.STOR_NEW_LIN_VNTS else 0
 
 
-def new_energy_capacity_rule(mod, g, p):
+def new_energy_stor_capacity_rule(mod, g, p):
     """
     New capacity built at project g in period p.
     Returns 0 if we can't build capacity at this project in period p.

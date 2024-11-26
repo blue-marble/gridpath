@@ -163,7 +163,7 @@ def capacity_rule(mod, g, p):
     return mod.stor_spec_power_capacity_mw[g, p]
 
 
-def energy_capacity_rule(mod, g, p):
+def energy_stor_capacity_rule(mod, g, p):
     """
     The energy capacity of projects of the *stor_spec* capacity type is a
     pre-specified number for each of the project's operational periods.

@@ -105,13 +105,13 @@ def add_model_components(
     | capacity_type will have a model variable (or sum of variables) as its   |
     | Capacity_MW.                                                            |
     +-------------------------------------------------------------------------+
-    | | :code:`Energy_Capacity_MWh`                                           |
+    | | :code:`Energy_Storage_Capacity_MWh`                                   |
     | | *Defined over*: :code:`PRJ_OPR_PRDS`                                  |
     |                                                                         |
     | Defines the project's energy capacity in each period (in which the      |
     | project can exist). The exact formulation of the expression depends on  |
     | the project's capacity_type. For each project, we call its              |
-    | capacity_type module's energy_capacity_rule method in order to          |
+    | capacity_type module's energy_stor_capacity_rule method in order to     |
     | formulate the expression.                                               |
     +-------------------------------------------------------------------------+
 
@@ -215,16 +215,18 @@ def add_model_components(
 
     m.Hyb_Stor_Capacity_MW = Expression(m.PRJ_OPR_PRDS, rule=hyb_stor_capacity_rule)
 
-    def energy_capacity_rule(mod, prj, prd):
+    def energy_stor_capacity_rule(mod, prj, prd):
         cap_type = mod.capacity_type[prj]
-        if hasattr(imported_capacity_modules[cap_type], "energy_capacity_rule"):
-            return imported_capacity_modules[cap_type].energy_capacity_rule(
+        if hasattr(imported_capacity_modules[cap_type], "energy_stor_capacity_rule"):
+            return imported_capacity_modules[cap_type].energy_stor_capacity_rule(
                 mod, prj, prd
             )
         else:
-            return cap_type_init.energy_capacity_rule(mod, prj, prd)
+            return cap_type_init.energy_stor_capacity_rule(mod, prj, prd)
 
-    m.Energy_Capacity_MWh = Expression(m.PRJ_OPR_PRDS, rule=energy_capacity_rule)
+    m.Energy_Storage_Capacity_MWh = Expression(
+        m.PRJ_OPR_PRDS, rule=energy_stor_capacity_rule
+    )
 
     def fuel_prod_capacity_rule(mod, prj, prd):
         cap_type = mod.capacity_type[prj]
@@ -379,7 +381,7 @@ def export_results(
             value(m.Capacity_MW[prj, prd]),
             value(m.Hyb_Gen_Capacity_MW[prj, prd]),
             value(m.Hyb_Stor_Capacity_MW[prj, prd]),
-            value(m.Energy_Capacity_MWh[prj, prd]),
+            value(m.Energy_Storage_Capacity_MWh[prj, prd]),
             value(m.Fuel_Production_Capacity_FuelUnitPerHour[prj, prd]),
             value(m.Fuel_Release_Capacity_FuelUnitPerHour[prj, prd]),
             value(m.Fuel_Storage_Capacity_FuelUnit[prj, prd]),

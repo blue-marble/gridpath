@@ -424,7 +424,7 @@ def capacity_rule(mod, g, p):
     )
 
 
-def energy_capacity_rule(mod, g, p):
+def energy_stor_capacity_rule(mod, g, p):
     """
     The energy capacity of a new storage project in a given operational
     period is equal to the sum of all binary build decisions of vintages
@@ -496,7 +496,7 @@ def new_capacity_rule(mod, g, p):
     )
 
 
-def new_energy_capacity_rule(mod, g, p):
+def new_energy_stor_capacity_rule(mod, g, p):
     """
     New capacity built at project g in period p.
     Returns 0 if we can't build capacity at this project in period p.
