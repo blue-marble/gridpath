@@ -410,7 +410,7 @@ def validate_inputs(
     cols = [
         "specified_capacity_mw",
         "fixed_cost_per_mw_yr",
-        "fixed_cost_per_mwh_year",
+        "fixed_cost_per_stor_mwh_yr",
     ]
     write_validation_to_database(
         conn=conn,
