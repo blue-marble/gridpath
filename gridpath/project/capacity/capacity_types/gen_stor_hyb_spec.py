@@ -126,7 +126,7 @@ def add_model_components(
     | This cost will be added to the objective function but will not affect   |
     | optimization decisions.                                                 |
     +-------------------------------------------------------------------------+
-    | | :code:`gen_stor_hyb_spec_fixed_cost_per_mwh_yr`                       |
+    | | :code:`gen_stor_hyb_spec_fixed_cost_per_stor_mwh_yr`                  |
     | | *Defined over*: :code:`GEN_STOR_HYB_SPEC_OPR_PRDS`                    |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
@@ -176,7 +176,7 @@ def add_model_components(
         m.GEN_STOR_HYB_SPEC_OPR_PRDS, within=NonNegativeReals
     )
 
-    m.gen_stor_hyb_spec_fixed_cost_per_mwh_yr = Param(
+    m.gen_stor_hyb_spec_fixed_cost_per_stor_mwh_yr = Param(
         m.GEN_STOR_HYB_SPEC_OPR_PRDS, within=NonNegativeReals
     )
 
@@ -235,7 +235,7 @@ def fixed_cost_rule(mod, prj, prd):
         + mod.gen_stor_hyb_spec_hyb_stor_capacity_mw[prj, prd]
         * mod.gen_stor_hyb_spec_hyb_stor_fixed_cost_per_mw_yr[prj, prd]
         + mod.gen_stor_hyb_spec_capacity_mwh[prj, prd]
-        * mod.gen_stor_hyb_spec_fixed_cost_per_mwh_yr[prj, prd]
+        * mod.gen_stor_hyb_spec_fixed_cost_per_stor_mwh_yr[prj, prd]
     )
 
 
@@ -303,9 +303,9 @@ def load_model_data(
         spec_params_dict["hyb_stor_fixed_cost_per_mw_yr"]
     )
 
-    data_portal.data()["gen_stor_hyb_spec_fixed_cost_per_mwh_yr"] = spec_params_dict[
-        "fixed_cost_per_mwh_yr"
-    ]
+    data_portal.data()["gen_stor_hyb_spec_fixed_cost_per_stor_mwh_yr"] = (
+        spec_params_dict["fixed_cost_per_stor_mwh_yr"]
+    )
 
 
 # Database

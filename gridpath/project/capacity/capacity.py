@@ -193,6 +193,15 @@ def add_model_components(
 
     m.Capacity_MW = Expression(m.PRJ_OPR_PRDS, rule=capacity_rule)
 
+    def energy_rule(mod, prj, prd):
+        cap_type = mod.capacity_type[prj]
+        if hasattr(imported_capacity_modules[cap_type], "energy_rule"):
+            return imported_capacity_modules[cap_type].energy_rule(mod, prj, prd)
+        else:
+            return cap_type_init.energy_rule(mod, prj, prd)
+
+    m.Energy_MWh = Expression(m.PRJ_OPR_PRDS, rule=energy_rule)
+
     def hyb_gen_capacity_rule(mod, prj, prd):
         cap_type = mod.capacity_type[prj]
         if hasattr(imported_capacity_modules[cap_type], "hyb_gen_capacity_rule"):
@@ -367,9 +376,10 @@ def export_results(
 
     results_columns = [
         "capacity_mw",
+        "energy_mwh",
         "hyb_gen_capacity_mw",
         "hyb_stor_capacity_mw",
-        "energy_capacity_mwh",
+        "stor_energy_capacity_mwh",
         "fuel_prod_capacity_fuelunitperhour",
         "fuel_rel_capacity_fuelunitperhour",
         "fuel_stor_capacity_fuelunit",
@@ -379,6 +389,7 @@ def export_results(
             prj,
             prd,
             value(m.Capacity_MW[prj, prd]),
+            value(m.Energy_MWh[prj, prd]),
             value(m.Hyb_Gen_Capacity_MW[prj, prd]),
             value(m.Hyb_Stor_Capacity_MW[prj, prd]),
             value(m.Energy_Storage_Capacity_MWh[prj, prd]),

@@ -121,6 +121,11 @@ def capacity_rule(mod, prj, prd):
     return 0
 
 
+def energy_rule(mod, g, p):
+    """ """
+    return 0
+
+
 def hyb_gen_capacity_rule(mod, prj, prd):
     """
     Power capacity of a hybrid project's generation component.

@@ -69,7 +69,7 @@ def add_model_components(
     +-------------------------------------------------------------------------+
     | Required Input Params                                                   |
     +=========================================================================+
-    | | :code:`gen_energy_power_capacity_mwh`                                 |
+    | | :code:`gen_energy_spec_power_capacity_mwh`                            |
     | | *Defined over*: :code:`GEN_ENERGY_SPEC_OPR_PRDS`                      |
     | | *Within*: :code:`NonNegativeReals`                                    |
     | | *Default*: :code:`Infinity`                                           |
@@ -92,7 +92,7 @@ def add_model_components(
     | MW-yr.) in each operational period. This cost will be added to the      |
     | objective function but will not affect optimization decisions.          |
     +-------------------------------------------------------------------------+
-    | | :code:`gen_energy_fixed_cost_per_mwh_yr`                              |
+    | | :code:`gen_energy_fixed_cost_per_stor_mwh_yr`                              |
     | | *Defined over*: :code:`GEN_ENERGY_SPEC_OPR_PRDS`                      |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
@@ -111,19 +111,19 @@ def add_model_components(
     # Required Params
     ###########################################################################
 
-    m.gen_energy_power_capacity_mw = Param(
+    m.gen_energy_spec_power_capacity_mw = Param(
         m.GEN_ENERGY_SPEC_OPR_PRDS, within=NonNegativeReals, default=float("inf")
     )
 
-    m.gen_energy_energy_capacity_mwh = Param(
+    m.gen_energy_spec_energy_mwh = Param(
         m.GEN_ENERGY_SPEC_OPR_PRDS, within=NonNegativeReals
     )
 
-    m.gen_energy_fixed_cost_per_mw_yr = Param(
+    m.gen_energy_spec_fixed_cost_per_mw_yr = Param(
         m.GEN_ENERGY_SPEC_OPR_PRDS, within=NonNegativeReals
     )
 
-    m.gen_energy_fixed_cost_per_mwh_yr = Param(
+    m.gen_energy_spec_fixed_cost_per_energy_mwh_yr = Param(
         m.GEN_ENERGY_SPEC_OPR_PRDS, within=NonNegativeReals
     )
 
@@ -146,7 +146,12 @@ def capacity_rule(mod, g, p):
     The power capacity of projects of the *gen_energy* capacity type is a
     pre-specified number for each of the project's operational periods.
     """
-    return mod.gen_energy_power_capacity_mw[g, p]
+    return mod.gen_energy_spec_power_capacity_mw[g, p]
+
+
+def energy_rule(mod, g, p):
+    """ """
+    return mod.gen_energy_spec_energy_mwh[g, p]
 
 
 def energy_stor_capacity_rule(mod, g, p):
@@ -154,7 +159,7 @@ def energy_stor_capacity_rule(mod, g, p):
     The energy capacity of projects of the *gen_energy* capacity type is a
     pre-specified number for each of the project's operational periods.
     """
-    return mod.gen_energy_energy_capacity_mwh[g, p]
+    return 0
 
 
 def fixed_cost_rule(mod, g, p):
@@ -165,10 +170,10 @@ def fixed_cost_rule(mod, g, p):
     the project's operational periods.
     """
     return (
-        mod.gen_energy_power_capacity_mw[g, p]
-        * mod.gen_energy_fixed_cost_per_mw_yr[g, p]
-        + mod.gen_energy_energy_capacity_mwh[g, p]
-        * mod.gen_energy_fixed_cost_per_mwh_yr[g, p]
+        mod.gen_energy_spec_power_capacity_mw[g, p]
+        * mod.gen_energy_spec_fixed_cost_per_mw_yr[g, p]
+        + mod.gen_energy_spec_energy_mwh[g, p]
+        * mod.gen_energy_spec_fixed_cost_per_energy_mwh_yr[g, p]
     )
 
 
@@ -199,7 +204,7 @@ def load_model_data(
 
     data_portal.data()["GEN_ENERGY_SPEC_OPR_PRDS"] = {None: project_period_list}
 
-    data_portal.data()["gen_energy_power_capacity_mw"] = spec_params_dict[
+    data_portal.data()["gen_energy_spec_power_capacity_mw"] = spec_params_dict[
         "specified_capacity_mw"
     ]
 
@@ -211,8 +216,8 @@ def load_model_data(
         "fixed_cost_per_mw_yr"
     ]
 
-    data_portal.data()["gen_energy_fixed_cost_per_mwh_yr"] = spec_params_dict[
-        "fixed_cost_per_mwh_yr"
+    data_portal.data()["gen_energy_fixed_cost_per_stor_mwh_yr"] = spec_params_dict[
+        "fixed_cost_per_stor_mwh_yr"
     ]
 
 

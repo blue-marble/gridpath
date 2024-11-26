@@ -264,7 +264,7 @@ class TestGenStorHybSpecCapType(unittest.TestCase):
         )
         self.assertDictEqual(expected_fc_per_stor_mw, actual_fc_per_stor_mw)
 
-        # Params: gen_stor_hyb_spec_fixed_cost_per_mwh_yr
+        # Params: gen_stor_hyb_spec_fixed_cost_per_stor_mwh_yr
         expected_fc_per_gen_mwh = OrderedDict(
             sorted(
                 {
@@ -276,7 +276,10 @@ class TestGenStorHybSpecCapType(unittest.TestCase):
         actual_fc_per_gen_mwh = OrderedDict(
             sorted(
                 {
-                    (prj, period): instance.gen_stor_hyb_spec_fixed_cost_per_mwh_yr[
+                    (
+                        prj,
+                        period,
+                    ): instance.gen_stor_hyb_spec_fixed_cost_per_stor_mwh_yr[
                         prj, period
                     ]
                     for (prj, period) in instance.GEN_STOR_HYB_SPEC_OPR_PRDS
