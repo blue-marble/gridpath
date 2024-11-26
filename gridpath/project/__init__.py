@@ -143,6 +143,7 @@ def add_model_components(
             "gen_stor_hyb_spec",
             "fuel_prod_spec",
             "fuel_prod_new",
+            "energy_spec",
         ],
     )
     m.operational_type = Param(
@@ -165,6 +166,7 @@ def add_model_components(
             "dac",
             "flex_load",
             "gen_hydro_water",
+            "energy_profile"
         ],
     )
     m.availability_type = Param(

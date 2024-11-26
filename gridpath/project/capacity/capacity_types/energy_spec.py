@@ -183,7 +183,7 @@ def load_model_data(
     ]
 
     data_portal.data()["gen_energy_energy_capacity_mwh"] = spec_params_dict[
-        "specified_capacity_mwh"
+        "specified_stor_capacity_mwh"
     ]
 
     data_portal.data()["gen_energy_fixed_cost_per_mw_yr"] = spec_params_dict[

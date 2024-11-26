@@ -140,7 +140,7 @@ def spec_get_inputs_from_database(conn, subscenarios, capacity_type):
         specified_capacity_mw,
         hyb_gen_specified_capacity_mw,
         hyb_stor_specified_capacity_mw,
-        specified_capacity_mwh,
+        specified_stor_capacity_mwh,
         fuel_production_capacity_fuelunitperhour,
         fuel_release_capacity_fuelunitperhour,
         fuel_storage_capacity_fuelunit,
@@ -161,7 +161,7 @@ def spec_get_inputs_from_database(conn, subscenarios, capacity_type):
         specified_capacity_mw,
         hyb_gen_specified_capacity_mw,
         hyb_stor_specified_capacity_mw,
-        specified_capacity_mwh,
+        specified_stor_capacity_mwh,
         fuel_production_capacity_fuelunitperhour,
         fuel_release_capacity_fuelunitperhour,
         fuel_storage_capacity_fuelunit
@@ -232,7 +232,7 @@ def spec_write_tab_file(
                     "specified_capacity_mw",
                     "hyb_gen_specified_capacity_mw",
                     "hyb_stor_specified_capacity_mw",
-                    "specified_capacity_mwh",
+                    "specified_stor_capacity_mwh",
                     "fuel_production_capacity_fuelunitperhour",
                     "fuel_release_capacity_fuelunitperhour",
                     "fuel_storage_capacity_fuelunit",
@@ -262,7 +262,7 @@ def write_from_query(spec_project_params, writer):
             specified_capacity_mw,
             hyb_gen_specified_capacity_mw,
             hyb_stor_specified_capacity_mw,
-            specified_capacity_mwh,
+            specified_stor_capacity_mwh,
             fuel_prod_cap,
             fuel_rel_cap,
             fuel_stor_cap,
@@ -281,7 +281,7 @@ def write_from_query(spec_project_params, writer):
                 specified_capacity_mw,
                 hyb_gen_specified_capacity_mw,
                 hyb_stor_specified_capacity_mw,
-                specified_capacity_mwh,
+                specified_stor_capacity_mwh,
                 fuel_prod_cap,
                 fuel_rel_cap,
                 fuel_stor_cap,
@@ -364,7 +364,7 @@ def spec_determine_inputs(
         df["specified_capacity_mw"],
         df["hyb_gen_specified_capacity_mw"],
         df["hyb_stor_specified_capacity_mw"],
-        df["specified_capacity_mwh"],
+        df["specified_stor_capacity_mwh"],
         df["fuel_production_capacity_fuelunitperhour"],
         df["fuel_release_capacity_fuelunitperhour"],
         df["fuel_storage_capacity_fuelunit"],
@@ -408,7 +408,7 @@ def spec_determine_inputs(
     main_dict["specified_capacity_mw"] = spec_capacity_mw_dict
     main_dict["hyb_gen_specified_capacity_mw"] = hyb_gen_spec_capacity_mw_dict
     main_dict["hyb_stor_specified_capacity_mw"] = hyb_stor_spec_capacity_mw_dict
-    main_dict["specified_capacity_mwh"] = spec_capacity_mwh_dict
+    main_dict["specified_stor_capacity_mwh"] = spec_capacity_mwh_dict
     main_dict["fuel_production_capacity_fuelunitperhour"] = spec_fuel_prod_cap_dict
     main_dict["fuel_release_capacity_fuelunitperhour"] = spec_fuel_rel_cap_dict
     main_dict["fuel_storage_capacity_fuelunit"] = spec_fuel_stor_cap_dict
