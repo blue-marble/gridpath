@@ -146,7 +146,16 @@ def energy_stor_capacity_rule(mod, prj, prd):
 
 
 def capacity_cost_rule(mod, prj, prd):
-    """ """
+    """
+    For new capacity investment separate from the fixed cost
+    """
+    return 0
+
+
+def energy_cost_rule(mod, prj, prd):
+    """
+    For new energy purchases separate from the fixed cost
+    """
     return 0
 
 

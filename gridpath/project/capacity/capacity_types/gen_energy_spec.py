@@ -111,6 +111,8 @@ def add_model_components(
     # Required Params
     ###########################################################################
 
+    # TODO: possibly remove the power param for this type and have the
+    #  shaping be done entirely by the operational params
     m.gen_energy_spec_power_capacity_mw = Param(
         m.GEN_ENERGY_SPEC_OPR_PRDS, within=NonNegativeReals, default=float("inf")
     )
