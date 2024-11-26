@@ -111,20 +111,11 @@ def add_model_components(
     # Required Params
     ###########################################################################
 
-    # TODO: possibly remove the power param for this type and have the
-    #  shaping be done entirely by the operational params
-    m.gen_energy_spec_power_capacity_mw = Param(
-        m.GEN_ENERGY_SPEC_OPR_PRDS, within=NonNegativeReals, default=float("inf")
-    )
-
     m.gen_energy_spec_energy_mwh = Param(
         m.GEN_ENERGY_SPEC_OPR_PRDS, within=NonNegativeReals
     )
 
-    m.gen_energy_spec_fixed_cost_per_mw_yr = Param(
-        m.GEN_ENERGY_SPEC_OPR_PRDS, within=NonNegativeReals
-    )
-
+    # Any fixed costs associated with the energy purchased
     m.gen_energy_spec_fixed_cost_per_energy_mwh_yr = Param(
         m.GEN_ENERGY_SPEC_OPR_PRDS, within=NonNegativeReals
     )
@@ -143,38 +134,19 @@ def add_model_components(
 ###############################################################################
 
 
-def capacity_rule(mod, g, p):
-    """
-    The power capacity of projects of the *gen_energy* capacity type is a
-    pre-specified number for each of the project's operational periods.
-    """
-    return mod.gen_energy_spec_power_capacity_mw[g, p]
-
-
 def energy_rule(mod, g, p):
     """ """
     return mod.gen_energy_spec_energy_mwh[g, p]
 
 
-def energy_stor_capacity_rule(mod, g, p):
-    """
-    The energy capacity of projects of the *gen_energy* capacity type is a
-    pre-specified number for each of the project's operational periods.
-    """
-    return 0
-
-
 def fixed_cost_rule(mod, g, p):
     """
     The fixed cost of projects of the *gen_energy* capacity type is a
-    pre-specified number equal to the power capacity times the per-mw fixed
-    cost plus the energy capacity times the per-mwh fixed cost for each of
-    the project's operational periods.
+    pre-specified number equal to the energy times the per-mwh fixed cost for
+    of the project's operational periods.
     """
     return (
-        mod.gen_energy_spec_power_capacity_mw[g, p]
-        * mod.gen_energy_spec_fixed_cost_per_mw_yr[g, p]
-        + mod.gen_energy_spec_energy_mwh[g, p]
+        mod.gen_energy_spec_energy_mwh[g, p]
         * mod.gen_energy_spec_fixed_cost_per_energy_mwh_yr[g, p]
     )
 

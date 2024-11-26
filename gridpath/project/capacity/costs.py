@@ -158,6 +158,12 @@ def add_model_components(
         Get fixed cost for each generator's respective capacity module. These are
         applied in every operational period.
 
+        Existing project costs are here only (i.e., we exclude ongoing sunk
+        capital cost payments).
+
+        New projects can have capacity/energy costs in addition to the fixed
+        costs here.
+
         Note that fixed cost inputs and calculations in the modules are on
         a period basis. Therefore, if the period spans subproblems (the main
         example of this would be specified capacity in, say, a production-cost
