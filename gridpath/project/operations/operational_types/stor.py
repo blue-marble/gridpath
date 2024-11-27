@@ -68,7 +68,7 @@ from gridpath.project.operations.operational_types.common_functions import (
     check_for_tmps_to_link,
     validate_opchars,
     write_tab_file_model_inputs,
-    get_prj_tmp_opr_inputs_from_db,
+    get_prj_temporal_index_opr_inputs_from_db,
 )
 from gridpath.common_functions import create_results_df
 
@@ -773,7 +773,7 @@ def get_model_inputs_from_database(
         weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
     )
 
-    prj_tmp_data = get_prj_tmp_opr_inputs_from_db(
+    prj_tmp_data = get_prj_temporal_index_opr_inputs_from_db(
         subscenarios=subscenarios,
         weather_iteration=db_weather_iteration,
         hydro_iteration=db_hydro_iteration,

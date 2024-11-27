@@ -1672,6 +1672,7 @@ CREATE TABLE inputs_project_operational_chars
     curtailment_cost_per_pwh                 FLOAT,   -- curtailment cost per unit-powerXhour
     hydro_operational_chars_scenario_id      INTEGER, -- determines hydro MWa, min, max
     energy_profile_scenario_id               INTEGER,
+    energy_hrz_shaping_scenario_id           INTEGER,
     lf_reserves_up_derate                    FLOAT,
     lf_reserves_down_derate                  FLOAT,
     regulation_up_derate                     FLOAT,
@@ -1728,6 +1729,9 @@ CREATE TABLE inputs_project_operational_chars
     FOREIGN KEY (project, energy_profile_scenario_id) REFERENCES
         subscenarios_project_energy_profiles
             (project, energy_profile_scenario_id),
+    FOREIGN KEY (project, energy_hrz_shaping_scenario_id) REFERENCES
+        subscenarios_project_energy_hrz_shaping
+            (project, energy_hrz_shaping_scenario_id),
     FOREIGN KEY (project, cap_factor_limits_scenario_id) REFERENCES
         subscenarios_project_cap_factor_limits (project, cap_factor_limits_scenario_id),
     FOREIGN KEY (operational_type) REFERENCES mod_operational_types
@@ -2029,27 +2033,27 @@ CREATE TABLE inputs_project_hydro_operational_chars
 DROP TABLE IF EXISTS subscenarios_project_energy_profiles;
 CREATE TABLE subscenarios_project_energy_profiles
 (
-    project                                VARCHAR(64),
+    project                    VARCHAR(64),
     energy_profile_scenario_id INTEGER,
-    name                                   VARCHAR(32),
-    description                            VARCHAR(128),
+    name                       VARCHAR(32),
+    description                VARCHAR(128),
     PRIMARY KEY (project, energy_profile_scenario_id)
 );
 
--- Variable generator profiles by weather year and stage
+-- Energy profiles by weather year and stage
 -- (Subproblem is omitted, as timepoints in a temporal scenario ID must be
 -- unique -- they can then be subdivided into different subproblems for other
 -- temporal scenario IDs)
 DROP TABLE IF EXISTS inputs_project_energy_profiles;
 CREATE TABLE inputs_project_energy_profiles
 (
-    project                                VARCHAR(64),
+    project                    VARCHAR(64),
     energy_profile_scenario_id INTEGER,
-    weather_iteration                      INTEGER,
-    hydro_iteration                        INTEGER,
-    stage_id                               INTEGER,
-    timepoint                              INTEGER,
-    energy_fraction                        FLOAT,
+    weather_iteration          INTEGER,
+    hydro_iteration            INTEGER,
+    stage_id                   INTEGER,
+    timepoint                  INTEGER,
+    energy_fraction            FLOAT,
     PRIMARY KEY (project, energy_profile_scenario_id,
                  weather_iteration, hydro_iteration, stage_id, timepoint),
     FOREIGN KEY (project, energy_profile_scenario_id) REFERENCES
@@ -2061,21 +2065,75 @@ DROP TABLE IF EXISTS
     subscenarios_project_energy_profiles_iterations;
 CREATE TABLE subscenarios_project_energy_profiles_iterations
 (
-    project                                VARCHAR(64),
+    project                    VARCHAR(64),
     energy_profile_scenario_id INTEGER,
-    name                                   VARCHAR(32),
-    description                            VARCHAR(128),
+    name                       VARCHAR(32),
+    description                VARCHAR(128),
     PRIMARY KEY (project, energy_profile_scenario_id)
 );
 
 DROP TABLE IF EXISTS inputs_project_energy_profiles_iterations;
 CREATE TABLE inputs_project_energy_profiles_iterations
 (
-    project                                TEXT,
-    energy_profile_scenario_id INTEGER,
-    varies_by_weather_iteration            INTEGER,
-    varies_by_hydro_iteration              INTEGER,
+    project                     TEXT,
+    energy_profile_scenario_id  INTEGER,
+    varies_by_weather_iteration INTEGER,
+    varies_by_hydro_iteration   INTEGER,
     PRIMARY KEY (project, energy_profile_scenario_id)
+);
+
+
+-- Energy horizon shaping params
+DROP TABLE IF EXISTS subscenarios_project_energy_hrz_shaping;
+CREATE TABLE subscenarios_project_energy_hrz_shaping
+(
+    project                        VARCHAR(64),
+    energy_hrz_shaping_scenario_id INTEGER,
+    name                           VARCHAR(32),
+    description                    VARCHAR(128),
+    PRIMARY KEY (project, energy_hrz_shaping_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_energy_hrz_shaping;
+CREATE TABLE inputs_project_energy_hrz_shaping
+(
+    project                        VARCHAR(64),
+    energy_hrz_shaping_scenario_id INTEGER,
+    weather_iteration              INTEGER,
+    hydro_iteration                INTEGER,
+    stage_id                       INTEGER,
+    balancing_type_project         TEXT,
+    horizon                        INTEGER,
+    avg_power                      FLOAT,
+    min_power                      FLOAT,
+    max_power                      FLOAT,
+    PRIMARY KEY (project, energy_hrz_shaping_scenario_id,
+                 weather_iteration, hydro_iteration, stage_id,
+                 balancing_type_project, horizon),
+    FOREIGN KEY (project, energy_hrz_shaping_scenario_id) REFERENCES
+        subscenarios_project_energy_hrz_shaping
+            (project, energy_hrz_shaping_scenario_id)
+);
+
+DROP TABLE IF EXISTS
+    subscenarios_project_energy_hrz_shaping_iterations;
+CREATE TABLE subscenarios_project_energy_hrz_shaping_iterations
+(
+    project                        VARCHAR(64),
+    energy_hrz_shaping_scenario_id INTEGER,
+    name                           VARCHAR(32),
+    description                    VARCHAR(128),
+    PRIMARY KEY (project, energy_hrz_shaping_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_energy_hrz_shaping_iterations;
+CREATE TABLE inputs_project_energy_hrz_shaping_iterations
+(
+    project                        TEXT,
+    energy_hrz_shaping_scenario_id INTEGER,
+    varies_by_weather_iteration    INTEGER,
+    varies_by_hydro_iteration      INTEGER,
+    PRIMARY KEY (project, energy_hrz_shaping_scenario_id)
 );
 
 -- Storage exogenously specified state of charge
@@ -6995,6 +7053,7 @@ SELECT project_portfolio_scenario_id,
        operational_type,
        variable_generator_profile_scenario_id,
        energy_profile_scenario_id,
+       energy_hrz_shaping_scenario_id,
        stor_exog_state_of_charge_scenario_id,
        flex_load_static_profile_scenario_id,
        subproblem_id,
