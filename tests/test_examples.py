@@ -1404,6 +1404,15 @@ class TestExamples(unittest.TestCase):
             scenario_name=scenario_name, skip_validation=True
         )
 
+    def test_example_test_w_storage_wind_as_energy(self):
+        """
+        Check validation and objective function value of
+        "test_w_storage_wind_as_energy" example
+        :return:
+        """
+        scenario_name = "test_w_storage_wind_as_energy"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
     @classmethod
     def tearDownClass(cls):
         os.remove(DB_PATH)

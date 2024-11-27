@@ -69,20 +69,13 @@ def add_model_components(
     +-------------------------------------------------------------------------+
     | Required Input Params                                                   |
     +=========================================================================+
-    | | :code:`gen_energy_spec_power_capacity_mwh`                            |
+    | | :code:`energy_spec_power_capacity_mwh`                            |
     | | *Defined over*: :code:`GEN_ENERGY_SPEC_OPR_PRDS`                      |
     | | *Within*: :code:`NonNegativeReals`                                    |
     | | *Default*: :code:`Infinity`                                           |
     |                                                                         |
     | The project's specified power capacity (in MW) in each operational      |
     | period. Defaults to infinity in if not specified.                       |
-    +-------------------------------------------------------------------------+
-    | | :code:`gen_energy_energy_capacity_mwh`                                |
-    | | *Defined over*: :code:`GEN_ENERGY_SPEC_OPR_PRDS`                      |
-    | | *Within*: :code:`NonNegativeReals`                                    |
-    |                                                                         |
-    | The project's specified energy capacity (in MWh) in each                |
-    | operational period.                                                     |
     +-------------------------------------------------------------------------+
     | | :code:`gen_energy_fixed_cost_per_mw_yr`                               |
     | | *Defined over*: :code:`GEN_ENERGY_SPEC_OPR_PRDS`                      |
@@ -111,12 +104,12 @@ def add_model_components(
     # Required Params
     ###########################################################################
 
-    m.gen_energy_spec_energy_mwh = Param(
+    m.energy_spec_energy_mwh = Param(
         m.GEN_ENERGY_SPEC_OPR_PRDS, within=NonNegativeReals
     )
 
     # Any fixed costs associated with the energy purchased
-    m.gen_energy_spec_fixed_cost_per_energy_mwh_yr = Param(
+    m.energy_spec_fixed_cost_per_energy_mwh_yr = Param(
         m.GEN_ENERGY_SPEC_OPR_PRDS, within=NonNegativeReals
     )
 
@@ -136,7 +129,7 @@ def add_model_components(
 
 def energy_rule(mod, g, p):
     """ """
-    return mod.gen_energy_spec_energy_mwh[g, p]
+    return mod.energy_spec_energy_mwh[g, p]
 
 
 def fixed_cost_rule(mod, g, p):
@@ -146,8 +139,8 @@ def fixed_cost_rule(mod, g, p):
     of the project's operational periods.
     """
     return (
-        mod.gen_energy_spec_energy_mwh[g, p]
-        * mod.gen_energy_spec_fixed_cost_per_energy_mwh_yr[g, p]
+        mod.energy_spec_energy_mwh[g, p]
+        * mod.energy_spec_fixed_cost_per_energy_mwh_yr[g, p]
     )
 
 
@@ -173,25 +166,17 @@ def load_model_data(
         availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
-        capacity_type="gen_energy",
+        capacity_type="energy_spec",
     )
 
     data_portal.data()["GEN_ENERGY_SPEC_OPR_PRDS"] = {None: project_period_list}
 
-    data_portal.data()["gen_energy_spec_power_capacity_mw"] = spec_params_dict[
-        "specified_capacity_mw"
+    data_portal.data()["energy_spec_energy_mwh"] = spec_params_dict[
+        "specified_energy_mwh"
     ]
 
-    data_portal.data()["gen_energy_energy_capacity_mwh"] = spec_params_dict[
-        "specified_stor_capacity_mwh"
-    ]
-
-    data_portal.data()["gen_energy_fixed_cost_per_mw_yr"] = spec_params_dict[
-        "fixed_cost_per_mw_yr"
-    ]
-
-    data_portal.data()["gen_energy_fixed_cost_per_stor_mwh_yr"] = spec_params_dict[
-        "fixed_cost_per_stor_mwh_yr"
+    data_portal.data()["energy_spec_fixed_cost_per_energy_mwh_yr"] = spec_params_dict[
+        "fixed_cost_per_energy_mwh_yr"
     ]
 
 
@@ -217,7 +202,7 @@ def get_model_inputs_from_database(
     :return:
     """
     spec_params = spec_get_inputs_from_database(
-        conn=conn, subscenarios=subscenarios, capacity_type="gen_energy"
+        conn=conn, subscenarios=subscenarios, capacity_type="energy_spec"
     )
     return spec_params
 

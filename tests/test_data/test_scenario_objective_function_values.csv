@@ -121,3 +121,4 @@ hydro_system,"{('', '', '', 1): {1: 17519.999222673472}}","{('', '', '', 1): {1:
 hydro_system_exog_elev,"{('', 'hydro_iteration_1', '', 1): {1: 0.0}}","{('', 'hydro_iteration_1', '', 1): {1: -0.0}}",,
 hydro_system_exog_elev_w_travel_time,"{('', 'hydro_iteration_1', '', 1): {1: 0.0}}","{('', 'hydro_iteration_1', '', 1): {1: -0.0}}",,
 ra_toolkit_sync_single_year_w_hydro_instead_of_weather_profile,"{('weather_iteration_2010', 'hydro_iteration_2010', 'availability_iteration_1', 1): {1: -0.0}, ('weather_iteration_2010', 'hydro_iteration_2010', 'availability_iteration_1', 2): {1: -0.0}}","{('weather_iteration_2010', 'hydro_iteration_2010', 'availability_iteration_1', 1): {1: -0.0}, ('weather_iteration_2010', 'hydro_iteration_2010', 'availability_iteration_1', 2): {1: -0.0}}",,
+test_w_storage_wind_as_energy,"{('', '', '', 1): {1: -237985313.88900003}}","{('', '', '', 1): {1: -237985313.88900003}}",,

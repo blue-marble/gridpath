@@ -1366,9 +1366,10 @@ CREATE TABLE inputs_project_specified_capacity
     project                                  VARCHAR(64),
     period                                   INTEGER,
     specified_capacity_mw                    FLOAT, -- grid-facing nameplate capacity
+    specified_energy_mwh                     FLOAT, -- energy available for shaping in period
     hyb_gen_specified_capacity_mw            FLOAT, -- e.g. CAES turbine capacity
     hyb_stor_specified_capacity_mw           FLOAT, -- e.g. battery tightly-coupled with PV
-    specified_stor_capacity_mwh                   FLOAT, -- storage energy capacity
+    specified_stor_capacity_mwh              FLOAT, -- storage energy capacity
     fuel_production_capacity_fuelunitperhour FLOAT, -- fuel production capacity (e.g. electrolyzer)
     fuel_release_capacity_fuelunitperhour    FLOAT, -- fuel release capacity
     fuel_storage_capacity_fuelunit           FLOAT, -- fuel storage capacity
@@ -1670,6 +1671,7 @@ CREATE TABLE inputs_project_operational_chars
     variable_generator_profile_scenario_id   INTEGER, -- determines var profiles
     curtailment_cost_per_pwh                 FLOAT,   -- curtailment cost per unit-powerXhour
     hydro_operational_chars_scenario_id      INTEGER, -- determines hydro MWa, min, max
+    energy_profile_scenario_id               INTEGER,
     lf_reserves_up_derate                    FLOAT,
     lf_reserves_down_derate                  FLOAT,
     regulation_up_derate                     FLOAT,
@@ -1723,6 +1725,9 @@ CREATE TABLE inputs_project_operational_chars
     FOREIGN KEY (project, hydro_operational_chars_scenario_id) REFERENCES
         subscenarios_project_hydro_operational_chars
             (project, hydro_operational_chars_scenario_id),
+    FOREIGN KEY (project, energy_profile_scenario_id) REFERENCES
+        subscenarios_project_energy_profiles
+            (project, energy_profile_scenario_id),
     FOREIGN KEY (project, cap_factor_limits_scenario_id) REFERENCES
         subscenarios_project_cap_factor_limits (project, cap_factor_limits_scenario_id),
     FOREIGN KEY (operational_type) REFERENCES mod_operational_types
@@ -2018,6 +2023,59 @@ CREATE TABLE inputs_project_hydro_operational_chars
     FOREIGN KEY (project, hydro_operational_chars_scenario_id) REFERENCES
         subscenarios_project_hydro_operational_chars
             (project, hydro_operational_chars_scenario_id)
+);
+
+-- Energy profiles
+DROP TABLE IF EXISTS subscenarios_project_energy_profiles;
+CREATE TABLE subscenarios_project_energy_profiles
+(
+    project                                VARCHAR(64),
+    energy_profile_scenario_id INTEGER,
+    name                                   VARCHAR(32),
+    description                            VARCHAR(128),
+    PRIMARY KEY (project, energy_profile_scenario_id)
+);
+
+-- Variable generator profiles by weather year and stage
+-- (Subproblem is omitted, as timepoints in a temporal scenario ID must be
+-- unique -- they can then be subdivided into different subproblems for other
+-- temporal scenario IDs)
+DROP TABLE IF EXISTS inputs_project_energy_profiles;
+CREATE TABLE inputs_project_energy_profiles
+(
+    project                                VARCHAR(64),
+    energy_profile_scenario_id INTEGER,
+    weather_iteration                      INTEGER,
+    hydro_iteration                        INTEGER,
+    stage_id                               INTEGER,
+    timepoint                              INTEGER,
+    energy_fraction                        FLOAT,
+    PRIMARY KEY (project, energy_profile_scenario_id,
+                 weather_iteration, hydro_iteration, stage_id, timepoint),
+    FOREIGN KEY (project, energy_profile_scenario_id) REFERENCES
+        subscenarios_project_energy_profiles
+            (project, energy_profile_scenario_id)
+);
+
+DROP TABLE IF EXISTS
+    subscenarios_project_energy_profiles_iterations;
+CREATE TABLE subscenarios_project_energy_profiles_iterations
+(
+    project                                VARCHAR(64),
+    energy_profile_scenario_id INTEGER,
+    name                                   VARCHAR(32),
+    description                            VARCHAR(128),
+    PRIMARY KEY (project, energy_profile_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_energy_profiles_iterations;
+CREATE TABLE inputs_project_energy_profiles_iterations
+(
+    project                                TEXT,
+    energy_profile_scenario_id INTEGER,
+    varies_by_weather_iteration            INTEGER,
+    varies_by_hydro_iteration              INTEGER,
+    PRIMARY KEY (project, energy_profile_scenario_id)
 );
 
 -- Storage exogenously specified state of charge
@@ -6936,6 +6994,7 @@ SELECT project_portfolio_scenario_id,
        temporal_scenario_id,
        operational_type,
        variable_generator_profile_scenario_id,
+       energy_profile_scenario_id,
        stor_exog_state_of_charge_scenario_id,
        flex_load_static_profile_scenario_id,
        subproblem_id,

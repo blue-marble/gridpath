@@ -469,6 +469,8 @@ def load_var_profile_inputs(
     subproblem,
     stage,
     op_type,
+    tab_filename="variable_generator_profiles.tab",
+    param_name="cap_factor",
 ):
     """
     Capacity factors vary by horizon and stage, so get inputs from appropriate
@@ -479,10 +481,17 @@ def load_var_profile_inputs(
     :param subproblem:
     :param stage:
     :param op_type:
+    :param tab_filename: defaults to "variable_generator_profiles.tab"
+    :param param_name: defaults to "cap_factor"
     :return:
     """
 
-    var_op_types = ["gen_var_must_take", "gen_var", "gen_var_stor_hyb"]
+    var_op_types = [
+        "gen_var_must_take",
+        "gen_var",
+        "gen_var_stor_hyb",
+        "energy_profile",
+    ]
     other_var_op_types = set(var_op_types) - set([op_type])
     assert op_type in var_op_types
 
@@ -519,15 +528,15 @@ def load_var_profile_inputs(
             subproblem,
             stage,
             "inputs",
-            "variable_generator_profiles.tab",
+            tab_filename,
         ),
         sep="\t",
-        usecols=["project", "timepoint", "cap_factor"],
-        dtype={"cap_factor": float},
+        usecols=["project", "timepoint", param_name],
+        dtype={param_name: float},
     )
     op_type_cf_df = cf_df[cf_df["project"].isin(op_type_prjs)]
-    cap_factor = op_type_cf_df.set_index(["project", "timepoint"])[
-        "cap_factor"
+    param_value = op_type_cf_df.set_index(["project", "timepoint"])[
+        param_name
     ].to_dict()
 
     # Throw warning if profile exists for a project not in projects.tab
@@ -538,15 +547,13 @@ def load_var_profile_inputs(
     invalid_prjs = cf_df[~cf_df["project"].isin(var_prjs)]["project"].unique()
     for prj in invalid_prjs:
         warnings.warn(
-            """WARNING: Profiles are specified for '{}' in 
-            variable_generator_profiles.tab, but '{}' is not in 
-            projects.tab.""".format(
-                prj, prj
-            )
+            f"""WARNING: Profiles are specified for '{prj}' in 
+            {tab_filename}, but '{prj}' is not in 
+            projects.tab."""
         )
 
     # Load data
-    data_portal.data()["{}_cap_factor".format(op_type)] = cap_factor
+    data_portal.data()[f"{op_type}_{param_name}"] = param_value
 
 
 # TODO: scenario setup tables; run slow queries only once, then select from
