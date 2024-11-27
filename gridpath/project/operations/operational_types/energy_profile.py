@@ -43,6 +43,9 @@ from gridpath.project.operations.operational_types.common_functions import (
 )
 
 
+# TODO: possibly add shaping capacity to this module
+
+
 def add_model_components(
     m,
     d,
@@ -205,6 +208,8 @@ def power_provision_rule(mod, g, tmp):
     the period times the energy profile fraction for the timepoint,
     and converted to power via the hours in timepoint and timepoint weight
     parameters.
+
+    No shaping capacity
     """
 
     return (
@@ -212,6 +217,43 @@ def power_provision_rule(mod, g, tmp):
         * mod.energy_profile_energy_fraction[g, tmp]
         / (mod.hrs_in_tmp[tmp] * mod.tmp_weight[tmp])
     )
+
+
+def power_delta_rule(mod, g, tmp):
+    if check_if_first_timepoint(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    ) and (
+        check_boundary_type(
+            mod=mod,
+            tmp=tmp,
+            balancing_type=mod.balancing_type_project[g],
+            boundary_type="linear",
+        )
+        or check_boundary_type(
+            mod=mod,
+            tmp=tmp,
+            balancing_type=mod.balancing_type_project[g],
+            boundary_type="linked",
+        )
+    ):
+        pass
+    else:
+        return (
+            mod.Energy_MWh[g, mod.period[tmp]]
+            * mod.energy_profile_energy_fraction[g, tmp]
+            / (mod.hrs_in_tmp[tmp] * mod.tmp_weight[tmp])
+        ) - (
+            mod.Energy_MWh[
+                g, mod.period[mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
+            ]
+            * mod.energy_profile_energy_fraction[
+                g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+            ]
+            / (
+                mod.hrs_in_tmp[mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
+                * mod.tmp_weight[mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
+            )
+        )
 
 
 # Inputs-Outputs

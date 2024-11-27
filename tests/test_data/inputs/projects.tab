@@ -31,3 +31,4 @@ Fuel_Prod_New	Zone1	fuel_prod_new	exogenous	1	fuel_prod	year	.	.	.	.	.	.	.	.	.	.
 DAC	Zone1	gen_spec	exogenous	1	dac	day	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	Carbon_Credits_Zone2	.	.
 Flex_Load	Zone1	gen_spec	exogenous	0	flex_load	day	.	.	.	.	.	.	.	.	0.9	0.8	0.5	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.
 Hydro_System_Gen1	Zone1	gen_spec	exogenous	0	gen_hydro_water	day	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	Powerhouse1	0.95
+Energy_Spec	Zone1	energy_spec	exogenous	0	energy_profile	day	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.
