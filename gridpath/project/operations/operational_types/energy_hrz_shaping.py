@@ -116,7 +116,7 @@ def add_model_components(
     |                                                                         |
     | The project's minimum power output in each operational horizon          |
     +-------------------------------------------------------------------------+
-    | | :code:`energy_hrz_shaping_average_power`                              |
+    | | :code:`energy_hrz_shaping_hrz_energy_fraction`                              |
     | | *Defined over*: :code:`ENERGY_HRZ_SHAPING_OPR_BT_HRZS`                |
     | | *Within*: :code:`Reals`                                               |
     |                                                                         |
@@ -170,7 +170,7 @@ def add_model_components(
     | | *Defined over*: :code:`ENERGY_HRZ_SHAPING_OPR_BT_HRZS`                |
     |                                                                         |
     | The project's averagepower in each operational horizon, should match    |
-    | the specified :code:`energy_hrz_shaping_average_power`.                 |
+    | the specified :code:`energy_hrz_shaping_hrz_energy_fraction`.                 |
     +-------------------------------------------------------------------------+
     | Ramps                                                                   |
     +-------------------------------------------------------------------------+
@@ -227,7 +227,11 @@ def add_model_components(
     # Required Params
     ###########################################################################
 
-    m.energy_hrz_shaping_average_power = Param(
+    # TODO: it seems like average power should be defined as a fraction of the
+    #  period energy while removing the sum over period constraint for this to
+    #  make sense; leaving like this for now;
+    #  framework is in place to change it
+    m.energy_hrz_shaping_hrz_energy_fraction = Param(
         m.ENERGY_HRZ_SHAPING_OPR_BT_HRZS, within=Reals
     )
 
@@ -254,9 +258,6 @@ def add_model_components(
     # Constraints
     ###########################################################################
 
-    m.EnergyHrzShaping_Total_Energy_in_Period_Constraint = Constraint(
-        m.ENERGY_HRZ_SHAPING_OPR_PRDS, rule=period_energy_rule
-    )
     m.EnergyHrzShaping_Max_Power_Constraint = Constraint(
         m.ENERGY_HRZ_SHAPING_OPR_TMPS, rule=max_power_rule
     )
@@ -272,18 +273,6 @@ def add_model_components(
 
 # Constraint Formulation Rules
 ###############################################################################
-
-
-def period_energy_rule(mod, prj, prd):
-    return (
-        sum(
-            mod.EnergyHrzShaping_Power_MW[prj, tmp]
-            * mod.hrs_in_tmp[tmp]
-            * mod.tmp_weight[tmp]
-            for tmp in mod.TMPS_IN_PRD[prd]
-        )
-        == mod.Energy_MWh[prj, prd]
-    )
 
 
 def max_power_rule(mod, prj, tmp):
@@ -321,23 +310,20 @@ def energy_budget_rule(mod, prj, bt, h):
     **Constraint Name**: EnergyHrzShaping_Energy_Budget_Constraint
     **Enforced Over**: ENERGY_HRZ_SHAPING_OPR_BT_HRZS
     """
-    return sum(
-        mod.EnergyHrzShaping_Power_MW[prj, tmp]
-        * mod.hrs_in_tmp[tmp]
-        * mod.tmp_weight[tmp]
-        for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, h]
-    ) == sum(
-        mod.energy_hrz_shaping_average_power[prj, bt, h]
-        * mod.hrs_in_tmp[tmp]
-        * mod.tmp_weight[tmp]
-        for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, h]
+    return (
+        sum(
+            mod.EnergyHrzShaping_Power_MW[prj, tmp]
+            * mod.hrs_in_tmp[tmp]
+            * mod.tmp_weight[tmp]
+            for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, h]
+        )
+        == mod.energy_hrz_shaping_hrz_energy_fraction[prj, bt, h]
+        * mod.Energy_MWh[prj, mod.hrz_period[bt, h]]
     )
 
 
 # Operational Type Methods
 ###############################################################################
-
-
 def power_provision_rule(mod, prj, tmp):
     """
     Power provision from must-take hydro.
@@ -428,7 +414,7 @@ def load_model_data(
         ),
         index=m.ENERGY_HRZ_SHAPING_OPR_BT_HRZS,
         param=(
-            m.energy_hrz_shaping_average_power,
+            m.energy_hrz_shaping_hrz_energy_fraction,
             m.energy_hrz_shaping_min_power,
             m.energy_hrz_shaping_max_power,
         ),
@@ -562,7 +548,7 @@ def get_model_inputs_from_database(
         op_type="energy_hrz_shaping",
         table="inputs_project_energy_hrz_shaping",
         subscenario_id_column="energy_hrz_shaping_scenario_id",
-        data_column="avg_power, min_power, max_power",
+        data_column="hrz_energy_fraction, min_power, max_power",
         opr_index_dict=BT_HRZ_INDEX_QUERY_PARAMS,
     )
 

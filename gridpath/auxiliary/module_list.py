@@ -41,8 +41,8 @@ def all_modules_list():
     """
     all_modules = [
         "temporal.operations.timepoints",
-        "temporal.operations.horizons",
         "temporal.investment.periods",
+        "temporal.operations.horizons",
         "temporal.investment.superperiods",
         "temporal.finalize",
         "geography.load_zones",

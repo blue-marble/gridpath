@@ -2104,7 +2104,7 @@ CREATE TABLE inputs_project_energy_hrz_shaping
     stage_id                       INTEGER,
     balancing_type_project         TEXT,
     horizon                        INTEGER,
-    avg_power                      FLOAT,
+    hrz_energy_fraction            FLOAT,
     min_power                      FLOAT,
     max_power                      FLOAT,
     PRIMARY KEY (project, energy_hrz_shaping_scenario_id,
