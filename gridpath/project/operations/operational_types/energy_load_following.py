@@ -29,10 +29,9 @@ from pyomo.environ import (
     Param,
     Constraint,
     Expression,
-    NonNegativeNonNegativeReals,
+    NonNegativeReals,
     PercentFraction,
     value,
-    NonNegativeReals,
 )
 import warnings
 
@@ -77,22 +76,22 @@ def add_model_components(
     +-------------------------------------------------------------------------+
     | Sets                                                                    |
     +=========================================================================+
-    | | :code:`ENERGY_HRZ_SHAPING`                                           |
+    | | :code:`ENERGY_LOAD_FOLLOWING`                                           |
     |                                                                         |
     | The set of generators of the :code:`energy_hrz_shaping` operational    |
     | type.                                                                   |
     +-------------------------------------------------------------------------+
-    | | :code:`ENERGY_HRZ_SHAPING_OPR_BT_HRZS`                                  |
+    | | :code:`ENERGY_LOAD_FOLLOWING_OPR_BT_HRZS`                                  |
     |                                                                         |
     | Two-dimensional set with generators of the :code:`energy_hrz_shaping`  |
     | operational type and their operational horizons.                        |
     +-------------------------------------------------------------------------+
-    | | :code:`ENERGY_HRZ_SHAPING_OPR_TMPS`                                  |
+    | | :code:`ENERGY_LOAD_FOLLOWING_OPR_TMPS`                                  |
     |                                                                         |
     | Two-dimensional set with generators of the :code:`energy_hrz_shaping`  |
     | operational type and their operational timepoints.                      |
     +-------------------------------------------------------------------------+
-    | | :code:`ENERGY_HRZ_SHAPING_LINKED_TMPS`                               |
+    | | :code:`ENERGY_LOAD_FOLLOWING_LINKED_TMPS`                               |
     |                                                                         |
     | Two-dimensional set with generators of the :code:`energy_hrz_shaping`  |
     | operational type and their linked timepoints.                           |
@@ -104,20 +103,20 @@ def add_model_components(
     | Required Input Params                                                   |
     +=========================================================================+
     | | :code:`energy_hrz_shaping_max_power`                                  |
-    | | *Defined over*: :code:`ENERGY_HRZ_SHAPING_OPR_BT_HRZS`                |
+    | | *Defined over*: :code:`ENERGY_LOAD_FOLLOWING_OPR_BT_HRZS`                |
     | | *Within*: :code:`NonNegativeReals`                                               |
     |                                                                         |
     | The project's maximum power output in each operational horizon as a     |
     | fraction of its available capacity.                                     |
     +-------------------------------------------------------------------------+
     | | :code:`energy_hrz_shaping_min_power`                                  |
-    | | *Defined over*: :code:`ENERGY_HRZ_SHAPING_OPR_BT_HRZS`                |
+    | | *Defined over*: :code:`ENERGY_LOAD_FOLLOWING_OPR_BT_HRZS`                |
     | | *Within*: :code:`NonNegativeReals`                                               |
     |                                                                         |
     | The project's minimum power output in each operational horizon          |
     +-------------------------------------------------------------------------+
     | | :code:`energy_hrz_shaping_hrz_energy_fraction`                              |
-    | | *Defined over*: :code:`ENERGY_HRZ_SHAPING_OPR_BT_HRZS`                |
+    | | *Defined over*: :code:`ENERGY_LOAD_FOLLOWING_OPR_BT_HRZS`                |
     | | *Within*: :code:`NonNegativeReals`                                               |
     |                                                                         |
     | The project's avarage power output in each operational horizon.         |
@@ -129,7 +128,7 @@ def add_model_components(
     | Linked Input Params                                                     |
     +=========================================================================+
     | | :code:`energy_hrz_shaping_linked_power`                              |
-    | | *Defined over*: :code:`ENERGY_HRZ_SHAPING_LINKED_TMPS`               |
+    | | *Defined over*: :code:`ENERGY_LOAD_FOLLOWING_LINKED_TMPS`               |
     | | *Within*: :code:`NonNegativeReals`                                               |
     |                                                                         |
     | The project's power provision in the linked timepoints.                 |
@@ -140,8 +139,8 @@ def add_model_components(
     +-------------------------------------------------------------------------+
     | Variables                                                               |
     +=========================================================================+
-    | | :code:`EnergyHrzShaping_Power_MW`                                     |
-    | | *Defined over*: :code:`ENERGY_HRZ_SHAPING_OPR_TMPS`                   |
+    | | :code:`EnergyLoadFollowing_Power_MW`                                     |
+    | | *Defined over*: :code:`ENERGY_LOAD_FOLLOWING_OPR_TMPS`                   |
     | | *Within*: :code:`NonNegativeReals`                                               |
     |                                                                         |
     | Power provision in MW from this project in each timepoint in which the  |
@@ -155,33 +154,33 @@ def add_model_components(
     +=========================================================================+
     | Power                                                                   |
     +-------------------------------------------------------------------------+
-    | | :code:`EnergyHrzShaping_Max_Power_Constraint`                         |
-    | | *Defined over*: :code:`ENERGY_HRZ_SHAPING_OPR_BT_HRZS`                |
+    | | :code:`EnergyLoadFollowing_Max_Power_Constraint`                         |
+    | | *Defined over*: :code:`ENERGY_LOAD_FOLLOWING_OPR_BT_HRZS`                |
     |                                                                         |
     | Limits power to :code:`energy_hrz_shaping_max_power`.                   |
     +-------------------------------------------------------------------------+
-    | | :code:`EnergyHrzShaping_Min_Power_Constraint`                         |
-    | | *Defined over*: :code:`ENERGY_HRZ_SHAPING_OPR_BT_HRZS`                |
+    | | :code:`EnergyLoadFollowing_Min_Power_Constraint`                         |
+    | | *Defined over*: :code:`ENERGY_LOAD_FOLLOWING_OPR_BT_HRZS`                |
     |                                                                         |
     | Power provision should exceed a certain level                           |
     | :code:`energy_hrz_shaping_min_power`                                    |
     +-------------------------------------------------------------------------+
-    | | :code:`EnergyHrzShaping_Energy_Budget_Constraint`                     |
-    | | *Defined over*: :code:`ENERGY_HRZ_SHAPING_OPR_BT_HRZS`                |
+    | | :code:`EnergyLoadFollowing_Energy_Budget_Constraint`                     |
+    | | *Defined over*: :code:`ENERGY_LOAD_FOLLOWING_OPR_BT_HRZS`                |
     |                                                                         |
     | The project's averagepower in each operational horizon, should match    |
     | the specified :code:`energy_hrz_shaping_hrz_energy_fraction`.                 |
     +-------------------------------------------------------------------------+
     | Ramps                                                                   |
     +-------------------------------------------------------------------------+
-    | | :code:`EnergyHrzShaping_Ramp_Up_Constraint`                           |
-    | | *Defined over*: :code:`ENERGY_HRZ_SHAPING_OPR_TMPS`                  |
+    | | :code:`EnergyLoadFollowing_Ramp_Up_Constraint`                           |
+    | | *Defined over*: :code:`ENERGY_LOAD_FOLLOWING_OPR_TMPS`                  |
     |                                                                         |
     | Limits the allowed project upward ramp based on the                     |
     | :code:`energy_hrz_shaping_ramp_up_when_on_rate`.                       |
     +-------------------------------------------------------------------------+
-    | | :code:`EnergyHrzShaping_Ramp_Down_Constraint`                         |
-    | | *Defined over*: :code:`ENERGY_HRZ_SHAPING_OPR_TMPS`                  |
+    | | :code:`EnergyLoadFollowing_Ramp_Down_Constraint`                         |
+    | | *Defined over*: :code:`ENERGY_LOAD_FOLLOWING_OPR_TMPS`                  |
     |                                                                         |
     | Limits the allowed project downward ramp based on the                   |
     | :code:`energy_hrz_shaping_ramp_down_when_on_rate`.                     |
@@ -191,132 +190,91 @@ def add_model_components(
     # Sets
     ###########################################################################
 
-    m.ENERGY_HRZ_SHAPING = Set(
+    m.ENERGY_LOAD_FOLLOWING = Set(
         within=m.PROJECTS,
         initialize=lambda mod: subset_init_by_param_value(
-            mod, "PROJECTS", "operational_type", "energy_hrz_shaping"
+            mod, "PROJECTS", "operational_type", "energy_load_following"
         ),
     )
 
-    m.ENERGY_HRZ_SHAPING_OPR_PRDS = Set(
+    m.ENERGY_LOAD_FOLLOWING_OPR_PRDS = Set(
         dimen=2,
         within=m.PRJ_OPR_PRDS,
         initialize=lambda mod: subset_init_by_set_membership(
             mod=mod,
             superset="PRJ_OPR_PRDS",
             index=0,
-            membership_set=mod.ENERGY_HRZ_SHAPING,
+            membership_set=mod.ENERGY_LOAD_FOLLOWING,
         ),
     )
 
-    m.ENERGY_HRZ_SHAPING_OPR_BT_HRZS = Set(dimen=3)
-
-    m.ENERGY_HRZ_SHAPING_OPR_TMPS = Set(
+    m.ENERGY_LOAD_FOLLOWING_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
         initialize=lambda mod: subset_init_by_set_membership(
             mod=mod,
             superset="PRJ_OPR_TMPS",
             index=0,
-            membership_set=mod.ENERGY_HRZ_SHAPING,
+            membership_set=mod.ENERGY_LOAD_FOLLOWING,
         ),
     )
 
-    m.ENERGY_HRZ_SHAPING_LINKED_TMPS = Set(dimen=2)
+    m.ENERGY_LOAD_FOLLOWING_LINKED_TMPS = Set(dimen=2)
 
     # Required Params
     ###########################################################################
 
-    m.energy_hrz_shaping_hrz_energy_fraction = Param(
-        m.ENERGY_HRZ_SHAPING_OPR_BT_HRZS, within=NonNegativeReals
-    )
-
-    m.energy_hrz_shaping_min_power = Param(
-        m.ENERGY_HRZ_SHAPING_OPR_BT_HRZS, within=NonNegativeReals
-    )
-
-    m.energy_hrz_shaping_max_power = Param(
-        m.ENERGY_HRZ_SHAPING_OPR_BT_HRZS, within=NonNegativeReals
+    # TODO: does this param make sense at the load zone level instead?
+    # TODO: instead of using this parameter, test with sum of static load for
+    #  now;
+    m.base_net_requirement = Param(
+        m.ENERGY_LOAD_FOLLOWING_OPR_PRDS, within=NonNegativeReals
     )
 
     # Linked Params
     ###########################################################################
 
     m.energy_hrz_shaping_linked_power = Param(
-        m.ENERGY_HRZ_SHAPING_LINKED_TMPS, within=NonNegativeReals
+        m.ENERGY_LOAD_FOLLOWING_LINKED_TMPS, within=NonNegativeReals
     )
 
     # Variables
     ###########################################################################
 
-    m.EnergyHrzShaping_Power_MW = Var(
-        m.ENERGY_HRZ_SHAPING_OPR_TMPS, within=NonNegativeReals
+    m.EnergyLoadFollowing_Power_MW = Var(
+        m.ENERGY_LOAD_FOLLOWING_OPR_TMPS, within=NonNegativeReals
     )
 
     # Constraints
     ###########################################################################
 
-    m.EnergyHrzShaping_Max_Power_Constraint = Constraint(
-        m.ENERGY_HRZ_SHAPING_OPR_TMPS, rule=max_power_rule
-    )
+    def load_following_rule(mod, prj, tmp):
+        """
+        **Constraint Name**: EnergyLoadFollowing_Power_Constraint
+        **Enforced Over**: ENERGY_LOAD_FOLLOWING_OPR_TMPS
 
-    m.EnergyHrzShaping_Min_Power_Constraint = Constraint(
-        m.ENERGY_HRZ_SHAPING_OPR_TMPS, rule=min_power_rule
-    )
-
-    m.EnergyHrzShaping_Energy_Budget_Constraint = Constraint(
-        m.ENERGY_HRZ_SHAPING_OPR_BT_HRZS, rule=energy_budget_rule
-    )
-
-
-# Constraint Formulation Rules
-###############################################################################
-
-
-def max_power_rule(mod, prj, tmp):
-    """
-    **Constraint Name**: EnergyHrzShaping_Max_Power_Constraint
-    **Enforced Over**: ENERGY_HRZ_SHAPING_OPR_BT_HRZS
-    """
-    return (
-        mod.EnergyHrzShaping_Power_MW[prj, tmp]
-        <= mod.energy_hrz_shaping_max_power[
-            prj,
-            mod.balancing_type_project[prj],
-            mod.horizon[tmp, mod.balancing_type_project[prj]],
-        ]
-    )
-
-
-def min_power_rule(mod, prj, tmp):
-    """
-    **Constraint Name**: EnergyHrzShaping_Min_Power_Constraint
-    **Enforced Over**: ENERGY_HRZ_SHAPING_OPR_BT_HRZS
-    """
-    return (
-        mod.EnergyHrzShaping_Power_MW[prj, tmp]
-        >= mod.energy_hrz_shaping_min_power[
-            prj,
-            mod.balancing_type_project[prj],
-            mod.horizon[tmp, mod.balancing_type_project[prj]],
-        ]
-    )
-
-
-def energy_budget_rule(mod, prj, bt, h):
-    """
-    **Constraint Name**: EnergyHrzShaping_Energy_Budget_Constraint
-    **Enforced Over**: ENERGY_HRZ_SHAPING_OPR_BT_HRZS
-    """
-    return (
-        sum(
-            mod.EnergyHrzShaping_Power_MW[prj, tmp]
-            * mod.hrs_in_tmp[tmp]
-            * mod.tmp_weight[tmp]
-            for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, h]
+        Meet everything above the dedicated resources dispatched flat
+        """
+        # TODO: replace static_load here with post EE variable
+        # TODO: allow less than or equal constraint here?
+        return mod.EnergyLoadFollowing_Power_MW[prj, tmp] == mod.static_load_mw[
+            mod.load_zone[prj], tmp
+        ] - (
+            # mod.base_net_requirement[prj, mod.period[tmp]]
+            sum(
+                mod.static_load_mw[mod.load_zone[prj], prd_tmp]
+                * mod.hrs_in_tmp[prd_tmp]
+                * mod.tmp_weight[prd_tmp]
+                for prd_tmp in mod.TMPS_IN_PRD[mod.period[tmp]]
+            )
+            - mod.Energy_MWh[prj, mod.period[tmp]]
+        ) / sum(
+            mod.hrs_in_tmp[prd_tmp] * mod.tmp_weight[prd_tmp]
+            for prd_tmp in mod.TMPS_IN_PRD[mod.period[tmp]]
         )
-        == mod.energy_hrz_shaping_hrz_energy_fraction[prj, bt, h]
-        * mod.Energy_MWh[prj, mod.hrz_period[bt, h]]
+
+    m.EnergyLoadFollowing_Power_Constraint = Constraint(
+        m.ENERGY_LOAD_FOLLOWING_OPR_TMPS, rule=load_following_rule
     )
 
 
@@ -326,7 +284,7 @@ def power_provision_rule(mod, prj, tmp):
     """
     Power provision from must-take hydro.
     """
-    return mod.EnergyHrzShaping_Power_MW[prj, tmp]
+    return mod.EnergyLoadFollowing_Power_MW[prj, tmp]
 
 
 def power_delta_rule(mod, prj, tmp):
@@ -353,8 +311,8 @@ def power_delta_rule(mod, prj, tmp):
         pass
     else:
         return (
-            mod.EnergyHrzShaping_Power_MW[prj, tmp]
-            - mod.EnergyHrzShaping_Power_MW[
+            mod.EnergyLoadFollowing_Power_MW[prj, tmp]
+            - mod.EnergyLoadFollowing_Power_MW[
                 prj, mod.prev_tmp[tmp, mod.balancing_type_project[prj]]
             ]
         )
@@ -384,54 +342,55 @@ def load_model_data(
     :param stage:
     :return:
     """
+    pass
 
-    # Determine list of projects load params from projects.tab (if any)
-    projects = load_optype_model_data(
-        mod=m,
-        data_portal=data_portal,
-        scenario_directory=scenario_directory,
-        weather_iteration=weather_iteration,
-        hydro_iteration=hydro_iteration,
-        availability_iteration=availability_iteration,
-        subproblem=subproblem,
-        stage=stage,
-        op_type="energy_hrz_shaping",
-    )
-
-    # Load data
-    data_portal.load(
-        filename=os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "inputs",
-            "energy_hrz_shaping_params.tab",
-        ),
-        index=m.ENERGY_HRZ_SHAPING_OPR_BT_HRZS,
-        param=(
-            m.energy_hrz_shaping_hrz_energy_fraction,
-            m.energy_hrz_shaping_min_power,
-            m.energy_hrz_shaping_max_power,
-        ),
-    )
-
-    # Linked timepoint params
-    linked_inputs_filename = os.path.join(
-        scenario_directory,
-        subproblem,
-        stage,
-        "inputs",
-        "energy_hrz_shaping_linked_timepoint_params.tab",
-    )
-    if os.path.exists(linked_inputs_filename):
-        data_portal.load(
-            filename=linked_inputs_filename,
-            index=m.ENERGY_HRZ_SHAPING_LINKED_TMPS,
-            param=(m.energy_hrz_shaping_linked_power,),
-        )
+    # # Determine list of projects load params from projects.tab (if any)
+    # projects = load_optype_model_data(
+    #     mod=m,
+    #     data_portal=data_portal,
+    #     scenario_directory=scenario_directory,
+    #     weather_iteration=weather_iteration,
+    #     hydro_iteration=hydro_iteration,
+    #     availability_iteration=availability_iteration,
+    #     subproblem=subproblem,
+    #     stage=stage,
+    #     op_type="energy_hrz_shaping",
+    # )
+    #
+    # # Load data
+    # data_portal.load(
+    #     filename=os.path.join(
+    #         scenario_directory,
+    #         weather_iteration,
+    #         hydro_iteration,
+    #         availability_iteration,
+    #         subproblem,
+    #         stage,
+    #         "inputs",
+    #         "energy_hrz_shaping_params.tab",
+    #     ),
+    #     index=m.ENERGY_LOAD_FOLLOWING_OPR_BT_HRZS,
+    #     param=(
+    #         m.energy_hrz_shaping_hrz_energy_fraction,
+    #         m.energy_hrz_shaping_min_power,
+    #         m.energy_hrz_shaping_max_power,
+    #     ),
+    # )
+    #
+    # # Linked timepoint params
+    # linked_inputs_filename = os.path.join(
+    #     scenario_directory,
+    #     subproblem,
+    #     stage,
+    #     "inputs",
+    #     "energy_hrz_shaping_linked_timepoint_params.tab",
+    # )
+    # if os.path.exists(linked_inputs_filename):
+    #     data_portal.load(
+    #         filename=linked_inputs_filename,
+    #         index=m.ENERGY_LOAD_FOLLOWING_LINKED_TMPS,
+    #         param=(m.energy_hrz_shaping_linked_power,),
+    #     )
 
 
 def export_results(
@@ -492,13 +451,13 @@ def export_results(
                     "linked_provide_power",
                 ]
             )
-            for p, tmp in sorted(mod.ENERGY_HRZ_SHAPING_OPR_TMPS):
+            for p, tmp in sorted(mod.ENERGY_LOAD_FOLLOWING_OPR_TMPS):
                 if tmp in tmps_to_link:
                     writer.writerow(
                         [
                             p,
                             tmp_linked_tmp_dict[tmp],
-                            max(value(mod.EnergyHrzShaping_Power_MW[p, tmp]), 0),
+                            max(value(mod.EnergyLoadFollowing_Power_MW[p, tmp]), 0),
                         ]
                     )
 
@@ -535,22 +494,22 @@ def get_model_inputs_from_database(
         weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
     )
 
-    prj_bt_hrz_data = get_prj_temporal_index_opr_inputs_from_db(
-        subscenarios=subscenarios,
-        weather_iteration=db_weather_iteration,
-        hydro_iteration=db_hydro_iteration,
-        availability_iteration=db_availability_iteration,
-        subproblem=db_subproblem,
-        stage=db_stage,
-        conn=conn,
-        op_type="energy_hrz_shaping",
-        table="inputs_project_energy_hrz_shaping",
-        subscenario_id_column="energy_hrz_shaping_scenario_id",
-        data_column="hrz_energy_fraction, min_power, max_power",
-        opr_index_dict=BT_HRZ_INDEX_QUERY_PARAMS,
-    )
-
-    return prj_bt_hrz_data
+    # prj_bt_hrz_data = get_prj_temporal_index_opr_inputs_from_db(
+    #     subscenarios=subscenarios,
+    #     weather_iteration=db_weather_iteration,
+    #     hydro_iteration=db_hydro_iteration,
+    #     availability_iteration=db_availability_iteration,
+    #     subproblem=db_subproblem,
+    #     stage=db_stage,
+    #     conn=conn,
+    #     op_type="energy_hrz_shaping",
+    #     table="inputs_project_energy_hrz_shaping",
+    #     subscenario_id_column="energy_hrz_shaping_scenario_id",
+    #     data_column="hrz_energy_fraction, min_power, max_power",
+    #     opr_index_dict=BT_HRZ_INDEX_QUERY_PARAMS,
+    # )
+    #
+    # return prj_bt_hrz_data
 
 
 def write_model_inputs(
@@ -574,29 +533,29 @@ def write_model_inputs(
     :param conn: database connection
     :return:
     """
-
-    data = get_model_inputs_from_database(
-        scenario_id,
-        subscenarios,
-        weather_iteration,
-        hydro_iteration,
-        availability_iteration,
-        subproblem,
-        stage,
-        conn,
-    )
-    fname = "energy_hrz_shaping_params.tab"
-
-    write_tab_file_model_inputs(
-        scenario_directory,
-        weather_iteration,
-        hydro_iteration,
-        availability_iteration,
-        subproblem,
-        stage,
-        fname,
-        data,
-    )
+    pass
+    # data = get_model_inputs_from_database(
+    #     scenario_id,
+    #     subscenarios,
+    #     weather_iteration,
+    #     hydro_iteration,
+    #     availability_iteration,
+    #     subproblem,
+    #     stage,
+    #     conn,
+    # )
+    # fname = "energy_load_following_params.tab"
+    #
+    # write_tab_file_model_inputs(
+    #     scenario_directory,
+    #     weather_iteration,
+    #     hydro_iteration,
+    #     availability_iteration,
+    #     subproblem,
+    #     stage,
+    #     fname,
+    #     data,
+    # )
 
 
 # Validation
@@ -632,5 +591,5 @@ def validate_inputs(
         subproblem,
         stage,
         conn,
-        "energy_hrz_shaping",
+        "energy_load_following",
     )

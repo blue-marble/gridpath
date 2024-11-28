@@ -1433,6 +1433,16 @@ class TestExamples(unittest.TestCase):
         scenario_name = "test_w_hydro_as_energy_no_reserves"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
+    def test_example_test_w_lf(self):
+        """
+        Check validation and objective function value of
+        "test_w_lf"
+        example
+        :return:
+        """
+        scenario_name = "test_w_lf"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
     @classmethod
     def tearDownClass(cls):
         os.remove(DB_PATH)

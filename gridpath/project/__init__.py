@@ -168,6 +168,7 @@ def add_model_components(
             "gen_hydro_water",
             "energy_profile",
             "energy_hrz_shaping",
+            "energy_load_following",
         ],
     )
     m.availability_type = Param(
