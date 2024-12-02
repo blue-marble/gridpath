@@ -549,6 +549,10 @@ def load_var_profile_inputs(
     data_portal.data()["{}_cap_factor".format(op_type)] = cap_factor
 
 
+# TODO: scenario setup tables; run slow queries only once, then select from
+#  smaller table for iterations/subproblems
+
+
 def get_prj_tmp_opr_inputs_from_db(
     subscenarios,
     weather_iteration,
@@ -578,14 +582,108 @@ def get_prj_tmp_opr_inputs_from_db(
     :param op_type:
     :return: cursor object with query results
     """
-    c = conn.cursor()
+    all_projects_sql = str()
+    # Check for no iterations projects
+    no_iterations_project_sql = make_project_list_query(
+        conn=conn,
+        subscenarios=subscenarios,
+        table=table,
+        data_column=data_column,
+        subscenario_id_column=subscenario_id_column,
+        op_type=op_type,
+        subproblem=subproblem,
+        stage=stage,
+        varies_by_weather_iteration=0,
+        varies_by_hydro_iteration=0,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+    )
+    all_projects_sql += no_iterations_project_sql
 
+    # Check for weather iterations projects
+    if no_iterations_project_sql != "":
+        all_projects_sql += " UNION "
+
+    weather_iterations_project_sql = make_project_list_query(
+        conn=conn,
+        subscenarios=subscenarios,
+        table=table,
+        data_column=data_column,
+        subscenario_id_column=subscenario_id_column,
+        op_type=op_type,
+        subproblem=subproblem,
+        stage=stage,
+        varies_by_weather_iteration=1,
+        varies_by_hydro_iteration=0,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+    )
+    all_projects_sql += weather_iterations_project_sql
+
+    # Check of hydro iterations projects
+    if weather_iterations_project_sql != "":
+        all_projects_sql += " UNION "
+    hydro_iterations_project_sql = make_project_list_query(
+        conn=conn,
+        subscenarios=subscenarios,
+        table=table,
+        data_column=data_column,
+        subscenario_id_column=subscenario_id_column,
+        op_type=op_type,
+        subproblem=subproblem,
+        stage=stage,
+        varies_by_weather_iteration=0,
+        varies_by_hydro_iteration=1,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+    )
+    all_projects_sql += hydro_iterations_project_sql
+
+    # Check for weather and hydro iterations projects
+    if hydro_iterations_project_sql != "":
+        all_projects_sql += " UNION "
+    weather_and_hydro_iterations_project_sql = make_project_list_query(
+        conn=conn,
+        subscenarios=subscenarios,
+        table=table,
+        data_column=data_column,
+        subscenario_id_column=subscenario_id_column,
+        op_type=op_type,
+        subproblem=subproblem,
+        stage=stage,
+        varies_by_weather_iteration=1,
+        varies_by_hydro_iteration=1,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+    )
+    all_projects_sql += weather_and_hydro_iterations_project_sql
+
+    if all_projects_sql[-7:] == " UNION ":
+        all_projects_sql = all_projects_sql[: len(all_projects_sql) - 7]
+
+    c = conn.cursor()
+    prj_tmp_data = c.execute(all_projects_sql)
+
+    return prj_tmp_data
+
+
+def get_prj_tmp_inputs_with_iterations_sql(
+    subscenarios,
+    table,
+    data_column,
+    subscenario_id_column,
+    op_type,
+    subproblem,
+    stage,
+    project_filter,
+    weather_iteration_to_use,
+    hydro_iteration_to_use,
+):
     # TODO: see note below; can produce this problem by having two scenarios
     #  one in which the project is spec and one new
     # NOTE: There can be cases where a resource is both in specified capacity
     # table and in new build table, but depending on capacity type you'd only
     # use one of them, so filtering with OR is not 100% correct.
-
     sql = f"""
         SELECT project, prj_tbl.timepoint, {data_column}
         FROM 
@@ -605,6 +703,7 @@ def get_prj_tmp_opr_inputs_from_db(
             FROM inputs_project_operational_chars
             WHERE project_operational_chars_scenario_id = {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
             AND operational_type = '{op_type}'
+            {project_filter}
             ) AS op_type_projects_with_btype_and_opchar_id
         USING (project)
         LEFT OUTER JOIN
@@ -620,13 +719,72 @@ def get_prj_tmp_opr_inputs_from_db(
         ON (
             prj_tbl.timepoint = tmp_tbl.timepoint
         )
-        WHERE weather_iteration = {weather_iteration}
+        WHERE weather_iteration = {weather_iteration_to_use}
+        AND hydro_iteration = {hydro_iteration_to_use}
+        """
+
+    return sql
+
+
+def make_project_str(projects_list):
+    project_str = "("
+    list_len = len(projects_list)
+    n = 1
+    for prj in projects_list:
+        project_str += f"{prj}"
+        if n < list_len:
+            project_str += ", "
+        else:
+            project_str += ")"
+        n += 1
+
+    return project_str
+
+
+def make_project_list_query(
+    conn,
+    subscenarios,
+    table,
+    data_column,
+    subscenario_id_column,
+    op_type,
+    subproblem,
+    stage,
+    varies_by_weather_iteration,
+    varies_by_hydro_iteration,
+    weather_iteration,
+    hydro_iteration,
+):
+    c = conn.cursor()
+    projects_list = c.execute(
+        f"""
+        SELECT project, {subscenario_id_column}
+        FROM {table}_iterations
+        WHERE varies_by_weather_iteration = {varies_by_weather_iteration}
+        AND varies_by_hydro_iteration = {varies_by_hydro_iteration}
         ;
-    """
+        """
+    ).fetchall()
+    if projects_list:
+        project_str = make_project_str(projects_list=projects_list)
+        sql = get_prj_tmp_inputs_with_iterations_sql(
+            subscenarios=subscenarios,
+            table=table,
+            data_column=data_column,
+            subscenario_id_column=subscenario_id_column,
+            op_type=op_type,
+            subproblem=subproblem,
+            stage=stage,
+            project_filter=f"AND (project, {subscenario_id_column}) in {project_str}",
+            weather_iteration_to_use=(
+                weather_iteration if varies_by_weather_iteration else 0
+            ),
+            hydro_iteration_to_use=hydro_iteration if varies_by_hydro_iteration else 0,
+        )
+    else:
+        sql = ""
 
-    prj_tmp_data = c.execute(sql)
-
-    return prj_tmp_data
+    return sql
 
 
 def validate_var_profiles(
