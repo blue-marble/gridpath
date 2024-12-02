@@ -663,44 +663,47 @@ def load_model_data(
         "periods.tab",
     )
     periods_df = pd.read_csv(periods_file, sep="\t")
-    periods_set = set(periods_df["period"])
+    prds_or_tmp_set = set(periods_df["period"])
 
-    # Variable O&M by period
-    project_period_var_om_file = os.path.join(
-        scenario_directory,
-        weather_iteration,
-        hydro_iteration,
-        availability_iteration,
-        subproblem,
-        stage,
-        "inputs",
-        "project_variable_om_by_period.tab",
-    )
-    if os.path.exists(project_period_var_om_file):
-        var_om_by_period_df = pd.read_csv(
-            project_period_var_om_file, sep="\t"
-        ).set_index(["project", "period"])
-        var_om_by_prd_prj_prd_list = []
-        var_om_by_period_dict = {}
+    # Variable O&M by period and timepoint
+    for prd_or_tmp_str in ["period", "timepoint"]:
+        project_var_om_file = os.path.join(
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            f"project_variable_om_by_{prd_or_tmp_str}.tab",
+        )
+        if os.path.exists(project_var_om_file):
+            var_om_df = pd.read_csv(project_var_om_file, sep="\t").set_index(
+                ["project", prd_or_tmp_str]
+            )
+            var_om_prj_idx_list = []
+            var_om_by_idx_dict = {}
 
-        for idx, val in var_om_by_period_df.iterrows():
-            (prj, prd) = idx
-            if prd == 0:
-                for period in sorted(list(periods_set)):
-                    var_om_by_prd_prj_prd_list.append((prj, period))
-                    var_om_by_period_dict[prj, period] = var_om_by_period_df.loc[
-                        prj, prd
-                    ]["variable_om_cost_by_period"]
-            else:
-                var_om_by_prd_prj_prd_list.append((prj, prd))
-                var_om_by_period_dict[prj, prd] = var_om_by_period_df.loc[prj, prd][
-                    "variable_om_cost_by_period"
-                ]
-
-        data_portal.data()["VAR_OM_COST_BY_PRD_PRJ_PRDS"] = {
-            None: var_om_by_prd_prj_prd_list
-        }
-        data_portal.data()["variable_om_cost_per_mwh_by_period"] = var_om_by_period_dict
+            for idx, val in var_om_df.iterrows():
+                (prj, prd_or_tmp) = idx
+                if prd_or_tmp == 0:
+                    for _prd_or_tmp in sorted(list(prds_or_tmp_set)):
+                        var_om_prj_idx_list.append((prj, _prd_or_tmp))
+                        var_om_by_idx_dict[prj, _prd_or_tmp] = var_om_df.loc[
+                            prj, prd_or_tmp
+                        ][f"variable_om_cost_by_{prd_or_tmp_str}"]
+                else:
+                    var_om_prj_idx_list.append((prj, prd_or_tmp))
+                    var_om_by_idx_dict[prj, prd_or_tmp] = var_om_df.loc[
+                        prj, prd_or_tmp
+                    ][f"variable_om_cost_by_{prd_or_tmp_str}"]
+            set_name_ending = "PRDS" if prd_or_tmp_str == "period" else "TMPS"
+            data_portal.data()[f"VAR_OM_COST_BY_PRD_PRJ_{set_name_ending}"] = {
+                None: var_om_prj_idx_list
+            }
+            data_portal.data()[
+                f"variable_om_cost_per_mwh_by_{prd_or_tmp_str}"
+            ] = var_om_by_idx_dict
 
     # Fuels
     project_fuels_file = os.path.join(
@@ -788,7 +791,7 @@ def load_model_data(
         vom_projects = set(vom_df["project"].unique())
 
         slope_dict, intercept_dict = get_slopes_intercept_by_project_period_segment(
-            vom_df, "average_variable_om_cost_per_mwh", vom_projects, periods_set
+            vom_df, "average_variable_om_cost_per_mwh", vom_projects, prds_or_tmp_set
         )
         vom_project_segments = list(slope_dict.keys())
 
@@ -869,7 +872,7 @@ def load_model_data(
         fuel_projects = pr_df["project"].unique()
 
         slope_dict, intercept_dict = get_slopes_intercept_by_project_period_segment(
-            hr_df, "average_heat_rate_mmbtu_per_mwh", fuel_projects, periods_set
+            hr_df, "average_heat_rate_mmbtu_per_mwh", fuel_projects, prds_or_tmp_set
         )
 
         fuel_project_segments = list(slope_dict.keys())
@@ -965,6 +968,35 @@ def get_inputs_from_database(
         -- Get only the subset of projects in the portfolio based on the 
         -- project_portfolio_scenario_id 
         WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
+        """
+    )
+
+    var_om_by_tmp_c = conn.cursor()
+    var_om_by_tmp = var_om_by_tmp_c.execute(
+        f"""
+        SELECT project, timepoint, variable_om_cost_by_timepoint
+        FROM inputs_project_portfolios
+        -- select the correct operational characteristics subscenario
+        INNER JOIN
+        (SELECT project, variable_om_cost_by_timepoint_scenario_id
+        FROM inputs_project_operational_chars
+        WHERE project_operational_chars_scenario_id = {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
+        ) AS op_char
+        USING(project)
+        -- select only matching projects
+        INNER JOIN
+        inputs_project_variable_om_cost_by_timepoint
+        USING(project, variable_om_cost_by_timepoint_scenario_id)
+        -- Get only the subset of projects in the portfolio based on the 
+        -- project_portfolio_scenario_id 
+        WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
+        AND timepoint in (
+            SELECT timepoint
+            FROM inputs_temporal
+            WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+            AND subproblem_id = {subproblem}
+            AND stage_id = {stage} 
+        )
         """
     )
 
@@ -1144,6 +1176,7 @@ def get_inputs_from_database(
     return (
         proj_opchar,
         var_om_by_prd,
+        var_om_by_tmp,
         fuels,
         heat_rates,
         vom_curves,
@@ -1188,6 +1221,7 @@ def write_model_inputs(
     (
         proj_opchar,
         var_om_by_prd,
+        var_om_by_tmp,
         fuels,
         heat_rate_curves,
         vom_curves,
@@ -1263,12 +1297,20 @@ def write_model_inputs(
         new_column_names=new_columns,
     )
 
-    # Write fuels file
+    # Write var cost by period file
     var_om_by_prd_df = cursor_to_df(var_om_by_prd)
     write_additional_opchar_file(
         opchar_df=var_om_by_prd_df,
         inputs_directory=inputs_directory,
         filename="project_variable_om_by_period.tab",
+    )
+
+    # Write var cost by tmp file
+    var_om_by_tmp_df = cursor_to_df(var_om_by_prd)
+    write_additional_opchar_file(
+        opchar_df=var_om_by_tmp_df,
+        inputs_directory=inputs_directory,
+        filename="project_variable_om_by_timepoint.tab",
     )
 
     # Write fuels file
@@ -1389,6 +1431,7 @@ def validate_inputs(
     (
         proj_opchar,
         var_om_by_prd,
+        var_om_by_tmp,
         fuels,
         heat_rates,
         vom_curves,

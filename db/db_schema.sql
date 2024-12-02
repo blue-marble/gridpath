@@ -1629,8 +1629,9 @@ CREATE TABLE inputs_project_operational_chars
     technology                               VARCHAR(32),
     operational_type                         VARCHAR(32),
     balancing_type_project                   VARCHAR(32),
-    variable_om_cost_per_mwh                 FLOAT,
+    variable_om_cost_per_mwh                 FLOAT,   -- simple variable O&M
     variable_om_cost_by_period_scenario_id   INTEGER, -- determines by period simple variable O&M
+    variable_om_cost_by_timepoint_scenario_id      INTEGER, -- determines by tmp simple variable O&M
     project_fuel_scenario_id                 INTEGER,
     heat_rate_curves_scenario_id             INTEGER, -- determined heat rate curve
     variable_om_curves_scenario_id           INTEGER, -- determined variable O&M curve
@@ -1695,6 +1696,9 @@ CREATE TABLE inputs_project_operational_chars
     FOREIGN KEY (project, variable_om_cost_by_period_scenario_id) REFERENCES
         subscenarios_project_variable_om_cost_by_period
             (project, variable_om_cost_by_period_scenario_id),
+    FOREIGN KEY (project, variable_om_cost_by_timepoint_scenario_id) REFERENCES
+        subscenarios_project_variable_om_cost_by_timepoint
+            (project, variable_om_cost_by_timepoint_scenario_id),
     FOREIGN KEY (project, project_fuel_scenario_id) REFERENCES
         subscenarios_project_fuels
             (project, project_fuel_scenario_id),
@@ -1750,6 +1754,32 @@ CREATE TABLE inputs_project_variable_om_cost_by_period
     FOREIGN KEY (project, variable_om_cost_by_period_scenario_id) REFERENCES
         subscenarios_project_variable_om_cost_by_period (project,
                                                          variable_om_cost_by_period_scenario_id)
+);
+
+-- Variable O&M by timepoint
+DROP TABLE IF EXISTS subscenarios_project_variable_om_cost_by_timepoint;
+CREATE TABLE subscenarios_project_variable_om_cost_by_timepoint
+(
+    project                             VARCHAR(32),
+    variable_om_cost_by_timepoint_scenario_id INTEGER,
+    name                                VARCHAR(32),
+    description                         VARCHAR(128),
+    PRIMARY KEY (project, variable_om_cost_by_timepoint_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_variable_om_cost_by_timepoint;
+CREATE TABLE inputs_project_variable_om_cost_by_timepoint
+(
+    project                             VARCHAR(64),
+    variable_om_cost_by_timepoint_scenario_id INTEGER,
+    timepoint                                 INTEGER, -- 0 means it's the same for all tmps
+    variable_om_cost_by_timepoint             FLOAT,
+    PRIMARY KEY (project, variable_om_cost_by_timepoint_scenario_id, timepoint),
+    FOREIGN KEY (project, variable_om_cost_by_timepoint_scenario_id)
+        REFERENCES subscenarios_project_variable_om_cost_by_timepoint (
+                                                                 project,
+                                                                 variable_om_cost_by_timepoint_scenario_id
+            )
 );
 
 -- Project fuels
