@@ -121,4 +121,6 @@ hydro_system,"{('', '', '', 1): {1: 17519.999222673472}}","{('', '', '', 1): {1:
 hydro_system_exog_elev,"{('', 'hydro_iteration_1', '', 1): {1: 0.0}}","{('', 'hydro_iteration_1', '', 1): {1: -0.0}}",,
 hydro_system_exog_elev_w_travel_time,"{('', 'hydro_iteration_1', '', 1): {1: 0.0}}","{('', 'hydro_iteration_1', '', 1): {1: -0.0}}",,
 ra_toolkit_sync_single_year_w_hydro_instead_of_weather_profile,"{('weather_iteration_2010', 'hydro_iteration_2010', 'availability_iteration_1', 1): {1: -0.0}, ('weather_iteration_2010', 'hydro_iteration_2010', 'availability_iteration_1', 2): {1: -0.0}}","{('weather_iteration_2010', 'hydro_iteration_2010', 'availability_iteration_1', 1): {1: -0.0}, ('weather_iteration_2010', 'hydro_iteration_2010', 'availability_iteration_1', 2): {1: -0.0}}",,
+2periods_nuclear_var_cost_by_timepoint_same,"{('', '', '', 1): {1: -75926182429562.45}}","{('', '', '', 1): {1: -75926182429562.45}}",,
+2periods_nuclear_var_cost_by_timepoint_diff,"{('', '', '', 1): {1: -75926182955162.45}}","{('', '', '', 1): {1: -75926182955162.45}}",,
 2periods_new_build_2zones_loadcomponents,"{('', '', '', 1): {1: -20171691804.789497}}","{('', '', '', 1): {1: -20171691804.789497}}",,
