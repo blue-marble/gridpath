@@ -1319,6 +1319,14 @@ def variable_om_by_period_cost_rule(mod, prj, tmp):
     )
 
 
+def variable_om_by_timepoint_cost_rule(mod, prj, tmp):
+    """ """
+    return (
+        mod.GenCommitCap_Provide_Power_MW[prj, tmp]
+        * mod.variable_om_cost_per_mwh_by_timepoint[prj, tmp]
+    )
+
+
 def variable_om_cost_by_ll_rule(mod, g, tmp, s):
     """
     Variable O&M cost has two components which are additive:

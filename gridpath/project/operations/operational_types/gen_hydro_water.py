@@ -223,6 +223,14 @@ def variable_om_by_period_cost_rule(mod, prj, tmp):
     )
 
 
+def variable_om_by_timepoint_cost_rule(mod, prj, tmp):
+    """ """
+    return (
+        mod.GenHydroWater_Power_MW[prj, tmp]
+        * mod.variable_om_cost_per_mwh_by_timepoint[prj, tmp]
+    )
+
+
 def power_delta_rule(mod, g, tmp):
     """
     This rule is only used in tuning costs, so fine to skip for linked

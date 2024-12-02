@@ -115,6 +115,11 @@ def variable_om_by_period_cost_rule(mod, g, tmp):
     return gen_commit_unit_common.variable_om_by_period_cost_rule(mod, g, tmp, "Lin")
 
 
+def variable_om_by_timepoint_cost_rule(mod, g, tmp):
+    """ """
+    return gen_commit_unit_common.variable_om_by_timepoint_cost_rule(mod, g, tmp, "Lin")
+
+
 def variable_om_cost_by_ll_rule(mod, g, tmp, s):
     """
     Variable O&M cost has two components which are additive:
