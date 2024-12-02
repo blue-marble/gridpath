@@ -171,6 +171,12 @@ def get_inputs_from_database(
     :param stage:
     :param conn: database connection
     :return:
+
+    Check the load_scenario_id for the scenario. Based on that, find
+    the load_components_scenario_id and will select the relevant load
+    components for this scenario. Finally, it will find the profiles for each
+    one of those load components based on the load_levels_scenario_id for the
+    scenario’s load_scenario_id.
     """
 
     c = conn.cursor()
