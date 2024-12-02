@@ -227,6 +227,17 @@ def add_model_components(
         ),
     )
 
+    m.VAR_OM_COST_BY_TMP_PRJS_OPR_TMPS = Set(
+        dimen=2,
+        within=m.PRJ_OPR_TMPS,
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod,
+            superset="PRJ_OPR_TMPS",
+            index=0,
+            membership_set=mod.VAR_OM_COST_BY_TMP_PRJS,
+        ),
+    )
+
     m.VAR_OM_COST_CURVE_PRJS_OPR_TMPS_SGMS = Set(
         dimen=3,
         initialize=lambda mod: sorted(
@@ -261,6 +272,7 @@ def add_model_components(
                 set(
                     mod.VAR_OM_COST_SIMPLE_PRJ_OPR_TMPS
                     | mod.VAR_OM_COST_BY_PRD_PRJS_OPR_TMPS
+                    | mod.VAR_OM_COST_BY_TMP_PRJS_OPR_TMPS
                     | mod.VAR_OM_COST_CURVE_PRJS_OPR_TMPS
                 )
             ),
@@ -413,6 +425,22 @@ def add_model_components(
         else:
             var_cost_by_prd = 0
 
+        # By timepoint VOM
+        if prj in mod.VAR_OM_COST_BY_TMP_PRJS:
+            if hasattr(
+                imported_operational_modules[op_type],
+                "variable_om_by_timepoint_cost_rule",
+            ):
+                var_cost_by_tmp = imported_operational_modules[
+                    op_type
+                ].variable_om_by_timepoint_cost_rule(mod, prj, tmp)
+            else:
+                var_cost_by_tmp = op_type_init.variable_om_by_timepoint_cost_rule(
+                    mod, prj, tmp
+                )
+        else:
+            var_cost_by_tmp = 0
+
         # VOM curve cost
         if prj in mod.VAR_OM_COST_CURVE_PRJS:
             var_cost_curve = mod.Variable_OM_Curve_Cost[prj, tmp]
@@ -420,7 +448,7 @@ def add_model_components(
             var_cost_curve = 0
 
         # The three are additive
-        return var_cost_simple + var_cost_by_prd + var_cost_curve
+        return var_cost_simple + var_cost_by_prd + var_cost_by_tmp + var_cost_curve
 
     m.Variable_OM_Cost = Expression(
         m.VAR_OM_COST_ALL_PRJS_OPR_TMPS, rule=variable_om_cost_rule
