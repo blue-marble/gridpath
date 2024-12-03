@@ -1,4 +1,4 @@
-scenario_id,123
+scenario_id,125
 scenario_name,test_w_storage_wind_as_energy
 of_transmission,
 of_transmission_hurdle_rates,
@@ -54,7 +54,7 @@ market_scenario_id,NULL
 water_system_params_scenario_id,NULL
 water_network_scenario_id,NULL
 project_portfolio_scenario_id,25
-project_operational_chars_scenario_id,30
+project_operational_chars_scenario_id,32
 project_availability_scenario_id,1
 fuel_scenario_id,1
 project_load_zone_scenario_id,1

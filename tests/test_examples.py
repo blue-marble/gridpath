@@ -1404,6 +1404,24 @@ class TestExamples(unittest.TestCase):
             scenario_name=scenario_name, skip_validation=True
         )
 
+    def test_example_2periods_nuclear_var_cost_by_timepoint_same(self):
+        """
+        Check validation and objective function value of
+        "2periods_nuclear_var_cost_by_timepoint_same" example
+        :return:
+        """
+        scenario_name = "2periods_nuclear_var_cost_by_timepoint_same"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_2periods_nuclear_var_cost_by_timepoint_diff(self):
+        """
+        Check validation and objective function value of
+        "2periods_nuclear_var_cost_by_timepoint_diff" example
+        :return:
+        """
+        scenario_name = "2periods_nuclear_var_cost_by_timepoint_diff"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
     def test_example_test_w_storage_wind_as_energy(self):
         """
         Check validation and objective function value of

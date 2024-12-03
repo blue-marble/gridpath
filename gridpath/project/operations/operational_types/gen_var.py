@@ -386,10 +386,20 @@ def variable_om_cost_rule(mod, g, tmp):
 def variable_om_by_period_cost_rule(mod, prj, tmp):
     """ """
     return (
-        mod.Capacity_MW[g, mod.period[tmp]]
-        * mod.Availability_Derate[g, tmp]
-        * mod.gen_var_cap_factor[g, tmp]
+        mod.Capacity_MW[prj, mod.period[tmp]]
+        * mod.Availability_Derate[prj, tmp]
+        * mod.gen_var_cap_factor[prj, tmp]
         * mod.variable_om_cost_per_mwh_by_period[prj, mod.period[tmp]]
+    )
+
+
+def variable_om_by_timepoint_cost_rule(mod, prj, tmp):
+    """ """
+    return (
+        mod.Capacity_MW[prj, mod.period[tmp]]
+        * mod.Availability_Derate[prj, tmp]
+        * mod.gen_var_cap_factor[prj, tmp]
+        * mod.variable_om_cost_per_mwh_by_timepoint[prj, tmp]
     )
 
 

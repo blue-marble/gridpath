@@ -29,7 +29,7 @@ from pyomo.environ import (
     Param,
     Constraint,
     Expression,
-    NonNegativeNonNegativeReals,
+    NonNegativeReals,
     PercentFraction,
     value,
     NonNegativeReals,
