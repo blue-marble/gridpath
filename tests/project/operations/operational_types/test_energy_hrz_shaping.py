@@ -38,7 +38,7 @@ PREREQUISITE_MODULE_NAMES = [
     "project.fuels",
     "project.operations",
 ]
-NAME_OF_MODULE_BEING_TESTED = "project.operations.operational_types.energy_profile"
+NAME_OF_MODULE_BEING_TESTED = "project.operations.operational_types.energy_hrz_shaping"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -56,7 +56,7 @@ except ImportError:
     print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED + " to test.")
 
 
-class TestEnergyProfile(unittest.TestCase):
+class TestEnergyHrzShaping(unittest.TestCase):
     """ """
 
     def test_add_model_components(self):
@@ -108,41 +108,93 @@ class TestEnergyProfile(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: ENERGY_PROFILE
-        expected_gen_set = sorted(["Energy_Spec"])
-        actual_gen_set = sorted([prj for prj in instance.ENERGY_PROFILE])
+        # Set: ENERGY_HRZ_SHAPING
+        expected_gen_set = sorted(["Energy_Hrz_Shaping"])
+        actual_gen_set = sorted([prj for prj in instance.ENERGY_HRZ_SHAPING])
         self.assertListEqual(expected_gen_set, actual_gen_set)
 
-        # Set: ENERGY_PROFILE_OPR_TMPS
+        # Set: ENERGY_HRZ_SHAPING_OPR_PRDS
+        expected_op_prds = sorted(
+            [("Energy_Hrz_Shaping", 2020), ("Energy_Hrz_Shaping", 2030)]
+        )
+        actual_op_prds = sorted(
+            [(prj, prd) for (prj, prd) in instance.ENERGY_HRZ_SHAPING_OPR_PRDS]
+        )
+        self.assertListEqual(
+            expected_op_prds,
+            actual_op_prds,
+        )
+
+        # Set: ENERGY_HRZ_SHAPING_OPR_TMPS
         expected_operational_timepoints_by_project = sorted(
             get_project_operational_timepoints(expected_gen_set)
         )
         actual_operational_timepoints_by_project = sorted(
-            [(g, tmp) for (g, tmp) in instance.ENERGY_PROFILE_OPR_TMPS]
+            [(g, tmp) for (g, tmp) in instance.ENERGY_HRZ_SHAPING_OPR_TMPS]
         )
         self.assertListEqual(
             expected_operational_timepoints_by_project,
             actual_operational_timepoints_by_project,
         )
 
-        # Param: energy_profile_energy_fraction
-        all_df = pd.read_csv(
-            os.path.join(TEST_DATA_DIRECTORY, "inputs", "energy_profiles.tab"),
-            sep="\t",
+        # Set: ENERGY_HRZ_SHAPING_OPR_BT_HRZS
+        expected_bt_hrz = sorted(
+            [
+                ("Energy_Hrz_Shaping", "day", 202001),
+                ("Energy_Hrz_Shaping", "day", 202002),
+                ("Energy_Hrz_Shaping", "day", 203001),
+                ("Energy_Hrz_Shaping", "day", 203002),
+            ]
+        )
+        actual_bt_hrz = sorted(
+            [(prj, bt, h) for (prj, bt, h) in instance.ENERGY_HRZ_SHAPING_OPR_BT_HRZS]
+        )
+        self.assertListEqual(
+            expected_bt_hrz,
+            actual_bt_hrz,
         )
 
-        # We only want projects of the 'gen_var_must_take' operational
-        # type
-        vnc_df = all_df[all_df["project"].isin(expected_gen_set)]
-        expected_cap_factor = vnc_df.set_index(["project", "timepoint"]).to_dict()[
-            "energy_fraction"
-        ]
-
-        actual_cap_factor = {
-            (g, tmp): instance.energy_profile_energy_fraction[g, tmp]
-            for (g, tmp) in instance.energy_profile_energy_fraction
+        # Param: energy_hrz_shaping_hrz_energy_fraction
+        expected_frac = {
+            ("Energy_Hrz_Shaping", "day", 202001): 1,
+            ("Energy_Hrz_Shaping", "day", 202002): 1,
+            ("Energy_Hrz_Shaping", "day", 203001): 1,
+            ("Energy_Hrz_Shaping", "day", 203002): 1,
         }
-        self.assertDictEqual(expected_cap_factor, actual_cap_factor)
+
+        actual_frac = {
+            (prj, bt, h): instance.energy_hrz_shaping_hrz_energy_fraction[prj, bt, h]
+            for (prj, bt, h) in instance.ENERGY_HRZ_SHAPING_OPR_BT_HRZS
+        }
+        self.assertDictEqual(expected_frac, actual_frac)
+
+        # Param: energy_hrz_shaping_min_power
+        expected_min = {
+            ("Energy_Hrz_Shaping", "day", 202001): 1.000002,
+            ("Energy_Hrz_Shaping", "day", 202002): 1.000002,
+            ("Energy_Hrz_Shaping", "day", 203001): 1.000002,
+            ("Energy_Hrz_Shaping", "day", 203002): 1.000002,
+        }
+
+        actual_min = {
+            (prj, bt, h): instance.energy_hrz_shaping_min_power[prj, bt, h]
+            for (prj, bt, h) in instance.ENERGY_HRZ_SHAPING_OPR_BT_HRZS
+        }
+        self.assertDictEqual(expected_min, actual_min)
+
+        # Param: energy_hrz_shaping_max_power
+        expected_max = {
+            ("Energy_Hrz_Shaping", "day", 202001): 6,
+            ("Energy_Hrz_Shaping", "day", 202002): 6,
+            ("Energy_Hrz_Shaping", "day", 203001): 6,
+            ("Energy_Hrz_Shaping", "day", 203002): 6,
+        }
+
+        actual_max = {
+            (prj, bt, h): instance.energy_hrz_shaping_max_power[prj, bt, h]
+            for (prj, bt, h) in instance.ENERGY_HRZ_SHAPING_OPR_BT_HRZS
+        }
+        self.assertDictEqual(expected_max, actual_max)
 
 
 if __name__ == "__main__":

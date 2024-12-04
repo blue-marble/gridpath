@@ -169,22 +169,8 @@ def add_model_components(
     | | :code:`EnergyHrzShaping_Energy_Budget_Constraint`                     |
     | | *Defined over*: :code:`ENERGY_HRZ_SHAPING_OPR_BT_HRZS`                |
     |                                                                         |
-    | The project's averagepower in each operational horizon, should match    |
-    | the specified :code:`energy_hrz_shaping_hrz_energy_fraction`.                 |
-    +-------------------------------------------------------------------------+
-    | Ramps                                                                   |
-    +-------------------------------------------------------------------------+
-    | | :code:`EnergyHrzShaping_Ramp_Up_Constraint`                           |
-    | | *Defined over*: :code:`ENERGY_HRZ_SHAPING_OPR_TMPS`                  |
-    |                                                                         |
-    | Limits the allowed project upward ramp based on the                     |
-    | :code:`energy_hrz_shaping_ramp_up_when_on_rate`.                       |
-    +-------------------------------------------------------------------------+
-    | | :code:`EnergyHrzShaping_Ramp_Down_Constraint`                         |
-    | | *Defined over*: :code:`ENERGY_HRZ_SHAPING_OPR_TMPS`                  |
-    |                                                                         |
-    | Limits the allowed project downward ramp based on the                   |
-    | :code:`energy_hrz_shaping_ramp_down_when_on_rate`.                     |
+    | The project's average power in each operational horizon, should match   |
+    | the specified :code:`energy_hrz_shaping_hrz_energy_fraction`.           |
     +-------------------------------------------------------------------------+
 
     """
@@ -209,8 +195,6 @@ def add_model_components(
         ),
     )
 
-    m.ENERGY_HRZ_SHAPING_OPR_BT_HRZS = Set(dimen=3)
-
     m.ENERGY_HRZ_SHAPING_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
@@ -221,6 +205,9 @@ def add_model_components(
             membership_set=mod.ENERGY_HRZ_SHAPING,
         ),
     )
+
+    # Note this is not derived from operational periods
+    m.ENERGY_HRZ_SHAPING_OPR_BT_HRZS = Set(dimen=3)
 
     m.ENERGY_HRZ_SHAPING_LINKED_TMPS = Set(dimen=2)
 
