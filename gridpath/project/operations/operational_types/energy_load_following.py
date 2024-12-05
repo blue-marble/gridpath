@@ -197,17 +197,6 @@ def add_model_components(
         ),
     )
 
-    m.ENERGY_LOAD_FOLLOWING_OPR_PRDS = Set(
-        dimen=2,
-        within=m.PRJ_OPR_PRDS,
-        initialize=lambda mod: subset_init_by_set_membership(
-            mod=mod,
-            superset="PRJ_OPR_PRDS",
-            index=0,
-            membership_set=mod.ENERGY_LOAD_FOLLOWING,
-        ),
-    )
-
     m.ENERGY_LOAD_FOLLOWING_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
@@ -225,10 +214,10 @@ def add_model_components(
     ###########################################################################
 
     # TODO: does this param make sense at the load zone level instead?
-    # TODO: instead of using this parameter, test with sum of static load for
-    #  now;
-    m.base_net_requirement = Param(
-        m.ENERGY_LOAD_FOLLOWING_OPR_PRDS, within=NonNegativeReals
+    # TODO: may want to default this to sum of static load
+    m.ENERGY_LOAD_FOLLOWING_PRJ_PRDS = Set(dimen=2)
+    m.base_net_requirement_mwh = Param(
+        m.ENERGY_LOAD_FOLLOWING_PRJ_PRDS, within=NonNegativeReals
     )
 
     # Linked Params
@@ -253,20 +242,14 @@ def add_model_components(
         **Constraint Name**: EnergyLoadFollowing_Power_Constraint
         **Enforced Over**: ENERGY_LOAD_FOLLOWING_OPR_TMPS
 
-        Meet everything above the dedicated resources dispatched flat
+        Meet everything above a flat block a
         """
         # TODO: replace static_load here with post EE variable
         # TODO: allow less than or equal constraint here?
         return mod.EnergyLoadFollowing_Power_MW[prj, tmp] == mod.static_load_mw[
             mod.load_zone[prj], tmp
         ] - (
-            # mod.base_net_requirement[prj, mod.period[tmp]]
-            sum(
-                mod.static_load_mw[mod.load_zone[prj], prd_tmp]
-                * mod.hrs_in_tmp[prd_tmp]
-                * mod.tmp_weight[prd_tmp]
-                for prd_tmp in mod.TMPS_IN_PRD[mod.period[tmp]]
-            )
+            mod.base_net_requirement_mwh[prj, mod.period[tmp]]
             - mod.Energy_MWh[prj, mod.period[tmp]]
         ) / sum(
             mod.hrs_in_tmp[prd_tmp] * mod.tmp_weight[prd_tmp]
@@ -344,53 +327,49 @@ def load_model_data(
     """
     pass
 
-    # # Determine list of projects load params from projects.tab (if any)
-    # projects = load_optype_model_data(
-    #     mod=m,
-    #     data_portal=data_portal,
-    #     scenario_directory=scenario_directory,
-    #     weather_iteration=weather_iteration,
-    #     hydro_iteration=hydro_iteration,
-    #     availability_iteration=availability_iteration,
-    #     subproblem=subproblem,
-    #     stage=stage,
-    #     op_type="energy_hrz_shaping",
-    # )
-    #
-    # # Load data
-    # data_portal.load(
-    #     filename=os.path.join(
-    #         scenario_directory,
-    #         weather_iteration,
-    #         hydro_iteration,
-    #         availability_iteration,
-    #         subproblem,
-    #         stage,
-    #         "inputs",
-    #         "energy_hrz_shaping_params.tab",
-    #     ),
-    #     index=m.ENERGY_LOAD_FOLLOWING_OPR_BT_HRZS,
-    #     param=(
-    #         m.energy_hrz_shaping_hrz_energy_fraction,
-    #         m.energy_hrz_shaping_min_power,
-    #         m.energy_hrz_shaping_max_power,
-    #     ),
-    # )
-    #
-    # # Linked timepoint params
-    # linked_inputs_filename = os.path.join(
-    #     scenario_directory,
-    #     subproblem,
-    #     stage,
-    #     "inputs",
-    #     "energy_hrz_shaping_linked_timepoint_params.tab",
-    # )
-    # if os.path.exists(linked_inputs_filename):
-    #     data_portal.load(
-    #         filename=linked_inputs_filename,
-    #         index=m.ENERGY_LOAD_FOLLOWING_LINKED_TMPS,
-    #         param=(m.energy_hrz_shaping_linked_power,),
-    #     )
+    # Determine list of projects load params from projects.tab (if any)
+    projects = load_optype_model_data(
+        mod=m,
+        data_portal=data_portal,
+        scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        op_type="energy_load_following",
+    )
+
+    # Load data
+    data_portal.load(
+        filename=os.path.join(
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "energy_load_following_base_net_requirements.tab",
+        ),
+        index=m.ENERGY_LOAD_FOLLOWING_PRJ_PRDS,
+        param=m.base_net_requirement_mwh,
+    )
+
+    # Linked timepoint params
+    linked_inputs_filename = os.path.join(
+        scenario_directory,
+        subproblem,
+        stage,
+        "inputs",
+        "energy_hrz_shaping_linked_timepoint_params.tab",
+    )
+    if os.path.exists(linked_inputs_filename):
+        data_portal.load(
+            filename=linked_inputs_filename,
+            index=m.ENERGY_LOAD_FOLLOWING_LINKED_TMPS,
+            param=(m.energy_hrz_shaping_linked_power,),
+        )
 
 
 def export_results(
@@ -413,53 +392,7 @@ def export_results(
     :return:
     """
 
-    # Dispatch results added to project_timepoint.csv via add_to_prj_tmp_results()
-
-    # If there's a linked_subproblems_map CSV file, check which of the
-    # current subproblem TMPS we should export results for to link to the
-    # next subproblem
-    tmps_to_link, tmp_linked_tmp_dict = check_for_tmps_to_link(
-        scenario_directory=scenario_directory, subproblem=subproblem, stage=stage
-    )
-
-    # If the list of timepoints to link is not empty, write the linked
-    # timepoint results for this module in the next subproblem's input
-    # directory
-    if tmps_to_link:
-        next_subproblem = str(int(subproblem) + 1)
-
-        # Export params by project and timepoint
-        with open(
-            os.path.join(
-                scenario_directory,
-                weather_iteration,
-                hydro_iteration,
-                availability_iteration,
-                next_subproblem,
-                stage,
-                "inputs",
-                "energy_hrz_shaping_linked_timepoint_params.tab",
-            ),
-            "w",
-            newline="",
-        ) as f:
-            writer = csv.writer(f, delimiter="\t", lineterminator="\n")
-            writer.writerow(
-                [
-                    "project",
-                    "linked_timepoint",
-                    "linked_provide_power",
-                ]
-            )
-            for p, tmp in sorted(mod.ENERGY_LOAD_FOLLOWING_OPR_TMPS):
-                if tmp in tmps_to_link:
-                    writer.writerow(
-                        [
-                            p,
-                            tmp_linked_tmp_dict[tmp],
-                            max(value(mod.EnergyLoadFollowing_Power_MW[p, tmp]), 0),
-                        ]
-                    )
+    pass
 
 
 # Database
@@ -494,22 +427,31 @@ def get_model_inputs_from_database(
         weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
     )
 
-    # prj_bt_hrz_data = get_prj_temporal_index_opr_inputs_from_db(
-    #     subscenarios=subscenarios,
-    #     weather_iteration=db_weather_iteration,
-    #     hydro_iteration=db_hydro_iteration,
-    #     availability_iteration=db_availability_iteration,
-    #     subproblem=db_subproblem,
-    #     stage=db_stage,
-    #     conn=conn,
-    #     op_type="energy_hrz_shaping",
-    #     table="inputs_project_energy_hrz_shaping",
-    #     subscenario_id_column="energy_hrz_shaping_scenario_id",
-    #     data_column="hrz_energy_fraction, min_power, max_power",
-    #     opr_index_dict=BT_HRZ_INDEX_QUERY_PARAMS,
-    # )
-    #
-    # return prj_bt_hrz_data
+    sql = f"""
+        SELECT project, period, base_net_requirement_mwh
+        FROM inputs_project_base_net_requirements
+        WHERE project IN (
+            SELECT project
+            FROM inputs_project_portfolios
+            WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
+        )
+        AND period IN (
+            SELECT period
+            FROM inputs_temporal_periods
+            WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+        )
+        AND (project, base_net_requirement_scenario_id) IN (
+            SELECT project, base_net_requirement_scenario_id
+            FROM inputs_project_operational_chars
+            WHERE project_operational_chars_scenario_id = {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
+            AND operational_type = 'energy_load_following'
+        );
+    """
+
+    c = conn.cursor()
+    base_net_requirements = c.execute(sql)
+
+    return base_net_requirements
 
 
 def write_model_inputs(
@@ -533,29 +475,29 @@ def write_model_inputs(
     :param conn: database connection
     :return:
     """
-    pass
-    # data = get_model_inputs_from_database(
-    #     scenario_id,
-    #     subscenarios,
-    #     weather_iteration,
-    #     hydro_iteration,
-    #     availability_iteration,
-    #     subproblem,
-    #     stage,
-    #     conn,
-    # )
-    # fname = "energy_load_following_params.tab"
-    #
-    # write_tab_file_model_inputs(
-    #     scenario_directory,
-    #     weather_iteration,
-    #     hydro_iteration,
-    #     availability_iteration,
-    #     subproblem,
-    #     stage,
-    #     fname,
-    #     data,
-    # )
+    base_net_requirements = get_model_inputs_from_database(
+        scenario_id,
+        subscenarios,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        conn,
+    )
+
+    fname = "energy_load_following_base_net_requirements.tab"
+
+    write_tab_file_model_inputs(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        fname,
+        base_net_requirements,
+    )
 
 
 # Validation

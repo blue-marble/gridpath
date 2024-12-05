@@ -30,6 +30,7 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.investment.periods",
     "temporal.operations.horizons",
     "geography.load_zones",
+    "system.load_balance.static_load_requirement",
     "geography.water_network",
     "system.water.water_system_params",
     "system.water.water_flows",

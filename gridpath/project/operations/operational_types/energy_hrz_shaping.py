@@ -126,18 +126,6 @@ def add_model_components(
     |
 
     +-------------------------------------------------------------------------+
-    | Linked Input Params                                                     |
-    +=========================================================================+
-    | | :code:`energy_hrz_shaping_linked_power`                              |
-    | | *Defined over*: :code:`ENERGY_HRZ_SHAPING_LINKED_TMPS`               |
-    | | *Within*: :code:`NonNegativeReals`                                               |
-    |                                                                         |
-    | The project's power provision in the linked timepoints.                 |
-    +-------------------------------------------------------------------------+
-
-    |
-
-    +-------------------------------------------------------------------------+
     | Variables                                                               |
     +=========================================================================+
     | | :code:`EnergyHrzShaping_Power_MW`                                     |
@@ -224,13 +212,6 @@ def add_model_components(
 
     m.energy_hrz_shaping_max_power = Param(
         m.ENERGY_HRZ_SHAPING_OPR_BT_HRZS, within=NonNegativeReals
-    )
-
-    # Linked Params
-    ###########################################################################
-
-    m.energy_hrz_shaping_linked_power = Param(
-        m.ENERGY_HRZ_SHAPING_LINKED_TMPS, within=NonNegativeReals
     )
 
     # Variables
@@ -405,20 +386,20 @@ def load_model_data(
         ),
     )
 
-    # Linked timepoint params
-    linked_inputs_filename = os.path.join(
-        scenario_directory,
-        subproblem,
-        stage,
-        "inputs",
-        "energy_hrz_shaping_linked_timepoint_params.tab",
-    )
-    if os.path.exists(linked_inputs_filename):
-        data_portal.load(
-            filename=linked_inputs_filename,
-            index=m.ENERGY_HRZ_SHAPING_LINKED_TMPS,
-            param=(m.energy_hrz_shaping_linked_power,),
-        )
+    # # Linked timepoint params
+    # linked_inputs_filename = os.path.join(
+    #     scenario_directory,
+    #     subproblem,
+    #     stage,
+    #     "inputs",
+    #     "energy_hrz_shaping_linked_timepoint_params.tab",
+    # )
+    # if os.path.exists(linked_inputs_filename):
+    #     data_portal.load(
+    #         filename=linked_inputs_filename,
+    #         index=m.ENERGY_HRZ_SHAPING_LINKED_TMPS,
+    #         param=(m.energy_hrz_shaping_linked_power,),
+    #     )
 
 
 def export_results(

@@ -32,6 +32,7 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.investment.periods",
     "temporal.operations.horizons",
     "geography.load_zones",
+    "system.load_balance.static_load_requirement",
     "geography.instantaneous_penetration_zones",
     "geography.water_network",
     "system.water.water_system_params",
@@ -48,7 +49,6 @@ PREREQUISITE_MODULE_NAMES = [
     "project.operations.operational_types",
     "project.operations.power",
     "project.operations.instantaneous_penetration_contributions",
-    "system.load_balance.static_load_requirement",
 ]
 NAME_OF_MODULE_BEING_TESTED = (
     "system.policy.instantaneous_penetration.instantaneous_penetration_requirements"
@@ -70,7 +70,7 @@ except ImportError:
     print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED + " to test.")
 
 
-class TestPeriodEnergyTarget(unittest.TestCase):
+class TestInstPen(unittest.TestCase):
     """ """
 
     def test_add_model_components(self):

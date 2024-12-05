@@ -41,6 +41,7 @@ PREREQUISITE_MODULE_NAMES = [
     "project.availability.availability",
     "project.fuels",
     "project.operations",
+    "system.load_balance.static_load_requirement",
     "project.operations.operational_types",
     "project.operations.power",
     "project.operations.tuning_costs",

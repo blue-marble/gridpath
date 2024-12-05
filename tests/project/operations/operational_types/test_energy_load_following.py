@@ -37,6 +37,7 @@ PREREQUISITE_MODULE_NAMES = [
     "project.availability.availability",
     "project.fuels",
     "project.operations",
+    "system.load_balance.static_load_requirement",
 ]
 NAME_OF_MODULE_BEING_TESTED = (
     "project.operations.operational_types.energy_load_following"
@@ -111,21 +112,9 @@ class TestEnergyHrzShaping(unittest.TestCase):
         instance = m.create_instance(data)
 
         # Set: ENERGY_LOAD_FOLLOWING
-        expected_gen_set = sorted(["Energy_Hrz_Shaping"])
+        expected_gen_set = sorted(["Energy_LF"])
         actual_gen_set = sorted([prj for prj in instance.ENERGY_LOAD_FOLLOWING])
         self.assertListEqual(expected_gen_set, actual_gen_set)
-
-        # Set: ENERGY_LOAD_FOLLOWING_OPR_PRDS
-        expected_op_prds = sorted(
-            [("Energy_Hrz_Shaping", 2020), ("Energy_Hrz_Shaping", 2030)]
-        )
-        actual_op_prds = sorted(
-            [(prj, prd) for (prj, prd) in instance.ENERGY_LOAD_FOLLOWING_OPR_PRDS]
-        )
-        self.assertListEqual(
-            expected_op_prds,
-            actual_op_prds,
-        )
 
         # Set: ENERGY_LOAD_FOLLOWING_OPR_TMPS
         expected_operational_timepoints_by_project = sorted(
@@ -138,6 +127,18 @@ class TestEnergyHrzShaping(unittest.TestCase):
             expected_operational_timepoints_by_project,
             actual_operational_timepoints_by_project,
         )
+
+        # Param: base_net_requirement_mwh
+        expected_frac = {
+            ("Energy_LF", 2020): 131400,
+            ("Energy_LF", 2030): 131400,
+        }
+
+        actual_frac = {
+            (prj, prd): instance.base_net_requirement_mwh[prj, prd]
+            for (prj, prd) in instance.ENERGY_LOAD_FOLLOWING_PRJ_PRDS
+        }
+        self.assertDictEqual(expected_frac, actual_frac)
 
 
 if __name__ == "__main__":

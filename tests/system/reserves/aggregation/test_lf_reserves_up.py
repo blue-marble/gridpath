@@ -45,6 +45,7 @@ PREREQUISITE_MODULE_NAMES = [
     "system.water.reservoirs",
     "system.water.water_node_balance",
     "system.water.powerhouses",
+    "system.load_balance.static_load_requirement",
     "project.operations.operational_types",
     "project.operations.power",
     "system.reserves.requirement.lf_reserves_up",

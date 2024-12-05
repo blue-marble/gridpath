@@ -105,7 +105,14 @@ class TestStorSpec(unittest.TestCase):
 
         # Set: GEN_ENERGY_SPEC_OPR_PRDS
         expected_proj_period_set = sorted(
-            [("Energy_Spec", 2020), ("Energy_Spec", 2030)]
+            [
+                ("Energy_Hrz_Shaping", 2020),
+                ("Energy_Hrz_Shaping", 2030),
+                ("Energy_LF", 2020),
+                ("Energy_LF", 2030),
+                ("Energy_Spec", 2020),
+                ("Energy_Spec", 2030),
+            ]
         )
         actual_proj_period_set = sorted(
             [(prj, period) for (prj, period) in instance.GEN_ENERGY_SPEC_OPR_PRDS]
@@ -114,7 +121,16 @@ class TestStorSpec(unittest.TestCase):
 
         # Params: energy_spec_energy_mwh
         expected_specified_energy = OrderedDict(
-            sorted({("Energy_Spec", 2020): 1000, ("Energy_Spec", 2030): 1000}.items())
+            sorted(
+                {
+                    ("Energy_Spec", 2020): 1000,
+                    ("Energy_Spec", 2030): 1000,
+                    ("Energy_Hrz_Shaping", 2020): 1000,
+                    ("Energy_Hrz_Shaping", 2030): 1000,
+                    ("Energy_LF", 2020): 1000,
+                    ("Energy_LF", 2030): 1000,
+                }.items()
+            )
         )
         actual_specified_energy = OrderedDict(
             sorted(
@@ -128,7 +144,16 @@ class TestStorSpec(unittest.TestCase):
 
         # Params: energy_spec_fixed_cost_per_energy_mwh_yr
         expected_fc = OrderedDict(
-            sorted({("Energy_Spec", 2020): 0, ("Energy_Spec", 2030): 0}.items())
+            sorted(
+                {
+                    ("Energy_Spec", 2020): 0,
+                    ("Energy_Spec", 2030): 0,
+                    ("Energy_Hrz_Shaping", 2020): 0,
+                    ("Energy_Hrz_Shaping", 2030): 0,
+                    ("Energy_LF", 2020): 0,
+                    ("Energy_LF", 2030): 0,
+                }.items()
+            )
         )
         actual_fc = OrderedDict(
             sorted(

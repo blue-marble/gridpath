@@ -1626,73 +1626,74 @@ CREATE TABLE subscenarios_project_operational_chars
 DROP TABLE IF EXISTS inputs_project_operational_chars;
 CREATE TABLE inputs_project_operational_chars
 (
-    project_operational_chars_scenario_id    INTEGER,
-    project                                  VARCHAR(64),
-    technology                               VARCHAR(32),
-    operational_type                         VARCHAR(32),
-    balancing_type_project                   VARCHAR(32),
-    variable_om_cost_per_mwh                 FLOAT,   -- simple variable O&M
-    variable_om_cost_by_period_scenario_id   INTEGER, -- determines by period simple variable O&M
-    variable_om_cost_by_timepoint_scenario_id      INTEGER, -- determines by tmp simple variable O&M
-    project_fuel_scenario_id                 INTEGER,
-    heat_rate_curves_scenario_id             INTEGER, -- determined heat rate curve
-    variable_om_curves_scenario_id           INTEGER, -- determined variable O&M curve
-    startup_chars_scenario_id                INTEGER, -- determines startup ramp chars
-    min_stable_level_fraction                FLOAT,
-    unit_size_mw                             FLOAT,
-    startup_cost_per_mw                      FLOAT,
-    shutdown_cost_per_mw                     FLOAT,
-    startup_fuel_mmbtu_per_mw                FLOAT,
-    startup_plus_ramp_up_rate                FLOAT,   -- Not used for gen_commit_lin/bin!
-    shutdown_plus_ramp_down_rate             FLOAT,
-    ramp_up_when_on_rate                     FLOAT,
-    ramp_down_when_on_rate                   FLOAT,
-    ramp_up_violation_penalty                FLOAT,   -- leave NULL for hard constraints
-    ramp_down_violation_penalty              FLOAT,   -- leave NULL for hard constraints
-    min_up_time_hours                        INTEGER,
-    min_up_time_violation_penalty            FLOAT,   -- leave NULL for hard constraint
-    min_down_time_hours                      INTEGER,
-    min_down_time_violation_penalty          FLOAT,   -- leave NULL for hard constraint
-    cycle_selection_scenario_id              INTEGER,
-    supplemental_firing_scenario_id          INTEGER,
-    allow_startup_shutdown_power             INTEGER, -- defaults to 0 in the model if not specified
-    storage_efficiency                       FLOAT,   -- hourly losses from storage; default 1 (no losses)
-    charging_efficiency                      FLOAT,
-    discharging_efficiency                   FLOAT,
-    charging_capacity_multiplier             FLOAT,   -- default 1 in model if not specified
-    discharging_capacity_multiplier          FLOAT,   -- default 1 in model if not specified
-    soc_penalty_cost_per_energyunit          FLOAT,
-    soc_last_tmp_penalty_cost_per_energyunit FLOAT,
-    flex_load_static_profile_scenario_id     INTEGER,
-    minimum_duration_hours                   FLOAT,
-    maximum_duration_hours                   FLOAT,
-    aux_consumption_frac_capacity            FLOAT,
-    aux_consumption_frac_power               FLOAT,
-    last_commitment_stage                    INTEGER,
-    variable_generator_profile_scenario_id   INTEGER, -- determines var profiles
-    curtailment_cost_per_pwh                 FLOAT,   -- curtailment cost per unit-powerXhour
-    hydro_operational_chars_scenario_id      INTEGER, -- determines hydro MWa, min, max
-    energy_profile_scenario_id               INTEGER,
-    energy_hrz_shaping_scenario_id           INTEGER,
-    lf_reserves_up_derate                    FLOAT,
-    lf_reserves_down_derate                  FLOAT,
-    regulation_up_derate                     FLOAT,
-    regulation_down_derate                   FLOAT,
-    frequency_response_derate                FLOAT,
-    spinning_reserves_derate                 FLOAT,
-    lf_reserves_up_ramp_rate                 FLOAT,
-    lf_reserves_down_ramp_rate               FLOAT,
-    regulation_up_ramp_rate                  FLOAT,
-    regulation_down_ramp_rate                FLOAT,
-    frequency_response_ramp_rate             FLOAT,
-    spinning_reserves_ramp_rate              FLOAT,
-    powerunithour_per_fuelunit               FLOAT,
-    cap_factor_limits_scenario_id            INTEGER,
-    partial_availability_threshold           FLOAT,
-    stor_exog_state_of_charge_scenario_id    INTEGER, -- determines storage SOC
-    nonfuel_carbon_emissions_per_mwh         FLOAT,
-    powerhouse                               TEXT,
-    generator_efficiency                     FLOAT,
+    project_operational_chars_scenario_id     INTEGER,
+    project                                   VARCHAR(64),
+    technology                                VARCHAR(32),
+    operational_type                          VARCHAR(32),
+    balancing_type_project                    VARCHAR(32),
+    variable_om_cost_per_mwh                  FLOAT,   -- simple variable O&M
+    variable_om_cost_by_period_scenario_id    INTEGER, -- determines by period simple variable O&M
+    variable_om_cost_by_timepoint_scenario_id INTEGER, -- determines by tmp simple variable O&M
+    project_fuel_scenario_id                  INTEGER,
+    heat_rate_curves_scenario_id              INTEGER, -- determined heat rate curve
+    variable_om_curves_scenario_id            INTEGER, -- determined variable O&M curve
+    startup_chars_scenario_id                 INTEGER, -- determines startup ramp chars
+    min_stable_level_fraction                 FLOAT,
+    unit_size_mw                              FLOAT,
+    startup_cost_per_mw                       FLOAT,
+    shutdown_cost_per_mw                      FLOAT,
+    startup_fuel_mmbtu_per_mw                 FLOAT,
+    startup_plus_ramp_up_rate                 FLOAT,   -- Not used for gen_commit_lin/bin!
+    shutdown_plus_ramp_down_rate              FLOAT,
+    ramp_up_when_on_rate                      FLOAT,
+    ramp_down_when_on_rate                    FLOAT,
+    ramp_up_violation_penalty                 FLOAT,   -- leave NULL for hard constraints
+    ramp_down_violation_penalty               FLOAT,   -- leave NULL for hard constraints
+    min_up_time_hours                         INTEGER,
+    min_up_time_violation_penalty             FLOAT,   -- leave NULL for hard constraint
+    min_down_time_hours                       INTEGER,
+    min_down_time_violation_penalty           FLOAT,   -- leave NULL for hard constraint
+    cycle_selection_scenario_id               INTEGER,
+    supplemental_firing_scenario_id           INTEGER,
+    allow_startup_shutdown_power              INTEGER, -- defaults to 0 in the model if not specified
+    storage_efficiency                        FLOAT,   -- hourly losses from storage; default 1 (no losses)
+    charging_efficiency                       FLOAT,
+    discharging_efficiency                    FLOAT,
+    charging_capacity_multiplier              FLOAT,   -- default 1 in model if not specified
+    discharging_capacity_multiplier           FLOAT,   -- default 1 in model if not specified
+    soc_penalty_cost_per_energyunit           FLOAT,
+    soc_last_tmp_penalty_cost_per_energyunit  FLOAT,
+    flex_load_static_profile_scenario_id      INTEGER,
+    minimum_duration_hours                    FLOAT,
+    maximum_duration_hours                    FLOAT,
+    aux_consumption_frac_capacity             FLOAT,
+    aux_consumption_frac_power                FLOAT,
+    last_commitment_stage                     INTEGER,
+    variable_generator_profile_scenario_id    INTEGER, -- determines var profiles
+    curtailment_cost_per_pwh                  FLOAT,   -- curtailment cost per unit-powerXhour
+    hydro_operational_chars_scenario_id       INTEGER, -- determines hydro MWa, min, max
+    energy_profile_scenario_id                INTEGER,
+    energy_hrz_shaping_scenario_id            INTEGER,
+    base_net_requirement_scenario_id          INTEGER,
+    lf_reserves_up_derate                     FLOAT,
+    lf_reserves_down_derate                   FLOAT,
+    regulation_up_derate                      FLOAT,
+    regulation_down_derate                    FLOAT,
+    frequency_response_derate                 FLOAT,
+    spinning_reserves_derate                  FLOAT,
+    lf_reserves_up_ramp_rate                  FLOAT,
+    lf_reserves_down_ramp_rate                FLOAT,
+    regulation_up_ramp_rate                   FLOAT,
+    regulation_down_ramp_rate                 FLOAT,
+    frequency_response_ramp_rate              FLOAT,
+    spinning_reserves_ramp_rate               FLOAT,
+    powerunithour_per_fuelunit                FLOAT,
+    cap_factor_limits_scenario_id             INTEGER,
+    partial_availability_threshold            FLOAT,
+    stor_exog_state_of_charge_scenario_id     INTEGER, -- determines storage SOC
+    nonfuel_carbon_emissions_per_mwh          FLOAT,
+    powerhouse                                TEXT,
+    generator_efficiency                      FLOAT,
     PRIMARY KEY (project_operational_chars_scenario_id, project),
     FOREIGN KEY (project_operational_chars_scenario_id) REFERENCES
         subscenarios_project_operational_chars (project_operational_chars_scenario_id),
@@ -1736,6 +1737,9 @@ CREATE TABLE inputs_project_operational_chars
     FOREIGN KEY (project, energy_hrz_shaping_scenario_id) REFERENCES
         subscenarios_project_energy_hrz_shaping
             (project, energy_hrz_shaping_scenario_id),
+    FOREIGN KEY (project, base_net_requirement_scenario_id) REFERENCES
+        subscenarios_project_base_net_requirements
+            (project, base_net_requirement_scenario_id),
     FOREIGN KEY (project, cap_factor_limits_scenario_id) REFERENCES
         subscenarios_project_cap_factor_limits (project, cap_factor_limits_scenario_id),
     FOREIGN KEY (operational_type) REFERENCES mod_operational_types
@@ -1770,25 +1774,25 @@ CREATE TABLE inputs_project_variable_om_cost_by_period
 DROP TABLE IF EXISTS subscenarios_project_variable_om_cost_by_timepoint;
 CREATE TABLE subscenarios_project_variable_om_cost_by_timepoint
 (
-    project                             VARCHAR(32),
+    project                                   VARCHAR(32),
     variable_om_cost_by_timepoint_scenario_id INTEGER,
-    name                                VARCHAR(32),
-    description                         VARCHAR(128),
+    name                                      VARCHAR(32),
+    description                               VARCHAR(128),
     PRIMARY KEY (project, variable_om_cost_by_timepoint_scenario_id)
 );
 
 DROP TABLE IF EXISTS inputs_project_variable_om_cost_by_timepoint;
 CREATE TABLE inputs_project_variable_om_cost_by_timepoint
 (
-    project                             VARCHAR(64),
+    project                                   VARCHAR(64),
     variable_om_cost_by_timepoint_scenario_id INTEGER,
     timepoint                                 INTEGER, -- 0 means it's the same for all tmps
     variable_om_cost_by_timepoint             FLOAT,
     PRIMARY KEY (project, variable_om_cost_by_timepoint_scenario_id, timepoint),
     FOREIGN KEY (project, variable_om_cost_by_timepoint_scenario_id)
         REFERENCES subscenarios_project_variable_om_cost_by_timepoint (
-                                                                 project,
-                                                                 variable_om_cost_by_timepoint_scenario_id
+                                                                       project,
+                                                                       variable_om_cost_by_timepoint_scenario_id
             )
 );
 
@@ -2164,6 +2168,31 @@ CREATE TABLE inputs_project_energy_hrz_shaping_iterations
     varies_by_weather_iteration    INTEGER,
     varies_by_hydro_iteration      INTEGER,
     PRIMARY KEY (project, energy_hrz_shaping_scenario_id)
+);
+
+-- Load following energy product
+DROP TABLE IF EXISTS subscenarios_project_base_net_requirements;
+CREATE TABLE subscenarios_project_base_net_requirements
+(
+    project                          VARCHAR(64),
+    base_net_requirement_scenario_id INTEGER,
+    name                             VARCHAR(32),
+    description                      VARCHAR(128),
+    PRIMARY KEY (project, base_net_requirement_scenario_id)
+);
+
+-- Doesn't vary by weather and hydro iteration for now
+DROP TABLE IF EXISTS inputs_project_base_net_requirements;
+CREATE TABLE inputs_project_base_net_requirements
+(
+    project                          VARCHAR(64),
+    base_net_requirement_scenario_id INTEGER,
+    period                           FLOAT,
+    base_net_requirement_mwh         FLOAT,
+    PRIMARY KEY (project, base_net_requirement_scenario_id, period),
+    FOREIGN KEY (project, base_net_requirement_scenario_id) REFERENCES
+        subscenarios_project_base_net_requirements
+            (project, base_net_requirement_scenario_id)
 );
 
 -- Storage exogenously specified state of charge
@@ -7084,6 +7113,7 @@ SELECT project_portfolio_scenario_id,
        variable_generator_profile_scenario_id,
        energy_profile_scenario_id,
        energy_hrz_shaping_scenario_id,
+       base_net_requirement_scenario_id,
        stor_exog_state_of_charge_scenario_id,
        flex_load_static_profile_scenario_id,
        subproblem_id,
