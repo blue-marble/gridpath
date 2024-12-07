@@ -596,3 +596,7 @@ def soc_last_tmp_penalty_cost_rule(mod, prj, tmp):
     If no soc_last_tmp_penalty_cost_rule is specified, the default last timepoint SOC penalty cost is 0.
     """
     return 0
+
+
+def peak_deviation_monthly_demand_charge_cost_rule(mod, prj, prd, mnth):
+    return 0

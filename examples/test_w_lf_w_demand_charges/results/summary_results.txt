@@ -1,0 +1,14 @@
+##### SUMMARY RESULTS FOR SCENARIO *test_w_lf_w_demand_charges* #####
+
+### CAPACITY RESULTS ###
+
+### OPERATIONAL RESULTS ###
+
+--> Energy Production <--
+                             Annual Energy (MWh)  % Total Power
+load_zone period technology                                    
+Zone1     2020   Coal                       0.00           0.00
+                 Gas                       40.00           0.03
+                 LF                    70,000.00          53.27
+                 Nuclear               52,560.00          40.00
+                 Wind                   8,800.00           6.70

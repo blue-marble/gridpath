@@ -1675,6 +1675,7 @@ CREATE TABLE inputs_project_operational_chars
     energy_profile_scenario_id                INTEGER,
     energy_hrz_shaping_scenario_id            INTEGER,
     base_net_requirement_scenario_id          INTEGER,
+    peak_deviation_demand_charge_scenario_id  INTEGER,
     lf_reserves_up_derate                     FLOAT,
     lf_reserves_down_derate                   FLOAT,
     regulation_up_derate                      FLOAT,
@@ -1740,6 +1741,9 @@ CREATE TABLE inputs_project_operational_chars
     FOREIGN KEY (project, base_net_requirement_scenario_id) REFERENCES
         subscenarios_project_base_net_requirements
             (project, base_net_requirement_scenario_id),
+    FOREIGN KEY (project, peak_deviation_demand_charge_scenario_id) REFERENCES
+        subscenarios_project_peak_deviation_demand_charges
+            (project, peak_deviation_demand_charge_scenario_id),
     FOREIGN KEY (project, cap_factor_limits_scenario_id) REFERENCES
         subscenarios_project_cap_factor_limits (project, cap_factor_limits_scenario_id),
     FOREIGN KEY (operational_type) REFERENCES mod_operational_types
@@ -2170,6 +2174,33 @@ CREATE TABLE inputs_project_energy_hrz_shaping_iterations
     PRIMARY KEY (project, energy_hrz_shaping_scenario_id)
 );
 
+-- Demand charge (peak deviation from average by month)
+DROP TABLE IF EXISTS subscenarios_project_peak_deviation_demand_charges;
+CREATE TABLE subscenarios_project_peak_deviation_demand_charges
+(
+    project                                  VARCHAR(64),
+    peak_deviation_demand_charge_scenario_id INTEGER,
+    name                                     VARCHAR(32),
+    description                              VARCHAR(128),
+    PRIMARY KEY (project, peak_deviation_demand_charge_scenario_id)
+);
+
+-- Doesn't vary by weather and hydro iteration for now
+DROP TABLE IF EXISTS inputs_project_peak_deviation_demand_charges;
+CREATE TABLE inputs_project_peak_deviation_demand_charges
+(
+    project                                  VARCHAR(64),
+    peak_deviation_demand_charge_scenario_id INTEGER,
+    period                                   FLOAT,
+    month                                    INTEGER,
+    peak_deviation_demand_charge_per_mw      FLOAT,
+    PRIMARY KEY (project, peak_deviation_demand_charge_scenario_id, period,
+                 month),
+    FOREIGN KEY (project, peak_deviation_demand_charge_scenario_id) REFERENCES
+        subscenarios_project_peak_deviation_demand_charges
+            (project, peak_deviation_demand_charge_scenario_id)
+);
+
 -- Load following energy product
 DROP TABLE IF EXISTS subscenarios_project_base_net_requirements;
 CREATE TABLE subscenarios_project_base_net_requirements
@@ -2194,6 +2225,7 @@ CREATE TABLE inputs_project_base_net_requirements
         subscenarios_project_base_net_requirements
             (project, base_net_requirement_scenario_id)
 );
+
 
 -- Storage exogenously specified state of charge
 DROP TABLE IF EXISTS subscenarios_project_stor_exog_state_of_charge;
@@ -6652,6 +6684,7 @@ CREATE TABLE results_system_costs
     Total_Capacity_Transfer_Costs                           FLOAT,
     Total_Carbon_Credit_Revenue                             FLOAT,
     Total_Carbon_Credit_Costs                               FLOAT,
+    Total_Peak_Deviation_Monthly_Demand_Charge_Cost         FLOAT,
     PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
                  availability_iteration, subproblem_id, stage_id)
 );

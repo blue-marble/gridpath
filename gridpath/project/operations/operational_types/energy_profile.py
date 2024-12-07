@@ -15,7 +15,15 @@
 """
 """
 
-from pyomo.environ import Param, Set, Reals, Constraint
+from pyomo.environ import (
+    Param,
+    Set,
+    NonNegativeReals,
+    Reals,
+    Expression,
+    Var,
+    Constraint,
+)
 import warnings
 
 from gridpath.auxiliary.auxiliary import (
@@ -125,13 +133,68 @@ def add_model_components(
         ),
     )
 
+    m.ENERGY_PROFILE_OPR_PRDS = Set(
+        dimen=2,
+        within=m.PRJ_OPR_PRDS,
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod,
+            superset="PRJ_OPR_PRDS",
+            index=0,
+            membership_set=mod.ENERGY_PROFILE,
+        ),
+    )
+
     # Required Params
     ###########################################################################
 
     m.energy_profile_energy_fraction = Param(m.ENERGY_PROFILE_OPR_TMPS, within=Reals)
+    m.energy_profile_peak_deviation_demand_charge = Param(
+        m.ENERGY_PROFILE, m.PERIODS, m.MONTHS, within=NonNegativeReals, default=0
+    )
+
+    # Variables
+    m.EnergyProfile_Peak_Deviation_in_Month = Var(
+        m.ENERGY_PROFILE_OPR_PRDS,
+        m.MONTHS,
+        within=NonNegativeReals,
+        initialize=0,
+    )
+
+    # Expressions
+    m.EnergyProfile_Provide_Power_MW = Expression(
+        m.ENERGY_PROFILE_OPR_TMPS,
+        initialize=lambda mod, prj, tmp: mod.Energy_MWh[prj, mod.period[tmp]]
+        * mod.energy_profile_energy_fraction[prj, tmp]
+        / (mod.hrs_in_tmp[tmp] * mod.tmp_weight[tmp]),
+    )
 
     # Constraints
     ###########################################################################
+    def monthly_peak_deviation_rule(mod, prj, tmp):
+        if mod.energy_profile_peak_deviation_demand_charge == 0:
+            return Constraint.Skip
+        else:
+            return mod.EnergyProfile_Peak_Deviation_in_Month[
+                prj, mod.period[tmp], mod.month[tmp]
+            ] >= (
+                mod.EnergyProfile_Provide_Power_MW[prj, tmp]
+                - sum(
+                    mod.EnergyProfile_Provide_Power_MW[prj, _tmp]
+                    * mod.hrs_in_tmp[_tmp]
+                    * mod.tmp_weight[_tmp]
+                    for _tmp in mod.TMPS_IN_PRD[mod.period[tmp]]
+                    if mod.month[tmp] == mod.month[_tmp]
+                )
+                / sum(
+                    mod.hrs_in_tmp[_tmp] * mod.tmp_weight[_tmp]
+                    for _tmp in mod.TMPS_IN_PRD[mod.period[tmp]]
+                    if mod.month[tmp] == mod.month[_tmp]
+                )
+            )
+
+    m.EnergyProfile_Peak_Deviation_in_Month_Constraint = Constraint(
+        m.ENERGY_PROFILE_OPR_TMPS, rule=monthly_peak_deviation_rule
+    )
 
     # TODO: remove this constraint once input validation is in place that
     #  does not allow specifying a reserve_zone if 'energy_profile' type
@@ -202,7 +265,7 @@ def add_model_components(
 ###############################################################################
 
 
-def power_provision_rule(mod, g, tmp):
+def power_provision_rule(mod, prj, tmp):
     """
     Power provision from energy_profile generators is their total energy for
     the period times the energy profile fraction for the timepoint,
@@ -212,10 +275,13 @@ def power_provision_rule(mod, g, tmp):
     No shaping capacity
     """
 
+    return mod.EnergyProfile_Provide_Power_MW[prj, tmp]
+
+
+def peak_deviation_monthly_demand_charge_cost_rule(mod, prj, prd, mnth):
     return (
-        mod.Energy_MWh[g, mod.period[tmp]]
-        * mod.energy_profile_energy_fraction[g, tmp]
-        / (mod.hrs_in_tmp[tmp] * mod.tmp_weight[tmp])
+        mod.EnergyProfile_Peak_Deviation_in_Month[prj, prd, mnth]
+        * mod.energy_profile_peak_deviation_demand_charge[prj, prd, mnth]
     )
 
 

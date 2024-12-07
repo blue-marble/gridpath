@@ -139,7 +139,7 @@ def add_model_components(
     +-------------------------------------------------------------------------+
     | Variables                                                               |
     +=========================================================================+
-    | | :code:`EnergyLoadFollowing_Power_MW`                                     |
+    | | :code:`EnergyLoadFollowing_Provide_Power_MW`                                     |
     | | *Defined over*: :code:`ENERGY_LOAD_FOLLOWING_OPR_TMPS`                   |
     | | *Within*: :code:`NonNegativeReals`                                               |
     |                                                                         |
@@ -208,6 +208,17 @@ def add_model_components(
         ),
     )
 
+    m.ENERGY_LOAD_FOLLOWING_OPR_PRDS = Set(
+        dimen=2,
+        within=m.PRJ_OPR_PRDS,
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod,
+            superset="PRJ_OPR_PRDS",
+            index=0,
+            membership_set=mod.ENERGY_LOAD_FOLLOWING,
+        ),
+    )
+
     m.ENERGY_LOAD_FOLLOWING_LINKED_TMPS = Set(dimen=2)
 
     # Required Params
@@ -220,6 +231,10 @@ def add_model_components(
         m.ENERGY_LOAD_FOLLOWING_PRJ_PRDS, within=NonNegativeReals
     )
 
+    m.energy_load_following_peak_deviation_demand_charge = Param(
+        m.ENERGY_LOAD_FOLLOWING, m.PERIODS, m.MONTHS, within=NonNegativeReals, default=0
+    )
+
     # Linked Params
     ###########################################################################
 
@@ -230,8 +245,15 @@ def add_model_components(
     # Variables
     ###########################################################################
 
-    m.EnergyLoadFollowing_Power_MW = Var(
+    m.EnergyLoadFollowing_Provide_Power_MW = Var(
         m.ENERGY_LOAD_FOLLOWING_OPR_TMPS, within=NonNegativeReals
+    )
+
+    m.EnergyLoadFollowing_Peak_Deviation_in_Month = Var(
+        m.ENERGY_LOAD_FOLLOWING_OPR_PRDS,
+        m.MONTHS,
+        within=NonNegativeReals,
+        initialize=0,
     )
 
     # Constraints
@@ -246,7 +268,7 @@ def add_model_components(
         """
         # TODO: replace static_load here with post EE variable
         # TODO: allow less than or equal constraint here?
-        return mod.EnergyLoadFollowing_Power_MW[prj, tmp] == mod.static_load_mw[
+        return mod.EnergyLoadFollowing_Provide_Power_MW[prj, tmp] == mod.static_load_mw[
             mod.load_zone[prj], tmp
         ] - (
             mod.base_net_requirement_mwh[prj, mod.period[tmp]]
@@ -260,6 +282,77 @@ def add_model_components(
         m.ENERGY_LOAD_FOLLOWING_OPR_TMPS, rule=load_following_rule
     )
 
+    # def tmps_by_prd_month_rule(mod, prd, month):
+    #     tmps_list = []
+    #     for tmp in mod.TMPS_IN_PRD[prd]:
+    #         if mod.month[tmp] == month:
+    #             tmps_list.append(tmp)
+    #
+    #     return tmps_list
+    #
+    # m.TMPS_BY_PRD_MONTH = Set(m.PERIODS, m.MONTHS, initialize=tmps_by_prd_month_rule)
+    #
+    # def prd_mnth_tmps_rule(mod):
+    #     prd_mnth_tmp_list = []
+    #     for prd in mod.PERIODS:
+    #         for month in mod.MONTHS:
+    #             for tmp in mod.TMPS_IN_PRD[prd]:
+    #                 if mod.month[tmp] == month:
+    #                     prd_mnth_tmp_list.append((prd, month, tmp))
+    #
+    #     return prd_mnth_tmp_list
+    #
+    # m.PRD_MONTH_TMPS = Set(dimen=3, initialize=prd_mnth_tmps_rule)
+    #
+    # def monthly_peak_deviation_rule(mod, prj, prd, mnth, tmp):
+    #     if mod.energy_load_following_peak_deviation_demand_charge == 0:
+    #         return Constraint.Skip
+    #     else:
+    #         return mod.EnergyLoadFollowing_Peak_Deviation_in_Month[
+    #             prj, prd, mnth
+    #         ] >= (
+    #             mod.EnergyLoadFollowing_Provide_Power_MW[prj, tmp]
+    #             - sum(
+    #                 mod.EnergyLoadFollowing_Provide_Power_MW[prj, _tmp]
+    #                 for _tmp in mod.TMPS_BY_PRD_MONTH[prd, mnth]
+    #             )
+    #             / sum(
+    #                 mod.hrs_in_tmp[_tmp] * mod.tmp_weight[_tmp]
+    #                 for _tmp in mod.TMPS_BY_PRD_MONTH[prd, mnth]
+    #             )
+    #         )
+    #
+    # m.EnergyLoadFollowing_Peak_Deviation_in_Month_Constraint = Constraint(
+    #     m.ENERGY_LOAD_FOLLOWING, m.PRD_MONTH_TMPS,
+    # rule=monthly_peak_deviation_rule
+    # )
+
+    def monthly_peak_deviation_rule(mod, prj, tmp):
+        if mod.energy_load_following_peak_deviation_demand_charge == 0:
+            return Constraint.Skip
+        else:
+            return mod.EnergyLoadFollowing_Peak_Deviation_in_Month[
+                prj, mod.period[tmp], mod.month[tmp]
+            ] >= (
+                mod.EnergyLoadFollowing_Provide_Power_MW[prj, tmp]
+                - sum(
+                    mod.EnergyLoadFollowing_Provide_Power_MW[prj, _tmp]
+                    * mod.hrs_in_tmp[_tmp]
+                    * mod.tmp_weight[_tmp]
+                    for _tmp in mod.TMPS_IN_PRD[mod.period[tmp]]
+                    if mod.month[tmp] == mod.month[_tmp]
+                )
+                / sum(
+                    mod.hrs_in_tmp[_tmp] * mod.tmp_weight[_tmp]
+                    for _tmp in mod.TMPS_IN_PRD[mod.period[tmp]]
+                    if mod.month[tmp] == mod.month[_tmp]
+                )
+            )
+
+    m.EnergyLoadFollowing_Peak_Deviation_in_Month_Constraint = Constraint(
+        m.ENERGY_LOAD_FOLLOWING_OPR_TMPS, rule=monthly_peak_deviation_rule
+    )
+
 
 # Operational Type Methods
 ###############################################################################
@@ -267,7 +360,14 @@ def power_provision_rule(mod, prj, tmp):
     """
     Power provision from must-take hydro.
     """
-    return mod.EnergyLoadFollowing_Power_MW[prj, tmp]
+    return mod.EnergyLoadFollowing_Provide_Power_MW[prj, tmp]
+
+
+def peak_deviation_monthly_demand_charge_cost_rule(mod, prj, prd, mnth):
+    return (
+        mod.EnergyLoadFollowing_Peak_Deviation_in_Month[prj, prd, mnth]
+        * mod.energy_load_following_peak_deviation_demand_charge[prj, prd, mnth]
+    )
 
 
 def power_delta_rule(mod, prj, tmp):
@@ -294,8 +394,8 @@ def power_delta_rule(mod, prj, tmp):
         pass
     else:
         return (
-            mod.EnergyLoadFollowing_Power_MW[prj, tmp]
-            - mod.EnergyLoadFollowing_Power_MW[
+            mod.EnergyLoadFollowing_Provide_Power_MW[prj, tmp]
+            - mod.EnergyLoadFollowing_Provide_Power_MW[
                 prj, mod.prev_tmp[tmp, mod.balancing_type_project[prj]]
             ]
         )
@@ -356,6 +456,23 @@ def load_model_data(
         param=m.base_net_requirement_mwh,
     )
 
+    demand_charges_tabfile_path = os.path.join(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+        "energy_load_following_peak_deviation_demand_charges.tab",
+    )
+
+    if os.path.exists(demand_charges_tabfile_path):
+        data_portal.load(
+            filename=demand_charges_tabfile_path,
+            param=m.energy_load_following_peak_deviation_demand_charge,
+        )
+
     # Linked timepoint params
     linked_inputs_filename = os.path.join(
         scenario_directory,
@@ -382,17 +499,13 @@ def export_results(
     subproblem,
     stage,
 ):
-    """
-
-    :param scenario_directory:
-    :param subproblem:
-    :param stage:
-    :param mod:
-    :param d:
-    :return:
-    """
-
     pass
+    # for prj, prd in mod.ENERGY_LOAD_FOLLOWING_OPR_PRDS:
+    #     for month in mod.MONTHS:
+    #         print(
+    #             value(mod.EnergyLoadFollowing_Peak_Deviation_in_Month[prj, prd, month]),
+    #             mod.energy_load_following_peak_deviation_demand_charge[prj, prd, month],
+    #         )
 
 
 # Database
@@ -427,7 +540,7 @@ def get_model_inputs_from_database(
         weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
     )
 
-    sql = f"""
+    base_net_req_sql = f"""
         SELECT project, period, base_net_requirement_mwh
         FROM inputs_project_base_net_requirements
         WHERE project IN (
@@ -448,10 +561,34 @@ def get_model_inputs_from_database(
         );
     """
 
-    c = conn.cursor()
-    base_net_requirements = c.execute(sql)
+    c1 = conn.cursor()
+    base_net_requirements = c1.execute(base_net_req_sql)
 
-    return base_net_requirements
+    demand_charge_sql = f"""
+            SELECT project, period, month, peak_deviation_demand_charge_per_mw
+            FROM inputs_project_peak_deviation_demand_charges
+            WHERE project IN (
+                SELECT project
+                FROM inputs_project_portfolios
+                WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
+            )
+            AND period IN (
+                SELECT period
+                FROM inputs_temporal_periods
+                WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+            )
+            AND (project, peak_deviation_demand_charge_scenario_id) IN (
+                SELECT project, peak_deviation_demand_charge_scenario_id
+                FROM inputs_project_operational_chars
+                WHERE project_operational_chars_scenario_id = {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
+                AND operational_type = 'energy_load_following'
+            );
+        """
+
+    c2 = conn.cursor()
+    demand_charges = c2.execute(demand_charge_sql)
+
+    return base_net_requirements, demand_charges
 
 
 def write_model_inputs(
@@ -475,7 +612,7 @@ def write_model_inputs(
     :param conn: database connection
     :return:
     """
-    base_net_requirements = get_model_inputs_from_database(
+    base_net_requirements, demand_charges = get_model_inputs_from_database(
         scenario_id,
         subscenarios,
         weather_iteration,
@@ -486,18 +623,22 @@ def write_model_inputs(
         conn,
     )
 
-    fname = "energy_load_following_base_net_requirements.tab"
+    data_files_to_write = [
+        ("energy_load_following_base_net_requirements.tab", base_net_requirements),
+        ("energy_load_following_peak_deviation_demand_charges.tab", demand_charges),
+    ]
 
-    write_tab_file_model_inputs(
-        scenario_directory,
-        weather_iteration,
-        hydro_iteration,
-        availability_iteration,
-        subproblem,
-        stage,
-        fname,
-        base_net_requirements,
-    )
+    for fname, data_object in data_files_to_write:
+        write_tab_file_model_inputs(
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            fname,
+            data_object,
+        )
 
 
 # Validation

@@ -1454,11 +1454,19 @@ class TestExamples(unittest.TestCase):
     def test_example_test_w_lf(self):
         """
         Check validation and objective function value of
-        "test_w_lf"
-        example
+        "test_w_lf" example
         :return:
         """
         scenario_name = "test_w_lf"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_w_lf_w_demand_charges(self):
+        """
+        Check validation and objective function value of
+        "test_w_lf_w_demand_charges" example
+        :return:
+        """
+        scenario_name = "test_w_lf_w_demand_charges"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     @classmethod
