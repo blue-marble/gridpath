@@ -142,6 +142,29 @@ class TestStorSpec(unittest.TestCase):
         )
         self.assertDictEqual(expected_specified_energy, actual_specified_energy)
 
+        # Params: shaping_capacity_mw
+        expected_shaping_cap = OrderedDict(
+            sorted(
+                {
+                    ("Energy_Spec", 2020): 0,
+                    ("Energy_Spec", 2030): 0,
+                    ("Energy_Hrz_Shaping", 2020): 0,
+                    ("Energy_Hrz_Shaping", 2030): 0,
+                    ("Energy_LF", 2020): 0,
+                    ("Energy_LF", 2030): 0,
+                }.items()
+            )
+        )
+        actual_shaping_cap = OrderedDict(
+            sorted(
+                {
+                    (prj, period): instance.shaping_capacity_mw[prj, period]
+                    for (prj, period) in instance.GEN_ENERGY_SPEC_OPR_PRDS
+                }.items()
+            )
+        )
+        self.assertDictEqual(expected_shaping_cap, actual_shaping_cap)
+
         # Params: energy_spec_fixed_cost_per_energy_mwh_yr
         expected_fc = OrderedDict(
             sorted(
@@ -166,6 +189,29 @@ class TestStorSpec(unittest.TestCase):
             )
         )
         self.assertDictEqual(expected_fc, actual_fc)
+
+        # Params: fixed_cost_per_shaping_mw_yr
+        expected_shap_cap_fc = OrderedDict(
+            sorted(
+                {
+                    ("Energy_Spec", 2020): 0,
+                    ("Energy_Spec", 2030): 0,
+                    ("Energy_Hrz_Shaping", 2020): 0,
+                    ("Energy_Hrz_Shaping", 2030): 0,
+                    ("Energy_LF", 2020): 0,
+                    ("Energy_LF", 2030): 0,
+                }.items()
+            )
+        )
+        actual_shap_cap_fc = OrderedDict(
+            sorted(
+                {
+                    (prj, period): instance.fixed_cost_per_shaping_mw_yr[prj, period]
+                    for (prj, period) in instance.GEN_ENERGY_SPEC_OPR_PRDS
+                }.items()
+            )
+        )
+        self.assertDictEqual(expected_shap_cap_fc, actual_shap_cap_fc)
 
 
 if __name__ == "__main__":

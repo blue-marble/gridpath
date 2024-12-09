@@ -153,6 +153,9 @@ def add_model_components(
     )
 
     # Variables
+    m.EnergyProfile_Provide_Power_MW = Var(
+        m.ENERGY_PROFILE_OPR_TMPS, within=NonNegativeReals
+    )
     m.EnergyProfile_Peak_Deviation_in_Month = Var(
         m.ENERGY_PROFILE_OPR_PRDS,
         m.MONTHS,
@@ -160,16 +163,33 @@ def add_model_components(
         initialize=0,
     )
 
-    # Expressions
-    m.EnergyProfile_Provide_Power_MW = Expression(
-        m.ENERGY_PROFILE_OPR_TMPS,
-        initialize=lambda mod, prj, tmp: mod.Energy_MWh[prj, mod.period[tmp]]
-        * mod.energy_profile_energy_fraction[prj, tmp]
-        / (mod.hrs_in_tmp[tmp] * mod.tmp_weight[tmp]),
-    )
-
     # Constraints
     ###########################################################################
+
+    def provide_power_min_constraint_rule(mod, prj, tmp):
+        return mod.EnergyProfile_Provide_Power_MW[prj, tmp] >= mod.Energy_MWh[
+            prj, mod.period[tmp]
+        ] * mod.energy_profile_energy_fraction[prj, tmp] / (
+            mod.hrs_in_tmp[tmp] * mod.tmp_weight[tmp]
+        )
+
+    m.EnergyProfile_Provide_Power_Min_Constraint = Constraint(
+        m.ENERGY_PROFILE_OPR_TMPS, rule=provide_power_min_constraint_rule
+    )
+
+    def provide_power_max_constraint_rule(mod, prj, tmp):
+        return (
+            mod.EnergyProfile_Provide_Power_MW[prj, tmp]
+            <= mod.Energy_MWh[prj, mod.period[tmp]]
+            * mod.energy_profile_energy_fraction[prj, tmp]
+            / (mod.hrs_in_tmp[tmp] * mod.tmp_weight[tmp])
+            + mod.shaping_capacity_mw[prj, mod.period[tmp]]
+        )
+
+    m.EnergyProfile_Provide_Power_Max_Constraint = Constraint(
+        m.ENERGY_PROFILE_OPR_TMPS, rule=provide_power_max_constraint_rule
+    )
+
     def monthly_peak_deviation_rule(mod, prj, tmp):
         if mod.energy_profile_peak_deviation_demand_charge == 0:
             return Constraint.Skip
@@ -271,8 +291,6 @@ def power_provision_rule(mod, prj, tmp):
     the period times the energy profile fraction for the timepoint,
     and converted to power via the hours in timepoint and timepoint weight
     parameters.
-
-    No shaping capacity
     """
 
     return mod.EnergyProfile_Provide_Power_MW[prj, tmp]

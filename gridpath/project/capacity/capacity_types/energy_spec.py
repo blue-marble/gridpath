@@ -17,7 +17,7 @@ Specified energy-only project. The energy will be shaped by the operational
 type.
 
 """
-
+import math
 import os.path
 import pandas as pd
 from pyomo.environ import Set, Param, NonNegativeReals
@@ -108,9 +108,19 @@ def add_model_components(
         m.GEN_ENERGY_SPEC_OPR_PRDS, within=NonNegativeReals
     )
 
+    # Will need to go through capacity.py if we allow shaping capacity for
+    # candidate energy resources eventually
+    m.shaping_capacity_mw = Param(
+        m.GEN_ENERGY_SPEC_OPR_PRDS, within=NonNegativeReals, default=0
+    )
+
     # Any fixed costs associated with the energy purchased
     m.energy_spec_fixed_cost_per_energy_mwh_yr = Param(
         m.GEN_ENERGY_SPEC_OPR_PRDS, within=NonNegativeReals
+    )
+
+    m.fixed_cost_per_shaping_mw_yr = Param(
+        m.GEN_ENERGY_SPEC_OPR_PRDS, within=NonNegativeReals, default=0
     )
 
     # Dynamic Components
@@ -141,6 +151,7 @@ def fixed_cost_rule(mod, g, p):
     return (
         mod.energy_spec_energy_mwh[g, p]
         * mod.energy_spec_fixed_cost_per_energy_mwh_yr[g, p]
+        + mod.shaping_capacity_mw[g, p] * mod.fixed_cost_per_shaping_mw_yr[g, p]
     )
 
 
@@ -177,6 +188,18 @@ def load_model_data(
 
     data_portal.data()["energy_spec_fixed_cost_per_energy_mwh_yr"] = spec_params_dict[
         "fixed_cost_per_energy_mwh_yr"
+    ]
+
+    # TODO: it's ugly to handle the default 0 here; figure out how to pass
+    #  "no value" and default to the 0 per the model formulation
+    for k in spec_params_dict["shaping_capacity_mw"].keys():
+        if math.isnan(spec_params_dict["shaping_capacity_mw"][k]):
+            spec_params_dict["shaping_capacity_mw"][k] = 0
+        if math.isnan(spec_params_dict["fixed_cost_per_shaping_mw_yr"][k]):
+            spec_params_dict["fixed_cost_per_shaping_mw_yr"][k] = 0
+    data_portal.data()["shaping_capacity_mw"] = spec_params_dict["shaping_capacity_mw"]
+    data_portal.data()["fixed_cost_per_shaping_mw_yr"] = spec_params_dict[
+        "fixed_cost_per_shaping_mw_yr"
     ]
 
 

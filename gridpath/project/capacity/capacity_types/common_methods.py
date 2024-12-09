@@ -139,6 +139,7 @@ def spec_get_inputs_from_database(conn, subscenarios, capacity_type):
         period,
         specified_capacity_mw,
         specified_energy_mwh,
+        shaping_capacity_mw,
         hyb_gen_specified_capacity_mw,
         hyb_stor_specified_capacity_mw,
         specified_stor_capacity_mwh,
@@ -147,6 +148,7 @@ def spec_get_inputs_from_database(conn, subscenarios, capacity_type):
         fuel_storage_capacity_fuelunit,
         fixed_cost_per_mw_yr,
         fixed_cost_per_energy_mwh_yr,
+        fixed_cost_per_shaping_mw_yr,
         hyb_gen_fixed_cost_per_mw_yr,
         hyb_stor_fixed_cost_per_mw_yr,
         fixed_cost_per_stor_mwh_yr,
@@ -162,6 +164,7 @@ def spec_get_inputs_from_database(conn, subscenarios, capacity_type):
         (SELECT project, period,
         specified_capacity_mw,
         specified_energy_mwh,
+        shaping_capacity_mw,
         hyb_gen_specified_capacity_mw,
         hyb_stor_specified_capacity_mw,
         specified_stor_capacity_mwh,
@@ -173,7 +176,8 @@ def spec_get_inputs_from_database(conn, subscenarios, capacity_type):
         USING (project, period)
         INNER JOIN
         (SELECT project, period,
-        fixed_cost_per_mw_yr, fixed_cost_per_energy_mwh_yr,
+        fixed_cost_per_mw_yr, fixed_cost_per_energy_mwh_yr, 
+        fixed_cost_per_shaping_mw_yr,
         hyb_gen_fixed_cost_per_mw_yr,
         hyb_stor_fixed_cost_per_mw_yr,
         fixed_cost_per_stor_mwh_yr,
@@ -234,6 +238,7 @@ def spec_write_tab_file(
                     "period",
                     "specified_capacity_mw",
                     "specified_energy_mwh",
+                    "shaping_capacity_mw",
                     "hyb_gen_specified_capacity_mw",
                     "hyb_stor_specified_capacity_mw",
                     "specified_stor_capacity_mwh",
@@ -242,6 +247,7 @@ def spec_write_tab_file(
                     "fuel_storage_capacity_fuelunit",
                     "fixed_cost_per_mw_yr",
                     "fixed_cost_per_energy_mwh_yr",
+                    "fixed_cost_per_shaping_mw_yr",
                     "hyb_gen_fixed_cost_per_mw_yr",
                     "hyb_stor_fixed_cost_per_mw_yr",
                     "fixed_cost_per_stor_mwh_yr",
@@ -266,6 +272,7 @@ def write_from_query(spec_project_params, writer):
             period,
             specified_capacity_mw,
             specified_energy_mwh,
+            shaping_capacity_mw,
             hyb_gen_specified_capacity_mw,
             hyb_stor_specified_capacity_mw,
             specified_stor_capacity_mwh,
@@ -274,6 +281,7 @@ def write_from_query(spec_project_params, writer):
             fuel_stor_cap,
             fixed_cost_per_mw_yr,
             fixed_cost_per_energy_mwh_yr,
+            fixed_cost_per_shaping_mw_yr,
             hyb_gen_fixed_cost_per_mw_yr,
             hyb_stor_fixed_cost_per_mw_yr,
             fixed_cost_per_stor_mwh_yr,
@@ -287,6 +295,7 @@ def write_from_query(spec_project_params, writer):
                 period,
                 specified_capacity_mw,
                 specified_energy_mwh,
+                shaping_capacity_mw,
                 hyb_gen_specified_capacity_mw,
                 hyb_stor_specified_capacity_mw,
                 specified_stor_capacity_mwh,
@@ -295,6 +304,7 @@ def write_from_query(spec_project_params, writer):
                 fuel_stor_cap,
                 fixed_cost_per_mw_yr,
                 fixed_cost_per_energy_mwh_yr,
+                fixed_cost_per_shaping_mw_yr,
                 hyb_gen_fixed_cost_per_mw_yr,
                 hyb_stor_fixed_cost_per_mw_yr,
                 fixed_cost_per_stor_mwh_yr,
@@ -340,6 +350,7 @@ def spec_determine_inputs(
     project_period_list = list()
     spec_capacity_mw_dict = dict()
     specified_energy_mwh_dict = dict()
+    shaping_capacity_mw_dict = dict()
     hyb_gen_spec_capacity_mw_dict = dict()
     hyb_stor_spec_capacity_mw_dict = dict()
     spec_capacity_mwh_dict = dict()
@@ -348,6 +359,7 @@ def spec_determine_inputs(
     spec_fuel_stor_cap_dict = dict()
     spec_fixed_cost_per_mw_yr_dict = dict()
     fixed_cost_per_energy_mwh_yr_dict = dict()
+    fixed_cost_per_shaping_mw_yr_dict = dict()
     hyb_gen_spec_fixed_cost_per_mw_yr_dict = dict()
     hyb_stor_spec_fixed_cost_per_mw_yr_dict = dict()
     spec_fixed_cost_per_stor_mwh_yr_dict = dict()
@@ -374,6 +386,7 @@ def spec_determine_inputs(
         df["period"],
         df["specified_capacity_mw"],
         df["specified_energy_mwh"],
+        df["shaping_capacity_mw"],
         df["hyb_gen_specified_capacity_mw"],
         df["hyb_stor_specified_capacity_mw"],
         df["specified_stor_capacity_mwh"],
@@ -382,6 +395,7 @@ def spec_determine_inputs(
         df["fuel_storage_capacity_fuelunit"],
         df["fixed_cost_per_mw_yr"],
         df["fixed_cost_per_energy_mwh_yr"],
+        df["fixed_cost_per_shaping_mw_yr"],
         df["hyb_gen_fixed_cost_per_mw_yr"],
         df["hyb_stor_fixed_cost_per_mw_yr"],
         df["fixed_cost_per_stor_mwh_yr"],
@@ -393,20 +407,22 @@ def spec_determine_inputs(
             project_period_list.append((row[0], row[1]))
             spec_capacity_mw_dict[(row[0], row[1])] = float(row[2])
             specified_energy_mwh_dict[(row[0], row[1])] = float(row[3])
-            hyb_gen_spec_capacity_mw_dict[(row[0], row[1])] = float(row[4])
-            hyb_stor_spec_capacity_mw_dict[(row[0], row[1])] = float(row[5])
-            spec_capacity_mwh_dict[(row[0], row[1])] = float(row[6])
-            spec_fuel_prod_cap_dict[(row[0], row[1])] = float(row[7])
-            spec_fuel_rel_cap_dict[(row[0], row[1])] = float(row[8])
-            spec_fuel_stor_cap_dict[(row[0], row[1])] = float(row[9])
-            spec_fixed_cost_per_mw_yr_dict[(row[0], row[1])] = float(row[10])
-            fixed_cost_per_energy_mwh_yr_dict[(row[0], row[1])] = float(row[11])
-            hyb_gen_spec_fixed_cost_per_mw_yr_dict[(row[0], row[1])] = float(row[12])
-            hyb_stor_spec_fixed_cost_per_mw_yr_dict[(row[0], row[1])] = float(row[13])
-            spec_fixed_cost_per_stor_mwh_yr_dict[(row[0], row[1])] = float(row[14])
-            spec_fuel_prod_fixed_cost_dict[(row[0], row[1])] = float(row[15])
-            spec_fuel_rel_fixed_cost_dict[(row[0], row[1])] = float(row[16])
-            spec_fuel_stor_fixed_cost_dict[(row[0], row[1])] = float(row[17])
+            shaping_capacity_mw_dict[(row[0], row[1])] = float(row[4])
+            hyb_gen_spec_capacity_mw_dict[(row[0], row[1])] = float(row[5])
+            hyb_stor_spec_capacity_mw_dict[(row[0], row[1])] = float(row[6])
+            spec_capacity_mwh_dict[(row[0], row[1])] = float(row[7])
+            spec_fuel_prod_cap_dict[(row[0], row[1])] = float(row[8])
+            spec_fuel_rel_cap_dict[(row[0], row[1])] = float(row[9])
+            spec_fuel_stor_cap_dict[(row[0], row[1])] = float(row[10])
+            spec_fixed_cost_per_mw_yr_dict[(row[0], row[1])] = float(row[11])
+            fixed_cost_per_energy_mwh_yr_dict[(row[0], row[1])] = float(row[12])
+            fixed_cost_per_shaping_mw_yr_dict[(row[0], row[1])] = float(row[13])
+            hyb_gen_spec_fixed_cost_per_mw_yr_dict[(row[0], row[1])] = float(row[14])
+            hyb_stor_spec_fixed_cost_per_mw_yr_dict[(row[0], row[1])] = float(row[15])
+            spec_fixed_cost_per_stor_mwh_yr_dict[(row[0], row[1])] = float(row[16])
+            spec_fuel_prod_fixed_cost_dict[(row[0], row[1])] = float(row[17])
+            spec_fuel_rel_fixed_cost_dict[(row[0], row[1])] = float(row[18])
+            spec_fuel_stor_fixed_cost_dict[(row[0], row[1])] = float(row[19])
 
     # Quick check that all relevant projects from projects.tab have capacity
     # params specified
@@ -422,6 +438,7 @@ def spec_determine_inputs(
     main_dict = dict()
     main_dict["specified_capacity_mw"] = spec_capacity_mw_dict
     main_dict["specified_energy_mwh"] = specified_energy_mwh_dict
+    main_dict["shaping_capacity_mw"] = shaping_capacity_mw_dict
     main_dict["hyb_gen_specified_capacity_mw"] = hyb_gen_spec_capacity_mw_dict
     main_dict["hyb_stor_specified_capacity_mw"] = hyb_stor_spec_capacity_mw_dict
     main_dict["specified_stor_capacity_mwh"] = spec_capacity_mwh_dict
@@ -430,6 +447,7 @@ def spec_determine_inputs(
     main_dict["fuel_storage_capacity_fuelunit"] = spec_fuel_stor_cap_dict
     main_dict["fixed_cost_per_mw_yr"] = spec_fixed_cost_per_mw_yr_dict
     main_dict["fixed_cost_per_energy_mwh_yr"] = fixed_cost_per_energy_mwh_yr_dict
+    main_dict["fixed_cost_per_shaping_mw_yr"] = fixed_cost_per_shaping_mw_yr_dict
     main_dict["hyb_gen_fixed_cost_per_mw_yr"] = hyb_gen_spec_fixed_cost_per_mw_yr_dict
     main_dict["hyb_stor_fixed_cost_per_mw_yr"] = hyb_stor_spec_fixed_cost_per_mw_yr_dict
     main_dict["fixed_cost_per_stor_mwh_yr"] = spec_fixed_cost_per_stor_mwh_yr_dict

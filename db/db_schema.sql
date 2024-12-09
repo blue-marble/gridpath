@@ -1367,6 +1367,7 @@ CREATE TABLE inputs_project_specified_capacity
     period                                   INTEGER,
     specified_capacity_mw                    FLOAT, -- grid-facing nameplate capacity
     specified_energy_mwh                     FLOAT, -- energy available for shaping in period
+    shaping_capacity_mw                      FLOAT, -- for energy products
     hyb_gen_specified_capacity_mw            FLOAT, -- e.g. CAES turbine capacity
     hyb_stor_specified_capacity_mw           FLOAT, -- e.g. battery tightly-coupled with PV
     specified_stor_capacity_mwh              FLOAT, -- storage energy capacity
@@ -1394,6 +1395,7 @@ CREATE TABLE inputs_project_specified_fixed_cost
     period                                                     INTEGER,
     fixed_cost_per_mw_yr                                       FLOAT,
     fixed_cost_per_energy_mwh_yr                               FLOAT,
+    fixed_cost_per_shaping_mw_yr                               FLOAT, -- for energy products
     hyb_gen_fixed_cost_per_mw_yr                               FLOAT,
     hyb_stor_fixed_cost_per_mw_yr                              FLOAT,
     fixed_cost_per_stor_mwh_yr                                 FLOAT,
