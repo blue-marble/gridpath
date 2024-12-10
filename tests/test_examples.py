@@ -1469,6 +1469,24 @@ class TestExamples(unittest.TestCase):
         scenario_name = "test_w_lf_w_demand_charges"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
+    def test_example_test_w_lf_only(self):
+        """
+        Check validation and objective function value of
+        "test_w_lf_only" example
+        :return:
+        """
+        scenario_name = "test_w_lf_only"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_w_lf_only_and_prices(self):
+        """
+        Check validation and objective function value of
+        "test_w_lf_only_and_prices" example
+        :return:
+        """
+        scenario_name = "test_w_lf_only_and_prices"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
     @classmethod
     def tearDownClass(cls):
         os.remove(DB_PATH)

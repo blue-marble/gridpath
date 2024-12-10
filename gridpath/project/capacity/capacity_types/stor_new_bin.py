@@ -607,7 +607,7 @@ def add_to_project_period_results(
     results_columns = [
         "new_build_binary",
         "new_build_mw",
-        "new_build_mwh",
+        "new_build_stor_mwh",
     ]
     data = [
         [
@@ -661,8 +661,8 @@ def summarize_results(
     new_build_df = pd.DataFrame(
         capacity_results_agg_df[
             (capacity_results_agg_df["new_build_mw"] > 0)
-            | (capacity_results_agg_df["new_build_mwh"] > 0)
-        ][["new_build_mw", "new_build_mwh"]]
+            | (capacity_results_agg_df["new_build_stor_mwh"] > 0)
+        ][["new_build_mw", "new_build_stor_mwh"]]
     )
 
     # Get the units from the units.csv file

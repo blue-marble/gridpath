@@ -73,7 +73,8 @@ def add_model_components(
     | | *Defined over*: :code:`PROJECTS`                                      |
     | | *Within*: :code:`["dr_new", "gen_new_bin", "gen_new_lin",`            |
     | | :code:`"gen_ret_bin", "gen_ret_lin", "gen_spec", "stor_new_bin",`     |
-    | | :code:`"stor_new_lin", "stor_spec", "fuel_prod_spec", "fuel_prod_new]`|
+    | | :code:`"stor_new_lin", "stor_spec", "fuel_prod_spec", "fuel_prod_new` |
+    | | :code:`"energy_spec", "energy_new_lin"]`                              |
     |                                                                         |
     | This param describes each project's capacity type, which determines how |
     | the available capacity of the project is defined (depending on the      |
@@ -144,6 +145,7 @@ def add_model_components(
             "fuel_prod_spec",
             "fuel_prod_new",
             "energy_spec",
+            "energy_new_lin",
         ],
     )
     m.operational_type = Param(

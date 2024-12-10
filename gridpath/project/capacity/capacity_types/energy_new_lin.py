@@ -31,8 +31,8 @@ from pyomo.environ import (
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.dynamic_components import (
-    energy_type_operational_period_sets,
-    energy_type_financial_period_sets,
+    capacity_type_operational_period_sets,
+    capacity_type_financial_period_sets,
 )
 from gridpath.auxiliary.validations import (
     write_validation_to_database,
@@ -43,7 +43,7 @@ from gridpath.auxiliary.validations import (
     validate_idxs,
 )
 from gridpath.common_functions import create_results_df
-from gridpath.project.energy.energy_types.common_methods import (
+from gridpath.project.capacity.capacity_types.common_methods import (
     relevant_periods_by_project_vintage,
     project_relevant_periods,
     project_vintages_relevant_in_period,
@@ -270,13 +270,13 @@ def add_model_components(
 
     # Add to list of sets we'll join to get the final
     # PRJ_OPR_PRDS set
-    getattr(d, energy_type_operational_period_sets).append(
+    getattr(d, capacity_type_operational_period_sets).append(
         "ENERGY_NEW_LIN_OPR_PRDS",
     )
 
     # Add to list of sets we'll join to get the final
     # PRJ_FIN_PRDS set
-    getattr(d, energy_type_financial_period_sets).append(
+    getattr(d, capacity_type_financial_period_sets).append(
         "ENERGY_NEW_LIN_FIN_PRDS",
     )
 
@@ -536,7 +536,7 @@ def summarize_results(
         availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
-        energy_type=Path(__file__).stem,
+        capacity_type=Path(__file__).stem,
     )
 
     # Get all technologies with the new build energy
@@ -601,7 +601,7 @@ def get_model_inputs_from_database(
         WHERE project_new_cost_scenario_id = {new_cost}) as cost
         USING (project, vintage)
         WHERE project_portfolio_scenario_id = {portfolio}
-        AND energy_type = 'energy_new_lin';""".format(
+        AND capacity_type = 'energy_new_lin';""".format(
             temporal=subscenarios.TEMPORAL_SCENARIO_ID,
             new_cost=subscenarios.PROJECT_NEW_COST_SCENARIO_ID,
             portfolio=subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
@@ -711,7 +711,7 @@ def validate_inputs(
     )
 
     projects = get_projects(
-        conn, scenario_id, subscenarios, "energy_type", "energy_new_lin"
+        conn, scenario_id, subscenarios, "capacity_type", "energy_new_lin"
     )
 
     # Convert input data into pandas DataFrame
@@ -757,22 +757,4 @@ def validate_inputs(
         db_table="inputs_project_new_cost",
         severity="High",
         errors=validate_values(cost_df, valid_numeric_columns, min=0),
-    )
-
-    # Check that all binary new build projects are available in >=1 vintage
-    msg = "Expected cost data for at least one vintage."
-    write_validation_to_database(
-        conn=conn,
-        scenario_id=scenario_id,
-        weather_iteration=weather_iteration,
-        hydro_iteration=hydro_iteration,
-        availability_iteration=availability_iteration,
-        subproblem_id=subproblem,
-        stage_id=stage,
-        gridpath_module=__name__,
-        db_table="inputs_project_new_cost",
-        severity="Mid",
-        errors=validate_idxs(
-            actual_idxs=cost_projects, req_idxs=projects, idx_label="project", msg=msg
-        ),
     )
