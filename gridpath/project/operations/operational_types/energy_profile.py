@@ -216,6 +216,26 @@ def add_model_components(
         m.ENERGY_PROFILE_OPR_TMPS, rule=monthly_peak_deviation_rule
     )
 
+    def total_energy_constraint(mod, prj, prd):
+        """
+        This constraint is somewhat redundant, but here to prevent degeneracy
+        issues when Energy_MWh does not have a cost associated it and could
+        be set arbitrarily high.
+        """
+        return (
+            sum(
+                mod.EnergyProfile_Provide_Power_MW[prj, tmp]
+                * mod.hrs_in_tmp[tmp]
+                * mod.tmp_weight[tmp]
+                for tmp in mod.TMPS_IN_PRD[prd]
+            )
+            == mod.Energy_MWh[prj, prd]
+        )
+
+    m.EnergyProfile_Total_Energy_in_Period_Constraint = Constraint(
+        m.ENERGY_PROFILE_OPR_PRDS, rule=total_energy_constraint
+    )
+
     # TODO: remove this constraint once input validation is in place that
     #  does not allow specifying a reserve_zone if 'energy_profile' type
     def no_upward_reserve_rule(mod, g, tmp):

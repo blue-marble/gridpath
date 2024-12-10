@@ -273,6 +273,26 @@ def add_model_components(
         m.ENERGY_HRZ_SHAPING_OPR_TMPS, rule=monthly_peak_deviation_rule
     )
 
+    def total_energy_constraint(mod, prj, prd):
+        """
+        This constraint is somewhat redundant, but here to prevent degeneracy
+        issues when Energy_MWh does not have a cost associated it and could
+        be set arbitrarily high.
+        """
+        return (
+            sum(
+                mod.EnergyHrzShaping_Provide_Power_MW[prj, tmp]
+                * mod.hrs_in_tmp[tmp]
+                * mod.tmp_weight[tmp]
+                for tmp in mod.TMPS_IN_PRD[prd]
+            )
+            == mod.Energy_MWh[prj, prd]
+        )
+
+    m.EnergyHrzShaping_Total_Energy_in_Period_Constraint = Constraint(
+        m.ENERGY_HRZ_SHAPING_OPR_PRDS, rule=total_energy_constraint
+    )
+
 
 # Constraint Formulation Rules
 ###############################################################################
