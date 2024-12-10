@@ -249,7 +249,7 @@ class TestStorNewBin(unittest.TestCase):
                     (
                         prj,
                         vintage,
-                    ): instance.stor_new_bin_annualized_real_cost_per_mwh_yr[
+                    ): instance.stor_new_bin_annualized_real_cost_per_stor_mwh_yr[
                         prj, vintage
                     ]
                     for (prj, vintage) in instance.STOR_NEW_BIN_VNTS

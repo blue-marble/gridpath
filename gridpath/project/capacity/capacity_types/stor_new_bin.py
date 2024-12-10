@@ -131,7 +131,7 @@ def add_model_components(
     | The project's cost to build new power capacity in annualized real       |
     | dollars in per MW.                                                      |
     +-------------------------------------------------------------------------+
-    | | :code:`stor_new_bin_annualized_real_cost_per_mwh_yr`                  |
+    | | :code:`stor_new_bin_annualized_real_cost_per_stor_mwh_yr`             |
     | | *Defined over*: :code:`STOR_NEW_BIN_VNTS`                             |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
@@ -263,7 +263,7 @@ def add_model_components(
         m.STOR_NEW_BIN_VNTS, within=NonNegativeReals
     )
 
-    m.stor_new_bin_annualized_real_cost_per_mwh_yr = Param(
+    m.stor_new_bin_annualized_real_cost_per_stor_mwh_yr = Param(
         m.STOR_NEW_BIN_VNTS, within=NonNegativeReals
     )
 
@@ -455,7 +455,7 @@ def capacity_cost_rule(mod, g, p):
             mod.stor_new_bin_build_size_mw[g]
             * mod.stor_new_bin_annualized_real_cost_per_mw_yr[g, v]
             + mod.stor_new_bin_build_size_mwh[g]
-            * mod.stor_new_bin_annualized_real_cost_per_mwh_yr[g, v]
+            * mod.stor_new_bin_annualized_real_cost_per_stor_mwh_yr[g, v]
         )
         for (gen, v) in mod.STOR_NEW_BIN_VNTS_FIN_IN_PRD[p]
         if gen == g
@@ -556,7 +556,7 @@ def load_model_data(
             "fixed_cost_per_stor_mwh_yr",
             "financial_lifetime_yrs",
             "annualized_real_cost_per_mw_yr",
-            "annualized_real_cost_per_mwh_yr",
+            "annualized_real_cost_per_stor_mwh_yr",
         ),
         param=(
             m.stor_new_bin_operational_lifetime_yrs,
@@ -564,7 +564,7 @@ def load_model_data(
             m.stor_new_bin_fixed_cost_per_stor_mwh_yr,
             m.stor_new_bin_financial_lifetime_yrs_by_vintage,
             m.stor_new_bin_annualized_real_cost_per_mw_yr,
-            m.stor_new_bin_annualized_real_cost_per_mwh_yr,
+            m.stor_new_bin_annualized_real_cost_per_stor_mwh_yr,
         ),
     )
 
@@ -711,7 +711,7 @@ def get_model_inputs_from_database(
         SELECT project, vintage, operational_lifetime_yrs,
         fixed_cost_per_mw_yr, fixed_cost_per_stor_mwh_yr, financial_lifetime_yrs,
         annualized_real_cost_per_mw_yr,
-        annualized_real_cost_per_mwh_yr
+        annualized_real_cost_per_stor_mwh_yr
         FROM inputs_project_portfolios
         
         CROSS JOIN
@@ -722,7 +722,7 @@ def get_model_inputs_from_database(
         INNER JOIN
             (SELECT project, vintage, operational_lifetime_yrs, 
             fixed_cost_per_mw_yr, fixed_cost_per_stor_mwh_yr, financial_lifetime_yrs,
-            annualized_real_cost_per_mw_yr, annualized_real_cost_per_mwh_yr
+            annualized_real_cost_per_mw_yr, annualized_real_cost_per_stor_mwh_yr
             FROM inputs_project_new_cost
             WHERE project_new_cost_scenario_id = {}) as cost
         USING (project, vintage)
@@ -819,7 +819,7 @@ def write_model_inputs(
                 "fixed_cost_per_stor_mwh_yr",
                 "financial_lifetime_yrs",
                 "annualized_real_cost_per_mw_yr",
-                "annualized_real_cost_per_mwh_yr",
+                "annualized_real_cost_per_stor_mwh_yr",
             ]
         )
 
