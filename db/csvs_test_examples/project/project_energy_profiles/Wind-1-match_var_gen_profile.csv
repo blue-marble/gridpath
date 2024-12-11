@@ -1,0 +1,5 @@
+weather_iteration,hydro_iteration,stage_id,timepoint,energy_fraction
+0,0,1,20200101,0.642857143
+0,0,1,20200102,0.357142857
+0,0,1,20300101,0.642857143
+0,0,1,20300102,0.357142857

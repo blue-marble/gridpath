@@ -25,7 +25,10 @@ from tests.common_functions import create_abstract_model, add_components_and_loa
 TEST_DATA_DIRECTORY = os.path.join(os.path.dirname(__file__), "..", "..", "test_data")
 
 # Import prerequisite modules
-PREREQUISITE_MODULE_NAMES = ["temporal.operations.timepoints"]
+PREREQUISITE_MODULE_NAMES = [
+    "temporal.operations.timepoints",
+    "temporal.investment.periods",
+]
 NAME_OF_MODULE_BEING_TESTED = "temporal.operations.horizons"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:

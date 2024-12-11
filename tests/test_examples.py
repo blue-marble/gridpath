@@ -1431,6 +1431,71 @@ class TestExamples(unittest.TestCase):
         scenario_name = "2periods_nuclear_var_cost_by_timepoint_diff"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
+    def test_example_test_w_storage_wind_as_energy(self):
+        """
+        Check validation and objective function value of
+        "test_w_storage_wind_as_energy" example
+        :return:
+        """
+        scenario_name = "test_w_storage_wind_as_energy"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_w_hydro_no_reserves(self):
+        """
+        Check validation and objective function value of
+        "test_w_hydro_no_reserves"
+        example
+        :return:
+        """
+        scenario_name = "test_w_hydro_no_reserves"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_w_hydro_as_energy_no_reserves(self):
+        """
+        Check validation and objective function value of
+        "test_w_hydro_as_energy_no_reserves"
+        example
+        :return:
+        """
+        scenario_name = "test_w_hydro_as_energy_no_reserves"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_w_lf(self):
+        """
+        Check validation and objective function value of
+        "test_w_lf" example
+        :return:
+        """
+        scenario_name = "test_w_lf"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_w_lf_w_demand_charges(self):
+        """
+        Check validation and objective function value of
+        "test_w_lf_w_demand_charges" example
+        :return:
+        """
+        scenario_name = "test_w_lf_w_demand_charges"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_w_lf_only(self):
+        """
+        Check validation and objective function value of
+        "test_w_lf_only" example
+        :return:
+        """
+        scenario_name = "test_w_lf_only"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_w_lf_only_and_prices(self):
+        """
+        Check validation and objective function value of
+        "test_w_lf_only_and_prices" example
+        :return:
+        """
+        scenario_name = "test_w_lf_only_and_prices"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
     @classmethod
     def tearDownClass(cls):
         os.remove(DB_PATH)

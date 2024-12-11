@@ -228,6 +228,20 @@ def add_model_components(
         initialize=lambda mod, b, h: list(mod.TMPS_BY_BLN_TYPE_HRZ[b, h])[-1],
     )
 
+    def hrz_period_init(mod, bt, hrz):
+        if (
+            mod.period[mod.first_hrz_tmp[bt, hrz]]
+            == mod.period[mod.first_hrz_tmp[bt, hrz]]
+        ):
+            return mod.period[mod.first_hrz_tmp[bt, hrz]]
+        else:
+            raise ValueError(
+                f"""Horizons cannot span periods. Check timepoints
+                             for balancing type {bt}, horizon {hrz}"""
+            )
+
+    m.hrz_period = Param(m.BLN_TYPE_HRZS, within=m.PERIODS, initialize=hrz_period_init)
+
     m.prev_tmp = Param(
         m.TMPS_BLN_TYPES, within=m.TMPS | {"."}, initialize=prev_tmp_init
     )
