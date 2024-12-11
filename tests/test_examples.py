@@ -797,7 +797,8 @@ class TestExamples(unittest.TestCase):
 
     def test_example_2periods_new_build_capgroups(self):
         """
-        Check validation and objective function value of "2periods_new_build" example
+        Check validation and objective function value of
+        "test_example_2periods_new_build_capgroups" example
         """
         scenario_name = "2periods_new_build_capgroups"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
@@ -1494,6 +1495,15 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         scenario_name = "test_w_lf_only_and_prices"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_w_wind_as_energy_profile_hydro_as_energy_shaping(self):
+        """
+        Check validation and objective function value of
+        "test_w_lf_only_and_prices" example
+        :return:
+        """
+        scenario_name = "test_w_wind_as_energy_profile_hydro_as_energy_shaping"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     @classmethod
