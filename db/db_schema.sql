@@ -3683,22 +3683,62 @@ CREATE TABLE subscenarios_system_load
     description      VARCHAR(128)
 );
 
--- Can include timepoints and zones other than the ones in a scenario, as
--- correct timepoints and zones will be pulled depending on
--- temporal_scenario_id and load_zone_scenario_id
 DROP TABLE IF EXISTS inputs_system_load;
 CREATE TABLE inputs_system_load
 (
-    load_scenario_id  INTEGER,
-    load_zone         VARCHAR(32),
-    weather_iteration INTEGER,
-    stage_id          INTEGER,
-    timepoint         INTEGER,
-    load_mw           FLOAT,
-    PRIMARY KEY (load_scenario_id, load_zone, weather_iteration, stage_id,
-                 timepoint),
+    load_scenario_id            INTEGER,
+    load_components_scenario_id INTEGER,
+    load_levels_scenario_id     INTEGER,
+    PRIMARY KEY (load_scenario_id, load_components_scenario_id,
+                 load_levels_scenario_id),
     FOREIGN KEY (load_scenario_id) REFERENCES subscenarios_system_load
         (load_scenario_id)
+);
+
+-- Can include timepoints and zones other than the ones in a scenario, as
+-- correct timepoints and zones will be pulled depending on
+-- temporal_scenario_id and load_zone_scenario_id
+DROP TABLE IF EXISTS subscenarios_system_load_components;
+CREATE TABLE subscenarios_system_load_components
+(
+    load_components_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name                        VARCHAR(32),
+    description                 VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_system_load_components;
+CREATE TABLE inputs_system_load_components
+(
+    load_components_scenario_id INTEGER,
+    load_zone                   VARCHAR(32),
+    load_component              TEXT,
+    PRIMARY KEY (load_components_scenario_id, load_zone, load_component)
+);
+
+-- Can include timepoints and zones other than the ones in a scenario, as
+-- correct timepoints and zones will be pulled depending on
+-- temporal_scenario_id and load_zone_scenario_id
+DROP TABLE IF EXISTS subscenarios_system_load_levels;
+CREATE TABLE subscenarios_system_load_levels
+(
+    load_levels_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name                    VARCHAR(32),
+    description             VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_system_load_levels;
+CREATE TABLE inputs_system_load_levels
+(
+    load_levels_scenario_id INTEGER,
+    load_zone               VARCHAR(32),
+    weather_iteration       INTEGER,
+    stage_id                INTEGER,
+    timepoint               INTEGER,
+    load_component          TEXT,
+    load_mw                 FLOAT,
+    PRIMARY KEY (load_levels_scenario_id, load_zone, weather_iteration,
+                 stage_id,
+                 timepoint, load_component)
 );
 
 

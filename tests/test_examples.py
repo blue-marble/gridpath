@@ -1404,6 +1404,15 @@ class TestExamples(unittest.TestCase):
             scenario_name=scenario_name, skip_validation=True
         )
 
+    def test_example_2periods_new_build_2zones_loadcomponents(self):
+        """
+        Check validation and objective function value of
+        "2periods_new_build_2zones_loadcomponents" example
+        :return:
+        """
+        scenario_name = "2periods_new_build_2zones_loadcomponents"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
     def test_example_2periods_nuclear_var_cost_by_timepoint_same(self):
         """
         Check validation and objective function value of

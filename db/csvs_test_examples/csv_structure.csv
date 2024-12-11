@@ -9,6 +9,8 @@ temporal,core,temporal_scenario_id,temporal_horizons,dir_aux,,0,,horizon_params.
 temporal,core,temporal_scenario_id,temporal,dir_aux,,0,,structure.csv,ignore,,
 temporal,core,temporal_scenario_id,temporal_horizon_timepoints_start_end,dir_aux,temporal,0,,horizon_timepoints.csv,,,
 project/project_portfolios,core,project_portfolio_scenario_id,project_portfolios,simple,,0,,,,,
+system_load/system_load/load_components,core,load_components_scenario_id,system_load_components,simple,,0,,,,,
+system_load/system_load/load_levels,core,load_levels_scenario_id,system_load_levels,simple,,0,,,,,
 system_load/system_load,core,load_scenario_id,system_load,simple,,0,,,,,
 system_load/load_zones,core,load_zone_scenario_id,geography_load_zones,simple,,0,,,,,
 project/project_load_zones,core,project_load_zone_scenario_id,project_load_zones,simple,,0,,,,,
