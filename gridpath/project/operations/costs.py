@@ -600,6 +600,27 @@ def add_model_components(
         m.SOC_LAST_TMP_PENALTY_COST_PRJ_OPR_TMPS, rule=soc_last_tmp_penalty_cost_rule
     )
 
+    def peak_deviation_monthly_demand_charge_cost_rule(mod, prj, prd, mnth):
+        """
+        Demand charge for deviating from average power in each month
+        """
+        op_type = mod.operational_type[prj]
+        if hasattr(
+            imported_operational_modules[op_type],
+            "peak_deviation_monthly_demand_charge_cost_rule",
+        ):
+            return imported_operational_modules[
+                op_type
+            ].peak_deviation_monthly_demand_charge_cost_rule(mod, prj, prd, mnth)
+        else:
+            return op_type_init.peak_deviation_monthly_demand_charge_cost_rule(
+                mod, prj, prd, mnth
+            )
+
+    m.Peak_Deviation_Demand_Charge_Cost = Expression(
+        m.PRJ_OPR_PRDS, m.MONTHS, rule=peak_deviation_monthly_demand_charge_cost_rule
+    )
+
 
 # Input-Output
 ###############################################################################
@@ -684,6 +705,10 @@ def export_results(
     for c in results_columns:
         getattr(d, PROJECT_TIMEPOINT_DF)[c] = None
     getattr(d, PROJECT_TIMEPOINT_DF).update(results_df)
+
+    # for prj, prd in m.PRJ_OPR_PRDS:
+    #     for mnth in m.MONTHS:
+    #         print(value(m.Peak_Deviation_Demand_Charge_Cost[prj, prd, mnth]))
 
 
 # Database

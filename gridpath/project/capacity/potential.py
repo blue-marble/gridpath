@@ -191,16 +191,18 @@ def add_model_components(
         else:
             return cap_type_init.new_capacity_rule(mod, prj, prd)
 
-    def new_energy_capacity_rule(mod, prj, prd):
+    def new_energy_stor_capacity_rule(mod, prj, prd):
         cap_type = mod.capacity_type[prj]
         # The capacity type modules check if this period is a "vintage" for
         # this project and return 0 if not
-        if hasattr(imported_capacity_modules[cap_type], "new_energy_capacity_rule"):
-            return imported_capacity_modules[cap_type].new_energy_capacity_rule(
+        if hasattr(
+            imported_capacity_modules[cap_type], "new_energy_stor_capacity_rule"
+        ):
+            return imported_capacity_modules[cap_type].new_energy_stor_capacity_rule(
                 mod, prj, prd
             )
         else:
-            return cap_type_init.new_energy_capacity_rule(mod, prj, prd)
+            return cap_type_init.new_energy_stor_capacity_rule(mod, prj, prd)
 
     # Optional Params
     ###########################################################################
@@ -327,7 +329,7 @@ def add_model_components(
             return Constraint.Skip
         else:
             return (
-                new_energy_capacity_rule(mod, prj, prd)
+                new_energy_stor_capacity_rule(mod, prj, prd)
                 >= mod.min_new_build_energy[prj, prd]
             )
 
@@ -346,7 +348,7 @@ def add_model_components(
             return Constraint.Skip
         else:
             return (
-                new_energy_capacity_rule(mod, prj, prd)
+                new_energy_stor_capacity_rule(mod, prj, prd)
                 <= mod.max_new_build_energy[prj, prd]
             )
 
@@ -365,7 +367,8 @@ def add_model_components(
             return Constraint.Skip
         else:
             return (
-                mod.Energy_Capacity_MWh[prj, prd] >= mod.min_capacity_energy[prj, prd]
+                mod.Energy_Storage_Capacity_MWh[prj, prd]
+                >= mod.min_capacity_energy[prj, prd]
             )
 
     m.Min_Energy_Constraint = Constraint(m.PRJ_OPR_PRDS, rule=min_energy_rule)
@@ -381,7 +384,8 @@ def add_model_components(
             return Constraint.Skip
         else:
             return (
-                mod.Energy_Capacity_MWh[prj, prd] <= mod.max_capacity_energy[prj, prd]
+                mod.Energy_Storage_Capacity_MWh[prj, prd]
+                <= mod.max_capacity_energy[prj, prd]
             )
 
     m.Max_Energy_Constraint = Constraint(m.PRJ_OPR_PRDS, rule=max_energy_rule)

@@ -28,8 +28,8 @@ TEST_DATA_DIRECTORY = os.path.join(
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
     "temporal.operations.timepoints",
-    "temporal.operations.horizons",
     "temporal.investment.periods",
+    "temporal.operations.horizons",
     "geography.load_zones",
     "project",
 ]
@@ -184,7 +184,7 @@ class TestStorNewBin(unittest.TestCase):
         )
         self.assertDictEqual(expected_mw_yr_fcost, actual_mw_yr_fcost)
 
-        # Params: stor_new_bin_fixed_cost_per_mwh_yr
+        # Params: stor_new_bin_fixed_cost_per_stor_mwh_yr
         expected_mwh_yr_fcost = OrderedDict(
             sorted({("Battery_Binary", 2020): 0, ("Battery_Binary", 2030): 0}.items())
         )
@@ -194,7 +194,7 @@ class TestStorNewBin(unittest.TestCase):
                     (
                         prj,
                         vintage,
-                    ): instance.stor_new_bin_fixed_cost_per_mwh_yr[prj, vintage]
+                    ): instance.stor_new_bin_fixed_cost_per_stor_mwh_yr[prj, vintage]
                     for (prj, vintage) in instance.STOR_NEW_BIN_VNTS
                 }.items()
             )
@@ -249,7 +249,7 @@ class TestStorNewBin(unittest.TestCase):
                     (
                         prj,
                         vintage,
-                    ): instance.stor_new_bin_annualized_real_cost_per_mwh_yr[
+                    ): instance.stor_new_bin_annualized_real_cost_per_stor_mwh_yr[
                         prj, vintage
                     ]
                     for (prj, vintage) in instance.STOR_NEW_BIN_VNTS

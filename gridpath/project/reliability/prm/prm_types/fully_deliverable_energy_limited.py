@@ -109,7 +109,7 @@ def add_model_components(
         """
         return (
             mod.FDDL_Project_Capacity_Credit_Eligible_Capacity_MW[g, p]
-            <= mod.Energy_Capacity_MWh[g, p]
+            <= mod.Energy_Storage_Capacity_MWh[g, p]
             / mod.min_duration_for_full_capacity_credit[g]
         )
 

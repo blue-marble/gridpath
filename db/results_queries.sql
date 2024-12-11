@@ -7,7 +7,7 @@ JOIN scenarios USING (scenario_id)
 
 -- Cumulative storage newly build capacity by scenario, project, and period
 SELECT scenario_id, scenario_name, project, period, technology, load_zone,
-energy_target_zone, instantaneous_penetration_zone, carbon_cap_zone, new_build_mw, new_build_mwh
+energy_target_zone, instantaneous_penetration_zone, carbon_cap_zone, new_build_mw, new_build_stor_mwh
 FROM results_project_period
 JOIN scenarios USING (scenario_id)
 ;

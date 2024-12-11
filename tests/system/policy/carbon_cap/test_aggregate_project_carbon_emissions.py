@@ -28,8 +28,8 @@ TEST_DATA_DIRECTORY = os.path.join(
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
     "temporal.operations.timepoints",
-    "temporal.operations.horizons",
     "temporal.investment.periods",
+    "temporal.operations.horizons",
     "geography.load_zones",
     "geography.carbon_cap_zones",
     "system.policy.carbon_cap.carbon_cap",
@@ -45,6 +45,7 @@ PREREQUISITE_MODULE_NAMES = [
     "project.availability.availability",
     "project.fuels",
     "project.operations",
+    "system.load_balance.static_load_requirement",
     "project.operations.operational_types",
     "project.operations.power",
     "project.operations.fuel_burn",

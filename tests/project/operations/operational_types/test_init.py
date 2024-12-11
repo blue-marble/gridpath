@@ -27,9 +27,10 @@ TEST_DATA_DIRECTORY = os.path.join(
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
     "temporal.operations.timepoints",
-    "temporal.operations.horizons",
     "temporal.investment.periods",
+    "temporal.operations.horizons",
     "geography.load_zones",
+    "system.load_balance.static_load_requirement",
     "geography.water_network",
     "system.water.water_system_params",
     "system.water.water_flows",
