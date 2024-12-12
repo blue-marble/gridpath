@@ -1,4 +1,4 @@
-project	period	min_new_build_power	max_new_build_power	min_capacity_power	max_capacity_power	min_new_build_energy	max_new_build_energy	min_capacity_energy	max_capacity_energy
+project	period	min_new_build_power	max_new_build_power	min_capacity_power	max_capacity_power	min_new_build_stor_energy	max_new_build_stor_energy	min_capacity_stor_energy	max_capacity_stor_energy
 Gas_CCGT_New	2020	5	.	.	20	.	.	.	.
 Gas_CCGT_New	2030	10	.	.	20	.	.	.	.
 Gas_CT_New	2030	.	20	10	.	.	.	.	.
