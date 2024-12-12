@@ -171,7 +171,15 @@ def new_capacity_rule(mod, prj, prd):
     return 0
 
 
-def new_energy_capacity_rule(mod, prj, prd):
+def new_energy_rule(mod, prj, prd):
+    """
+    New energy procured at project g in period p. This is NOT the storage
+    energy capacity built.
+    """
+    return 0
+
+
+def new_energy_stor_capacity_rule(mod, prj, prd):
     """
     New energy capacity built at project g in period p.
     """
