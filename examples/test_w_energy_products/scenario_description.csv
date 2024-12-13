@@ -1,5 +1,5 @@
-scenario_id,133
-scenario_name,test_w_wind_as_energy_profile_hydro_as_energy_shaping
+scenario_id,135
+scenario_name,test_w_energy_products
 of_transmission,
 of_transmission_hurdle_rates,
 of_simultaneous_flow_limits,
@@ -53,8 +53,8 @@ local_capacity_zone_scenario_id,NULL
 market_scenario_id,NULL
 water_system_params_scenario_id,NULL
 water_network_scenario_id,NULL
-project_portfolio_scenario_id,29
-project_operational_chars_scenario_id,36
+project_portfolio_scenario_id,30
+project_operational_chars_scenario_id,37
 project_availability_scenario_id,1
 fuel_scenario_id,1
 project_load_zone_scenario_id,1
@@ -91,7 +91,7 @@ project_specified_capacity_scenario_id,6
 project_specified_fixed_cost_scenario_id,3
 fuel_price_scenario_id,1
 project_new_cost_scenario_id,1
-project_new_potential_scenario_id,NULL
+project_new_potential_scenario_id,1
 project_new_binary_build_size_scenario_id,NULL
 project_capacity_group_requirement_scenario_id,NULL
 project_relative_capacity_requirement_scenario_id,NULL

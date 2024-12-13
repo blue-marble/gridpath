@@ -1516,13 +1516,22 @@ class TestExamples(unittest.TestCase):
         scenario_name = "test_w_hydro_as_slice_candidate"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
-    def test_example_test_w_wind_as_energy_profile_hydro_as_energy_shaping(self):
+    def test_example_test_w_energy_products(self):
         """
         Check validation and objective function value of
         "test_w_lf_only_and_prices" example
         :return:
         """
-        scenario_name = "test_w_wind_as_energy_profile_hydro_as_energy_shaping"
+        scenario_name = "test_w_energy_products"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_w_energy_products_group_limits(self):
+        """
+        Check validation and objective function value of
+        "test_w_lf_only_and_prices" example
+        :return:
+        """
+        scenario_name = "test_w_energy_products_group_limits"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     @classmethod
