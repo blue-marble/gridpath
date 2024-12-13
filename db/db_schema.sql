@@ -1538,6 +1538,10 @@ CREATE TABLE inputs_project_capacity_group_requirements
     capacity_group_new_capacity_max                FLOAT,
     capacity_group_total_capacity_min              FLOAT,
     capacity_group_total_capacity_max              FLOAT,
+    energy_group_new_energy_min                    FLOAT, -- applies to energy projects only
+    energy_group_new_energy_max                    FLOAT, -- applies to energy projects only
+    energy_group_total_energy_min                  FLOAT, -- applies to energy projects only
+    energy_group_total_energy_max                  FLOAT, -- applies to energy projects only
     PRIMARY KEY (project_capacity_group_requirement_scenario_id,
                  capacity_group, period),
     FOREIGN KEY (project_capacity_group_requirement_scenario_id) REFERENCES
@@ -5336,6 +5340,20 @@ CREATE TABLE results_project_group_capacity
     capacity_group_new_min_marginal_cost   FLOAT,
     capacity_group_total_max_marginal_cost FLOAT,
     capacity_group_total_min_marginal_cost FLOAT,
+    group_new_energy                     FLOAT,
+    group_total_energy                   FLOAT,
+    energy_group_new_energy_min        FLOAT,
+    energy_group_new_energy_max        FLOAT,
+    energy_group_total_energy_min      FLOAT,
+    energy_group_total_energy_max      FLOAT,
+    energy_group_new_max_dual            FLOAT,
+    energy_group_new_min_dual            FLOAT,
+    energy_group_total_max_dual          FLOAT,
+    energy_group_total_min_dual          FLOAT,
+    energy_group_new_max_marginal_cost   FLOAT,
+    energy_group_new_min_marginal_cost   FLOAT,
+    energy_group_total_max_marginal_cost FLOAT,
+    energy_group_total_min_marginal_cost FLOAT,
     PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
                  availability_iteration, subproblem_id, stage_id,
                  capacity_group, period)

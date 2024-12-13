@@ -1,0 +1,18 @@
+##### SUMMARY RESULTS FOR SCENARIO *test_w_energy_products* #####
+
+### CAPACITY RESULTS ###
+
+--> New Energy Procurement <--
+                             New Energy (MW)
+load_zone technology period                 
+Zone1     Hydro      2020          26,280.00
+          LF         2020          92,856.00
+
+### OPERATIONAL RESULTS ###
+
+--> Energy Production <--
+                             Annual Energy (MWh)  % Total Power
+load_zone period technology                                    
+Zone1     2020   Hydro                 26,280.00          20.00
+                 LF                    92,856.00          70.67
+                 Wind                  12,264.00           9.33

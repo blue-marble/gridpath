@@ -181,7 +181,7 @@ def new_energy_rule(mod, prj, prd):
 
 def new_energy_stor_capacity_rule(mod, prj, prd):
     """
-    New energy capacity built at project g in period p.
+    Storage energy capacity; not used anywhere but here for clarity
     """
     return 0
 

@@ -118,22 +118,22 @@ def add_model_components(
     +-------------------------------------------------------------------------+
     | Constraints                                                             |
     +=========================================================================+
-    | | :code:`Max_Group_Build_in_Period_Constraint`                          |
+    | | :code:`Max_Group_Capacity_Build_in_Period_Constraint`                          |
     | | *Defined over*: :code:`CAPACITY_GROUP_PERIODS`                        |
     |                                                                         |
     | Limits the amount of new build in each group in each period.            |
     +-------------------------------------------------------------------------+
-    | | :code:`Min_Group_Build_in_Period_Constraint`                          |
+    | | :code:`Min_Group_Capacity_Build_in_Period_Constraint`                          |
     | | *Defined over*: :code:`CAPACITY_GROUP_PERIODS`                        |
     |                                                                         |
     | Requires a certain amount of new build in each group in each period.    |
     +-------------------------------------------------------------------------+
-    | | :code:`Max_Group_Total_Cap_in_Period_Constraint`                      |
+    | | :code:`Max_Group_Total_Capacity_in_Period_Constraint`                      |
     | | *Defined over*: :code:`CAPACITY_GROUP_PERIODS`                        |
     |                                                                         |
     | Limits the total amount of capacity in each group in each period        |
     +-------------------------------------------------------------------------+
-    | | :code:`Min_Group_Build_in_Period_Constraint`                          |
+    | | :code:`Min_Group_Capacity_Build_in_Period_Constraint`                          |
     | | *Defined over*: :code:`CAPACITY_GROUP_PERIODS`                        |
     |                                                                         |
     | Requires a certain amount of capacity in each group in each period.     |
@@ -166,6 +166,19 @@ def add_model_components(
         m.CAPACITY_GROUP_PERIODS, within=NonNegativeReals, default=float("inf")
     )
 
+    m.energy_group_new_energy_min = Param(
+        m.CAPACITY_GROUP_PERIODS, within=NonNegativeReals, default=0
+    )
+    m.energy_group_new_energy_max = Param(
+        m.CAPACITY_GROUP_PERIODS, within=NonNegativeReals, default=float("inf")
+    )
+    m.energy_group_total_energy_min = Param(
+        m.CAPACITY_GROUP_PERIODS, within=NonNegativeReals, default=0
+    )
+    m.energy_group_total_energy_max = Param(
+        m.CAPACITY_GROUP_PERIODS, within=NonNegativeReals, default=float("inf")
+    )
+
     # Import needed capacity type modules
     required_capacity_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
@@ -181,7 +194,7 @@ def add_model_components(
         required_capacity_modules
     )
 
-    # Get the new and total capacity in the group for the respective
+    # Get the new and total capacity/energy in the group for the respective
     # expressions
     def new_capacity_rule(mod, prj, prd):
         cap_type = mod.capacity_type[prj]
@@ -191,6 +204,15 @@ def add_model_components(
             return imported_capacity_modules[cap_type].new_capacity_rule(mod, prj, prd)
         else:
             return cap_type_init.new_capacity_rule(mod, prj, prd)
+
+    def new_energy_rule(mod, prj, prd):
+        cap_type = mod.capacity_type[prj]
+        # The capacity type modules check if this period is a "vintage" for
+        # this project and return 0 if not
+        if hasattr(imported_capacity_modules[cap_type], "new_energy_rule"):
+            return imported_capacity_modules[cap_type].new_energy_rule(mod, prj, prd)
+        else:
+            return cap_type_init.new_energy_rule(mod, prj, prd)
 
     def total_capacity_rule(mod, prj, prd):
         cap_type = mod.capacity_type[prj]
@@ -204,6 +226,18 @@ def add_model_components(
             else:
                 return cap_type_init.capacity_rule(mod, prj, prd)
 
+    def total_energy_rule(mod, prj, prd):
+        cap_type = mod.capacity_type[prj]
+        # Return the capacity type's energy rule if the project is
+        # operational in this timepoint; otherwise, return 0
+        if prd not in mod.OPR_PRDS_BY_PRJ[prj]:
+            return 0
+        else:
+            if hasattr(imported_capacity_modules[cap_type], "energy_rule"):
+                return imported_capacity_modules[cap_type].energy_rule(mod, prj, prd)
+            else:
+                return cap_type_init.energy_rule(mod, prj, prd)
+
     # Expressions
     def group_new_capacity_rule(mod, grp, prd):
         return sum(
@@ -213,6 +247,16 @@ def add_model_components(
 
     m.Group_New_Capacity_in_Period = Expression(
         m.CAPACITY_GROUP_PERIODS, rule=group_new_capacity_rule
+    )
+
+    def group_new_energy_rule(mod, grp, prd):
+        return sum(
+            new_energy_rule(mod, prj, prd)
+            for prj in mod.PROJECTS_IN_CAPACITY_GROUP[grp]
+        )
+
+    m.Group_New_Energy_in_Period = Expression(
+        m.CAPACITY_GROUP_PERIODS, rule=group_new_energy_rule
     )
 
     def group_total_capacity_rule(mod, grp, prd):
@@ -225,23 +269,53 @@ def add_model_components(
         m.CAPACITY_GROUP_PERIODS, rule=group_total_capacity_rule
     )
 
+    def group_total_energy_rule(mod, grp, prd):
+        return sum(
+            total_energy_rule(mod, prj, prd)
+            for prj in mod.PROJECTS_IN_CAPACITY_GROUP[grp]
+        )
+
+    m.Group_Total_Energy_in_Period = Expression(
+        m.CAPACITY_GROUP_PERIODS, rule=group_total_energy_rule
+    )
+
     # Constraints
+    # Capacity build
     # Limit the min and max amount of new build in a group-period
-    m.Max_Group_Build_in_Period_Constraint = Constraint(
+    m.Max_Group_Capacity_Build_in_Period_Constraint = Constraint(
         m.CAPACITY_GROUP_PERIODS, rule=new_capacity_max_rule
     )
 
-    m.Min_Group_Build_in_Period_Constraint = Constraint(
+    m.Min_Group_Capacity_Build_in_Period_Constraint = Constraint(
         m.CAPACITY_GROUP_PERIODS, rule=new_capacity_min_rule
     )
 
     # Limit the min and max amount of total capacity in a group-period
-    m.Max_Group_Total_Cap_in_Period_Constraint = Constraint(
+    m.Max_Group_Total_Capacity_in_Period_Constraint = Constraint(
         m.CAPACITY_GROUP_PERIODS, rule=total_capacity_max_rule
     )
 
-    m.Min_Group_Total_Cap_in_Period_Constraint = Constraint(
+    m.Min_Group_Total_Capacity_in_Period_Constraint = Constraint(
         m.CAPACITY_GROUP_PERIODS, rule=total_capacity_min_rule
+    )
+
+    # Energy procured
+    # Limit the min and max amount of new build in a group-period
+    m.Max_Group_Energy_Build_in_Period_Constraint = Constraint(
+        m.CAPACITY_GROUP_PERIODS, rule=new_energy_max_rule
+    )
+
+    m.Min_Group_Energy__Build_in_Period_Constraint = Constraint(
+        m.CAPACITY_GROUP_PERIODS, rule=new_energy_min_rule
+    )
+
+    # Limit the min and max amount of total energy in a group-period
+    m.Max_Group_Total_Energy_in_Period_Constraint = Constraint(
+        m.CAPACITY_GROUP_PERIODS, rule=total_energy_max_rule
+    )
+
+    m.Min_Group_Total_Energy_in_Period_Constraint = Constraint(
+        m.CAPACITY_GROUP_PERIODS, rule=total_energy_min_rule
     )
 
 
@@ -287,6 +361,50 @@ def total_capacity_min_rule(mod, grp, prd):
         )
 
 
+# Energy procurement (for energy products only; does not limit output from
+# other capacity types)
+
+
+def new_energy_max_rule(mod, grp, prd):
+    if mod.capacity_group_new_capacity_max[grp, prd] == float("inf"):
+        return Constraint.Feasible
+    else:
+        return (
+            mod.Group_New_Energy_in_Period[grp, prd]
+            <= mod.energy_group_new_energy_max[grp, prd]
+        )
+
+
+def new_energy_min_rule(mod, grp, prd):
+    if mod.energy_group_new_energy_min[grp, prd] == 0:
+        return Constraint.Feasible
+    else:
+        return (
+            mod.Group_New_Energy_in_Period[grp, prd]
+            >= mod.energy_group_new_energy_min[grp, prd]
+        )
+
+
+def total_energy_max_rule(mod, grp, prd):
+    if mod.energy_group_total_energy_max[grp, prd] == float("inf"):
+        return Constraint.Feasible
+    else:
+        return (
+            mod.Group_Total_Energy_in_Period[grp, prd]
+            <= mod.energy_group_total_energy_max[grp, prd]
+        )
+
+
+def total_energy_min_rule(mod, grp, prd):
+    if mod.energy_group_total_energy_min[grp, prd] == 0:
+        return Constraint.Feasible
+    else:
+        return (
+            mod.Group_Total_Energy_in_Period[grp, prd]
+            >= mod.energy_group_total_energy_min[grp, prd]
+        )
+
+
 # Input-Output
 ###############################################################################
 
@@ -325,6 +443,10 @@ def load_model_data(
                 m.capacity_group_new_capacity_max,
                 m.capacity_group_total_capacity_min,
                 m.capacity_group_total_capacity_max,
+                m.energy_group_new_energy_min,
+                m.energy_group_new_energy_max,
+                m.energy_group_total_energy_min,
+                m.energy_group_total_energy_max,
             ),
         )
 
@@ -413,6 +535,20 @@ def export_results(
                     "capacity_group_new_min_marginal_cost",
                     "capacity_group_total_max_marginal_cost",
                     "capacity_group_total_min_marginal_cost",
+                    "group_new_energy",
+                    "group_total_energy",
+                    "energy_group_new_energy_min",
+                    "energy_group_new_energy_max",
+                    "energy_group_total_energy_min",
+                    "energy_group_total_energy_max",
+                    "energy_group_new_max_dual",
+                    "energy_group_new_min_dual",
+                    "energy_group_total_max_dual",
+                    "energy_group_total_min_dual",
+                    "energy_group_new_max_marginal_cost",
+                    "energy_group_new_min_marginal_cost",
+                    "energy_group_total_max_marginal_cost",
+                    "energy_group_total_min_marginal_cost",
                 ]
             )
 
@@ -430,15 +566,15 @@ def export_results(
                         (
                             duals_wrapper(
                                 m,
-                                getattr(m, "Max_Group_Build_in_Period_Constraint")[
-                                    grp, prd
-                                ],
+                                getattr(
+                                    m, "Max_Group_Capacity_Build_in_Period_Constraint"
+                                )[grp, prd],
                             )
                             if (grp, prd)
                             in [
                                 idx
                                 for idx in getattr(
-                                    m, "Max_Group_Build_in_Period_Constraint"
+                                    m, "Max_Group_Capacity_Build_in_Period_Constraint"
                                 )
                             ]
                             else None
@@ -446,15 +582,15 @@ def export_results(
                         (
                             duals_wrapper(
                                 m,
-                                getattr(m, "Min_Group_Build_in_Period_Constraint")[
-                                    grp, prd
-                                ],
+                                getattr(
+                                    m, "Min_Group_Capacity_Build_in_Period_Constraint"
+                                )[grp, prd],
                             )
                             if (grp, prd)
                             in [
                                 idx
                                 for idx in getattr(
-                                    m, "Min_Group_Build_in_Period_Constraint"
+                                    m, "Min_Group_Capacity_Build_in_Period_Constraint"
                                 )
                             ]
                             else None
@@ -464,14 +600,15 @@ def export_results(
                                 m,
                                 (
                                     getattr(
-                                        m, "Max_Group_Total_Cap_in_Period_Constraint"
+                                        m,
+                                        "Max_Group_Total_Capacity_in_Period_Constraint",
                                     )[grp, prd]
                                     if (grp, prd)
                                     in [
                                         idx
                                         for idx in getattr(
                                             m,
-                                            "Max_Group_Total_Cap_in_Period_Constraint",
+                                            "Max_Group_Total_Capacity_in_Period_Constraint",
                                         )
                                     ]
                                     else None
@@ -479,7 +616,8 @@ def export_results(
                                 duals_wrapper(
                                     m,
                                     getattr(
-                                        m, "Min_Group_Total_Cap_in_Period_Constraint"
+                                        m,
+                                        "Min_Group_Total_Capacity_in_Period_Constraint",
                                     )[grp, prd],
                                 ),
                             )
@@ -487,45 +625,7 @@ def export_results(
                             in [
                                 idx
                                 for idx in getattr(
-                                    m, "Min_Group_Total_Cap_in_Period_Constraint"
-                                )
-                            ]
-                            else None
-                        ),
-                        (
-                            none_dual_type_error_wrapper(
-                                duals_wrapper(
-                                    m,
-                                    getattr(m, "Max_Group_Build_in_Period_Constraint")[
-                                        grp, prd
-                                    ],
-                                ),
-                                m.period_objective_coefficient[prd],
-                            )
-                            if (grp, prd)
-                            in [
-                                idx
-                                for idx in getattr(
-                                    m, "Max_Group_Build_in_Period_Constraint"
-                                )
-                            ]
-                            else None
-                        ),
-                        (
-                            none_dual_type_error_wrapper(
-                                duals_wrapper(
-                                    m,
-                                    getattr(m, "Min_Group_Build_in_Period_Constraint")[
-                                        grp, prd
-                                    ],
-                                ),
-                                m.period_objective_coefficient[prd],
-                            )
-                            if (grp, prd)
-                            in [
-                                idx
-                                for idx in getattr(
-                                    m, "Min_Group_Build_in_Period_Constraint"
+                                    m, "Min_Group_Total_Capacity_in_Period_Constraint"
                                 )
                             ]
                             else None
@@ -535,7 +635,8 @@ def export_results(
                                 duals_wrapper(
                                     m,
                                     getattr(
-                                        m, "Max_Group_Total_Cap_in_Period_Constraint"
+                                        m,
+                                        "Max_Group_Capacity_Build_in_Period_Constraint",
                                     )[grp, prd],
                                 ),
                                 m.period_objective_coefficient[prd],
@@ -544,7 +645,7 @@ def export_results(
                             in [
                                 idx
                                 for idx in getattr(
-                                    m, "Max_Group_Total_Cap_in_Period_Constraint"
+                                    m, "Max_Group_Capacity_Build_in_Period_Constraint"
                                 )
                             ]
                             else None
@@ -554,7 +655,8 @@ def export_results(
                                 duals_wrapper(
                                     m,
                                     getattr(
-                                        m, "Min_Group_Total_Cap_in_Period_Constraint"
+                                        m,
+                                        "Min_Group_Capacity_Build_in_Period_Constraint",
                                     )[grp, prd],
                                 ),
                                 m.period_objective_coefficient[prd],
@@ -563,7 +665,47 @@ def export_results(
                             in [
                                 idx
                                 for idx in getattr(
-                                    m, "Min_Group_Total_Cap_in_Period_Constraint"
+                                    m, "Min_Group_Capacity_Build_in_Period_Constraint"
+                                )
+                            ]
+                            else None
+                        ),
+                        (
+                            none_dual_type_error_wrapper(
+                                duals_wrapper(
+                                    m,
+                                    getattr(
+                                        m,
+                                        "Max_Group_Total_Capacity_in_Period_Constraint",
+                                    )[grp, prd],
+                                ),
+                                m.period_objective_coefficient[prd],
+                            )
+                            if (grp, prd)
+                            in [
+                                idx
+                                for idx in getattr(
+                                    m, "Max_Group_Total_Capacity_in_Period_Constraint"
+                                )
+                            ]
+                            else None
+                        ),
+                        (
+                            none_dual_type_error_wrapper(
+                                duals_wrapper(
+                                    m,
+                                    getattr(
+                                        m,
+                                        "Min_Group_Total_Capacity_in_Period_Constraint",
+                                    )[grp, prd],
+                                ),
+                                m.period_objective_coefficient[prd],
+                            )
+                            if (grp, prd)
+                            in [
+                                idx
+                                for idx in getattr(
+                                    m, "Min_Group_Total_Capacity_in_Period_Constraint"
                                 )
                             ]
                             else None
@@ -599,7 +741,9 @@ def get_inputs_from_database(
         """
         SELECT capacity_group, period,
         capacity_group_new_capacity_min, capacity_group_new_capacity_max,
-        capacity_group_total_capacity_min, capacity_group_total_capacity_max
+        capacity_group_total_capacity_min, capacity_group_total_capacity_max,
+        energy_group_new_energy_min, energy_group_new_energy_max,
+        energy_group_total_energy_min, energy_group_total_energy_max
         FROM inputs_project_capacity_group_requirements
         WHERE project_capacity_group_requirement_scenario_id = {}
         """.format(
@@ -688,6 +832,10 @@ def write_model_inputs(
                     "capacity_group_new_capacity_max",
                     "capacity_group_total_capacity_min",
                     "capacity_group_total_capacity_max",
+                    "energy_group_new_energy_min",
+                    "energy_group_new_energy_max",
+                    "energy_group_total_energy_min",
+                    "energy_group_total_energy_max",
                 ]
             )
 
@@ -729,25 +877,25 @@ def save_duals(
     instance,
     dynamic_components,
 ):
-    instance.constraint_indices["Max_Group_Build_in_Period_Constraint"] = [
+    instance.constraint_indices["Max_Group_Capacity_Build_in_Period_Constraint"] = [
         "capacity_group",
         "period",
         "dual",
     ]
 
-    instance.constraint_indices["Min_Group_Build_in_Period_Constraint"] = [
+    instance.constraint_indices["Min_Group_Capacity_Build_in_Period_Constraint"] = [
         "capacity_group",
         "period",
         "dual",
     ]
 
-    instance.constraint_indices["Max_Group_Total_Cap_in_Period_Constraint"] = [
+    instance.constraint_indices["Max_Group_Total_Capacity_in_Period_Constraint"] = [
         "capacity_group",
         "period",
         "dual",
     ]
 
-    instance.constraint_indices["Min_Group_Total_Cap_in_Period_Constraint"] = [
+    instance.constraint_indices["Min_Group_Total_Capacity_in_Period_Constraint"] = [
         "capacity_group",
         "period",
         "dual",
