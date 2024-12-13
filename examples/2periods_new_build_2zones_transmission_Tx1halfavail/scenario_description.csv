@@ -28,6 +28,7 @@ of_local_capacity,
 of_markets,
 of_water,
 of_tuning,
+of_policy,
 temporal_scenario_id,6
 load_zone_scenario_id,2
 lf_reserves_up_ba_scenario_id,3
@@ -48,6 +49,7 @@ performance_standard_zones_carbon_credits_zones_scenario_id,NULL
 carbon_tax_zones_carbon_credits_zones_scenario_id,NULL
 carbon_credits_params_scenario_id,NULL
 fuel_burn_limit_ba_scenario_id,NULL
+policy_zone_scenario_id,NULL
 prm_zone_scenario_id,NULL
 local_capacity_zone_scenario_id,NULL
 market_scenario_id,NULL
