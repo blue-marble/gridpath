@@ -60,6 +60,7 @@ def all_modules_list():
         "geography.performance_standard_zones",
         "geography.carbon_credits_zones",
         "geography.fuel_burn_limit_balancing_areas",
+        "geography.generic_policy",
         "geography.prm_zones",
         "geography.local_capacity_zones",
         "geography.markets",
@@ -432,6 +433,7 @@ def optional_modules_list():
             "system.policy.subsidies",
             "objective.system.policy.aggregate_subsidies",
         ],
+        "policy": ["geography.generic_policy"],
         "prm": [
             "geography.prm_zones",
             "system.reliability.prm",

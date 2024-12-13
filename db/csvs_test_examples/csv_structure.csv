@@ -181,3 +181,4 @@ water/reservoirs/volume_to_elevation_curves,water,volume_to_elevation_curve_id,s
 water/reservoirs,water,water_node_reservoir_scenario_id,system_water_node_reservoirs,simple,,0,,,,,
 water/flows,water,water_flow_scenario_id,system_water_flows,simple,,0,,,,,
 water/powerhouses,water,water_powerhouse_scenario_id,system_water_powerhouses,simple,,0,,,,,
+policy/generic/geography,generic_policy,policy_zone_scenario_id,geography_policy_zones,simple,,0,,,,,
