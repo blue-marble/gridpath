@@ -4,3 +4,5 @@ Gas_CCGT_New	2030	10	.	.	20	.	.	.	.	.	.	.	.
 Gas_CT_New	2030	.	20	10	.	.	.	.	.	.	.	.	.
 Battery	2020	.	.	.	6	.	.	.	7	.	.	.	.
 Battery	2030	.	.	7	.	.	.	10	.	.	.	.	.
+Energy_Slice_Hrz_Shaping	2020	.	.	.	.	.	.	.	.	.	.	.	1000
+Energy_Slice_Hrz_Shaping	2030	.	.	.	.	.	.	.	.	.	.	.	1000

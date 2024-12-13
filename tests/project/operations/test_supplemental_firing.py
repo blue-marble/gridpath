@@ -42,6 +42,7 @@ PREREQUISITE_MODULE_NAMES = [
     "project.fuels",
     "project.operations",
     "system.load_balance.static_load_requirement",
+    "project.capacity.potential",
     "project.operations.operational_types",
 ]
 NAME_OF_MODULE_BEING_TESTED = "project.operations.supplemental_firing"

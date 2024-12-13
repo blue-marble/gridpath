@@ -43,6 +43,7 @@ PREREQUISITE_MODULE_NAMES = [
     "project.availability.availability",
     "project.fuels",
     "project.operations",
+    "project.capacity.potential",
 ]
 NAME_OF_MODULE_BEING_TESTED = "project.operations.operational_types"
 IMPORTED_PREREQ_MODULES = list()

@@ -45,6 +45,7 @@ PREREQUISITE_MODULE_NAMES = [
     "project.availability.availability",
     "project.fuels",
     "project.operations",
+    "project.capacity.potential",
     "project.operations.operational_types",
     "project.operations.power",
     "project.operations.instantaneous_penetration_contributions",

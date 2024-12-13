@@ -141,6 +141,7 @@ class TestExogenousAvailabilityType(unittest.TestCase):
                 "Energy_Spec",
                 "Energy_Hrz_Shaping",
                 "Energy_LF",
+                "Energy_Slice_Hrz_Shaping",
             ]
         )
         actual_project_subset = sorted([prj for prj in instance.AVL_EXOG])
