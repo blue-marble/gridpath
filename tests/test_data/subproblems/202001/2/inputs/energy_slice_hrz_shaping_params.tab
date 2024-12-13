@@ -1,0 +1,5 @@
+project	balancing_type_project	horizon	hrz_energy	min_power	max_power
+Energy_Slice_Hrz_Shaping	day	202001	1000	1.000002	6
+Energy_Slice_Hrz_Shaping	day	202002	1000	1.000002	6
+Energy_Slice_Hrz_Shaping	day	203001	1000	1.000002	6
+Energy_Slice_Hrz_Shaping	day	203002	1000	1.000002	6

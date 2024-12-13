@@ -1503,10 +1503,14 @@ CREATE TABLE inputs_project_new_potential
     max_new_build_power               FLOAT,
     min_capacity_power                FLOAT,
     max_capacity_power                FLOAT,
-    min_new_build_energy              FLOAT,
-    max_new_build_energy              FLOAT,
-    min_capacity_energy               FLOAT,
-    max_capacity_energy               FLOAT,
+    min_new_build_stor_energy         FLOAT,
+    max_new_build_stor_energy         FLOAT,
+    min_capacity_stor_energy          FLOAT,
+    max_capacity_stor_energy          FLOAT,
+    min_new_procured_energy           FLOAT,
+    max_new_procured_energy           FLOAT,
+    min_total_procured_energy         FLOAT,
+    max_total_procured_energy         FLOAT,
     PRIMARY KEY (project_new_potential_scenario_id, project, period),
     FOREIGN KEY (project_new_potential_scenario_id) REFERENCES
         subscenarios_project_new_potential (project_new_potential_scenario_id)
@@ -1682,6 +1686,7 @@ CREATE TABLE inputs_project_operational_chars
     hydro_operational_chars_scenario_id       INTEGER, -- determines hydro MWa, min, max
     energy_profile_scenario_id                INTEGER,
     energy_hrz_shaping_scenario_id            INTEGER,
+    energy_slice_hrz_shaping_scenario_id      INTEGER,
     base_net_requirement_scenario_id          INTEGER,
     peak_deviation_demand_charge_scenario_id  INTEGER,
     lf_reserves_up_derate                     FLOAT,
@@ -1746,6 +1751,9 @@ CREATE TABLE inputs_project_operational_chars
     FOREIGN KEY (project, energy_hrz_shaping_scenario_id) REFERENCES
         subscenarios_project_energy_hrz_shaping
             (project, energy_hrz_shaping_scenario_id),
+    FOREIGN KEY (project, energy_slice_hrz_shaping_scenario_id) REFERENCES
+        subscenarios_project_energy_slice_hrz_shaping
+            (project, energy_slice_hrz_shaping_scenario_id),
     FOREIGN KEY (project, base_net_requirement_scenario_id) REFERENCES
         subscenarios_project_base_net_requirements
             (project, base_net_requirement_scenario_id),
@@ -2180,6 +2188,60 @@ CREATE TABLE inputs_project_energy_hrz_shaping_iterations
     varies_by_weather_iteration    INTEGER,
     varies_by_hydro_iteration      INTEGER,
     PRIMARY KEY (project, energy_hrz_shaping_scenario_id)
+);
+
+
+-- Energy slice horizon shaping params
+DROP TABLE IF EXISTS subscenarios_project_energy_slice_hrz_shaping;
+CREATE TABLE subscenarios_project_energy_slice_hrz_shaping
+(
+    project                        VARCHAR(64),
+    energy_slice_hrz_shaping_scenario_id INTEGER,
+    name                           VARCHAR(32),
+    description                    VARCHAR(128),
+    PRIMARY KEY (project, energy_slice_hrz_shaping_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_energy_slice_hrz_shaping;
+CREATE TABLE inputs_project_energy_slice_hrz_shaping
+(
+    project                        VARCHAR(64),
+    energy_slice_hrz_shaping_scenario_id INTEGER,
+    weather_iteration              INTEGER,
+    hydro_iteration                INTEGER,
+    stage_id                       INTEGER,
+    balancing_type_project         TEXT,
+    horizon                        INTEGER,
+    hrz_energy                     FLOAT,
+    min_power                      FLOAT,
+    max_power                      FLOAT,
+    PRIMARY KEY (project, energy_slice_hrz_shaping_scenario_id,
+                 weather_iteration, hydro_iteration, stage_id,
+                 balancing_type_project, horizon),
+    FOREIGN KEY (project, energy_slice_hrz_shaping_scenario_id) REFERENCES
+        subscenarios_project_energy_slice_hrz_shaping
+            (project, energy_slice_hrz_shaping_scenario_id)
+);
+
+DROP TABLE IF EXISTS
+    subscenarios_project_energy_slice_hrz_shaping_iterations;
+CREATE TABLE subscenarios_project_energy_slice_hrz_shaping_iterations
+(
+    project                        VARCHAR(64),
+    energy_slice_hrz_shaping_scenario_id INTEGER,
+    name                           VARCHAR(32),
+    description                    VARCHAR(128),
+    PRIMARY KEY (project, energy_slice_hrz_shaping_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_energy_slice_hrz_shaping_iterations;
+CREATE TABLE inputs_project_energy_slice_hrz_shaping_iterations
+(
+    project                        TEXT,
+    energy_slice_hrz_shaping_scenario_id INTEGER,
+    varies_by_weather_iteration    INTEGER,
+    varies_by_hydro_iteration      INTEGER,
+    PRIMARY KEY (project, energy_slice_hrz_shaping_scenario_id)
 );
 
 -- Demand charge (peak deviation from average by month)
@@ -5238,10 +5300,14 @@ CREATE TABLE results_project_period
     max_build_power_dual                   FLOAT,
     min_total_power_dual                   FLOAT,
     max_total_power_dual                   FLOAT,
-    min_build_energy_dual                  FLOAT,
-    max_build_energy_dual                  FLOAT,
-    min_total_energy_dual                  FLOAT,
-    max_total_energy_dual                  FLOAT,
+    min_build_stor_energy_dual             FLOAT,
+    max_build_stor_energy_dual             FLOAT,
+    min_total_stor_energy_dual             FLOAT,
+    max_total_stor_energy_dual             FLOAT,
+    min_build_energy_dual                   FLOAT,
+    max_build_energy_dual                   FLOAT,
+    min_total_energy_dual                   FLOAT,
+    max_total_energy_dual                   FLOAT,
     carbon_credits_zone                    VARCHAR(32),
     carbon_credits_generated_tCO2          FLOAT,
     carbon_credits_purchased_tCO2          FLOAT,
@@ -7209,6 +7275,7 @@ SELECT project_portfolio_scenario_id,
        variable_generator_profile_scenario_id,
        energy_profile_scenario_id,
        energy_hrz_shaping_scenario_id,
+       energy_slice_hrz_shaping_scenario_id,
        base_net_requirement_scenario_id,
        stor_exog_state_of_charge_scenario_id,
        flex_load_static_profile_scenario_id,

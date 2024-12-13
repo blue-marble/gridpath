@@ -1506,6 +1506,25 @@ class TestExamples(unittest.TestCase):
         scenario_name = "test_w_wind_as_energy_profile_hydro_as_energy_shaping"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
+    def test_example_test_w_lf_only_energy_potential_limit(self):
+        """
+        Check validation and objective function value of
+        "test_w_lf_only_energy_potential_limit" example
+        :return:
+        """
+        scenario_name = "test_w_lf_only_energy_potential_limit"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_w_hydro_as_slice_candidate(self):
+        """
+        Check validation and objective function value of
+        "test_w_hydro_as_slice_candidate"
+        example
+        :return:
+        """
+        scenario_name = "test_w_hydro_as_slice_candidate"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
     @classmethod
     def tearDownClass(cls):
         os.remove(DB_PATH)

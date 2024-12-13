@@ -44,6 +44,7 @@ must be specified appropriately).
 
 import csv
 import os.path
+import warnings
 
 from pyomo.environ import Set, Param, PositiveIntegers
 
@@ -235,9 +236,11 @@ def add_model_components(
         ):
             return mod.period[mod.first_hrz_tmp[bt, hrz]]
         else:
-            raise ValueError(
-                f"""Horizons cannot span periods. Check timepoints
-                             for balancing type {bt}, horizon {hrz}"""
+            warnings.warn(
+                f"""Horizon found that spans periods. Is this intended? Check 
+                timepoints for balancing type {bt}, horizon {hrz}. Some 
+                functionality sets the horizon period to the period of the 
+                first timepoint of the horizon."""
             )
 
     m.hrz_period = Param(m.BLN_TYPE_HRZS, within=m.PERIODS, initialize=hrz_period_init)
