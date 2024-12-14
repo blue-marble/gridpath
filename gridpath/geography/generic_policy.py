@@ -68,7 +68,7 @@ def load_model_data(
             subproblem,
             stage,
             "inputs",
-            "policies_zones.tab",
+            "policy_zones.tab",
         ),
         index=m.POLICIES_ZONES,
         param=(
@@ -102,7 +102,7 @@ def get_inputs_from_database(
         f"""SELECT policy_name, policy_zone, allow_violation, 
         violation_penalty_per_unit
         FROM inputs_geography_policy_zones
-        WHERE policy_zone_scenario_id = {subscenarios.POLICY_ZONES_SCENARIO_ID};
+        WHERE policy_zone_scenario_id = {subscenarios.POLICY_ZONE_SCENARIO_ID};
         """
     )
 
@@ -146,7 +146,7 @@ def write_model_inputs(
 ):
     """
     Get inputs from database and write out the model input
-    policy_zone_zones.tab file.
+    policy_zones.tab file.
     :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:

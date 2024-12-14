@@ -55,8 +55,8 @@ def add_model_components(
     )
 
     # Target specified as function of load
-    m.horizon_policy_as_f_load_coeff = Param(
-        m.ENERGY_TARGET_ZONE_BLN_TYPE_HRZS_WITH_ENERGY_TARGET,
+    m.policy_requirement_f_load_coeff = Param(
+        m.POLICIES_ZONE_BLN_TYPE_HRZS_WITH_REQ,
         within=NonNegativeReals,
         default=0,
     )
@@ -89,19 +89,16 @@ def add_model_components(
                 if tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, h]
             )
             fraction_target = (
-                mod.horizon_policy_as_f_load_coeff[policy_name, policy_zone, bt, h]
+                mod.policy_requirement_f_load_coeff[policy_name, policy_zone, bt, h]
                 * total_bt_horizon_load
             )
         else:
             fraction_target = 0
 
-        return (
-            mod.horizon_policy_requirement_mwh[policy_name, policy_zone, bt, h]
-            + fraction_target
-        )
+        return mod.policy_requirement[policy_name, policy_zone, bt, h] + fraction_target
 
     m.Policy_Zone_Horizon_Requirement = Expression(
-        m.ENERGY_TARGET_ZONE_BLN_TYPE_HRZS_WITH_ENERGY_TARGET,
+        m.POLICIES_ZONE_BLN_TYPE_HRZS_WITH_REQ,
         rule=policy_requirement_rule,
     )
 
@@ -139,7 +136,7 @@ def load_model_data(
             "policy_requirements.tab",
         ),
         index=m.POLICIES_ZONE_BLN_TYPE_HRZS_WITH_REQ,
-        param=(m.policy_requirement, m.horizon_policy_as_f_load_coeff),
+        param=(m.policy_requirement, m.policy_requirement_f_load_coeff),
     )
 
     # If we have a policy zone to load zone map input file, load it; otherwise,
@@ -177,7 +174,8 @@ def get_inputs_from_database(
 
     c = conn.cursor()
     policy_requirements = c.execute(
-        """SELECT policy_name, policy_zone, period, policy_requirement
+        """SELECT policy_name, policy_zone, balancing_type_horizon, horizon, 
+        policy_requirement, policy_requirement_f_load_coeff
         FROM inputs_system_policy_requirements
         JOIN
         (SELECT balancing_type_horizon, horizon
@@ -194,7 +192,7 @@ def get_inputs_from_database(
         AND stage_id = {};
         """.format(
             subscenarios.TEMPORAL_SCENARIO_ID,
-            subscenarios.POLICIES_ZONE_SCENARIO_ID,
+            subscenarios.POLICY_ZONE_SCENARIO_ID,
             subscenarios.POLICY_REQUIREMENT_SCENARIO_ID,
             subproblem,
             stage,
@@ -204,14 +202,14 @@ def get_inputs_from_database(
     # Get any policy zone to load zone mapping for the percent target
     c2 = conn.cursor()
     lz_mapping = c2.execute(
-        """SELECT policy_zone, load_zone
-        FROM inputs_system_horizon_policy_load_zone_map
+        """SELECT policy_name, policy_zone, load_zone
+        FROM inputs_system_policy_requirements_load_zone_map
         JOIN
-        (SELECT policy_zone
+        (SELECT policy_name, policy_zone
         FROM inputs_geography_policy_zones
         WHERE policy_zone_scenario_id = {}) as relevant_zones
-        USING (policy_zone)
-        WHERE policy_scenario_id = {}
+        USING (policy_name, policy_zone)
+        WHERE policy_requirement_scenario_id = {}
         """.format(
             subscenarios.POLICY_ZONE_SCENARIO_ID,
             subscenarios.POLICY_REQUIREMENT_SCENARIO_ID,
@@ -312,11 +310,14 @@ def write_model_inputs(
                 "balancing_type",
                 "horizon",
                 "policy_requirement",
+                "policy_requirement_f_load_coeff",
             ]
         )
 
         for row in policy_requirements:
-            writer.writerow(row)
+            # It's OK if targets are not specified; they default to 0
+            replace_nulls = ["." if i is None else i for i in row]
+            writer.writerow(replace_nulls)
 
     # Write the policy-zone to load zone map file for the policy percent
     # target if there are any mappings only
