@@ -128,6 +128,7 @@ carbon_tax_scenario_id,NULL
 performance_standard_scenario_id,3
 fuel_burn_limit_scenario_id,NULL
 subsidy_scenario_id,NULL
+policy_requirement_scenario_id,NULL
 prm_requirement_scenario_id,NULL
 local_capacity_requirement_scenario_id,NULL
 elcc_surface_scenario_id,NULL

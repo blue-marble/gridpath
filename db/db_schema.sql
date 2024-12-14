@@ -4524,6 +4524,50 @@ CREATE TABLE inputs_system_performance_standard
         subscenarios_system_performance_standard (performance_standard_scenario_id)
 );
 
+-- Generic policy
+DROP TABLE IF EXISTS subscenarios_system_policy_requirements;
+CREATE TABLE subscenarios_system_policy_requirements
+(
+    policy_requirement_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name                           VARCHAR(32),
+    description                    VARCHAR(128)
+);
+
+-- Can include bt-horizons and zones other than the ones in a scenario, as
+-- correct temporal index and zones will be pulled depending on
+-- temporal_scenario_id and policy_requirement_scenario_id
+DROP TABLE IF EXISTS inputs_system_policy_requirements;
+CREATE TABLE inputs_system_policy_requirements
+(
+    policy_requirement_scenario_id  INTEGER,
+    policy_name                     TEXT,
+    policy_zone                     TEXT,
+    subproblem_id                   INTEGER,
+    stage_id                        INTEGER,
+    balancing_type_horizon          VARCHAR(64),
+    horizon                         INTEGER,
+    policy_requirement              FLOAT,
+    policy_requirement_f_load_coeff FLOAT,
+    PRIMARY KEY (policy_requirement_scenario_id, policy_name, policy_zone,
+                 subproblem_id, stage_id, balancing_type_horizon, horizon)
+);
+
+-- If the policy requirement is specified as a function of load, we need to also
+-- specify which load, i.e. specify a mapping between the policy zone
+-- and the load zones whose load should be part of the requirement calculation
+-- (mapping should be one-to-many)
+DROP TABLE IF EXISTS inputs_system_policy_requirements_load_zone_map;
+CREATE TABLE inputs_system_policy_requirements_load_zone_map
+(
+    policy_requirement_scenario_id INTEGER,
+    policy_name                    TEXT,
+    policy_zone                    TEXT,
+    load_zone                      TEXT,
+    PRIMARY KEY (policy_requirement_scenario_id, policy_name, policy_zone,
+                 load_zone)
+);
+
+
 -- PRM requirements
 DROP TABLE IF EXISTS subscenarios_system_prm_requirement;
 CREATE TABLE subscenarios_system_prm_requirement
@@ -4812,6 +4856,7 @@ CREATE TABLE scenarios
     performance_standard_scenario_id                            INTEGER,
     fuel_burn_limit_scenario_id                                 INTEGER,
     subsidy_scenario_id                                         INTEGER,
+    policy_requirement_scenario_id                              INTEGER,
     prm_requirement_scenario_id                                 INTEGER,
     local_capacity_requirement_scenario_id                      INTEGER,
     elcc_surface_scenario_id                                    INTEGER,
@@ -5053,6 +5098,9 @@ CREATE TABLE scenarios
     FOREIGN KEY (horizon_energy_target_scenario_id) REFERENCES
         subscenarios_system_horizon_energy_targets
             (horizon_energy_target_scenario_id),
+    FOREIGN KEY (policy_requirement_scenario_id) REFERENCES
+        subscenarios_system_policy_requirements
+            (policy_requirement_scenario_id),
     FOREIGN KEY (transmission_target_scenario_id) REFERENCES
         subscenarios_system_transmission_targets
             (transmission_target_scenario_id),

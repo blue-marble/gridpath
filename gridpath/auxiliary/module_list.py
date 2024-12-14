@@ -81,6 +81,7 @@ def all_modules_list():
         "system.policy.performance_standard.performance_standard",
         "system.policy.fuel_burn_limits",
         "system.policy.fuel_burn_limits.fuel_burn_limits",
+        "system.policy.generic_policy.generic_policy_requirements",
         "system.reliability.prm",
         "system.reliability.prm.prm_requirement",
         "system.reliability.local_capacity",
@@ -433,7 +434,10 @@ def optional_modules_list():
             "system.policy.subsidies",
             "objective.system.policy.aggregate_subsidies",
         ],
-        "policy": ["geography.generic_policy"],
+        "policy": [
+            "geography.generic_policy",
+            "system.policy.generic_policy.generic_policy_requirements",
+        ],
         "prm": [
             "geography.prm_zones",
             "system.reliability.prm",
