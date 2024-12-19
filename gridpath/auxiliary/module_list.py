@@ -255,6 +255,7 @@ def all_modules_list():
         "objective.system.policy.aggregate_carbon_tax_costs",
         "objective.system.policy.aggregate_performance_standard_violation_penalties",
         "objective.system.policy.aggregate_fuel_burn_limit_violation_penalties",
+        "objective.system.policy.aggregate_policy_target_violation_penalties",
         "objective.system.policy.aggregate_subsidies",
         "objective.system.policy.aggregate_carbon_credit_sales_and_purchases",
         "objective.system.reliability.prm.aggregate_capacity_transfer_costs",
@@ -444,6 +445,7 @@ def optional_modules_list():
             "project.policy.policy_contribution",
             "system.policy.generic_policy.aggregate_project_policy_contributions",
             "system.policy.generic_policy.policy_target_balance",
+            "objective.system.policy.aggregate_policy_target_violation_penalties",
         ],
         "prm": [
             "geography.prm_zones",

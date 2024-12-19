@@ -6924,6 +6924,7 @@ CREATE TABLE results_system_costs
     Total_Carbon_Credit_Revenue                             FLOAT,
     Total_Carbon_Credit_Costs                               FLOAT,
     Total_Peak_Deviation_Monthly_Demand_Charge_Cost         FLOAT,
+    Total_Policy_Target_Balance_Penalty_Costs               FLOAT,
     PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
                  availability_iteration, subproblem_id, stage_id)
 );
