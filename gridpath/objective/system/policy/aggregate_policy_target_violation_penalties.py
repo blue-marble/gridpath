@@ -40,7 +40,7 @@ def add_model_components(
 
     def total_penalty_costs_rule(mod):
         return sum(
-            mod.Policy_Target_Shortage_Expression[policy, zone, bt, h]
+            mod.Policy_Requirement_Shortage_Expression[policy, zone, bt, h]
             * mod.policy_zone_violation_penalty_per_unit[policy, zone]
             * mod.number_years_represented[mod.period[mod.last_hrz_tmp[bt, h]]]
             * mod.discount_factor[mod.period[mod.last_hrz_tmp[bt, h]]]

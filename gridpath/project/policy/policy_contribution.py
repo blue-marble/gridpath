@@ -29,6 +29,7 @@ from gridpath.auxiliary.db_interface import (
     update_prj_zone_column,
     determine_table_subset_by_start_and_column,
     directories_to_db_values,
+    import_csv,
 )
 from gridpath.common_functions import create_results_df
 from gridpath.project.operations.common_functions import load_operational_type_modules
@@ -188,7 +189,43 @@ def export_results(
     :param d:
     :return:
     """
-    pass
+
+    results_columns = [
+        "period",
+        "policy_contribution",
+    ]
+    data = [
+        [
+            prj,
+            p,
+            z,
+            tmp,
+            m.period[tmp],
+            value(m.Policy_Contribution_in_Timepoint[prj, p, z, tmp]),
+        ]
+        for (prj, p, z, tmp) in m.PRJ_POLICY_ZONE_OPR_TMPS
+    ]
+
+    results_df = create_results_df(
+        index_columns=["project", "policy_name", "policy_zone", "timepoint"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    results_df.to_csv(
+        os.path.join(
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "results",
+            "project_policy_zone_timepoint.csv",
+        ),
+        sep=",",
+        index=True,
+    )
 
 
 # Database
@@ -319,3 +356,39 @@ def write_model_inputs(
             # It's OK if targets are not specified; they default to 0
             replace_nulls = ["." if i is None else i for i in row]
             writer.writerow(replace_nulls)
+
+
+def import_results_into_database(
+    scenario_id,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    c,
+    db,
+    results_directory,
+    quiet,
+):
+    """
+
+    :param scenario_id:
+    :param c:
+    :param db:
+    :param results_directory:
+    :param quiet:
+    :return:
+    """
+    import_csv(
+        conn=db,
+        cursor=c,
+        scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        quiet=quiet,
+        results_directory=results_directory,
+        which_results="project_policy_zone_timepoint",
+    )

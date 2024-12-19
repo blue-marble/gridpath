@@ -25,7 +25,7 @@ from pyomo.environ import Set, Param, NonNegativeReals, Expression, value, Any
 from gridpath.auxiliary.db_interface import directories_to_db_values
 from gridpath.common_functions import create_results_df
 
-# from gridpath.system.policy.carbon_cap import POLICIES_ZONE_PRD_DF
+from gridpath.system.policy.generic_policy import POLICY_ZONE_PRD_DF
 
 
 def add_model_components(
@@ -56,7 +56,7 @@ def add_model_components(
 
     # Target specified as a scalar
     m.policy_requirement = Param(
-        m.POLICIES_ZONE_BLN_TYPE_HRZS_WITH_REQ, within=NonNegativeReals
+        m.POLICIES_ZONE_BLN_TYPE_HRZS_WITH_REQ, within=NonNegativeReals, default=0
     )
 
     # Target specified as function of load
@@ -352,43 +352,52 @@ def write_model_inputs(
                 writer.writerow(row)
 
 
-# def export_results(
-#     scenario_directory,
-#     weather_iteration,
-#     hydro_iteration,
-#     availability_iteration,
-#     subproblem,
-#     stage,
-#     m,
-#     d,
-# ):
-#     """
-#
-#     :param scenario_directory:
-#     :param subproblem:
-#     :param stage:
-#     :param m:
-#     :param d:
-#     :return:
-#     """
-#
-#     results_columns = [
-#         "policy_requirement",
-#     ]
-#     data = [
-#         [
-#             z,
-#             p,
-#             m.policy_requirement[z, p],
-#         ]
-#         for (z, p) in m.POLICIES_ZONE_BLN_TYPE_HRZS_WITH_REQ
-#     ]
-#     results_df = create_results_df(
-#         index_columns=["carbon_cap_zone", "period"],
-#         results_columns=results_columns,
-#         data=data,
-#     )
-#
-#     for c in results_columns:
-#         getattr(d, POLICIES_ZONE_PRD_DF)[c] = None
-#     getattr(d, POLICIES_ZONE_PRD_DF).update(results_df)
+def export_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
+):
+    """
+
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :param m:
+    :param d:
+    :return:
+    """
+
+    results_columns = [
+        "policy_requirement",
+        "policy_requirement_f_load_coeff",
+    ]
+    data = [
+        [
+            p,
+            z,
+            bt,
+            h,
+            m.policy_requirement[p, z, bt, h],
+            m.policy_requirement_f_load_coeff[p, z, bt, h],
+        ]
+        for (p, z, bt, h) in m.POLICIES_ZONE_BLN_TYPE_HRZS_WITH_REQ
+    ]
+    results_df = create_results_df(
+        index_columns=[
+            "policy_name",
+            "policy_zone",
+            "balancing_type_horizon",
+            "horizon",
+        ],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    for c in results_columns:
+        getattr(d, POLICY_ZONE_PRD_DF)[c] = None
+    getattr(d, POLICY_ZONE_PRD_DF).update(results_df)

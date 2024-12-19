@@ -5562,6 +5562,26 @@ CREATE TABLE results_project_timepoint
                  availability_iteration, subproblem_id, stage_id, timepoint)
 );
 
+
+DROP TABLE IF EXISTS results_project_policy_zone_timepoint;
+CREATE TABLE results_project_policy_zone_timepoint
+(
+    scenario_id                                     INTEGER,
+    project                                         VARCHAR(64),
+    weather_iteration                               INTEGER,
+    hydro_iteration                                 INTEGER,
+    availability_iteration                          INTEGER,
+    policy_name TEXT, policy_zone TEXT,
+    timepoint                                       INTEGER,
+    period                                          INTEGER,
+    subproblem_id                                   INTEGER,
+    stage_id                                        INTEGER,
+    policy_contribution                             FLOAT,
+    PRIMARY KEY (scenario_id, project, weather_iteration, hydro_iteration,
+                 availability_iteration, subproblem_id, stage_id,
+                 policy_name, policy_zone, timepoint)
+);
+
 DROP TABLE IF EXISTS results_project_curtailment_variable_periodagg;
 CREATE TABLE results_project_curtailment_variable_periodagg
 (
@@ -6709,6 +6729,32 @@ CREATE TABLE results_system_fuel_burn_limits
                  availability_iteration, subproblem_id, stage_id,
                  balancing_type, horizon, fuel, fuel_burn_limit_ba)
 );
+
+-- Generic policy
+DROP TABLE IF EXISTS results_system_policy_requirements;
+CREATE TABLE results_system_policy_requirements
+(
+    scenario_id                                INTEGER,
+    policy_name                                TEXT,
+    policy_zone                                TEXT,
+    weather_iteration                          INTEGER,
+    hydro_iteration                            INTEGER,
+    availability_iteration                     INTEGER,
+    subproblem_id                              INTEGER,
+    stage_id                                   INTEGER,
+    balancing_type_horizon                     VARCHAR(64),
+    horizon                                    INTEGER,
+    policy_requirement                         FLOAT,
+    policy_requirement_f_load_coeff            FLOAT,
+    policy_requirement_calculated_in_horizon   FLOAT,
+    policy_requirement_shortage                FLOAT,
+    dual                                       FLOAT,
+    policy_requirement_marginal_cost_per_unit  FLOAT,
+    PRIMARY KEY (scenario_id, policy_name, policy_zone, weather_iteration,
+                 hydro_iteration, subproblem_id, stage_id,
+                 balancing_type_horizon, horizon)
+);
+
 
 -- PRM balance
 DROP TABLE IF EXISTS results_system_prm;

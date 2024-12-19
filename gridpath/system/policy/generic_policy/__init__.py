@@ -1,4 +1,4 @@
-# Copyright 2016-2023 Blue Marble Analytics.
+# Copyright 2016-2024 Blue Marble Analytics.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@ import pandas as pd
 
 from gridpath.auxiliary.db_interface import import_csv
 
-CARBON_CAP_ZONE_PRD_DF = "carbon_cap_zone_period_df"
+POLICY_ZONE_PRD_DF = "policy_zone_period_df"
 
 
 def export_results(
@@ -34,29 +34,22 @@ def export_results(
     # Other modules will update these dataframe with actual results
     # The results dataframes are by index
 
-    # Zone-period DF
-    z_prd_df = pd.DataFrame(
+    p_z_bt_h_df = pd.DataFrame(
         columns=[
-            "carbon_cap_zone",
-            "period",
-            "discount_factor",
-            "number_years_represented",
+            "policy_name",
+            "policy_zone",
+            "balancing_type_horizon",
+            "horizon",
         ],
         data=[
-            [
-                z,
-                p,
-                m.discount_factor[p],
-                m.number_years_represented[p],
-            ]
-            for (z, p) in m.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP
+            [p, z, bt, h] for (p, z, bt, h) in m.POLICIES_ZONE_BLN_TYPE_HRZS_WITH_REQ
         ],
-    ).set_index(["carbon_cap_zone", "period"])
+    ).set_index(["policy_name", "policy_zone", "balancing_type_horizon", "horizon"])
 
-    z_prd_df.sort_index(inplace=True)
+    p_z_bt_h_df.sort_index(inplace=True)
 
     # Add the dataframe to the dynamic components to pass to other modules
-    setattr(d, CARBON_CAP_ZONE_PRD_DF, z_prd_df)
+    setattr(d, POLICY_ZONE_PRD_DF, p_z_bt_h_df)
 
 
 def import_results_into_database(
@@ -91,5 +84,5 @@ def import_results_into_database(
         stage=stage,
         quiet=quiet,
         results_directory=results_directory,
-        which_results="system_carbon_cap",
+        which_results="system_policy_requirements",
     )
