@@ -4567,6 +4567,35 @@ CREATE TABLE inputs_system_policy_requirements_load_zone_map
                  load_zone)
 );
 
+-- Project, policy, zones
+-- Which projects count toward which policies and "zones"
+-- Projects are allowed to contribute to more than one policy and to
+-- different zones within the same policy
+DROP TABLE IF EXISTS subscenarios_project_policy_zones;
+CREATE TABLE subscenarios_project_policy_zones
+(
+    project_policy_zone_scenario_id INTEGER PRIMARY KEY,
+    name                            VARCHAR(32),
+    description                     VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_project_policy_zones;
+CREATE TABLE inputs_project_policy_zones
+(
+    project_policy_zone_scenario_id INTEGER,
+    project                         TEXT,
+    policy_name                     TEXT,
+    policy_zone                     TEXT,
+    compliance_type                 TEXT,
+    f_slope                         FLOAT, -- may eventually want to use IDs
+    -- and be able to vary some of these by a temporal index
+    f_intercept                     FLOAT,
+    PRIMARY KEY (project_policy_zone_scenario_id, project, policy_name,
+                 policy_zone),
+    FOREIGN KEY (project_policy_zone_scenario_id) REFERENCES
+        subscenarios_project_policy_zones (project_policy_zone_scenario_id)
+);
+
 
 -- PRM requirements
 DROP TABLE IF EXISTS subscenarios_system_prm_requirement;
@@ -4805,6 +4834,7 @@ CREATE TABLE scenarios
     project_carbon_credits_purchase_zone_scenario_id            INTEGER,
     project_carbon_credits_scenario_id                          INTEGER,
     project_fuel_burn_limit_ba_scenario_id                      INTEGER,
+    project_policy_zone_scenario_id                             INTEGER,
     project_prm_zone_scenario_id                                INTEGER,
     prm_capacity_transfer_scenario_id                           INTEGER,
     prm_capacity_transfer_params_scenario_id                    INTEGER,
@@ -4992,6 +5022,8 @@ CREATE TABLE scenarios
     FOREIGN KEY (project_fuel_burn_limit_ba_scenario_id) REFERENCES
         subscenarios_project_fuel_burn_limit_balancing_areas
             (project_fuel_burn_limit_ba_scenario_id),
+    FOREIGN KEY (project_policy_zone_scenario_id) REFERENCES
+        subscenarios_project_policy_zones (project_policy_zone_scenario_id),
     FOREIGN KEY (project_prm_zone_scenario_id) REFERENCES
         subscenarios_project_prm_zones (project_prm_zone_scenario_id),
     FOREIGN KEY (transmission_prm_zone_scenario_id) REFERENCES

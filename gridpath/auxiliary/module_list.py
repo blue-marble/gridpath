@@ -139,6 +139,7 @@ def all_modules_list():
         "project.reliability.prm.group_costs",
         "project.reliability.local_capacity",
         "project.reliability.local_capacity.local_capacity_contribution",
+        "project.policy.policy_contribution",
         "project.consolidate_results",
         "project.summary_results",
         "transmission",
@@ -437,6 +438,8 @@ def optional_modules_list():
         "policy": [
             "geography.generic_policy",
             "system.policy.generic_policy.generic_policy_requirements",
+            "project.policy.compliance_types",
+            "project.policy.policy_contribution",
         ],
         "prm": [
             "geography.prm_zones",

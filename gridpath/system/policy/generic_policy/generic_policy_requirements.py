@@ -20,7 +20,7 @@ import csv
 import os.path
 import pandas as pd
 
-from pyomo.environ import Set, Param, NonNegativeReals, Expression, value
+from pyomo.environ import Set, Param, NonNegativeReals, Expression, value, Any
 
 from gridpath.auxiliary.db_interface import directories_to_db_values
 from gridpath.common_functions import create_results_df
@@ -44,6 +44,11 @@ def add_model_components(
     :param d:
     :return:
     """
+
+    m.POLICIES = Set(
+        within=Any,
+        initialize=lambda mod: sorted(list(set([p for (p, z) in mod.POLICIES_ZONES]))),
+    )
 
     m.POLICIES_ZONE_BLN_TYPE_HRZS_WITH_REQ = Set(
         dimen=4, within=m.POLICIES_ZONES * m.BLN_TYPE_HRZS
