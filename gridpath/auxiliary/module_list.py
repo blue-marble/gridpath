@@ -220,6 +220,8 @@ def all_modules_list():
         "system.policy.fuel_burn_limits.aggregate_project_fuel_burn",
         "system.policy.fuel_burn_limits.fuel_burn_limit_balance",
         "system.policy.fuel_burn_limits.consolidate_results",
+        "system.policy.generic_policy.aggregate_project_policy_contributions",
+        "system.policy.generic_policy.policy_target_balance",
         "system.reliability.prm.aggregate_project_simple_prm_contribution",
         "system.reliability.prm.capacity_contribution_transfers",
         "system.reliability.prm.elcc_surface",
@@ -441,6 +443,7 @@ def optional_modules_list():
             "project.policy.compliance_types",
             "project.policy.policy_contribution",
             "system.policy.generic_policy.aggregate_project_policy_contributions",
+            "system.policy.generic_policy.policy_target_balance",
         ],
         "prm": [
             "geography.prm_zones",
