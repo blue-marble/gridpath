@@ -18,7 +18,6 @@ Requirements for each policy and policy zone
 
 import csv
 import os.path
-import pandas as pd
 
 from pyomo.environ import Set, Param, NonNegativeReals, Expression, value, Any
 

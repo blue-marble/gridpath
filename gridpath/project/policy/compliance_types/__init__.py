@@ -19,6 +19,7 @@
 # Compliance Type Module Method Defaults
 ###############################################################################
 
+
 def contribution_in_timepoint(mod, prj, policy, zone, tmp):
     """
     Defaults to 0
