@@ -3804,6 +3804,7 @@ CREATE TABLE inputs_system_load_components
     load_components_scenario_id INTEGER,
     load_zone                   VARCHAR(32),
     load_component              TEXT,
+    load_level_default          FLOAT, -- defaults to infinity in model
     PRIMARY KEY (load_components_scenario_id, load_zone, load_component)
 );
 
