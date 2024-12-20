@@ -64,6 +64,11 @@ def add_model_components(
     +-------------------------------------------------------------------------+
     | Sets                                                                    |
     +=========================================================================+
+    | | :code:`LOAD_ZONE_LOAD_CMPNTS`                                         |
+    |                                                                         |
+    | Two-dimensional set of load_zone-load_components for which load should  |
+    | be defined.                                                             |
+    +-------------------------------------------------------------------------+
     | | :code:`LOAD_ZONE_TMP_LOAD_CMPNTS`                                     |
     |                                                                         |
     | Three-dimensional set of load_zone-timepoint-load_component             |
@@ -78,9 +83,26 @@ def add_model_components(
     | | :code:`component_static_load_mw`                                      |
     | | *Defined over*: :code:`LOAD_ZONE_TMP_LOAD_CMPNTS`                     |
     | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`load_level_default`                                 |
     |                                                                         |
     | The amount of load for each load zone and timepoint for each load       |
     | component.                                                              |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Optional Input Params                                                   |
+    +=========================================================================+
+    | | :code:`load_level_default`                                            |
+    | | *Defined over*: :code:`LOAD_ZONE_LOAD_CMPNTS`                         |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`float("inf")`                                       |
+    |                                                                         |
+    | Default value for component_static_load_mw if it is not defined for     |
+    | this load zone and load component in timepoints without defined value.  |
+    | If not defined, this parameter itself defaults to infinity. If          |
+    | ends up defaulting to infinity, a ValueError is raised.                 |
     +-------------------------------------------------------------------------+
 
     |
@@ -99,17 +121,58 @@ def add_model_components(
     """
 
     # Static load
+    m.LOAD_ZONE_LOAD_CMPNTS = Set(dimen=2, within=m.LOAD_ZONES * Any)
+    m.load_level_default = Param(
+        m.LOAD_ZONE_LOAD_CMPNTS, within=NonNegativeReals, initialize=float("inf")
+    )
+
     m.LOAD_ZONE_TMP_LOAD_CMPNTS = Set(dimen=3, within=m.LOAD_ZONES * m.TMPS * Any)
+
+    def set_default_and_warn_about_undefined_loads(mod, lz, tmp, cmp):
+        check_for_value_and_raise_value_error(
+            param=mod.load_level_default[lz, cmp],
+            value_to_check=float("inf"),
+            msg=f"""
+            Parameter component_static_load_mw at index 
+            {lz, tmp, cmp} has no value defined. It 
+            must either be included with the load inputs or a value must 
+            be set via the load_level_default parameter of load_zone 
+            {lz}.
+            """,
+        )
+
+        return mod.load_level_default[lz, cmp]
+
     m.component_static_load_mw = Param(
-        m.LOAD_ZONE_TMP_LOAD_CMPNTS, within=NonNegativeReals
+        m.LOAD_ZONE_TMP_LOAD_CMPNTS,
+        within=NonNegativeReals,
+        default=lambda mod, lz, tmp, cmp: set_default_and_warn_about_undefined_loads(
+            mod, lz, tmp, cmp
+        ),
     )
 
     def total_static_load_from_components_init(mod, lz, tmp):
-        return sum(
-            mod.component_static_load_mw[load_zone, timepoint, component]
-            for (load_zone, timepoint, component) in mod.LOAD_ZONE_TMP_LOAD_CMPNTS
-            if (load_zone == lz and timepoint == tmp)
-        )
+        lz_load_in_tmp = 0
+        for load_zone, timepoint, component in mod.LOAD_ZONE_TMP_LOAD_CMPNTS:
+            if mod.component_static_load_mw[load_zone, timepoint, component] == float(
+                "inf"
+            ):
+                raise ValueError(
+                    f"""
+                Parameter component_static_load_mw at index 
+                {load_zone, timepoint, component} has no value defined. It 
+                must either be included with the load inputs or a value must 
+                be set via the load_level_default parameter of load_zone 
+                {load_zone}.
+                """
+                )
+            else:
+                if load_zone == lz and timepoint == tmp:
+                    lz_load_in_tmp += mod.component_static_load_mw[
+                        load_zone, timepoint, component
+                    ]
+
+        return lz_load_in_tmp
 
     m.LZ_Load_in_Tmp = Expression(
         m.LOAD_ZONES, m.TMPS, initialize=total_static_load_from_components_init
@@ -152,6 +215,21 @@ def load_model_data(
         ),
         index=m.LOAD_ZONE_TMP_LOAD_CMPNTS,
         param=m.component_static_load_mw,
+    )
+
+    data_portal.load(
+        filename=os.path.join(
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "load_level_defaults.tab",
+        ),
+        index=m.LOAD_ZONE_LOAD_CMPNTS,
+        param=m.load_level_default,
     )
 
 
@@ -223,7 +301,25 @@ def get_inputs_from_database(
 
     loads = c.execute(sql)
 
-    return loads
+    c2 = conn.cursor()
+    ld_comp_defaults = c2.execute(
+        f"""SELECT load_zone, load_component, load_level_default
+            FROM inputs_system_load_components
+            INNER JOIN
+            -- Get only relevant load zones
+            (SELECT load_zone
+            FROM inputs_geography_load_zones
+            WHERE load_zone_scenario_id = {subscenarios.LOAD_ZONE_SCENARIO_ID}) as relevant_load_zones
+            USING (load_zone)
+            WHERE load_components_scenario_id = (
+                SELECT load_components_scenario_id
+                FROM inputs_system_load
+                WHERE load_scenario_id = {subscenarios.LOAD_SCENARIO_ID}
+                )
+        """
+    )
+
+    return loads, ld_comp_defaults
 
 
 def validate_inputs(
@@ -282,7 +378,7 @@ def write_model_inputs(
         weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
     )
 
-    loads = get_inputs_from_database(
+    loads, ld_comp_defaults = get_inputs_from_database(
         scenario_id,
         subscenarios,
         db_weather_iteration,
@@ -314,6 +410,31 @@ def write_model_inputs(
 
         for row in loads:
             writer.writerow(row)
+
+    with open(
+        os.path.join(
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "load_level_defaults.tab",
+        ),
+        "w",
+        newline="",
+    ) as load_level_default_tab_file:
+        writer = csv.writer(
+            load_level_default_tab_file, delimiter="\t", lineterminator="\n"
+        )
+
+        # Write header
+        writer.writerow(["load_zone", "load_component", "load_level_default"])
+
+        for row in ld_comp_defaults:
+            replace_nulls = ["." if i is None else i for i in row]
+            writer.writerow(replace_nulls)
 
 
 def export_results(
@@ -357,3 +478,8 @@ def export_results(
     for c in results_columns:
         getattr(d, LOAD_ZONE_TMP_DF)[c] = None
     getattr(d, LOAD_ZONE_TMP_DF).update(results_df)
+
+
+def check_for_value_and_raise_value_error(param, value_to_check, msg):
+    if param == value_to_check:
+        raise ValueError(msg)

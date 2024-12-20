@@ -1,4 +1,4 @@
-load_zone,load_component
-Zone1,all
-Zone2,all
-Zone3,all
+load_zone,load_component,load_level_default
+Zone1,all,
+Zone2,all,
+Zone3,all,
