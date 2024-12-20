@@ -1,3 +1,2 @@
 policy_name,policy_zone,allow_violation,violation_penalty_per_unit
 RPS,RPSZone1,0,0
-Policy2,Policy2_Zone1,0,0

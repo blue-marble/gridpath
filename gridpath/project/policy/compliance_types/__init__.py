@@ -16,71 +16,17 @@
 
 """
 
-from pyomo.environ import Set
-
-from gridpath.auxiliary.auxiliary import (
-    get_required_subtype_modules,
-    load_subtype_modules,
-)
-from gridpath.project.operations.common_functions import load_operational_type_modules
-
-
-def add_model_components(
-    m,
-    d,
-    scenario_directory,
-    weather_iteration,
-    hydro_iteration,
-    availability_iteration,
-    subproblem,
-    stage,
-):
-    """ """
-    # Import needed operational modules
-    required_compliance_modules = get_required_subtype_modules(
-        scenario_directory=scenario_directory,
-        weather_iteration=weather_iteration,
-        hydro_iteration=hydro_iteration,
-        availability_iteration=availability_iteration,
-        subproblem=subproblem,
-        stage=stage,
-        which_type="compliance_type",
-    )
-
-    imported_compliance_modules = load_subtype_modules(
-        required_subtype_modules=required_compliance_modules,
-        package="gridpath.project.policy.compliance_types",
-        required_attributes=[],
-    )
-
-    # Add any components specific to the operational modules
-    for comp_m in required_compliance_modules:
-        imp_op_m = imported_compliance_modules[comp_m]
-        if hasattr(imp_op_m, "add_model_components"):
-            imp_op_m.add_model_components(
-                m,
-                d,
-                scenario_directory,
-                weather_iteration,
-                hydro_iteration,
-                availability_iteration,
-                subproblem,
-                stage,
-            )
-
-
 # Compliance Type Module Method Defaults
 ###############################################################################
 
-
-def contribution_in_timepoint(mod, prj, policy, tmp):
+def contribution_in_timepoint(mod, prj, policy, zone, tmp):
     """
     Defaults to 0
     """
     return 0
 
 
-def contribution_in_horizon(mod, prj, policy, bt, h):
+def contribution_in_horizon(mod, prj, policy, zone, bt, h):
     """
     Defaults to 0
     """

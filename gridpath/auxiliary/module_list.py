@@ -444,7 +444,6 @@ def optional_modules_list():
             "geography.generic_policy",
             "system.policy.generic_policy",
             "system.policy.generic_policy.generic_policy_requirements",
-            "project.policy.compliance_types",
             "project.policy.policy_contribution",
             "system.policy.generic_policy.aggregate_project_policy_contributions",
             "system.policy.generic_policy.policy_target_balance",

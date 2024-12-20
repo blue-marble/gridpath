@@ -18,24 +18,19 @@ Get contributions for each project and policy
 
 import csv
 import os.path
+import pandas as pd
 from pyomo.environ import Param, Set, Expression, value, Reals
 
 from gridpath.auxiliary.auxiliary import (
     get_required_subtype_modules,
-    cursor_to_df,
-    subset_init_by_set_membership,
+    load_subtype_modules,
 )
 from gridpath.auxiliary.db_interface import (
-    update_prj_zone_column,
-    determine_table_subset_by_start_and_column,
     directories_to_db_values,
     import_csv,
 )
 from gridpath.common_functions import create_results_df
-from gridpath.project.operations.common_functions import load_operational_type_modules
-from gridpath.auxiliary.validations import write_validation_to_database, validate_idxs
 import gridpath.project.policy.compliance_types as compliance_type_init
-from gridpath.project import PROJECT_TIMEPOINT_DF
 
 
 def add_model_components(
@@ -53,19 +48,22 @@ def add_model_components(
     # Dynamic Inputs
     ###########################################################################
 
-    # required_operational_modules = get_required_subtype_modules(
-    #     scenario_directory=scenario_directory,
-    #     weather_iteration=weather_iteration,
-    #     hydro_iteration=hydro_iteration,
-    #     availability_iteration=availability_iteration,
-    #     subproblem=subproblem,
-    #     stage=stage,
-    #     which_type="operational_type",
-    # )
-    #
-    # imported_compliance_modules = load_operational_type_modules(
-    #     required_operational_modules
-    # )
+    required_compliance_modules = get_required_subtype_modules(
+        scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        which_type="compliance_type",
+        filename="project_policy_zones",
+    )
+
+    imported_compliance_modules = load_subtype_modules(
+        required_subtype_modules=required_compliance_modules,
+        package="gridpath.project.policy.compliance_types",
+        required_attributes=[],
+    )
 
     m.PROJECT_POLICY_ZONES = Set(dimen=3, within=m.PROJECTS * m.POLICIES_ZONES)
     m.compliance_type = Param(
@@ -77,8 +75,20 @@ def add_model_components(
         ],
     )
 
-    m.f_slope = Param(m.PROJECT_POLICY_ZONES, within=Reals, default=0)
-    m.f_intercept = Param(m.PROJECT_POLICY_ZONES, within=Reals, default=0)
+    # Add any components specific to the PRM modules
+    for comp_m in required_compliance_modules:
+        imp_comp_m = imported_compliance_modules[comp_m]
+        if hasattr(imp_comp_m, "add_model_components"):
+            imp_comp_m.add_model_components(
+                m,
+                d,
+                scenario_directory,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
+            )
 
     def prj_policy_zone_opr_tmps_init(mod):
         opr_tmps = list()
@@ -96,18 +106,17 @@ def add_model_components(
 
     def contribution_in_timepoint(mod, prj, policy, zone, tmp):
         """ """
-        # compliance_type = mod.compliance_type[prj]
-        # if hasattr(imported_compliance_modules[compliance_type], "contribution_in_timepoint"):
-        #     return imported_compliance_modules[compliance_type].contribution_in_timepoint(
-        #         mod, prj, policy, tmp
-        #     )
-        # else:
-        #     return compliance_type_init.contribution_in_timepoint(mod, prj, policy, tmp)
-
-        return (
-            mod.f_slope[prj, policy, zone] * mod.Power_Provision_MW[prj, tmp]
-            + mod.f_intercept[prj, policy, zone]
-        )
+        compliance_type = mod.compliance_type[prj, policy, zone]
+        if hasattr(
+            imported_compliance_modules[compliance_type], "contribution_in_timepoint"
+        ):
+            return imported_compliance_modules[
+                compliance_type
+            ].contribution_in_timepoint(mod, prj, policy, zone, tmp)
+        else:
+            return compliance_type_init.contribution_in_timepoint(
+                mod, prj, policy, zone, tmp
+            )
 
     m.Policy_Contribution_in_Timepoint = Expression(
         m.PRJ_POLICY_ZONE_OPR_TMPS, rule=contribution_in_timepoint
@@ -166,8 +175,52 @@ def load_model_data(
             "project_policy_zones.tab",
         ),
         index=m.PROJECT_POLICY_ZONES,
-        param=(m.compliance_type, m.f_slope, m.f_intercept),
+        select=(
+            "project",
+            "policy_name",
+            "policy_zone",
+            "compliance_type",
+        ),
+        param=m.compliance_type,
     )
+
+    project_df = pd.read_csv(
+        os.path.join(
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "project_policy_zones.tab",
+        ),
+        sep="\t",
+        usecols=["project", "compliance_type"],
+    )
+    required_compliance_modules = [
+        comp_type for comp_type in project_df.compliance_type.unique()
+    ]
+
+    imported_compliance_modules = load_subtype_modules(
+        required_subtype_modules=required_compliance_modules,
+        package="gridpath.project.policy.compliance_types",
+        required_attributes=[],
+    )
+
+    for comp_m in required_compliance_modules:
+        if hasattr(imported_compliance_modules[comp_m], "load_model_data"):
+            imported_compliance_modules[comp_m].load_model_data(
+                m,
+                d,
+                data_portal,
+                scenario_directory,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
+            )
 
 
 def export_results(
@@ -353,7 +406,6 @@ def write_model_inputs(
         )
 
         for row in project_policy_zones:
-            # It's OK if targets are not specified; they default to 0
             replace_nulls = ["." if i is None else i for i in row]
             writer.writerow(replace_nulls)
 
