@@ -32,7 +32,7 @@
     "electron-json-storage": "^4.1.6",
     "process": "^0.11.10",
     "rxjs": "~6.3.3",
-    "socket.io": "^2.2.0",
+    "socket.io": "^4.8.1",
     "socket.io-client": "^2.1.1",
     "tslib": "^1.9.0",
     "zone.js": "~0.8.26"
@@ -51,7 +51,7 @@
     "jasmine-core": "~2.99.1",
     "jasmine-spec-reporter": "~4.2.1",
     "jquery": "^3.4.1",
-    "karma": "~4.0.0",
+    "karma": "~6.4.4",
     "karma-chrome-launcher": "~2.2.0",
     "karma-coverage-istanbul-reporter": "~2.0.1",
     "karma-jasmine": "~1.1.2",
