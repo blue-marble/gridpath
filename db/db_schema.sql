@@ -3753,7 +3753,7 @@ CREATE TABLE inputs_transmission_simultaneous_flow_limit_line_groups
     transmission_simultaneous_flow_limit_line_group_scenario_id INTEGER,
     transmission_simultaneous_flow_limit                        VARCHAR(64),
     transmission_line                                           VARCHAR(64),
-    simultaneous_flow_direction                                 INTEGER,
+    simultaneous_flow_coefficient                               INTEGER,
     PRIMARY KEY (transmission_simultaneous_flow_limit_line_group_scenario_id,
                  transmission_simultaneous_flow_limit, transmission_line),
     FOREIGN KEY (transmission_simultaneous_flow_limit_line_group_scenario_id)

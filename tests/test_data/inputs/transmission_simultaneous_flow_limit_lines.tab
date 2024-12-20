@@ -1,4 +1,4 @@
-simultaneous_flow_limit	transmission_line	simultaneous_flow_direction
+simultaneous_flow_limit	transmission_line	simultaneous_flow_coefficient
 Zone1_Exports	Tx1	1
 Zone1_Exports	Tx_New	1
 Zone1_Imports	Tx1	-1
