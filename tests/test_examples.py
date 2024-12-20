@@ -832,7 +832,7 @@ class TestExamples(unittest.TestCase):
     def test_example_test_new_build_gen_var_stor_hyb(self):
         """
         Check validation and objective function value of
-        "2periods_new_build_horizon_energy_target_halfyear" example
+        "test_new_build_gen_var_stor_hyb" example
         :return:
         """
         scenario_name = "test_new_build_gen_var_stor_hyb"
@@ -1532,6 +1532,15 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         scenario_name = "test_w_energy_products_group_limits"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_2periods_new_build_generic_policy(self):
+        """
+        Check validation and objective function value of
+        "2periods_new_build_generic_policy" example
+        :return:
+        """
+        scenario_name = "2periods_new_build_generic_policy"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     @classmethod

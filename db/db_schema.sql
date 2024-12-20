@@ -853,6 +853,32 @@ CREATE TABLE inputs_system_carbon_credits_params
         subscenarios_system_carbon_credits_params (carbon_credits_params_scenario_id)
 );
 
+-- Generic policy
+-- TODO: add a generic policy list subscenario
+
+-- This is the unit at which the policy is applied in the model
+DROP TABLE IF EXISTS subscenarios_geography_policy_zones;
+CREATE TABLE subscenarios_geography_policy_zones
+(
+    policy_zone_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name                    VARCHAR(32),
+    description             VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_geography_policy_zones;
+CREATE TABLE inputs_geography_policy_zones
+(
+    policy_zone_scenario_id    INTEGER,
+    policy_name                TEXT,
+    policy_zone                TEXT,
+    allow_violation            INTEGER DEFAULT 0, -- constraint is hard by default
+    violation_penalty_per_unit FLOAT   DEFAULT 0,
+    PRIMARY KEY (policy_zone_scenario_id, policy_name, policy_zone),
+    FOREIGN KEY (policy_zone_scenario_id) REFERENCES
+        subscenarios_geography_policy_zones (policy_zone_scenario_id)
+);
+
+
 -- PRM
 -- This is the unit at which PRM requirements are met in the model; it can be
 -- different from the load zones
@@ -2195,26 +2221,26 @@ CREATE TABLE inputs_project_energy_hrz_shaping_iterations
 DROP TABLE IF EXISTS subscenarios_project_energy_slice_hrz_shaping;
 CREATE TABLE subscenarios_project_energy_slice_hrz_shaping
 (
-    project                        VARCHAR(64),
+    project                              VARCHAR(64),
     energy_slice_hrz_shaping_scenario_id INTEGER,
-    name                           VARCHAR(32),
-    description                    VARCHAR(128),
+    name                                 VARCHAR(32),
+    description                          VARCHAR(128),
     PRIMARY KEY (project, energy_slice_hrz_shaping_scenario_id)
 );
 
 DROP TABLE IF EXISTS inputs_project_energy_slice_hrz_shaping;
 CREATE TABLE inputs_project_energy_slice_hrz_shaping
 (
-    project                        VARCHAR(64),
+    project                              VARCHAR(64),
     energy_slice_hrz_shaping_scenario_id INTEGER,
-    weather_iteration              INTEGER,
-    hydro_iteration                INTEGER,
-    stage_id                       INTEGER,
-    balancing_type_project         TEXT,
-    horizon                        INTEGER,
-    hrz_energy                     FLOAT,
-    min_power                      FLOAT,
-    max_power                      FLOAT,
+    weather_iteration                    INTEGER,
+    hydro_iteration                      INTEGER,
+    stage_id                             INTEGER,
+    balancing_type_project               TEXT,
+    horizon                              INTEGER,
+    hrz_energy                           FLOAT,
+    min_power                            FLOAT,
+    max_power                            FLOAT,
     PRIMARY KEY (project, energy_slice_hrz_shaping_scenario_id,
                  weather_iteration, hydro_iteration, stage_id,
                  balancing_type_project, horizon),
@@ -2227,20 +2253,20 @@ DROP TABLE IF EXISTS
     subscenarios_project_energy_slice_hrz_shaping_iterations;
 CREATE TABLE subscenarios_project_energy_slice_hrz_shaping_iterations
 (
-    project                        VARCHAR(64),
+    project                              VARCHAR(64),
     energy_slice_hrz_shaping_scenario_id INTEGER,
-    name                           VARCHAR(32),
-    description                    VARCHAR(128),
+    name                                 VARCHAR(32),
+    description                          VARCHAR(128),
     PRIMARY KEY (project, energy_slice_hrz_shaping_scenario_id)
 );
 
 DROP TABLE IF EXISTS inputs_project_energy_slice_hrz_shaping_iterations;
 CREATE TABLE inputs_project_energy_slice_hrz_shaping_iterations
 (
-    project                        TEXT,
+    project                              TEXT,
     energy_slice_hrz_shaping_scenario_id INTEGER,
-    varies_by_weather_iteration    INTEGER,
-    varies_by_hydro_iteration      INTEGER,
+    varies_by_weather_iteration          INTEGER,
+    varies_by_hydro_iteration            INTEGER,
     PRIMARY KEY (project, energy_slice_hrz_shaping_scenario_id)
 );
 
@@ -4498,6 +4524,79 @@ CREATE TABLE inputs_system_performance_standard
         subscenarios_system_performance_standard (performance_standard_scenario_id)
 );
 
+-- Generic policy
+DROP TABLE IF EXISTS subscenarios_system_policy_requirements;
+CREATE TABLE subscenarios_system_policy_requirements
+(
+    policy_requirement_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name                           VARCHAR(32),
+    description                    VARCHAR(128)
+);
+
+-- Can include bt-horizons and zones other than the ones in a scenario, as
+-- correct temporal index and zones will be pulled depending on
+-- temporal_scenario_id and policy_requirement_scenario_id
+DROP TABLE IF EXISTS inputs_system_policy_requirements;
+CREATE TABLE inputs_system_policy_requirements
+(
+    policy_requirement_scenario_id  INTEGER,
+    policy_name                     TEXT,
+    policy_zone                     TEXT,
+    subproblem_id                   INTEGER,
+    stage_id                        INTEGER,
+    balancing_type_horizon          VARCHAR(64),
+    horizon                         INTEGER,
+    policy_requirement              FLOAT,
+    policy_requirement_f_load_coeff FLOAT,
+    PRIMARY KEY (policy_requirement_scenario_id, policy_name, policy_zone,
+                 subproblem_id, stage_id, balancing_type_horizon, horizon)
+);
+
+-- If the policy requirement is specified as a function of load, we need to also
+-- specify which load, i.e. specify a mapping between the policy zone
+-- and the load zones whose load should be part of the requirement calculation
+-- (mapping should be one-to-many)
+DROP TABLE IF EXISTS inputs_system_policy_requirements_load_zone_map;
+CREATE TABLE inputs_system_policy_requirements_load_zone_map
+(
+    policy_requirement_scenario_id INTEGER,
+    policy_name                    TEXT,
+    policy_zone                    TEXT,
+    load_zone                      TEXT,
+    PRIMARY KEY (policy_requirement_scenario_id, policy_name, policy_zone,
+                 load_zone)
+);
+
+-- Project, policy, zones
+-- Which projects count toward which policies and "zones"
+-- Projects are allowed to contribute to more than one policy and to
+-- different zones within the same policy
+DROP TABLE IF EXISTS subscenarios_project_policy_zones;
+CREATE TABLE subscenarios_project_policy_zones
+(
+    project_policy_zone_scenario_id INTEGER PRIMARY KEY,
+    name                            VARCHAR(32),
+    description                     VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_project_policy_zones;
+CREATE TABLE inputs_project_policy_zones
+(
+    project_policy_zone_scenario_id INTEGER,
+    project                         TEXT,
+    policy_name                     TEXT,
+    policy_zone                     TEXT,
+    compliance_type                 TEXT,
+    f_slope                         FLOAT, -- may eventually want to use IDs
+    -- and be able to vary some of these by a temporal index
+    f_intercept                     FLOAT,
+    PRIMARY KEY (project_policy_zone_scenario_id, project, policy_name,
+                 policy_zone),
+    FOREIGN KEY (project_policy_zone_scenario_id) REFERENCES
+        subscenarios_project_policy_zones (project_policy_zone_scenario_id)
+);
+
+
 -- PRM requirements
 DROP TABLE IF EXISTS subscenarios_system_prm_requirement;
 CREATE TABLE subscenarios_system_prm_requirement
@@ -4686,6 +4785,7 @@ CREATE TABLE scenarios
     of_markets                                                  INTEGER,
     of_water                                                    INTEGER,
     of_tuning                                                   INTEGER,
+    of_policy                                                   INTEGER,
     temporal_scenario_id                                        INTEGER,
     load_zone_scenario_id                                       INTEGER,
     lf_reserves_up_ba_scenario_id                               INTEGER,
@@ -4706,6 +4806,7 @@ CREATE TABLE scenarios
     carbon_tax_zones_carbon_credits_zones_scenario_id           INTEGER,
     carbon_credits_params_scenario_id                           INTEGER,
     fuel_burn_limit_ba_scenario_id                              INTEGER,
+    policy_zone_scenario_id                                     INTEGER,
     prm_zone_scenario_id                                        INTEGER,
     local_capacity_zone_scenario_id                             INTEGER,
     market_scenario_id                                          INTEGER,
@@ -4733,6 +4834,7 @@ CREATE TABLE scenarios
     project_carbon_credits_purchase_zone_scenario_id            INTEGER,
     project_carbon_credits_scenario_id                          INTEGER,
     project_fuel_burn_limit_ba_scenario_id                      INTEGER,
+    project_policy_zone_scenario_id                             INTEGER,
     project_prm_zone_scenario_id                                INTEGER,
     prm_capacity_transfer_scenario_id                           INTEGER,
     prm_capacity_transfer_params_scenario_id                    INTEGER,
@@ -4784,6 +4886,7 @@ CREATE TABLE scenarios
     performance_standard_scenario_id                            INTEGER,
     fuel_burn_limit_scenario_id                                 INTEGER,
     subsidy_scenario_id                                         INTEGER,
+    policy_requirement_scenario_id                              INTEGER,
     prm_requirement_scenario_id                                 INTEGER,
     local_capacity_requirement_scenario_id                      INTEGER,
     elcc_surface_scenario_id                                    INTEGER,
@@ -4844,6 +4947,8 @@ CREATE TABLE scenarios
     FOREIGN KEY (fuel_burn_limit_ba_scenario_id) REFERENCES
         subscenarios_geography_fuel_burn_limit_balancing_areas
             (fuel_burn_limit_ba_scenario_id),
+    FOREIGN KEY (policy_zone_scenario_id) REFERENCES
+        subscenarios_geography_policy_zones (policy_zone_scenario_id),
     FOREIGN KEY (prm_zone_scenario_id) REFERENCES
         subscenarios_geography_prm_zones (prm_zone_scenario_id),
     FOREIGN KEY (local_capacity_zone_scenario_id) REFERENCES
@@ -4917,6 +5022,8 @@ CREATE TABLE scenarios
     FOREIGN KEY (project_fuel_burn_limit_ba_scenario_id) REFERENCES
         subscenarios_project_fuel_burn_limit_balancing_areas
             (project_fuel_burn_limit_ba_scenario_id),
+    FOREIGN KEY (project_policy_zone_scenario_id) REFERENCES
+        subscenarios_project_policy_zones (project_policy_zone_scenario_id),
     FOREIGN KEY (project_prm_zone_scenario_id) REFERENCES
         subscenarios_project_prm_zones (project_prm_zone_scenario_id),
     FOREIGN KEY (transmission_prm_zone_scenario_id) REFERENCES
@@ -5023,6 +5130,9 @@ CREATE TABLE scenarios
     FOREIGN KEY (horizon_energy_target_scenario_id) REFERENCES
         subscenarios_system_horizon_energy_targets
             (horizon_energy_target_scenario_id),
+    FOREIGN KEY (policy_requirement_scenario_id) REFERENCES
+        subscenarios_system_policy_requirements
+            (policy_requirement_scenario_id),
     FOREIGN KEY (transmission_target_scenario_id) REFERENCES
         subscenarios_system_transmission_targets
             (transmission_target_scenario_id),
@@ -5304,10 +5414,10 @@ CREATE TABLE results_project_period
     max_build_stor_energy_dual             FLOAT,
     min_total_stor_energy_dual             FLOAT,
     max_total_stor_energy_dual             FLOAT,
-    min_build_energy_dual                   FLOAT,
-    max_build_energy_dual                   FLOAT,
-    min_total_energy_dual                   FLOAT,
-    max_total_energy_dual                   FLOAT,
+    min_build_energy_dual                  FLOAT,
+    max_build_energy_dual                  FLOAT,
+    min_total_energy_dual                  FLOAT,
+    max_total_energy_dual                  FLOAT,
     carbon_credits_zone                    VARCHAR(32),
     carbon_credits_generated_tCO2          FLOAT,
     carbon_credits_purchased_tCO2          FLOAT,
@@ -5340,20 +5450,20 @@ CREATE TABLE results_project_group_capacity
     capacity_group_new_min_marginal_cost   FLOAT,
     capacity_group_total_max_marginal_cost FLOAT,
     capacity_group_total_min_marginal_cost FLOAT,
-    group_new_energy                     FLOAT,
-    group_total_energy                   FLOAT,
-    energy_group_new_energy_min        FLOAT,
-    energy_group_new_energy_max        FLOAT,
-    energy_group_total_energy_min      FLOAT,
-    energy_group_total_energy_max      FLOAT,
-    energy_group_new_max_dual            FLOAT,
-    energy_group_new_min_dual            FLOAT,
-    energy_group_total_max_dual          FLOAT,
-    energy_group_total_min_dual          FLOAT,
-    energy_group_new_max_marginal_cost   FLOAT,
-    energy_group_new_min_marginal_cost   FLOAT,
-    energy_group_total_max_marginal_cost FLOAT,
-    energy_group_total_min_marginal_cost FLOAT,
+    group_new_energy                       FLOAT,
+    group_total_energy                     FLOAT,
+    energy_group_new_energy_min            FLOAT,
+    energy_group_new_energy_max            FLOAT,
+    energy_group_total_energy_min          FLOAT,
+    energy_group_total_energy_max          FLOAT,
+    energy_group_new_max_dual              FLOAT,
+    energy_group_new_min_dual              FLOAT,
+    energy_group_total_max_dual            FLOAT,
+    energy_group_total_min_dual            FLOAT,
+    energy_group_new_max_marginal_cost     FLOAT,
+    energy_group_new_min_marginal_cost     FLOAT,
+    energy_group_total_max_marginal_cost   FLOAT,
+    energy_group_total_min_marginal_cost   FLOAT,
     PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
                  availability_iteration, subproblem_id, stage_id,
                  capacity_group, period)
@@ -5450,6 +5560,27 @@ CREATE TABLE results_project_timepoint
     stop_unavailability                             FLOAT,
     PRIMARY KEY (scenario_id, project, weather_iteration, hydro_iteration,
                  availability_iteration, subproblem_id, stage_id, timepoint)
+);
+
+
+DROP TABLE IF EXISTS results_project_policy_zone_timepoint;
+CREATE TABLE results_project_policy_zone_timepoint
+(
+    scenario_id            INTEGER,
+    project                VARCHAR(64),
+    weather_iteration      INTEGER,
+    hydro_iteration        INTEGER,
+    availability_iteration INTEGER,
+    policy_name            TEXT,
+    policy_zone            TEXT,
+    timepoint              INTEGER,
+    period                 INTEGER,
+    subproblem_id          INTEGER,
+    stage_id               INTEGER,
+    policy_contribution    FLOAT,
+    PRIMARY KEY (scenario_id, project, weather_iteration, hydro_iteration,
+                 availability_iteration, subproblem_id, stage_id,
+                 policy_name, policy_zone, timepoint)
 );
 
 DROP TABLE IF EXISTS results_project_curtailment_variable_periodagg;
@@ -6600,6 +6731,32 @@ CREATE TABLE results_system_fuel_burn_limits
                  balancing_type, horizon, fuel, fuel_burn_limit_ba)
 );
 
+-- Generic policy
+DROP TABLE IF EXISTS results_system_policy_requirements;
+CREATE TABLE results_system_policy_requirements
+(
+    scenario_id                               INTEGER,
+    policy_name                               TEXT,
+    policy_zone                               TEXT,
+    weather_iteration                         INTEGER,
+    hydro_iteration                           INTEGER,
+    availability_iteration                    INTEGER,
+    subproblem_id                             INTEGER,
+    stage_id                                  INTEGER,
+    balancing_type_horizon                    VARCHAR(64),
+    horizon                                   INTEGER,
+    policy_requirement                        FLOAT,
+    policy_requirement_f_load_coeff           FLOAT,
+    policy_requirement_calculated_in_horizon  FLOAT,
+    policy_requirement_shortage               FLOAT,
+    dual                                      FLOAT,
+    policy_requirement_marginal_cost_per_unit FLOAT,
+    PRIMARY KEY (scenario_id, policy_name, policy_zone, weather_iteration,
+                 hydro_iteration, subproblem_id, stage_id,
+                 balancing_type_horizon, horizon)
+);
+
+
 -- PRM balance
 DROP TABLE IF EXISTS results_system_prm;
 CREATE TABLE results_system_prm
@@ -6814,6 +6971,7 @@ CREATE TABLE results_system_costs
     Total_Carbon_Credit_Revenue                             FLOAT,
     Total_Carbon_Credit_Costs                               FLOAT,
     Total_Peak_Deviation_Monthly_Demand_Charge_Cost         FLOAT,
+    Total_Policy_Target_Balance_Penalty_Costs               FLOAT,
     PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
                  availability_iteration, subproblem_id, stage_id)
 );
