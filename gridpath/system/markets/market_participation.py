@@ -145,9 +145,7 @@ def load_model_data(
     )
 
     # Load starting market positions if applicable
-    stages = check_for_integer_subdirectories(
-        os.path.join(subproblem_directory)
-    )
+    stages = check_for_integer_subdirectories(os.path.join(subproblem_directory))
 
     if stages:
         # First check if we are in the first stage and set the first_stage_flag to
