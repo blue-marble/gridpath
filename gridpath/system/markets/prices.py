@@ -54,8 +54,6 @@ def load_model_data(
             weather_iteration,
             hydro_iteration,
             availability_iteration,
-            hydro_iteration,
-            availability_iteration,
             subproblem,
             stage,
             "inputs",
