@@ -286,10 +286,11 @@ def export_results(
         "starting_volume",
         "exogenous_water_inflow_rate_vol_per_sec",
         "endogenous_water_inflow_rate_vol_per_sec",
+        "gross_water_inflow_rate_vol_per_sec",
         "discharge_water_to_powerhouse_rate_vol_per_sec",
         "spill_water_rate_vol_per_sec",
         "evap_losses_NOT_IMPLEMENTED",
-        "endogenous_water_outflows_rate_vol_per_sec",
+        "gross_water_outflow_rate_vol_per_sec",
     ]
     data = [
         [
@@ -311,6 +312,7 @@ def export_results(
                 for (wl, dep_tmp, arr_tmp) in m.WATER_LINK_DEPARTURE_ARRIVAL_TMPS
                 if wl in m.WATER_LINKS_TO_BY_WATER_NODE[wn] and arr_tmp == tmp
             ),
+            value(m.Gross_Water_Node_Inflow_Rate_Vol_Per_Sec[wn, tmp]),
             value(
                 m.Discharge_Water_to_Powerhouse_Rate_Vol_Per_Sec[wn, tmp]
                 if wn in m.WATER_NODES_W_RESERVOIRS
@@ -326,11 +328,7 @@ def export_results(
                 if wn in m.WATER_NODES_W_RESERVOIRS
                 else None
             ),
-            sum(
-                value(m.Water_Link_Flow_Rate_Vol_per_Sec[wl, dep_tmp, arr_tmp])
-                for (wl, dep_tmp, arr_tmp) in m.WATER_LINK_DEPARTURE_ARRIVAL_TMPS
-                if wl in m.WATER_LINKS_TO_BY_WATER_NODE[wn] and dep_tmp == tmp
-            ),
+            value(m.Gross_Water_Node_Release_Rate_Vol_per_Sec[wn, tmp]),
         ]
         for wn in m.WATER_NODES
         for tmp in m.TMPS
