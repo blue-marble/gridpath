@@ -227,6 +227,23 @@ def get_inputs_from_database(
             FROM inputs_system_water_powerhouses
             WHERE water_powerhouse_scenario_id = 
             {subscenarios.WATER_POWERHOUSE_SCENARIO_ID}
+            AND powerhouse_water_node IN (
+                    SELECT water_node_from as water_node
+                    FROM inputs_geography_water_network
+                    WHERE water_network_scenario_id = 
+                    {subscenarios.WATER_NETWORK_SCENARIO_ID}
+                    UNION
+                    SELECT water_node_to as water_node
+                    FROM inputs_geography_water_network
+                    WHERE water_network_scenario_id = 
+                    {subscenarios.WATER_NETWORK_SCENARIO_ID}
+                )
+            AND powerhouse_water_node in (
+                SELECT water_node
+                FROM inputs_system_water_node_reservoirs
+                WHERE water_node_reservoir_scenario_id = 
+                    {subscenarios.WATER_NODE_RESERVOIR_SCENARIO_ID}
+            )
             ;
             """
     )

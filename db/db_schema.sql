@@ -1334,7 +1334,6 @@ CREATE TABLE inputs_system_water_powerhouses
     tailwater_elevation          FLOAT,
     headloss_factor              FLOAT,
     turbine_efficiency           FLOAT,
-    generator_efficiency         FLOAT,
     PRIMARY KEY (water_powerhouse_scenario_id, powerhouse),
     FOREIGN KEY (water_powerhouse_scenario_id) REFERENCES
         subscenarios_system_water_powerhouses (water_powerhouse_scenario_id)
@@ -6887,10 +6886,11 @@ CREATE TABLE results_system_water_node_timepoint
     starting_volume                                FLOAT,
     exogenous_water_inflow_rate_vol_per_sec        FLOAT,
     endogenous_water_inflow_rate_vol_per_sec       FLOAT,
+    gross_water_inflow_rate_vol_per_sec            FLOAT,
     discharge_water_to_powerhouse_rate_vol_per_sec FLOAT,
     spill_water_rate_vol_per_sec                   FLOAT,
     evap_losses_NOT_IMPLEMENTED                    FLOAT,
-    endogenous_water_outflows_rate_vol_per_sec     FLOAT,
+    gross_water_outflow_rate_vol_per_sec           FLOAT,
     PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
                  availability_iteration, subproblem_id, stage_id, water_node,
                  timepoint)

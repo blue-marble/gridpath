@@ -102,7 +102,7 @@ def add_model_components(
 
     # Target release node-bt_horizons
     m.WATER_NODE_RESERVOIR_BT_HRZS_WITH_TOTAL_RELEASE_REQUIREMENTS = Set(
-        within=m.WATER_NODES * m.BLN_TYPE_HRZS
+        dimen=3, within=m.WATER_NODES * m.BLN_TYPE_HRZS
     )
 
     # ### Parameters ###
@@ -328,8 +328,9 @@ def load_model_data(
         subproblem,
         stage,
         "inputs",
-        "reservoir_release_targets.tab",
+        "reservoir_target_releases.tab",
     )
+
     if os.path.exists(rel_fname):
         data_portal.load(
             filename=rel_fname,
@@ -401,7 +402,19 @@ def get_inputs_from_database(
             elevation_type
         FROM inputs_system_water_node_reservoirs
         WHERE water_node_reservoir_scenario_id = 
-        {subscenarios.WATER_NODE_RESERVOIR_SCENARIO_ID};
+        {subscenarios.WATER_NODE_RESERVOIR_SCENARIO_ID}
+        AND water_node IN (
+                    SELECT water_node_from as water_node
+                    FROM inputs_geography_water_network
+                    WHERE water_network_scenario_id = 
+                    {subscenarios.WATER_NETWORK_SCENARIO_ID}
+                    UNION
+                    SELECT water_node_to as water_node
+                    FROM inputs_geography_water_network
+                    WHERE water_network_scenario_id = 
+                    {subscenarios.WATER_NETWORK_SCENARIO_ID}
+                )
+        ;
         """
     )
 
@@ -437,9 +450,11 @@ def get_inputs_from_database(
                 {subscenarios.WATER_NODE_RESERVOIR_SCENARIO_ID}
             )
             AND (balancing_type, horizon)
-            IN (SELECT balancing_type_horizon, horizon
-                FROM inputs_temporal_horizons
+            IN (SELECT DISTINCT balancing_type_horizon, horizon
+                FROM inputs_temporal_horizon_timepoints
                 WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+                AND subproblem_id = {subproblem}
+                AND stage_id = {stage}
             )
             AND hydro_iteration = {hydro_iteration}
             ;

@@ -175,6 +175,17 @@ def get_inputs_from_database(
                 FROM inputs_system_water_inflows
                 WHERE water_inflow_scenario_id = 
                 {subscenarios.WATER_INFLOW_SCENARIO_ID}
+                AND water_node IN (
+                    SELECT water_node_from as water_node
+                    FROM inputs_geography_water_network
+                    WHERE water_network_scenario_id = 
+                    {subscenarios.WATER_NETWORK_SCENARIO_ID}
+                    UNION
+                    SELECT water_node_to as water_node
+                    FROM inputs_geography_water_network
+                    WHERE water_network_scenario_id = 
+                    {subscenarios.WATER_NETWORK_SCENARIO_ID}
+                )
                 AND timepoint
                 IN (SELECT timepoint
                     FROM inputs_temporal

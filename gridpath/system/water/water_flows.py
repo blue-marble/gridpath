@@ -236,6 +236,12 @@ def get_inputs_from_database(
             FROM inputs_system_water_flows
             WHERE water_flow_scenario_id = 
             {subscenarios.WATER_FLOW_SCENARIO_ID}
+            AND water_link IN (
+                SELECT water_link
+                FROM inputs_geography_water_network
+                WHERE water_network_scenario_id = 
+                {subscenarios.WATER_NETWORK_SCENARIO_ID}
+            )
             AND timepoint
             IN (SELECT timepoint
                 FROM inputs_temporal
@@ -346,7 +352,8 @@ def write_model_inputs(
             )
 
             for row in water_flow_bounds_list:
-                writer.writerow(row)
+                replace_nulls = ["." if i is None else i for i in row]
+                writer.writerow(replace_nulls)
 
 
 def export_results(
