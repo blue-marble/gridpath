@@ -77,9 +77,10 @@ def add_model_components(
 
         return wl_dep_arr_tmp
 
+    m.TMPS_AND_OUTSIDE_HORIZON = Set(initialize=m.TMPS | {"tmp_outside_horizon"})
     m.WATER_LINK_DEPARTURE_ARRIVAL_TMPS = Set(
         dimen=3,
-        within=m.WATER_LINKS * m.TMPS * m.TMPS,
+        within=m.WATER_LINKS * m.TMPS * m.TMPS_AND_OUTSIDE_HORIZON,
         initialize=water_link_departure_arrival_tmp_init,
     )
 
@@ -113,13 +114,14 @@ def add_model_components(
 def determine_arrival_timepoint(mod, tmp, travel_time_hours):
     # If this is the last timepoint of a linear horizon, there are no
     # timepoints to check
+    # TODO: check if this makes sense
     if check_if_boundary_type_and_last_timepoint(
         mod=mod,
         tmp=tmp,
         balancing_type=mod.water_system_balancing_type,
         boundary_type="linear",
     ):
-        tmp_to_check = None
+        tmp_to_check = "tmp_outside_horizon"
     elif check_if_boundary_type_and_last_timepoint(
         mod=mod,
         tmp=tmp,
@@ -128,8 +130,12 @@ def determine_arrival_timepoint(mod, tmp, travel_time_hours):
     ):
         # TODO: add linked
         tmp_to_check = None
-    # Otherwise, we can start searching
+    # If travel time is less than the hours in the starting timepoint, we stay
+    # in the same timepoint
+    elif travel_time_hours < mod.hrs_in_tmp[tmp]:
+        tmp_to_check = tmp
     else:
+        # Otherwise, we check the following timepoints
         # First we'll check the next timepoint of the starting timepoint and
         # start with the duration of the starting timepoint
         tmp_to_check = mod.next_tmp[tmp, mod.water_system_balancing_type]
@@ -137,14 +143,15 @@ def determine_arrival_timepoint(mod, tmp, travel_time_hours):
         while hours_from_departure_tmp < travel_time_hours:
             # If we haven't exceeded the travel time yet, we move on to the next tmp
             # In a 'linear' horizon setting, once we reach the last
-            # timepoint of the horizon, we break out of the loop since there
-            # are no more timepoints to consider
+            # timepoint of the horizon, we set the arrival timepoint to
+            # "tmp_outside_horizon" and break out of the loop
             if check_if_boundary_type_and_last_timepoint(
                 mod=mod,
                 tmp=tmp_to_check,
                 balancing_type=mod.water_system_balancing_type,
                 boundary_type="linear",
             ):
+                tmp_to_check = "tmp_outside_horizon"
                 break
             # In a 'circular' horizon setting, once we reach timepoint *t*,
             # we break out of the loop since there are no more timepoints to
