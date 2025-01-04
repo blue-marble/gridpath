@@ -59,7 +59,7 @@ def add_model_components(
     """
 
     # ### Expressions ### #
-    def gross_node_inflow_rate_init(mod, wn, tmp):
+    def node_inflow_rate_init(mod, wn, tmp):
         """
         Exogenous inflow to node + sum of flow on all links to note in the
         timepoint of arrival
@@ -73,30 +73,24 @@ def add_model_components(
     m.Gross_Water_Node_Inflow_Rate_Vol_Per_Sec = Expression(
         m.WATER_NODES,
         m.TMPS,
-        initialize=gross_node_inflow_rate_init,
+        initialize=node_inflow_rate_init,
     )
 
-    def gross_node_release_rate_vol_per_sec(mod, wn, tmp):
-        # If we have e reservoir, this is controlled by the reservoir
-        # variables; otherwise, just set it to inflow for the mass balance
-        return (
-            mod.Gross_Reservoir_Release_Rate_Vol_Per_Sec[wn, tmp]
-            if wn in mod.WATER_NODES_W_RESERVOIRS
-            else 0
-        ) + (
-            mod.Gross_Water_Node_Inflow_Rate_Vol_Per_Sec[wn, tmp]
-            if wn not in mod.WATER_NODES_W_RESERVOIRS
-            else 0
+    def node_outflow_rate_init(mod, wn, tmp):
+        return sum(
+            mod.Water_Link_Flow_Rate_Vol_per_Sec[wl, dep_tmp, arr_tmp]
+            for (wl, dep_tmp, arr_tmp) in mod.WATER_LINK_DEPARTURE_ARRIVAL_TMPS
+            if wl in mod.WATER_LINKS_FROM_BY_WATER_NODE[wn] and dep_tmp == tmp
         )
 
-    m.Gross_Water_Node_Release_Rate_Vol_per_Sec = Expression(
+    m.Gross_Water_Node_Outflow_Rate_Vol_per_Sec = Expression(
         m.WATER_NODES,
         m.TMPS,
-        initialize=gross_node_release_rate_vol_per_sec,
+        initialize=node_outflow_rate_init,
     )
 
     # ### Constraints ### #
-    def get_total_inflow_volunit(mod, wn, tmp):
+    def get_total_inflow_for_reservoir_tracking_volunit(mod, wn, tmp):
         """
         Total inflow is exogenous inflow at node plus sum of endogenous
         inflow from all links to node
@@ -109,106 +103,110 @@ def add_model_components(
 
         return inflow_in_tmp
 
-    def get_total_release_volunit(mod, wn, tmp):
+    def get_total_reservoir_release_volunit(mod, wn, tmp):
         outflow_in_tmp = (
-            mod.Gross_Water_Node_Release_Rate_Vol_per_Sec[wn, tmp]
+            mod.Gross_Reservoir_Release_Rate_Vol_Per_Sec[wn, tmp]
             * 3600
             * mod.hrs_in_tmp[tmp]
         )
 
         return outflow_in_tmp
 
-    def water_mass_balance_constraint_rule(mod, wn, tmp):
+    def reservoir_storage_tracking_rule(mod, wn, tmp):
         """ """
-        # If no reservoir, simply set total inflow equal to total release
-        if wn not in mod.WATER_NODES_W_RESERVOIRS:
-            return get_total_inflow_volunit(mod, wn, tmp) == get_total_release_volunit(
-                mod, wn, tmp
-            )
-        # If the node does have a reservoir, we'll track the water in storage
-        else:
-            # No constraint in the first timepoint of a linear horizon (no
-            # previous timepoint for tracking)
-            if check_if_first_timepoint(
-                mod=mod, tmp=tmp, balancing_type=mod.water_system_balancing_type
-            ) and check_boundary_type(
-                mod=mod,
-                tmp=tmp,
-                balancing_type=mod.water_system_balancing_type,
-                boundary_type="linear",
-            ):
-                return Constraint.Skip
-            else:
-                # TODO: add linked horizons
-                if check_if_first_timepoint(
-                    mod=mod, tmp=tmp, balancing_type=mod.water_system_balancing_type
-                ) and check_boundary_type(
-                    mod=mod,
-                    tmp=tmp,
-                    balancing_type=mod.water_system_balancing_type,
-                    boundary_type="linked",
-                ):
-                    current_tmp_starting_water_volume = None
-                    prev_tmp_starting_water_volume = None
+        # No constraint in the first timepoint of a linear horizon (no
+        # previous timepoints for tracking reservoir levels)
+        if check_if_first_timepoint(
+            mod=mod, tmp=tmp, balancing_type=mod.water_system_balancing_type
+        ) and check_boundary_type(
+            mod=mod,
+            tmp=tmp,
+            balancing_type=mod.water_system_balancing_type,
+            boundary_type="linear",
+        ):
+            return Constraint.Skip
+        # TODO: add linked horizons
+        elif check_if_first_timepoint(
+            mod=mod, tmp=tmp, balancing_type=mod.water_system_balancing_type
+        ) and check_boundary_type(
+            mod=mod,
+            tmp=tmp,
+            balancing_type=mod.water_system_balancing_type,
+            boundary_type="linked",
+        ):
+            current_tmp_starting_water_volume = None
+            prev_tmp_starting_water_volume = None
 
-                    # Inflows and releases
-                    prev_tmp_inflow = None
-                    prev_tmp_release = None
-                    raise (
-                        UserWarning(
-                            "Linked horizons have not been implemented for "
-                            "water system feature."
-                        )
-                    )
-                else:
-                    current_tmp_starting_water_volume = (
-                        mod.Reservoir_Starting_Volume_WaterVolumeUnit[wn, tmp]
-                    )
-                    prev_tmp_starting_water_volume = (
-                        mod.Reservoir_Starting_Volume_WaterVolumeUnit[
-                            wn, mod.prev_tmp[tmp, mod.water_system_balancing_type]
-                        ]
-                    )
-
-                    # Inflows and releases; these are already calculated
-                    # based on per sec flows and hours in the timepoint
-                    prev_tmp_inflow = get_total_inflow_volunit(
-                        mod, wn, mod.prev_tmp[tmp, mod.water_system_balancing_type]
-                    )
-
-                    prev_tmp_release = get_total_release_volunit(
-                        mod, wn, mod.prev_tmp[tmp, mod.water_system_balancing_type]
-                    )
-
-                return current_tmp_starting_water_volume == (
-                    prev_tmp_starting_water_volume + prev_tmp_inflow - prev_tmp_release
+            # Inflows and releases
+            prev_tmp_inflow = None
+            prev_tmp_outflow = None
+            raise (
+                UserWarning(
+                    "Linked horizons have not been implemented for "
+                    "water system feature."
                 )
+            )
+        else:
+            current_tmp_starting_water_volume = (
+                mod.Reservoir_Starting_Volume_WaterVolumeUnit[wn, tmp]
+            )
+            prev_tmp_starting_water_volume = (
+                mod.Reservoir_Starting_Volume_WaterVolumeUnit[
+                    wn, mod.prev_tmp[tmp, mod.water_system_balancing_type]
+                ]
+            )
 
-    m.Water_Mass_Balance_Constraint = Constraint(
-        m.WATER_NODES, m.TMPS, rule=water_mass_balance_constraint_rule
+            # Inflows and releases; these are already calculated
+            # based on per sec flows and hours in the timepoint
+            prev_tmp_inflow = get_total_inflow_for_reservoir_tracking_volunit(
+                mod, wn, mod.prev_tmp[tmp, mod.water_system_balancing_type]
+            )
+
+            prev_tmp_outflow = get_total_reservoir_release_volunit(
+                mod, wn, mod.prev_tmp[tmp, mod.water_system_balancing_type]
+            )
+
+        return current_tmp_starting_water_volume == (
+            prev_tmp_starting_water_volume + prev_tmp_inflow - prev_tmp_outflow
+        )
+
+    m.Reservoir_Storage_Tracking_Constraint = Constraint(
+        m.WATER_NODES_W_RESERVOIRS, m.TMPS, rule=reservoir_storage_tracking_rule
     )
 
     # Set the sum of outflows from the node to be equal to discharge & spill
-    def enforce_outflow_rule(mod, wn, tmp):
+    # for nodes with storage and to inflow for nodes without storage
+    def enforce_mass_balance_outflow_rule(mod, wn, tmp):
         """
-        The sum of the flows on all links from this node must equal the gross
-        outflow from the node. Skip constraint for the last node in the
+        The sum of the flows on all links from this node must equal the
+        reservoir release for nodes with reservoirs and total inflows for
+        reservoirs without reservoirs. Skip constraint for the last node in the
         network with no out links.
+
+        For linear horizons, the lwater outflows may arrive outside of the
+        horizon boundary if travel time is more than hours in the remaining
+        timepoints. We still need to enforce outflow constraints (that are
+        based on the departure timepoint). These flows have the
+        "tmp_outside_horizon" index for the arrival timepoint.
         """
         if [wl for wl in mod.WATER_LINKS_FROM_BY_WATER_NODE[wn]]:
-            return (
-                sum(
-                    mod.Water_Link_Flow_Rate_Vol_per_Sec[wl, dep_tmp, arr_tmp]
-                    for (wl, dep_tmp, arr_tmp) in mod.WATER_LINK_DEPARTURE_ARRIVAL_TMPS
-                    if wl in mod.WATER_LINKS_FROM_BY_WATER_NODE[wn] and dep_tmp == tmp
+            # For nodes with reservoirs, set to reservoir release
+            if wn in mod.WATER_NODES_W_RESERVOIRS:
+                return (
+                    mod.Gross_Water_Node_Outflow_Rate_Vol_per_Sec[wn, tmp]
+                    == mod.Gross_Reservoir_Release_Rate_Vol_Per_Sec[wn, tmp]
                 )
-                == mod.Gross_Water_Node_Release_Rate_Vol_per_Sec[wn, tmp]
-            )
+            else:
+                # For nodes without reservoirs, set to inflow
+                return (
+                    mod.Gross_Water_Node_Outflow_Rate_Vol_per_Sec[wn, tmp]
+                    == mod.Gross_Water_Node_Inflow_Rate_Vol_Per_Sec[wn, tmp]
+                )
         else:
             return Constraint.Skip
 
     m.Water_Node_Outflow_Constraint = Constraint(
-        m.WATER_NODES, m.TMPS, rule=enforce_outflow_rule
+        m.WATER_NODES, m.TMPS, rule=enforce_mass_balance_outflow_rule
     )
 
 
@@ -328,7 +326,7 @@ def export_results(
                 if wn in m.WATER_NODES_W_RESERVOIRS
                 else None
             ),
-            value(m.Gross_Water_Node_Release_Rate_Vol_per_Sec[wn, tmp]),
+            value(m.Gross_Water_Node_Outflow_Rate_Vol_per_Sec[wn, tmp]),
         ]
         for wn in m.WATER_NODES
         for tmp in m.TMPS
