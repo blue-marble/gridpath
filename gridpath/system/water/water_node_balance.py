@@ -210,33 +210,6 @@ def add_model_components(
     )
 
 
-def load_model_data(
-    m,
-    d,
-    data_portal,
-    scenario_directory,
-    weather_iteration,
-    hydro_iteration,
-    availability_iteration,
-    subproblem,
-    stage,
-):
-
-    data_portal.load(
-        filename=os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "inputs",
-            "water_inflows.tab",
-        ),
-        param=m.exogenous_water_inflow_rate_vol_per_sec,
-    )
-
-
 def validate_inputs(
     scenario_id,
     subscenarios,

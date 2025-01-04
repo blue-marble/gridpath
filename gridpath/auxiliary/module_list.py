@@ -89,8 +89,8 @@ def all_modules_list():
         "system.reliability.local_capacity.local_capacity_requirement",
         "system.markets.prices",
         "system.water.water_system_params",
-        "system.water.water_flows",
         "system.water.water_nodes",
+        "system.water.water_flows",
         "system.water.reservoirs",
         "system.water.water_node_balance",
         "system.water.powerhouses",
@@ -266,6 +266,7 @@ def all_modules_list():
         "objective.system.reliability.local_capacity"
         ".aggregate_local_capacity_violation_penalties",
         "objective.system.aggregate_market_revenue_and_costs",
+        "objective.system.water.aggregate_flow_constraint_slack_use_tuning_costs",
         "objective.max_npv",
     ]
     return all_modules
@@ -491,6 +492,7 @@ def optional_modules_list():
             "system.water.water_node_balance",
             "system.water.water_flows",
             "system.water.powerhouses",
+            "objective.system.water.aggregate_flow_constraint_slack_use_tuning_costs",
         ],
         "tuning": [
             "project.operations.tuning_costs",

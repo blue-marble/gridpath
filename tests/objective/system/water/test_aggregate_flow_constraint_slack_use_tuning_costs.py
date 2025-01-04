@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from importlib import import_module
 import os.path
 import pandas as pd
@@ -21,7 +20,9 @@ import unittest
 
 from tests.common_functions import create_abstract_model, add_components_and_load_data
 
-TEST_DATA_DIRECTORY = os.path.join(os.path.dirname(__file__), "..", "..", "test_data")
+TEST_DATA_DIRECTORY = os.path.join(
+    os.path.dirname(__file__), "..", "..", "..", "test_data"
+)
 
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
@@ -29,8 +30,12 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.investment.periods",
     "temporal.operations.horizons",
     "geography.water_network",
+    "system.water.water_system_params",
+    "system.water.water_flows",
 ]
-NAME_OF_MODULE_BEING_TESTED = "system.water.water_system_params"
+NAME_OF_MODULE_BEING_TESTED = (
+    "objective.system.water.aggregate_flow_constraint_slack_use_tuning_costs"
+)
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -48,7 +53,7 @@ except ImportError:
     print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED + " to test.")
 
 
-class TestWaterFlows(unittest.TestCase):
+class TestFlowSlackTuningCostsAgg(unittest.TestCase):
     """ """
 
     def test_add_model_components(self):
@@ -85,7 +90,7 @@ class TestWaterFlows(unittest.TestCase):
 
     def test_data_loaded_correctly(self):
         """
-        Test components initialized with data as expected
+        Test that the data loaded are as expected
         :return:
         """
         m, data = add_components_and_load_data(
@@ -100,28 +105,6 @@ class TestWaterFlows(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Param: water_system_balancing_type
-        expected_bt = "day"
-        actual_bt = instance.water_system_balancing_type.value
 
-        self.assertEqual(expected_bt, actual_bt)
-
-        # Param: theoretical_power_coefficient
-        expected_coeff = 0.0847
-        actual_coeff = instance.theoretical_power_coefficient.value
-
-        self.assertEqual(expected_coeff, actual_coeff)
-
-        # Param: allow_lin_hrz_first_tmp_flow_slack
-        expect_slack = 0
-        actual_slack = instance.allow_lin_hrz_first_tmp_flow_slack.value
-
-        self.assertEqual(expect_slack, actual_slack)
-
-        # Param: allow_lin_hrz_first_tmp_flow_slack_tuning_cost
-        expect_slack_tuning_cost = 0
-        actual_slack_tuning_cost = (
-            instance.allow_lin_hrz_first_tmp_flow_slack_tuning_cost.value
-        )
-
-        self.assertEqual(expect_slack_tuning_cost, actual_slack_tuning_cost)
+if __name__ == "__main__":
+    unittest.main()
