@@ -48,6 +48,13 @@ def add_model_components(
     # m vs ft; user must ensure consistent units
     m.theoretical_power_coefficient = Param(within=NonNegativeReals)
 
+    # To avoid infeasibilities, slack can be allowed for some flow constraints
+    # See water_flows module
+    m.allow_lin_hrz_first_tmp_flow_slack = Param(within=NonNegativeReals, default=0)
+    m.allow_lin_hrz_first_tmp_flow_slack_tuning_cost = Param(
+        within=NonNegativeReals, default=0
+    )
+
 
 def load_model_data(
     m,
@@ -72,7 +79,12 @@ def load_model_data(
             "inputs",
             "water_system_params.tab",
         ),
-        param=(m.water_system_balancing_type, m.theoretical_power_coefficient),
+        param=(
+            m.water_system_balancing_type,
+            m.theoretical_power_coefficient,
+            m.allow_lin_hrz_first_tmp_flow_slack,
+            m.allow_lin_hrz_first_tmp_flow_slack_tuning_cost,
+        ),
     )
 
 
@@ -96,7 +108,9 @@ def get_inputs_from_database(
 
     c = conn.cursor()
     water_system_params = c.execute(
-        f"""SELECT water_system_balancing_type, theoretical_power_coefficient
+        f"""SELECT water_system_balancing_type, theoretical_power_coefficient,
+                allow_lin_hrz_first_tmp_flow_slack, 
+                allow_lin_hrz_first_tmp_flow_slack_tuning_cost
                 FROM inputs_system_water_system_params
                 WHERE water_system_params_scenario_id = 
                 {subscenarios.WATER_SYSTEM_PARAMS_SCENARIO_ID}
@@ -194,6 +208,8 @@ def write_model_inputs(
             [
                 "water_system_balancing_type",
                 "theoretical_power_coefficient",
+                "allow_lin_hrz_first_tmp_flow_slack",
+                "allow_lin_hrz_first_tmp_flow_slack_tuning_cost",
             ]
         )
 

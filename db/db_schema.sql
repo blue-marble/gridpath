@@ -1057,9 +1057,11 @@ CREATE TABLE subscenarios_system_water_system_params
 DROP TABLE IF EXISTS inputs_system_water_system_params;
 CREATE TABLE inputs_system_water_system_params
 (
-    water_system_params_scenario_id INTEGER PRIMARY KEY,
-    water_system_balancing_type     TEXT,
-    theoretical_power_coefficient   FLOAT,
+    water_system_params_scenario_id                INTEGER PRIMARY KEY,
+    water_system_balancing_type                    TEXT,
+    theoretical_power_coefficient                  FLOAT,
+    allow_lin_hrz_first_tmp_flow_slack             FLOAT,
+    allow_lin_hrz_first_tmp_flow_slack_tuning_cost FLOAT,
     FOREIGN KEY (water_system_params_scenario_id) REFERENCES
         subscenarios_system_water_system_params (water_system_params_scenario_id)
 );
@@ -6856,16 +6858,17 @@ DROP TABLE IF EXISTS results_system_ra;
 DROP TABLE IF EXISTS results_system_water_link_timepoint;
 CREATE TABLE results_system_water_link_timepoint
 (
-    scenario_id            INTEGER,
-    weather_iteration      INTEGER,
-    hydro_iteration        INTEGER,
-    availability_iteration INTEGER,
-    subproblem_id          INTEGER,
-    stage_id               INTEGER,
-    water_link             VARCHAR(32),
-    departure_timepoint    INTEGER,
-    arrival_timepoint      INTEGER,
-    water_flow_vol_per_sec FLOAT,
+    scenario_id                       INTEGER,
+    weather_iteration                 INTEGER,
+    hydro_iteration                   INTEGER,
+    availability_iteration            INTEGER,
+    subproblem_id                     INTEGER,
+    stage_id                          INTEGER,
+    water_link                        VARCHAR(32),
+    departure_timepoint               INTEGER,
+    arrival_timepoint                 INTEGER,
+    water_flow_vol_per_sec            FLOAT,
+    water_flow_slack_used_vol_per_sec FLOAT,
     PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
                  availability_iteration, subproblem_id, stage_id, water_link,
                  departure_timepoint)
@@ -6973,6 +6976,7 @@ CREATE TABLE results_system_costs
     Total_Carbon_Credit_Costs                               FLOAT,
     Total_Peak_Deviation_Monthly_Demand_Charge_Cost         FLOAT,
     Total_Policy_Target_Balance_Penalty_Costs               FLOAT,
+    Total_Flow_Constraint_Slack_Tuning_Cost                 FLOAT,
     PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
                  availability_iteration, subproblem_id, stage_id)
 );
