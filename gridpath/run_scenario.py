@@ -815,7 +815,7 @@ def save_results(
                 )
             )
         if results.solver.termination_condition != TerminationCondition.optimal:
-            warnings.warn("   ...solution is not optimal.")
+            warnings.warn("   ...solution is not optimal!")
         # Continue with results export
         # Parse arguments to see if we're following a special rule for whether to
         # export results
@@ -1104,7 +1104,7 @@ def solve(instance, parsed_arguments):
             for row in _reader:
                 solver_options[row[0]] = row[1]
 
-        # Check the the solver name specified is the same as that given from the
+        # Check the solver name specified is the same as that given from the
         # command line (if any)
         if parsed_arguments.solver is not None:
             if not parsed_arguments.solver == solver_options["solver_name"]:

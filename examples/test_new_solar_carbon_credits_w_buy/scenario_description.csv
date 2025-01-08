@@ -26,7 +26,9 @@ of_deliverability,
 of_elcc_surface,
 of_local_capacity,
 of_markets,
+of_water,
 of_tuning,
+of_policy,
 temporal_scenario_id,3
 load_zone_scenario_id,1
 lf_reserves_up_ba_scenario_id,1
@@ -47,9 +49,12 @@ performance_standard_zones_carbon_credits_zones_scenario_id,NULL
 carbon_tax_zones_carbon_credits_zones_scenario_id,NULL
 carbon_credits_params_scenario_id,3
 fuel_burn_limit_ba_scenario_id,NULL
+policy_zone_scenario_id,NULL
 prm_zone_scenario_id,NULL
 local_capacity_zone_scenario_id,NULL
 market_scenario_id,NULL
+water_system_params_scenario_id,NULL
+water_network_scenario_id,NULL
 project_portfolio_scenario_id,4
 project_operational_chars_scenario_id,1
 project_availability_scenario_id,1
@@ -72,6 +77,7 @@ project_carbon_credits_generation_zone_scenario_id,1
 project_carbon_credits_purchase_zone_scenario_id,1
 project_carbon_credits_scenario_id,1
 project_fuel_burn_limit_ba_scenario_id,NULL
+project_policy_zone_scenario_id,NULL
 project_prm_zone_scenario_id,NULL
 prm_capacity_transfer_scenario_id,NULL
 prm_capacity_transfer_params_scenario_id,NULL
@@ -123,9 +129,14 @@ carbon_tax_scenario_id,NULL
 performance_standard_scenario_id,NULL
 fuel_burn_limit_scenario_id,NULL
 subsidy_scenario_id,NULL
+policy_requirement_scenario_id,NULL
 prm_requirement_scenario_id,NULL
 local_capacity_requirement_scenario_id,NULL
 elcc_surface_scenario_id,NULL
 market_price_scenario_id,NULL
 market_volume_scenario_id,NULL
+water_node_reservoir_scenario_id,NULL
+water_flow_scenario_id,NULL
+water_inflow_scenario_id,NULL
+water_powerhouse_scenario_id,NULL
 tuning_scenario_id,NULL

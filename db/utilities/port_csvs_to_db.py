@@ -44,12 +44,15 @@ portfoio CSVs are located in the *path* column of the
 this directory, the user must include a file for each portfolio they want to
 be able to model, e.g. *1_base.csv* for project_portfolio_scenario_id 1 and
 *2_extra_project.csv* for project_portfolio_scenario_id 2. CSVs for
-subscenarios flagged with 1 in the *project_input* column of the
+subscenarios flagged with 1 in the *sub_input_flag* column of the
 *csv_structure.csv* file require that the filename consist of the project
 name, subscenario ID, and subscenario name, separated by dashes, e.g. two
 profiles for a project named 'Solar' can be specified in the files named
 *Solar-1-base.csv* and *Solar-2-high.csv* respectively. Note that project
-filenames should not include dashes.
+filenames should not include dashes. Use the same format for transmission
+lines and reservoirs. To tell GridPath what the column name is for these
+types of inputs, include it in the sub_input_column field (e.g., project,
+transmission_line, or reservoir).
 
 A few subscenarios consist of multiple tables data for which is located
 inside CSVs in the same directory. For these subscenarios, the directory
@@ -82,7 +85,7 @@ from db.utilities.common_functions import (
     determine_tables_to_delete_from,
     confirm_and_temp_update_affected_tables,
     repopulate_tables,
-    verify_project_flag_project_alignment,
+    verify_sub_input_flag_project_alignment,
 )
 
 
@@ -176,8 +179,8 @@ def load_all_from_csv_structure(conn, csv_path, csv_structure, quiet):
             (
                 table,
                 inputs_dir,
-                project_flag,
-                project_is_tx,
+                sub_input_flag,
+                sub_input_column,
                 cols_to_exclude_str,
                 custom_method,
                 subscenario_type,
@@ -193,8 +196,8 @@ def load_all_from_csv_structure(conn, csv_path, csv_structure, quiet):
                 subscenario,
                 table,
                 subscenario_type,
-                project_flag,
-                project_is_tx,
+                sub_input_flag,
+                sub_input_column,
                 cols_to_exclude_str,
                 custom_method,
                 inputs_dir,
@@ -224,8 +227,8 @@ def load_all_subscenario_ids_from_directory(
             (
                 table,
                 inputs_dir,
-                project_flag,
-                project_is_tx,
+                sub_input_flag,
+                sub_input_column,
                 cols_to_exclude_str,
                 custom_method,
                 subscenario_type,
@@ -236,8 +239,8 @@ def load_all_subscenario_ids_from_directory(
                 subscenario=subscenario,
                 table=table,
                 subscenario_type=subscenario_type,
-                project_flag=project_flag,
-                project_is_tx=project_is_tx,
+                sub_input_flag=sub_input_flag,
+                sub_input_column=sub_input_column,
                 cols_to_exclude_str=cols_to_exclude_str,
                 custom_method=custom_method,
                 inputs_dir=inputs_dir,
@@ -286,17 +289,17 @@ def load_single_subscenario_id_from_directory(
         (
             subscenario_table,
             input_tables,
-            project_flag,
-            project_is_tx,
+            sub_input_flag,
+            sub_input_column,
             base_table,
             base_subscenario,
         ) = determine_tables_to_delete_from(
             csv_structure=csv_structure, subscenario=subscenario
         )
 
-        # Verify project-project_flag aligmnet
-        verify_project_flag_project_alignment(
-            project=project, project_flag=project_flag, subscenario=subscenario
+        # Verify project-sub_input_flag aligmnet
+        verify_sub_input_flag_project_alignment(
+            project=project, sub_input_flag=sub_input_flag, subscenario=subscenario
         )
 
         # If this subscenario ID (or the base subscenario ID if
@@ -310,8 +313,8 @@ def load_single_subscenario_id_from_directory(
             base_subscenario_ids_data,
         ) = confirm_and_temp_update_affected_tables(
             conn=conn,
-            project_flag=project_flag,
-            project_is_tx=project_is_tx,
+            sub_input_flag=sub_input_flag,
+            sub_input_column=sub_input_column,
             subscenario=subscenario,
             subscenario_id=subscenario_id_to_load,
             project=project,
@@ -327,8 +330,8 @@ def load_single_subscenario_id_from_directory(
             project=project,
             subscenario_table=subscenario_table,
             input_tables=input_tables,
-            project_flag=project_flag,
-            project_is_tx=project_is_tx,
+            sub_input_flag=sub_input_flag,
+            sub_input_column=sub_input_column,
         )
 
     # Import the data
@@ -339,17 +342,17 @@ def load_single_subscenario_id_from_directory(
             (
                 table,
                 inputs_dir,
-                project_flag,
-                project_is_tx,
+                sub_input_flag,
+                sub_input_column,
                 cols_to_exclude_str,
                 custom_method,
                 subscenario_type,
                 filename,
             ) = parse_row(row=row, csv_path=csv_path)
 
-            # Verify project-project_flag alignment
-            verify_project_flag_project_alignment(
-                project=project, project_flag=project_flag, subscenario=subscenario
+            # Verify project-sub_input_flag alignment
+            verify_sub_input_flag_project_alignment(
+                project=project, sub_input_flag=sub_input_flag, subscenario=subscenario
             )
 
             # Load the data for this (project-)subscenario_id
@@ -358,8 +361,8 @@ def load_single_subscenario_id_from_directory(
                 subscenario=subscenario,
                 table=table,
                 subscenario_type=subscenario_type,
-                project_flag=project_flag,
-                project_is_tx=project_is_tx,
+                sub_input_flag=sub_input_flag,
+                sub_input_column=sub_input_column,
                 cols_to_exclude_str=cols_to_exclude_str,
                 custom_method=custom_method,
                 inputs_dir=inputs_dir,
@@ -374,8 +377,8 @@ def load_single_subscenario_id_from_directory(
     if delete_flag:
         repopulate_tables(
             conn=conn,
-            project_flag=project_flag,
-            project_is_tx=project_is_tx,
+            sub_input_flag=sub_input_flag,
+            sub_input_column=sub_input_column,
             subscenario=subscenario,
             subscenario_id=subscenario_id_to_load,
             project=project,
@@ -469,8 +472,8 @@ def parse_row(row, csv_path):
     """
     table = row["table"]
     inputs_dir = os.path.join(csv_path, row["path"])
-    project_flag = True if int(row["project_input"]) else False
-    project_is_tx = True if int(row["project_is_tx"]) else False
+    sub_input_flag = True if int(row["sub_input_flag"]) else False
+    sub_input_column = row["sub_input_column"]
     cols_to_exclude_str = str(row["cols_to_exclude_str"])
     custom_method = str(row["custom_method"])
     subscenario_type = row["subscenario_type"]
@@ -479,8 +482,8 @@ def parse_row(row, csv_path):
     return (
         table,
         inputs_dir,
-        project_flag,
-        project_is_tx,
+        sub_input_flag,
+        sub_input_column,
         cols_to_exclude_str,
         custom_method,
         subscenario_type,

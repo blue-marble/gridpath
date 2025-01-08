@@ -96,27 +96,67 @@ class TestLoadRequirement(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Param: static_load_mw
+        #
+        expected = sorted([("Zone1", "all"), ("Zone2", "all"), ("Zone3", "all")])
+        actual = sorted([(z, cmp) for (z, cmp) in instance.LOAD_ZONE_LOAD_CMPNTS])
+        self.assertListEqual(
+            expected, actual, msg="LOAD_ZONES set data does not load correctly."
+        )
+
+        # Param: load_level_default
+        expected_defult = OrderedDict(
+            sorted(
+                {
+                    ("Zone1", "all"): float("inf"),
+                    ("Zone2", "all"): float("inf"),
+                    ("Zone3", "all"): 0,
+                }.items()
+            )
+        )
+        actual_default = OrderedDict(
+            sorted(
+                {
+                    (z, cmp): instance.load_level_default[z, cmp]
+                    for (z, cmp) in instance.LOAD_ZONE_LOAD_CMPNTS
+                }.items()
+            )
+        )
+        self.assertDictEqual(expected_defult, actual_default)
+
+        # Param: component_static_load_mw
         load_df = pd.read_csv(
             os.path.join(TEST_DATA_DIRECTORY, "inputs", "load_mw.tab"), sep="\t"
         )
-        expected_static_load = OrderedDict(
+        expected_component_static_load = OrderedDict(
             sorted(
-                load_df.set_index(["LOAD_ZONES", "timepoint"])
+                load_df.set_index(["LOAD_ZONES", "timepoint", "load_component"])
                 .to_dict()["load_mw"]
                 .items()
             )
         )
-        actual_static_load = OrderedDict(
+        actual_component_static_load = OrderedDict(
             sorted(
                 {
-                    (z, tmp): instance.static_load_mw[z, tmp]
-                    for z in instance.LOAD_ZONES
-                    for tmp in instance.TMPS
+                    (z, tmp, cmp): instance.component_static_load_mw[z, tmp, cmp]
+                    for (z, tmp, cmp) in instance.LOAD_ZONE_TMP_LOAD_CMPNTS
                 }.items()
             )
         )
-        self.assertDictEqual(expected_static_load, actual_static_load)
+        self.assertDictEqual(
+            expected_component_static_load, actual_component_static_load
+        )
+
+        from gridpath.system.load_balance.static_load_requirement import (
+            check_for_value_and_raise_value_error,
+        )
+
+        self.assertRaises(
+            ValueError,
+            check_for_value_and_raise_value_error,
+            instance.load_level_default["Zone1", "all"],
+            float("inf"),
+            "msg",
+        )
 
 
 if __name__ == "__main__":

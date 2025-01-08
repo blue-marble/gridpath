@@ -30,7 +30,7 @@ def get_required_subtype_modules(
     subproblem,
     stage,
     which_type,
-    prj_or_tx="project",
+    filename="projects",
 ):
     """
     Get a list of unique types from projects.tab.
@@ -44,7 +44,7 @@ def get_required_subtype_modules(
             subproblem,
             stage,
             "inputs",
-            "{}s.tab".format(prj_or_tx),
+            "{}.tab".format(filename),
         ),
         sep="\t",
     )

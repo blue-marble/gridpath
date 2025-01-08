@@ -29,8 +29,8 @@ TEST_DATA_DIRECTORY = os.path.join(
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
     "temporal.operations.timepoints",
-    "temporal.operations.horizons",
     "temporal.investment.periods",
+    "temporal.operations.horizons",
     "geography.load_zones",
     "project",
     "project.capacity.capacity",
@@ -137,6 +137,11 @@ class TestExogenousAvailabilityType(unittest.TestCase):
                 "Fuel_Prod_New",
                 "DAC",
                 "Flex_Load",
+                "Hydro_System_Gen1",
+                "Energy_Spec",
+                "Energy_Hrz_Shaping",
+                "Energy_LF",
+                "Energy_Slice_Hrz_Shaping",
             ]
         )
         actual_project_subset = sorted([prj for prj in instance.AVL_EXOG])

@@ -1,4 +1,4 @@
-# Copyright 2016-2023 Blue Marble Analytics LLC.
+# Copyright 2016-2024 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,8 +27,8 @@ TEST_DATA_DIRECTORY = os.path.join(os.path.dirname(__file__), "..", "..", "test_
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
     "temporal.operations.timepoints",
-    "temporal.operations.horizons",
     "temporal.investment.periods",
+    "temporal.operations.horizons",
     "geography.load_zones",
     "project",
     "project.capacity.capacity",
@@ -106,7 +106,12 @@ class TestCapacityGroups(unittest.TestCase):
 
         # Set: CAPACITY_GROUP_PERIODS
         expected_cap_group_periods = sorted(
-            [("Capacity_Group1", 2020), ("Capacity_Group1", 2030)]
+            [
+                ("Capacity_Group1", 2020),
+                ("Capacity_Group1", 2030),
+                ("Energy_Group", 2020),
+                ("Energy_Group", 2030),
+            ]
         )
         actual_cap_group_periods = sorted(
             [(prj, period) for (prj, period) in instance.CAPACITY_GROUP_PERIODS]
@@ -114,13 +119,19 @@ class TestCapacityGroups(unittest.TestCase):
         self.assertListEqual(expected_cap_group_periods, actual_cap_group_periods)
 
         # Set: CAPACITY_GROUPS
-        expected_cap_group_periods = sorted(["Capacity_Group1"])
+        expected_cap_group_periods = sorted(["Capacity_Group1", "Energy_Group"])
         actual_cap_group_periods = sorted([g for g in instance.CAPACITY_GROUPS])
         self.assertListEqual(expected_cap_group_periods, actual_cap_group_periods)
 
         # Set: PROJECTS_IN_CAPACITY_GROUP
         expected_prj_in_cap_group = {
-            "Capacity_Group1": ["Gas_CCGT_New", "Gas_CCGT_New_Binary", "Gas_CT_New"]
+            "Capacity_Group1": ["Gas_CCGT_New", "Gas_CCGT_New_Binary", "Gas_CT_New"],
+            "Energy_Group": [
+                "Energy_Spec",
+                "Energy_Hrz_Shaping",
+                "Energy_LF",
+                "Energy_Slice_Hrz_Shaping",
+            ],
         }
         actual_prj_in_cap_group = {
             g: [p for p in instance.PROJECTS_IN_CAPACITY_GROUP[g]]
@@ -132,17 +143,22 @@ class TestCapacityGroups(unittest.TestCase):
         expected_new_min = {
             ("Capacity_Group1", 2020): 1,
             ("Capacity_Group1", 2030): 1,
+            ("Energy_Group", 2020): 0,
+            ("Energy_Group", 2030): 0,
         }
         actual_new_min = {
             (g, p): instance.capacity_group_new_capacity_min[g, p]
             for (g, p) in instance.CAPACITY_GROUP_PERIODS
         }
+
         self.assertDictEqual(expected_new_min, actual_new_min)
 
         # Params: capacity_group_new_capacity_max
         expected_new_max = {
             ("Capacity_Group1", 2020): 10,
             ("Capacity_Group1", 2030): 10,
+            ("Energy_Group", 2020): float("inf"),
+            ("Energy_Group", 2030): float("inf"),
         }
         actual_new_max = {
             (g, p): instance.capacity_group_new_capacity_max[g, p]
@@ -154,6 +170,8 @@ class TestCapacityGroups(unittest.TestCase):
         expected_total_min = {
             ("Capacity_Group1", 2020): 2,
             ("Capacity_Group1", 2030): 5,
+            ("Energy_Group", 2020): 0,
+            ("Energy_Group", 2030): 0,
         }
         actual_total_min = {
             (g, p): instance.capacity_group_total_capacity_min[g, p]
@@ -165,9 +183,64 @@ class TestCapacityGroups(unittest.TestCase):
         expected_total_max = {
             ("Capacity_Group1", 2020): 20,
             ("Capacity_Group1", 2030): 50,
+            ("Energy_Group", 2020): float("inf"),
+            ("Energy_Group", 2030): float("inf"),
         }
         actual_total_max = {
             (g, p): instance.capacity_group_total_capacity_max[g, p]
             for (g, p) in instance.CAPACITY_GROUP_PERIODS
         }
         self.assertDictEqual(expected_total_max, actual_total_max)
+
+        # Params: energy_group_new_energy_min
+        expected_new_emin = {
+            ("Capacity_Group1", 2020): 0,
+            ("Capacity_Group1", 2030): 0,
+            ("Energy_Group", 2020): 0,
+            ("Energy_Group", 2030): 0,
+        }
+        actual_new_emin = {
+            (g, p): instance.energy_group_new_energy_min[g, p]
+            for (g, p) in instance.CAPACITY_GROUP_PERIODS
+        }
+
+        self.assertDictEqual(expected_new_emin, actual_new_emin)
+
+        # Params: energy_group_new_energy_max
+        expected_new_emax = {
+            ("Capacity_Group1", 2020): float("inf"),
+            ("Capacity_Group1", 2030): float("inf"),
+            ("Energy_Group", 2020): float("inf"),
+            ("Energy_Group", 2030): float("inf"),
+        }
+        actual_new_emax = {
+            (g, p): instance.energy_group_new_energy_max[g, p]
+            for (g, p) in instance.CAPACITY_GROUP_PERIODS
+        }
+        self.assertDictEqual(expected_new_emax, actual_new_emax)
+
+        # Params: energy_group_total_energy_min
+        expected_total_emin = {
+            ("Capacity_Group1", 2020): 0,
+            ("Capacity_Group1", 2030): 0,
+            ("Energy_Group", 2020): 0,
+            ("Energy_Group", 2030): 0,
+        }
+        actual_total_emin = {
+            (g, p): instance.energy_group_total_energy_min[g, p]
+            for (g, p) in instance.CAPACITY_GROUP_PERIODS
+        }
+        self.assertDictEqual(expected_total_emin, actual_total_emin)
+
+        # Params: energy_group_total_energy_max
+        expected_total_emax = {
+            ("Capacity_Group1", 2020): float("inf"),
+            ("Capacity_Group1", 2030): float("inf"),
+            ("Energy_Group", 2020): 1000,
+            ("Energy_Group", 2030): 1000,
+        }
+        actual_total_emax = {
+            (g, p): instance.energy_group_total_energy_max[g, p]
+            for (g, p) in instance.CAPACITY_GROUP_PERIODS
+        }
+        self.assertDictEqual(expected_total_emax, actual_total_emax)

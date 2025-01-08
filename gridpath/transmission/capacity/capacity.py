@@ -122,7 +122,7 @@ def add_model_components(
         subproblem=subproblem,
         stage=stage,
         which_type="tx_capacity_type",
-        prj_or_tx="transmission_line",
+        filename="transmission_lines",
     )
 
     # Import needed transmission capacity type modules for expression rules
@@ -253,7 +253,7 @@ def export_results(
         subproblem=subproblem,
         stage=stage,
         which_type="tx_capacity_type",
-        prj_or_tx="transmission_line",
+        filename="transmission_lines",
     )
 
     # Import needed transmission capacity type modules

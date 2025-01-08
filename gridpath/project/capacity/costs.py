@@ -126,10 +126,43 @@ def add_model_components(
 
     m.Capacity_Cost_in_Period = Expression(m.PRJ_FIN_PRDS, rule=capacity_cost_rule)
 
+    def energy_cost_rule(mod, prj, prd):
+        """
+        Get energy cost for each project's respective capacity module.
+        These are applied in every financial period.
+
+        Note that energy cost inputs and calculations in the modules are on
+        a period basis. Therefore, if the period spans subproblems (the main
+        example of this would be specified capacity in, say, a production-cost
+        scenario with multiple subproblems), we adjust the capacity costs down
+        accordingly.
+        """
+        cap_type = mod.capacity_type[prj]
+        if hasattr(imported_capacity_modules[cap_type], "energy_cost_rule"):
+            energy_cost = imported_capacity_modules[cap_type].energy_cost_rule(
+                mod, prj, prd
+            )
+        else:
+            energy_cost = cap_type_init.energy_cost_rule(mod, prj, prd)
+
+        return (
+            energy_cost
+            * mod.hours_in_subproblem_period[prd]
+            / mod.hours_in_period_timepoints[prd]
+        )
+
+    m.Energy_Cost_in_Period = Expression(m.PRJ_FIN_PRDS, rule=energy_cost_rule)
+
     def fixed_cost_rule(mod, prj, prd):
         """
         Get fixed cost for each generator's respective capacity module. These are
         applied in every operational period.
+
+        Existing project costs are here only (i.e., we exclude ongoing sunk
+        capital cost payments).
+
+        New projects can have capacity/energy costs in addition to the fixed
+        costs here.
 
         Note that fixed cost inputs and calculations in the modules are on
         a period basis. Therefore, if the period spans subproblems (the main

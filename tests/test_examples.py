@@ -98,7 +98,9 @@ class TestExamples(unittest.TestCase):
 
         self.assertListEqual(expected_validations, actual_validations)
 
-    def run_and_check_objective(self, test, expected_objective, parallel=1):
+    def run_and_check_objective(
+        self, test, expected_objective, solver=None, parallel=1
+    ):
         """
 
         :param test: str, name of the test example
@@ -107,28 +109,30 @@ class TestExamples(unittest.TestCase):
             parallelization functionality
         :return:
         """
+        args_to_pass = [
+            "--database",
+            DB_PATH,
+            "--scenario",
+            test,
+            "--scenario_location",
+            EXAMPLES_DIRECTORY,
+            # "--log",
+            # "--write_solver_files_to_logs_dir",
+            # "--keepfiles",
+            # "--symbolic",
+            "--n_parallel_get_inputs",
+            str(parallel),
+            "--n_parallel_solve",
+            str(parallel),
+            "--quiet",
+            "--mute_solver_output",
+            "--testing",
+        ]
+        if solver is not None:
+            args_to_pass.append("--solver")
+            args_to_pass.append(solver)
 
-        actual_objective = run_end_to_end.main(
-            [
-                "--database",
-                DB_PATH,
-                "--scenario",
-                test,
-                "--scenario_location",
-                EXAMPLES_DIRECTORY,
-                # "--log",
-                # "--write_solver_files_to_logs_dir",
-                # "--keepfiles",
-                # "--symbolic",
-                "--n_parallel_get_inputs",
-                str(parallel),
-                "--n_parallel_solve",
-                str(parallel),
-                "--quiet",
-                "--mute_solver_output",
-                "--testing",
-            ]
-        )
+        actual_objective = run_end_to_end.main(args_to_pass)
 
         # Check if we have a multiprocessing manager
         # If so, convert the manager proxy dictionary to a simple dictionary
@@ -212,7 +216,9 @@ class TestExamples(unittest.TestCase):
             logging.exception(e)
             os.remove(DB_PATH)
 
-    def validate_and_test_example_generic(self, scenario_name, skip_validation=False):
+    def validate_and_test_example_generic(
+        self, scenario_name, solver=None, skip_validation=False
+    ):
         # Use the expected objective column by default
         column_to_use = "expected_objective"
         if MACOS and not pd.isnull(
@@ -231,7 +237,9 @@ class TestExamples(unittest.TestCase):
         objective = ast.literal_eval(self.df.loc[scenario_name][column_to_use])
         if not skip_validation:
             self.check_validation(scenario_name)
-        self.run_and_check_objective(scenario_name, objective)
+        self.run_and_check_objective(
+            test=scenario_name, solver=solver, expected_objective=objective
+        )
 
     def test_example_test(self):
         """
@@ -797,7 +805,8 @@ class TestExamples(unittest.TestCase):
 
     def test_example_2periods_new_build_capgroups(self):
         """
-        Check validation and objective function value of "2periods_new_build" example
+        Check validation and objective function value of
+        "test_example_2periods_new_build_capgroups" example
         """
         scenario_name = "2periods_new_build_capgroups"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
@@ -831,7 +840,7 @@ class TestExamples(unittest.TestCase):
     def test_example_test_new_build_gen_var_stor_hyb(self):
         """
         Check validation and objective function value of
-        "2periods_new_build_horizon_energy_target_halfyear" example
+        "test_new_build_gen_var_stor_hyb" example
         :return:
         """
         scenario_name = "test_new_build_gen_var_stor_hyb"
@@ -1364,13 +1373,22 @@ class TestExamples(unittest.TestCase):
         scenario_name = "test_new_instantaneous_penetration"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
-    def test_open_data(self):
+    def test_hydro_system_exog_elev(self):
         """
-        Check validation and objective function value of "open_data" example
+        Check validation and objective function value of "hydro_system" example
         :return:
         """
 
-        scenario_name = "open_data"
+        scenario_name = "hydro_system_exog_elev"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_hydro_system_exog_elev_w_travel_time(self):
+        """
+        Check validation and objective function value of "hydro_system" example
+        :return:
+        """
+
+        scenario_name = "hydro_system_exog_elev_w_travel_time"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_test_tx_flow_w_simflow(self):
@@ -1381,6 +1399,167 @@ class TestExamples(unittest.TestCase):
 
         scenario_name = "test_tx_flow_w_simflow"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_ra_toolkit_sync_single_year_w_hydro_instead_of_weather_profile(
+        self,
+    ):
+        """
+        Check validation and objective function values of
+        "ra_toolkit_sync_single_year_w_hydro_instead_of_weather_profile" example
+        :return:
+        """
+        scenario_name = "ra_toolkit_sync_single_year_w_hydro_instead_of_weather_profile"
+        self.validate_and_test_example_generic(
+            scenario_name=scenario_name, skip_validation=True
+        )
+
+    def test_example_2periods_new_build_2zones_loadcomponents(self):
+        """
+        Check validation and objective function value of
+        "2periods_new_build_2zones_loadcomponents" example
+        :return:
+        """
+        scenario_name = "2periods_new_build_2zones_loadcomponents"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_2periods_nuclear_var_cost_by_timepoint_same(self):
+        """
+        Check validation and objective function value of
+        "2periods_nuclear_var_cost_by_timepoint_same" example
+        :return:
+        """
+        scenario_name = "2periods_nuclear_var_cost_by_timepoint_same"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_2periods_nuclear_var_cost_by_timepoint_diff(self):
+        """
+        Check validation and objective function value of
+        "2periods_nuclear_var_cost_by_timepoint_diff" example
+        :return:
+        """
+        scenario_name = "2periods_nuclear_var_cost_by_timepoint_diff"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_w_storage_wind_as_energy(self):
+        """
+        Check validation and objective function value of
+        "test_w_storage_wind_as_energy" example
+        :return:
+        """
+        scenario_name = "test_w_storage_wind_as_energy"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_w_hydro_no_reserves(self):
+        """
+        Check validation and objective function value of
+        "test_w_hydro_no_reserves"
+        example
+        :return:
+        """
+        scenario_name = "test_w_hydro_no_reserves"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_w_hydro_as_energy_no_reserves(self):
+        """
+        Check validation and objective function value of
+        "test_w_hydro_as_energy_no_reserves"
+        example
+        :return:
+        """
+        scenario_name = "test_w_hydro_as_energy_no_reserves"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_w_lf(self):
+        """
+        Check validation and objective function value of
+        "test_w_lf" example
+        :return:
+        """
+        scenario_name = "test_w_lf"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_w_lf_w_demand_charges(self):
+        """
+        Check validation and objective function value of
+        "test_w_lf_w_demand_charges" example
+        :return:
+        """
+        scenario_name = "test_w_lf_w_demand_charges"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_w_lf_only(self):
+        """
+        Check validation and objective function value of
+        "test_w_lf_only" example
+        :return:
+        """
+        scenario_name = "test_w_lf_only"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_w_lf_only_and_prices(self):
+        """
+        Check validation and objective function value of
+        "test_w_lf_only_and_prices" example
+        :return:
+        """
+        scenario_name = "test_w_lf_only_and_prices"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_w_lf_only_energy_potential_limit(self):
+        """
+        Check validation and objective function value of
+        "test_w_lf_only_energy_potential_limit" example
+        :return:
+        """
+        scenario_name = "test_w_lf_only_energy_potential_limit"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_w_hydro_as_slice_candidate(self):
+        """
+        Check validation and objective function value of
+        "test_w_hydro_as_slice_candidate"
+        example
+        :return:
+        """
+        scenario_name = "test_w_hydro_as_slice_candidate"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_w_energy_products(self):
+        """
+        Check validation and objective function value of
+        "test_w_lf_only_and_prices" example
+        :return:
+        """
+        scenario_name = "test_w_energy_products"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_w_energy_products_group_limits(self):
+        """
+        Check validation and objective function value of
+        "test_w_lf_only_and_prices" example
+        :return:
+        """
+        scenario_name = "test_w_energy_products_group_limits"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_2periods_new_build_generic_policy(self):
+        """
+        Check validation and objective function value of
+        "2periods_new_build_generic_policy" example
+        :return:
+        """
+        scenario_name = "2periods_new_build_generic_policy"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_open_data(self):
+        """
+        Check validation and objective function value of "open_data" example
+        :return:
+        """
+
+        scenario_name = "open_data"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
 
     @classmethod
     def tearDownClass(cls):

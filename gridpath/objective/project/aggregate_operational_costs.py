@@ -197,6 +197,24 @@ def add_model_components(
         rule=total_soc_last_tmp_penalty_cost_rule
     )
 
+    def total_peak_deviation_monthly_demand_charge_cost_rule(mod):
+        """
+        Sum demand charges for each pr, prd, month.
+        :param mod:
+        :return:
+        """
+        return sum(
+            mod.Peak_Deviation_Demand_Charge_Cost[g, prd, mnth]
+            * mod.number_years_represented[prd]
+            * mod.discount_factor[prd]
+            for (g, prd) in mod.PRJ_OPR_PRDS
+            for mnth in mod.MONTHS
+        )
+
+    m.Total_Peak_Deviation_Monthly_Demand_Charge_Cost = Expression(
+        rule=total_peak_deviation_monthly_demand_charge_cost_rule
+    )
+
     record_dynamic_components(dynamic_components=d)
 
 
@@ -218,4 +236,7 @@ def record_dynamic_components(dynamic_components):
     getattr(dynamic_components, cost_components).append("Total_SOC_Penalty_Cost")
     getattr(dynamic_components, cost_components).append(
         "Total_SOC_Penalty_Last_Tmp_Cost"
+    )
+    getattr(dynamic_components, cost_components).append(
+        "Total_Peak_Deviation_Monthly_Demand_Charge_Cost"
     )

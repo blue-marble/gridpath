@@ -228,7 +228,7 @@ def energy_budget_rule(mod, p, h):
             mod.DR_Shift_Up_MW[p, tmp] * mod.hrs_in_tmp[tmp]
             for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[mod.balancing_type_project[p], h]
         )
-        <= mod.Energy_Capacity_MWh[
+        <= mod.Energy_Storage_Capacity_MWh[
             p, mod.period[mod.first_hrz_tmp[mod.balancing_type_project[p], h]]
         ]
     )

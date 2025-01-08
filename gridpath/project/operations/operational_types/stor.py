@@ -68,7 +68,7 @@ from gridpath.project.operations.operational_types.common_functions import (
     check_for_tmps_to_link,
     validate_opchars,
     write_tab_file_model_inputs,
-    get_prj_tmp_opr_inputs_from_db,
+    get_prj_temporal_index_opr_inputs_from_db,
 )
 from gridpath.common_functions import create_results_df
 
@@ -560,7 +560,8 @@ def max_energy_in_storage_rule(mod, s, tmp):
     """
     return (
         mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp]
-        <= mod.Energy_Capacity_MWh[s, mod.period[tmp]] * mod.Availability_Derate[s, tmp]
+        <= mod.Energy_Storage_Capacity_MWh[s, mod.period[tmp]]
+        * mod.Availability_Derate[s, tmp]
     )
 
 
@@ -649,7 +650,8 @@ def max_footroom_energy_rule(mod, s, tmp):
         mod.Stor_Downward_Reserves_MW[s, tmp]
         * mod.hrs_in_tmp[tmp]
         * mod.stor_charging_efficiency[s]
-        <= mod.Energy_Capacity_MWh[s, mod.period[tmp]] * mod.Availability_Derate[s, tmp]
+        <= mod.Energy_Storage_Capacity_MWh[s, mod.period[tmp]]
+        * mod.Availability_Derate[s, tmp]
         - mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp]
         - mod.Stor_Charge_MW[s, tmp]
         * mod.hrs_in_tmp[tmp]
@@ -705,8 +707,16 @@ def variable_om_cost_rule(mod, g, tmp):
 def variable_om_by_period_cost_rule(mod, prj, tmp):
     """ """
     return (
-        mod.Stor_Discharge_MW[g, tmp]
+        mod.Stor_Discharge_MW[prj, tmp]
         * mod.variable_om_cost_per_mwh_by_period[prj, mod.period[tmp]]
+    )
+
+
+def variable_om_by_timepoint_cost_rule(mod, prj, tmp):
+    """ """
+    return (
+        mod.Stor_Discharge_MW[prj, tmp]
+        * mod.variable_om_cost_per_mwh_by_timepoint[prj, tmp]
     )
 
 
@@ -771,7 +781,7 @@ def get_model_inputs_from_database(
         weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
     )
 
-    prj_tmp_data = get_prj_tmp_opr_inputs_from_db(
+    prj_tmp_data = get_prj_temporal_index_opr_inputs_from_db(
         subscenarios=subscenarios,
         weather_iteration=db_weather_iteration,
         hydro_iteration=db_hydro_iteration,
@@ -1057,7 +1067,7 @@ def curtailment_cost_rule(mod, g, tmp):
 def soc_penalty_cost_rule(mod, prj, tmp):
     """ """
     return mod.soc_penalty_cost_per_energyunit[prj] * (
-        mod.Energy_Capacity_MWh[prj, mod.period[tmp]]
+        mod.Energy_Storage_Capacity_MWh[prj, mod.period[tmp]]
         * mod.Availability_Derate[prj, tmp]
         - mod.Stor_Ending_Energy_in_Storage_MWh[prj, tmp]
     )
@@ -1069,7 +1079,7 @@ def soc_last_tmp_penalty_cost_rule(mod, prj, tmp):
         mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[prj]
     ):
         return mod.soc_last_tmp_penalty_cost_per_energyunit[prj] * (
-            mod.Energy_Capacity_MWh[prj, mod.period[tmp]]
+            mod.Energy_Storage_Capacity_MWh[prj, mod.period[tmp]]
             * mod.Availability_Derate[prj, tmp]
             - mod.Stor_Ending_Energy_in_Storage_MWh[prj, tmp]
         )

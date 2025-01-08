@@ -50,9 +50,10 @@ import pandas as pd
 
 from db.common_functions import connect_to_database
 
-LOAD_SCENARIO_ID_DEFAULT = 1
-LOAD_SCENARIO_NAME_DEFAULT = "ra_toolkit"
+LOAD_LEVELS_SCENARIO_ID_DEFAULT = 1
+LOAD_LEVELS_SCENARIO_NAME_DEFAULT = "ra_toolkit"
 STAGE_ID_DEFAULT = 1
+LOAD_COMPONENT_NAME_DEFAULT = "all"
 
 
 def parse_arguments(args):
@@ -70,15 +71,15 @@ def parse_arguments(args):
     parser.add_argument("-out_dir", "--output_directory")
     parser.add_argument(
         "-id",
-        "--load_scenario_id",
-        default=LOAD_SCENARIO_ID_DEFAULT,
-        help=f"Defaults to {LOAD_SCENARIO_ID_DEFAULT}.",
+        "--load_levels_scenario_id",
+        default=LOAD_LEVELS_SCENARIO_ID_DEFAULT,
+        help=f"Defaults to {LOAD_LEVELS_SCENARIO_ID_DEFAULT}.",
     )
     parser.add_argument(
         "-name",
-        "--load_scenario_name",
-        default=LOAD_SCENARIO_NAME_DEFAULT,
-        help=f"Defaults to '{LOAD_SCENARIO_NAME_DEFAULT}'.",
+        "--load_levels_scenario_name",
+        default=LOAD_LEVELS_SCENARIO_NAME_DEFAULT,
+        help=f"Defaults to '{LOAD_LEVELS_SCENARIO_NAME_DEFAULT}'.",
     )
 
     parser.add_argument(
@@ -86,6 +87,13 @@ def parse_arguments(args):
         "--stage_id",
         default=STAGE_ID_DEFAULT,
         help=f"Defaults to '{STAGE_ID_DEFAULT}",
+    )
+
+    parser.add_argument(
+        "-comp",
+        "--load_component",
+        default=LOAD_COMPONENT_NAME_DEFAULT,
+        help=f"Defaults to '{LOAD_COMPONENT_NAME_DEFAULT}",
     )
 
     parser.add_argument(
@@ -106,9 +114,10 @@ def parse_arguments(args):
 def create_load_profile_csv(
     conn,
     output_directory,
-    load_scenario_id,
-    load_scenario_name,
+    load_levels_scenario_id,
+    load_levels_scenario_name,
     stage_id,
+    load_component_name,
     overwrite,
 ):
     """
@@ -120,7 +129,9 @@ def create_load_profile_csv(
 
     query = f"""
         SELECT load_zone, year AS weather_iteration, {stage_id} as stage_id, 
-        hour_of_year as timepoint, sum(weighted_load_mw) as load_mw
+        hour_of_year as timepoint, 
+        '{load_component_name}' AS load_component, sum(weighted_load_mw) as 
+        load_mw
         FROM (
         SELECT year, month, day_of_month, hour_of_day, load_zone_unit, load_zone, unit_weight, load_mw, unit_weight * load_mw as weighted_load_mw,
             (CAST(
@@ -147,7 +158,7 @@ def create_load_profile_csv(
 
     filename = os.path.join(
         output_directory,
-        f"{load_scenario_id}_{load_scenario_name}.csv",
+        f"{load_levels_scenario_id}_{load_levels_scenario_name}.csv",
     )
     if overwrite:
         mode = "w"
@@ -180,9 +191,10 @@ def main(args=None):
     create_load_profile_csv(
         conn=conn,
         output_directory=parsed_args.output_directory,
-        load_scenario_id=parsed_args.load_scenario_id,
-        load_scenario_name=parsed_args.load_scenario_name,
+        load_levels_scenario_id=parsed_args.load_levels_scenario_id,
+        load_levels_scenario_name=parsed_args.load_levels_scenario_name,
         stage_id=parsed_args.stage_id,
+        load_component_name=parsed_args.load_component,
         overwrite=parsed_args.overwrite,
     )
 

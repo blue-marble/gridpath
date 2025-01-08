@@ -1,4 +1,4 @@
-# Copyright 2016-2023 Blue Marble Analytics LLC.
+# Copyright 2016-2024 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,14 +26,22 @@ TEST_DATA_DIRECTORY = os.path.join(os.path.dirname(__file__), "..", "..", "test_
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
     "temporal.operations.timepoints",
-    "temporal.operations.horizons",
     "temporal.investment.periods",
+    "temporal.operations.horizons",
     "geography.load_zones",
+    "geography.water_network",
+    "system.water.water_system_params",
+    "system.water.water_flows",
+    "system.water.water_nodes",
+    "system.water.reservoirs",
+    "system.water.water_node_balance",
+    "system.water.powerhouses",
     "project",
     "project.capacity.capacity",
     "project.availability.availability",
     "project.fuels",
     "project.operations",
+    "system.load_balance.static_load_requirement",
     "project.operations.operational_types",
     "project.operations.power",
 ]

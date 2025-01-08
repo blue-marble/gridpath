@@ -80,7 +80,7 @@ def add_model_components(
     |                                                                         |
     | The maximum amount of power capacity for a project in a certain period. |
     +-------------------------------------------------------------------------+
-    | | :code:`min_new_build_energy`                                          |
+    | | :code:`min_new_build_stor_energy`                                          |
     | | *Defined over*: :code:`PROJECTS`, :code:`PERIODS`                     |
     | | *Within*: :code:`NonNegativeReals`                                    |
     | | *Default*: :code:`0`                                                  |
@@ -88,7 +88,7 @@ def add_model_components(
     | The minimum amount of energy capacity for a project to be built in a    |
     | certain period.                                                         |
     +-------------------------------------------------------------------------+
-    | | :code:`max_new_build_energy`                                          |
+    | | :code:`max_new_build_stor_energy`                                          |
     | | *Defined over*: :code:`PROJECTS`, :code:`PERIODS`                     |
     | | *Within*: :code:`NonNegativeReals`                                    |
     | | *Default*: :code:`Infinity`                                           |
@@ -96,14 +96,14 @@ def add_model_components(
     | The maximum amount of energy capacity for a project to be built in a    |
     | certain period.                                                         |
     +-------------------------------------------------------------------------+
-    | | :code:`min_capacity_energy`                                           |
+    | | :code:`min_capacity_stor_energy`                                           |
     | | *Defined over*: :code:`PROJECTS`, :code:`PERIODS`                     |
     | | *Within*: :code:`NonNegativeReals`                                    |
     | | *Default*: :code:`0`                                                  |
     |                                                                         |
     | The minimum amount of energy capacity for a project in a certain period.|
     +-------------------------------------------------------------------------+
-    | | :code:`max_capacity_energy`                                           |
+    | | :code:`max_capacity_stor_energy`                                           |
     | | *Defined over*: :code:`PROJECTS`, :code:`PERIODS`                     |
     | | *Within*: :code:`NonNegativeReals`                                    |
     | | *Default*: :code:`Infinity`                                           |
@@ -140,29 +140,29 @@ def add_model_components(
     | Limits the amount of power capacity that can exist in a certain period, |
     | based on :code:`max_capacity_power`.                                    |
     +-------------------------------------------------------------------------+
-    | | :code:`Min_Build_Energy_Constraint`                                   |
+    | | :code:`Min_Build_Stor_Energy_Constraint`                                   |
     | | *Defined over*: :code:`PROJECTS`, :code:`PERIODS`                     |
     |                                                                         |
     | Ensures that certain amount of energy capacity must be built in a       |
-    | particular period, based on :code:`min_new_build_energy`.               |
+    | particular period, based on :code:`min_new_build_stor_energy`.               |
     +-------------------------------------------------------------------------+
-    | | :code:`Max_Build_Energy_Constraint`                                   |
+    | | :code:`Max_Build_Stor_Energy_Constraint`                                   |
     | | *Defined over*: :code:`PROJECTS`, :code:`PERIODS`                     |
     |                                                                         |
     | Limits the amount of energy capacity that can be built in a particular  |
-    | period based on :code:`max_new_build_energy`.                           |
+    | period based on :code:`max_new_build_stor_energy`.                           |
     +-------------------------------------------------------------------------+
-    | | :code:`Min_Energy_Constraint`                                         |
+    | | :code:`Min_Stor_Energy_Constraint`                                         |
     | | *Defined over*: :code:`PROJECTS`, :code:`PERIODS`                     |
     |                                                                         |
     | Ensures that certain amount of energy capacity must exist in a certain  |
-    | period, based on :code:`min_capacity_energy`.                           |
+    | period, based on :code:`min_capacity_stor_energy`.                           |
     +-------------------------------------------------------------------------+
-    | | :code:`Max_Energy_Constraint`                                         |
+    | | :code:`Max_Stor_Energy_Constraint`                                         |
     | | *Defined over*: :code:`PROJECTS`, :code:`PERIODS`                     |
     |                                                                         |
     | Limits the amount of energy capacity that can exist in a certain        |
-    | period, based on :code:`max_capacity_energy`.                           |
+    | period, based on :code:`max_capacity_stor_energy`.                           |
     +-------------------------------------------------------------------------+
 
 
@@ -191,16 +191,27 @@ def add_model_components(
         else:
             return cap_type_init.new_capacity_rule(mod, prj, prd)
 
-    def new_energy_capacity_rule(mod, prj, prd):
+    def new_energy_rule(mod, prj, prd):
         cap_type = mod.capacity_type[prj]
         # The capacity type modules check if this period is a "vintage" for
         # this project and return 0 if not
-        if hasattr(imported_capacity_modules[cap_type], "new_energy_capacity_rule"):
-            return imported_capacity_modules[cap_type].new_energy_capacity_rule(
+        if hasattr(imported_capacity_modules[cap_type], "new_energy_rule"):
+            return imported_capacity_modules[cap_type].new_energy_rule(mod, prj, prd)
+        else:
+            return cap_type_init.new_energy_rule(mod, prj, prd)
+
+    def new_energy_stor_capacity_rule(mod, prj, prd):
+        cap_type = mod.capacity_type[prj]
+        # The capacity type modules check if this period is a "vintage" for
+        # this project and return 0 if not
+        if hasattr(
+            imported_capacity_modules[cap_type], "new_energy_stor_capacity_rule"
+        ):
+            return imported_capacity_modules[cap_type].new_energy_stor_capacity_rule(
                 mod, prj, prd
             )
         else:
-            return cap_type_init.new_energy_capacity_rule(mod, prj, prd)
+            return cap_type_init.new_energy_stor_capacity_rule(mod, prj, prd)
 
     # Optional Params
     ###########################################################################
@@ -230,25 +241,50 @@ def add_model_components(
         default=float("inf"),
     )
 
-    m.min_new_build_energy = Param(
+    m.min_new_build_stor_energy = Param(
         m.PROJECTS, m.PERIODS, within=NonNegativeReals, default=0
     )
 
-    m.max_new_build_energy = Param(
+    m.max_new_build_stor_energy = Param(
         m.PROJECTS,
         m.PERIODS,
         within=NonNegativeReals,
         default=float("inf"),
     )
 
-    m.min_capacity_energy = Param(
+    m.min_capacity_stor_energy = Param(
         m.PROJECTS,
         m.PERIODS,
         within=NonNegativeReals,
         default=0,
     )
 
-    m.max_capacity_energy = Param(
+    m.max_capacity_stor_energy = Param(
+        m.PROJECTS,
+        m.PERIODS,
+        within=NonNegativeReals,
+        default=float("inf"),
+    )
+
+    m.min_new_procured_energy = Param(
+        m.PROJECTS, m.PERIODS, within=NonNegativeReals, default=0
+    )
+
+    m.max_new_procured_energy = Param(
+        m.PROJECTS,
+        m.PERIODS,
+        within=NonNegativeReals,
+        default=float("inf"),
+    )
+
+    m.min_total_energy = Param(
+        m.PROJECTS,
+        m.PERIODS,
+        within=NonNegativeReals,
+        default=0,
+    )
+
+    m.max_total_energy = Param(
         m.PROJECTS,
         m.PERIODS,
         within=NonNegativeReals,
@@ -315,43 +351,114 @@ def add_model_components(
 
     m.Max_Power_Constraint = Constraint(m.PRJ_OPR_PRDS, rule=max_power_rule)
 
-    # Energy capacity (for storage)
-    def min_build_energy_rule(mod, prj, prd):
+    # Energy storage capacity (this is not energy procurement)
+    def min_build_stor_energy_rule(mod, prj, prd):
         """
-        **Constraint Name**: Min_Build_Energy_Constraint
+        **Constraint Name**: Min_Build_Stor_Energy_Constraint
         **Enforced Over**: m.PROJECTS, m.PERIODS
 
         Must build a certain amount of energy capacity in period.
         """
-        if mod.min_new_build_energy[prj, prd] == 0:
+        if mod.min_new_build_stor_energy[prj, prd] == 0:
             return Constraint.Skip
         else:
             return (
-                new_energy_capacity_rule(mod, prj, prd)
-                >= mod.min_new_build_energy[prj, prd]
+                new_energy_stor_capacity_rule(mod, prj, prd)
+                >= mod.min_new_build_stor_energy[prj, prd]
             )
 
-    m.Min_Build_Energy_Constraint = Constraint(
-        m.PRJ_OPR_PRDS, rule=min_build_energy_rule
+    m.Min_Build_Stor_Energy_Constraint = Constraint(
+        m.PRJ_OPR_PRDS, rule=min_build_stor_energy_rule
     )
 
-    def max_build_energy_rule(mod, prj, prd):
+    def max_build_stor_energy_rule(mod, prj, prd):
         """
-        **Constraint Name**: Max_Build_Energy_Constraint
+        **Constraint Name**: Max_Build_Stor_Energy_Constraint
         **Enforced Over**: m.PROJECTS, m.PERIODS
 
         Can't build more than certain amount of energy capacity in period.
         """
-        if mod.max_new_build_energy[prj, prd] == float("inf"):
+        if mod.max_new_build_stor_energy[prj, prd] == float("inf"):
             return Constraint.Skip
         else:
             return (
-                new_energy_capacity_rule(mod, prj, prd)
-                <= mod.max_new_build_energy[prj, prd]
+                new_energy_stor_capacity_rule(mod, prj, prd)
+                <= mod.max_new_build_stor_energy[prj, prd]
+            )
+
+    m.Max_Build_Stor_Energy_Constraint = Constraint(
+        m.PRJ_OPR_PRDS, rule=max_build_stor_energy_rule
+    )
+
+    def min_energy_rule(mod, prj, prd):
+        """
+        **Constraint Name**: Min_Stor_Energy_Constraint
+        **Enforced Over**: m.PROJECTS, m.PERIOD
+
+        Must have a certain amount of energy capacity in period.
+        """
+        if mod.min_capacity_stor_energy[prj, prd] == 0:
+            return Constraint.Skip
+        else:
+            return (
+                mod.Energy_Storage_Capacity_MWh[prj, prd]
+                >= mod.min_capacity_stor_energy[prj, prd]
+            )
+
+    m.Min_Stor_Energy_Constraint = Constraint(m.PRJ_OPR_PRDS, rule=min_energy_rule)
+
+    def max_energy_rule(mod, prj, prd):
+        """
+        **Constraint Name**: Max_Stor_Energy_Constraint
+        **Enforced Over**: m.PROJECTS, m.PERIOD
+
+        Can't have more than certain amount of energy capacity in period.
+        """
+        if mod.max_capacity_stor_energy[prj, prd] == float("inf"):
+            return Constraint.Skip
+        else:
+            return (
+                mod.Energy_Storage_Capacity_MWh[prj, prd]
+                <= mod.max_capacity_stor_energy[prj, prd]
+            )
+
+    m.Max_Stor_Energy_Constraint = Constraint(m.PRJ_OPR_PRDS, rule=max_energy_rule)
+
+    # Energy products
+    def min_procured_energy_rule(mod, prj, prd):
+        """
+        **Constraint Name**: Min_Build_Energy_Constraint
+        **Enforced Over**: m.PROJECTS, m.PERIODS
+
+        Must build a certain amount of capacity in period.
+        """
+        if mod.min_new_procured_energy[prj, prd] == 0:
+            return Constraint.Skip
+        else:
+            return (
+                new_energy_rule(mod, prj, prd) >= mod.min_new_procured_energy[prj, prd]
+            )
+
+    m.Min_Build_Energy_Constraint = Constraint(
+        m.PRJ_OPR_PRDS, rule=min_procured_energy_rule
+    )
+
+    def max_procured_energy_rule(mod, prj, prd):
+        """
+        **Constraint Name**: Max_Build_Energy_Constraint
+        **Enforced Over**: m.PROJECTS, m.PERIODS
+
+        Can't build more than certain amount of capacity in period.
+        """
+        if mod.max_new_procured_energy[prj, prd] == float("inf"):
+            return Constraint.Skip
+        else:
+            return (
+                new_energy_rule(mod, prj, prd) <= mod.max_new_procured_energy[prj, prd]
             )
 
     m.Max_Build_Energy_Constraint = Constraint(
-        m.PRJ_OPR_PRDS, rule=max_build_energy_rule
+        m.PRJ_OPR_PRDS, rule=max_procured_energy_rule
     )
 
     def min_energy_rule(mod, prj, prd):
@@ -359,14 +466,12 @@ def add_model_components(
         **Constraint Name**: Min_Energy_Constraint
         **Enforced Over**: m.PROJECTS, m.PERIOD
 
-        Must have a certain amount of energy capacity in period.
+        Must have a certain amount of capacity in period.
         """
-        if mod.min_capacity_energy[prj, prd] == 0:
+        if mod.min_total_energy[prj, prd] == 0:
             return Constraint.Skip
         else:
-            return (
-                mod.Energy_Capacity_MWh[prj, prd] >= mod.min_capacity_energy[prj, prd]
-            )
+            return mod.Energy_MWh[prj, prd] >= mod.min_total_energy[prj, prd]
 
     m.Min_Energy_Constraint = Constraint(m.PRJ_OPR_PRDS, rule=min_energy_rule)
 
@@ -375,14 +480,12 @@ def add_model_components(
         **Constraint Name**: Max_Energy_Constraint
         **Enforced Over**: m.PROJECTS, m.PERIOD
 
-        Can't have more than certain amount of energy capacity in period.
+        Can't have more than certain amount of capacity in period.
         """
-        if mod.max_capacity_energy[prj, prd] == float("inf"):
+        if mod.max_total_energy[prj, prd] == float("inf"):
             return Constraint.Skip
         else:
-            return (
-                mod.Energy_Capacity_MWh[prj, prd] <= mod.max_capacity_energy[prj, prd]
-            )
+            return mod.Energy_MWh[prj, prd] <= mod.max_total_energy[prj, prd]
 
     m.Max_Energy_Constraint = Constraint(m.PRJ_OPR_PRDS, rule=max_energy_rule)
 
@@ -429,10 +532,14 @@ def load_model_data(
                 m.max_new_build_power,
                 m.min_capacity_power,
                 m.max_capacity_power,
-                m.min_new_build_energy,
-                m.max_new_build_energy,
-                m.min_capacity_energy,
-                m.max_capacity_energy,
+                m.min_new_build_stor_energy,
+                m.max_new_build_stor_energy,
+                m.min_capacity_stor_energy,
+                m.max_capacity_stor_energy,
+                m.min_new_procured_energy,
+                m.max_new_procured_energy,
+                m.min_total_energy,
+                m.max_total_energy,
             ),
         )
 
@@ -463,8 +570,10 @@ def get_model_inputs_from_database(
     potentials = c.execute(
         """SELECT project, period, min_new_build_power, max_new_build_power,
             min_capacity_power, max_capacity_power,
-            min_new_build_energy, max_new_build_energy,
-            min_capacity_energy, max_capacity_energy
+            min_new_build_stor_energy, max_new_build_stor_energy,
+            min_capacity_stor_energy, max_capacity_stor_energy,
+            min_new_procured_energy, max_new_procured_energy,
+            min_total_procured_energy, max_total_procured_energy
             FROM inputs_project_portfolios
             CROSS JOIN
             (SELECT period
@@ -473,8 +582,10 @@ def get_model_inputs_from_database(
             INNER JOIN (
             SELECT project, period, min_new_build_power, max_new_build_power,
             min_capacity_power, max_capacity_power,
-            min_new_build_energy, max_new_build_energy,
-            min_capacity_energy, max_capacity_energy
+            min_new_build_stor_energy, max_new_build_stor_energy,
+            min_capacity_stor_energy, max_capacity_stor_energy,
+            min_new_procured_energy, max_new_procured_energy,
+            min_total_procured_energy, max_total_procured_energy
             FROM inputs_project_new_potential
             WHERE project_new_potential_scenario_id = {potential}) as potential
             USING (project, period)
@@ -551,10 +662,14 @@ def write_model_inputs(
                     "max_new_build_power",
                     "min_capacity_power",
                     "max_capacity_power",
-                    "min_new_build_energy",
-                    "max_new_build_energy",
-                    "min_capacity_energy",
-                    "max_capacity_energy",
+                    "min_new_build_stor_energy",
+                    "max_new_build_stor_energy",
+                    "min_capacity_stor_energy",
+                    "max_capacity_stor_energy",
+                    "min_new_procured_energy",
+                    "max_new_procured_energy",
+                    "min_total_procured_energy",
+                    "max_total_procured_energy",
                 ]
             )
 
@@ -592,6 +707,30 @@ def save_duals(
     ]
 
     instance.constraint_indices["Max_Power_Constraint"] = [
+        "project",
+        "period",
+        "dual",
+    ]
+
+    instance.constraint_indices["Min_Build_Stor_Energy_Constraint"] = [
+        "project",
+        "period",
+        "dual",
+    ]
+
+    instance.constraint_indices["Max_Build_Stor_Energy_Constraint"] = [
+        "project",
+        "period",
+        "dual",
+    ]
+
+    instance.constraint_indices["Min_Stor_Energy_Constraint"] = [
+        "project",
+        "period",
+        "dual",
+    ]
+
+    instance.constraint_indices["Max_Stor_Energy_Constraint"] = [
         "project",
         "period",
         "dual",
@@ -647,6 +786,10 @@ def export_results(
         "max_build_power_dual",
         "min_total_power_dual",
         "max_total_power_dual",
+        "min_build_stor_energy_dual",
+        "max_build_stor_energy_dual",
+        "min_total_stor_energy_dual",
+        "max_total_stor_energy_dual",
         "min_build_energy_dual",
         "max_build_energy_dual",
         "min_total_energy_dual",
@@ -676,6 +819,34 @@ def export_results(
             (
                 duals_wrapper(m, getattr(m, "Max_Power_Constraint")[prj, prd])
                 if (prj, prd) in [idx for idx in getattr(m, "Max_Power_Constraint")]
+                else None
+            ),
+            (
+                duals_wrapper(
+                    m, getattr(m, "Min_Build_Stor_Energy_Constraint")[prj, prd]
+                )
+                if (prj, prd)
+                in [idx for idx in getattr(m, "Min_Build_Stor_Energy_Constraint")]
+                else None
+            ),
+            (
+                duals_wrapper(
+                    m, getattr(m, "Max_Build_Stor_Energy_Constraint")[prj, prd]
+                )
+                if (prj, prd)
+                in [idx for idx in getattr(m, "Max_Build_Stor_Energy_Constraint")]
+                else None
+            ),
+            (
+                duals_wrapper(m, getattr(m, "Min_Stor_Energy_Constraint")[prj, prd])
+                if (prj, prd)
+                in [idx for idx in getattr(m, "Min_Stor_Energy_Constraint")]
+                else None
+            ),
+            (
+                duals_wrapper(m, getattr(m, "Max_Stor_Energy_Constraint")[prj, prd])
+                if (prj, prd)
+                in [idx for idx in getattr(m, "Max_Stor_Energy_Constraint")]
                 else None
             ),
             (
@@ -793,7 +964,7 @@ def validate_inputs(
             ),
         )
 
-    cols = ["min_capacity_energy", "max_capacity_energy"]
+    cols = ["min_capacity_stor_energy", "max_capacity_stor_energy"]
     # Check that maximum new build doesn't decrease - MWh
     if cols[1] in df_cols:
         write_validation_to_database(

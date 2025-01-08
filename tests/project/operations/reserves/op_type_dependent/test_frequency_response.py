@@ -28,8 +28,8 @@ TEST_DATA_DIRECTORY = os.path.join(
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
     "temporal.operations.timepoints",
-    "temporal.operations.horizons",
     "temporal.investment.periods",
+    "temporal.operations.horizons",
     "geography.load_zones",
     "geography.frequency_response_balancing_areas",
     "project",
@@ -38,6 +38,15 @@ PREREQUISITE_MODULE_NAMES = [
     "project.fuels",
     "project.operations",
     "project.operations.reserves.frequency_response",
+    "geography.water_network",
+    "system.water.water_system_params",
+    "system.water.water_flows",
+    "system.water.water_nodes",
+    "system.water.reservoirs",
+    "system.water.water_node_balance",
+    "system.water.powerhouses",
+    "system.load_balance.static_load_requirement",
+    "project.capacity.potential",
     "project.operations.operational_types",
 ]
 NAME_OF_MODULE_BEING_TESTED = (

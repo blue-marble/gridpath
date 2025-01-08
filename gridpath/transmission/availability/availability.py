@@ -44,7 +44,7 @@ def add_model_components(
         availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
-        prj_or_tx="transmission_line",
+        filename="transmission_lines",
         which_type="tx_availability_type",
     )
     imported_availability_modules = load_availability_type_modules(
@@ -114,7 +114,7 @@ def load_model_data(
         availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
-        prj_or_tx="transmission_line",
+        filename="transmission_lines",
         which_type="tx_availability_type",
     )
     imported_availability_modules = load_availability_type_modules(
@@ -165,7 +165,7 @@ def export_results(
         subproblem=subproblem,
         stage=stage,
         which_type="tx_availability_type",
-        prj_or_tx="transmission_line",
+        filename="transmission_lines",
     )
     imported_availability_modules = load_availability_type_modules(
         required_availability_modules

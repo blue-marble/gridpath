@@ -121,6 +121,11 @@ def capacity_rule(mod, prj, prd):
     return 0
 
 
+def energy_rule(mod, g, p):
+    """ """
+    return 0
+
+
 def hyb_gen_capacity_rule(mod, prj, prd):
     """
     Power capacity of a hybrid project's generation component.
@@ -135,13 +140,22 @@ def hyb_stor_capacity_rule(mod, prj, prd):
     return 0
 
 
-def energy_capacity_rule(mod, prj, prd):
+def energy_stor_capacity_rule(mod, prj, prd):
     """ """
     return 0
 
 
 def capacity_cost_rule(mod, prj, prd):
-    """ """
+    """
+    For new capacity investment separate from the fixed cost
+    """
+    return 0
+
+
+def energy_cost_rule(mod, prj, prd):
+    """
+    For new energy purchases separate from the fixed cost
+    """
     return 0
 
 
@@ -157,9 +171,17 @@ def new_capacity_rule(mod, prj, prd):
     return 0
 
 
-def new_energy_capacity_rule(mod, prj, prd):
+def new_energy_rule(mod, prj, prd):
     """
-    New energy capacity built at project g in period p.
+    New energy procured at project g in period p. This is NOT the storage
+    energy capacity built.
+    """
+    return 0
+
+
+def new_energy_stor_capacity_rule(mod, prj, prd):
+    """
+    Storage energy capacity; not used anywhere but here for clarity
     """
     return 0
 
