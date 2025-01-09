@@ -169,9 +169,9 @@ def add_battery_durations(
                 ;
                 --SELECT * FROM relevant_projects_table;
                 UPDATE spec_cap_table
-                SET specified_capacity_mwh = {tech_dur_dict[tech]}*specified_capacity_mw
+                SET specified_stor_capacity_mwh = {tech_dur_dict[tech]}*specified_capacity_mw
                 WHERE (project, period) IN (SELECT (project, period) FROM {tech}_relevant_projects_table)
-                AND specified_capacity_mwh IS NULL
+                AND specified_stor_capacity_mwh IS NULL
                 ;
                 """
             )

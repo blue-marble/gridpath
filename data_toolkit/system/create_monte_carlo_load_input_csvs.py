@@ -213,7 +213,7 @@ def create_load_levels_csv(
     load_levels_scenario_name,
     stage_id,
     load_component_name,
-    overwrite,
+    overwrite_load_levels_csv,
 ):
     """
     This module will create load profiles for each synthetic weather
@@ -296,7 +296,7 @@ def create_load_levels_csv(
                 "load_levels",
                 f"{load_levels_scenario_id}_{load_levels_scenario_name}.csv",
             )
-            if not os.path.exists(filename) or (overwrite and draw_n == 0):
+            if not os.path.exists(filename) or (overwrite_load_levels_csv and draw_n == 0):
                 mode = "w"
                 write_header = True
             else:
@@ -360,7 +360,7 @@ def main(args=None):
             load_levels_scenario_name=parsed_args.load_levels_scenario_name,
             stage_id=parsed_args.stage_id,
             load_component_name=parsed_args.load_component,
-            overwrite=parsed_args.load_levels_overwrite,
+            overwrite_load_levels_csv=parsed_args.load_levels_overwrite,
         )
 
 

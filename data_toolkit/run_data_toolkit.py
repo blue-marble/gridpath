@@ -186,7 +186,7 @@ def main(args=None):
         if not skip:
             settings_list = []
             for setting in settings_dict[script_name]:
-                if setting[0] != "overwrite":
+                if "overwrite" not in setting[0]:
                     settings_list.append(f"--{setting[0]}")
                     settings_list.append(setting[1])
                 else:
