@@ -110,6 +110,8 @@ def get_project_fixed_cost(
     SELECT {disagg_project_name_str} AS project,
         {study_year} as period,
         0 AS fixed_cost_per_mw_yr,
+        0 AS fixed_cost_per_energy_mwh_yr,
+        0 AS fixed_cost_per_shaping_mw_yr,
         NULL AS hyb_gen_fixed_cost_per_mw_yr,
         NULL AS hyb_stor_fixed_cost_per_mw_yr,
         CASE WHEN raw_data_eia860_generators.prime_mover_code NOT IN ('BA', 
@@ -117,7 +119,7 @@ def get_project_fixed_cost(
             THEN NULL
             ELSE 0
         END
-            AS fixed_cost_per_mwh_year,
+            AS fixed_cost_per_stor_mwh_yr,
         NULL AS fuel_production_capacity_fixed_cost_per_fuelunitperhour_yr,
         NULL AS fuel_release_capacity_fixed_cost_per_fuelunitperhour_yr,
         NULL AS fuel_storage_capacity_fixed_cost_per_fuelunit_yr
@@ -135,13 +137,15 @@ def get_project_fixed_cost(
     SELECT {agg_project_name_str} AS project,
         {study_year} as period,
         0 AS specified_fixed_cost_mw,
+        0 AS fixed_cost_per_energy_mwh_yr,
+        0 AS fixed_cost_per_shaping_mw_yr,
         NULL AS hyb_gen_specified_fixed_cost_mw,
         NULL AS hyb_stor_specified_fixed_cost_mw,
         CASE
             WHEN energy_storage_capacity_mwh IS NULL THEN NULL
             ELSE 0
             END 
-            AS specified_fixed_cost_mwh,
+            AS fixed_cost_per_stor_mwh_yr,
         NULL AS fuel_production_fixed_cost_fuelunitperhour,
         NULL AS fuel_release_fixed_cost_fuelunitperhour,
         NULL AS fuel_storage_fixed_cost_fuelunit

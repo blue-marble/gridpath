@@ -23,7 +23,7 @@ RA_SETTINGS_STEPS_CSV = "../tests/test_data/data_toolkit_ra_settings_steps.csv"
 OPEN_DATA_SETTINGS_CSV = "../tests/test_data/data_toolkit_open_data_settings" ".csv"
 
 
-class TestRAToolkit(unittest.TestCase):
+class TestDataToolkit(unittest.TestCase):
     """
     Check if the database is created with no errors.
     """

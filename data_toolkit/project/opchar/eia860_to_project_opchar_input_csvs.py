@@ -231,6 +231,7 @@ def make_opchar_sql_str(
     balancing_type_project="NULL",
     variable_om_cost_per_mwh="NULL",
     variable_om_cost_by_period_scenario_id="NULL",
+    variable_om_cost_by_timepoint_scenario_id="NULL",
     project_fuel_scenario_id="NULL",
     heat_rate_curves_scenario_id="NULL",
     variable_om_curves_scenario_id="NULL",
@@ -269,6 +270,11 @@ def make_opchar_sql_str(
     variable_generator_profile_scenario_id="NULL",
     curtailment_cost_per_pwh="NULL",
     hydro_operational_chars_scenario_id="NULL",
+    energy_profile_scenario_id="NULL",
+    energy_hrz_shaping_scenario_id="NULL",
+    energy_slice_hrz_shaping_scenario_id="NULL",
+    base_net_requirement_scenario_id="NULL",
+    peak_deviation_demand_charge_scenario_id="NULL",
     lf_reserves_up_derate="NULL",
     lf_reserves_down_derate="NULL",
     regulation_up_derate="NULL",
@@ -286,6 +292,8 @@ def make_opchar_sql_str(
     partial_availability_threshold="NULL",
     stor_exog_state_of_charge_scenario_id="NULL",
     nonfuel_carbon_emissions_per_mwh="NULL",
+    powerhouse="NULL",
+    generator_efficiency="NULL",
 ):
     """ """
 
@@ -294,7 +302,9 @@ def make_opchar_sql_str(
      {operational_type} AS operational_type,
      {balancing_type_project} AS balancing_type_project,
      {variable_om_cost_per_mwh} AS variable_om_cost_per_mwh,
-     {variable_om_cost_by_period_scenario_id} AS variable_om_cost_by_period_scenario_id,	
+     {variable_om_cost_by_period_scenario_id} AS variable_om_cost_by_period_scenario_id,
+     {variable_om_cost_by_timepoint_scenario_id} AS 
+     variable_om_cost_by_timepoint_scenario_id,	
      {project_fuel_scenario_id} AS project_fuel_scenario_id,
      {heat_rate_curves_scenario_id} AS heat_rate_curves_scenario_id,	
      {variable_om_curves_scenario_id} AS variable_om_curves_scenario_id,
@@ -333,6 +343,13 @@ def make_opchar_sql_str(
      {variable_generator_profile_scenario_id} AS variable_generator_profile_scenario_id,
      {curtailment_cost_per_pwh} AS curtailment_cost_per_pwh,	
      {hydro_operational_chars_scenario_id} AS hydro_operational_chars_scenario_id,
+     {energy_profile_scenario_id} AS "energy_profile_scenario_id",
+     {energy_hrz_shaping_scenario_id} AS "energy_hrz_shaping_scenario_id",
+     {energy_slice_hrz_shaping_scenario_id} AS 
+     "energy_slice_hrz_shaping_scenario_id",
+     {base_net_requirement_scenario_id} AS "base_net_requirement_scenario_id",
+     {peak_deviation_demand_charge_scenario_id} AS 
+     "peak_deviation_demand_charge_scenario_id",
      {lf_reserves_up_derate} AS lf_reserves_up_derate,	
      {lf_reserves_down_derate} AS lf_reserves_down_derate,
      {regulation_up_derate} AS regulation_up_derate,	
@@ -349,7 +366,9 @@ def make_opchar_sql_str(
      {cap_factor_limits_scenario_id} AS cap_factor_limits_scenario_id,
      {partial_availability_threshold} AS partial_availability_threshold,
      {stor_exog_state_of_charge_scenario_id} AS stor_exog_state_of_charge_scenario_id,
-     {nonfuel_carbon_emissions_per_mwh} AS nonfuel_carbon_emissions_per_mwh
+     {nonfuel_carbon_emissions_per_mwh} AS nonfuel_carbon_emissions_per_mwh,
+     {powerhouse} AS powerhouse,
+     {generator_efficiency} AS generator_efficiency
     """
 
     return opchar_sql_str

@@ -113,6 +113,8 @@ def get_project_capacity(
     SELECT {disagg_project_name_str} AS project, 
         {study_year} as period,
         capacity_mw AS specified_capacity_mw,
+        NULL AS specified_energy_mwh,
+        NULL AS shaping_capacity_mw,
         NULL AS hyb_gen_specified_capacity_mw,
         NULL AS hyb_stor_specified_capacity_mw,
         CASE 
@@ -120,7 +122,7 @@ def get_project_capacity(
             'ES', 'FW', 'PS') THEN NULL
             ELSE energy_storage_capacity_mwh
         END
-            AS specified_capacity_mwh,
+            AS specified_stor_capacity_mwh,
         NULL AS fuel_production_capacity_fuelunitperhour,
         NULL AS fuel_release_capacity_fuelunitperhour,
         NULL AS fuel_storage_capacity_fuelunit
@@ -138,9 +140,11 @@ def get_project_capacity(
     SELECT {agg_project_name_str} AS project,
         {study_year} as period,
         SUM(capacity_mw) AS specified_capacity_mw,
+        NULL AS specified_energy_mwh,
+        NULL AS shaping_capacity_mw,
         NULL AS hyb_gen_specified_capacity_mw,
         NULL AS hyb_stor_specified_capacity_mw,
-        SUM(energy_storage_capacity_mwh) AS specified_capacity_mwh,
+        SUM(energy_storage_capacity_mwh) AS specified_stor_capacity_mwh,
         NULL AS fuel_production_capacity_fuelunitperhour,
         NULL AS fuel_release_capacity_fuelunitperhour,
         NULL AS fuel_storage_capacity_fuelunit

@@ -1,4 +1,4 @@
-# Copyright 2016-2024 Blue Marble Analytics LLC.
+# Copyright 2016-2025 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -48,9 +48,17 @@ from argparse import ArgumentParser
 import os.path
 import pandas as pd
 
+from data_toolkit.system.common_methods import (
+    create_load_scenario_csv,
+    create_load_components_scenario_csv,
+)
 from db.common_functions import connect_to_database
 
-LOAD_LEVELS_SCENARIO_ID_DEFAULT = 1
+LOAD_SCENARIO_ID_DEFAULT = 1  # it's 6 in the test examples
+LOAD_SCENARIO_NAME_DEFAULT = "ra_toolkit"
+LOAD_COMPONENTS_SCENARIO_ID_DEFAULT = 1  # it's 6 in the test examples
+LOAD_COMPONENTS_SCENARIO_NAME_DEFAULT = "ra_toolkit"
+LOAD_LEVELS_SCENARIO_ID_DEFAULT = 1  # it's 6 in the test examples
 LOAD_LEVELS_SCENARIO_NAME_DEFAULT = "ra_toolkit"
 STAGE_ID_DEFAULT = 1
 LOAD_COMPONENT_NAME_DEFAULT = "all"
@@ -68,15 +76,45 @@ def parse_arguments(args):
 
     parser.add_argument("-db", "--database")
 
-    parser.add_argument("-out_dir", "--output_directory")
+    parser.add_argument(
+        "-out_dir",
+        "--output_directory",
+        help="""This will be the location of the load_scenario_id file. The 
+        load components and load levels files are assumed to be in the 
+        'load_components' and 'load_levels' subdirectories respectively.""",
+    )
     parser.add_argument(
         "-id",
+        "--load_scenario_id",
+        default=LOAD_SCENARIO_ID_DEFAULT,
+        help=f"Defaults to {LOAD_SCENARIO_ID_DEFAULT}.",
+    )
+    parser.add_argument(
+        "-name",
+        "--load_scenario_name",
+        default=LOAD_SCENARIO_NAME_DEFAULT,
+        help=f"Defaults to '{LOAD_SCENARIO_NAME_DEFAULT}'.",
+    )
+    parser.add_argument(
+        "-lc_id",
+        "--load_components_scenario_id",
+        default=LOAD_COMPONENTS_SCENARIO_ID_DEFAULT,
+        help=f"Defaults to {LOAD_COMPONENTS_SCENARIO_ID_DEFAULT}.",
+    )
+    parser.add_argument(
+        "-lc_name",
+        "--load_components_scenario_name",
+        default=LOAD_COMPONENTS_SCENARIO_NAME_DEFAULT,
+        help=f"Defaults to '{LOAD_COMPONENTS_SCENARIO_NAME_DEFAULT}'.",
+    )
+    parser.add_argument(
+        "-ll_id",
         "--load_levels_scenario_id",
         default=LOAD_LEVELS_SCENARIO_ID_DEFAULT,
         help=f"Defaults to {LOAD_LEVELS_SCENARIO_ID_DEFAULT}.",
     )
     parser.add_argument(
-        "-name",
+        "-ll_name",
         "--load_levels_scenario_name",
         default=LOAD_LEVELS_SCENARIO_NAME_DEFAULT,
         help=f"Defaults to '{LOAD_LEVELS_SCENARIO_NAME_DEFAULT}'.",
@@ -97,11 +135,47 @@ def parse_arguments(args):
     )
 
     parser.add_argument(
-        "-o",
-        "--overwrite",
+        "-l_o",
+        "--load_scenario_overwrite",
         default=False,
         action="store_true",
         help="Overwrite existing CSV files.",
+    )
+    parser.add_argument(
+        "-lc_o",
+        "--load_components_overwrite",
+        default=False,
+        action="store_true",
+        help="Overwrite existing CSV files.",
+    )
+    parser.add_argument(
+        "-ll_o",
+        "--load_levels_overwrite",
+        default=False,
+        action="store_true",
+        help="Overwrite existing CSV files.",
+    )
+
+    parser.add_argument(
+        "-skip_l",
+        "--skip_load_scenario",
+        default=False,
+        action="store_true",
+        help="Don't create load_scenario file.",
+    )
+    parser.add_argument(
+        "-skip_lc",
+        "--skip_load_components",
+        default=False,
+        action="store_true",
+        help="Don't create load components file.",
+    )
+    parser.add_argument(
+        "-skip_ll",
+        "--skip_load_levels",
+        default=False,
+        action="store_true",
+        help="Don't create load levels file.",
     )
 
     parser.add_argument("-q", "--quiet", default=False, action="store_true")
@@ -111,7 +185,7 @@ def parse_arguments(args):
     return parsed_arguments
 
 
-def create_load_profile_csv(
+def create_load_levels_csv(
     conn,
     output_directory,
     load_levels_scenario_id,
@@ -121,7 +195,7 @@ def create_load_profile_csv(
     overwrite,
 ):
     """
-    This module currenlty assumes timepoint IDs will be 1 through 8760 for
+    This module currently assumes timepoint IDs will be 1 through 8760 for
     each year. The query will aggregate loads based on the aggregations and
     weights defined in the user_defined_load_zone_units
     table.
@@ -158,6 +232,7 @@ def create_load_profile_csv(
 
     filename = os.path.join(
         output_directory,
+        "load_levels",
         f"{load_levels_scenario_id}_{load_levels_scenario_name}.csv",
     )
     if overwrite:
@@ -185,18 +260,45 @@ def main(args=None):
         print("Creating sync load profile CSVs...")
 
     os.makedirs(parsed_args.output_directory, exist_ok=True)
+    os.makedirs(
+        os.path.join(parsed_args.output_directory, "load_components"), exist_ok=True
+    )
+    os.makedirs(
+        os.path.join(parsed_args.output_directory, "load_levels"), exist_ok=True
+    )
 
     conn = connect_to_database(db_path=parsed_args.database)
 
-    create_load_profile_csv(
-        conn=conn,
-        output_directory=parsed_args.output_directory,
-        load_levels_scenario_id=parsed_args.load_levels_scenario_id,
-        load_levels_scenario_name=parsed_args.load_levels_scenario_name,
-        stage_id=parsed_args.stage_id,
-        load_component_name=parsed_args.load_component,
-        overwrite=parsed_args.overwrite,
-    )
+    if not parsed_args.skip_load_scenario:
+        create_load_scenario_csv(
+            output_directory=parsed_args.output_directory,
+            load_scenario_id=parsed_args.load_scenario_id,
+            load_scenario_name=parsed_args.load_scenario_name,
+            load_components_scenario_id=parsed_args.load_components_scenario_id,
+            load_levels_scenario_id=parsed_args.load_levels_scenario_id,
+            overwrite_load_scenario_csv=parsed_args.load_scenario_overwrite,
+        )
+
+    if not parsed_args.skip_load_components:
+        create_load_components_scenario_csv(
+            conn=conn,
+            output_directory=parsed_args.output_directory,
+            load_component_name=parsed_args.load_component,
+            load_components_scenario_id=parsed_args.load_components_scenario_id,
+            load_components_scenario_name=parsed_args.load_components_scenario_name,
+            overwrite_load_components_csv=parsed_args.load_components_overwrite,
+        )
+
+    if not parsed_args.skip_load_levels:
+        create_load_levels_csv(
+            conn=conn,
+            output_directory=parsed_args.output_directory,
+            load_levels_scenario_id=parsed_args.load_levels_scenario_id,
+            load_levels_scenario_name=parsed_args.load_levels_scenario_name,
+            stage_id=parsed_args.stage_id,
+            load_component_name=parsed_args.load_component,
+            overwrite=parsed_args.load_levels_overwrite,
+        )
 
 
 if __name__ == "__main__":
