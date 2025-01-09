@@ -19,24 +19,7 @@
 import os.path
 import pandas as pd
 
-
-def create_csv_generic(
-    filename,
-    df,
-    overwrite,
-):
-    """ """
-    if not os.path.exists(filename) or overwrite:
-        df.to_csv(
-            filename,
-            mode="w",
-            index=False,
-        )
-    else:
-        raise ValueError(
-            f"The file {filename} already exists and overwrite has not been "
-            "indicated."
-        )
+from data_toolkit.common_methods import create_csv_generic
 
 
 def create_load_scenario_csv(

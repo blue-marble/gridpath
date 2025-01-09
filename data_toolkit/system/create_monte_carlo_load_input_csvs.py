@@ -296,7 +296,9 @@ def create_load_levels_csv(
                 "load_levels",
                 f"{load_levels_scenario_id}_{load_levels_scenario_name}.csv",
             )
-            if not os.path.exists(filename) or (overwrite_load_levels_csv and draw_n == 0):
+            if not os.path.exists(filename) or (
+                overwrite_load_levels_csv and draw_n == 0
+            ):
                 mode = "w"
                 write_header = True
             else:

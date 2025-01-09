@@ -16,6 +16,9 @@ from multiprocessing import get_context
 import os.path
 import pandas as pd
 
+from data_toolkit.project.opchar.var_profiles.common_methods import (
+    create_iterations_csv,
+)
 from db.common_functions import connect_to_database
 
 BINS_ID_DEFAULT = 1
@@ -199,6 +202,17 @@ def create_project_csv(
             mode=mode,
             header=write_header,
             index=False,
+        )
+
+        # Add the iterations CSV
+        iterations_directory = os.path.join(output_directory, "iterations")
+        os.makedirs(iterations_directory, exist_ok=True)
+        create_iterations_csv(
+            iterations_directory=iterations_directory,
+            project=project,
+            profile_id=profile_scenario_id,
+            profile_name=profile_scenario_name,
+            overwrite=True,
         )
 
 

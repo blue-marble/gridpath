@@ -1,49 +1,49 @@
-LOAD_ZONES	timepoint	load_mw
-Zone1	25	8361.0
-Zone1	26	7988.0
-Zone1	27	7752.0
-Zone1	28	7654.0
-Zone1	29	7841.0
-Zone1	30	8136.0
-Zone1	31	8374.0
-Zone1	32	8328.0
-Zone1	33	8293.0
-Zone1	34	8123.0
-Zone1	35	8028.0
-Zone1	36	7933.0
-Zone1	37	7797.0
-Zone1	38	7917.0
-Zone1	39	8250.0
-Zone1	40	8847.0
-Zone1	41	9942.0
-Zone1	42	11273.0
-Zone1	43	11079.0
-Zone1	44	11041.0
-Zone1	45	10870.0
-Zone1	46	10457.0
-Zone1	47	9690.0
-Zone1	48	9048.0
-Zone2	25	8361.0
-Zone2	26	7988.0
-Zone2	27	7752.0
-Zone2	28	7654.0
-Zone2	29	7841.0
-Zone2	30	8136.0
-Zone2	31	8374.0
-Zone2	32	8328.0
-Zone2	33	8293.0
-Zone2	34	8123.0
-Zone2	35	8028.0
-Zone2	36	7933.0
-Zone2	37	7797.0
-Zone2	38	7917.0
-Zone2	39	8250.0
-Zone2	40	8847.0
-Zone2	41	9942.0
-Zone2	42	11273.0
-Zone2	43	11079.0
-Zone2	44	11041.0
-Zone2	45	10870.0
-Zone2	46	10457.0
-Zone2	47	9690.0
-Zone2	48	9048.0
+LOAD_ZONES	timepoint	load_component	load_mw
+Zone1	25	all	8361.0
+Zone1	26	all	7988.0
+Zone1	27	all	7752.0
+Zone1	28	all	7654.0
+Zone1	29	all	7841.0
+Zone1	30	all	8136.0
+Zone1	31	all	8374.0
+Zone1	32	all	8328.0
+Zone1	33	all	8293.0
+Zone1	34	all	8123.0
+Zone1	35	all	8028.0
+Zone1	36	all	7933.0
+Zone1	37	all	7797.0
+Zone1	38	all	7917.0
+Zone1	39	all	8250.0
+Zone1	40	all	8847.0
+Zone1	41	all	9942.0
+Zone1	42	all	11273.0
+Zone1	43	all	11079.0
+Zone1	44	all	11041.0
+Zone1	45	all	10870.0
+Zone1	46	all	10457.0
+Zone1	47	all	9690.0
+Zone1	48	all	9048.0
+Zone2	25	all	8361.0
+Zone2	26	all	7988.0
+Zone2	27	all	7752.0
+Zone2	28	all	7654.0
+Zone2	29	all	7841.0
+Zone2	30	all	8136.0
+Zone2	31	all	8374.0
+Zone2	32	all	8328.0
+Zone2	33	all	8293.0
+Zone2	34	all	8123.0
+Zone2	35	all	8028.0
+Zone2	36	all	7933.0
+Zone2	37	all	7797.0
+Zone2	38	all	7917.0
+Zone2	39	all	8250.0
+Zone2	40	all	8847.0
+Zone2	41	all	9942.0
+Zone2	42	all	11273.0
+Zone2	43	all	11079.0
+Zone2	44	all	11041.0
+Zone2	45	all	10870.0
+Zone2	46	all	10457.0
+Zone2	47	all	9690.0
+Zone2	48	all	9048.0
