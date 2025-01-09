@@ -61,6 +61,7 @@ setup(
         "PyUtilib==6.0.0",  # used for solver temp file management
         "Jinja2==3.0.3",  # bokeh dependency; see #904
         "dill==0.3.7",  # pickling
+        "duckdb==1.0.0",  # data-handling
     ]
     + extras_ui,
     extras_require={
@@ -84,7 +85,15 @@ setup(
             "gridpath_create_database = db.create_database:main",
             "gridpath_load_csvs = db.utilities.port_csvs_to_db:main",
             "gridpath_load_scenarios = db.utilities.scenario:main",
-            "gridpath_run_ra_toolkit = db.utilities.ra_toolkit.run_ra_toolkit:main",
+            "gridpath_get_pudl_data = "
+            "data_toolkit.raw_data.pudl.download_data_from_pudl:main",
+            "gridpath_pudl_to_gridpath_raw = "
+            "data_toolkit.raw_data.pudl.pudl_to_gridpath_raw_data:main",
+            "gridpath_get_pcm_demo_inputs = "
+            "data_toolkit.raw_data.get_pcm_demo_user_defined_inputs:main",
+            "gridpath_get_ra_toolkit_data_raw = "
+            "data_toolkit.raw_data.ra_toolkit.get_ra_toolkit_data:main",
+            "gridpath_run_data_toolkit = " "data_toolkit.run_data_toolkit:main",
         ]
     },
 )

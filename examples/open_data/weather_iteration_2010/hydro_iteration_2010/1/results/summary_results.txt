@@ -1,0 +1,19 @@
+##### SUMMARY RESULTS FOR SCENARIO *open_data* #####
+
+### CAPACITY RESULTS ###
+
+### OPERATIONAL RESULTS ###
+
+--> Energy Production <--
+                             Annual Energy (MWh)  % Total Power
+load_zone period technology                                    
+Zone1     2026   Batteries           -121,878.26          -0.30
+                 Gas               23,087,873.36          57.14
+                 Hydro              2,628,000.00           6.50
+                 Solar              4,461,930.18          11.04
+                 Wind              10,350,636.38          25.62
+Zone2     2026   Batteries            -91,408.70          -0.28
+                 Gas               24,185,686.98          74.51
+                 Hydro              1,971,000.00           6.07
+                 Solar              3,629,203.48          11.18
+                 Wind               2,766,363.86           8.52
