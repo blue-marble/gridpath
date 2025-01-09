@@ -1,4 +1,4 @@
-# Copyright 2016-2024 Blue Marble Analytics LLC.
+# Copyright 2016-2025 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@ from multiprocessing import get_context
 import os.path
 import pandas as pd
 
-from data_toolkit.project.opchar.var_profiles.common_methods import (
+from data_toolkit.project.common_methods import (
     create_iterations_csv,
 )
 from db.common_functions import connect_to_database
@@ -212,6 +212,8 @@ def create_project_csv(
             project=project,
             profile_id=profile_scenario_id,
             profile_name=profile_scenario_name,
+            varies_by_weather=1,
+            varies_by_hydro=0,
             overwrite=True,
         )
 

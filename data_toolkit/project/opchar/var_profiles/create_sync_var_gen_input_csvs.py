@@ -50,7 +50,7 @@ from multiprocessing import get_context
 import os.path
 import sys
 
-from data_toolkit.project.opchar.var_profiles.common_methods import (
+from data_toolkit.project.common_methods import (
     create_iterations_csv,
 )
 from db.common_functions import connect_to_database
@@ -148,6 +148,8 @@ def create_variable_profile_csvs_pool(pool_datum):
         project=project,
         profile_id=variable_generator_profile_scenario_id,
         profile_name=variable_generator_profile_scenario_name,
+        varies_by_weather=1,
+        varies_by_hydro=0,
         overwrite=True,
     )
 

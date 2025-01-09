@@ -1,4 +1,4 @@
-# Copyright 2016-2024 Blue Marble Analytics LLC.
+# Copyright 2016-2025 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,7 +19,13 @@ from data_toolkit.common_methods import create_csv_generic
 
 
 def create_iterations_csv(
-    iterations_directory, project, profile_id, profile_name, overwrite
+    iterations_directory,
+    project,
+    profile_id,
+    profile_name,
+    varies_by_weather,
+    varies_by_hydro,
+    overwrite,
 ):
     filename = os.path.join(
         iterations_directory,
@@ -28,8 +34,8 @@ def create_iterations_csv(
 
     df = pd.DataFrame(
         {
-            "varies_by_weather_iteration": [1],
-            "varies_by_hydro_iteration": [0],
+            "varies_by_weather_iteration": [varies_by_weather],
+            "varies_by_hydro_iteration": [varies_by_hydro],
         }
     )
 
