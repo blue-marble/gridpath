@@ -208,7 +208,6 @@ def main(args=None):
 
             settings_list.append("--quiet" if parsed_args.quiet else "")
 
-            print(script_name, settings_list)
             # Run the script's main function with the requested arguments
             getattr(globals()[script_name], "main")(settings_list)
 

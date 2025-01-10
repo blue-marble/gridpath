@@ -56,7 +56,7 @@ Settings
     * weather_draws_seed
     * n_iterations
     * study_year
-    * iterations_seed
+    * timeseries_iteration_draw_initial_seed
 
 """
 
@@ -87,15 +87,28 @@ def parse_arguments(args):
         "-bins_id", "--weather_bins_id", default=1, help="Defaults to 1."
     )
     parser.add_argument(
-        "-wd_seed", "--weather_draws_seed", default=0, help="Defaults to 0."
+        "-wd_seed",
+        "--weather_draws_seed",
+        default=None,
+        help="Defaults to None (no seeding). WARNING: Proceed with caution if "
+        "you set a seed and make sure you understand what this script "
+        "does with it.",
     )
     parser.add_argument(
-        "-draws_id", "--weather_draws_id", default=1, help="Defaults to 1."
+        "-draws_id",
+        "--weather_draws_id",
+        default=1,
+        help="Defaults to 1.",
     )
     parser.add_argument("-n_iter", "--n_iterations")
     parser.add_argument("-yr", "--study_year")
     parser.add_argument(
-        "-it_seed", "--iterations_seed", default=0, help="Defaults to 0."
+        "-it_seed",
+        "--timeseries_iteration_draw_initial_seed",
+        default=None,
+        help="Defaults to None (no seeding). WARNING: Proceed with caution if "
+        "you set a seed and make sure you understand what this script "
+        "does with it.",
     )
     parser.add_argument("-q", "--quiet", default=False, action="store_true")
 
@@ -221,7 +234,7 @@ def create_weather_draws(
         ) VALUES (
             {weather_bins_id}, 
             {weather_draws_id}, 
-            {weather_draws_seed}, 
+            {weather_draws_seed if weather_draws_seed is not None else 'NULL'}, 
             {n_iterations}
         );
     """
@@ -268,97 +281,187 @@ def get_weather_draws(conn, weather_bins_id, weather_draws_id):
     return draws
 
 
-def make_synthetic_iterations(
+def draw_conditions(
     conn,
-    weather_bins_id,
     weather_draws_id,
-    timeseries,
-    iterations_seed,
-    quiet,
+    weather_iteration,
+    draw_number,
+    timeseries_name,
+    sql_set_string,
+    options_list,
+    timeseries_iteration_draw_seed,
 ):
     """ """
-    if not quiet:
+    np.random.seed(seed=timeseries_iteration_draw_seed)
+
+    c = conn.cursor()
+
+    # Randomly select from list
+    # If seed is set, this will always select the same number
+    (
+        year,
+        month,
+        day_of_month,
+        day_type,
+        weather_bin,
+    ) = options_list[np.random.randint(len(options_list))]
+
+    # Add to dictionary
+    sql_set_string += f"""{timeseries_name}_year = {year},
+        {timeseries_name}_month = {month},
+        {timeseries_name}_day_of_month = {day_of_month},"""
+
+    # Remove the trailing comma
+    sql_set_string = sql_set_string.rstrip(",")
+
+    # Load the selection into the database
+    update_sql = f"""
+        UPDATE aux_weather_iterations
+        SET {sql_set_string}
+        WHERE weather_draws_id = {weather_draws_id}
+        AND weather_iteration = {weather_iteration}
+        AND draw_number = {draw_number}
+        ;
+    """
+
+    spin_on_database_lock_generic(c.execute(update_sql))
+
+    conn.commit()
+
+
+def make_timeseries_draw_profiles(conn, parsed_args):
+    """
+    Draw from each timeseries' raw data to create synthetic weather
+    iteration profiles based on particular weather draws
+    """
+
+    if not parsed_args.quiet:
         print("   ...creating synthetic iterations...")
+
+    # Get the timeseries
+    c = conn.cursor()
+    timeseries = [
+        (timeseries_name, consider_day_types)
+        for (timeseries_name, consider_day_types) in c.execute(
+            f"""SELECT timeseries_name, consider_day_types
+            FROM user_defined_monte_carlo_timeseries
+            ;"""
+        ).fetchall()
+    ]
+
+    # Update the timeseries-iterations initial seed; if set, the seed is
+    # incremented by one for each timeseries/iteration/draw
+    # Proceed with caution if seeding and ensure the behavior implemented is
+    # appropriate for use case
+    it_seed_sql = f"""
+            UPDATE aux_weather_draws_info
+            SET timeseries_iteration_draw_initial_seed = 
+            {parsed_args.timeseries_iteration_draw_initial_seed if parsed_args.timeseries_iteration_draw_initial_seed is not None else 'NULL'}
+            ;
+        """
+
+    spin_on_database_lock_generic(c.execute(it_seed_sql))
+
     # Get the weather draws
     weather_draws = get_weather_draws(
-        conn=conn, weather_bins_id=weather_bins_id, weather_draws_id=weather_draws_id
+        conn=conn,
+        weather_bins_id=parsed_args.weather_bins_id,
+        weather_draws_id=parsed_args.weather_draws_id,
     )
 
-    np.random.seed(seed=iterations_seed)
-    prev_weather_iteration = None
-    for weather_iteration, draw_number, month, day_type, weather_bin in weather_draws:
-        if (
-            prev_weather_iteration is not None
-            and prev_weather_iteration != weather_iteration
-            and weather_iteration % 10 == 0
-        ):
-            if not quiet:
-                print(f"      ...weather iteration {weather_iteration}")
-        prev_weather_iteration = weather_iteration
+    # Set a starting seed if requested
+    timeseries_iteration_draw_seed = (
+        int(parsed_args.timeseries_iteration_draw_initial_seed)
+        if parsed_args.timeseries_iteration_draw_initial_seed is not None
+        else None
+    )
+    # Iterate over timeseries
+    for timeseries_name, consider_day_types in timeseries:
+        if not parsed_args.quiet:
+            print(f"...processing timeseries: {timeseries_name}")
 
-        c = conn.cursor()
+        # Add the necessary columns
+        columns_to_add = [
+            f"{timeseries_name}_year",
+            f"{timeseries_name}_month",
+            f"{timeseries_name}_day_of_month",
+        ]
 
-        sql_set_string = ""
-        for timeseries_name, consider_day_types in timeseries:
+        for column in columns_to_add:
+            sql = f"""
+                    ALTER TABLE aux_weather_iterations
+                    ADD COLUMN {column} INTEGER
+                    ;
+                """
+            spin_on_database_lock_generic(c.execute(sql))
+        conn.commit()
+
+        # Iterate over weather iterations and draws
+        prev_weather_iteration = None
+        for (
+            weather_iteration,
+            draw_number,
+            month,
+            day_type,
+            weather_bin,
+        ) in weather_draws:
+            if (
+                prev_weather_iteration is not None
+                and prev_weather_iteration != weather_iteration
+                and weather_iteration % 10 == 0
+            ):
+                if not parsed_args.quiet:
+                    print(f"      ...weather iteration {weather_iteration}")
+            prev_weather_iteration = weather_iteration
+
+            sql_set_string = ""
+
             consider_day_types_str = (
                 f"AND day_type = {day_type}" if consider_day_types else ""
             )
 
             get_options_sql = f"""
-                SELECT year, month, day_of_month, 
-                day_type, weather_bin
-                FROM (
-                    SELECT year, month, day_of_month, day_type, weather_bin
-                    FROM user_defined_weather_bins
-                    WHERE month = {month}
-                    {consider_day_types_str}
-                    AND weather_bin = {weather_bin}
-                    AND weather_bins_id = {weather_bins_id}
-                )
-                WHERE year in (
-                    SELECT year
-                    FROM user_defined_data_availability
-                    WHERE timeseries_name = '{timeseries_name}'
+                    SELECT year, month, day_of_month, 
+                    day_type, weather_bin
+                    FROM (
+                        SELECT year, month, day_of_month, day_type, weather_bin
+                        FROM user_defined_weather_bins
+                        WHERE month = {month}
+                        {consider_day_types_str}
+                        AND weather_bin = {weather_bin}
+                        AND weather_bins_id = {parsed_args.weather_bins_id}
                     )
-                ORDER BY year, month, day_of_month
-            ;
-            """
+                    WHERE year in (
+                        SELECT year
+                        FROM user_defined_data_availability
+                        WHERE timeseries_name = '{timeseries_name}'
+                        )
+                    ORDER BY year, month, day_of_month
+                ;
+                """
 
-            get_options = c.execute(get_options_sql).fetchall()
+            c2 = conn.cursor()
+            get_options = c2.execute(get_options_sql).fetchall()
 
             # Make into a list
             options_list = [o for o in get_options]
 
-            # Randomly select from list
-            (
-                year,
-                month,
-                day_of_month,
-                day_type,
-                weather_bin,
-            ) = options_list[np.random.randint(len(options_list))]
+            # Draw the conditions
+            draw_conditions(
+                conn=conn,
+                weather_draws_id=int(parsed_args.weather_draws_id),
+                weather_iteration=weather_iteration,
+                draw_number=draw_number,
+                timeseries_name=timeseries_name,
+                sql_set_string=sql_set_string,
+                options_list=options_list,
+                timeseries_iteration_draw_seed=timeseries_iteration_draw_seed,
+            )
 
-            # Add to dictionary
-            sql_set_string += f"""{timeseries_name}_year = {year},
-                {timeseries_name}_month = {month},
-                {timeseries_name}_day_of_month = {day_of_month},"""
-
-        # Remove the trailing comma
-        sql_set_string = sql_set_string.rstrip(",")
-
-        # Load the selection into the database
-        update_sql = f"""
-            UPDATE aux_weather_iterations
-            SET {sql_set_string}
-            WHERE weather_draws_id = {weather_draws_id}
-            AND weather_iteration = {weather_iteration}
-            AND draw_number = {draw_number}
-            ;
-        """
-
-        spin_on_database_lock_generic(c.execute(update_sql))
-
-    conn.commit()
+            if timeseries_iteration_draw_seed is not None:
+                # TODO: instead of incrementing seed, possibly set seeds via CSV
+                #  data input for easier reproducitiblity
+                timeseries_iteration_draw_seed += 1
 
 
 def main(args=None):
@@ -376,65 +479,19 @@ def main(args=None):
     create_weather_draws(
         conn=conn,
         weather_bins_id=int(parsed_args.weather_bins_id),
-        weather_draws_seed=int(parsed_args.weather_draws_seed),
+        weather_draws_seed=(
+            int(parsed_args.weather_draws_seed)
+            if parsed_args.weather_draws_seed is not None
+            else None
+        ),
         n_iterations=int(parsed_args.n_iterations),
         weather_draws_id=int(parsed_args.weather_draws_id),
         study_year=int(parsed_args.study_year),
         quiet=parsed_args.quiet,
     )
 
-    # ### Draw from each timeseries to create synthetic weather iterations # ###
-    # Get the timeseries
-    c = conn.cursor()
-    timeseries = [
-        (timeseries_name, consider_day_types)
-        for (timeseries_name, consider_day_types) in c.execute(
-            f"""SELECT timeseries_name, consider_day_types
-        FROM user_defined_monte_carlo_timeseries
-        ;"""
-        ).fetchall()
-    ]
-
-    # Update the iterations seed
-    # It is currently the same for all timeseries
-    it_seed_sql = f"""
-        UPDATE aux_weather_draws_info
-        SET iterations_seed = {parsed_args.iterations_seed}
-        ;
-    """
-
-    spin_on_database_lock_generic(c.execute(it_seed_sql))
-
-    # Get the needed timeseries, draw the conditions, and load into the database
-    for timeseries_name, consider_day_types in timeseries:
-        if not parsed_args.quiet:
-            print(f"...processing timeseries: {timeseries_name}")
-
-        # Add the necessary columns
-        columns_to_add = [
-            f"{timeseries_name}_year",
-            f"{timeseries_name}_month",
-            f"{timeseries_name}_day_of_month",
-        ]
-
-        for column in columns_to_add:
-            sql = f"""
-                ALTER TABLE aux_weather_iterations
-                ADD COLUMN {column} INTEGER
-                ;
-            """
-            spin_on_database_lock_generic(c.execute(sql))
-        conn.commit()
-
-    # Draw the conditions
-    make_synthetic_iterations(
-        conn=conn,
-        weather_bins_id=int(parsed_args.weather_bins_id),
-        weather_draws_id=int(parsed_args.weather_draws_id),
-        timeseries=timeseries,
-        iterations_seed=int(parsed_args.iterations_seed),
-        quiet=parsed_args.quiet,
-    )
+    # ####### Based on the weather draws, create timeseries profiles ###########
+    make_timeseries_draw_profiles(conn=conn, parsed_args=parsed_args)
 
 
 if __name__ == "__main__":
