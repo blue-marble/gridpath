@@ -173,9 +173,23 @@ def main(args=None):
     settings_dict = {}
     for index, row in settings_df.iterrows():
         if row["script"] not in settings_dict.keys():
-            settings_dict[row["script"]] = [(row["setting"], row["value"])]
+            settings_dict[row["script"]] = [
+                (
+                    row["setting"],
+                    row["value"],
+                    row["script_true_false_arg"],
+                    row["reverse_default_behavior"],
+                )
+            ]
         else:
-            settings_dict[row["script"]].append((row["setting"], row["value"]))
+            settings_dict[row["script"]].append(
+                (
+                    row["setting"],
+                    row["value"],
+                    row["script_true_false_arg"],
+                    row["reverse_default_behavior"],
+                )
+            )
 
     for script_name in settings_dict.keys():
         skip = determine_skip(
@@ -186,14 +200,15 @@ def main(args=None):
         if not skip:
             settings_list = []
             for setting in settings_dict[script_name]:
-                if "overwrite" not in setting[0]:
+                if pd.isna(setting[2]) or setting[2] == 0:
                     settings_list.append(f"--{setting[0]}")
                     settings_list.append(setting[1])
                 else:
-                    settings_list.append(f"--{setting[0]}" if int(setting[1]) else "")
+                    settings_list.append(f"--{setting[0]}" if int(setting[3]) else "")
 
             settings_list.append("--quiet" if parsed_args.quiet else "")
 
+            print(script_name, settings_list)
             # Run the script's main function with the requested arguments
             getattr(globals()[script_name], "main")(settings_list)
 
