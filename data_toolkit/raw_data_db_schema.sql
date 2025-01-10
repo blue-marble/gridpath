@@ -274,7 +274,7 @@ CREATE TABLE aux_weather_draws_info
     weather_draws_id INTEGER,
     seed             INTEGER,
     n_iterations     INTEGER,
-    iterations_seed  INTEGER,
+    timeseries_iteration_draw_initial_seed  INTEGER,
     PRIMARY KEY (weather_bins_id, weather_draws_id)
 );
 
