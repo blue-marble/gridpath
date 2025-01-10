@@ -75,17 +75,23 @@ def parse_arguments(args):
     parser.add_argument("-stage", "--stage_id", default=1, help="Defaults to 1.")
     parser.add_argument("-n_iter", "--n_iterations")
     parser.add_argument(
-        "-user_seeding", "--user_provided_seeding", default=False, action="store_true"
+        "-user_seeding",
+        "--user_provided_seeding",
+        default=False,
+        action="store_true",
+        help="WARNING: make sure you understand what this script does with "
+        "the user-defined seeds before enabling this.",
     )
     parser.add_argument(
         "-seed",
-        "--starting_project_iteration_seeds",
+        "--starting_project_iteration_seed",
         default=0,
         help="Starting seed for an iteration-project combination. If selected, "
         "this script increments the seed by 1 for each project-iteration. "
-        "Setting the seed will ensure that you get the same results each time, "
-        "but can compromise randomness. Make sure to set '--user_provided_seeding' "
-        "flag to True to use this functionality and proceed with caution.",
+        "Setting the seeds will ensure that you get the same results each "
+        "time, but can compromise randomness. Make sure to set "
+        "'--user_provided_seeding' flag to True to use this functionality and "
+        "proceed with caution.",
     )
     parser.add_argument(
         "-max_unit_seed_int",
@@ -93,7 +99,7 @@ def parse_arguments(args):
         default=1000000,
         help="The max integer for assigning seeds to each unit outage "
         "simulation for a given project. The --user_provided_seeding flag must "
-        "be set to True for this to take effect.",
+        "be set to True for this to take effect. Proceed with caution.",
     )
     parser.add_argument(
         "-id", "--project_availability_scenario_id", default=1, help="Defaults to 1."
@@ -154,6 +160,9 @@ def get_weighted_availability_adjustment(
     # be used if --random is set to False; otherwise, the unit_seeds will be
     # reset to None
     if user_provided_seeding:
+        # For each project iteration, we assign a seed to each unit outage
+        # simulation based on the project_iteration_seed and a
+        # max_integer_for_unit_seeding number set by the user
         np.random.seed(project_iteration_seed)
         unit_seeds = np.random.randint(
             1, max_integer_for_unit_outage_seeding, size=len(project_df.index)
@@ -386,7 +395,7 @@ def main(args=None):
 
     all_files = []
     pool_data = []
-    project_iteration_seed = parsed_args.starting_project_iteration_seeds
+    project_iteration_seed = parsed_args.starting_project_iteration_seed
     for project in projects:
         # Write header if we are overwriting the file or it doesn't exist
         overwrite = parsed_args.overwrite
