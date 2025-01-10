@@ -174,14 +174,21 @@ def main(args=None):
     for index, row in settings_df.iterrows():
         if row["script"] not in settings_dict.keys():
             settings_dict[row["script"]] = [
-                (row["setting"], row["value"], row["script_true_false_arg"],
-                 row["reverse_default_behavior"])
+                (
+                    row["setting"],
+                    row["value"],
+                    row["script_true_false_arg"],
+                    row["reverse_default_behavior"],
+                )
             ]
         else:
             settings_dict[row["script"]].append(
-                (row["setting"], row["value"],
-                 row["script_true_false_arg"],
-                 row["reverse_default_behavior"])
+                (
+                    row["setting"],
+                    row["value"],
+                    row["script_true_false_arg"],
+                    row["reverse_default_behavior"],
+                )
             )
 
     for script_name in settings_dict.keys():
@@ -197,8 +204,7 @@ def main(args=None):
                     settings_list.append(f"--{setting[0]}")
                     settings_list.append(setting[1])
                 else:
-                    settings_list.append(f"--{setting[0]}" if int(setting[3])
-                                         else "")
+                    settings_list.append(f"--{setting[0]}" if int(setting[3]) else "")
 
             settings_list.append("--quiet" if parsed_args.quiet else "")
 
