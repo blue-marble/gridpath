@@ -27,6 +27,7 @@ from pyomo.environ import (
     Constraint,
     Any,
     value,
+    Expression,
 )
 
 from gridpath.auxiliary.db_interface import directories_to_db_values, import_csv
@@ -90,15 +91,54 @@ def add_model_components(
         m.WATER_LINK_DEPARTURE_ARRIVAL_TMPS, within=NonNegativeReals
     )
 
-    m.Water_Link_Flow_Rate_Vol_per_Sec_LinHrzFirstTmpSlack = Var(
-        m.WATER_LINKS, m.TMPS, within=NonNegativeReals, initialize=0
+    m.Water_Link_Min_Flow_Violation = Var(
+        m.WATER_LINK_DEPARTURE_ARRIVAL_TMPS, within=NonNegativeReals
+    )
+    m.Water_Link_Max_Flow_Violation = Var(
+        m.WATER_LINK_DEPARTURE_ARRIVAL_TMPS, within=NonNegativeReals
+    )
+
+    def min_flow_violation_expression_init(mod, wl, dep_tmp, arr_tmp):
+        """
+
+        :param mod:
+        :param z:
+        :param tmp:
+        :return:
+        """
+        if mod.allow_water_link_min_flow_violation[wl]:
+            return mod.Water_Link_Min_Flow_Violation[wl, dep_tmp, arr_tmp]
+        else:
+            return 0
+
+    m.Water_Link_Min_Flow_Violation_Expression = Expression(
+        m.WATER_LINK_DEPARTURE_ARRIVAL_TMPS,
+        initialize=min_flow_violation_expression_init,
+    )
+
+    def max_flow_violation_expression_init(mod, wl, dep_tmp, arr_tmp):
+        """
+
+        :param mod:
+        :param z:
+        :param tmp:
+        :return:
+        """
+        if mod.allow_water_link_max_flow_violation[wl]:
+            return mod.Water_Link_Max_Flow_Violation[wl, dep_tmp, arr_tmp]
+        else:
+            return 0
+
+    m.Water_Link_Max_Flow_Violation_Expression = Expression(
+        m.WATER_LINK_DEPARTURE_ARRIVAL_TMPS,
+        initialize=max_flow_violation_expression_init,
     )
 
     # ### Constraints ### #
     def min_flow_rule(mod, wl, dep_tmp, arr_tmp):
         return (
             mod.Water_Link_Flow_Rate_Vol_per_Sec[wl, dep_tmp, arr_tmp]
-            + mod.Water_Link_Flow_Rate_Vol_per_Sec_LinHrzFirstTmpSlack[wl, dep_tmp]
+            + mod.Water_Link_Min_Flow_Violation_Expression[wl, dep_tmp, arr_tmp]
             >= mod.min_flow_vol_per_second[wl, dep_tmp]
         )
 
@@ -106,35 +146,10 @@ def add_model_components(
         m.WATER_LINK_DEPARTURE_ARRIVAL_TMPS, rule=min_flow_rule
     )
 
-    def min_flow_slack_rule(mod, wl, tmp):
-        if mod.allow_lin_hrz_first_tmp_flow_slack:
-            if check_if_boundary_type_and_first_timepoint(
-                mod=mod,
-                tmp=tmp,
-                boundary_type="linear",
-                balancing_type=mod.water_system_balancing_type,
-            ):
-                return (
-                    mod.Water_Link_Flow_Rate_Vol_per_Sec_LinHrzFirstTmpSlack[wl, tmp]
-                    <= mod.min_flow_vol_per_second[wl, tmp]
-                )
-            else:
-                return (
-                    mod.Water_Link_Flow_Rate_Vol_per_Sec_LinHrzFirstTmpSlack[wl, tmp]
-                    == 0
-                )
-        else:
-            return (
-                mod.Water_Link_Flow_Rate_Vol_per_Sec_LinHrzFirstTmpSlack[wl, tmp] == 0
-            )
-
-    m.MinFlowSlackConstraint = Constraint(
-        m.WATER_LINKS, m.TMPS, rule=min_flow_slack_rule
-    )
-
     def max_flow_rule(mod, wl, dep_tmp, arr_tmp):
         return (
             mod.Water_Link_Flow_Rate_Vol_per_Sec[wl, dep_tmp, arr_tmp]
+            - mod.Water_Link_Max_Flow_Violation_Expression[wl, dep_tmp, arr_tmp]
             <= mod.max_flow_vol_per_second[wl, dep_tmp]
         )
 
@@ -416,7 +431,8 @@ def export_results(
     """
     results_columns = [
         "water_flow_vol_per_sec",
-        "water_flow_slack_used_vol_per_sec",
+        "water_flow_min_violation_vol_per_sec",
+        "water_flow_max_violation_vol_per_sec",
     ]
     data = [
         [
@@ -424,7 +440,8 @@ def export_results(
             dep_tmp,
             arr_tmp,
             value(m.Water_Link_Flow_Rate_Vol_per_Sec[wl, dep_tmp, arr_tmp]),
-            value(m.Water_Link_Flow_Rate_Vol_per_Sec_LinHrzFirstTmpSlack[wl, dep_tmp]),
+            value(m.Water_Link_Min_Flow_Violation_Expression[wl, dep_tmp, arr_tmp]),
+            value(m.Water_Link_Max_Flow_Violation_Expression[wl, dep_tmp, arr_tmp]),
         ]
         for (wl, dep_tmp, arr_tmp) in m.WATER_LINK_DEPARTURE_ARRIVAL_TMPS
     ]

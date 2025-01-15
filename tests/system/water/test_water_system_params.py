@@ -111,17 +111,3 @@ class TestWaterFlows(unittest.TestCase):
         actual_coeff = instance.theoretical_power_coefficient.value
 
         self.assertEqual(expected_coeff, actual_coeff)
-
-        # Param: allow_lin_hrz_first_tmp_flow_slack
-        expect_slack = 0
-        actual_slack = instance.allow_lin_hrz_first_tmp_flow_slack.value
-
-        self.assertEqual(expect_slack, actual_slack)
-
-        # Param: allow_lin_hrz_first_tmp_flow_slack_tuning_cost
-        expect_slack_tuning_cost = 0
-        actual_slack_tuning_cost = (
-            instance.allow_lin_hrz_first_tmp_flow_slack_tuning_cost.value
-        )
-
-        self.assertEqual(expect_slack_tuning_cost, actual_slack_tuning_cost)
