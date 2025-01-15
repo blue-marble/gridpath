@@ -120,7 +120,7 @@ def add_model_components(
     )
 
     # Release targets
-    m.reservoir_target_release = Param(
+    m.reservoir_target_release_avg_flow_volunit_per_sec = Param(
         m.WATER_NODE_RESERVOIR_BT_HRZS_WITH_TOTAL_RELEASE_REQUIREMENTS,
         within=NonNegativeReals,
     )
@@ -210,14 +210,13 @@ def add_model_components(
     # Target releases
     def reservoir_target_release_constraint_rule(mod, wn, bt, hrz):
         """ """
-        return (
-            sum(
-                mod.Gross_Reservoir_Release_Rate_Vol_Per_Sec[wn, tmp]
-                * 3600
-                * mod.hrs_in_tmp[tmp]
-                for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
-            )
-            == mod.reservoir_target_release[wn, bt, hrz]
+        return sum(
+            mod.Gross_Reservoir_Release_Rate_Vol_Per_Sec[wn, tmp] * mod.hrs_in_tmp[tmp]
+            for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
+        ) == sum(
+            mod.reservoir_target_release_avg_flow_volunit_per_sec[wn, bt, hrz]
+            * mod.hrs_in_tmp[tmp]
+            for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
         )
 
     m.Water_Node_Target_Release_Constraint = Constraint(
@@ -328,14 +327,14 @@ def load_model_data(
         subproblem,
         stage,
         "inputs",
-        "reservoir_target_releases.tab",
+        "reservoir_target_release_avg_flow_volunit_per_secs.tab",
     )
 
     if os.path.exists(rel_fname):
         data_portal.load(
             filename=rel_fname,
             index=m.WATER_NODE_RESERVOIR_BT_HRZS_WITH_TOTAL_RELEASE_REQUIREMENTS,
-            param=m.reservoir_target_release,
+            param=m.reservoir_target_release_avg_flow_volunit_per_sec,
         )
 
     # TODO: refactor
@@ -441,7 +440,7 @@ def get_inputs_from_database(
 
     c2 = conn.cursor()
     target_releases = c2.execute(
-        f"""SELECT water_node, balancing_type, horizon, reservoir_target_release
+        f"""SELECT water_node, balancing_type, horizon, reservoir_target_release_avg_flow_volunit_per_sec
             FROM inputs_system_water_node_reservoirs_target_releases
             WHERE (water_node, target_release_scenario_id)
             IN (SELECT water_node, target_release_scenario_id
@@ -597,7 +596,7 @@ def write_model_inputs(
                 subproblem,
                 stage,
                 "inputs",
-                "reservoir_target_releases.tab",
+                "reservoir_target_release_avg_flow_volunit_per_secs.tab",
             ),
             "w",
             newline="",
@@ -606,7 +605,12 @@ def write_model_inputs(
 
             # Write header
             writer.writerow(
-                ["reservoir", "balancing_type", "horizon", "reservoir_target_release"]
+                [
+                    "reservoir",
+                    "balancing_type",
+                    "horizon",
+                    "reservoir_target_release_avg_flow_volunit_per_sec",
+                ]
             )
 
             for row in target_releases_list:
