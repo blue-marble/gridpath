@@ -155,7 +155,9 @@ class TestReservoirs(unittest.TestCase):
             ("Water_Node_3", "day", 202001): 200,
         }
         actual_rt = {
-            (r, bt, hrz): instance.reservoir_target_release_avg_flow_volunit_per_sec[r, bt, hrz]
+            (r, bt, hrz): instance.reservoir_target_release_avg_flow_volunit_per_sec[
+                r, bt, hrz
+            ]
             for (
                 r,
                 bt,
