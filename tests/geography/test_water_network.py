@@ -131,3 +131,47 @@ class TestWaterNetwork(unittest.TestCase):
             for wl in instance.WATER_LINKS
         }
         self.assertDictEqual(expected_tr_time, actual_tr_time)
+
+        # Param: allow_water_link_min_flow_violation
+        expected_allow_min = {
+            "Water_Link_12": 1,
+            "Water_Link_23": 0,
+        }
+        actual_allow_min = {
+            wl: instance.allow_water_link_min_flow_violation[wl]
+            for wl in instance.WATER_LINKS
+        }
+        self.assertDictEqual(expected_allow_min, actual_allow_min)
+
+        # Param: min_flow_violation_penalty_cost
+        expected_min_v = {
+            "Water_Link_12": 100,
+            "Water_Link_23": 0,
+        }
+        actual_min_v = {
+            wl: instance.min_flow_violation_penalty_cost[wl]
+            for wl in instance.WATER_LINKS
+        }
+        self.assertDictEqual(expected_min_v, actual_min_v)
+
+        # Param: allow_water_link_max_flow_violation
+        expected_allow_max = {
+            "Water_Link_12": 0,
+            "Water_Link_23": 1,
+        }
+        actual_allow_max = {
+            wl: instance.allow_water_link_max_flow_violation[wl]
+            for wl in instance.WATER_LINKS
+        }
+        self.assertDictEqual(expected_allow_max, actual_allow_max)
+
+        # Param: max_flow_violation_penalty_cost
+        expected_max_v = {
+            "Water_Link_12": 0,
+            "Water_Link_23": 100,
+        }
+        actual_max_v = {
+            wl: instance.max_flow_violation_penalty_cost[wl]
+            for wl in instance.WATER_LINKS
+        }
+        self.assertDictEqual(expected_max_v, actual_max_v)

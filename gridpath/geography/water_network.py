@@ -24,6 +24,7 @@ from pyomo.environ import (
     Param,
     NonNegativeReals,
     Any,
+    Boolean,
 )
 
 from gridpath.auxiliary.db_interface import directories_to_db_values
@@ -91,6 +92,18 @@ def add_model_components(
     m.water_link_flow_transport_time_hours = Param(
         m.WATER_LINKS, within=NonNegativeReals, default=0
     )
+    m.allow_water_link_min_flow_violation = Param(
+        m.WATER_LINKS, within=Boolean, default=0
+    )
+    m.min_flow_violation_penalty_cost = Param(
+        m.WATER_LINKS, within=NonNegativeReals, default=0
+    )
+    m.allow_water_link_max_flow_violation = Param(
+        m.WATER_LINKS, within=Boolean, default=0
+    )
+    m.max_flow_violation_penalty_cost = Param(
+        m.WATER_LINKS, within=NonNegativeReals, default=0
+    )
 
 
 def load_model_data(
@@ -120,6 +133,10 @@ def load_model_data(
             m.water_node_from,
             m.water_node_to,
             m.water_link_flow_transport_time_hours,
+            m.allow_water_link_min_flow_violation,
+            m.min_flow_violation_penalty_cost,
+            m.allow_water_link_max_flow_violation,
+            m.max_flow_violation_penalty_cost,
         ),
     )
 
@@ -145,7 +162,11 @@ def get_inputs_from_database(
     c = conn.cursor()
     water_links = c.execute(
         f"""SELECT water_link, water_node_from, water_node_to,
-        water_link_flow_transport_time_hours
+        water_link_flow_transport_time_hours,
+        allow_water_link_min_flow_violation,
+        min_flow_violation_penalty_cost,
+        allow_water_link_max_flow_violation,
+        max_flow_violation_penalty_cost
         FROM inputs_geography_water_network
         WHERE water_network_scenario_id = {subscenarios.WATER_NETWORK_SCENARIO_ID};
         """
@@ -210,7 +231,7 @@ def write_model_inputs(
         weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
     )
 
-    carbon_cap_zone = get_inputs_from_database(
+    water_network = get_inputs_from_database(
         scenario_id,
         subscenarios,
         db_weather_iteration,
@@ -244,8 +265,13 @@ def write_model_inputs(
                 "water_node_from",
                 "water_node_to",
                 "water_link_flow_transport_time_hours",
+                "allow_water_link_min_flow_violation",
+                "min_flow_violation_penalty_cost",
+                "allow_water_link_max_flow_violation",
+                "max_flow_violation_penalty_cost",
             ]
         )
 
-        for row in carbon_cap_zone:
-            writer.writerow(row)
+        for row in water_network:
+            replace_nulls = ["." if i is None else i for i in row]
+            writer.writerow(replace_nulls)
