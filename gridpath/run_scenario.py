@@ -242,6 +242,9 @@ def run_optimization_for_subproblem_stage(
     if parsed_arguments.incomplete_only:
         termination_condition_file = os.path.join(
             scenario_directory,
+            weather_iteration_directory,
+            hydro_iteration_directory,
+            availability_iteration_directory,
             subproblem_directory,
             stage_directory,
             "results",
