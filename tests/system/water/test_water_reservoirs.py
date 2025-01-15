@@ -148,14 +148,14 @@ class TestReservoirs(unittest.TestCase):
         }
         self.assertDictEqual(expected_te, actual_te)
 
-        # Param: reservoir_target_release
+        # Param: reservoir_target_release_avg_flow_volunit_per_sec
         expected_rt = {
             ("Water_Node_1", "day", 202001): 200,
             ("Water_Node_2", "day", 202001): 200,
             ("Water_Node_3", "day", 202001): 200,
         }
         actual_rt = {
-            (r, bt, hrz): instance.reservoir_target_release[r, bt, hrz]
+            (r, bt, hrz): instance.reservoir_target_release_avg_flow_volunit_per_sec[r, bt, hrz]
             for (
                 r,
                 bt,

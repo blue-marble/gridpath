@@ -1219,12 +1219,12 @@ CREATE TABLE subscenarios_system_water_node_reservoirs_target_releases
 DROP TABLE IF EXISTS inputs_system_water_node_reservoirs_target_releases;
 CREATE TABLE inputs_system_water_node_reservoirs_target_releases
 (
-    water_node                 TEXT,
-    target_release_scenario_id INTEGER,
-    hydro_iteration            INTEGER DEFAULT 0 NOT NULL,
-    balancing_type             TEXT,
-    horizon                    INTEGER,
-    reservoir_target_release   DECIMAL,
+    water_node                                        TEXT,
+    target_release_scenario_id                        INTEGER,
+    hydro_iteration                                   INTEGER DEFAULT 0 NOT NULL,
+    balancing_type                                    TEXT,
+    horizon                                           INTEGER,
+    reservoir_target_release_avg_flow_volunit_per_sec DECIMAL,
     PRIMARY KEY (water_node, target_release_scenario_id, hydro_iteration,
                  balancing_type, horizon),
     FOREIGN KEY (water_node, target_release_scenario_id) REFERENCES
