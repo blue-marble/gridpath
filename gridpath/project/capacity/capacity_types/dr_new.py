@@ -165,7 +165,7 @@ def add_model_components(
     +-------------------------------------------------------------------------+
     | Expressions                                                             |
     +=========================================================================+
-    | | :code:`DRNew_Energy_Capacity_MWh`                                     |
+    | | :code:`DRNew_Energy_Storage_Capacity_MWh`                             |
     | | *Defined over*: :code:`DR_NEW_OPR_PRDS`                               |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
@@ -236,8 +236,8 @@ def add_model_components(
     # Expressions
     ###########################################################################
 
-    m.DRNew_Energy_Capacity_MWh = Expression(
-        m.DR_NEW_OPR_PRDS, rule=dr_new_energy_capacity_rule
+    m.DRNew_Energy_Storage_Capacity_MWh = Expression(
+        m.DR_NEW_OPR_PRDS, rule=dr_new_energy_stor_capacity_rule
     )
 
     m.DRNew_Power_Capacity_MW = Expression(
@@ -269,9 +269,9 @@ def add_model_components(
 ###############################################################################
 
 
-def dr_new_energy_capacity_rule(mod, g, p):
+def dr_new_energy_stor_capacity_rule(mod, g, p):
     """
-    **Expression Name**: DRNew_Energy_Capacity_MWh
+    **Expression Name**: DRNew_Energy_Storage_Capacity_MWh
     **Defined Over**: DR_NEW_OPR_PRDS
 
     Total energy capacity in each period is the sum of all new build over the
@@ -289,7 +289,7 @@ def dr_new_power_capacity_rule(mod, g, p):
 
     Vintages = all periods
     """
-    return mod.DRNew_Energy_Capacity_MWh[g, p] / mod.dr_new_min_duration[g]
+    return mod.DRNew_Energy_Storage_Capacity_MWh[g, p] / mod.dr_new_min_duration[g]
 
 
 # Constraint Formulation Rules
@@ -303,7 +303,7 @@ def cost_rule(mod, project, point, period):
 
     For each segment on the piecewise linear curve, the cost variable is
     constrained to be equal to or larger than the calculated value on the
-    curve. Depending on the cumulative build (*DRNew_Energy_Capacity_MWh*)
+    curve. Depending on the cumulative build (*DRNew_Energy_Storage_Capacity_MWh*)
     only one segment is active at a time. The supply curve is assumed to be
     convex, i.e. costs increase at an increasing rate as you move up the
     curve.
@@ -311,7 +311,7 @@ def cost_rule(mod, project, point, period):
     return (
         mod.DRNew_Cost[project, period]
         >= mod.dr_new_supply_curve_slope[project, point]
-        * mod.DRNew_Energy_Capacity_MWh[project, period]
+        * mod.DRNew_Energy_Storage_Capacity_MWh[project, period]
         + mod.dr_new_supply_curve_intercept[project, point]
     )
 
@@ -327,11 +327,11 @@ def capacity_rule(mod, g, p):
     return mod.DRNew_Power_Capacity_MW[g, p]
 
 
-def energy_capacity_rule(mod, g, p):
+def energy_stor_capacity_rule(mod, g, p):
     """
     The total energy capacity of dr_new operational in period p.
     """
-    return mod.DRNew_Energy_Capacity_MWh[g, p]
+    return mod.DRNew_Energy_Storage_Capacity_MWh[g, p]
 
 
 def capacity_cost_rule(mod, g, p):

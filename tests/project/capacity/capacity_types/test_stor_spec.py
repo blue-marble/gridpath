@@ -28,8 +28,8 @@ TEST_DATA_DIRECTORY = os.path.join(
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
     "temporal.operations.timepoints",
-    "temporal.operations.horizons",
     "temporal.investment.periods",
+    "temporal.operations.horizons",
     "geography.load_zones",
     "project",
 ]
@@ -152,14 +152,16 @@ class TestStorSpec(unittest.TestCase):
         )
         self.assertDictEqual(expected_fixed_cost_per_mw, actual_fixed_cost_per_mw)
 
-        # Params: stor_spec_fixed_cost_per_mwh_yr
+        # Params: stor_spec_fixed_cost_per_stor_mwh_yr
         expected_fixed_cost_per_mwh = OrderedDict(
             sorted({("Battery_Specified", 2020): 5000}.items())
         )
         actual_fixed_cost_per_mwh = OrderedDict(
             sorted(
                 {
-                    (prj, period): instance.stor_spec_fixed_cost_per_mwh_yr[prj, period]
+                    (prj, period): instance.stor_spec_fixed_cost_per_stor_mwh_yr[
+                        prj, period
+                    ]
                     for (prj, period) in instance.STOR_SPEC_OPR_PRDS
                 }.items()
             )

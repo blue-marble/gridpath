@@ -1,0 +1,3 @@
+water_link	water_node_from	water_node_to	water_link_flow_transport_time_hours	allow_water_link_min_flow_violation	min_flow_violation_penalty_cost	allow_water_link_max_flow_violation	max_flow_violation_penalty_cost
+Water_Link_12	Water_Node_1	Water_Node_2	1	.	.	.	.
+Water_Link_23	Water_Node_2	Water_Node_3	2	.	.	.	.

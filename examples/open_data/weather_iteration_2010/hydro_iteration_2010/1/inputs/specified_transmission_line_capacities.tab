@@ -1,0 +1,2 @@
+transmission_line	period	specified_tx_min_mw	specified_tx_max_mw	fixed_cost_per_mw_yr
+Zone1_Zone2	2026	-2000.0	2000.0	0.0

@@ -31,7 +31,7 @@ from pyomo.environ import (
     Param,
     Constraint,
     NonNegativeReals,
-    Integers,
+    Reals,
     Expression,
     value,
 )
@@ -94,13 +94,13 @@ def add_model_components(
     | operational period, e.g. the sum of all imports into the CAISO zone     |
     | cannot exceed 10,000 MW.                                                |
     +-------------------------------------------------------------------------+
-    | | :code:`sim_flow_direction`                                            |
+    | | :code:`sim_flow_coefficient`                                          |
     | | *Defined over*: :code:`SIM_FLOW_LMT_TX_LINES`                         |
     | | *Within*: :code:`Integers [-1, 1]`                                    |
     |                                                                         |
     | For each transmission line in each simultaneous flow limit group, this  |
-    | param describes in which direction the transmission line is added into  |
-    | the flow limit constraint.                                              |
+    | param describes how flow on the transmission line affects flow across   |
+    | the simultaneous flow limit.                                            |
     +-------------------------------------------------------------------------+
 
     |
@@ -112,7 +112,7 @@ def add_model_components(
     | | *Defined over*: :code:`SIM_FLOW_LMT_TMPS`                             |
     |                                                                         |
     | The total flow on lines in each simultaneous flow limit group,          |
-    | according to their specified direction in :code:`sim_flow_direction`    |
+    | according to their specified effect via :code:`sim_flow_coefficient`    |
     +-------------------------------------------------------------------------+
 
     |
@@ -170,10 +170,9 @@ def add_model_components(
 
     m.sim_flow_lmt_mw = Param(m.SIM_FLOW_LMT_PRDS, within=NonNegativeReals)
 
-    m.sim_flow_direction = Param(
+    m.sim_flow_coefficient = Param(
         m.SIM_FLOW_LMT_TX_LINES,
-        within=Integers,
-        validate=lambda mod, v, g, l: v in [-1, 1],
+        within=Reals,
     )
 
     # Expressions
@@ -201,7 +200,7 @@ def sim_flow_expression_rule(mod, g, tmp):
     Total flow on lines in each simultaneous flow group.
     """
     return sum(
-        mod.Transmit_Power_MW[tx_line, tmp] * mod.sim_flow_direction[g, tx_line]
+        mod.Transmit_Power_MW[tx_line, tmp] * mod.sim_flow_coefficient[g, tx_line]
         for tx_line in mod.TX_LINES_BY_SIM_FLOW_LMT[g]
         if (tx_line, tmp) in mod.TX_OPR_TMPS
     )
@@ -276,10 +275,10 @@ def load_model_data(
         select=(
             "simultaneous_flow_limit",
             "transmission_line",
-            "simultaneous_flow_direction",
+            "simultaneous_flow_coefficient",
         ),
         index=m.SIM_FLOW_LMT_TX_LINES,
-        param=m.sim_flow_direction,
+        param=m.sim_flow_coefficient,
     )
 
 
@@ -319,16 +318,16 @@ def export_results(
         writer = csv.writer(tx_op_results_file)
         writer.writerow(
             [
-                "simultaneous_flow_limit",
+                "transmission_simultaneous_flow_limit",
                 "timepoint",
-                "period",
                 "timepoint_weight",
+                "period",
                 "simultaneous_flow_mw",
             ]
         )
         for g, tmp in m.SIM_FLOW_LMT_TMPS:
             writer.writerow(
-                [g, tmp, m.period[tmp], m.tmp_weight[tmp], value(m.Sim_Flow_MW[g, tmp])]
+                [g, tmp, m.tmp_weight[tmp], m.period[tmp], value(m.Sim_Flow_MW[g, tmp])]
             )
 
 
@@ -390,7 +389,7 @@ def get_inputs_from_database(
     c2 = conn.cursor()
     limit_lines = c2.execute(
         """SELECT transmission_simultaneous_flow_limit, transmission_line,
-        simultaneous_flow_direction
+        simultaneous_flow_coefficient
         FROM inputs_transmission_simultaneous_flow_limit_line_groups
         INNER JOIN
         (SELECT DISTINCT transmission_simultaneous_flow_limit
@@ -508,7 +507,7 @@ def write_model_inputs(
             [
                 "simultaneous_flow_limit",
                 "transmission_line",
-                "simultaneous_flow_direction",
+                "simultaneous_flow_coefficient",
             ]
         )
 

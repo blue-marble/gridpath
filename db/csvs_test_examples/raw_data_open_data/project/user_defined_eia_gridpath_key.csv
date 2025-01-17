@@ -1,0 +1,6 @@
+﻿prime_mover_code,prime_mover_label,energy_source_code,energy_source_label,fuel_type_eiaaeo,gridpath_generic_fuel,aeo_prices,gridpath_capacity_type,gridpath_operational_type,gridpath_technology,gridpath_balancing_type,default_variable_om_cost_per_mwh,default_storage_efficiency,default_charging_efficiency,default_discharging_efficiency,heat_rate_mmbtu_per_mwh,min_load_fraction,heat_rate_source,agg_project
+WT,wind_onshore,WND,wind,,,,gen_spec,gen_var_must_take,Wind,day,0,,,,,,,Wind
+HY,hydraulic_turbine,WAT,water,,,,gen_spec,gen_hydro_must_take,Hydro,day,0,,,,,,,Hydro
+CT,combined_cycle_combustion_turbine,NG,natural_gas,natural_gas,Gas,1,gen_spec,gen_commit_lin,Gas,day,0,,,,7.596,0.5,https://www.eia.gov/electricity/annual/html/epa_08_02.html,
+BA,battery_storage,MWH,electricity_storage,,,,stor_spec,stor,Batteries,day,0,1,0.92,0.92,,,,
+PV,solar_pv,SUN,solar,,,,gen_spec,gen_var_must_take,Solar,day,0,,,,,,,Solar

@@ -20,9 +20,13 @@ The user may specify the name and location of the GridPath database path using t
 
 >>> gridpath_create_database --database PATH/DO/DB
 
-The default schema for the GridPath SQLite database is in db_schema.sql.
+The default schema for the GridPath SQLite database is in db/db_schema.sql.
 
 .. _database-structure-section-ref:
+
+To create a database for GridPath raw data, point to the schema in
+../data_toolkit/raw_data_db_schema.sql instead and also specify the
+--omit_data flag.
 
 """
 
@@ -53,7 +57,7 @@ def parse_arguments(arguments):
     )
     parser.add_argument(
         "--db_schema",
-        default="db_schema.sql",
+        default="./db_schema.sql",
         help="Name of the SQL file containing the database "
         "schema. Assumed to be in same directory as"
         "create_database.py",
@@ -101,7 +105,7 @@ def create_database_schema(conn, parsed_arguments):
         conn.executescript(schema)
 
 
-def load_data(conn, data_directory, omit_data, custom_units):
+def load_data(conn, data_directory, custom_units):
     """
     Load GridPath structural data (e.g. defaults, allowed modules, validation
     data, UI component data, etc.)
@@ -109,38 +113,37 @@ def load_data(conn, data_directory, omit_data, custom_units):
     :param data_directory:
     :param omit_data:
     :param custom_units: Boolean, True if user-specified units
+    :param omit_data:
     :return:
     """
-    if not omit_data:
-        # General Model Data
-        expected_files = [
-            "mod_availability_types",
-            "mod_capacity_types",
-            "mod_features",
-            "mod_feature_subscenarios",
-            "mod_horizon_boundary_types",
-            "mod_months",
-            "mod_operational_types",
-            "mod_prm_types",
-            "mod_reserve_types",
-            "mod_run_status_types",
-            "mod_tx_availability_types",
-            "mod_tx_capacity_types",
-            "mod_tx_operational_types",
-            "mod_capacity_and_operational_type_invalid_combos",
-            "mod_tx_capacity_and_tx_operational_type_invalid_combos",
-            "mod_units",
-            "mod_validation_status_types",
-            "ui_scenario_detail_table_metadata",
-            "ui_scenario_detail_table_row_metadata",
-            "ui_scenario_results_plot_metadata",
-            "ui_scenario_results_table_metadata",
-            "viz_technologies",
-        ]
-        for f in expected_files:
-            load_aux_data(conn=conn, data_directory=data_directory, filename=f)
+    expected_files = [
+        "mod_availability_types",
+        "mod_capacity_types",
+        "mod_features",
+        "mod_feature_subscenarios",
+        "mod_horizon_boundary_types",
+        "mod_months",
+        "mod_operational_types",
+        "mod_prm_types",
+        "mod_reserve_types",
+        "mod_run_status_types",
+        "mod_tx_availability_types",
+        "mod_tx_capacity_types",
+        "mod_tx_operational_types",
+        "mod_tx_capacity_and_tx_operational_type_invalid_combos",
+        "mod_capacity_and_operational_type_invalid_combos",
+        "mod_units",
+        "mod_validation_status_types",
+        "ui_scenario_detail_table_metadata",
+        "ui_scenario_detail_table_row_metadata",
+        "ui_scenario_results_plot_metadata",
+        "ui_scenario_results_table_metadata",
+        "viz_technologies",
+    ]
+    for f in expected_files:
+        load_aux_data(conn=conn, data_directory=data_directory, filename=f)
 
-        set_custom_units(conn=conn, custom_units=custom_units)
+    set_custom_units(conn=conn, custom_units=custom_units)
 
 
 def set_custom_units(conn, custom_units):
@@ -259,7 +262,9 @@ def load_aux_data(conn, data_directory, filename):
     data = []
     cursor = conn.cursor()
 
-    file_path = os.path.join(data_directory, f"{filename}.csv")
+    file_path = os.path.join(
+        os.path.dirname(__file__), data_directory, f"{filename}.csv"
+    )
     df = pd.read_csv(file_path, delimiter=",")
     spin_on_database_lock_generic(
         command=df.to_sql(
@@ -298,12 +303,12 @@ def main(args=None):
     # Create schema
     create_database_schema(conn=conn, parsed_arguments=parsed_args)
     # Load data
-    load_data(
-        conn=conn,
-        omit_data=parsed_args.omit_data,
-        data_directory=parsed_args.data_directory,
-        custom_units=parsed_args.custom_units,
-    )
+    if not parsed_args.omit_data:
+        load_data(
+            conn=conn,
+            data_directory=parsed_args.data_directory,
+            custom_units=parsed_args.custom_units,
+        )
     # Close the database
     conn.close()
 

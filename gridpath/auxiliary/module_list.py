@@ -1,4 +1,4 @@
-# Copyright 2016-2023 Blue Marble Analytics LLC.
+# Copyright 2016-2024 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -41,8 +41,8 @@ def all_modules_list():
     """
     all_modules = [
         "temporal.operations.timepoints",
-        "temporal.operations.horizons",
         "temporal.investment.periods",
+        "temporal.operations.horizons",
         "temporal.investment.superperiods",
         "temporal.finalize",
         "geography.load_zones",
@@ -60,9 +60,11 @@ def all_modules_list():
         "geography.performance_standard_zones",
         "geography.carbon_credits_zones",
         "geography.fuel_burn_limit_balancing_areas",
+        "geography.generic_policy",
         "geography.prm_zones",
         "geography.local_capacity_zones",
         "geography.markets",
+        "geography.water_network",
         "system.load_balance",
         "system.load_balance.static_load_requirement",
         "system.policy.energy_targets",
@@ -79,11 +81,19 @@ def all_modules_list():
         "system.policy.performance_standard.performance_standard",
         "system.policy.fuel_burn_limits",
         "system.policy.fuel_burn_limits.fuel_burn_limits",
+        "system.policy.generic_policy",
+        "system.policy.generic_policy.generic_policy_requirements",
         "system.reliability.prm",
         "system.reliability.prm.prm_requirement",
         "system.reliability.local_capacity",
         "system.reliability.local_capacity.local_capacity_requirement",
         "system.markets.prices",
+        "system.water.water_system_params",
+        "system.water.water_nodes",
+        "system.water.water_flows",
+        "system.water.reservoirs",
+        "system.water.water_node_balance",
+        "system.water.powerhouses",
         "project",
         "project.capacity",
         "project.capacity.capacity_types",
@@ -130,6 +140,7 @@ def all_modules_list():
         "project.reliability.prm.group_costs",
         "project.reliability.local_capacity",
         "project.reliability.local_capacity.local_capacity_contribution",
+        "project.policy.policy_contribution",
         "project.consolidate_results",
         "project.summary_results",
         "transmission",
@@ -210,6 +221,9 @@ def all_modules_list():
         "system.policy.fuel_burn_limits.aggregate_project_fuel_burn",
         "system.policy.fuel_burn_limits.fuel_burn_limit_balance",
         "system.policy.fuel_burn_limits.consolidate_results",
+        "system.policy.generic_policy.aggregate_project_policy_contributions",
+        "system.policy.generic_policy.policy_target_balance",
+        "system.policy.generic_policy.consolidate_results",
         "system.reliability.prm.aggregate_project_simple_prm_contribution",
         "system.reliability.prm.capacity_contribution_transfers",
         "system.reliability.prm.elcc_surface",
@@ -243,6 +257,7 @@ def all_modules_list():
         "objective.system.policy.aggregate_carbon_tax_costs",
         "objective.system.policy.aggregate_performance_standard_violation_penalties",
         "objective.system.policy.aggregate_fuel_burn_limit_violation_penalties",
+        "objective.system.policy.aggregate_policy_target_violation_penalties",
         "objective.system.policy.aggregate_subsidies",
         "objective.system.policy.aggregate_carbon_credit_sales_and_purchases",
         "objective.system.reliability.prm.aggregate_capacity_transfer_costs",
@@ -251,6 +266,7 @@ def all_modules_list():
         "objective.system.reliability.local_capacity"
         ".aggregate_local_capacity_violation_penalties",
         "objective.system.aggregate_market_revenue_and_costs",
+        "objective.system.water.aggregate_flow_violation_penalty_costs",
         "objective.max_npv",
     ]
     return all_modules
@@ -425,6 +441,16 @@ def optional_modules_list():
             "system.policy.subsidies",
             "objective.system.policy.aggregate_subsidies",
         ],
+        "policy": [
+            "geography.generic_policy",
+            "system.policy.generic_policy",
+            "system.policy.generic_policy.generic_policy_requirements",
+            "project.policy.policy_contribution",
+            "system.policy.generic_policy.aggregate_project_policy_contributions",
+            "system.policy.generic_policy.policy_target_balance",
+            "objective.system.policy.aggregate_policy_target_violation_penalties",
+            "system.policy.generic_policy.consolidate_results",
+        ],
         "prm": [
             "geography.prm_zones",
             "system.reliability.prm",
@@ -457,6 +483,16 @@ def optional_modules_list():
             "system.markets.volume",
             "system.load_balance.aggregate_market_participation",
             "objective.system.aggregate_market_revenue_and_costs",
+        ],
+        "water": [
+            "geography.water_network",
+            "system.water.water_system_params",
+            "system.water.water_nodes",
+            "system.water.reservoirs",
+            "system.water.water_node_balance",
+            "system.water.water_flows",
+            "system.water.powerhouses",
+            "objective.system.water.aggregate_flow_violation_penalty_costs",
         ],
         "tuning": [
             "project.operations.tuning_costs",

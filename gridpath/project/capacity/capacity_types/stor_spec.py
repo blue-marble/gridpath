@@ -108,7 +108,7 @@ def add_model_components(
     | MW-yr.) in each operational period. This cost will be added to the      |
     | objective function but will not affect optimization decisions.          |
     +-------------------------------------------------------------------------+
-    | | :code:`stor_spec_fixed_cost_per_mwh_yr`                               |
+    | | :code:`stor_spec_fixed_cost_per_stor_mwh_yr`                          |
     | | *Defined over*: :code:`STOR_SPEC_OPR_PRDS`                            |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
@@ -137,7 +137,7 @@ def add_model_components(
         m.STOR_SPEC_OPR_PRDS, within=NonNegativeReals
     )
 
-    m.stor_spec_fixed_cost_per_mwh_yr = Param(
+    m.stor_spec_fixed_cost_per_stor_mwh_yr = Param(
         m.STOR_SPEC_OPR_PRDS, within=NonNegativeReals
     )
 
@@ -163,7 +163,7 @@ def capacity_rule(mod, g, p):
     return mod.stor_spec_power_capacity_mw[g, p]
 
 
-def energy_capacity_rule(mod, g, p):
+def energy_stor_capacity_rule(mod, g, p):
     """
     The energy capacity of projects of the *stor_spec* capacity type is a
     pre-specified number for each of the project's operational periods.
@@ -181,7 +181,7 @@ def fixed_cost_rule(mod, g, p):
     return (
         mod.stor_spec_power_capacity_mw[g, p] * mod.stor_spec_fixed_cost_per_mw_yr[g, p]
         + mod.stor_spec_energy_capacity_mwh[g, p]
-        * mod.stor_spec_fixed_cost_per_mwh_yr[g, p]
+        * mod.stor_spec_fixed_cost_per_stor_mwh_yr[g, p]
     )
 
 
@@ -217,15 +217,15 @@ def load_model_data(
     ]
 
     data_portal.data()["stor_spec_energy_capacity_mwh"] = spec_params_dict[
-        "specified_capacity_mwh"
+        "specified_stor_capacity_mwh"
     ]
 
     data_portal.data()["stor_spec_fixed_cost_per_mw_yr"] = spec_params_dict[
         "fixed_cost_per_mw_yr"
     ]
 
-    data_portal.data()["stor_spec_fixed_cost_per_mwh_yr"] = spec_params_dict[
-        "fixed_cost_per_mwh_yr"
+    data_portal.data()["stor_spec_fixed_cost_per_stor_mwh_yr"] = spec_params_dict[
+        "fixed_cost_per_stor_mwh_yr"
     ]
 
 
@@ -410,7 +410,7 @@ def validate_inputs(
     cols = [
         "specified_capacity_mw",
         "fixed_cost_per_mw_yr",
-        "fixed_cost_per_mwh_year",
+        "fixed_cost_per_stor_mwh_yr",
     ]
     write_validation_to_database(
         conn=conn,

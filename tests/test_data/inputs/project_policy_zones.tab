@@ -1,0 +1,5 @@
+project	policy_name	policy_zone	compliance_type	f_slope	f_intercept
+Wind	RPS	RPSZone1	f_output	1	0
+Wind_z2	RPS	RPSZone1	f_output	1	0
+Gas_CCGT	Carbon	CarbonZone1	f_output	0.4	10
+Coal	Carbon	CarbonZone1	f_output	0.7	100

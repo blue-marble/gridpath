@@ -2,3 +2,7 @@ capacity_group	project
 Capacity_Group1	Gas_CCGT_New
 Capacity_Group1	Gas_CCGT_New_Binary
 Capacity_Group1	Gas_CT_New
+Energy_Group	Energy_Spec
+Energy_Group	Energy_Hrz_Shaping
+Energy_Group	Energy_LF
+Energy_Group	Energy_Slice_Hrz_Shaping

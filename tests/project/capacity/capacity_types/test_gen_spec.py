@@ -28,8 +28,8 @@ TEST_DATA_DIRECTORY = os.path.join(
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
     "temporal.operations.timepoints",
-    "temporal.operations.horizons",
     "temporal.investment.periods",
+    "temporal.operations.horizons",
     "geography.load_zones",
     "project",
 ]
@@ -143,6 +143,8 @@ class TestGenSpec(unittest.TestCase):
                 ("DAC", 2030),
                 ("Flex_Load", 2020),
                 ("Flex_Load", 2030),
+                ("Hydro_System_Gen1", 2020),
+                ("Hydro_System_Gen1", 2030),
             ]
         )
         actual_proj_period_set = sorted(
@@ -191,6 +193,8 @@ class TestGenSpec(unittest.TestCase):
                     ("DAC", 2030): 1000,
                     ("Flex_Load", 2020): 10,
                     ("Flex_Load", 2030): 20,
+                    ("Hydro_System_Gen1", 2020): 100,
+                    ("Hydro_System_Gen1", 2030): 100,
                 }.items()
             )
         )
@@ -245,6 +249,8 @@ class TestGenSpec(unittest.TestCase):
                     ("DAC", 2030): 10.0,
                     ("Flex_Load", 2020): 0.0,
                     ("Flex_Load", 2030): 0.0,
+                    ("Hydro_System_Gen1", 2020): 0,
+                    ("Hydro_System_Gen1", 2030): 0,
                 }.items()
             )
         )

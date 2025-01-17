@@ -1,0 +1,3 @@
+report_year,electricity_market_module_region_eiaaeo,model_case_eiaaeo,projection_year,fuel_type_eiaaeo,fuel_cost_per_mmbtu,fuel_cost_real_per_mmbtu_eiaaeo,real_cost_basis_year
+2023,region_1_z1,aeo,2026,natural_gas,3.95816,3.540312,2022
+2023,region_1_z2,aeo,2026,natural_gas,4,3.577735109,2022

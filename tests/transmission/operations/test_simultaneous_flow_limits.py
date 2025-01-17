@@ -26,8 +26,8 @@ TEST_DATA_DIRECTORY = os.path.join(os.path.dirname(__file__), "..", "..", "test_
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
     "temporal.operations.timepoints",
-    "temporal.operations.horizons",
     "temporal.investment.periods",
+    "temporal.operations.horizons",
     "geography.load_zones",
     "transmission",
     "transmission.capacity",
@@ -305,7 +305,7 @@ class TestTxSimultaneousFlowLimits(unittest.TestCase):
         )
         self.assertListEqual(expected_limit_lines, actual_limit_lines)
 
-        # Param: sim_flow_direction
+        # Param: sim_flow_coefficient
         expected_dir = OrderedDict(
             sorted(
                 {
@@ -319,7 +319,7 @@ class TestTxSimultaneousFlowLimits(unittest.TestCase):
         actual_dir = OrderedDict(
             sorted(
                 {
-                    (g, tx): instance.sim_flow_direction[g, tx]
+                    (g, tx): instance.sim_flow_coefficient[g, tx]
                     for (g, tx) in instance.SIM_FLOW_LMT_TX_LINES
                 }.items()
             )

@@ -125,13 +125,17 @@ def load_model_data(
     subproblem,
     stage,
 ):
+    subproblem_directory = os.path.join(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+    )
+
     data_portal.load(
         filename=os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
+            subproblem_directory,
             stage,
             "inputs",
             "load_zone_markets.tab",
@@ -141,9 +145,7 @@ def load_model_data(
     )
 
     # Load starting market positions if applicable
-    stages = check_for_integer_subdirectories(
-        os.path.join(scenario_directory, subproblem)
-    )
+    stages = check_for_integer_subdirectories(os.path.join(subproblem_directory))
 
     if stages:
         # First check if we are in the first stage and set the first_stage_flag to
@@ -156,8 +158,7 @@ def load_model_data(
 
             starting_market_positions_df = pd.read_csv(
                 os.path.join(
-                    scenario_directory,
-                    subproblem,
+                    subproblem_directory,
                     "pass_through_inputs",
                     "market_positions.tab",
                 ),

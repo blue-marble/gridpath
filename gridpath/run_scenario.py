@@ -39,9 +39,9 @@ from pyomo.environ import (
 )
 
 # from pyomo.util.infeasible import log_infeasible_constraints
+from pyomo.common.timing import report_timing
 from pyomo.common.tempfiles import TempfileManager
 from pyomo.core import ComponentUID, SymbolMap
-import pyomo.environ
 from pyomo.opt import ReaderFactory, ResultsFormat, ProblemFormat
 import sys
 import warnings
@@ -129,6 +129,9 @@ def create_problem(
         subproblem,
         stage,
     )
+
+    if parsed_arguments.report_timing:
+        report_timing()
 
     # Create a dual suffix component
     # TODO: maybe this shouldn't always be needed
@@ -242,6 +245,9 @@ def run_optimization_for_subproblem_stage(
     if parsed_arguments.incomplete_only:
         termination_condition_file = os.path.join(
             scenario_directory,
+            weather_iteration_directory,
+            hydro_iteration_directory,
+            availability_iteration_directory,
             subproblem_directory,
             stage_directory,
             "results",
@@ -815,7 +821,7 @@ def save_results(
                 )
             )
         if results.solver.termination_condition != TerminationCondition.optimal:
-            warnings.warn("   ...solution is not optimal.")
+            warnings.warn("   ...solution is not optimal!")
         # Continue with results export
         # Parse arguments to see if we're following a special rule for whether to
         # export results
@@ -1104,7 +1110,7 @@ def solve(instance, parsed_arguments):
             for row in _reader:
                 solver_options[row[0]] = row[1]
 
-        # Check the the solver name specified is the same as that given from the
+        # Check the solver name specified is the same as that given from the
         # command line (if any)
         if parsed_arguments.solver is not None:
             if not parsed_arguments.solver == solver_options["solver_name"]:

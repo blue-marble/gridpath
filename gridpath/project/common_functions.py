@@ -93,6 +93,17 @@ def check_if_boundary_type_and_first_timepoint(mod, tmp, balancing_type, boundar
         return False
 
 
+def check_if_boundary_type_and_last_timepoint(mod, tmp, balancing_type, boundary_type):
+    if check_if_last_timepoint(
+        mod=mod, tmp=tmp, balancing_type=balancing_type
+    ) and check_boundary_type(
+        mod=mod, tmp=tmp, balancing_type=balancing_type, boundary_type=boundary_type
+    ):
+        return True
+    else:
+        return False
+
+
 def get_column_row_value(header, column_name, row):
     """
     :param header: list; the CSV file header (list of column names)

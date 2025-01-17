@@ -1,0 +1,4 @@
+project,specified,new_build,capacity_type
+Wind,,,energy_spec
+Hydro,,,energy_new_lin
+Load_Following_Product,,,energy_new_lin

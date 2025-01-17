@@ -27,8 +27,8 @@ TEST_DATA_DIRECTORY = os.path.join(os.path.dirname(__file__), "..", "..", "test_
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
     "temporal.operations.timepoints",
-    "temporal.operations.horizons",
     "temporal.investment.periods",
+    "temporal.operations.horizons",
     "geography.load_zones",
     "project",
     "project.capacity.capacity",
@@ -201,89 +201,97 @@ class TestCapacityCosts(unittest.TestCase):
 
         self.assertDictEqual(expected_max_capacity_power, actual_max_capacity_power)
 
-        # Param: min_new_build_energy
-        expected_min_new_build_energy = {}
+        # Param: min_new_build_stor_energy
+        expected_min_new_build_stor_energy = {}
         for prj, prd in project_periods:
             if (prj, prd) in potentials.index:
-                if potentials.loc[prj, prd]["min_new_build_energy"] == ".":
-                    expected_min_new_build_energy[prj, prd] = 0
+                if potentials.loc[prj, prd]["min_new_build_stor_energy"] == ".":
+                    expected_min_new_build_stor_energy[prj, prd] = 0
                 else:
-                    expected_min_new_build_energy[prj, prd] = float(
-                        potentials.loc[prj, prd]["min_new_build_energy"]
+                    expected_min_new_build_stor_energy[prj, prd] = float(
+                        potentials.loc[prj, prd]["min_new_build_stor_energy"]
                     )
             else:
-                expected_min_new_build_energy[prj, prd] = 0
+                expected_min_new_build_stor_energy[prj, prd] = 0
 
-        actual_min_new_build_energy = {
-            (prj, prd): instance.min_new_build_energy[prj, prd]
+        actual_min_new_build_stor_energy = {
+            (prj, prd): instance.min_new_build_stor_energy[prj, prd]
             for prj in instance.PROJECTS
             for prd in instance.PERIODS
         }
 
-        self.assertDictEqual(expected_min_new_build_energy, actual_min_new_build_energy)
+        self.assertDictEqual(
+            expected_min_new_build_stor_energy, actual_min_new_build_stor_energy
+        )
 
-        # Param: max_new_build_energy
-        expected_max_new_build_energy = {}
+        # Param: max_new_build_stor_energy
+        expected_max_new_build_stor_energy = {}
         for prj, prd in project_periods:
             if (prj, prd) in potentials.index:
-                if potentials.loc[prj, prd]["max_new_build_energy"] == ".":
-                    expected_max_new_build_energy[prj, prd] = float("inf")
+                if potentials.loc[prj, prd]["max_new_build_stor_energy"] == ".":
+                    expected_max_new_build_stor_energy[prj, prd] = float("inf")
                 else:
-                    expected_max_new_build_energy[prj, prd] = float(
-                        potentials.loc[prj, prd]["max_new_build_energy"]
+                    expected_max_new_build_stor_energy[prj, prd] = float(
+                        potentials.loc[prj, prd]["max_new_build_stor_energy"]
                     )
             else:
-                expected_max_new_build_energy[prj, prd] = float("inf")
+                expected_max_new_build_stor_energy[prj, prd] = float("inf")
 
-        actual_max_new_build_energy = {
-            (prj, prd): instance.max_new_build_energy[prj, prd]
+        actual_max_new_build_stor_energy = {
+            (prj, prd): instance.max_new_build_stor_energy[prj, prd]
             for prj in instance.PROJECTS
             for prd in instance.PERIODS
         }
 
-        self.assertDictEqual(expected_max_new_build_energy, actual_max_new_build_energy)
+        self.assertDictEqual(
+            expected_max_new_build_stor_energy, actual_max_new_build_stor_energy
+        )
 
-        # Param: min_capacity_energy
-        expected_min_capacity_energy = {}
+        # Param: min_capacity_stor_energy
+        expected_min_capacity_stor_energy = {}
         for prj, prd in project_periods:
             if (prj, prd) in potentials.index:
-                if potentials.loc[prj, prd]["min_capacity_energy"] == ".":
-                    expected_min_capacity_energy[prj, prd] = 0
+                if potentials.loc[prj, prd]["min_capacity_stor_energy"] == ".":
+                    expected_min_capacity_stor_energy[prj, prd] = 0
                 else:
-                    expected_min_capacity_energy[prj, prd] = float(
-                        potentials.loc[prj, prd]["min_capacity_energy"]
+                    expected_min_capacity_stor_energy[prj, prd] = float(
+                        potentials.loc[prj, prd]["min_capacity_stor_energy"]
                     )
             else:
-                expected_min_capacity_energy[prj, prd] = 0
+                expected_min_capacity_stor_energy[prj, prd] = 0
 
-        actual_min_capacity_energy = {
-            (prj, prd): instance.min_capacity_energy[prj, prd]
+        actual_min_capacity_stor_energy = {
+            (prj, prd): instance.min_capacity_stor_energy[prj, prd]
             for prj in instance.PROJECTS
             for prd in instance.PERIODS
         }
 
-        self.assertDictEqual(expected_min_capacity_energy, actual_min_capacity_energy)
+        self.assertDictEqual(
+            expected_min_capacity_stor_energy, actual_min_capacity_stor_energy
+        )
 
-        # Param: max_capacity_energy
-        expected_max_capacity_energy = {}
+        # Param: max_capacity_stor_energy
+        expected_max_capacity_stor_energy = {}
         for prj, prd in project_periods:
             if (prj, prd) in potentials.index:
-                if potentials.loc[prj, prd]["max_capacity_energy"] == ".":
-                    expected_max_capacity_energy[prj, prd] = float("inf")
+                if potentials.loc[prj, prd]["max_capacity_stor_energy"] == ".":
+                    expected_max_capacity_stor_energy[prj, prd] = float("inf")
                 else:
-                    expected_max_capacity_energy[prj, prd] = float(
-                        potentials.loc[prj, prd]["max_capacity_energy"]
+                    expected_max_capacity_stor_energy[prj, prd] = float(
+                        potentials.loc[prj, prd]["max_capacity_stor_energy"]
                     )
             else:
-                expected_max_capacity_energy[prj, prd] = float("inf")
+                expected_max_capacity_stor_energy[prj, prd] = float("inf")
 
-        actual_max_capacity_energy = {
-            (prj, prd): instance.max_capacity_energy[prj, prd]
+        actual_max_capacity_stor_energy = {
+            (prj, prd): instance.max_capacity_stor_energy[prj, prd]
             for prj in instance.PROJECTS
             for prd in instance.PERIODS
         }
 
-        self.assertDictEqual(expected_max_capacity_energy, actual_max_capacity_energy)
+        self.assertDictEqual(
+            expected_max_capacity_stor_energy, actual_max_capacity_stor_energy
+        )
 
 
 if __name__ == "__main__":

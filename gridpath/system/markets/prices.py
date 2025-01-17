@@ -54,8 +54,6 @@ def load_model_data(
             weather_iteration,
             hydro_iteration,
             availability_iteration,
-            hydro_iteration,
-            availability_iteration,
             subproblem,
             stage,
             "inputs",
@@ -84,39 +82,72 @@ def get_inputs_from_database(
     """
 
     c = conn.cursor()
-
-    prices = c.execute(
-        """
-        SELECT market, timepoint, market_price
+    market_list = c.execute(
+        f"""
+        SELECT market, 
+        market_price_profile_scenario_id,
+        varies_by_weather_iteration, 
+        varies_by_hydro_iteration
+        FROM inputs_market_prices
+        WHERE market_price_scenario_id = {subscenarios.MARKET_PRICE_SCENARIO_ID}
         -- Get prices for included markets only
-        FROM (
+        AND market in (
             SELECT market
             FROM inputs_geography_markets
-            WHERE market_scenario_id = ?
-        ) as market_tbl
-        -- Get prices for included timepoints only
-        CROSS JOIN (
-            SELECT stage_id, timepoint from inputs_temporal
-            WHERE temporal_scenario_id = ?
-            AND subproblem_id = ?
-            AND stage_id = ?
-        ) as tmp_tbl
-        LEFT OUTER JOIN (
-            SELECT market, stage_id, timepoint, market_price
-            FROM inputs_market_prices
-            WHERE market_price_scenario_id = ?
-        ) as price_tbl
-        USING (market, stage_id, timepoint)
-        ;
-        """,
-        (
-            subscenarios.MARKET_SCENARIO_ID,
-            subscenarios.TEMPORAL_SCENARIO_ID,
-            subproblem,
-            stage,
-            subscenarios.MARKET_PRICE_SCENARIO_ID,
-        ),
-    )
+            WHERE market_scenario_id = {subscenarios.MARKET_SCENARIO_ID}
+        )
+        """
+    ).fetchall()
+
+    # Loop over the markets for the final query since prices don't all vary
+    # by the same iteration types
+    n_markets = len(market_list)
+    query_all = str()
+    n = 1
+    for (
+        market,
+        market_price_profile_scenario_id,
+        varies_by_weather_iteration,
+        varies_by_hydro_iteration,
+    ) in market_list:
+        union_str = "UNION" if n < n_markets else ""
+
+        weather_iteration_to_use = (
+            weather_iteration if varies_by_weather_iteration else 0
+        )
+        hydro_iteration_to_use = hydro_iteration if varies_by_hydro_iteration else 0
+
+        query_market = f"""
+            -- Select market name explicitly here to print even if prices 
+            -- are not found for the relevant timepoints
+            SELECT '{market}' AS market, timepoint, market_price
+            -- Get prices for scenario's timepoints only
+            -- Note prices are required for all timepoints, so don't remove 
+            -- the LEFT OUTER JOIN
+            FROM (
+                SELECT stage_id, timepoint 
+                FROM inputs_temporal
+                WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+                AND subproblem_id = {subproblem}
+                AND stage_id = {stage}
+            ) as tmp_tbl
+            LEFT OUTER JOIN (
+                SELECT market, stage_id, timepoint, market_price
+                FROM inputs_market_price_profiles
+                WHERE market = '{market}'
+                AND market_price_profile_scenario_id = {market_price_profile_scenario_id}
+                AND hydro_iteration = {hydro_iteration_to_use}
+                AND weather_iteration = {weather_iteration_to_use}
+            ) as prices_tbl
+            USING (stage_id, timepoint)
+            {union_str}
+            """
+
+        query_all += query_market
+        n += 1
+
+    c1 = conn.cursor()
+    prices = c1.execute(query_all)
 
     return prices
 

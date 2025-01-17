@@ -469,6 +469,8 @@ def load_var_profile_inputs(
     subproblem,
     stage,
     op_type,
+    tab_filename="variable_generator_profiles.tab",
+    param_name="cap_factor",
 ):
     """
     Capacity factors vary by horizon and stage, so get inputs from appropriate
@@ -479,10 +481,17 @@ def load_var_profile_inputs(
     :param subproblem:
     :param stage:
     :param op_type:
+    :param tab_filename: defaults to "variable_generator_profiles.tab"
+    :param param_name: defaults to "cap_factor"
     :return:
     """
 
-    var_op_types = ["gen_var_must_take", "gen_var", "gen_var_stor_hyb"]
+    var_op_types = [
+        "gen_var_must_take",
+        "gen_var",
+        "gen_var_stor_hyb",
+        "energy_profile",
+    ]
     other_var_op_types = set(var_op_types) - set([op_type])
     assert op_type in var_op_types
 
@@ -519,15 +528,15 @@ def load_var_profile_inputs(
             subproblem,
             stage,
             "inputs",
-            "variable_generator_profiles.tab",
+            tab_filename,
         ),
         sep="\t",
-        usecols=["project", "timepoint", "cap_factor"],
-        dtype={"cap_factor": float},
+        usecols=["project", "timepoint", param_name],
+        dtype={param_name: float},
     )
     op_type_cf_df = cf_df[cf_df["project"].isin(op_type_prjs)]
-    cap_factor = op_type_cf_df.set_index(["project", "timepoint"])[
-        "cap_factor"
+    param_value = op_type_cf_df.set_index(["project", "timepoint"])[
+        param_name
     ].to_dict()
 
     # Throw warning if profile exists for a project not in projects.tab
@@ -538,18 +547,41 @@ def load_var_profile_inputs(
     invalid_prjs = cf_df[~cf_df["project"].isin(var_prjs)]["project"].unique()
     for prj in invalid_prjs:
         warnings.warn(
-            """WARNING: Profiles are specified for '{}' in 
-            variable_generator_profiles.tab, but '{}' is not in 
-            projects.tab.""".format(
-                prj, prj
-            )
+            f"""WARNING: Profiles are specified for '{prj}' in 
+            {tab_filename}, but '{prj}' is not in 
+            projects.tab."""
         )
 
     # Load data
-    data_portal.data()["{}_cap_factor".format(op_type)] = cap_factor
+    data_portal.data()[f"{op_type}_{param_name}"] = param_value
 
 
-def get_prj_tmp_opr_inputs_from_db(
+# TODO: scenario setup tables; run slow queries only once, then select from
+#  smaller table for iterations/subproblems
+
+
+# TODO: consolidate with horizon equivalent methods below
+TIMEPOINT_INDEX_QUERY_PARAMS = {
+    "select_columns": "prj_tbl.timepoint",
+    "project_operational_table": "project_operational_timepoints",
+    "index_columns": "timepoint",
+    "index_join_table": "inputs_temporal",
+    "index_columns_join_table": "timepoint",
+    "join_expression": "prj_tbl.timepoint = index_join_tbl.timepoint",
+}
+
+BT_HRZ_INDEX_QUERY_PARAMS = {
+    "select_columns": "prj_tbl.balancing_type_project, prj_tbl.horizon",
+    "project_operational_table": "project_operational_horizons",
+    "index_columns": "balancing_type_project, horizon",
+    "index_join_table": "inputs_temporal_horizon_timepoints",
+    "index_columns_join_table": "balancing_type_horizon, horizon",
+    "join_expression": "prj_tbl.balancing_type_project = "
+    "index_join_tbl.balancing_type_horizon AND prj_tbl.horizon = index_join_tbl.horizon",
+}
+
+
+def get_prj_temporal_index_opr_inputs_from_db(
     subscenarios,
     weather_iteration,
     hydro_iteration,
@@ -561,6 +593,121 @@ def get_prj_tmp_opr_inputs_from_db(
     table,
     subscenario_id_column,
     data_column,
+    opr_index_dict=None,
+):
+    """
+    Determine appropriate iterations for projects and get those inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :param op_type:
+    :return: cursor object with query results
+    """
+    if opr_index_dict is None:
+        opr_index_dict = TIMEPOINT_INDEX_QUERY_PARAMS
+
+    all_projects_sql = str()
+    # Check for no iterations projects
+    no_iterations_project_sql = make_iteration_subset_project_list_query(
+        conn=conn,
+        subscenarios=subscenarios,
+        table=table,
+        data_columns=data_column,
+        subscenario_id_column=subscenario_id_column,
+        op_type=op_type,
+        subproblem=subproblem,
+        stage=stage,
+        varies_by_weather_iteration=0,
+        varies_by_hydro_iteration=0,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        opr_index_dict=opr_index_dict,
+    )
+    all_projects_sql += no_iterations_project_sql
+
+    # Check for weather iterations projects
+    if no_iterations_project_sql != "":
+        all_projects_sql += " UNION "
+
+    weather_iterations_project_sql = make_iteration_subset_project_list_query(
+        conn=conn,
+        subscenarios=subscenarios,
+        table=table,
+        data_columns=data_column,
+        subscenario_id_column=subscenario_id_column,
+        op_type=op_type,
+        subproblem=subproblem,
+        stage=stage,
+        varies_by_weather_iteration=1,
+        varies_by_hydro_iteration=0,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        opr_index_dict=opr_index_dict,
+    )
+    all_projects_sql += weather_iterations_project_sql
+
+    # Check of hydro iterations projects
+    if weather_iterations_project_sql != "":
+        all_projects_sql += " UNION "
+    hydro_iterations_project_sql = make_iteration_subset_project_list_query(
+        conn=conn,
+        subscenarios=subscenarios,
+        table=table,
+        data_columns=data_column,
+        subscenario_id_column=subscenario_id_column,
+        op_type=op_type,
+        subproblem=subproblem,
+        stage=stage,
+        varies_by_weather_iteration=0,
+        varies_by_hydro_iteration=1,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        opr_index_dict=opr_index_dict,
+    )
+    all_projects_sql += hydro_iterations_project_sql
+
+    # Check for weather and hydro iterations projects
+    if hydro_iterations_project_sql != "":
+        all_projects_sql += " UNION "
+    weather_and_hydro_iterations_project_sql = make_iteration_subset_project_list_query(
+        conn=conn,
+        subscenarios=subscenarios,
+        table=table,
+        data_columns=data_column,
+        subscenario_id_column=subscenario_id_column,
+        op_type=op_type,
+        subproblem=subproblem,
+        stage=stage,
+        varies_by_weather_iteration=1,
+        varies_by_hydro_iteration=1,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        opr_index_dict=opr_index_dict,
+    )
+    all_projects_sql += weather_and_hydro_iterations_project_sql
+
+    if all_projects_sql[-7:] == " UNION ":
+        all_projects_sql = all_projects_sql[: len(all_projects_sql) - 7]
+
+    c = conn.cursor()
+    prj_tmp_data = c.execute(all_projects_sql)
+
+    return prj_tmp_data
+
+
+def get_prj_indx_inputs_with_iterations_sql(
+    subscenarios,
+    opr_index_dict,
+    table,
+    data_columns,
+    subscenario_id_column,
+    op_type,
+    subproblem,
+    stage,
+    project_filter,
+    weather_iteration_to_use,
+    hydro_iteration_to_use,
 ):
     """
     Select only profiles of projects in the portfolio
@@ -570,29 +717,27 @@ def get_prj_tmp_opr_inputs_from_db(
     Select only timepoints on periods when the project is operational
     (periods with existing project capacity for existing projects or
     with costs specified for new projects)
-
-    :param subscenarios: SubScenarios object with all subscenario info
-    :param subproblem:
-    :param stage:
-    :param conn: database connection
-    :param op_type:
-    :return: cursor object with query results
     """
-    c = conn.cursor()
+
+    select_columns = opr_index_dict["select_columns"]
+    project_operational_table = opr_index_dict["project_operational_table"]
+    index_columns = opr_index_dict["index_columns"]
+    index_join_table = opr_index_dict["index_join_table"]
+    index_columns_join_table = opr_index_dict["index_columns_join_table"]
+    join_expression = opr_index_dict["join_expression"]
 
     # TODO: see note below; can produce this problem by having two scenarios
     #  one in which the project is spec and one new
     # NOTE: There can be cases where a resource is both in specified capacity
     # table and in new build table, but depending on capacity type you'd only
     # use one of them, so filtering with OR is not 100% correct.
-
     sql = f"""
-        SELECT project, prj_tbl.timepoint, {data_column}
+        SELECT project, {select_columns}, {data_columns}
         FROM 
         -- Use DISTINCT in case there are spinup/lookahead timepoints, 
         -- which will show up more than once otherwise
-            (SELECT DISTINCT project, stage_id, timepoint
-            FROM project_operational_timepoints
+            (SELECT DISTINCT project, stage_id, {index_columns}
+            FROM {project_operational_table}
             WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
             AND project_operational_chars_scenario_id = {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
             AND temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
@@ -605,28 +750,93 @@ def get_prj_tmp_opr_inputs_from_db(
             FROM inputs_project_operational_chars
             WHERE project_operational_chars_scenario_id = {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
             AND operational_type = '{op_type}'
+            {project_filter}
             ) AS op_type_projects_with_btype_and_opchar_id
         USING (project)
         LEFT OUTER JOIN
             {table}
-        USING ({subscenario_id_column}, project, stage_id, timepoint)
+        USING ({subscenario_id_column}, project, stage_id, {index_columns})
         JOIN (
-            SELECT timepoint
-            FROM inputs_temporal
+            SELECT {index_columns_join_table}
+            FROM {index_join_table}
             WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
             AND subproblem_id = {subproblem}
             AND stage_id = {stage}
-        ) as tmp_tbl
+        ) as index_join_tbl
         ON (
-            prj_tbl.timepoint = tmp_tbl.timepoint
+            {join_expression}
         )
-        WHERE weather_iteration = {weather_iteration}
+        WHERE weather_iteration = {weather_iteration_to_use}
+        AND hydro_iteration = {hydro_iteration_to_use}
+        """
+
+    return sql
+
+
+def make_iteration_subset_project_list_query(
+    conn,
+    subscenarios,
+    table,
+    data_columns,
+    subscenario_id_column,
+    op_type,
+    subproblem,
+    stage,
+    varies_by_weather_iteration,
+    varies_by_hydro_iteration,
+    weather_iteration,
+    hydro_iteration,
+    opr_index_dict,
+):
+    c = conn.cursor()
+    projects_list = c.execute(
+        f"""
+        SELECT project, {subscenario_id_column}
+        FROM {table}_iterations
+        WHERE varies_by_weather_iteration = {varies_by_weather_iteration}
+        AND varies_by_hydro_iteration = {varies_by_hydro_iteration}
         ;
-    """
+        """
+    ).fetchall()
+    if projects_list:
+        project_str = make_project_str(projects_list=projects_list)
+        sql = get_prj_indx_inputs_with_iterations_sql(
+            subscenarios=subscenarios,
+            opr_index_dict=opr_index_dict,
+            table=table,
+            data_columns=data_columns,
+            subscenario_id_column=subscenario_id_column,
+            op_type=op_type,
+            subproblem=subproblem,
+            stage=stage,
+            project_filter=f"AND (project, {subscenario_id_column}) in {project_str}",
+            weather_iteration_to_use=(
+                weather_iteration if varies_by_weather_iteration else 0
+            ),
+            hydro_iteration_to_use=hydro_iteration if varies_by_hydro_iteration else 0,
+        )
+    else:
+        sql = ""
 
-    prj_tmp_data = c.execute(sql)
+    return sql
 
-    return prj_tmp_data
+
+def make_project_str(projects_list):
+    project_str = "("
+    list_len = len(projects_list)
+    n = 1
+    for prj in projects_list:
+        project_str += f"{prj}"
+        if n < list_len:
+            project_str += ", "
+        else:
+            project_str += ")"
+        n += 1
+
+    return project_str
+
+
+##
 
 
 def validate_var_profiles(
@@ -649,7 +859,7 @@ def validate_var_profiles(
     :param op_type:
     :return:
     """
-    var_profiles = get_prj_tmp_opr_inputs_from_db(
+    var_profiles = get_prj_temporal_index_opr_inputs_from_db(
         subscenarios=subscenarios,
         weather_iteration=weather_iteration,
         hydro_iteration=hydro_iteration,
@@ -1089,6 +1299,8 @@ def get_optype_inputs_from_db(scenario_id, subscenarios, conn, op_type):
         "aux_consumption_frac_power",
         "powerunithour_per_fuelunit",
         "partial_availability_threshold",
+        "powerhouse",
+        "generator_efficiency",
     ]
 
     sql = """SELECT {}

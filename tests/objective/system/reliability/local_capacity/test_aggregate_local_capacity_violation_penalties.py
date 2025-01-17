@@ -28,8 +28,8 @@ TEST_DATA_DIRECTORY = os.path.join(
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
     "temporal.operations.timepoints",
-    "temporal.operations.horizons",
     "temporal.investment.periods",
+    "temporal.operations.horizons",
     "geography.local_capacity_zones",
     "system.reliability.local_capacity.local_capacity_requirement",
     "system.reliability.local_capacity.local_capacity_balance",

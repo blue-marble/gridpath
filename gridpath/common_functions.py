@@ -247,6 +247,11 @@ def get_run_scenario_parser():
         action="store_true",
         help="Use symbolic labels in solver files.",
     )
+    parser.add_argument(
+        "--report_timing",
+        default=False,
+        action="store_true",
+    )
     # Flag for test runs (various changes in behavior)
     parser.add_argument(
         "--testing",

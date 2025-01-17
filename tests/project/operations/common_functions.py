@@ -79,10 +79,19 @@ def get_project_operational_periods(project_list):
     )
     fp_df = [tuple(x) for x in fp_df.values if x[0] in project_list]
 
+    en_df = pd.read_csv(
+        os.path.join(
+            TEST_DATA_DIRECTORY, "inputs", "new_build_energy_vintage_costs.tab"
+        ),
+        usecols=["project", "vintage"],
+        sep="\t",
+    )
+    en_df = [tuple(x) for x in en_df.values if x[0] in project_list]
+
     # Manually add shiftable DR, which is available in all periods
     dr = [("Shift_DR", 2020), ("Shift_DR", 2030)] if "Shift_DR" in project_list else []
 
-    expected_proj_period_set = sorted(eg + ng + ngb + ns + nsb + fp_df + dr)
+    expected_proj_period_set = sorted(eg + ng + ngb + ns + nsb + fp_df + dr + en_df)
 
     return expected_proj_period_set
 

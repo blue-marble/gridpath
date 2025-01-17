@@ -27,8 +27,8 @@ TEST_DATA_DIRECTORY = os.path.join(os.path.dirname(__file__), "..", "..", "test_
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
     "temporal.operations.timepoints",
-    "temporal.operations.horizons",
     "temporal.investment.periods",
+    "temporal.operations.horizons",
     "geography.load_zones",
     "project",
 ]
@@ -176,7 +176,17 @@ class TestCapacity(unittest.TestCase):
         # Manually add shiftable DR, which is available in all periods
         dr = [("Shift_DR", 2020), ("Shift_DR", 2030)]
 
-        expected_proj_period_set = sorted(eg + ng + ngb + ns + nsb + fp + dr)
+        # New energy product projects
+        en_df = pd.read_csv(
+            os.path.join(
+                TEST_DATA_DIRECTORY, "inputs", "new_build_energy_vintage_costs.tab"
+            ),
+            usecols=["project", "vintage"],
+            sep="\t",
+        )
+        en_p = [tuple(x) for x in en_df.values]
+
+        expected_proj_period_set = sorted(eg + ng + ngb + ns + nsb + fp + dr + en_p)
         actual_proj_period_set = sorted(
             [(prj, period) for (prj, period) in instance.PRJ_OPR_PRDS]
         )

@@ -76,7 +76,7 @@ def add_model_components(
         # target; if no map provided, the fraction_target is 0
         if mod.HORIZON_ENERGY_TARGET_ZONE_LOAD_ZONES:
             total_bt_horizon_static_load = sum(
-                mod.static_load_mw[lz, tmp] * mod.hrs_in_tmp[tmp] * mod.tmp_weight[tmp]
+                mod.LZ_Load_in_Tmp[lz, tmp] * mod.hrs_in_tmp[tmp] * mod.tmp_weight[tmp]
                 for (
                     _energy_target_zone,
                     lz,

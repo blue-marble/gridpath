@@ -3212,6 +3212,14 @@ def variable_om_by_period_cost_rule(mod, g, tmp, Bin_or_Lin):
     )
 
 
+def variable_om_by_timepoint_cost_rule(mod, g, tmp, Bin_or_Lin):
+    """ """
+    return (
+        getattr(mod, "GenCommit{}_Provide_Power_MW".format(Bin_or_Lin))[g, tmp]
+        * mod.variable_om_cost_per_mwh_by_timepoint[tmp]
+    )
+
+
 def variable_om_cost_by_ll_rule(mod, g, tmp, s, Bin_or_Lin):
     """
     Variable O&M cost has two components which are additive:

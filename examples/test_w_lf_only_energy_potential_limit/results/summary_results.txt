@@ -1,0 +1,15 @@
+##### SUMMARY RESULTS FOR SCENARIO *test_w_lf_only_energy_potential_limit* #####
+
+### CAPACITY RESULTS ###
+
+--> New Energy Procurement <--
+                             New Energy (MW)
+load_zone technology period                 
+Zone1     LF         2020         100,000.00
+
+### OPERATIONAL RESULTS ###
+
+--> Energy Production <--
+                             Annual Energy (MWh)  % Total Power
+load_zone period technology                                    
+Zone1     2020   LF                   100,000.00         100.00

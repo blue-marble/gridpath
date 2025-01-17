@@ -1,3 +1,7 @@
+# DEPRECATED
+
+We do not actively maintain or provide support for the GridPath UI as of 2025.
+
 # Welcome
 
 Welcome to the GridPath user interface!
@@ -50,6 +54,3 @@ To compile the project for distribution, run:
 ```bash
 npm run dist
 ```
-
-# Support
-We do not currently have resources to provide support for the UI.
