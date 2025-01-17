@@ -64,11 +64,14 @@ def add_model_components(
         Exogenous inflow to node + sum of flow on all links to note in the
         timepoint of arrival
         """
-        return mod.exogenous_water_inflow_rate_vol_per_sec[wn, tmp] + sum(
-            mod.Water_Link_Flow_Rate_Vol_per_Sec[wl, dep_tmp, arr_tmp]
-            for (wl, dep_tmp, arr_tmp) in mod.WATER_LINK_DEPARTURE_ARRIVAL_TMPS
-            if wl in mod.WATER_LINKS_TO_BY_WATER_NODE[wn] and arr_tmp == tmp
-        )
+        endogenous_flows = 0
+        for wl in mod.WATER_LINKS_TO_BY_WATER_NODE[wn]:
+            if mod.departure_timepoint[wl, tmp] != "tmp_outside_horizon":
+                endogenous_flows += mod.Water_Link_Flow_Rate_Vol_per_Sec[
+                    wl, mod.departure_timepoint[wl, tmp], tmp
+                ]
+
+        return mod.exogenous_water_inflow_rate_vol_per_sec[wn, tmp] + endogenous_flows
 
     m.Gross_Water_Node_Inflow_Rate_Vol_Per_Sec = Expression(
         m.WATER_NODES,
@@ -78,9 +81,10 @@ def add_model_components(
 
     def node_outflow_rate_init(mod, wn, tmp):
         return sum(
-            mod.Water_Link_Flow_Rate_Vol_per_Sec[wl, dep_tmp, arr_tmp]
-            for (wl, dep_tmp, arr_tmp) in mod.WATER_LINK_DEPARTURE_ARRIVAL_TMPS
-            if wl in mod.WATER_LINKS_FROM_BY_WATER_NODE[wn] and dep_tmp == tmp
+            mod.Water_Link_Flow_Rate_Vol_per_Sec[
+                wl, tmp, mod.arrival_timepoint[wl, tmp]
+            ]
+            for wl in mod.WATER_LINKS_FROM_BY_WATER_NODE[wn]
         )
 
     m.Gross_Water_Node_Outflow_Rate_Vol_per_Sec = Expression(

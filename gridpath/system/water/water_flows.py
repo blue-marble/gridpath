@@ -86,6 +86,35 @@ def add_model_components(
         initialize=water_link_departure_arrival_tmp_init,
     )
 
+    def departure_tmp_init(mod):
+        dep_tmp_dict = {}
+        for water_link, dep_tmp, arr_tmp in mod.WATER_LINK_DEPARTURE_ARRIVAL_TMPS:
+            dep_tmp_dict[water_link, arr_tmp] = dep_tmp
+
+        return dep_tmp_dict
+
+    m.departure_timepoint = Param(
+        m.WATER_LINKS,
+        m.TMPS_AND_OUTSIDE_HORIZON,
+        default="tmp_outside_horizon",
+        within=m.TMPS_AND_OUTSIDE_HORIZON,
+        initialize=departure_tmp_init,
+    )
+
+    def arrival_tmp_init(mod):
+        arr_tmp_dict = {}
+        for water_link, dep_tmp, arr_tmp in mod.WATER_LINK_DEPARTURE_ARRIVAL_TMPS:
+            arr_tmp_dict[water_link, dep_tmp] = arr_tmp
+
+        return arr_tmp_dict
+
+    m.arrival_timepoint = Param(
+        m.WATER_LINKS,
+        m.TMPS_AND_OUTSIDE_HORIZON,
+        within=m.TMPS_AND_OUTSIDE_HORIZON,
+        initialize=arrival_tmp_init,
+    )
+
     # ### Variables ### #
     m.Water_Link_Flow_Rate_Vol_per_Sec = Var(
         m.WATER_LINK_DEPARTURE_ARRIVAL_TMPS, within=NonNegativeReals
