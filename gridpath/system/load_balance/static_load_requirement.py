@@ -19,7 +19,7 @@ load requirement to the load-balance constraint.
 
 import csv
 import os.path
-from pyomo.environ import Set, Param, Any, NonNegativeReals, Expression
+from pyomo.environ import Set, Param, Any, NonNegativeReals, Expression, value
 
 from gridpath.auxiliary.db_interface import directories_to_db_values
 from gridpath.auxiliary.dynamic_components import load_balance_consumption_components
@@ -52,24 +52,26 @@ def add_model_components(
     :param m: the Pyomo abstract model object we are adding the components to
     :param d: the DynamicComponents class object we are adding components to
 
-    Here, we add the *component_static_load_mw* parameter -- profiles for the
-    various load components defined for each load zone *z* and timepoint
-    *tmp*. These profiles are summed into the *LZ_Load_in_Tmp* expression,
-    which in turn is added to the dynamic load-balance consumption components
-    that will go into the load balance constraint in the *load_balance*
-    module (i.e. the constraint's RHS).
+    Here, we add profiles for the various load components that must be defined
+    for each load zone *z* and timepoint *tmp*. These profiles are summed
+    into the *LZ_Load_in_Tmp* expression, which in turn is added to the
+    dynamic load-balance consumption components that will go into the load
+    balance constraint in the *load_balance* module (i.e. the constraint's RHS).
 
     The following Pyomo model components are defined in this module:
 
     +-------------------------------------------------------------------------+
     | Sets                                                                    |
     +=========================================================================+
-    | | :code:`LOAD_ZONE_LOAD_CMPNTS`                                         |
+    | | :code:`LOAD_ZONE_LOAD_CMPNTS_ALL`                                     |
     |                                                                         |
-    | Two-dimensional set of load_zone-load_components for which load should  |
-    | be defined.                                                             |
+    | Two-dimensional set of all load_zone-load_components.                   |
     +-------------------------------------------------------------------------+
-    | | :code:`LOAD_ZONE_TMP_LOAD_CMPNTS`                                     |
+    | | :code:`LOAD_ZONE_TMP_LOAD_CMPNTS_ALL`                                 |
+    |                                                                         |
+    | Three-dimensional set of all load_zone-timepoint-load_components.       |
+    +-------------------------------------------------------------------------+
+    | | :code:`LOAD_ZONE_TMP_LOAD_CMPNTS_W_DEFINED_LOAD`                      |
     |                                                                         |
     | Three-dimensional set of load_zone-timepoint-load_component             |
     | for which load will be defined.                                         |
@@ -80,13 +82,11 @@ def add_model_components(
     +-------------------------------------------------------------------------+
     | Required Input Params                                                   |
     +=========================================================================+
-    | | :code:`component_static_load_mw`                                      |
-    | | *Defined over*: :code:`LOAD_ZONE_TMP_LOAD_CMPNTS`                     |
+    | | :code:`component_static_load_mw_w_tmp_value`                          |
+    | | *Defined over*: :code:`LOAD_ZONE_TMP_LOAD_CMPNTS_W_DEFINED_LOAD`      |
     | | *Within*: :code:`NonNegativeReals`                                    |
-    | | *Default*: :code:`load_level_default`                                 |
     |                                                                         |
-    | The amount of load for each load zone and timepoint for each load       |
-    | component.                                                              |
+    | Load level for load_zone, timepoint, and load_component.                |
     +-------------------------------------------------------------------------+
 
     |
@@ -97,12 +97,23 @@ def add_model_components(
     | | :code:`load_level_default`                                            |
     | | *Defined over*: :code:`LOAD_ZONE_LOAD_CMPNTS`                         |
     | | *Within*: :code:`NonNegativeReals`                                    |
-    | | *Default*: :code:`float("inf")`                                       |
+    | | *Default*: :code:`"undefined"`                                        |
     |                                                                         |
-    | Default value for component_static_load_mw if it is not defined for     |
-    | this load zone and load component in timepoints without defined value.  |
-    | If not defined, this parameter itself defaults to infinity. If          |
-    | ends up defaulting to infinity, a ValueError is raised.                 |
+    | Default value for load level if it is not defined for via the timepoint |
+    | inputs; if not defined, this parameter itself defaults to infinity. If  |
+    | it ends up defaulting to infinity, a ValueError is raised.              |
+    +-------------------------------------------------------------------------+
+
+    +-------------------------------------------------------------------------+
+    | Derived Params                                                          |
+    +=========================================================================+
+    | | :code:`component_static_load_mw`                                      |
+    | | *Defined over*: :code:`LOAD_ZONE_TMP_LOAD_CMPNTS_ALL`                 |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | Will either be set to component_static_load_mw_w_tmp_value or to        |
+    | load_level_default. One or the other is required; if both are specified |
+    | a ValueError will be thrown.                                            |
     +-------------------------------------------------------------------------+
 
     |
@@ -121,57 +132,101 @@ def add_model_components(
     """
 
     # Static load
-    m.LOAD_ZONE_LOAD_CMPNTS = Set(dimen=2, within=m.LOAD_ZONES * Any)
+    # All load zones and load componenst
+    m.LOAD_ZONE_LOAD_CMPNTS_ALL = Set(dimen=2, within=m.LOAD_ZONES * Any)
+    # Defaults for each load_zone-load_component
     m.load_level_default = Param(
-        m.LOAD_ZONE_LOAD_CMPNTS, within=NonNegativeReals, initialize=float("inf")
+        m.LOAD_ZONE_LOAD_CMPNTS_ALL,
+        within=NonNegativeReals | {"undefined"},
+        initialize="undefined",
     )
 
-    m.LOAD_ZONE_TMP_LOAD_CMPNTS = Set(dimen=3, within=m.LOAD_ZONES * m.TMPS * Any)
+    # All load_zone-tmp-load_component combinations
+    m.LOAD_ZONE_TMP_LOAD_CMPNTS_ALL = Set(
+        dimen=3,
+        within=m.LOAD_ZONES * m.TMPS * Any,
+        initialize=lambda mod: [
+            (lz, tmp, cmp)
+            for (lz, cmp) in mod.LOAD_ZONE_LOAD_CMPNTS_ALL
+            for tmp in mod.TMPS
+        ],
+    )
+
+    # LZ-tmp-load_components with defined load
+    m.LOAD_ZONE_TMP_LOAD_CMPNTS_W_DEFINED_LOAD = Set(
+        dimen=3, within=m.LOAD_ZONES * m.TMPS * Any
+    )
+    m.component_static_load_mw_w_tmp_value = Param(
+        m.LOAD_ZONE_TMP_LOAD_CMPNTS_W_DEFINED_LOAD,
+        within=NonNegativeReals,
+    )
 
     def set_default_and_warn_about_undefined_loads(mod, lz, tmp, cmp):
-        check_for_value_and_raise_value_error(
-            param=mod.load_level_default[lz, cmp],
-            value_to_check=float("inf"),
-            msg=f"""
-            Parameter component_static_load_mw at index 
-            {lz, tmp, cmp} has no value defined. It 
-            must either be included with the load inputs or a value must 
-            be set via the load_level_default parameter of load_zone 
-            {lz}.
-            """,
-        )
+        if (lz, tmp, cmp) in mod.LOAD_ZONE_TMP_LOAD_CMPNTS_W_DEFINED_LOAD:
+            if mod.load_level_default[lz, cmp] != "undefined":
+                raise ValueError(
+                    f"""
+                    You have both a default value and a by-timepoint value 
+                    defined for load in load_zone {lz}, component {cmp}. 
+                    Please check your inputs and select either one or the other.
+                """
+                )
+            else:
+                return mod.component_static_load_mw_w_tmp_value[lz, tmp, cmp]
+        else:
+            check_for_value_and_raise_value_error(
+                param=mod.load_level_default[lz, cmp],
+                value_to_check="undefined",
+                msg=f"""
+                Parameter component_static_load_mw at index 
+                {lz, tmp, cmp} has no value defined. It 
+                must either be included with the load inputs or a value must 
+                be set via the load_level_default parameter of load_zone 
+                {lz}.
+                """,
+            )
 
-        return mod.load_level_default[lz, cmp]
+            return mod.load_level_default[lz, cmp]
 
     m.component_static_load_mw = Param(
-        m.LOAD_ZONE_TMP_LOAD_CMPNTS,
+        m.LOAD_ZONE_TMP_LOAD_CMPNTS_ALL,
         within=NonNegativeReals,
         default=lambda mod, lz, tmp, cmp: set_default_and_warn_about_undefined_loads(
             mod, lz, tmp, cmp
         ),
     )
 
-    def total_static_load_from_components_init(mod, lz, tmp):
-        lz_load_in_tmp = 0
-        for load_zone, timepoint, component in mod.LOAD_ZONE_TMP_LOAD_CMPNTS:
-            if mod.component_static_load_mw[load_zone, timepoint, component] == float(
-                "inf"
+    def total_static_load_from_components_init(mod):
+        lz_load_in_tmp = {}
+        for (
+            load_zone,
+            timepoint,
+            component,
+        ) in mod.LOAD_ZONE_TMP_LOAD_CMPNTS_ALL:
+            if (
+                mod.component_static_load_mw[load_zone, timepoint, component]
+                == "undefined"
             ):
                 raise ValueError(
                     f"""
                 Parameter component_static_load_mw at index 
-                {load_zone, timepoint, component} has no value defined. It 
-                must either be included with the load inputs or a value must 
-                be set via the load_level_default parameter of load_zone 
-                {load_zone}.
+                {load_zone, timepoint, component} has no value defined. Load 
+                must either be included with the timepoint load inputs or a 
+                value must be set via the load_level_default parameter of 
+                load_zone {load_zone}.
                 """
                 )
             else:
-                if load_zone == lz and timepoint == tmp:
-                    lz_load_in_tmp += mod.component_static_load_mw[
-                        load_zone, timepoint, component
-                    ]
+                if (load_zone, timepoint) not in lz_load_in_tmp.keys():
+                    lz_load_in_tmp[(load_zone, timepoint)] = (
+                        mod.component_static_load_mw[load_zone, timepoint, component]
+                    )
+                else:
+                    lz_load_in_tmp[
+                        (load_zone, timepoint)
+                    ] += mod.component_static_load_mw[load_zone, timepoint, component]
 
+        # print(lz_load_in_tmp)
         return lz_load_in_tmp
 
     m.LZ_Load_in_Tmp = Expression(
@@ -213,8 +268,8 @@ def load_model_data(
             "inputs",
             "load_mw.tab",
         ),
-        index=m.LOAD_ZONE_TMP_LOAD_CMPNTS,
-        param=m.component_static_load_mw,
+        index=m.LOAD_ZONE_TMP_LOAD_CMPNTS_W_DEFINED_LOAD,
+        param=m.component_static_load_mw_w_tmp_value,
     )
 
     data_portal.load(
@@ -228,7 +283,7 @@ def load_model_data(
             "inputs",
             "load_level_defaults.tab",
         ),
-        index=m.LOAD_ZONE_LOAD_CMPNTS,
+        index=m.LOAD_ZONE_LOAD_CMPNTS_ALL,
         param=m.load_level_default,
     )
 

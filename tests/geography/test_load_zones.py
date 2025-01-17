@@ -84,7 +84,7 @@ class TestLoadZones(unittest.TestCase):
             stage="",
         )
         instance = m.create_instance(data)
-        expected = sorted(["Zone1", "Zone2", "Zone3"])
+        expected = sorted(["Zone1", "Zone2", "Zone3", "Zone4"])
         actual = sorted([z for z in instance.LOAD_ZONES])
         self.assertListEqual(
             expected, actual, msg="LOAD_ZONES set data does not load correctly."
@@ -92,7 +92,7 @@ class TestLoadZones(unittest.TestCase):
 
         # Param: allow_overgeneration
         expected_allow_overgen = OrderedDict(
-            sorted({"Zone1": 1, "Zone2": 1, "Zone3": 1}.items())
+            sorted({"Zone1": 1, "Zone2": 1, "Zone3": 1, "Zone4": 1}.items())
         )
         actual_allow_overgen = OrderedDict(
             sorted(
@@ -105,7 +105,14 @@ class TestLoadZones(unittest.TestCase):
 
         # Param: overgeneration_penalty_per_mw
         expected_overgen_penalty = OrderedDict(
-            sorted({"Zone1": 99999999, "Zone2": 99999999, "Zone3": 99999999}.items())
+            sorted(
+                {
+                    "Zone1": 99999999,
+                    "Zone2": 99999999,
+                    "Zone3": 99999999,
+                    "Zone4": 99999999,
+                }.items()
+            )
         )
         actual_overgen_penalty = OrderedDict(
             sorted(
@@ -119,7 +126,7 @@ class TestLoadZones(unittest.TestCase):
 
         # Param: allow_unserved_energy
         expected_allow_unserved_energy = OrderedDict(
-            sorted({"Zone1": 1, "Zone2": 1, "Zone3": 1}.items())
+            sorted({"Zone1": 1, "Zone2": 1, "Zone3": 1, "Zone4": 1}.items())
         )
         actual_allow_unserved_energy = OrderedDict(
             sorted(
@@ -134,7 +141,14 @@ class TestLoadZones(unittest.TestCase):
 
         # Param: unserved_energy_penalty_per_mwh
         expected_unserved_energy_penalty = OrderedDict(
-            sorted({"Zone1": 99999999, "Zone2": 99999999, "Zone3": 99999999}.items())
+            sorted(
+                {
+                    "Zone1": 99999999,
+                    "Zone2": 99999999,
+                    "Zone3": 99999999,
+                    "Zone4": 99999999,
+                }.items()
+            )
         )
         actual_unserved_energy_penalty = OrderedDict(
             sorted(
@@ -151,7 +165,12 @@ class TestLoadZones(unittest.TestCase):
         # Param: unserved_energy_limit_mwh
         expected_unserved_energy_limit = OrderedDict(
             sorted(
-                {"Zone1": float("inf"), "Zone2": float("inf"), "Zone3": 100000}.items()
+                {
+                    "Zone1": float("inf"),
+                    "Zone2": float("inf"),
+                    "Zone3": 100000,
+                    "Zone4": 100000,
+                }.items()
             )
         )
         actual_unserved_energy_limit = OrderedDict(
@@ -168,7 +187,7 @@ class TestLoadZones(unittest.TestCase):
 
         # Param: max_unserved_load_penalty_per_mw
         expected_max_unserved_load_penalty_per_mw = OrderedDict(
-            sorted({"Zone1": 0, "Zone2": 0, "Zone3": 0}.items())
+            sorted({"Zone1": 0, "Zone2": 0, "Zone3": 0, "Zone4": 0}.items())
         )
         actual_max_unserved_load_penalty_per_mw = OrderedDict(
             sorted(
@@ -186,7 +205,12 @@ class TestLoadZones(unittest.TestCase):
         # Param: max_unserved_load_limit_mw
         expected_unserved_load_limit = OrderedDict(
             sorted(
-                {"Zone1": 1000, "Zone2": float("inf"), "Zone3": float("inf")}.items()
+                {
+                    "Zone1": 1000,
+                    "Zone2": float("inf"),
+                    "Zone3": float("inf"),
+                    "Zone4": float("inf"),
+                }.items()
             )
         )
         actual_unserved_load_limit = OrderedDict(
@@ -201,7 +225,7 @@ class TestLoadZones(unittest.TestCase):
 
         # Param: export_penalty_cost_per_mwh
         expected_export_penalty_cost_per_mwh = OrderedDict(
-            sorted({"Zone1": 0, "Zone2": 0, "Zone3": 0}.items())
+            sorted({"Zone1": 0, "Zone2": 0, "Zone3": 0, "Zone4": 0}.items())
         )
         actual_export_penalty_cost_per_mwh = OrderedDict(
             sorted(

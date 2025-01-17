@@ -2,3 +2,4 @@ load_zone	allow_overgeneration	overgeneration_penalty_per_mw	allow_unserved_ener
 Zone1	1	99999999	1	99999999	.	0	1000	0
 Zone2	1	99999999	1	99999999	.	0	.	0
 Zone3	1	99999999	1	99999999	100000	0	.	0
+Zone4	1	99999999	1	99999999	100000	0	.	0
