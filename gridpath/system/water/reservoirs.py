@@ -327,7 +327,7 @@ def load_model_data(
         subproblem,
         stage,
         "inputs",
-        "reservoir_target_release_avg_flow_volunit_per_secs.tab",
+        "reservoir_target_releases.tab",
     )
 
     if os.path.exists(rel_fname):
@@ -596,7 +596,7 @@ def write_model_inputs(
                 subproblem,
                 stage,
                 "inputs",
-                "reservoir_target_release_avg_flow_volunit_per_secs.tab",
+                "reservoir_target_releases.tab",
             ),
             "w",
             newline="",

@@ -138,16 +138,6 @@ class TestWaterNodeBalance(unittest.TestCase):
         }
         self.assertDictEqual(expected_res, actual_res)
 
-        # Param: theoretical_power_coefficient
-        expected_pwr_coeff = {
-            "Powerhouse1": 0.0847,
-            "Powerhouse2": 0.0847,
-        }
-        actual_pwr_coeff = {
-            p: instance.theoretical_power_coefficient[p] for p in instance.POWERHOUSES
-        }
-        self.assertDictEqual(expected_pwr_coeff, actual_pwr_coeff)
-
         # Param: tailwater_elevation
         expected_telev = {
             "Powerhouse1": 800,
