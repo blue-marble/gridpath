@@ -124,18 +124,6 @@ class TestReservoirs(unittest.TestCase):
 
         self.assertListEqual(expected_r_tmp, actual_r_tmp)
 
-        # Param: balancing_type_reservoir
-        expected_bt = {
-            "Water_Node_1": "day",
-            "Water_Node_2": "day",
-            "Water_Node_3": "day",
-        }
-        actual_bt = {
-            r: instance.balancing_type_reservoir[r]
-            for r in instance.WATER_NODES_W_RESERVOIRS
-        }
-        self.assertDictEqual(expected_bt, actual_bt)
-
         # Param: reservoir_target_volume
         expected_te = {
             ("Water_Node_1", 20200101): 110000,

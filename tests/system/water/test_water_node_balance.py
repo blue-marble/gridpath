@@ -31,6 +31,8 @@ PREREQUISITE_MODULE_NAMES = [
     "geography.water_network",
     "system.water.water_system_params",
     "system.water.water_flows",
+    "system.water.water_nodes",
+    "system.water.reservoirs",
 ]
 NAME_OF_MODULE_BEING_TESTED = "system.water.water_node_balance"
 IMPORTED_PREREQ_MODULES = list()

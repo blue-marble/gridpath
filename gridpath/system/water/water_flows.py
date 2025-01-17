@@ -110,7 +110,7 @@ def add_model_components(
 
     m.arrival_timepoint = Param(
         m.WATER_LINKS,
-        m.TMPS_AND_OUTSIDE_HORIZON,
+        m.TMPS,
         within=m.TMPS_AND_OUTSIDE_HORIZON,
         initialize=arrival_tmp_init,
     )
@@ -188,10 +188,16 @@ def add_model_components(
 
 
 def determine_arrival_timepoint(mod, dep_tmp, travel_time_hours):
-    # If travel time is less than the hours in the departure timepoint, we stay
-    # in the same timepoint
+    """
+    USER WARNING: timepoint durations longer than the travel time may create
+    issues. You could also see issues if timepoints don't receive any flows
+    because of short durations. This functionality is new and not yet
+    extensively tested, so proceed with caution.
+    """
+    # If travel time is less than the hours in the departure timepoint,
+    # we send the water to the next timepoint and are done
     if travel_time_hours < mod.hrs_in_tmp[dep_tmp]:
-        arr_tmp = dep_tmp
+        arr_tmp = mod.next_tmp[dep_tmp, mod.water_system_balancing_type]
     # If this is the last timepoint of a linear horizon, there are no
     # timepoints to check and we'll return 'tmp_outside_horizon'
     elif check_if_boundary_type_and_last_timepoint(
