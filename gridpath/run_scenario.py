@@ -39,9 +39,9 @@ from pyomo.environ import (
 )
 
 # from pyomo.util.infeasible import log_infeasible_constraints
+from pyomo.common.timing import report_timing
 from pyomo.common.tempfiles import TempfileManager
 from pyomo.core import ComponentUID, SymbolMap
-import pyomo.environ
 from pyomo.opt import ReaderFactory, ResultsFormat, ProblemFormat
 import sys
 import warnings
@@ -129,6 +129,9 @@ def create_problem(
         subproblem,
         stage,
     )
+
+    if parsed_arguments.report_timing:
+        report_timing()
 
     # Create a dual suffix component
     # TODO: maybe this shouldn't always be needed
