@@ -1110,6 +1110,7 @@ CREATE TABLE inputs_system_water_node_reservoirs
     max_spill                        FLOAT,
     evaporation_coefficient          FLOAT,
     elevation_type                   TEXT,
+    constant_elevation               FLOAT,
     exogenous_elevation_id           INTEGER,
     volume_to_elevation_curve_id     INTEGER,
     PRIMARY KEY (water_node_reservoir_scenario_id, water_node),
