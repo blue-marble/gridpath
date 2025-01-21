@@ -1176,6 +1176,7 @@ def load_startup_chars(
 
     startup_chars_file = os.path.join(
         scenario_directory,
+        weather_iteration,
         hydro_iteration,
         availability_iteration,
         subproblem,

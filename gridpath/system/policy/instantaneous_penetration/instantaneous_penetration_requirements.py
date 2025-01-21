@@ -221,7 +221,15 @@ def load_model_data(
     stage,
 ):
 
-    input_dir = os.path.join(scenario_directory, subproblem, stage, "inputs")
+    input_dir = os.path.join(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+    )
 
     # Load the targets by timpoint
     data_portal.load(

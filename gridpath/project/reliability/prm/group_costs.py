@@ -449,6 +449,9 @@ def load_model_data(
     # Existing deliverability: optional
     existing_deliverability_file = os.path.join(
         scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
         subproblem,
         stage,
         "inputs",
@@ -463,6 +466,9 @@ def load_model_data(
     # Potentials: optional
     group_potentials_file = os.path.join(
         scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
         subproblem,
         stage,
         "inputs",

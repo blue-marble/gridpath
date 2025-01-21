@@ -1110,6 +1110,7 @@ CREATE TABLE inputs_system_water_node_reservoirs
     max_spill                        FLOAT,
     evaporation_coefficient          FLOAT,
     elevation_type                   TEXT,
+    constant_elevation               FLOAT,
     exogenous_elevation_id           INTEGER,
     volume_to_elevation_curve_id     INTEGER,
     PRIMARY KEY (water_node_reservoir_scenario_id, water_node),
@@ -6137,7 +6138,8 @@ CREATE TABLE results_system_market_participation
     final_buy_power              FLOAT,
     final_net_buy_power          FLOAT,
     PRIMARY KEY (scenario_id, load_zone, market, weather_iteration,
-                 hydro_iteration, subproblem_id, stage_id, timepoint)
+                 hydro_iteration, availability_iteration, subproblem_id,
+                 stage_id, timepoint)
 );
 
 DROP TABLE IF EXISTS results_system_lf_reserves_up;
@@ -6161,7 +6163,8 @@ CREATE TABLE results_system_lf_reserves_up
     dual                         FLOAT,
     marginal_price_per_mw        FLOAT,
     PRIMARY KEY (scenario_id, lf_reserves_up_ba, weather_iteration,
-                 hydro_iteration, subproblem_id, stage_id, timepoint)
+                 hydro_iteration, availability_iteration, subproblem_id,
+                 stage_id, timepoint)
 );
 
 DROP TABLE IF EXISTS results_system_lf_reserves_down;
@@ -6185,7 +6188,8 @@ CREATE TABLE results_system_lf_reserves_down
     dual                         FLOAT,
     marginal_price_per_mw        FLOAT,
     PRIMARY KEY (scenario_id, lf_reserves_down_ba, weather_iteration,
-                 hydro_iteration, subproblem_id, stage_id, timepoint)
+                 hydro_iteration, availability_iteration, subproblem_id,
+                 stage_id, timepoint)
 );
 
 DROP TABLE IF EXISTS results_system_regulation_up;
@@ -6209,7 +6213,8 @@ CREATE TABLE results_system_regulation_up
     dual                         FLOAT,
     marginal_price_per_mw        FLOAT,
     PRIMARY KEY (scenario_id, regulation_up_ba, weather_iteration,
-                 hydro_iteration, subproblem_id, stage_id, timepoint)
+                 hydro_iteration, availability_iteration, subproblem_id,
+                 stage_id, timepoint)
 );
 
 DROP TABLE IF EXISTS results_system_regulation_down;
@@ -6233,7 +6238,8 @@ CREATE TABLE results_system_regulation_down
     dual                         FLOAT,
     marginal_price_per_mw        FLOAT,
     PRIMARY KEY (scenario_id, regulation_down_ba, weather_iteration,
-                 hydro_iteration, subproblem_id, stage_id, timepoint)
+                 hydro_iteration, availability_iteration, subproblem_id,
+                 stage_id, timepoint)
 );
 
 DROP TABLE IF EXISTS results_system_frequency_response;
@@ -6257,7 +6263,8 @@ CREATE TABLE results_system_frequency_response
     dual                         FLOAT,
     marginal_price_per_mw        FLOAT,
     PRIMARY KEY (scenario_id, frequency_response_ba, weather_iteration,
-                 hydro_iteration, subproblem_id, stage_id, timepoint)
+                 hydro_iteration, availability_iteration, subproblem_id,
+                 stage_id, timepoint)
 );
 
 -- TODO: frequency_response_partial_ba is the same as frequency_response_ba
@@ -6308,7 +6315,8 @@ CREATE TABLE results_system_spinning_reserves
     dual                         FLOAT,
     marginal_price_per_mw        FLOAT,
     PRIMARY KEY (scenario_id, spinning_reserves_ba, weather_iteration,
-                 hydro_iteration, subproblem_id, stage_id, timepoint)
+                 hydro_iteration, availability_iteration,
+                 subproblem_id, stage_id, timepoint)
 );
 
 -- Carbon emissions
@@ -6338,7 +6346,8 @@ CREATE TABLE results_system_carbon_cap
     dual                                  FLOAT,
     carbon_cap_marginal_cost_per_emission FLOAT,
     PRIMARY KEY (scenario_id, carbon_cap_zone, weather_iteration,
-                 hydro_iteration, subproblem_id, stage_id, period)
+                 hydro_iteration, availability_iteration, subproblem_id,
+                 stage_id, period)
 );
 
 -- Carbon tax emissions
@@ -6363,7 +6372,8 @@ CREATE TABLE results_system_carbon_tax
     total_carbon_tax_cost           FLOAT,
     dual                            FLOAT,
     PRIMARY KEY (scenario_id, carbon_tax_zone, weather_iteration,
-                 hydro_iteration, subproblem_id, stage_id, period)
+                 hydro_iteration, availability_iteration, subproblem_id,
+                 stage_id, period)
 );
 
 -- Performance standard
@@ -6414,7 +6424,7 @@ CREATE TABLE results_system_carbon_credits
     sell_credits                   FLOAT,
     buy_credits                    FLOAT,
     PRIMARY KEY (scenario_id, carbon_credits_zone, weather_iteration,
-                 hydro_iteration,
+                 hydro_iteration, availability_iteration,
                  subproblem_id, stage_id, period)
 );
 
@@ -6467,8 +6477,8 @@ CREATE TABLE results_system_horizon_energy_target
     energy_target_shortage_mwh                 FLOAT,
     dual                                       FLOAT,
     PRIMARY KEY (scenario_id, energy_target_zone, weather_iteration,
-                 hydro_iteration, subproblem_id, stage_id,
-                 balancing_type_horizon, horizon)
+                 hydro_iteration, availability_iteration, subproblem_id,
+                 stage_id, balancing_type_horizon, horizon)
 );
 
 -- instantaneous penetration
@@ -6498,7 +6508,9 @@ CREATE TABLE results_system_instantaneous_penetration
     instantaneous_penetration_min_marginal_price_per_mw FLOAT,
     dual_instantaneous_penetration_max                  FLOAT,
     instantaneous_penetration_max_marginal_price_per_mw FLOAT,
-    PRIMARY KEY (scenario_id, instantaneous_penetration_zone, subproblem_id,
+    PRIMARY KEY (scenario_id, instantaneous_penetration_zone,
+                 weather_iteration, hydro_iteration,
+                 availability_iteration, subproblem_id,
                  stage_id, timepoint)
 );
 
@@ -6592,8 +6604,8 @@ CREATE TABLE results_system_policy_requirements
     dual                                      FLOAT,
     policy_requirement_marginal_cost_per_unit FLOAT,
     PRIMARY KEY (scenario_id, policy_name, policy_zone, weather_iteration,
-                 hydro_iteration, subproblem_id, stage_id,
-                 balancing_type_horizon, horizon)
+                 hydro_iteration, availability_iteration, subproblem_id,
+                 stage_id, balancing_type_horizon, horizon)
 );
 
 
@@ -6621,7 +6633,7 @@ CREATE TABLE results_system_prm
     dual                                      FLOAT,
     prm_marginal_cost_per_mw                  FLOAT,
     PRIMARY KEY (scenario_id, prm_zone, period, weather_iteration,
-                 hydro_iteration,
+                 hydro_iteration, availability_iteration,
                  subproblem_id, stage_id)
 );
 

@@ -1,4 +1,4 @@
-# Copyright 2016-2024 Blue Marble Analytics LLC.
+# Copyright 2016-2025 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ from pyomo.environ import (
     Set,
     Param,
     Boolean,
-    NonNegativeReals,
+    Reals,
     NonNegativeIntegers,
     Any,
 )
@@ -95,7 +95,7 @@ def add_model_components(
     # #### Parameters #### #
     # Inflow rate, defined in volume units per second
     m.exogenous_water_inflow_rate_vol_per_sec = Param(
-        m.WATER_NODES, m.TMPS, default=0, within=NonNegativeReals
+        m.WATER_NODES, m.TMPS, default=0, within=Reals
     )
 
     # ### Derived Sets ### #

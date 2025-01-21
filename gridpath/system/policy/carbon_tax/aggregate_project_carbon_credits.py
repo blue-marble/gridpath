@@ -164,6 +164,9 @@ def write_model_inputs(
     df = df.fillna(".")
     fpath = os.path.join(
         scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
         subproblem,
         stage,
         "inputs",

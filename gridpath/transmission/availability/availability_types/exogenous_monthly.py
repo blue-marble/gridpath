@@ -1,4 +1,4 @@
-# Copyright 2016-2023 Blue Marble Analytics LLC.
+# Copyright 2016-2025 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -147,6 +147,9 @@ def load_model_data(
     # transmission_availability_exogenous.tab, but use the default instead
     availability_file = os.path.join(
         scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
         subproblem,
         stage,
         "inputs",
@@ -179,7 +182,7 @@ def get_inputs_from_database(
     :return:
     """
 
-    sql = """
+    sql = f"""
         SELECT transmission_line, month, availability_derate
         -- Select only lines, periods, timepoints from the relevant 
         -- portfolio, relevant opchar scenario id, operational type, 
@@ -187,7 +190,7 @@ def get_inputs_from_database(
         FROM 
             (SELECT transmission_line
             FROM inputs_transmission_portfolios
-            WHERE transmission_portfolio_scenario_id = {portfolio}
+            WHERE transmission_portfolio_scenario_id = {subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID}
             ) as tx_portfolio
         -- Of the lines in the portfolio, select only those that are in 
         -- this transmission_availability_scenario_id and have 'exogenous' as 
@@ -198,8 +201,8 @@ def get_inputs_from_database(
         INNER JOIN (
             SELECT transmission_line, exogenous_availability_scenario_id
             FROM inputs_transmission_availability
-            WHERE transmission_availability_scenario_id = {availability_scenario}
-            AND availability_type = '{availability_type}'
+            WHERE transmission_availability_scenario_id = {subscenarios.TRANSMISSION_AVAILABILITY_SCENARIO_ID}
+            AND availability_type = 'exogenous_monthly'
             AND exogenous_availability_scenario_id IS NOT NULL
             ) AS avail_char
         USING (transmission_line)
@@ -212,12 +215,7 @@ def get_inputs_from_database(
         WHERE stage_id = {stage}
         AND month != 0  -- exclude month=0 (timepoint availability)
         ;
-    """.format(
-        portfolio=subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID,
-        availability_scenario=subscenarios.TRANSMISSION_AVAILABILITY_SCENARIO_ID,
-        availability_type="exogenous_monthly",
-        stage=stage,
-    )
+    """
 
     c = conn.cursor()
     availabilities = c.execute(sql)

@@ -1,4 +1,4 @@
 water_node	minimum_volume_volumeunit	maximum_volume_volumeunit	max_spill	evaporation_coefficient	elevation_type
 Water_Node_1	22500.0	25000.0	0.1	0.0	exogenous
 Water_Node_2	1250.0	1750.0	0.1	0.0	exogenous
-Water_Node_3	50.0	75.0	0.1	0.0	exogenous
+Water_Node_3	50.0	75.0	0.1	0.0	constant

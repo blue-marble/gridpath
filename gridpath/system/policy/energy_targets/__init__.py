@@ -131,6 +131,9 @@ def import_results_into_database(
         if os.path.exists(
             os.path.join(
                 results_directory,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
                 subproblem,
                 stage,
                 "results",
