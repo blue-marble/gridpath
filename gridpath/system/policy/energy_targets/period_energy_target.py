@@ -145,6 +145,9 @@ def load_model_data(
     # initialize PERIOD_ENERGY_TARGET_ZONE_LOAD_ZONES as an empty list
     map_filename = os.path.join(
         scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
         subproblem,
         stage,
         "inputs",

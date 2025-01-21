@@ -203,6 +203,9 @@ def load_model_data(
 
     transmission_flow_limits_file = os.path.join(
         scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
         subproblem,
         stage,
         "inputs",

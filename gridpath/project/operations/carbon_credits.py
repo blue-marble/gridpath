@@ -422,6 +422,9 @@ def load_model_data(
 
     prj_carbon_credits_file = os.path.join(
         scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
         str(subproblem),
         str(stage),
         "inputs",
@@ -438,6 +441,9 @@ def load_model_data(
 
     prj_carbon_credits_purchase_file = os.path.join(
         scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
         str(subproblem),
         str(stage),
         "inputs",

@@ -279,6 +279,9 @@ def load_model_data(
     # Average heat rate
     hr_curves_file = os.path.join(
         scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
         subproblem,
         stage,
         "inputs",
@@ -295,6 +298,9 @@ def load_model_data(
     )
     carbon_tax_allowance_file = os.path.join(
         scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
         subproblem,
         stage,
         "inputs",
