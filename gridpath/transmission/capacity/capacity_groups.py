@@ -223,6 +223,7 @@ def load_model_data(
 
     req_file = os.path.join(
         scenario_directory,
+        weather_iteration,
         hydro_iteration,
         availability_iteration,
         subproblem,
