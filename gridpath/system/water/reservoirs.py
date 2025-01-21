@@ -226,7 +226,7 @@ def add_model_components(
 
     # ### Elevation ### #
     m.elevation_type = Param(
-        m.WATER_NODES_W_RESERVOIRS, within=["exogenous", "endogenous"]
+        m.WATER_NODES_W_RESERVOIRS, within=["constant", "exogenous", "endogenous"]
     )
 
     # Import needed elevation modules
