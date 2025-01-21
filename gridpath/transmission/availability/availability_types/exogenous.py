@@ -1,4 +1,4 @@
-# Copyright 2016-2023 Blue Marble Analytics LLC.
+# Copyright 2016-2025 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-For each transmisison line assigned this *availability type*, the user may
+For each transmission line assigned this *availability type*, the user may
 specify an (un)availability schedule, i.e. a capacity derate for each
 timepoint in which the line may be operated. If fully derated in a given
 timepoint, the available transmission capacity will be 0 in that timepoint
@@ -160,6 +160,9 @@ def load_model_data(
     # transmission_availability_exogenous.tab, but use the default instead
     availability_file = os.path.join(
         scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
         subproblem,
         stage,
         "inputs",
@@ -192,7 +195,7 @@ def get_inputs_from_database(
     :return:
     """
 
-    sql = """
+    sql = f"""
         SELECT transmission_line, timepoint, availability_derate
         -- Select only lines, periods, timepoints from the relevant 
         -- portfolio, relevant opchar scenario id, operational type, 
@@ -200,13 +203,13 @@ def get_inputs_from_database(
         FROM 
             (SELECT transmission_line, stage_id, timepoint
             FROM transmission_operational_timepoints
-            WHERE transmission_portfolio_scenario_id = {}
-            AND transmission_operational_chars_scenario_id = {}
-            AND temporal_scenario_id = {}
-            AND (transmission_specified_capacity_scenario_id = {}
-                 OR transmission_new_cost_scenario_id = {})
-            AND subproblem_id = {}
-            AND stage_id = {}
+            WHERE transmission_portfolio_scenario_id = {subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID}
+            AND transmission_operational_chars_scenario_id = {subscenarios.TRANSMISSION_OPERATIONAL_CHARS_SCENARIO_ID}
+            AND temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+            AND (transmission_specified_capacity_scenario_id = {subscenarios.TRANSMISSION_SPECIFIED_CAPACITY_SCENARIO_ID}
+                 OR transmission_new_cost_scenario_id = {subscenarios.TRANSMISSION_NEW_COST_SCENARIO_ID})
+            AND subproblem_id = {subproblem}
+            AND stage_id = {stage}
             ) as tx_periods_timepoints_tbl
         -- Of the lines in the portfolio, select only those that are in 
         -- this transmission_availability_scenario_id and have 'exogenous' as 
@@ -217,8 +220,8 @@ def get_inputs_from_database(
         INNER JOIN (
             SELECT transmission_line, exogenous_availability_scenario_id
             FROM inputs_transmission_availability
-            WHERE transmission_availability_scenario_id = {}
-            AND availability_type = '{}'
+            WHERE transmission_availability_scenario_id = {subscenarios.TRANSMISSION_AVAILABILITY_SCENARIO_ID}
+            AND availability_type = 'exogenous'
             AND exogenous_availability_scenario_id IS NOT NULL
             ) AS avail_char
         USING (transmission_line)
@@ -231,17 +234,7 @@ def get_inputs_from_database(
         timepoint)
         WHERE timepoint != 0 -- exclude timepoint=0 (monthly availability)
         ;
-    """.format(
-        subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID,
-        subscenarios.TRANSMISSION_OPERATIONAL_CHARS_SCENARIO_ID,
-        subscenarios.TEMPORAL_SCENARIO_ID,
-        subscenarios.TRANSMISSION_SPECIFIED_CAPACITY_SCENARIO_ID,
-        subscenarios.TRANSMISSION_NEW_COST_SCENARIO_ID,
-        subproblem,
-        stage,
-        subscenarios.TRANSMISSION_AVAILABILITY_SCENARIO_ID,
-        "exogenous",
-    )
+    """
 
     c = conn.cursor()
     availabilities = c.execute(sql)
