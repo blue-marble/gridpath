@@ -1,4 +1,4 @@
-water_link	timepoint	min_flow_vol_per_second	max_flow_vol_per_second
+water_link	timepoint	min_tmp_flow_vol_per_second	max_tmp_flow_vol_per_second
 Water_Link_12	20200101	.	.
 Water_Link_12	20200102	10	100
 Water_Link_12	20200103	10	100
