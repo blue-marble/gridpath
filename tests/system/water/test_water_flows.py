@@ -103,7 +103,8 @@ class TestWaterFlows(unittest.TestCase):
 
         # Param: min_tmp_flow_vol_per_second
         df = pd.read_csv(
-            os.path.join(TEST_DATA_DIRECTORY, "inputs", "water_flow_bounds.tab"),
+            os.path.join(TEST_DATA_DIRECTORY, "inputs",
+                         "water_flow_tmp_bounds.tab"),
             sep="\t",
         )
 
@@ -125,7 +126,8 @@ class TestWaterFlows(unittest.TestCase):
 
         # Param: max_tmp_flow_vol_per_second
         df = pd.read_csv(
-            os.path.join(TEST_DATA_DIRECTORY, "inputs", "water_flow_bounds.tab"),
+            os.path.join(TEST_DATA_DIRECTORY, "inputs",
+                         "water_flow_tmp_bounds.tab"),
             sep="\t",
         )
 

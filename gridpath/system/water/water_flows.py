@@ -64,7 +64,23 @@ def add_model_components(
     )
     m.max_tmp_flow_vol_per_second = Param(m.WATER_LINKS, m.TMPS, default=float("inf"))
 
-    # Min and max
+    # Min and max total flows by horizon
+    m.WATER_LINKS_W_BT_HRZ_MIN_FLOW_CONSTRAINT = Set(
+        dimen=3, within=m.WATER_LINKS * m.BLN_TYPE_HRZS
+    )
+    m.WATER_LINKS_W_BT_HRZ_MAX_FLOW_CONSTRAINT = Set(
+        dimen=3, within=m.WATER_LINKS * m.BLN_TYPE_HRZS
+    )
+
+    m.min_bt_hrz_flow_avg_vol_per_second = Param(
+        m.WATER_LINKS_W_BT_HRZ_MIN_FLOW_CONSTRAINT,
+        within=NonNegativeReals,
+    )
+
+    m.max_bt_hrz_flow_avg_vol_per_second = Param(
+        m.WATER_LINKS_W_BT_HRZ_MAX_FLOW_CONSTRAINT,
+        within=NonNegativeReals,
+    )
 
     # Set WATER_LINK_DEPARTURE_ARRIVAL_TMPS
     def water_link_departure_arrival_tmp_init(mod):
@@ -166,7 +182,7 @@ def add_model_components(
     )
 
     # ### Constraints ### #
-    def min_flow_rule(mod, wl, dep_tmp, arr_tmp):
+    def min_tmp_flow_rule(mod, wl, dep_tmp, arr_tmp):
         return (
             mod.Water_Link_Flow_Rate_Vol_per_Sec[wl, dep_tmp, arr_tmp]
             + mod.Water_Link_Min_Flow_Violation_Expression[wl, dep_tmp, arr_tmp]
@@ -174,10 +190,10 @@ def add_model_components(
         )
 
     m.Water_Link_Minimum_Flow_Constraint = Constraint(
-        m.WATER_LINK_DEPARTURE_ARRIVAL_TMPS, rule=min_flow_rule
+        m.WATER_LINK_DEPARTURE_ARRIVAL_TMPS, rule=min_tmp_flow_rule
     )
 
-    def max_flow_rule(mod, wl, dep_tmp, arr_tmp):
+    def max_tmp_flow_rule(mod, wl, dep_tmp, arr_tmp):
         return (
             mod.Water_Link_Flow_Rate_Vol_per_Sec[wl, dep_tmp, arr_tmp]
             - mod.Water_Link_Max_Flow_Violation_Expression[wl, dep_tmp, arr_tmp]
@@ -185,7 +201,39 @@ def add_model_components(
         )
 
     m.Water_Link_Maximum_Flow_Constraint = Constraint(
-        m.WATER_LINK_DEPARTURE_ARRIVAL_TMPS, rule=max_flow_rule
+        m.WATER_LINK_DEPARTURE_ARRIVAL_TMPS, rule=max_tmp_flow_rule
+    )
+       
+    def min_total_hrz_flow_constraint_rule(mod, wl, bt, hrz):
+        """ """
+        return sum(
+            mod.Water_Link_Flow_Rate_Vol_per_Sec[wl, tmp] * mod.hrs_in_tmp[tmp]
+            for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
+        ) >= sum(
+            mod.min_bt_hrz_flow_avg_vol_per_second[wl, bt, hrz]
+            * mod.hrs_in_tmp[tmp]
+            for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
+        )
+
+    m.Water_Link_Min_Total_Hrz_Flow_Constraint = Constraint(
+        m.WATER_LINKS_W_BT_HRZ_MIN_FLOW_CONSTRAINT,
+        rule=min_total_hrz_flow_constraint_rule,
+    )
+    
+    def max_total_hrz_flow_constraint_rule(mod, wl, bt, hrz):
+        """ """
+        return sum(
+            mod.Water_Link_Flow_Rate_Vol_per_Sec[wl, tmp] * mod.hrs_in_tmp[tmp]
+            for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
+        ) <= sum(
+            mod.max_bt_hrz_flow_avg_vol_per_second[wl, bt, hrz]
+            * mod.hrs_in_tmp[tmp]
+            for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
+        )
+
+    m.Water_Link_Max_Total_Hrz_Flow_Constraint = Constraint(
+        m.WATER_LINKS_W_BT_HRZ_MAX_FLOW_CONSTRAINT,
+        rule=max_total_hrz_flow_constraint_rule,
     )
 
 
@@ -285,7 +333,7 @@ def load_model_data(
     subproblem,
     stage,
 ):
-    fname = os.path.join(
+    tmp_fname = os.path.join(
         scenario_directory,
         weather_iteration,
         hydro_iteration,
@@ -293,12 +341,48 @@ def load_model_data(
         subproblem,
         stage,
         "inputs",
-        "water_flow_bounds.tab",
+        "water_flow_tmp_bounds.tab",
     )
-    if os.path.exists(fname):
+    if os.path.exists(tmp_fname):
         data_portal.load(
-            filename=fname,
+            filename=tmp_fname,
             param=(m.min_tmp_flow_vol_per_second, m.max_tmp_flow_vol_per_second),
+        )
+        
+    hrz_min_fname = os.path.join(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+        "water_flow_hrz_min_bounds.tab",
+    )
+
+    if os.path.exists(hrz_min_fname):
+        data_portal.load(
+            filename=hrz_min_fname,
+            index=m.WATER_LINKS_W_BT_HRZ_MIN_FLOW_CONSTRAINT,
+            param=m.min_bt_hrz_flow_avg_vol_per_second,
+        )
+
+    hrz_max_fname = os.path.join(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+        "water_flow_hrz_max_bounds.tab",
+    )
+
+    if os.path.exists(hrz_max_fname):
+        data_portal.load(
+            filename=hrz_max_fname,
+            index=m.WATER_LINKS_W_BT_HRZ_MAX_FLOW_CONSTRAINT,
+            param=m.max_bt_hrz_flow_avg_vol_per_second,
         )
 
 
@@ -321,12 +405,15 @@ def get_inputs_from_database(
     """
 
     c = conn.cursor()
-    water_flows = c.execute(
-        f"""SELECT water_link, timepoint, 
+    sql = f"""SELECT water_link, timepoint, 
             min_tmp_flow_vol_per_second, max_tmp_flow_vol_per_second
-            FROM inputs_system_water_flows
-            WHERE water_flow_scenario_id = 
-            {subscenarios.WATER_FLOW_SCENARIO_ID}
+            FROM inputs_system_water_flows_timepoint_bounds
+            WHERE (water_link, water_flow_timepoint_bounds_scenario_id) in (
+                SELECT water_link, water_flow_timepoint_bounds_scenario_id
+                FROM inputs_system_water_flows
+                WHERE water_flow_scenario_id = 
+                {subscenarios.WATER_FLOW_SCENARIO_ID}
+            )
             AND water_link IN (
                 SELECT water_link
                 FROM inputs_geography_water_network
@@ -339,9 +426,11 @@ def get_inputs_from_database(
                 WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
                 AND subproblem_id = {subproblem}
                 AND stage_id = {stage})
-            AND hydro_iteration = {hydro_iteration}
             ;
             """
+
+    water_flows = c.execute(
+        sql
     )
 
     return water_flows
@@ -384,7 +473,7 @@ def write_model_inputs(
 ):
     """
     Get inputs from database and write out the model input
-    water_flow_bounds.tab file.
+    water_flow_tmp_bounds.tab file.
     :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -425,7 +514,7 @@ def write_model_inputs(
                 subproblem,
                 stage,
                 "inputs",
-                "water_flow_bounds.tab",
+                "water_flow_tmp_bounds.tab",
             ),
             "w",
             newline="",

@@ -180,6 +180,7 @@ water/reservoirs/exogenous_elevation,water,exogenous_elevation_id,system_water_n
 water/reservoirs/volume_to_elevation_curves,water,volume_to_elevation_curve_id,system_water_node_reservoir_volume_to_elevation_curves,simple,,1,water_node,,,water_reservoir_scenario_id,system_water_reservoirs
 water/reservoirs,water,water_node_reservoir_scenario_id,system_water_node_reservoirs,simple,,0,,,,,
 water/flows,water,water_flow_scenario_id,system_water_flows,simple,,0,,,,,
+water/flows/tmp_flow_bounds,data_dependent,water_flow_timepoint_bounds_scenario_id,system_water_flows_timepoint_bounds,simple,,1,water_link,,,inputs_system_water_flows,water_flow_scenario_id
 water/powerhouses,water,water_powerhouse_scenario_id,system_water_powerhouses,simple,,0,,,,,
 policy/generic/geography,policy,policy_zone_scenario_id,geography_policy_zones,simple,,0,,,,,
 policy/generic/requirements,policy,policy_requirement_scenario_id,system_policy_requirements,dir_main,,0,,requirements.csv,,,

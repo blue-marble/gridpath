@@ -1231,7 +1231,6 @@ CREATE TABLE inputs_system_water_node_reservoirs_target_releases
     FOREIGN KEY (water_node, target_release_scenario_id) REFERENCES
         subscenarios_system_water_node_reservoirs_target_releases
             (water_node, target_release_scenario_id)
-
 );
 
 
@@ -1286,16 +1285,57 @@ CREATE TABLE subscenarios_system_water_flows
 DROP TABLE IF EXISTS inputs_system_water_flows;
 CREATE TABLE inputs_system_water_flows
 (
-    water_flow_scenario_id      INTEGER,
-    water_link                  TEXT,
-    hydro_iteration             INTEGER DEFAULT 0 NOT NULL,
-    timepoint                   FLOAT,
-    min_tmp_flow_vol_per_second TEXT,
-    max_tmp_flow_vol_per_second INTEGER,
-    PRIMARY KEY (water_flow_scenario_id, water_link, timepoint,
-                 hydro_iteration),
+    water_flow_scenario_id                  INTEGER,
+    water_link                              TEXT,
+    water_flow_timepoint_bounds_scenario_id INTEGER,
+    PRIMARY KEY (water_flow_scenario_id, water_link),
     FOREIGN KEY (water_flow_scenario_id) REFERENCES
         subscenarios_system_water_flows (water_flow_scenario_id)
+);
+
+
+DROP TABLE IF EXISTS subscenarios_system_water_flows_timepoint_bounds;
+CREATE TABLE subscenarios_system_water_flows_timepoint_bounds
+(
+    water_link                              TEXT,
+    water_flow_timepoint_bounds_scenario_id INTEGER,
+    name                                    VARCHAR(32),
+    description                             VARCHAR(128),
+    PRIMARY KEY (water_link, water_flow_timepoint_bounds_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_system_water_flows_timepoint_bounds;
+CREATE TABLE inputs_system_water_flows_timepoint_bounds
+(
+    water_link                              TEXT,
+    water_flow_timepoint_bounds_scenario_id INTEGER,
+    timepoint                               FLOAT,
+    min_tmp_flow_vol_per_second             TEXT,
+    max_tmp_flow_vol_per_second             INTEGER,
+    PRIMARY KEY (water_link, timepoint),
+    FOREIGN KEY (water_link, water_flow_timepoint_bounds_scenario_id) REFERENCES
+        subscenarios_system_water_flows_timepoint_bounds
+            (water_link, water_flow_timepoint_bounds_scenario_id)
+);
+
+DROP TABLE IF EXISTS
+    subscenarios_system_water_flows_timepoint_bounds_iterations;
+CREATE TABLE subscenarios_system_water_flows_timepoint_bounds_iterations
+(
+    water_link                              TEXT,
+    water_flow_timepoint_bounds_scenario_id INTEGER,
+    name                                    VARCHAR(32),
+    description                             VARCHAR(128),
+    PRIMARY KEY (water_link, water_flow_timepoint_bounds_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_system_water_flows_timepoint_bounds_iterations;
+CREATE TABLE inputs_system_water_flows_timepoint_bounds_iterations
+(
+    water_link                              TEXT,
+    water_flow_timepoint_bounds_scenario_id INTEGER,
+    varies_by_hydro_iteration               INTEGER,
+    PRIMARY KEY (water_link, water_flow_timepoint_bounds_scenario_id)
 );
 
 -- Water nodes
