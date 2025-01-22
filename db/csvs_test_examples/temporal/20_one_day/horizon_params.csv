@@ -1,2 +1,4 @@
 balancing_type_horizon,horizon,boundary
 day,1,circular
+half_day,1,circular
+half_day,2,circular

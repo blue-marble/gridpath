@@ -1,2 +1,4 @@
 stage_id,balancing_type_horizon,horizon,tmp_start,tmp_start_spinup_or_lookahead,tmp_end,tmp_end_spinup_or_lookahead
 1,day,1,1,0,24,0
+1,half_day,1,1,0,12,0
+1,half_day,2,13,0,24,0

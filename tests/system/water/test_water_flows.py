@@ -103,8 +103,7 @@ class TestWaterFlows(unittest.TestCase):
 
         # Param: min_tmp_flow_vol_per_second
         df = pd.read_csv(
-            os.path.join(TEST_DATA_DIRECTORY, "inputs",
-                         "water_flow_tmp_bounds.tab"),
+            os.path.join(TEST_DATA_DIRECTORY, "inputs", "water_flow_tmp_bounds.tab"),
             sep="\t",
         )
 
@@ -126,8 +125,7 @@ class TestWaterFlows(unittest.TestCase):
 
         # Param: max_tmp_flow_vol_per_second
         df = pd.read_csv(
-            os.path.join(TEST_DATA_DIRECTORY, "inputs",
-                         "water_flow_tmp_bounds.tab"),
+            os.path.join(TEST_DATA_DIRECTORY, "inputs", "water_flow_tmp_bounds.tab"),
             sep="\t",
         )
 
@@ -762,3 +760,21 @@ class TestWaterFlows(unittest.TestCase):
         }
 
         self.assertDictEqual(expected_arr_tmp, actual_arr_tmp)
+
+        # Min hrz flows
+        expected_min_hrz_flow = {}
+        actual_min_hrz_flow = {
+            (wl, bt, hrz): instance.min_bt_hrz_flow_avg_vol_per_second[wl, bt, hrz]
+            for (wl, bt, hrz) in instance.WATER_LINKS_W_BT_HRZ_MIN_FLOW_CONSTRAINT
+        }
+
+        self.assertDictEqual(expected_min_hrz_flow, actual_min_hrz_flow)
+
+        # Max hrz flows
+        expected_max_hrz_flow = {("Water_Link_12", "day", 202001): 100}
+        actual_max_hrz_flow = {
+            (wl, bt, hrz): instance.max_bt_hrz_flow_avg_vol_per_second[wl, bt, hrz]
+            for (wl, bt, hrz) in instance.WATER_LINKS_W_BT_HRZ_MAX_FLOW_CONSTRAINT
+        }
+
+        self.assertDictEqual(expected_max_hrz_flow, actual_max_hrz_flow)

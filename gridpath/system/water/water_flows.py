@@ -203,15 +203,17 @@ def add_model_components(
     m.Water_Link_Maximum_Flow_Constraint = Constraint(
         m.WATER_LINK_DEPARTURE_ARRIVAL_TMPS, rule=max_tmp_flow_rule
     )
-       
+
     def min_total_hrz_flow_constraint_rule(mod, wl, bt, hrz):
         """ """
         return sum(
-            mod.Water_Link_Flow_Rate_Vol_per_Sec[wl, tmp] * mod.hrs_in_tmp[tmp]
-            for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
+            mod.Water_Link_Flow_Rate_Vol_per_Sec[
+                wl, dep_tmp, mod.arrival_timepoint[wl, dep_tmp]
+            ]
+            * mod.hrs_in_tmp[dep_tmp]
+            for dep_tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
         ) >= sum(
-            mod.min_bt_hrz_flow_avg_vol_per_second[wl, bt, hrz]
-            * mod.hrs_in_tmp[tmp]
+            mod.min_bt_hrz_flow_avg_vol_per_second[wl, bt, hrz] * mod.hrs_in_tmp[tmp]
             for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
         )
 
@@ -219,15 +221,17 @@ def add_model_components(
         m.WATER_LINKS_W_BT_HRZ_MIN_FLOW_CONSTRAINT,
         rule=min_total_hrz_flow_constraint_rule,
     )
-    
+
     def max_total_hrz_flow_constraint_rule(mod, wl, bt, hrz):
         """ """
         return sum(
-            mod.Water_Link_Flow_Rate_Vol_per_Sec[wl, tmp] * mod.hrs_in_tmp[tmp]
-            for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
+            mod.Water_Link_Flow_Rate_Vol_per_Sec[
+                wl, dep_tmp, mod.arrival_timepoint[wl, dep_tmp]
+            ]
+            * mod.hrs_in_tmp[dep_tmp]
+            for dep_tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
         ) <= sum(
-            mod.max_bt_hrz_flow_avg_vol_per_second[wl, bt, hrz]
-            * mod.hrs_in_tmp[tmp]
+            mod.max_bt_hrz_flow_avg_vol_per_second[wl, bt, hrz] * mod.hrs_in_tmp[tmp]
             for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
         )
 
@@ -348,7 +352,7 @@ def load_model_data(
             filename=tmp_fname,
             param=(m.min_tmp_flow_vol_per_second, m.max_tmp_flow_vol_per_second),
         )
-        
+
     hrz_min_fname = os.path.join(
         scenario_directory,
         weather_iteration,
@@ -405,7 +409,7 @@ def get_inputs_from_database(
     """
 
     c = conn.cursor()
-    sql = f"""SELECT water_link, timepoint, 
+    tmp_sql = f"""SELECT water_link, timepoint, 
             min_tmp_flow_vol_per_second, max_tmp_flow_vol_per_second
             FROM inputs_system_water_flows_timepoint_bounds
             WHERE (water_link, water_flow_timepoint_bounds_scenario_id) in (
@@ -429,11 +433,61 @@ def get_inputs_from_database(
             ;
             """
 
-    water_flows = c.execute(
-        sql
-    )
+    tmp_flow_bounds = c.execute(tmp_sql)
 
-    return water_flows
+    hrz_min_sql = f"""SELECT water_link, balancing_type, horizon,
+            min_bt_hrz_flow_avg_vol_per_second
+            FROM inputs_system_water_flows_horizon_bounds
+            WHERE min_bt_hrz_flow_avg_vol_per_second IS NOT NULL
+            AND (water_link, water_flow_horizon_bounds_scenario_id) in (
+                SELECT water_link, water_flow_horizon_bounds_scenario_id
+                FROM inputs_system_water_flows
+                WHERE water_flow_scenario_id = 
+                {subscenarios.WATER_FLOW_SCENARIO_ID}
+            )
+            AND water_link IN (
+                SELECT water_link
+                FROM inputs_geography_water_network
+                WHERE water_network_scenario_id = 
+                {subscenarios.WATER_NETWORK_SCENARIO_ID}
+            )
+            AND (balancing_type, horizon)
+            IN (SELECT balancing_type, horizon
+                FROM inputs_temporal_horizons
+                WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+                )
+            ;
+            """
+    c2 = conn.cursor()
+    hrz_min_flow_bounds = c2.execute(hrz_min_sql)
+
+    hrz_max_sql = f"""SELECT water_link, balancing_type, horizon,
+            max_bt_hrz_flow_avg_vol_per_second
+            FROM inputs_system_water_flows_horizon_bounds
+            WHERE max_bt_hrz_flow_avg_vol_per_second IS NOT NULL
+            AND (water_link, water_flow_horizon_bounds_scenario_id) in (
+                SELECT water_link, water_flow_horizon_bounds_scenario_id
+                FROM inputs_system_water_flows
+                WHERE water_flow_scenario_id = 
+                {subscenarios.WATER_FLOW_SCENARIO_ID}
+            )
+            AND water_link IN (
+                SELECT water_link
+                FROM inputs_geography_water_network
+                WHERE water_network_scenario_id = 
+                {subscenarios.WATER_NETWORK_SCENARIO_ID}
+            )
+            AND (balancing_type, horizon)
+            IN (SELECT balancing_type, horizon
+                FROM inputs_temporal_horizons
+                WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+                )
+            ;
+            """
+    c3 = conn.cursor()
+    hrz_max_flow_bounds = c3.execute(hrz_max_sql)
+
+    return tmp_flow_bounds, hrz_min_flow_bounds, hrz_max_flow_bounds
 
 
 def validate_inputs(
@@ -492,19 +546,21 @@ def write_model_inputs(
         weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
     )
 
-    water_flows = get_inputs_from_database(
-        scenario_id,
-        subscenarios,
-        db_weather_iteration,
-        db_hydro_iteration,
-        db_availability_iteration,
-        db_subproblem,
-        db_stage,
-        conn,
+    tmp_flow_bounds, hrz_min_flow_bounds, hrz_max_flow_bounds = (
+        get_inputs_from_database(
+            scenario_id,
+            subscenarios,
+            db_weather_iteration,
+            db_hydro_iteration,
+            db_availability_iteration,
+            db_subproblem,
+            db_stage,
+            conn,
+        )
     )
 
-    water_flow_bounds_list = [row for row in water_flows]
-    if water_flow_bounds_list:
+    tmp_water_flow_bounds_list = [row for row in tmp_flow_bounds]
+    if tmp_water_flow_bounds_list:
         with open(
             os.path.join(
                 scenario_directory,
@@ -531,7 +587,71 @@ def write_model_inputs(
                 ]
             )
 
-            for row in water_flow_bounds_list:
+            for row in tmp_water_flow_bounds_list:
+                replace_nulls = ["." if i is None else i for i in row]
+                writer.writerow(replace_nulls)
+
+    hrz_min_flow_bounds_list = [row for row in hrz_min_flow_bounds]
+    if hrz_min_flow_bounds_list:
+        with open(
+            os.path.join(
+                scenario_directory,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
+                "inputs",
+                "water_flow_hrz_min_bounds.tab",
+            ),
+            "w",
+            newline="",
+        ) as f:
+            writer = csv.writer(f, delimiter="\t", lineterminator="\n")
+
+            # Write header
+            writer.writerow(
+                [
+                    "water_link",
+                    "balancing_type",
+                    "horizon",
+                    "min_bt_hrz_flow_avg_vol_per_second",
+                ]
+            )
+
+            for row in hrz_min_flow_bounds_list:
+                replace_nulls = ["." if i is None else i for i in row]
+                writer.writerow(replace_nulls)
+
+    hrz_max_flow_bounds_list = [row for row in hrz_max_flow_bounds]
+    if hrz_max_flow_bounds_list:
+        with open(
+            os.path.join(
+                scenario_directory,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
+                "inputs",
+                "water_flow_hrz_max_bounds.tab",
+            ),
+            "w",
+            newline="",
+        ) as f:
+            writer = csv.writer(f, delimiter="\t", lineterminator="\n")
+
+            # Write header
+            writer.writerow(
+                [
+                    "water_link",
+                    "balancing_type",
+                    "horizon",
+                    "max_bt_hrz_flow_avg_vol_per_second",
+                ]
+            )
+
+            for row in hrz_max_flow_bounds_list:
                 replace_nulls = ["." if i is None else i for i in row]
                 writer.writerow(replace_nulls)
 
