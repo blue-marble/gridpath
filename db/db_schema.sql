@@ -1286,12 +1286,12 @@ CREATE TABLE subscenarios_system_water_flows
 DROP TABLE IF EXISTS inputs_system_water_flows;
 CREATE TABLE inputs_system_water_flows
 (
-    water_flow_scenario_id  INTEGER,
-    water_link              TEXT,
-    hydro_iteration         INTEGER DEFAULT 0 NOT NULL,
-    timepoint               FLOAT,
-    min_flow_vol_per_second TEXT,
-    max_flow_vol_per_second INTEGER,
+    water_flow_scenario_id      INTEGER,
+    water_link                  TEXT,
+    hydro_iteration             INTEGER DEFAULT 0 NOT NULL,
+    timepoint                   FLOAT,
+    min_tmp_flow_vol_per_second TEXT,
+    max_tmp_flow_vol_per_second INTEGER,
     PRIMARY KEY (water_flow_scenario_id, water_link, timepoint,
                  hydro_iteration),
     FOREIGN KEY (water_flow_scenario_id) REFERENCES

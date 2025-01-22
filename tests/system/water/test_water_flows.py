@@ -101,7 +101,7 @@ class TestWaterFlows(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Param: min_flow_vol_per_second
+        # Param: min_tmp_flow_vol_per_second
         df = pd.read_csv(
             os.path.join(TEST_DATA_DIRECTORY, "inputs", "water_flow_bounds.tab"),
             sep="\t",
@@ -109,19 +109,21 @@ class TestWaterFlows(unittest.TestCase):
 
         # Check that no values are getting the default value of 0
         df = df.replace(".", 0)
-        df["min_flow_vol_per_second"] = pd.to_numeric(df["min_flow_vol_per_second"])
+        df["min_tmp_flow_vol_per_second"] = pd.to_numeric(
+            df["min_tmp_flow_vol_per_second"]
+        )
 
         expected_min_bound = df.set_index(["water_link", "timepoint"]).to_dict()[
-            "min_flow_vol_per_second"
+            "min_tmp_flow_vol_per_second"
         ]
         actual_min_bound = {
-            (wl, tmp): instance.min_flow_vol_per_second[wl, tmp]
+            (wl, tmp): instance.min_tmp_flow_vol_per_second[wl, tmp]
             for wl in instance.WATER_LINKS
             for tmp in instance.TMPS
         }
         self.assertDictEqual(expected_min_bound, actual_min_bound)
 
-        # Param: max_flow_vol_per_second
+        # Param: max_tmp_flow_vol_per_second
         df = pd.read_csv(
             os.path.join(TEST_DATA_DIRECTORY, "inputs", "water_flow_bounds.tab"),
             sep="\t",
@@ -129,13 +131,15 @@ class TestWaterFlows(unittest.TestCase):
 
         # Check that no values are getting the default value of infinity
         df = df.replace(".", float("inf"))
-        df["max_flow_vol_per_second"] = pd.to_numeric(df["max_flow_vol_per_second"])
+        df["max_tmp_flow_vol_per_second"] = pd.to_numeric(
+            df["max_tmp_flow_vol_per_second"]
+        )
 
         expected_max_bound = df.set_index(["water_link", "timepoint"]).to_dict()[
-            "max_flow_vol_per_second"
+            "max_tmp_flow_vol_per_second"
         ]
         actual_max_bound = {
-            (wl, tmp): instance.max_flow_vol_per_second[wl, tmp]
+            (wl, tmp): instance.max_tmp_flow_vol_per_second[wl, tmp]
             for wl in instance.WATER_LINKS
             for tmp in instance.TMPS
         }

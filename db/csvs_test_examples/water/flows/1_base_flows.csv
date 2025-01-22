@@ -1,4 +1,4 @@
-﻿water_link,hydro_iteration,timepoint,min_flow_vol_per_second,max_flow_vol_per_second
+﻿water_link,hydro_iteration,timepoint,min_tmp_flow_vol_per_second,max_tmp_flow_vol_per_second
 Water_Link_12,1,1,0.002,0.02
 Water_Link_12,1,2,0.002,0.02
 Water_Link_12,1,3,0.002,0.02

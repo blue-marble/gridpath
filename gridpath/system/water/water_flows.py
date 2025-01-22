@@ -59,10 +59,12 @@ def add_model_components(
     # These are probably not params but expressions with a non-linear
     # relationship to elevation; most of the curves look they can be
     # piecewise linear
-    m.min_flow_vol_per_second = Param(
+    m.min_tmp_flow_vol_per_second = Param(
         m.WATER_LINKS, m.TMPS, within=NonNegativeReals, default=0
     )
-    m.max_flow_vol_per_second = Param(m.WATER_LINKS, m.TMPS, default=float("inf"))
+    m.max_tmp_flow_vol_per_second = Param(m.WATER_LINKS, m.TMPS, default=float("inf"))
+
+    # Min and max
 
     # Set WATER_LINK_DEPARTURE_ARRIVAL_TMPS
     def water_link_departure_arrival_tmp_init(mod):
@@ -168,7 +170,7 @@ def add_model_components(
         return (
             mod.Water_Link_Flow_Rate_Vol_per_Sec[wl, dep_tmp, arr_tmp]
             + mod.Water_Link_Min_Flow_Violation_Expression[wl, dep_tmp, arr_tmp]
-            >= mod.min_flow_vol_per_second[wl, dep_tmp]
+            >= mod.min_tmp_flow_vol_per_second[wl, dep_tmp]
         )
 
     m.Water_Link_Minimum_Flow_Constraint = Constraint(
@@ -179,7 +181,7 @@ def add_model_components(
         return (
             mod.Water_Link_Flow_Rate_Vol_per_Sec[wl, dep_tmp, arr_tmp]
             - mod.Water_Link_Max_Flow_Violation_Expression[wl, dep_tmp, arr_tmp]
-            <= mod.max_flow_vol_per_second[wl, dep_tmp]
+            <= mod.max_tmp_flow_vol_per_second[wl, dep_tmp]
         )
 
     m.Water_Link_Maximum_Flow_Constraint = Constraint(
@@ -296,7 +298,7 @@ def load_model_data(
     if os.path.exists(fname):
         data_portal.load(
             filename=fname,
-            param=(m.min_flow_vol_per_second, m.max_flow_vol_per_second),
+            param=(m.min_tmp_flow_vol_per_second, m.max_tmp_flow_vol_per_second),
         )
 
 
@@ -321,7 +323,7 @@ def get_inputs_from_database(
     c = conn.cursor()
     water_flows = c.execute(
         f"""SELECT water_link, timepoint, 
-            min_flow_vol_per_second, max_flow_vol_per_second
+            min_tmp_flow_vol_per_second, max_tmp_flow_vol_per_second
             FROM inputs_system_water_flows
             WHERE water_flow_scenario_id = 
             {subscenarios.WATER_FLOW_SCENARIO_ID}
@@ -435,8 +437,8 @@ def write_model_inputs(
                 [
                     "water_link",
                     "timepoint",
-                    "min_flow_vol_per_second",
-                    "max_flow_vol_per_second",
+                    "min_tmp_flow_vol_per_second",
+                    "max_tmp_flow_vol_per_second",
                 ]
             )
 
