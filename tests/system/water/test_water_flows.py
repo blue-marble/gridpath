@@ -107,8 +107,10 @@ class TestWaterFlows(unittest.TestCase):
             sep="\t",
         )
 
-        # Check that no values are getting the default value of 0
-        df = df.replace(".", 0)
+        # Check that no values are getting the default value
+        df = df.replace(
+            ".", instance.water_link_default_min_flow_vol_per_sec["Water_Link_12"]
+        )
         df["min_tmp_flow_vol_per_second"] = pd.to_numeric(
             df["min_tmp_flow_vol_per_second"]
         )

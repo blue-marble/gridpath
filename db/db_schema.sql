@@ -1081,6 +1081,7 @@ CREATE TABLE inputs_geography_water_network
     water_node_from                      TEXT,
     water_node_to                        TEXT,
     water_link_flow_transport_time_hours FLOAT,
+    default_min_flow_vol_per_sec         FLOAT,
     allow_water_link_min_flow_violation  INTEGER,
     min_flow_violation_penalty_cost      FLOAT,
     allow_water_link_max_flow_violation  INTEGER,

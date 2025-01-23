@@ -92,6 +92,8 @@ def add_model_components(
     m.water_link_flow_transport_time_hours = Param(
         m.WATER_LINKS, within=NonNegativeReals, default=0
     )
+
+    m.water_link_default_min_flow_vol_per_sec = Param(m.WATER_LINKS, default=0)
     m.allow_water_link_min_flow_violation = Param(
         m.WATER_LINKS, within=Boolean, default=0
     )
@@ -133,6 +135,7 @@ def load_model_data(
             m.water_node_from,
             m.water_node_to,
             m.water_link_flow_transport_time_hours,
+            m.water_link_default_min_flow_vol_per_sec,
             m.allow_water_link_min_flow_violation,
             m.min_flow_violation_penalty_cost,
             m.allow_water_link_max_flow_violation,
@@ -163,6 +166,7 @@ def get_inputs_from_database(
     water_links = c.execute(
         f"""SELECT water_link, water_node_from, water_node_to,
         water_link_flow_transport_time_hours,
+        default_min_flow_vol_per_sec,
         allow_water_link_min_flow_violation,
         min_flow_violation_penalty_cost,
         allow_water_link_max_flow_violation,
@@ -265,6 +269,7 @@ def write_model_inputs(
                 "water_node_from",
                 "water_node_to",
                 "water_link_flow_transport_time_hours",
+                "default_min_flow_vol_per_sec",
                 "allow_water_link_min_flow_violation",
                 "min_flow_violation_penalty_cost",
                 "allow_water_link_max_flow_violation",

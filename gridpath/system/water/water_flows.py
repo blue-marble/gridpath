@@ -60,7 +60,10 @@ def add_model_components(
     # relationship to elevation; most of the curves look they can be
     # piecewise linear
     m.min_tmp_flow_vol_per_second = Param(
-        m.WATER_LINKS, m.TMPS, within=NonNegativeReals, default=0
+        m.WATER_LINKS,
+        m.TMPS,
+        within=NonNegativeReals,
+        default=lambda mod, wl, tmp: mod.water_link_default_min_flow_vol_per_sec[wl],
     )
     m.max_tmp_flow_vol_per_second = Param(m.WATER_LINKS, m.TMPS, default=float("inf"))
 

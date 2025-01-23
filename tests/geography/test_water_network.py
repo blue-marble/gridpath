@@ -132,6 +132,17 @@ class TestWaterNetwork(unittest.TestCase):
         }
         self.assertDictEqual(expected_tr_time, actual_tr_time)
 
+        # Param: water_link_default_min_flow_vol_per_sec
+        expected_def_min_flow = {
+            "Water_Link_12": 5,
+            "Water_Link_23": 0,
+        }
+        actual_def_min_flow = {
+            wl: instance.water_link_default_min_flow_vol_per_sec[wl]
+            for wl in instance.WATER_LINKS
+        }
+        self.assertDictEqual(expected_def_min_flow, actual_def_min_flow)
+
         # Param: allow_water_link_min_flow_violation
         expected_allow_min = {
             "Water_Link_12": 1,
