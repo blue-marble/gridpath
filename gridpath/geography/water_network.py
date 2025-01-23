@@ -93,20 +93,6 @@ def add_model_components(
         m.WATER_LINKS, within=NonNegativeReals, default=0
     )
 
-    m.water_link_default_min_flow_vol_per_sec = Param(m.WATER_LINKS, default=0)
-    m.allow_water_link_min_flow_violation = Param(
-        m.WATER_LINKS, within=Boolean, default=0
-    )
-    m.min_flow_violation_penalty_cost = Param(
-        m.WATER_LINKS, within=NonNegativeReals, default=0
-    )
-    m.allow_water_link_max_flow_violation = Param(
-        m.WATER_LINKS, within=Boolean, default=0
-    )
-    m.max_flow_violation_penalty_cost = Param(
-        m.WATER_LINKS, within=NonNegativeReals, default=0
-    )
-
 
 def load_model_data(
     m,
@@ -135,11 +121,6 @@ def load_model_data(
             m.water_node_from,
             m.water_node_to,
             m.water_link_flow_transport_time_hours,
-            m.water_link_default_min_flow_vol_per_sec,
-            m.allow_water_link_min_flow_violation,
-            m.min_flow_violation_penalty_cost,
-            m.allow_water_link_max_flow_violation,
-            m.max_flow_violation_penalty_cost,
         ),
     )
 
@@ -165,12 +146,7 @@ def get_inputs_from_database(
     c = conn.cursor()
     water_links = c.execute(
         f"""SELECT water_link, water_node_from, water_node_to,
-        water_link_flow_transport_time_hours,
-        default_min_flow_vol_per_sec,
-        allow_water_link_min_flow_violation,
-        min_flow_violation_penalty_cost,
-        allow_water_link_max_flow_violation,
-        max_flow_violation_penalty_cost
+        water_link_flow_transport_time_hours
         FROM inputs_geography_water_network
         WHERE water_network_scenario_id = {subscenarios.WATER_NETWORK_SCENARIO_ID};
         """
@@ -269,11 +245,6 @@ def write_model_inputs(
                 "water_node_from",
                 "water_node_to",
                 "water_link_flow_transport_time_hours",
-                "default_min_flow_vol_per_sec",
-                "allow_water_link_min_flow_violation",
-                "min_flow_violation_penalty_cost",
-                "allow_water_link_max_flow_violation",
-                "max_flow_violation_penalty_cost",
             ]
         )
 

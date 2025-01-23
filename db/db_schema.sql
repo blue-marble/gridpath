@@ -1081,11 +1081,6 @@ CREATE TABLE inputs_geography_water_network
     water_node_from                      TEXT,
     water_node_to                        TEXT,
     water_link_flow_transport_time_hours FLOAT,
-    default_min_flow_vol_per_sec         FLOAT,
-    allow_water_link_min_flow_violation  INTEGER,
-    min_flow_violation_penalty_cost      FLOAT,
-    allow_water_link_max_flow_violation  INTEGER,
-    max_flow_violation_penalty_cost      FLOAT,
     PRIMARY KEY (water_network_scenario_id, water_link),
     FOREIGN KEY (water_network_scenario_id) REFERENCES
         subscenarios_geography_water_network (water_network_scenario_id)
@@ -1288,6 +1283,11 @@ CREATE TABLE inputs_system_water_flows
 (
     water_flow_scenario_id                  INTEGER,
     water_link                              TEXT,
+    default_min_flow_vol_per_sec            FLOAT,
+    allow_water_link_min_flow_violation     INTEGER,
+    min_flow_violation_penalty_cost         FLOAT,
+    allow_water_link_max_flow_violation     INTEGER,
+    max_flow_violation_penalty_cost         FLOAT,
     water_flow_timepoint_bounds_scenario_id INTEGER,
     water_flow_horizon_bounds_scenario_id   INTEGER,
     PRIMARY KEY (water_flow_scenario_id, water_link),

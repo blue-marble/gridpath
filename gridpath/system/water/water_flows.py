@@ -28,6 +28,7 @@ from pyomo.environ import (
     Any,
     value,
     Expression,
+    Boolean,
 )
 
 from gridpath.auxiliary.db_interface import directories_to_db_values, import_csv
@@ -55,6 +56,20 @@ def add_model_components(
     :param d:
     :return:
     """
+    m.water_link_default_min_flow_vol_per_sec = Param(m.WATER_LINKS, default=0)
+    m.allow_water_link_min_flow_violation = Param(
+        m.WATER_LINKS, within=Boolean, default=0
+    )
+    m.min_flow_violation_penalty_cost = Param(
+        m.WATER_LINKS, within=NonNegativeReals, default=0
+    )
+    m.allow_water_link_max_flow_violation = Param(
+        m.WATER_LINKS, within=Boolean, default=0
+    )
+    m.max_flow_violation_penalty_cost = Param(
+        m.WATER_LINKS, within=NonNegativeReals, default=0
+    )
+
     # Start with these as params BUT:
     # These are probably not params but expressions with a non-linear
     # relationship to elevation; most of the curves look they can be
@@ -340,6 +355,27 @@ def load_model_data(
     subproblem,
     stage,
 ):
+
+    data_portal.load(
+        filename=os.path.join(
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "water_flow_params.tab",
+        ),
+        param=(
+            m.water_link_default_min_flow_vol_per_sec,
+            m.allow_water_link_min_flow_violation,
+            m.min_flow_violation_penalty_cost,
+            m.allow_water_link_max_flow_violation,
+            m.max_flow_violation_penalty_cost,
+        ),
+    )
+
     tmp_fname = os.path.join(
         scenario_directory,
         weather_iteration,
@@ -410,8 +446,27 @@ def get_inputs_from_database(
     :param conn: database connection
     :return:
     """
+    c0 = conn.cursor()
+    water_flow_params = c0.execute(
+        f"""SELECT water_link,
+        default_min_flow_vol_per_sec,
+        allow_water_link_min_flow_violation,
+        min_flow_violation_penalty_cost,
+        allow_water_link_max_flow_violation,
+        max_flow_violation_penalty_cost
+        FROM inputs_system_water_flows
+        WHERE water_flow_scenario_id = {subscenarios.WATER_FLOW_SCENARIO_ID}
+        AND water_link IN (
+                SELECT water_link
+                FROM inputs_geography_water_network
+                WHERE water_network_scenario_id = 
+                {subscenarios.WATER_NETWORK_SCENARIO_ID}
+            )
+        ;
+        """
+    )
 
-    c = conn.cursor()
+    c1 = conn.cursor()
     tmp_sql = f"""SELECT water_link, timepoint, 
             min_tmp_flow_vol_per_second, max_tmp_flow_vol_per_second
             FROM inputs_system_water_flows_timepoint_bounds
@@ -436,7 +491,7 @@ def get_inputs_from_database(
             ;
             """
 
-    tmp_flow_bounds = c.execute(tmp_sql)
+    tmp_flow_bounds = c1.execute(tmp_sql)
 
     hrz_min_sql = f"""SELECT water_link, balancing_type, horizon,
             min_bt_hrz_flow_avg_vol_per_second
@@ -490,7 +545,7 @@ def get_inputs_from_database(
     c3 = conn.cursor()
     hrz_max_flow_bounds = c3.execute(hrz_max_sql)
 
-    return tmp_flow_bounds, hrz_min_flow_bounds, hrz_max_flow_bounds
+    return water_flow_params, tmp_flow_bounds, hrz_min_flow_bounds, hrz_max_flow_bounds
 
 
 def validate_inputs(
@@ -549,7 +604,7 @@ def write_model_inputs(
         weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
     )
 
-    tmp_flow_bounds, hrz_min_flow_bounds, hrz_max_flow_bounds = (
+    water_flow_params, tmp_flow_bounds, hrz_min_flow_bounds, hrz_max_flow_bounds = (
         get_inputs_from_database(
             scenario_id,
             subscenarios,
@@ -561,6 +616,38 @@ def write_model_inputs(
             conn,
         )
     )
+
+    with open(
+        os.path.join(
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "water_flow_params.tab",
+        ),
+        "w",
+        newline="",
+    ) as f:
+        writer = csv.writer(f, delimiter="\t", lineterminator="\n")
+
+        # Write header
+        writer.writerow(
+            [
+                "water_link",
+                "default_min_flow_vol_per_sec",
+                "allow_water_link_min_flow_violation",
+                "min_flow_violation_penalty_cost",
+                "allow_water_link_max_flow_violation",
+                "max_flow_violation_penalty_cost",
+            ]
+        )
+
+        for row in water_flow_params:
+            replace_nulls = ["." if i is None else i for i in row]
+            writer.writerow(replace_nulls)
 
     tmp_water_flow_bounds_list = [row for row in tmp_flow_bounds]
     if tmp_water_flow_bounds_list:

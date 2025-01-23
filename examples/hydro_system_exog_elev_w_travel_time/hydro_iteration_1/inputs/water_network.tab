@@ -1,5 +1,5 @@
-water_link	water_node_from	water_node_to	water_link_flow_transport_time_hours	default_min_flow_vol_per_sec	allow_water_link_min_flow_violation	min_flow_violation_penalty_cost	allow_water_link_max_flow_violation	max_flow_violation_penalty_cost
-Water_Link_12	Water_Node_1	Water_Node_2	1.0	0.0	.	.	.	.
-Water_Link_23	Water_Node_2	Water_Node_3	2.0	0.0	.	.	.	.
-Water_Link_34	Water_Node_3	Water_Node_4	1.0	0.0	.	.	.	.
-Water_Link_45	Water_Node_4	Water_Node_5	2.0	0.0	.	.	.	.
+water_link	water_node_from	water_node_to	water_link_flow_transport_time_hours
+Water_Link_12	Water_Node_1	Water_Node_2	1.0
+Water_Link_23	Water_Node_2	Water_Node_3	2.0
+Water_Link_34	Water_Node_3	Water_Node_4	1.0
+Water_Link_45	Water_Node_4	Water_Node_5	2.0

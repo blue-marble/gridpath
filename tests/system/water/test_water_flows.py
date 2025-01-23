@@ -101,6 +101,61 @@ class TestWaterFlows(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
+        # Param: water_link_default_min_flow_vol_per_sec
+        expected_def_min_flow = {
+            "Water_Link_12": 5,
+            "Water_Link_23": 0,
+        }
+        actual_def_min_flow = {
+            wl: instance.water_link_default_min_flow_vol_per_sec[wl]
+            for wl in instance.WATER_LINKS
+        }
+        self.assertDictEqual(expected_def_min_flow, actual_def_min_flow)
+
+        # Param: allow_water_link_min_flow_violation
+        expected_allow_min = {
+            "Water_Link_12": 1,
+            "Water_Link_23": 0,
+        }
+        actual_allow_min = {
+            wl: instance.allow_water_link_min_flow_violation[wl]
+            for wl in instance.WATER_LINKS
+        }
+        self.assertDictEqual(expected_allow_min, actual_allow_min)
+
+        # Param: min_flow_violation_penalty_cost
+        expected_min_v = {
+            "Water_Link_12": 100,
+            "Water_Link_23": 0,
+        }
+        actual_min_v = {
+            wl: instance.min_flow_violation_penalty_cost[wl]
+            for wl in instance.WATER_LINKS
+        }
+        self.assertDictEqual(expected_min_v, actual_min_v)
+
+        # Param: allow_water_link_max_flow_violation
+        expected_allow_max = {
+            "Water_Link_12": 0,
+            "Water_Link_23": 1,
+        }
+        actual_allow_max = {
+            wl: instance.allow_water_link_max_flow_violation[wl]
+            for wl in instance.WATER_LINKS
+        }
+        self.assertDictEqual(expected_allow_max, actual_allow_max)
+
+        # Param: max_flow_violation_penalty_cost
+        expected_max_v = {
+            "Water_Link_12": 0,
+            "Water_Link_23": 100,
+        }
+        actual_max_v = {
+            wl: instance.max_flow_violation_penalty_cost[wl]
+            for wl in instance.WATER_LINKS
+        }
+        self.assertDictEqual(expected_max_v, actual_max_v)
+
         # Param: min_tmp_flow_vol_per_second
         df = pd.read_csv(
             os.path.join(TEST_DATA_DIRECTORY, "inputs", "water_flow_tmp_bounds.tab"),
