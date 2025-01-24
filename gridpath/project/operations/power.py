@@ -345,20 +345,57 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
 
     # Aggregate dispatch by technology
     agg_sql = """
-        INSERT INTO results_project_dispatch_by_technology
-        (scenario_id, subproblem_id, stage_id, period, timepoint, 
-        timepoint_weight, number_of_hours_in_timepoint, spinup_or_lookahead,
-        load_zone, technology, power_mw)
+        INSERT INTO results_project_dispatch_by_technology (
+            scenario_id, 
+            weather_iteration, 
+            hydro_iteration, 
+            availability_iteration, 
+            subproblem_id,
+            stage_id, 
+            period, 
+            timepoint, 
+            timepoint_weight, 
+            number_of_hours_in_timepoint, 
+            spinup_or_lookahead,
+            load_zone, 
+            technology, 
+            power_mw
+            )
         SELECT
-        scenario_id, subproblem_id, stage_id, period, timepoint, 
-        timepoint_weight, number_of_hours_in_timepoint, spinup_or_lookahead,
-        load_zone, technology, sum(power_mw) AS power_mw
+            scenario_id,
+            weather_iteration, 
+            hydro_iteration, 
+            availability_iteration, 
+            subproblem_id, 
+            stage_id,
+            period, 
+            timepoint, 
+            timepoint_weight, 
+            number_of_hours_in_timepoint, 
+            spinup_or_lookahead,
+            load_zone, 
+            technology, 
+            sum(power_mw) AS power_mw
         FROM results_project_timepoint
         WHERE scenario_id = ?
-        GROUP BY subproblem_id, stage_id, timepoint, 
-        load_zone, technology
-        ORDER BY subproblem_id, stage_id, timepoint, 
-        load_zone, technology;"""
+        GROUP BY 
+            weather_iteration, 
+            hydro_iteration, 
+            availability_iteration, 
+            subproblem_id, 
+            stage_id, 
+            timepoint, 
+            load_zone, 
+            technology
+        ORDER BY 
+            weather_iteration, 
+            hydro_iteration, 
+            availability_iteration, 
+            subproblem_id, 
+            stage_id, 
+            timepoint, 
+            load_zone, 
+            technology;"""
     spin_on_database_lock(
         conn=db, cursor=c, sql=agg_sql, data=(scenario_id,), many=False
     )
@@ -377,20 +414,52 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
 
     # Aggregate dispatch by technology, period, and spinup_or_lookahead
     agg_sql = """
-        INSERT INTO results_project_dispatch_by_technology_period
-        (scenario_id, subproblem_id, stage_id, period, load_zone, technology, 
-        spinup_or_lookahead, energy_mwh)
+        INSERT INTO results_project_dispatch_by_technology_period (
+            scenario_id, 
+            weather_iteration, 
+            hydro_iteration, 
+            availability_iteration, 
+            subproblem_id, 
+            stage_id, 
+            period, 
+            load_zone, 
+        technology, spinup_or_lookahead, energy_mwh)
         SELECT
-        scenario_id, subproblem_id, stage_id, period, load_zone, technology, 
-        spinup_or_lookahead,
-        SUM(power_mw * timepoint_weight * number_of_hours_in_timepoint ) AS 
-        energy_mwh 
+            scenario_id, 
+            weather_iteration, 
+            hydro_iteration, 
+            availability_iteration, 
+            subproblem_id, 
+            stage_id, 
+            period, 
+            load_zone, 
+            technology, 
+            spinup_or_lookahead,
+            SUM(power_mw * timepoint_weight * number_of_hours_in_timepoint ) AS energy_mwh 
         FROM results_project_dispatch_by_technology
         WHERE scenario_id = ?
-        GROUP BY subproblem_id, stage_id, period, load_zone, technology, 
-        spinup_or_lookahead
-        ORDER BY subproblem_id, stage_id, period, load_zone, technology, 
-        spinup_or_lookahead;"""
+        GROUP BY 
+            weather_iteration, 
+            hydro_iteration, 
+            availability_iteration, 
+            subproblem_id, 
+            stage_id, 
+            period, 
+            load_zone, 
+            technology, 
+            spinup_or_lookahead
+        ORDER BY 
+            weather_iteration, 
+            hydro_iteration, 
+            availability_iteration, 
+            subproblem_id, 
+            stage_id, 
+            period, 
+            load_zone, 
+            technology, 
+            spinup_or_lookahead
+            ;
+            """
     spin_on_database_lock(
         conn=db, cursor=c, sql=agg_sql, data=(scenario_id,), many=False
     )

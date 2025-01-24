@@ -1,4 +1,4 @@
-# Copyright 2016-2023 Blue Marble Analytics LLC.
+# Copyright 2016-2025 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -81,6 +81,13 @@ def create_parser():
     parser.add_argument(
         "--stage", default=1, type=int, help="The stage ID. Defaults to 1."
     )
+    parser.add_argument(
+        "--weather_iteration", default=0, type=int, help="Defaults to 0."
+    )
+    parser.add_argument("--hydro_iteration", default=0, type=int, help="Defaults to 0.")
+    parser.add_argument(
+        "--availability_iteration", default=0, type=int, help="Defaults to 0."
+    )
 
     return parser
 
@@ -134,28 +141,42 @@ def get_timepoints(conn, scenario_id, starting_tmp=None, ending_tmp=None, stage_
     return tmps
 
 
-def get_power_by_tech_results(conn, scenario_id, load_zone, stage, timepoints):
+def get_power_by_tech_results(
+    conn,
+    scenario_id,
+    load_zone,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    stage,
+    timepoints,
+):
     """
     Get results for power by technology for a given load_zone and set of
     points.
     :param conn:
     :param scenario_id:
     :param load_zone:
+    :param weather_iteration:
+    :param hydro_iteration:
+    :param availability_iteration:
     :param stage:
     :param timepoints
     :return:
     """
 
     # Power by technology
-    query = """SELECT timepoint, technology, power_mw
+    timepoints_str = ",".join(["?"] * len(timepoints))
+    query = f"""SELECT timepoint, technology, power_mw
         FROM results_project_dispatch_by_technology
-        WHERE scenario_id = {}
-        AND load_zone = '{}'
-        AND stage_id = {}
-        AND timepoint IN ({})
-        ;""".format(
-        scenario_id, load_zone, stage, ",".join(["?"] * len(timepoints))
-    )
+        WHERE scenario_id = {scenario_id}
+        AND load_zone = '{load_zone}'
+        AND weather_iteration = {weather_iteration}
+        AND hydro_iteration = {hydro_iteration}
+        AND availability_iteration = {availability_iteration}
+        AND stage_id = {stage}
+        AND timepoint IN ({timepoints_str})
+        ;"""
 
     df = pd.read_sql(query, conn, params=timepoints)
     if not df.empty:
@@ -168,75 +189,115 @@ def get_power_by_tech_results(conn, scenario_id, load_zone, stage, timepoints):
         return index_only_df
 
 
-def get_variable_curtailment_results(c, scenario_id, load_zone, stage, timepoints):
+def get_variable_curtailment_results(
+    c,
+    scenario_id,
+    load_zone,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    stage,
+    timepoints,
+):
     """
     Get variable generator curtailment for a given load_zone and set of
     timepoints.
     :param c:
     :param scenario_id:
     :param load_zone:
+    :param weather_iteration:
+    :param hydro_iteration:
+    :param availability_iteration:
     :param stage:
     :param timepoints:
     :return:
     """
-    query = """SELECT scheduled_curtailment_mw
+    query = f"""SELECT scheduled_curtailment_mw
             FROM results_project_curtailment_variable_periodagg
-            WHERE scenario_id = {}
-            AND load_zone = '{}'
-            AND stage_id = {}
-            AND timepoint IN ({})
-            ;""".format(
-        scenario_id, load_zone, stage, ",".join(["?"] * len(timepoints))
-    )
+            WHERE scenario_id = {scenario_id}
+            AND load_zone = '{load_zone}'
+            AND weather_iteration = {weather_iteration}
+            AND hydro_iteration = {hydro_iteration}
+            AND availability_iteration = {availability_iteration}
+            AND stage_id = {stage}
+            AND timepoint IN ({",".join(["?"] * len(timepoints))})
+            ;"""
 
     curtailment = [i[0] for i in c.execute(query, timepoints).fetchall()]
 
     return curtailment
 
 
-def get_hydro_curtailment_results(c, scenario_id, load_zone, stage, timepoints):
+def get_hydro_curtailment_results(
+    c,
+    scenario_id,
+    load_zone,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    stage,
+    timepoints,
+):
     """
     Get conventional hydro curtailment for a given load_zone and set of
     timepoints.
     :param scenario_id:
     :param load_zone:
+    :param weather_iteration:
+    :param hydro_iteration:
+    :param availability_iteration:
     :param stage:
     :param timepoints:
     :return:
     """
-    query = """SELECT scheduled_curtailment_mw
+    query = f"""SELECT scheduled_curtailment_mw
             FROM results_project_curtailment_hydro_periodagg
-            WHERE scenario_id = {}
-            AND load_zone = '{}'
-            AND stage_id = {}
-            AND timepoint IN ({});""".format(
-        scenario_id, load_zone, stage, ",".join(["?"] * len(timepoints))
-    )
+            WHERE scenario_id = {scenario_id}
+            AND load_zone = '{load_zone}'
+            AND weather_iteration = {weather_iteration}
+            AND hydro_iteration = {hydro_iteration}
+            AND availability_iteration = {availability_iteration}
+            AND stage_id = {stage}
+            AND timepoint IN ({",".join(["?"] * len(timepoints))})
+            ;"""
 
     curtailment = [i[0] for i in c.execute(query, timepoints).fetchall()]
 
     return curtailment
 
 
-def get_imports_exports_results(c, scenario_id, load_zone, stage, timepoints):
+def get_imports_exports_results(
+    c,
+    scenario_id,
+    load_zone,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    stage,
+    timepoints,
+):
     """
     Get imports/exports results for a given load_zone and set of timepoints.
     :param c:
     :param scenario_id:
     :param load_zone:
+    :param weather_iteration:
+    :param hydro_iteration:
+    :param availability_iteration:
     :param stage:
     :param timepoints:
     :return:
     """
-    query = """SELECT net_imports_mw
+    query = f"""SELECT net_imports_mw
         FROM results_system_load_zone_timepoint
-        WHERE scenario_id = {}
-        AND load_zone = '{}'
-        AND stage_id = {}
-        AND timepoint IN ({})
-        ;""".format(
-        scenario_id, load_zone, stage, ",".join(["?"] * len(timepoints))
-    )
+        WHERE scenario_id = {scenario_id}
+        AND load_zone = '{load_zone}'
+        AND weather_iteration = {weather_iteration}
+        AND hydro_iteration = {hydro_iteration}
+        AND availability_iteration = {availability_iteration}
+        AND stage_id = {stage}
+        AND timepoint IN ({",".join(["?"] * len(timepoints))})
+        ;"""
 
     net_imports = c.execute(query, timepoints).fetchall()
 
@@ -248,25 +309,38 @@ def get_imports_exports_results(c, scenario_id, load_zone, stage, timepoints):
     return imports, exports
 
 
-def get_market_participation_results(c, scenario_id, load_zone, stage, timepoints):
+def get_market_participation_results(
+    c,
+    scenario_id,
+    load_zone,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    stage,
+    timepoints,
+):
     """
     Get market participation results for a given load_zone and set of timepoints.
     :param c:
     :param scenario_id:
     :param load_zone:
+    :param weather_iteration:
+    :param hydro_iteration:
+    :param availability_iteration:
     :param stage:
     :param timepoints:
     :return:
     """
-    query = """SELECT net_market_purchases_mw
+    query = f"""SELECT net_market_purchases_mw
         FROM results_system_load_zone_timepoint
-        WHERE scenario_id = {}
-        AND load_zone = '{}'
-        AND stage_id = {}
-        AND timepoint IN ({})
-        ;""".format(
-        scenario_id, load_zone, stage, ",".join(["?"] * len(timepoints))
-    )
+        WHERE scenario_id = {scenario_id}
+            AND load_zone = '{load_zone}'
+            AND weather_iteration = {weather_iteration}
+            AND hydro_iteration = {hydro_iteration}
+            AND availability_iteration = {availability_iteration}
+            AND stage_id = {stage}
+            AND timepoint IN ({",".join(["?"] * len(timepoints))})
+            ;"""
 
     market_participation = c.execute(query, timepoints).fetchall()
 
@@ -290,28 +364,39 @@ def get_market_participation_results(c, scenario_id, load_zone, stage, timepoint
     return sales, purchases
 
 
-def get_load(c, scenario_id, load_zone, stage, timepoints):
+def get_load(
+    c,
+    scenario_id,
+    load_zone,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    stage,
+    timepoints,
+):
     """
 
     :param c:
     :param scenario_id:
     :param load_zone:
+    :param weather_iteration:
+    :param hydro_iteration:
+    :param availability_iteration:
     :param stage:
     :param timepoints
     :return:
     """
 
-    query = """SELECT static_load_mw, unserved_energy_mw
+    query = f"""SELECT static_load_mw, unserved_energy_mw
         FROM results_system_load_zone_timepoint
-        WHERE scenario_id = {}
-        AND load_zone = '{}'
-        AND stage_id = {}
-        AND timepoint IN ({});""".format(
-        scenario_id,
-        load_zone,
-        stage,
-        ",".join(["?"] * len(timepoints)),
-    )
+        WHERE scenario_id = {scenario_id}
+        AND load_zone = '{load_zone}'
+        AND weather_iteration = {weather_iteration}
+        AND hydro_iteration = {hydro_iteration}
+        AND availability_iteration = {availability_iteration}
+        AND stage_id = {stage}
+        AND timepoint IN ({",".join(["?"] * len(timepoints))})
+        ;"""
 
     load_balance = c.execute(query, timepoints).fetchall()
 
@@ -322,7 +407,16 @@ def get_load(c, scenario_id, load_zone, stage, timepoints):
 
 
 def get_plotting_data(
-    conn, scenario_id, load_zone, starting_tmp, ending_tmp, stage, **kwargs
+    conn,
+    scenario_id,
+    load_zone,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    starting_tmp,
+    ending_tmp,
+    stage,
+    **kwargs,
 ):
     """
     Get the dispatch data by timepoint and technology for a given
@@ -334,6 +428,9 @@ def get_plotting_data(
     :param conn:
     :param scenario_id:
     :param load_zone:
+    :param weather_iteration:
+    :param hydro_iteration:
+    :param availability_iteration:
     :param starting_tmp:
     :param ending_tmp:
     :param stage:
@@ -354,6 +451,9 @@ def get_plotting_data(
         load_zone=load_zone,
         stage=stage,
         timepoints=timepoints,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
     )
 
     # Add x axis
@@ -373,6 +473,9 @@ def get_plotting_data(
         c=c,
         scenario_id=scenario_id,
         load_zone=load_zone,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         stage=stage,
         timepoints=timepoints,
     )
@@ -384,6 +487,9 @@ def get_plotting_data(
         c=c,
         scenario_id=scenario_id,
         load_zone=load_zone,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         stage=stage,
         timepoints=timepoints,
     )
@@ -395,6 +501,9 @@ def get_plotting_data(
         c=c,
         scenario_id=scenario_id,
         load_zone=load_zone,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         stage=stage,
         timepoints=timepoints,
     )
@@ -408,6 +517,9 @@ def get_plotting_data(
         c=c,
         scenario_id=scenario_id,
         load_zone=load_zone,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         stage=stage,
         timepoints=timepoints,
     )
@@ -421,6 +533,9 @@ def get_plotting_data(
         c=c,
         scenario_id=scenario_id,
         load_zone=load_zone,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
         stage=stage,
         timepoints=timepoints,
     )
@@ -713,6 +828,9 @@ def main(args=None):
         starting_tmp=parsed_args.starting_tmp,
         ending_tmp=parsed_args.ending_tmp,
         stage=parsed_args.stage,
+        weather_iteration=parsed_args.weather_iteration,
+        hydro_iteration=parsed_args.hydro_iteration,
+        availability_iteration=parsed_args.availability_iteration,
     )
 
     plot = create_plot(
