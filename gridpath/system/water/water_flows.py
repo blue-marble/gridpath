@@ -510,9 +510,10 @@ def get_inputs_from_database(
                 {subscenarios.WATER_NETWORK_SCENARIO_ID}
             )
             AND (balancing_type, horizon)
-            IN (SELECT balancing_type, horizon
-                FROM inputs_temporal_horizons
+            IN (SELECT DISTINCT balancing_type, horizon
+                FROM inputs_temporal_horizon_timepoints
                 WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+                AND subproblem_id = {subproblem}
                 )
             ;
             """
@@ -536,9 +537,10 @@ def get_inputs_from_database(
                 {subscenarios.WATER_NETWORK_SCENARIO_ID}
             )
             AND (balancing_type, horizon)
-            IN (SELECT balancing_type, horizon
-                FROM inputs_temporal_horizons
+            IN (SELECT DISTINCT balancing_type, horizon
+                FROM inputs_temporal_horizon_timepoints
                 WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+                AND subproblem_id = {subproblem}
                 )
             ;
             """
