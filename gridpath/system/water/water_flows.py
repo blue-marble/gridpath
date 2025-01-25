@@ -158,34 +158,40 @@ def add_model_components(
     m.WATER_LINK_RAMP_LIMITS = Set(
         dimen=2,
         within=m.WATER_LINKS * Any,
-        initialize=[("Newhalem_to_Marblemount", "one_hour_downramp")],
+        initialize=[("Newhalem_to_Marblemount", "one_hour_downramp"),
+                    ("Newhalem_to_Marblemount", "24_hour_downramp")],
     )
     m.water_link_ramp_limit_up_or_down = Param(
         m.WATER_LINK_RAMP_LIMITS,
         within=[1, -1],
-        initialize={("Newhalem_to_Marblemount", "one_hour_downramp"): -1},
+        initialize={("Newhalem_to_Marblemount", "one_hour_downramp"): -1,
+                    ("Newhalem_to_Marblemount", "24_hour_downramp"): -1},
     )
     m.water_link_ramp_limit_n_hours = Param(
         m.WATER_LINK_RAMP_LIMITS,
         within=PositiveReals,
-        initialize={("Newhalem_to_Marblemount", "one_hour_downramp"): 1},
+        initialize={("Newhalem_to_Marblemount", "one_hour_downramp"): 1,
+                    ("Newhalem_to_Marblemount", "24_hour_downramp"): 24},
     )
 
     # TODO: move to balancing type horizon definition
     m.water_link_ramp_limit_allowed_flow_delta = Param(
         m.WATER_LINK_RAMP_LIMITS,
         within=Reals,
-        initialize={("Newhalem_to_Marblemount", "one_hour_downramp"): 500},
+        initialize={("Newhalem_to_Marblemount", "one_hour_downramp"): 500,
+                    ("Newhalem_to_Marblemount", "24_hour_downramp"): 2500},
     )
 
     def ramp_limit_tmps_set_init(mod):
         ramp_limit_tmps = []
         for water_link, ramp_limit in mod.WATER_LINK_RAMP_LIMITS:
             for tmp in mod.TMPS:
-                arr_tmp = determine_future_timepoint(
-                    mod, tmp, mod.water_link_ramp_limit_n_hours[water_link, ramp_limit]
+                dep_to_arr_tmps = determine_future_timepoint(
+                    mod, tmp, mod.water_link_ramp_limit_n_hours[water_link,
+                    ramp_limit], keep_tmps=True
                 )
-                ramp_limit_tmps.append((water_link, ramp_limit, tmp, arr_tmp))
+                for arr_tmp in dep_to_arr_tmps:
+                    ramp_limit_tmps.append((water_link, ramp_limit, tmp, arr_tmp))
 
         print(ramp_limit_tmps)
         return ramp_limit_tmps
@@ -326,17 +332,21 @@ def add_model_components(
     )
 
 
-def determine_future_timepoint(mod, dep_tmp, time_from_dep_tmp):
+def determine_future_timepoint(mod, dep_tmp, time_from_dep_tmp,
+                               keep_tmps=False):
     """
     USER WARNING: timepoint durations longer than the travel time may create
     issues. You could also see issues if timepoints don't receive any flows
     because of short durations. This functionality is new and not yet
     extensively tested, so proceed with caution.
     """
+    dep_to_arr_tmps_list = []
     # If travel time is less than the hours in the departure timepoint,
     # balancing happens within the departure timepoint
     if time_from_dep_tmp < mod.hrs_in_tmp[dep_tmp]:
         arr_tmp = dep_tmp
+        if keep_tmps:
+            dep_to_arr_tmps_list.append(arr_tmp)
     # If this is the last timepoint of a linear horizon, there are no
     # timepoints to check and we'll return 'tmp_outside_horizon'
     elif check_if_boundary_type_and_last_timepoint(
@@ -346,6 +356,8 @@ def determine_future_timepoint(mod, dep_tmp, time_from_dep_tmp):
         boundary_type="linear",
     ):
         arr_tmp = "tmp_outside_horizon"
+        if keep_tmps:
+            dep_to_arr_tmps_list.append(arr_tmp)
     elif check_if_boundary_type_and_last_timepoint(
         mod=mod,
         tmp=dep_tmp,
@@ -359,6 +371,7 @@ def determine_future_timepoint(mod, dep_tmp, time_from_dep_tmp):
         # First we'll check the next timepoint of the starting timepoint and
         # start with the duration of the starting timepoint
         arr_tmp = mod.next_tmp[dep_tmp, mod.water_system_balancing_type]
+        dep_to_arr_tmps_list.append(arr_tmp)
         hours_from_departure_tmp = mod.hrs_in_tmp[dep_tmp]
         while hours_from_departure_tmp < time_from_dep_tmp:
             # If we haven't exceeded the travel time yet, we move on to the next tmp
@@ -372,6 +385,8 @@ def determine_future_timepoint(mod, dep_tmp, time_from_dep_tmp):
                 boundary_type="linear",
             ):
                 arr_tmp = "tmp_outside_horizon"
+                if keep_tmps:
+                    dep_to_arr_tmps_list.append(arr_tmp)
                 break
             # In a 'circular' horizon setting, once we loop back to the
             # departure timepoint again, we break out of the loop since there
@@ -387,6 +402,8 @@ def determine_future_timepoint(mod, dep_tmp, time_from_dep_tmp):
                 and arr_tmp == dep_tmp
             ):
                 arr_tmp = "tmp_outside_horizon"
+                if keep_tmps:
+                    dep_to_arr_tmps_list.append(arr_tmp)
                 break
             # TODO: only allow the first horizon of a subproblem to have
             #  linked timepoints
@@ -407,8 +424,12 @@ def determine_future_timepoint(mod, dep_tmp, time_from_dep_tmp):
             else:
                 hours_from_departure_tmp += mod.hrs_in_tmp[arr_tmp]
                 arr_tmp = mod.next_tmp[arr_tmp, mod.water_system_balancing_type]
-
-    return arr_tmp
+                if keep_tmps:
+                    dep_to_arr_tmps_list.append(arr_tmp)
+    if keep_tmps:
+        return dep_to_arr_tmps_list
+    else:
+        return arr_tmp
 
 
 def load_model_data(
