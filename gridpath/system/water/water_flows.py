@@ -29,6 +29,8 @@ from pyomo.environ import (
     value,
     Expression,
     Boolean,
+    PositiveReals,
+    Reals,
 )
 
 from gridpath.auxiliary.db_interface import directories_to_db_values, import_csv
@@ -105,10 +107,10 @@ def add_model_components(
         wl_dep_arr_tmp = []
         for wl in mod.WATER_LINKS:
             for departure_tmp in mod.TMPS:
-                arrival_tmp = determine_arrival_timepoint(
+                arrival_tmp = determine_future_timepoint(
                     mod=mod,
                     dep_tmp=departure_tmp,
-                    travel_time_hours=mod.water_link_flow_transport_time_hours[wl],
+                    time_from_dep_tmp=mod.water_link_flow_transport_time_hours[wl],
                 )
                 if arrival_tmp is not None:
                     wl_dep_arr_tmp.append((wl, departure_tmp, arrival_tmp))
@@ -149,6 +151,49 @@ def add_model_components(
         m.TMPS,
         within=m.TMPS_AND_OUTSIDE_HORIZON,
         initialize=arrival_tmp_init,
+    )
+
+    # Ramp limits
+    # TODO: remove initialize
+    m.WATER_LINK_RAMP_LIMITS = Set(
+        dimen=2,
+        within=m.WATER_LINKS * Any,
+        initialize=[("Newhalem_to_Marblemount", "one_hour_downramp")],
+    )
+    m.water_link_ramp_limit_up_or_down = Param(
+        m.WATER_LINK_RAMP_LIMITS,
+        within=[1, -1],
+        initialize={("Newhalem_to_Marblemount", "one_hour_downramp"): -1},
+    )
+    m.water_link_ramp_limit_n_hours = Param(
+        m.WATER_LINK_RAMP_LIMITS,
+        within=PositiveReals,
+        initialize={("Newhalem_to_Marblemount", "one_hour_downramp"): 1},
+    )
+
+    # TODO: move to balancing type horizon definition
+    m.water_link_ramp_limit_allowed_flow_delta = Param(
+        m.WATER_LINK_RAMP_LIMITS,
+        within=Reals,
+        initialize={("Newhalem_to_Marblemount", "one_hour_downramp"): 500},
+    )
+
+    def ramp_limit_tmps_set_init(mod):
+        ramp_limit_tmps = []
+        for water_link, ramp_limit in mod.WATER_LINK_RAMP_LIMITS:
+            for tmp in mod.TMPS:
+                arr_tmp = determine_future_timepoint(
+                    mod, tmp, mod.water_link_ramp_limit_n_hours[water_link, ramp_limit]
+                )
+                ramp_limit_tmps.append((water_link, ramp_limit, tmp, arr_tmp))
+
+        print(ramp_limit_tmps)
+        return ramp_limit_tmps
+
+    m.WATER_LINK_RAMP_LIMIT_DEP_ARR_TMPS = Set(
+        dimen=4,
+        within=m.WATER_LINK_RAMP_LIMITS * m.TMPS * m.TMPS_AND_OUTSIDE_HORIZON,
+        initialize=ramp_limit_tmps_set_init,
     )
 
     # ### Variables ### #
@@ -258,8 +303,30 @@ def add_model_components(
         rule=max_total_hrz_flow_constraint_rule,
     )
 
+    # Ramp constraints
+    def up_ramp_constraint_rule(mod, wl, ramp_limit, tmp, future_tmp):
+        if future_tmp == "tmp_outside_horizon":
+            return Constraint.Skip
+        else:
+            return (
+                mod.water_link_ramp_limit_up_or_down[wl, ramp_limit]
+                * (
+                    mod.Water_Link_Flow_Rate_Vol_per_Sec[
+                        wl, future_tmp, mod.arrival_timepoint[wl, future_tmp]
+                    ]
+                    - mod.Water_Link_Flow_Rate_Vol_per_Sec[
+                        wl, tmp, mod.arrival_timepoint[wl, tmp]
+                    ]
+                )
+                <= mod.water_link_ramp_limit_allowed_flow_delta[wl, ramp_limit]
+            )
 
-def determine_arrival_timepoint(mod, dep_tmp, travel_time_hours):
+    m.Water_Link_Down_Constraint = Constraint(
+        m.WATER_LINK_RAMP_LIMIT_DEP_ARR_TMPS, rule=up_ramp_constraint_rule
+    )
+
+
+def determine_future_timepoint(mod, dep_tmp, time_from_dep_tmp):
     """
     USER WARNING: timepoint durations longer than the travel time may create
     issues. You could also see issues if timepoints don't receive any flows
@@ -268,7 +335,7 @@ def determine_arrival_timepoint(mod, dep_tmp, travel_time_hours):
     """
     # If travel time is less than the hours in the departure timepoint,
     # balancing happens within the departure timepoint
-    if travel_time_hours < mod.hrs_in_tmp[dep_tmp]:
+    if time_from_dep_tmp < mod.hrs_in_tmp[dep_tmp]:
         arr_tmp = dep_tmp
     # If this is the last timepoint of a linear horizon, there are no
     # timepoints to check and we'll return 'tmp_outside_horizon'
@@ -293,7 +360,7 @@ def determine_arrival_timepoint(mod, dep_tmp, travel_time_hours):
         # start with the duration of the starting timepoint
         arr_tmp = mod.next_tmp[dep_tmp, mod.water_system_balancing_type]
         hours_from_departure_tmp = mod.hrs_in_tmp[dep_tmp]
-        while hours_from_departure_tmp < travel_time_hours:
+        while hours_from_departure_tmp < time_from_dep_tmp:
             # If we haven't exceeded the travel time yet, we move on to the next tmp
             # In a 'linear' horizon setting, once we reach the last
             # timepoint of the horizon, we set the arrival timepoint to
