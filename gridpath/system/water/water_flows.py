@@ -29,7 +29,6 @@ from pyomo.environ import (
     Expression,
     Boolean,
     PositiveReals,
-    Reals,
 )
 
 from gridpath.auxiliary.db_interface import directories_to_db_values, import_csv
@@ -174,8 +173,7 @@ def add_model_components(
         dimen=4, within=m.WATER_LINK_RAMP_LIMITS * m.BLN_TYPE_HRZS
     )
     m.water_link_ramp_limit_bt_hrz_allowed_flow_delta = Param(
-        m.WATER_LINK_RAMP_LIMITS_BT_HRZ,
-        within=Reals,
+        m.WATER_LINK_RAMP_LIMITS_BT_HRZ, within=NonNegativeReals, default=float("inf")
     )
 
     def tmp_ramp_limit_init(mod):
@@ -193,7 +191,7 @@ def add_model_components(
     m.water_link_ramp_limit_tmp_allowed_flow_delta = Param(
         m.WATER_LINK_RAMP_LIMITS,
         m.TMPS,
-        within=Reals,
+        within=NonNegativeReals,
         default=float("inf"),
         initialize=tmp_ramp_limit_init,
     )
