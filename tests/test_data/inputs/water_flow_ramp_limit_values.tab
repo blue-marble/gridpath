@@ -1,0 +1,2 @@
+water_link	ramp_limit_name	balancing_type	horizon	allowed_flow_delta_vol_per_sec	
+Water_Link_12	1hour_downramp	day	202001	100	500

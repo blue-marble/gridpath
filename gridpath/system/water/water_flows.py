@@ -194,6 +194,7 @@ def add_model_components(
         m.WATER_LINK_RAMP_LIMITS,
         m.TMPS,
         within=Reals,
+        default=float("inf"),
         initialize=tmp_ramp_limit_init,
     )
 
@@ -701,13 +702,14 @@ def get_inputs_from_database(
                 {subscenarios.WATER_NETWORK_SCENARIO_ID}
             )
             AND (balancing_type, horizon)
-            IN (SELECT DISTINCT balancing_type, horizon
+            IN (SELECT DISTINCT balancing_type_horizon, horizon
                 FROM inputs_temporal_horizon_timepoints
                 WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
                 AND subproblem_id = {subproblem}
                 )
             ;
             """
+
     c5 = conn.cursor()
     ramp_limit_values = c5.execute(ramp_limit_values_sql)
 

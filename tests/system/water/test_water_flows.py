@@ -835,3 +835,161 @@ class TestWaterFlows(unittest.TestCase):
         }
 
         self.assertDictEqual(expected_max_hrz_flow, actual_max_hrz_flow)
+
+        # Set: WATER_LINK_RAMP_LIMITS
+        expected_wl_rl = sorted([("Water_Link_12", "1hour_downramp")])
+        actual_wl_rl = sorted(
+            [(wl, rl) for (wl, rl) in instance.WATER_LINK_RAMP_LIMITS]
+        )
+        self.assertListEqual(expected_wl_rl, actual_wl_rl)
+
+        # Param: water_link_ramp_limit_up_or_down
+        expected_up_or_down = {("Water_Link_12", "1hour_downramp"): -1}
+        actual_up_or_down = {
+            (wl, rl): instance.water_link_ramp_limit_up_or_down[wl, rl]
+            for (wl, rl) in instance.WATER_LINK_RAMP_LIMITS
+        }
+
+        self.assertDictEqual(expected_up_or_down, actual_up_or_down)
+
+        # Param: water_link_ramp_limit_n_hours
+        expected_nhours = {("Water_Link_12", "1hour_downramp"): 1}
+        actual_nhours = {
+            (wl, rl): instance.water_link_ramp_limit_n_hours[wl, rl]
+            for (wl, rl) in instance.WATER_LINK_RAMP_LIMITS
+        }
+
+        self.assertDictEqual(expected_nhours, actual_nhours)
+
+        # Set: WATER_LINK_RAMP_LIMITS_BT_HRZ
+        expected_wl_rl_bt_hrz = sorted(
+            [("Water_Link_12", "1hour_downramp", "day", 202001)]
+        )
+        actual_wl_rl_bt_hrz = sorted(
+            [
+                (wl, rl, bt, hrz)
+                for (wl, rl, bt, hrz) in instance.WATER_LINK_RAMP_LIMITS_BT_HRZ
+            ]
+        )
+        self.assertListEqual(expected_wl_rl_bt_hrz, actual_wl_rl_bt_hrz)
+
+        # Param: water_link_ramp_limit_bt_hrz_allowed_flow_delta
+        expected_hrz_delta = {("Water_Link_12", "1hour_downramp", "day", 202001): 100}
+        actual_hrz_delta = {
+            (wl, rl, bt, hrz): instance.water_link_ramp_limit_bt_hrz_allowed_flow_delta[
+                wl, rl, bt, hrz
+            ]
+            for (wl, rl, bt, hrz) in instance.WATER_LINK_RAMP_LIMITS_BT_HRZ
+        }
+
+        self.assertDictEqual(expected_hrz_delta, actual_hrz_delta)
+
+        # water_link_ramp_limit_tmp_allowed_flow_delta
+        expected_tmp_delta = {
+            ("Water_Link_12", "1hour_downramp", 20200101): 100,
+            ("Water_Link_12", "1hour_downramp", 20200102): 100,
+            ("Water_Link_12", "1hour_downramp", 20200103): 100,
+            ("Water_Link_12", "1hour_downramp", 20200104): 100,
+            ("Water_Link_12", "1hour_downramp", 20200105): 100,
+            ("Water_Link_12", "1hour_downramp", 20200106): 100,
+            ("Water_Link_12", "1hour_downramp", 20200107): 100,
+            ("Water_Link_12", "1hour_downramp", 20200108): 100,
+            ("Water_Link_12", "1hour_downramp", 20200109): 100,
+            ("Water_Link_12", "1hour_downramp", 20200110): 100,
+            ("Water_Link_12", "1hour_downramp", 20200111): 100,
+            ("Water_Link_12", "1hour_downramp", 20200112): 100,
+            ("Water_Link_12", "1hour_downramp", 20200113): 100,
+            ("Water_Link_12", "1hour_downramp", 20200114): 100,
+            ("Water_Link_12", "1hour_downramp", 20200115): 100,
+            ("Water_Link_12", "1hour_downramp", 20200116): 100,
+            ("Water_Link_12", "1hour_downramp", 20200117): 100,
+            ("Water_Link_12", "1hour_downramp", 20200118): 100,
+            ("Water_Link_12", "1hour_downramp", 20200119): 100,
+            ("Water_Link_12", "1hour_downramp", 20200120): 100,
+            ("Water_Link_12", "1hour_downramp", 20200121): 100,
+            ("Water_Link_12", "1hour_downramp", 20200122): 100,
+            ("Water_Link_12", "1hour_downramp", 20200123): 100,
+            ("Water_Link_12", "1hour_downramp", 20200124): 100,
+            ("Water_Link_12", "1hour_downramp", 20200201): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20200202): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20200203): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20200204): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20200205): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20200206): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20200207): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20200208): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20200209): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20200210): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20200211): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20200212): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20200213): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20200214): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20200215): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20200216): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20200217): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20200218): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20200219): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20200220): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20200221): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20200222): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20200223): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20200224): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20300101): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20300102): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20300103): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20300104): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20300105): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20300106): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20300107): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20300108): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20300109): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20300110): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20300111): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20300112): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20300113): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20300114): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20300115): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20300116): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20300117): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20300118): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20300119): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20300120): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20300121): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20300122): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20300123): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20300124): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20300201): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20300202): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20300203): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20300204): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20300205): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20300206): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20300207): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20300208): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20300209): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20300210): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20300211): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20300212): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20300213): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20300214): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20300215): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20300216): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20300217): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20300218): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20300219): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20300220): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20300221): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20300222): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20300223): float("inf"),
+            ("Water_Link_12", "1hour_downramp", 20300224): float("inf"),
+        }
+
+        actual_tmp_delta = {
+            (wl, rl, tmp): instance.water_link_ramp_limit_tmp_allowed_flow_delta[
+                wl, rl, tmp
+            ]
+            for (wl, rl) in instance.WATER_LINK_RAMP_LIMITS
+            for tmp in instance.TMPS
+        }
+
+        self.assertDictEqual(expected_tmp_delta, actual_tmp_delta)
