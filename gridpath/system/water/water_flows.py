@@ -1,4 +1,4 @@
-# Copyright 2016-2024 Blue Marble Analytics LLC.
+# Copyright 2016-2025 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 Flows across water links.
 """
 
-import csv
 import os.path
 
 from pyomo.environ import (
@@ -29,6 +28,8 @@ from pyomo.environ import (
     value,
     Expression,
     Boolean,
+    PositiveReals,
+    Reals,
 )
 
 from gridpath.auxiliary.db_interface import directories_to_db_values, import_csv
@@ -37,6 +38,9 @@ from gridpath.project.common_functions import (
     check_if_boundary_type_and_last_timepoint,
     check_boundary_type,
     check_if_boundary_type_and_first_timepoint,
+)
+from gridpath.project.operations.operational_types.common_functions import (
+    write_tab_file_model_inputs,
 )
 
 
@@ -105,10 +109,10 @@ def add_model_components(
         wl_dep_arr_tmp = []
         for wl in mod.WATER_LINKS:
             for departure_tmp in mod.TMPS:
-                arrival_tmp = determine_arrival_timepoint(
+                arrival_tmp = determine_future_timepoint(
                     mod=mod,
                     dep_tmp=departure_tmp,
-                    travel_time_hours=mod.water_link_flow_transport_time_hours[wl],
+                    time_from_dep_tmp=mod.water_link_flow_transport_time_hours[wl],
                 )
                 if arrival_tmp is not None:
                     wl_dep_arr_tmp.append((wl, departure_tmp, arrival_tmp))
@@ -149,6 +153,70 @@ def add_model_components(
         m.TMPS,
         within=m.TMPS_AND_OUTSIDE_HORIZON,
         initialize=arrival_tmp_init,
+    )
+
+    # Ramp limits
+    m.WATER_LINK_RAMP_LIMITS = Set(
+        dimen=2,
+        within=m.WATER_LINKS * Any,
+    )
+
+    m.water_link_ramp_limit_up_or_down = Param(
+        m.WATER_LINK_RAMP_LIMITS,
+        within=[1, -1],
+    )
+    m.water_link_ramp_limit_n_hours = Param(
+        m.WATER_LINK_RAMP_LIMITS,
+        within=PositiveReals,
+    )
+
+    m.WATER_LINK_RAMP_LIMITS_BT_HRZ = Set(
+        dimen=4, within=m.WATER_LINK_RAMP_LIMITS * m.BLN_TYPE_HRZS
+    )
+    m.water_link_ramp_limit_bt_hrz_allowed_flow_delta = Param(
+        m.WATER_LINK_RAMP_LIMITS_BT_HRZ,
+        within=Reals,
+    )
+
+    def tmp_ramp_limit_init(mod):
+        tmp_ramp_limits = {}
+        for water_link, ramp_limit, bt, hrz in mod.WATER_LINK_RAMP_LIMITS_BT_HRZ:
+            for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]:
+                tmp_ramp_limits[(water_link, ramp_limit, tmp)] = (
+                    mod.water_link_ramp_limit_bt_hrz_allowed_flow_delta[
+                        water_link, ramp_limit, bt, hrz
+                    ]
+                )
+
+        return tmp_ramp_limits
+
+    m.water_link_ramp_limit_tmp_allowed_flow_delta = Param(
+        m.WATER_LINK_RAMP_LIMITS,
+        m.TMPS,
+        within=Reals,
+        default=float("inf"),
+        initialize=tmp_ramp_limit_init,
+    )
+
+    def ramp_limit_tmps_set_init(mod):
+        ramp_limit_tmps = []
+        for water_link, ramp_limit in mod.WATER_LINK_RAMP_LIMITS:
+            for tmp in mod.TMPS:
+                dep_to_arr_tmps = determine_future_timepoint(
+                    mod,
+                    tmp,
+                    mod.water_link_ramp_limit_n_hours[water_link, ramp_limit],
+                    keep_tmps=True,
+                )
+                for arr_tmp in dep_to_arr_tmps:
+                    ramp_limit_tmps.append((water_link, ramp_limit, tmp, arr_tmp))
+
+        return ramp_limit_tmps
+
+    m.WATER_LINK_RAMP_LIMIT_DEP_ARR_TMPS = Set(
+        dimen=4,
+        within=m.WATER_LINK_RAMP_LIMITS * m.TMPS * m.TMPS_AND_OUTSIDE_HORIZON,
+        initialize=ramp_limit_tmps_set_init,
     )
 
     # ### Variables ### #
@@ -258,18 +326,43 @@ def add_model_components(
         rule=max_total_hrz_flow_constraint_rule,
     )
 
+    # Ramp constraints
+    def water_link_flow_ramp_constraint_rule(mod, wl, ramp_limit, tmp, future_tmp):
+        if future_tmp == "tmp_outside_horizon":
+            return Constraint.Skip
+        else:
+            return (
+                mod.water_link_ramp_limit_up_or_down[wl, ramp_limit]
+                * (
+                    mod.Water_Link_Flow_Rate_Vol_per_Sec[
+                        wl, future_tmp, mod.arrival_timepoint[wl, future_tmp]
+                    ]
+                    - mod.Water_Link_Flow_Rate_Vol_per_Sec[
+                        wl, tmp, mod.arrival_timepoint[wl, tmp]
+                    ]
+                )
+                <= mod.water_link_ramp_limit_tmp_allowed_flow_delta[wl, ramp_limit, tmp]
+            )
 
-def determine_arrival_timepoint(mod, dep_tmp, travel_time_hours):
+    m.Water_Link_Flow_Ramp_Constraint = Constraint(
+        m.WATER_LINK_RAMP_LIMIT_DEP_ARR_TMPS, rule=water_link_flow_ramp_constraint_rule
+    )
+
+
+def determine_future_timepoint(mod, dep_tmp, time_from_dep_tmp, keep_tmps=False):
     """
     USER WARNING: timepoint durations longer than the travel time may create
     issues. You could also see issues if timepoints don't receive any flows
     because of short durations. This functionality is new and not yet
     extensively tested, so proceed with caution.
     """
+    dep_to_arr_tmps_list = []
     # If travel time is less than the hours in the departure timepoint,
     # balancing happens within the departure timepoint
-    if travel_time_hours < mod.hrs_in_tmp[dep_tmp]:
+    if time_from_dep_tmp < mod.hrs_in_tmp[dep_tmp]:
         arr_tmp = dep_tmp
+        if keep_tmps:
+            dep_to_arr_tmps_list.append(arr_tmp)
     # If this is the last timepoint of a linear horizon, there are no
     # timepoints to check and we'll return 'tmp_outside_horizon'
     elif check_if_boundary_type_and_last_timepoint(
@@ -279,6 +372,8 @@ def determine_arrival_timepoint(mod, dep_tmp, travel_time_hours):
         boundary_type="linear",
     ):
         arr_tmp = "tmp_outside_horizon"
+        if keep_tmps:
+            dep_to_arr_tmps_list.append(arr_tmp)
     elif check_if_boundary_type_and_last_timepoint(
         mod=mod,
         tmp=dep_tmp,
@@ -292,8 +387,9 @@ def determine_arrival_timepoint(mod, dep_tmp, travel_time_hours):
         # First we'll check the next timepoint of the starting timepoint and
         # start with the duration of the starting timepoint
         arr_tmp = mod.next_tmp[dep_tmp, mod.water_system_balancing_type]
+        dep_to_arr_tmps_list.append(arr_tmp)
         hours_from_departure_tmp = mod.hrs_in_tmp[dep_tmp]
-        while hours_from_departure_tmp < travel_time_hours:
+        while hours_from_departure_tmp < time_from_dep_tmp:
             # If we haven't exceeded the travel time yet, we move on to the next tmp
             # In a 'linear' horizon setting, once we reach the last
             # timepoint of the horizon, we set the arrival timepoint to
@@ -305,6 +401,8 @@ def determine_arrival_timepoint(mod, dep_tmp, travel_time_hours):
                 boundary_type="linear",
             ):
                 arr_tmp = "tmp_outside_horizon"
+                if keep_tmps:
+                    dep_to_arr_tmps_list.append(arr_tmp)
                 break
             # In a 'circular' horizon setting, once we loop back to the
             # departure timepoint again, we break out of the loop since there
@@ -320,6 +418,8 @@ def determine_arrival_timepoint(mod, dep_tmp, travel_time_hours):
                 and arr_tmp == dep_tmp
             ):
                 arr_tmp = "tmp_outside_horizon"
+                if keep_tmps:
+                    dep_to_arr_tmps_list.append(arr_tmp)
                 break
             # TODO: only allow the first horizon of a subproblem to have
             #  linked timepoints
@@ -340,8 +440,12 @@ def determine_arrival_timepoint(mod, dep_tmp, travel_time_hours):
             else:
                 hours_from_departure_tmp += mod.hrs_in_tmp[arr_tmp]
                 arr_tmp = mod.next_tmp[arr_tmp, mod.water_system_balancing_type]
-
-    return arr_tmp
+                if keep_tmps:
+                    dep_to_arr_tmps_list.append(arr_tmp)
+    if keep_tmps:
+        return dep_to_arr_tmps_list
+    else:
+        return arr_tmp
 
 
 def load_model_data(
@@ -355,16 +459,18 @@ def load_model_data(
     subproblem,
     stage,
 ):
-
+    inputs_directory = os.path.join(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+    )
     data_portal.load(
         filename=os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "inputs",
+            inputs_directory,
             "water_flow_params.tab",
         ),
         param=(
@@ -377,13 +483,7 @@ def load_model_data(
     )
 
     tmp_fname = os.path.join(
-        scenario_directory,
-        weather_iteration,
-        hydro_iteration,
-        availability_iteration,
-        subproblem,
-        stage,
-        "inputs",
+        inputs_directory,
         "water_flow_tmp_bounds.tab",
     )
     if os.path.exists(tmp_fname):
@@ -393,13 +493,7 @@ def load_model_data(
         )
 
     hrz_min_fname = os.path.join(
-        scenario_directory,
-        weather_iteration,
-        hydro_iteration,
-        availability_iteration,
-        subproblem,
-        stage,
-        "inputs",
+        inputs_directory,
         "water_flow_hrz_min_bounds.tab",
     )
 
@@ -411,13 +505,7 @@ def load_model_data(
         )
 
     hrz_max_fname = os.path.join(
-        scenario_directory,
-        weather_iteration,
-        hydro_iteration,
-        availability_iteration,
-        subproblem,
-        stage,
-        "inputs",
+        inputs_directory,
         "water_flow_hrz_max_bounds.tab",
     )
 
@@ -426,6 +514,33 @@ def load_model_data(
             filename=hrz_max_fname,
             index=m.WATER_LINKS_W_BT_HRZ_MAX_FLOW_CONSTRAINT,
             param=m.max_bt_hrz_flow_avg_vol_per_second,
+        )
+
+    ramp_limit_fname = os.path.join(
+        inputs_directory,
+        "water_flow_ramp_limits.tab",
+    )
+
+    if os.path.exists(ramp_limit_fname):
+        data_portal.load(
+            filename=ramp_limit_fname,
+            index=m.WATER_LINK_RAMP_LIMITS,
+            param=(
+                m.water_link_ramp_limit_up_or_down,
+                m.water_link_ramp_limit_n_hours,
+            ),
+        )
+
+    ramp_limit_values_fname = os.path.join(
+        inputs_directory,
+        "water_flow_ramp_limit_values.tab",
+    )
+
+    if os.path.exists(ramp_limit_values_fname):
+        data_portal.load(
+            filename=ramp_limit_values_fname,
+            index=m.WATER_LINK_RAMP_LIMITS_BT_HRZ,
+            param=m.water_link_ramp_limit_bt_hrz_allowed_flow_delta,
         )
 
 
@@ -510,7 +625,7 @@ def get_inputs_from_database(
                 {subscenarios.WATER_NETWORK_SCENARIO_ID}
             )
             AND (balancing_type, horizon)
-            IN (SELECT DISTINCT balancing_type, horizon
+            IN (SELECT DISTINCT balancing_type_horizon, horizon
                 FROM inputs_temporal_horizon_timepoints
                 WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
                 AND subproblem_id = {subproblem}
@@ -537,7 +652,7 @@ def get_inputs_from_database(
                 {subscenarios.WATER_NETWORK_SCENARIO_ID}
             )
             AND (balancing_type, horizon)
-            IN (SELECT DISTINCT balancing_type, horizon
+            IN (SELECT DISTINCT balancing_type_horizon, horizon
                 FROM inputs_temporal_horizon_timepoints
                 WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
                 AND subproblem_id = {subproblem}
@@ -547,7 +662,65 @@ def get_inputs_from_database(
     c3 = conn.cursor()
     hrz_max_flow_bounds = c3.execute(hrz_max_sql)
 
-    return water_flow_params, tmp_flow_bounds, hrz_min_flow_bounds, hrz_max_flow_bounds
+    ramp_limits_sql = f"""
+        SELECT water_link,
+        ramp_limit_name,
+        ramp_limit_up_or_down,
+        ramp_limit_n_hours
+        FROM inputs_system_water_flow_ramp_limits
+        WHERE (water_link, water_flow_ramp_limit_scenario_id) in (
+                SELECT water_link, water_flow_ramp_limit_scenario_id
+                FROM inputs_system_water_flows
+                WHERE water_flow_scenario_id = 
+                {subscenarios.WATER_FLOW_SCENARIO_ID}
+            )
+        AND water_link IN (
+                SELECT water_link
+                FROM inputs_geography_water_network
+                WHERE water_network_scenario_id = 
+                {subscenarios.WATER_NETWORK_SCENARIO_ID}
+            )
+        ;
+        """
+    c4 = conn.cursor()
+    ramp_limits = c4.execute(ramp_limits_sql)
+
+    ramp_limit_values_sql = f"""
+        SELECT water_link, ramp_limit_name, balancing_type, horizon,
+            allowed_flow_delta_vol_per_sec
+            FROM inputs_system_water_flow_ramp_limit_bt_hrz_values
+            WHERE (water_link, water_flow_ramp_limit_scenario_id) in (
+                SELECT water_link, water_flow_ramp_limit_scenario_id
+                FROM inputs_system_water_flows
+                WHERE water_flow_scenario_id = 
+                {subscenarios.WATER_FLOW_SCENARIO_ID}
+            )
+            AND water_link IN (
+                SELECT water_link
+                FROM inputs_geography_water_network
+                WHERE water_network_scenario_id = 
+                {subscenarios.WATER_NETWORK_SCENARIO_ID}
+            )
+            AND (balancing_type, horizon)
+            IN (SELECT DISTINCT balancing_type_horizon, horizon
+                FROM inputs_temporal_horizon_timepoints
+                WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+                AND subproblem_id = {subproblem}
+                )
+            ;
+            """
+
+    c5 = conn.cursor()
+    ramp_limit_values = c5.execute(ramp_limit_values_sql)
+
+    return (
+        water_flow_params,
+        tmp_flow_bounds,
+        hrz_min_flow_bounds,
+        hrz_max_flow_bounds,
+        ramp_limits,
+        ramp_limit_values,
+    )
 
 
 def validate_inputs(
@@ -606,146 +779,95 @@ def write_model_inputs(
         weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
     )
 
-    water_flow_params, tmp_flow_bounds, hrz_min_flow_bounds, hrz_max_flow_bounds = (
-        get_inputs_from_database(
-            scenario_id,
-            subscenarios,
-            db_weather_iteration,
-            db_hydro_iteration,
-            db_availability_iteration,
-            db_subproblem,
-            db_stage,
-            conn,
-        )
+    (
+        water_flow_params,
+        tmp_flow_bounds,
+        hrz_min_flow_bounds,
+        hrz_max_flow_bounds,
+        ramp_limits,
+        ramp_limit_values,
+    ) = get_inputs_from_database(
+        scenario_id,
+        subscenarios,
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+        conn,
     )
 
-    with open(
-        os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "inputs",
-            "water_flow_params.tab",
-        ),
-        "w",
-        newline="",
-    ) as f:
-        writer = csv.writer(f, delimiter="\t", lineterminator="\n")
+    write_tab_file_model_inputs(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        fname="water_flow_params.tab",
+        data=water_flow_params,
+        replace_nulls=True,
+    )
 
-        # Write header
-        writer.writerow(
-            [
-                "water_link",
-                "default_min_flow_vol_per_sec",
-                "allow_water_link_min_flow_violation",
-                "min_flow_violation_penalty_cost",
-                "allow_water_link_max_flow_violation",
-                "max_flow_violation_penalty_cost",
-            ]
-        )
+    write_tab_file_model_inputs(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        fname="water_flow_tmp_bounds.tab",
+        data=tmp_flow_bounds,
+        replace_nulls=True,
+    )
 
-        for row in water_flow_params:
-            replace_nulls = ["." if i is None else i for i in row]
-            writer.writerow(replace_nulls)
+    write_tab_file_model_inputs(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        fname="water_flow_hrz_min_bounds.tab",
+        data=hrz_min_flow_bounds,
+        replace_nulls=True,
+    )
 
-    tmp_water_flow_bounds_list = [row for row in tmp_flow_bounds]
-    if tmp_water_flow_bounds_list:
-        with open(
-            os.path.join(
-                scenario_directory,
-                weather_iteration,
-                hydro_iteration,
-                availability_iteration,
-                subproblem,
-                stage,
-                "inputs",
-                "water_flow_tmp_bounds.tab",
-            ),
-            "w",
-            newline="",
-        ) as f:
-            writer = csv.writer(f, delimiter="\t", lineterminator="\n")
+    write_tab_file_model_inputs(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        fname="water_flow_hrz_max_bounds.tab",
+        data=hrz_max_flow_bounds,
+        replace_nulls=True,
+    )
 
-            # Write header
-            writer.writerow(
-                [
-                    "water_link",
-                    "timepoint",
-                    "min_tmp_flow_vol_per_second",
-                    "max_tmp_flow_vol_per_second",
-                ]
-            )
+    write_tab_file_model_inputs(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        fname="water_flow_ramp_limits.tab",
+        data=ramp_limits,
+        replace_nulls=True,
+    )
 
-            for row in tmp_water_flow_bounds_list:
-                replace_nulls = ["." if i is None else i for i in row]
-                writer.writerow(replace_nulls)
-
-    hrz_min_flow_bounds_list = [row for row in hrz_min_flow_bounds]
-    if hrz_min_flow_bounds_list:
-        with open(
-            os.path.join(
-                scenario_directory,
-                weather_iteration,
-                hydro_iteration,
-                availability_iteration,
-                subproblem,
-                stage,
-                "inputs",
-                "water_flow_hrz_min_bounds.tab",
-            ),
-            "w",
-            newline="",
-        ) as f:
-            writer = csv.writer(f, delimiter="\t", lineterminator="\n")
-
-            # Write header
-            writer.writerow(
-                [
-                    "water_link",
-                    "balancing_type",
-                    "horizon",
-                    "min_bt_hrz_flow_avg_vol_per_second",
-                ]
-            )
-
-            for row in hrz_min_flow_bounds_list:
-                replace_nulls = ["." if i is None else i for i in row]
-                writer.writerow(replace_nulls)
-
-    hrz_max_flow_bounds_list = [row for row in hrz_max_flow_bounds]
-    if hrz_max_flow_bounds_list:
-        with open(
-            os.path.join(
-                scenario_directory,
-                weather_iteration,
-                hydro_iteration,
-                availability_iteration,
-                subproblem,
-                stage,
-                "inputs",
-                "water_flow_hrz_max_bounds.tab",
-            ),
-            "w",
-            newline="",
-        ) as f:
-            writer = csv.writer(f, delimiter="\t", lineterminator="\n")
-
-            # Write header
-            writer.writerow(
-                [
-                    "water_link",
-                    "balancing_type",
-                    "horizon",
-                    "max_bt_hrz_flow_avg_vol_per_second",
-                ]
-            )
-
-            for row in hrz_max_flow_bounds_list:
-                replace_nulls = ["." if i is None else i for i in row]
-                writer.writerow(replace_nulls)
+    write_tab_file_model_inputs(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        fname="water_flow_ramp_limit_values.tab",
+        data=ramp_limit_values,
+        replace_nulls=True,
+    )
 
 
 def export_results(

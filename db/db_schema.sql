@@ -1290,6 +1290,7 @@ CREATE TABLE inputs_system_water_flows
     max_flow_violation_penalty_cost         FLOAT,
     water_flow_timepoint_bounds_scenario_id INTEGER,
     water_flow_horizon_bounds_scenario_id   INTEGER,
+    water_flow_ramp_limit_scenario_id       INTEGER,
     PRIMARY KEY (water_flow_scenario_id, water_link),
     FOREIGN KEY (water_flow_scenario_id) REFERENCES
         subscenarios_system_water_flows (water_flow_scenario_id)
@@ -1348,6 +1349,57 @@ CREATE TABLE inputs_system_water_flows_horizon_bounds
             (water_link, water_flow_horizon_bounds_scenario_id)
 );
 
+-- Water flow ramp limits
+DROP TABLE IF EXISTS subscenarios_system_water_flow_ramp_limits;
+CREATE TABLE subscenarios_system_water_flow_ramp_limits
+(
+    water_link                        TEXT,
+    water_flow_ramp_limit_scenario_id INTEGER,
+    name                              VARCHAR(32),
+    description                       VARCHAR(128),
+    PRIMARY KEY (water_link, water_flow_ramp_limit_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_system_water_flow_ramp_limits;
+CREATE TABLE inputs_system_water_flow_ramp_limits
+(
+    water_link                        TEXT,
+    water_flow_ramp_limit_scenario_id INTEGER,
+    ramp_limit_name                   TEXT,
+    ramp_limit_up_or_down             INTEGER, -- 1 for upramp, -1 for downramp
+    ramp_limit_n_hours                FLOAT,
+    PRIMARY KEY (water_link, water_flow_ramp_limit_scenario_id,
+                 ramp_limit_name),
+    FOREIGN KEY (water_link, water_flow_ramp_limit_scenario_id) REFERENCES
+        subscenarios_system_water_flow_ramp_limits
+            (water_link, water_flow_ramp_limit_scenario_id)
+);
+
+DROP TABLE IF EXISTS subscenarios_system_water_flow_ramp_limit_bt_hrz_values;
+CREATE TABLE subscenarios_system_water_flow_ramp_limit_bt_hrz_values
+(
+    water_link                        TEXT,
+    water_flow_ramp_limit_scenario_id INTEGER,
+    name                              VARCHAR(32),
+    description                       VARCHAR(128),
+    PRIMARY KEY (water_link, water_flow_ramp_limit_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_system_water_flow_ramp_limit_bt_hrz_values;
+CREATE TABLE inputs_system_water_flow_ramp_limit_bt_hrz_values
+(
+    water_link                        TEXT,
+    water_flow_ramp_limit_scenario_id INTEGER,
+    ramp_limit_name                   TEXT,
+    balancing_type                    TEXT,
+    horizon                           INTEGER,
+    allowed_flow_delta_vol_per_sec    FLOAT,
+    PRIMARY KEY (water_link, water_flow_ramp_limit_scenario_id,
+                 ramp_limit_name, balancing_type, horizon),
+    FOREIGN KEY (water_link, water_flow_ramp_limit_scenario_id) REFERENCES
+        subscenarios_system_water_flow_ramp_limits
+            (water_link, water_flow_ramp_limit_scenario_id)
+);
 
 -- Water nodes
 DROP TABLE IF EXISTS subscenarios_system_water_inflows;
