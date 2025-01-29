@@ -1,0 +1,3 @@
+﻿ramp_limit_name,balancing_type,horizon,allowed_flow_delta_vol_per_sec
+1hour_downramp,day,1,10
+1hour_downramp,day,2,10
