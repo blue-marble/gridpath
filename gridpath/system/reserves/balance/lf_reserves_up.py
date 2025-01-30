@@ -82,6 +82,8 @@ def export_results(
         d=d,
         reserve_type="lf_reserves_up",
         reserve_zone_set="LF_RESERVES_UP_ZONES",
+        reserve_requirement_expression="LF_Up_Requirement",
+        total_reserve_provision_expression="Total_LF_Reserves_Up_Provision_MW",
         reserve_violation_expression="LF_Reserves_Up_Violation_MW_Expression",
     )
 

@@ -82,6 +82,8 @@ def export_results(
         d=d,
         reserve_type="spinning_reserves",
         reserve_zone_set="SPINNING_RESERVES_ZONES",
+        reserve_requirement_expression="Spin_Requirement",
+        total_reserve_provision_expression="Total_Spinning_Reserves_Provision_MW",
         reserve_violation_expression="Spinning_Reserves_Violation_MW_Expression",
     )
 

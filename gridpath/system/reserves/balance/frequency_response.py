@@ -98,6 +98,8 @@ def export_results(
         d=d,
         reserve_type="frequency_response",
         reserve_zone_set="FREQUENCY_RESPONSE_BAS",
+        reserve_requirement_expression="Frequency_Response_Requirement",
+        total_reserve_provision_expression="Total_Frequency_Response_Provision_MW",
         reserve_violation_expression="Frequency_Response_Violation_MW_Expression",
     )
 
@@ -112,6 +114,8 @@ def export_results(
         d=d,
         reserve_type="frequency_response_partial",
         reserve_zone_set="FREQUENCY_RESPONSE_BAS",
+        reserve_requirement_expression="frequency_response_requirement_partial_mw",
+        total_reserve_provision_expression="Total_Partial_Frequency_Response_Provision_MW",
         reserve_violation_expression="Frequency_Response_Partial_Violation_MW",
     )
 
