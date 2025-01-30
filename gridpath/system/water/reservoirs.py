@@ -125,8 +125,13 @@ def add_model_components(
         within=NonNegativeReals,
     )
 
-    # Spill bound
-    m.max_spill = Param(m.WATER_NODES_W_RESERVOIRS, within=NonNegativeReals)
+    # Powerhouse release and spill bounds
+    m.max_powerhouse_release_vol_unit_per_sec = Param(
+        m.WATER_NODES_W_RESERVOIRS, within=NonNegativeReals
+    )
+    m.max_spill_vol_unit_per_sec = Param(
+        m.WATER_NODES_W_RESERVOIRS, within=NonNegativeReals
+    )
 
     # Losses
     # TODO: by month
@@ -140,11 +145,17 @@ def add_model_components(
     )
 
     m.Discharge_Water_to_Powerhouse_Rate_Vol_Per_Sec = Var(
-        m.WATER_NODES_W_RESERVOIRS, m.TMPS, within=NonNegativeReals
+        m.WATER_NODES_W_RESERVOIRS,
+        m.TMPS,
+        within=NonNegativeReals,
+        bounds=lambda mod, r, tmp: (0, mod.max_powerhouse_release_vol_unit_per_sec[r]),
     )
 
     m.Spill_Water_Rate_Vol_Per_Sec = Var(
-        m.WATER_NODES_W_RESERVOIRS, m.TMPS, within=NonNegativeReals
+        m.WATER_NODES_W_RESERVOIRS,
+        m.TMPS,
+        within=NonNegativeReals,
+        bounds=lambda mod, r, tmp: (0, mod.max_spill_vol_unit_per_sec[r]),
     )
 
     # TODO: implement the correct calculation; depends on area, which depends
@@ -295,9 +306,10 @@ def load_model_data(
         ),
         index=m.WATER_NODES_W_RESERVOIRS,
         param=(
+            m.max_powerhouse_release_vol_unit_per_sec,
+            m.max_spill_vol_unit_per_sec,
             m.minimum_volume_volumeunit,
             m.maximum_volume_volumeunit,
-            m.max_spill,
             m.evaporation_coefficient,
             m.elevation_type,
         ),
@@ -394,9 +406,10 @@ def get_inputs_from_database(
     c = conn.cursor()
     reservoirs = c.execute(
         f"""SELECT water_node,
+            max_powerhouse_release_vol_unit_per_sec,
+            max_spill_vol_unit_per_sec,
             minimum_volume_volumeunit,
             maximum_volume_volumeunit,
-            max_spill,
             evaporation_coefficient,
             elevation_type
         FROM inputs_system_water_node_reservoirs
@@ -550,9 +563,10 @@ def write_model_inputs(
         writer.writerow(
             [
                 "water_node",
+                "max_powerhouse_release_vol_unit_per_sec",
+                "max_spill_vol_unit_per_sec",
                 "minimum_volume_volumeunit",
                 "maximum_volume_volumeunit",
-                "max_spill",
                 "evaporation_coefficient",
                 "elevation_type",
             ]
