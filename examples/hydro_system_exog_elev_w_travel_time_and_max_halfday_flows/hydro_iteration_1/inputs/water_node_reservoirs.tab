@@ -1,4 +1,4 @@
-water_node	minimum_volume_volumeunit	maximum_volume_volumeunit	max_spill	evaporation_coefficient	elevation_type
-Water_Node_1	22500.0	25000.0	0.1	0.0	exogenous
-Water_Node_2	1250.0	1750.0	0.1	0.0	exogenous
-Water_Node_3	50.0	75.0	0.1	0.0	constant
+water_node	max_powerhouse_release_vol_unit_per_sec	max_spill_vol_unit_per_sec	minimum_volume_volumeunit	maximum_volume_volumeunit	evaporation_coefficient	elevation_type
+Water_Node_1	0.1	0.1	22500.0	25000.0	0.0	exogenous
+Water_Node_2	0.1	0.1	1250.0	1750.0	0.0	exogenous
+Water_Node_3	0.1	0.1	50.0	75.0	0.0	constant

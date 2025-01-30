@@ -178,14 +178,27 @@ class TestReservoirs(unittest.TestCase):
         }
         self.assertDictEqual(expected_mine, actual_mine)
 
-        # Param: max_spill
+        # Param: max_powerhouse_release_vol_unit_per_sec
+        expected_maxrelease = {
+            "Water_Node_1": 5000,
+            "Water_Node_2": 5000,
+            "Water_Node_3": 5000,
+        }
+        actual_maxrelease = {
+            r: instance.max_powerhouse_release_vol_unit_per_sec[r]
+            for r in instance.WATER_NODES_W_RESERVOIRS
+        }
+        self.assertDictEqual(expected_maxrelease, actual_maxrelease)
+
+        # Param: max_spill_vol_unit_per_sec
         expected_maxspill = {
             "Water_Node_1": 100000,
             "Water_Node_2": 100000,
             "Water_Node_3": 100000,
         }
         actual_maxspill = {
-            r: instance.max_spill[r] for r in instance.WATER_NODES_W_RESERVOIRS
+            r: instance.max_spill_vol_unit_per_sec[r]
+            for r in instance.WATER_NODES_W_RESERVOIRS
         }
         self.assertDictEqual(expected_maxspill, actual_maxspill)
 
