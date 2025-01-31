@@ -180,6 +180,7 @@ def calculate_from_project_year_month_data(
 
             df = pd.DataFrame(
                 columns=[
+                    "weather_iteration",
                     "hydro_iteration",
                     "stage_id",
                     "balancing_type_project",
@@ -213,6 +214,7 @@ def calculate_from_project_year_month_data(
             weighted_max = weighted_max / total
 
             df.loc[len(df)] = [
+                0,  # no weather iteration
                 yr,
                 stage_id,
                 bt,
@@ -235,6 +237,8 @@ def calculate_from_project_year_month_data(
                 header=not os.path.exists(filename),
                 index=False,
             )
+
+            # TODO: add iterations CSVs
 
 
 def calculate_from_project_year_month_data_pool(pool_datum):

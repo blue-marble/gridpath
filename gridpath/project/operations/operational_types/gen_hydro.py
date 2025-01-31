@@ -55,11 +55,12 @@ from gridpath.project.common_functions import (
 from gridpath.project.operations.operational_types.common_functions import (
     load_optype_model_data,
     load_hydro_opchars,
-    get_hydro_inputs_from_database,
     write_tab_file_model_inputs,
     check_for_tmps_to_link,
     validate_opchars,
     validate_hydro_opchars,
+    get_prj_temporal_index_opr_inputs_from_db,
+    BT_HRZ_INDEX_QUERY_PARAMS,
 )
 from gridpath.common_functions import create_results_df
 
@@ -924,16 +925,32 @@ def get_model_inputs_from_database(
     :param conn: database connection
     :return: cursor object with query results
     """
-
-    return get_hydro_inputs_from_database(
-        subscenarios,
-        hydro_iteration,
-        availability_iteration,
-        subproblem,
-        stage,
-        conn,
-        op_type="gen_hydro",
+    (
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+    ) = directories_to_db_values(
+        weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
     )
+
+    prj_bt_hrz_data = get_prj_temporal_index_opr_inputs_from_db(
+        subscenarios=subscenarios,
+        weather_iteration=db_weather_iteration,
+        hydro_iteration=db_hydro_iteration,
+        availability_iteration=db_availability_iteration,
+        subproblem=db_subproblem,
+        stage=db_stage,
+        conn=conn,
+        op_type="gen_hydro",
+        table="inputs_project_hydro_operational_chars",
+        subscenario_id_column="hydro_operational_chars_scenario_id",
+        data_column="average_power_fraction, min_power_fraction, " "max_power_fraction",
+        opr_index_dict=BT_HRZ_INDEX_QUERY_PARAMS,
+    )
+
+    return prj_bt_hrz_data
 
 
 def write_model_inputs(
@@ -958,24 +975,14 @@ def write_model_inputs(
     :return:
     """
 
-    (
-        db_weather_iteration,
-        db_hydro_iteration,
-        db_availability_iteration,
-        db_subproblem,
-        db_stage,
-    ) = directories_to_db_values(
-        weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
-    )
-
     data = get_model_inputs_from_database(
         scenario_id,
         subscenarios,
-        db_weather_iteration,
-        db_hydro_iteration,
-        db_availability_iteration,
-        db_subproblem,
-        db_stage,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
         conn,
     )
     fname = "hydro_conventional_horizon_params.tab"

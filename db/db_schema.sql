@@ -2202,6 +2202,7 @@ CREATE TABLE inputs_project_hydro_operational_chars
 (
     project                             VARCHAR(64),
     hydro_operational_chars_scenario_id INTEGER,
+    weather_iteration                   INTEGER,
     hydro_iteration                     INTEGER DEFAULT 0 NOT NULL,
     stage_id                            INTEGER,
     balancing_type_project              VARCHAR(64),
@@ -2210,11 +2211,32 @@ CREATE TABLE inputs_project_hydro_operational_chars
     min_power_fraction                  FLOAT,
     max_power_fraction                  FLOAT,
     PRIMARY KEY (project, hydro_operational_chars_scenario_id,
-                 hydro_iteration, stage_id,
+                 weather_iteration, hydro_iteration, stage_id,
                  balancing_type_project, horizon),
     FOREIGN KEY (project, hydro_operational_chars_scenario_id) REFERENCES
         subscenarios_project_hydro_operational_chars
             (project, hydro_operational_chars_scenario_id)
+);
+
+DROP TABLE IF EXISTS
+    subscenarios_project_hydro_operational_chars_iterations;
+CREATE TABLE subscenarios_project_hydro_operational_chars_iterations
+(
+    project                                VARCHAR(64),
+    hydro_operational_chars_scenario_id INTEGER,
+    name                                   VARCHAR(32),
+    description                            VARCHAR(128),
+    PRIMARY KEY (project, hydro_operational_chars_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_hydro_operational_chars_iterations;
+CREATE TABLE inputs_project_hydro_operational_chars_iterations
+(
+    project                                TEXT,
+    hydro_operational_chars_scenario_id INTEGER,
+    varies_by_weather_iteration            INTEGER,
+    varies_by_hydro_iteration              INTEGER,
+    PRIMARY KEY (project, hydro_operational_chars_scenario_id)
 );
 
 -- Energy profiles
