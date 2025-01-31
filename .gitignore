@@ -110,4 +110,11 @@ scenarios/
 # Ignore node_modules in the UI folder
 ui/node_modules
 
-.DS_Store
+# Mac stuff
+__MACOSX
+**/.DS_Store
+
+# Ignore db files to avoid accidentally committing large files
+**/*.db
+**/*.db-shm
+**/*.db-wal
