@@ -49,12 +49,9 @@ from gridpath.project.common_functions import (
 )
 from gridpath.project.operations.operational_types.common_functions import (
     load_optype_model_data,
-    load_hydro_opchars,
-    get_hydro_inputs_from_database,
     write_tab_file_model_inputs,
     check_for_tmps_to_link,
     validate_opchars,
-    validate_hydro_opchars,
     get_prj_temporal_index_opr_inputs_from_db,
     BT_HRZ_INDEX_QUERY_PARAMS,
 )
