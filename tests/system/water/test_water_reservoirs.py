@@ -215,73 +215,77 @@ class TestReservoirs(unittest.TestCase):
         self.assertDictEqual(expected_evap, actual_evap)
 
         # Param: allow_min_volume_violation
-        e = {
+        e_allow_min_volume_violation = {
             "Water_Node_1": 0,
             "Water_Node_2": 0,
             "Water_Node_3": 0,
         }
-        a = {
+        a_allow_min_volume_violation = {
             r: instance.allow_min_volume_violation[r]
             for r in instance.WATER_NODES_W_RESERVOIRS
         }
-        self.assertDictEqual(e, a)
+        self.assertDictEqual(e_allow_min_volume_violation, a_allow_min_volume_violation)
 
         # Param: min_volume_violation_cost
-        expected_evap = {
+        e_min_volume_violation_cost = {
             "Water_Node_1": 0,
             "Water_Node_2": 0,
             "Water_Node_3": 0,
         }
-        actual_evap = {
+        a_min_volume_violation_cost = {
             r: instance.min_volume_violation_cost[r]
             for r in instance.WATER_NODES_W_RESERVOIRS
         }
-        self.assertDictEqual(e, a)
+        self.assertDictEqual(e_min_volume_violation_cost, a_min_volume_violation_cost)
 
         # Param: allow_max_volume_violation
-        expected_evap = {
+        e_allow_max_volume_violation = {
             "Water_Node_1": 0,
             "Water_Node_2": 0,
             "Water_Node_3": 0,
         }
-        actual_evap = {
+        a_allow_max_volume_violation = {
             r: instance.allow_max_volume_violation[r]
             for r in instance.WATER_NODES_W_RESERVOIRS
         }
-        self.assertDictEqual(e, a)
+        self.assertDictEqual(e_allow_max_volume_violation, a_allow_max_volume_violation)
 
         # Param: max_volume_violation_cost
-        expected_evap = {
+        e_max_volume_violation_cost = {
             "Water_Node_1": 0,
             "Water_Node_2": 0,
             "Water_Node_3": 0,
         }
-        actual_evap = {
+        a_max_volume_violation_cost = {
             r: instance.max_volume_violation_cost[r]
             for r in instance.WATER_NODES_W_RESERVOIRS
         }
-        self.assertDictEqual(e, a)
+        self.assertDictEqual(e_max_volume_violation_cost, a_max_volume_violation_cost)
 
         # Param: allow_target_release_violation
-        expected_evap = {
+        e_allow_target_release_violation = {
             "Water_Node_1": 0,
             "Water_Node_2": 0,
             "Water_Node_3": 0,
         }
-        actual_evap = {
+        a_allow_target_release_violation = {
             r: instance.allow_target_release_violation[r]
             for r in instance.WATER_NODES_W_RESERVOIRS
         }
-        self.assertDictEqual(e, a)
+        self.assertDictEqual(
+            e_allow_target_release_violation, a_allow_target_release_violation
+        )
 
         # Param: target_release_violation_cost
-        expected_evap = {
+        e_target_release_violation_cost = {
             "Water_Node_1": 0,
             "Water_Node_2": 0,
             "Water_Node_3": 0,
         }
-        actual_evap = {
+        a_target_release_violation_cost = {
             r: instance.target_release_violation_cost[r]
             for r in instance.WATER_NODES_W_RESERVOIRS
         }
-        self.assertDictEqual(e, a)
+        self.assertDictEqual(
+            e_target_release_violation_cost, a_target_release_violation_cost
+        )
