@@ -37,9 +37,6 @@ from gridpath.auxiliary.auxiliary import (
     load_subtype_modules,
 )
 from gridpath.auxiliary.db_interface import directories_to_db_values
-from gridpath.common_functions import (
-    create_results_df,
-)
 
 
 def add_model_components(
@@ -110,19 +107,44 @@ def add_model_components(
     m.reservoir_target_volume = Param(
         m.WATER_NODE_RESERVOIR_TMPS_W_TARGET_VOLUME, within=NonNegativeReals
     )
+
     # Volume bounds
     m.maximum_volume_volumeunit = Param(
         m.WATER_NODES_W_RESERVOIRS, within=NonNegativeReals
+    )
+
+    m.allow_min_volume_violation = Param(
+        m.WATER_NODES_W_RESERVOIRS, within=Boolean, default=0
+    )
+
+    m.min_volume_violation_cost = Param(
+        m.WATER_NODES_W_RESERVOIRS, within=NonNegativeReals, default=0
     )
 
     m.minimum_volume_volumeunit = Param(
         m.WATER_NODES_W_RESERVOIRS, within=NonNegativeReals
     )
 
+    m.allow_max_volume_violation = Param(
+        m.WATER_NODES_W_RESERVOIRS, within=Boolean, default=0
+    )
+
+    m.max_volume_violation_cost = Param(
+        m.WATER_NODES_W_RESERVOIRS, within=NonNegativeReals, default=0
+    )
+
     # Release targets
     m.reservoir_target_release_avg_flow_volunit_per_sec = Param(
         m.WATER_NODE_RESERVOIR_BT_HRZS_WITH_TOTAL_RELEASE_REQUIREMENTS,
         within=NonNegativeReals,
+    )
+
+    m.allow_target_release_violation = Param(
+        m.WATER_NODES_W_RESERVOIRS, within=Boolean, default=0
+    )
+
+    m.target_release_violation_cost = Param(
+        m.WATER_NODES_W_RESERVOIRS, within=NonNegativeReals, default=0
     )
 
     # Powerhouse release and spill bounds
@@ -143,6 +165,9 @@ def add_model_components(
     m.Reservoir_Starting_Volume_WaterVolumeUnit = Var(
         m.WATER_NODES_W_RESERVOIRS, m.TMPS, within=NonNegativeReals
     )
+
+    # TODO: make constraints for the upper bounds, so that they are easier to
+    #  find
 
     m.Discharge_Water_to_Powerhouse_Rate_Vol_Per_Sec = Var(
         m.WATER_NODES_W_RESERVOIRS,
@@ -180,6 +205,21 @@ def add_model_components(
         initialize=gross_reservoir_release,
     )
 
+    # Slack variables
+    m.Target_Release_Violation_VolUnit = Var(
+        m.WATER_NODE_RESERVOIR_BT_HRZS_WITH_TOTAL_RELEASE_REQUIREMENTS,
+        within=NonNegativeReals,
+        initialize=0,
+    )
+
+    m.Min_Reservoir_Storage_Violation = Var(
+        m.WATER_NODES_W_RESERVOIRS, m.TMPS, within=NonNegativeReals, initialize=0
+    )
+
+    m.Max_Reservoir_Storage_Violation = Var(
+        m.WATER_NODES_W_RESERVOIRS, m.TMPS, within=NonNegativeReals, initialize=0
+    )
+
     # ### Constraints ### #
 
     def reservoir_target_storage_constraint_rule(mod, wn_w_r, tmp):
@@ -197,6 +237,8 @@ def add_model_components(
     def reservoir_storage_min_bound_constraint_rule(mod, r, tmp):
         return (
             mod.Reservoir_Starting_Volume_WaterVolumeUnit[r, tmp]
+            + mod.Min_Reservoir_Storage_Violation[r, tmp]
+            * mod.allow_max_volume_violation[r]
             >= mod.minimum_volume_volumeunit[r]
         )
 
@@ -210,6 +252,8 @@ def add_model_components(
         return (
             mod.Reservoir_Starting_Volume_WaterVolumeUnit[r, tmp]
             <= mod.maximum_volume_volumeunit[r]
+            + mod.Max_Reservoir_Storage_Violation[r, tmp]
+            * mod.allow_min_volume_violation[r]
         )
 
     m.Maximum_Water_Storage_Constraint = Constraint(
@@ -221,13 +265,21 @@ def add_model_components(
     # Target releases
     def reservoir_target_release_constraint_rule(mod, wn, bt, hrz):
         """ """
-        return sum(
-            mod.Gross_Reservoir_Release_Rate_Vol_Per_Sec[wn, tmp] * mod.hrs_in_tmp[tmp]
-            for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
-        ) == sum(
-            mod.reservoir_target_release_avg_flow_volunit_per_sec[wn, bt, hrz]
-            * mod.hrs_in_tmp[tmp]
-            for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
+        return (
+            sum(
+                mod.Gross_Reservoir_Release_Rate_Vol_Per_Sec[wn, tmp]
+                * 3600
+                * mod.hrs_in_tmp[tmp]
+                for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
+            )
+            == sum(
+                mod.reservoir_target_release_avg_flow_volunit_per_sec[wn, bt, hrz]
+                * 3600
+                * mod.hrs_in_tmp[tmp]
+                for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
+            )
+            - mod.Target_Release_Violation_VolUnit[wn, bt, hrz]
+            * mod.allow_target_release_violation[wn]
         )
 
     m.Water_Node_Target_Release_Constraint = Constraint(
@@ -293,6 +345,7 @@ def load_model_data(
     subproblem,
     stage,
 ):
+
     data_portal.load(
         filename=os.path.join(
             scenario_directory,
@@ -308,12 +361,19 @@ def load_model_data(
         param=(
             m.max_powerhouse_release_vol_unit_per_sec,
             m.max_spill_vol_unit_per_sec,
+            m.allow_target_release_violation,
+            m.target_release_violation_cost,
             m.minimum_volume_volumeunit,
             m.maximum_volume_volumeunit,
+            m.allow_min_volume_violation,
+            m.min_volume_violation_cost,
+            m.allow_max_volume_violation,
+            m.max_volume_violation_cost,
             m.evaporation_coefficient,
             m.elevation_type,
         ),
     )
+
     fname = os.path.join(
         scenario_directory,
         weather_iteration,
@@ -408,8 +468,14 @@ def get_inputs_from_database(
         f"""SELECT water_node,
             max_powerhouse_release_vol_unit_per_sec,
             max_spill_vol_unit_per_sec,
+            allow_target_release_violation,
+            target_release_violation_cost,
             minimum_volume_volumeunit,
             maximum_volume_volumeunit,
+            allow_min_volume_violation,
+            min_volume_violation_cost,
+            allow_max_volume_violation,
+            max_volume_violation_cost,
             evaporation_coefficient,
             elevation_type
         FROM inputs_system_water_node_reservoirs
@@ -565,14 +631,21 @@ def write_model_inputs(
                 "water_node",
                 "max_powerhouse_release_vol_unit_per_sec",
                 "max_spill_vol_unit_per_sec",
+                "allow_target_release_violation",
+                "target_release_violation_cost",
                 "minimum_volume_volumeunit",
                 "maximum_volume_volumeunit",
+                "allow_min_volume_violation",
+                "min_volume_violation_cost",
+                "allow_max_volume_violation",
+                "max_volume_violation_cost",
                 "evaporation_coefficient",
                 "elevation_type",
             ]
         )
 
         for row in reservoirs:
+            row = ["." if i is None else i for i in row]
             writer.writerow(row)
 
     target_volumes_list = [row for row in target_volumes]
