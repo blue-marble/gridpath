@@ -1296,6 +1296,10 @@ CREATE TABLE inputs_system_water_flows
     min_flow_violation_penalty_cost         FLOAT,
     allow_water_link_max_flow_violation     INTEGER,
     max_flow_violation_penalty_cost         FLOAT,
+    allow_water_link_hrz_min_flow_violation INTEGER,
+    hrz_min_flow_violation_penalty_cost     FLOAT,
+    allow_water_link_hrz_max_flow_violation INTEGER,
+    hrz_max_flow_violation_penalty_cost     FLOAT,
     water_flow_timepoint_bounds_scenario_id INTEGER,
     water_flow_horizon_bounds_scenario_id   INTEGER,
     water_flow_ramp_limit_scenario_id       INTEGER,
@@ -2229,20 +2233,20 @@ DROP TABLE IF EXISTS
     subscenarios_project_hydro_operational_chars_iterations;
 CREATE TABLE subscenarios_project_hydro_operational_chars_iterations
 (
-    project                                VARCHAR(64),
+    project                             VARCHAR(64),
     hydro_operational_chars_scenario_id INTEGER,
-    name                                   VARCHAR(32),
-    description                            VARCHAR(128),
+    name                                VARCHAR(32),
+    description                         VARCHAR(128),
     PRIMARY KEY (project, hydro_operational_chars_scenario_id)
 );
 
 DROP TABLE IF EXISTS inputs_project_hydro_operational_chars_iterations;
 CREATE TABLE inputs_project_hydro_operational_chars_iterations
 (
-    project                                TEXT,
+    project                             TEXT,
     hydro_operational_chars_scenario_id INTEGER,
-    varies_by_weather_iteration            INTEGER,
-    varies_by_hydro_iteration              INTEGER,
+    varies_by_weather_iteration         INTEGER,
+    varies_by_hydro_iteration           INTEGER,
     PRIMARY KEY (project, hydro_operational_chars_scenario_id)
 );
 
@@ -6981,6 +6985,8 @@ CREATE TABLE results_system_costs
     Total_Release_Violation_Penalty_Cost                    FLOAT,
     Total_Min_Water_Storage_Violation_Penalty_Cost          FLOAT,
     Total_Max_Water_Storage_Violation_Penalty_Cost          FLOAT,
+    Total_Hrz_Min_Flow_Violation_Penalty_Cost               FLOAT,
+    Total_Hrz_Max_Flow_Violation_Penalty_Cost               FLOAT,
     PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
                  availability_iteration, subproblem_id, stage_id)
 );

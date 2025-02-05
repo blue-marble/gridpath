@@ -73,6 +73,20 @@ def add_model_components(
         m.WATER_LINKS, within=NonNegativeReals, default=0
     )
 
+    m.allow_water_link_hrz_min_flow_violation = Param(
+        m.WATER_LINKS, within=Boolean, default=0
+    )
+    m.hrz_min_flow_violation_penalty_cost = Param(
+        m.WATER_LINKS, within=NonNegativeReals, default=0
+    )
+
+    m.allow_water_link_hrz_max_flow_violation = Param(
+        m.WATER_LINKS, within=Boolean, default=0
+    )
+    m.hrz_max_flow_violation_penalty_cost = Param(
+        m.WATER_LINKS, within=NonNegativeReals, default=0
+    )
+
     # Start with these as params BUT:
     # These are probably not params but expressions with a non-linear
     # relationship to elevation; most of the curves look they can be
@@ -229,6 +243,14 @@ def add_model_components(
         m.WATER_LINK_DEPARTURE_ARRIVAL_TMPS, within=NonNegativeReals
     )
 
+    m.Water_Link_Hrz_Min_Flow_Violation = Var(
+        m.WATER_LINKS_W_BT_HRZ_MIN_FLOW_CONSTRAINT, within=NonNegativeReals
+    )
+
+    m.Water_Link_Hrz_Max_Flow_Violation = Var(
+        m.WATER_LINKS_W_BT_HRZ_MAX_FLOW_CONSTRAINT, within=NonNegativeReals
+    )
+
     def min_flow_violation_expression_init(mod, wl, dep_tmp, arr_tmp):
         """
 
@@ -265,6 +287,44 @@ def add_model_components(
         initialize=max_flow_violation_expression_init,
     )
 
+    def hrz_min_flow_violation_expression_init(mod, wl, bt, hrz):
+        """
+
+        :param mod:
+        :param wl:
+        :param bt:
+        :param hrz:
+        :return:
+        """
+        if mod.allow_water_link_hrz_min_flow_violation[wl]:
+            return mod.Water_Link_Hrz_Min_Flow_Violation[wl, bt, hrz]
+        else:
+            return 0
+
+    m.Water_Link_Hrz_Min_Flow_Violation_Expression = Expression(
+        m.WATER_LINKS_W_BT_HRZ_MIN_FLOW_CONSTRAINT,
+        initialize=hrz_min_flow_violation_expression_init,
+    )
+
+    def hrz_max_flow_violation_expression_init(mod, wl, bt, hrz):
+        """
+
+        :param mod:
+        :param wl:
+        :param bt:
+        :param hrz:
+        :return:
+        """
+        if mod.allow_water_link_hrz_max_flow_violation[wl]:
+            return mod.Water_Link_Hrz_Max_Flow_Violation[wl, bt, hrz]
+        else:
+            return 0
+
+    m.Water_Link_Hrz_Max_Flow_Violation_Expression = Expression(
+        m.WATER_LINKS_W_BT_HRZ_MAX_FLOW_CONSTRAINT,
+        initialize=hrz_max_flow_violation_expression_init,
+    )
+
     # ### Constraints ### #
     def min_tmp_flow_rule(mod, wl, dep_tmp, arr_tmp):
         return (
@@ -285,7 +345,7 @@ def add_model_components(
         )
 
     m.Water_Link_Maximum_Flow_Constraint = Constraint(
-        m.WATER_LINK_DEPARTURE_ARRIVAL_TMPS, rule=max_tmp_flow_rule
+        m.WATER_LINKS_W_BT_HRZ_MIN_FLOW_CONSTRAINT, rule=max_tmp_flow_rule
     )
 
     def min_total_hrz_flow_constraint_rule(mod, wl, bt, hrz):
@@ -296,7 +356,7 @@ def add_model_components(
             ]
             * mod.hrs_in_tmp[dep_tmp]
             for dep_tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
-        ) >= sum(
+        ) + mod.Water_Link_Hrz_Min_Flow_Violation_Expression[wl, bt, hrz] >= sum(
             mod.min_bt_hrz_flow_avg_vol_per_second[wl, bt, hrz] * mod.hrs_in_tmp[tmp]
             for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
         )
@@ -314,7 +374,7 @@ def add_model_components(
             ]
             * mod.hrs_in_tmp[dep_tmp]
             for dep_tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
-        ) <= sum(
+        ) - mod.Water_Link_Hrz_Max_Flow_Violation_Expression[wl, bt, hrz] <= sum(
             mod.max_bt_hrz_flow_avg_vol_per_second[wl, bt, hrz] * mod.hrs_in_tmp[tmp]
             for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
         )
@@ -477,6 +537,10 @@ def load_model_data(
             m.min_flow_violation_penalty_cost,
             m.allow_water_link_max_flow_violation,
             m.max_flow_violation_penalty_cost,
+            m.allow_water_link_hrz_min_flow_violation,
+            m.hrz_min_flow_violation_penalty_cost,
+            m.allow_water_link_hrz_max_flow_violation,
+            m.hrz_max_flow_violation_penalty_cost,
         ),
     )
 
@@ -566,7 +630,11 @@ def get_inputs_from_database(
         allow_water_link_min_flow_violation,
         min_flow_violation_penalty_cost,
         allow_water_link_max_flow_violation,
-        max_flow_violation_penalty_cost
+        max_flow_violation_penalty_cost,
+        allow_water_link_hrz_min_flow_violation,
+        hrz_min_flow_violation_penalty_cost,
+        allow_water_link_hrz_max_flow_violation,
+        hrz_max_flow_violation_penalty_cost
         FROM inputs_system_water_flows
         WHERE water_flow_scenario_id = {subscenarios.WATER_FLOW_SCENARIO_ID}
         AND water_link IN (
