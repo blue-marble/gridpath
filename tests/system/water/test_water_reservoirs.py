@@ -202,6 +202,21 @@ class TestReservoirs(unittest.TestCase):
         }
         self.assertDictEqual(expected_maxspill, actual_maxspill)
 
+        # Param: max_total_outflow_vol_unit_per_sec
+        expected_max_total_outflow_vol_unit_per_sec = {
+            "Water_Node_1": 100001,
+            "Water_Node_2": 100001,
+            "Water_Node_3": 100001,
+        }
+        actual_max_total_outflow_vol_unit_per_sec = {
+            r: instance.max_total_outflow_vol_unit_per_sec[r]
+            for r in instance.WATER_NODES_W_RESERVOIRS
+        }
+        self.assertDictEqual(
+            expected_max_total_outflow_vol_unit_per_sec,
+            actual_max_total_outflow_vol_unit_per_sec,
+        )
+
         # Param: evaporation_coefficient
         expected_evap = {
             "Water_Node_1": 0.1,

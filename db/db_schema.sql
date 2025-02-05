@@ -1101,6 +1101,7 @@ CREATE TABLE inputs_system_water_node_reservoirs
     water_node                              TEXT,
     max_powerhouse_release_vol_unit_per_sec FLOAT,
     max_spill_vol_unit_per_sec              FLOAT,
+    max_total_outflow_vol_unit_per_sec      FLOAT,
     target_volume_scenario_id               INTEGER,
     target_release_scenario_id              INTEGER,
     allow_target_release_violation          INTEGER,

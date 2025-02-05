@@ -154,6 +154,9 @@ def add_model_components(
     m.max_spill_vol_unit_per_sec = Param(
         m.WATER_NODES_W_RESERVOIRS, within=NonNegativeReals
     )
+    m.max_total_outflow_vol_unit_per_sec = Param(
+        m.WATER_NODES_W_RESERVOIRS, within=NonNegativeReals
+    )
 
     # Losses
     # TODO: by month
@@ -166,21 +169,16 @@ def add_model_components(
         m.WATER_NODES_W_RESERVOIRS, m.TMPS, within=NonNegativeReals
     )
 
-    # TODO: make constraints for the upper bounds, so that they are easier to
-    #  find
-
     m.Discharge_Water_to_Powerhouse_Rate_Vol_Per_Sec = Var(
         m.WATER_NODES_W_RESERVOIRS,
         m.TMPS,
         within=NonNegativeReals,
-        bounds=lambda mod, r, tmp: (0, mod.max_powerhouse_release_vol_unit_per_sec[r]),
     )
 
     m.Spill_Water_Rate_Vol_Per_Sec = Var(
         m.WATER_NODES_W_RESERVOIRS,
         m.TMPS,
         within=NonNegativeReals,
-        bounds=lambda mod, r, tmp: (0, mod.max_spill_vol_unit_per_sec[r]),
     )
 
     # TODO: implement the correct calculation; depends on area, which depends
@@ -221,6 +219,38 @@ def add_model_components(
     )
 
     # ### Constraints ### #
+
+    def max_powerhouse_discharge_constraint_rule(mod, wn_w_r, tmp):
+        return (
+            mod.Discharge_Water_to_Powerhouse_Rate_Vol_Per_Sec[wn_w_r, tmp]
+            <= mod.max_powerhouse_release_vol_unit_per_sec[wn_w_r]
+        )
+
+    m.Max_Discharge_Water_to_Powerhouse_Constraint = Constraint(
+        m.WATER_NODES_W_RESERVOIRS,
+        m.TMPS,
+        rule=max_powerhouse_discharge_constraint_rule,
+    )
+
+    def max_spill_constraint_rule(mod, wn_w_r, tmp):
+        return (
+            mod.Spill_Water_Rate_Vol_Per_Sec[wn_w_r, tmp]
+            <= mod.max_spill_vol_unit_per_sec[wn_w_r]
+        )
+
+    m.Max_Spill_Constraint = Constraint(
+        m.WATER_NODES_W_RESERVOIRS, m.TMPS, rule=max_spill_constraint_rule
+    )
+
+    def max_gross_outflow_constraint_rule(mod, wn_w_r, tmp):
+        return (
+            mod.Gross_Reservoir_Release_Rate_Vol_Per_Sec[wn_w_r, tmp]
+            <= mod.max_total_outflow_vol_unit_per_sec[wn_w_r]
+        )
+
+    m.Max_Gross_Outflow_Constraint = Constraint(
+        m.WATER_NODES_W_RESERVOIRS, m.TMPS, rule=max_gross_outflow_constraint_rule
+    )
 
     def reservoir_target_storage_constraint_rule(mod, wn_w_r, tmp):
         """ """
@@ -361,6 +391,7 @@ def load_model_data(
         param=(
             m.max_powerhouse_release_vol_unit_per_sec,
             m.max_spill_vol_unit_per_sec,
+            m.max_total_outflow_vol_unit_per_sec,
             m.allow_target_release_violation,
             m.target_release_violation_cost,
             m.minimum_volume_volumeunit,
@@ -468,6 +499,7 @@ def get_inputs_from_database(
         f"""SELECT water_node,
             max_powerhouse_release_vol_unit_per_sec,
             max_spill_vol_unit_per_sec,
+            max_total_outflow_vol_unit_per_sec,
             allow_target_release_violation,
             target_release_violation_cost,
             minimum_volume_volumeunit,
@@ -631,6 +663,7 @@ def write_model_inputs(
                 "water_node",
                 "max_powerhouse_release_vol_unit_per_sec",
                 "max_spill_vol_unit_per_sec",
+                "max_total_outflow_vol_unit_per_sec",
                 "allow_target_release_violation",
                 "target_release_violation_cost",
                 "minimum_volume_volumeunit",
