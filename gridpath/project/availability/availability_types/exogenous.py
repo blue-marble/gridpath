@@ -108,7 +108,13 @@ def add_model_components(
         ),
     )
 
-    m.AVL_EXOG_PRJ_BT_HRZ_W_DERATES = Set(dimen=3, within=m.PROJECTS * m.BLN_TYPE_HRZS)
+    m.AVL_EXOG_PRJ_BT_HRZ_W_WEATHER_DERATES = Set(
+        dimen=3, within=m.PROJECTS * m.BLN_TYPE_HRZS
+    )
+
+    m.AVL_EXOG_PRJ_BT_HRZ_W_INDEPENDENT_DERATES = Set(
+        dimen=3, within=m.PROJECTS * m.BLN_TYPE_HRZS
+    )
 
     # Required Params
     ###########################################################################
@@ -127,17 +133,17 @@ def add_model_components(
     )
 
     m.avl_exog_cap_derate_weather_bt_hrz = Param(
-        m.AVL_EXOG_PRJ_BT_HRZ_W_DERATES, within=NonNegativeReals, default=1
+        m.AVL_EXOG_PRJ_BT_HRZ_W_WEATHER_DERATES, within=NonNegativeReals, default=1
     )
 
     m.avl_exog_cap_derate_independent_bt_hrz = Param(
-        m.AVL_EXOG_PRJ_BT_HRZ_W_DERATES, within=NonNegativeReals, default=1
+        m.AVL_EXOG_PRJ_BT_HRZ_W_INDEPENDENT_DERATES, within=NonNegativeReals, default=1
     )
 
     # Make timepoint params from the bt-hrz params
     def hrz_cap_derate_weather_by_tmp_init(mod, prj, tmp):
         derate = 1
-        for _prj, bt, hrz in mod.AVL_EXOG_PRJ_BT_HRZ_W_DERATES:
+        for _prj, bt, hrz in mod.AVL_EXOG_PRJ_BT_HRZ_W_WEATHER_DERATES:
             for _tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]:
                 if _prj == prj and _tmp == tmp:
                     derate = mod.avl_exog_cap_derate_weather_bt_hrz[prj, bt, hrz]
@@ -150,7 +156,7 @@ def add_model_components(
 
     def hrz_cap_derate_independent_by_tmp_init(mod, prj, tmp):
         derate = 1
-        for _prj, bt, hrz in mod.AVL_EXOG_PRJ_BT_HRZ_W_DERATES:
+        for _prj, bt, hrz in mod.AVL_EXOG_PRJ_BT_HRZ_W_INDEPENDENT_DERATES:
             for _tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]:
                 if _prj == prj and _tmp == tmp:
                     derate = mod.avl_exog_cap_derate_independent_bt_hrz[prj, bt, hrz]
@@ -271,6 +277,7 @@ def load_model_data(
     if os.path.exists(availability_independent_bt_hrz_file):
         data_portal.load(
             filename=availability_independent_bt_hrz_file,
+            index=m.AVL_EXOG_PRJ_BT_HRZ_W_INDEPENDENT_DERATES,
             param=m.avl_exog_cap_derate_independent_bt_hrz,
         )
 
@@ -282,6 +289,7 @@ def load_model_data(
     if os.path.exists(availability_weather_bt_hrz_file):
         data_portal.load(
             filename=availability_weather_bt_hrz_file,
+            index=m.AVL_EXOG_PRJ_BT_HRZ_W_WEATHER_DERATES,
             param=m.avl_exog_cap_derate_weather_bt_hrz,
         )
 
