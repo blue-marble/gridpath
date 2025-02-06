@@ -2562,6 +2562,8 @@ CREATE TABLE inputs_project_availability
     availability_type                              VARCHAR(32),
     exogenous_availability_independent_scenario_id INTEGER,
     exogenous_availability_weather_scenario_id     INTEGER,
+    exogenous_availability_independent_bt_hrz_scenario_id INTEGER,
+    exogenous_availability_weather_bt_hrz_scenario_id     INTEGER,
     endogenous_availability_scenario_id            INTEGER,
     PRIMARY KEY (project_availability_scenario_id, project, availability_type)
 );
@@ -2609,37 +2611,70 @@ CREATE TABLE inputs_project_availability_exogenous_weather
     project                                    VARCHAR(64),
     exogenous_availability_weather_scenario_id INTEGER,
     weather_iteration                          INTEGER,
-    hydro_iteration                            INTEGER,
     stage_id                                   INTEGER,
     timepoint                                  INTEGER,
     availability_derate_weather                FLOAT,
     PRIMARY KEY (project, exogenous_availability_weather_scenario_id,
-                 weather_iteration, hydro_iteration, stage_id, timepoint),
+                 weather_iteration, stage_id, timepoint),
     FOREIGN KEY (project, exogenous_availability_weather_scenario_id)
         REFERENCES subscenarios_project_availability_exogenous_weather
             (project, exogenous_availability_weather_scenario_id)
 );
 
--- TODO: remove no iterations param and consolidate here
-DROP TABLE IF EXISTS
-    subscenarios_project_availability_exogenous_weather_iterations;
-CREATE TABLE subscenarios_project_availability_exogenous_weather_iterations
+
+DROP TABLE IF EXISTS subscenarios_project_availability_exogenous_independent_bt_hrz;
+CREATE TABLE subscenarios_project_availability_exogenous_independent_bt_hrz
 (
-    project                                    VARCHAR(64),
-    exogenous_availability_weather_scenario_id INTEGER,
-    name                                       VARCHAR(32),
-    description                                VARCHAR(128),
-    PRIMARY KEY (project, exogenous_availability_weather_scenario_id)
+    project                                               VARCHAR(64),
+    exogenous_availability_independent_bt_hrz_scenario_id INTEGER,
+    name                                                  VARCHAR(32),
+    description                                           VARCHAR(128),
+    PRIMARY KEY (project, exogenous_availability_independent_bt_hrz_scenario_id)
 );
 
-DROP TABLE IF EXISTS inputs_project_availability_exogenous_weather_iterations;
-CREATE TABLE inputs_project_availability_exogenous_weather_iterations
+DROP TABLE IF EXISTS inputs_project_availability_exogenous_independent_bt_hrz;
+CREATE TABLE inputs_project_availability_exogenous_independent_bt_hrz
 (
-    project                                    TEXT,
-    exogenous_availability_weather_scenario_id INTEGER,
-    varies_by_weather_iteration                INTEGER,
-    varies_by_hydro_iteration                  INTEGER,
-    PRIMARY KEY (project, exogenous_availability_weather_scenario_id)
+    project                                               VARCHAR(64),
+    exogenous_availability_independent_bt_hrz_scenario_id INTEGER,
+    availability_iteration                                INTEGER,
+    stage_id                                              INTEGER,
+    balancing_type_project                                TEXT,
+    horizon                                               INTEGER,
+    availability_derate_independent_bt_hrz                FLOAT,
+    PRIMARY KEY (project, exogenous_availability_independent_bt_hrz_scenario_id,
+                 availability_iteration, stage_id, balancing_type_project,
+                 horizon),
+    FOREIGN KEY (project, exogenous_availability_independent_bt_hrz_scenario_id)
+        REFERENCES subscenarios_project_availability_exogenous_independent_bt_hrz
+            (project, exogenous_availability_independent_bt_hrz_scenario_id)
+);
+
+DROP TABLE IF EXISTS subscenarios_project_availability_exogenous_weather_bt_hrz;
+CREATE TABLE subscenarios_project_availability_exogenous_weather_bt_hrz
+(
+    project                                           VARCHAR(64),
+    exogenous_availability_weather_bt_hrz_scenario_id INTEGER,
+    name                                              VARCHAR(32),
+    description                                       VARCHAR(128),
+    PRIMARY KEY (project, exogenous_availability_weather_bt_hrz_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_availability_exogenous_weather_bt_hrz;
+CREATE TABLE inputs_project_availability_exogenous_weather_bt_hrz
+(
+    project                                           VARCHAR(64),
+    exogenous_availability_weather_bt_hrz_scenario_id INTEGER,
+    weather_iteration                                 INTEGER,
+    stage_id                                          INTEGER,
+    balancing_type_project                                TEXT,
+    horizon                                               INTEGER,
+    availability_derate_weather_bt_hrz                FLOAT,
+    PRIMARY KEY (project, exogenous_availability_weather_bt_hrz_scenario_id,
+                 weather_iteration, stage_id, balancing_type_project, horizon),
+    FOREIGN KEY (project, exogenous_availability_weather_bt_hrz_scenario_id)
+        REFERENCES subscenarios_project_availability_exogenous_weather_bt_hrz
+            (project, exogenous_availability_weather_bt_hrz_scenario_id)
 );
 
 

@@ -1576,6 +1576,14 @@ class TestExamples(unittest.TestCase):
         scenario_name = "hydro_system_w_ramp_limits"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
+    def test_test_w_bt_hrz_avl(self):
+        """
+        :return:
+        """
+
+        scenario_name = "test_w_bt_hrz_avl"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
     @classmethod
     def tearDownClass(cls):
         os.remove(DB_PATH)

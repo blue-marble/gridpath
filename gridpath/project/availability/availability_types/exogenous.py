@@ -38,6 +38,9 @@ from gridpath.auxiliary.validations import (
 from gridpath.project.common_functions import (
     determine_project_subset,
 )
+from gridpath.project.operations.operational_types.common_functions import (
+    write_tab_file_model_inputs,
+)
 
 
 def add_model_components(
@@ -105,6 +108,14 @@ def add_model_components(
         ),
     )
 
+    m.AVL_EXOG_PRJ_BT_HRZ_W_WEATHER_DERATES = Set(
+        dimen=3, within=m.PROJECTS * m.BLN_TYPE_HRZS
+    )
+
+    m.AVL_EXOG_PRJ_BT_HRZ_W_INDEPENDENT_DERATES = Set(
+        dimen=3, within=m.PROJECTS * m.BLN_TYPE_HRZS
+    )
+
     # Required Params
     ###########################################################################
 
@@ -121,6 +132,41 @@ def add_model_components(
         m.AVL_EXOG_OPR_TMPS, within=NonNegativeReals, default=1
     )
 
+    m.avl_exog_cap_derate_weather_bt_hrz = Param(
+        m.AVL_EXOG_PRJ_BT_HRZ_W_WEATHER_DERATES, within=NonNegativeReals, default=1
+    )
+
+    m.avl_exog_cap_derate_independent_bt_hrz = Param(
+        m.AVL_EXOG_PRJ_BT_HRZ_W_INDEPENDENT_DERATES, within=NonNegativeReals, default=1
+    )
+
+    # Make timepoint params from the bt-hrz params
+    def hrz_cap_derate_weather_by_tmp_init(mod, prj, tmp):
+        derate = 1
+        for _prj, bt, hrz in mod.AVL_EXOG_PRJ_BT_HRZ_W_WEATHER_DERATES:
+            for _tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]:
+                if _prj == prj and _tmp == tmp:
+                    derate = mod.avl_exog_cap_derate_weather_bt_hrz[prj, bt, hrz]
+
+        return derate
+
+    m.avl_exog_cap_derate_weather_bt_hrz_by_tmp = Param(
+        m.AVL_EXOG_OPR_TMPS, initialize=hrz_cap_derate_weather_by_tmp_init
+    )
+
+    def hrz_cap_derate_independent_by_tmp_init(mod, prj, tmp):
+        derate = 1
+        for _prj, bt, hrz in mod.AVL_EXOG_PRJ_BT_HRZ_W_INDEPENDENT_DERATES:
+            for _tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]:
+                if _prj == prj and _tmp == tmp:
+                    derate = mod.avl_exog_cap_derate_independent_bt_hrz[prj, bt, hrz]
+
+        return derate
+
+    m.avl_exog_cap_derate_independent_bt_hrz_by_tmp = Param(
+        m.AVL_EXOG_OPR_TMPS, initialize=hrz_cap_derate_independent_by_tmp_init
+    )
+
 
 # Availability Type Methods
 ###############################################################################
@@ -131,6 +177,8 @@ def availability_derate_cap_rule(mod, g, tmp):
     return (
         mod.avl_exog_cap_derate_independent[g, tmp]
         * mod.avl_exog_cap_derate_weather[g, tmp]
+        * mod.avl_exog_cap_derate_weather_bt_hrz_by_tmp[g, tmp]
+        * mod.avl_exog_cap_derate_independent_bt_hrz_by_tmp[g, tmp]
     )
 
 
@@ -184,7 +232,8 @@ def load_model_data(
     # assigned as their derate
     # The test examples do not currently have a
     # project_availability_exogenous_x.tab, but use the default instead
-    availability_independent_file = os.path.join(
+
+    input_directory = os.path.join(
         scenario_directory,
         weather_iteration,
         hydro_iteration,
@@ -192,6 +241,10 @@ def load_model_data(
         subproblem,
         stage,
         "inputs",
+    )
+
+    availability_independent_file = os.path.join(
+        input_directory,
         "project_availability_exogenous_independent.tab",
     )
 
@@ -205,13 +258,7 @@ def load_model_data(
         )
 
     availability_weather_file = os.path.join(
-        scenario_directory,
-        weather_iteration,
-        hydro_iteration,
-        availability_iteration,
-        subproblem,
-        stage,
-        "inputs",
+        input_directory,
         "project_availability_exogenous_weather.tab",
     )
 
@@ -219,6 +266,31 @@ def load_model_data(
         data_portal.load(
             filename=availability_weather_file,
             param=m.avl_exog_cap_derate_weather,
+        )
+
+    # Balancing type - horizon inputs
+    availability_independent_bt_hrz_file = os.path.join(
+        input_directory,
+        "project_availability_exogenous_independent_bt_hrz.tab",
+    )
+
+    if os.path.exists(availability_independent_bt_hrz_file):
+        data_portal.load(
+            filename=availability_independent_bt_hrz_file,
+            index=m.AVL_EXOG_PRJ_BT_HRZ_W_INDEPENDENT_DERATES,
+            param=m.avl_exog_cap_derate_independent_bt_hrz,
+        )
+
+    availability_weather_bt_hrz_file = os.path.join(
+        input_directory,
+        "project_availability_exogenous_weather_bt_hrz.tab",
+    )
+
+    if os.path.exists(availability_weather_bt_hrz_file):
+        data_portal.load(
+            filename=availability_weather_bt_hrz_file,
+            index=m.AVL_EXOG_PRJ_BT_HRZ_W_WEATHER_DERATES,
+            param=m.avl_exog_cap_derate_weather_bt_hrz,
         )
 
 
@@ -244,96 +316,168 @@ def get_inputs_from_database(
     :return:
     """
 
+    # Derate by timepoint
     ind_sql = f"""
         SELECT project, timepoint, availability_derate_independent, 
         hyb_stor_cap_availability_derate_independent
-        -- Select only projects, periods, timepoints from the relevant 
-        -- portfolio, relevant opchar scenario id, operational type, 
-        -- and temporal scenario id
-        FROM 
-            (SELECT project, stage_id, timepoint
-            FROM project_operational_timepoints
+        FROM inputs_project_availability_exogenous_independent
+        -- Portfolio projects only
+        WHERE project IN (
+            SELECT project FROM inputs_project_portfolios
             WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
-            AND project_operational_chars_scenario_id = {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
-            AND temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
-            AND (project_specified_capacity_scenario_id = {subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID}
-                 OR project_new_cost_scenario_id = {subscenarios.PROJECT_NEW_COST_SCENARIO_ID})
-            AND subproblem_id = {subproblem}
-            AND stage_id = {stage}
-            ) as projects_periods_timepoints_tbl
-        -- Of the projects in the portfolio, select only those that are in 
-        -- this project_availability_scenario_id and have 'exogenous' as 
-        -- their availability type and a non-null 
-        -- exogenous_availability_scenario_id, i.e. they have 
-        -- timepoint-level availability inputs in the 
-        -- inputs_project_availability_exogenous table
-        INNER JOIN (
-            SELECT project, exogenous_availability_independent_scenario_id
+        )
+        -- Projects from this availability ID and type only
+        AND project IN (
+            SELECT project
             FROM inputs_project_availability
             WHERE project_availability_scenario_id = {subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID}
             AND availability_type = 'exogenous'
             AND exogenous_availability_independent_scenario_id IS NOT NULL
-            ) AS avail_char
-        USING (project)
-        -- Now that we have the relevant projects and timepoints, get the 
-        -- respective availability_derate (and no others) from 
-        -- inputs_project_availability_exogenous
-        LEFT OUTER JOIN
-            inputs_project_availability_exogenous_independent
-        USING (exogenous_availability_independent_scenario_id, project, 
-                stage_id, timepoint)
-        WHERE availability_iteration = {availability_iteration}
+        )
+        -- Relevant optype opchar ID
+        AND (project, exogenous_availability_independent_scenario_id) IN (
+            SELECT project, exogenous_availability_independent_scenario_id
+            FROM inputs_project_availability
+            WHERE project_availability_scenario_id = {subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID}
+        )
+        -- Relevant temporal index
+        AND timepoint IN (
+            SELECT timepoint
+            FROM inputs_temporal
+            WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+            AND subproblem_id = {subproblem}
+            AND stage_id = {stage}
+        )
+        -- Get the correct availability iteration
+        AND availability_iteration = {availability_iteration}
         ;
     """
 
     c1 = conn.cursor()
     independent_availabilities = c1.execute(ind_sql)
 
+    # Derate by timepoint and weather
     weather_sql = f"""
         SELECT project, timepoint, availability_derate_weather
-        -- Select only projects, periods, timepoints from the relevant 
-        -- portfolio, relevant opchar scenario id, operational type, 
-        -- and temporal scenario id
-        FROM 
-            (SELECT project, stage_id, timepoint
-            FROM project_operational_timepoints
+        FROM inputs_project_availability_exogenous_weather
+        -- Portfolio projects only
+        WHERE project IN (
+            SELECT project FROM inputs_project_portfolios
             WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
-            AND project_operational_chars_scenario_id = {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
-            AND temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
-            AND (project_specified_capacity_scenario_id = {subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID}
-                 OR project_new_cost_scenario_id = {subscenarios.PROJECT_NEW_COST_SCENARIO_ID})
-            AND subproblem_id = {subproblem}
-            AND stage_id = {stage}
-            ) as projects_periods_timepoints_tbl
-        -- Of the projects in the portfolio, select only those that are in 
-        -- this project_availability_scenario_id and have 'exogenous' as 
-        -- their availability type and a non-null 
-        -- exogenous_availability_scenario_id, i.e. they have 
-        -- timepoint-level availability inputs in the 
-        -- inputs_project_availability_exogenous table
-        INNER JOIN (
-            SELECT project, exogenous_availability_weather_scenario_id
+        )
+        -- Projects from this availability ID and type only
+        AND project IN (
+            SELECT project
             FROM inputs_project_availability
             WHERE project_availability_scenario_id = {subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID}
             AND availability_type = 'exogenous'
             AND exogenous_availability_weather_scenario_id IS NOT NULL
-            ) AS avail_char
-        USING (project)
-        -- Now that we have the relevant projects and timepoints, get the 
-        -- respective availability_derate (and no others) from 
-        -- inputs_project_availability_exogenous
-        LEFT OUTER JOIN
-            inputs_project_availability_exogenous_weather
-        USING (exogenous_availability_weather_scenario_id, project, stage_id, 
-        timepoint)
-        WHERE weather_iteration = {weather_iteration}
+        )
+        -- Relevant optype opchar ID
+        AND (project, exogenous_availability_weather_scenario_id) IN (
+            SELECT project, exogenous_availability_weather_scenario_id
+            FROM inputs_project_availability
+            WHERE project_availability_scenario_id = {subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID}
+        )
+        -- Relevant temporal index
+        AND timepoint IN (
+            SELECT timepoint
+            FROM inputs_temporal
+            WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+            AND subproblem_id = {subproblem}
+            AND stage_id = {stage}
+        )
+        -- Get the correct weather iteration
+        AND weather_iteration = {weather_iteration}
         ;
     """
 
     c2 = conn.cursor()
     weather_availabilities = c2.execute(weather_sql)
 
-    return independent_availabilities, weather_availabilities
+    # Derate by balancing type - horizon
+    bt_hrz_ind_sql = f"""
+        SELECT project, balancing_type_project, horizon, availability_derate_independent_bt_hrz
+        FROM inputs_project_availability_exogenous_independent_bt_hrz
+        -- Portfolio projects only
+        WHERE project IN (
+            SELECT project FROM inputs_project_portfolios
+            WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
+        )
+        -- Projects from this availability ID and type only
+        AND project IN (
+            SELECT project
+            FROM inputs_project_availability
+            WHERE project_availability_scenario_id = {subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID}
+            AND availability_type = 'exogenous'
+            AND exogenous_availability_independent_bt_hrz_scenario_id IS NOT NULL
+        )
+        -- Relevant optype opchar ID
+        AND (project, exogenous_availability_independent_bt_hrz_scenario_id) IN (
+            SELECT project, exogenous_availability_independent_bt_hrz_scenario_id
+            FROM inputs_project_availability
+            WHERE project_availability_scenario_id = {subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID}
+        )
+        -- Relevant temporal index
+        AND (balancing_type_project, horizon) IN (
+            SELECT balancing_type_horizon, horizon
+            FROM inputs_temporal_horizon_timepoints
+            WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+            AND subproblem_id = {subproblem}
+        )
+        -- Get the correct availability iteration
+        AND availability_iteration = {availability_iteration}
+        ;
+    """
+
+    c3 = conn.cursor()
+    bt_hrz_independent_availabilities = c3.execute(bt_hrz_ind_sql)
+
+    # Derate by timepoint and weather
+    bt_hrz_weather_sql = f"""
+        SELECT project, balancing_type_project, horizon, 
+        availability_derate_weather_bt_hrz
+        FROM inputs_project_availability_exogenous_weather_bt_hrz
+        -- Portfolio projects only
+        WHERE project IN (
+            SELECT project FROM inputs_project_portfolios
+            WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
+        )
+        -- Projects from this availability ID and type only
+        AND project IN (
+            SELECT project
+            FROM inputs_project_availability
+            WHERE project_availability_scenario_id = {subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID}
+            AND availability_type = 'exogenous'
+            AND exogenous_availability_weather_bt_hrz_scenario_id IS NOT NULL
+        )
+        -- Relevant optype opchar ID
+        AND (project, exogenous_availability_weather_bt_hrz_scenario_id) IN (
+            SELECT project, exogenous_availability_weather_bt_hrz_scenario_id
+            FROM inputs_project_availability
+            WHERE project_availability_scenario_id = {subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID}
+        )
+        -- Relevant temporal index
+        AND (balancing_type_project, horizon) IN (
+            SELECT balancing_type_horizon, horizon
+            FROM inputs_temporal_horizon_timepoints
+            WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+            AND subproblem_id = {subproblem}
+        )
+        -- Get the correct weather iteration
+        AND weather_iteration = {weather_iteration}
+        ;
+    """
+
+    c4 = conn.cursor()
+    bt_hrz_weather_availabilities = c4.execute(bt_hrz_weather_sql)
+
+    return (
+        independent_availabilities,
+        weather_availabilities,
+        bt_hrz_independent_availabilities,
+        bt_hrz_weather_availabilities,
+    )
 
 
 def write_model_inputs(
@@ -366,7 +510,12 @@ def write_model_inputs(
         weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
     )
 
-    independent_availabilities, weather_availabilities = get_inputs_from_database(
+    (
+        independent_availabilities,
+        weather_availabilities,
+        independent_availabilities_bt_hrz,
+        weather_availabilities_bt_hrz,
+    ) = get_inputs_from_database(
         scenario_id,
         subscenarios,
         db_weather_iteration,
@@ -377,65 +526,65 @@ def write_model_inputs(
         conn,
     )
 
-    independent_availabilities = independent_availabilities.fetchall()
-    weather_availabilities = weather_availabilities.fetchall()
+    write_tab_file_model_inputs(
+        scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        fname="project_availability_exogenous_weather.tab",
+        data=weather_availabilities,
+        replace_nulls=True,
+    )
 
-    if independent_availabilities:
-        with open(
-            os.path.join(
-                scenario_directory,
-                weather_iteration,
-                hydro_iteration,
-                availability_iteration,
-                subproblem,
-                stage,
-                "inputs",
-                "project_availability_exogenous_independent.tab",
-            ),
-            "w",
-            newline="",
-        ) as availability_tab_file:
-            writer = csv.writer(
-                availability_tab_file, delimiter="\t", lineterminator="\n"
-            )
+    write_tab_file_model_inputs(
+        scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        fname="project_availability_exogenous_independent.tab",
+        data=independent_availabilities,
+        replace_nulls=True,
+    )
 
-            writer.writerow(
-                [
-                    "project",
-                    "timepoint",
-                    "availability_derate_independent",
-                    "hyb_stor_cap_availability_derate_independent",
-                ]
-            )
+    write_tab_file_model_inputs(
+        scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        fname="project_availability_exogenous_weather.tab",
+        data=weather_availabilities,
+        replace_nulls=True,
+    )
 
-            for row in independent_availabilities:
-                row = ["." if i is None else i for i in row]
-                writer.writerow(row)
+    write_tab_file_model_inputs(
+        scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        fname="project_availability_exogenous_independent_bt_hrz.tab",
+        data=independent_availabilities_bt_hrz,
+        replace_nulls=True,
+    )
 
-    if weather_availabilities:
-        with open(
-            os.path.join(
-                scenario_directory,
-                weather_iteration,
-                hydro_iteration,
-                availability_iteration,
-                subproblem,
-                stage,
-                "inputs",
-                "project_availability_exogenous_weather.tab",
-            ),
-            "w",
-            newline="",
-        ) as availability_tab_file:
-            writer = csv.writer(
-                availability_tab_file, delimiter="\t", lineterminator="\n"
-            )
-
-            writer.writerow(["project", "timepoint", "availability_derate_weather"])
-
-            for row in weather_availabilities:
-                row = ["." if i is None else i for i in row]
-                writer.writerow(row)
+    write_tab_file_model_inputs(
+        scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        fname="project_availability_exogenous_weather_bt_hrz.tab",
+        data=weather_availabilities_bt_hrz,
+        replace_nulls=True,
+    )
 
 
 # Validation
@@ -459,7 +608,12 @@ def validate_inputs(
     :param conn:
     :return:
     """
-    independent_availabilities, weather_availabilities = get_inputs_from_database(
+    (
+        independent_availabilities,
+        weather_availabilities,
+        independent_availabilities_bt_hrz,
+        weather_availabilities_bt_hrz,
+    ) = get_inputs_from_database(
         scenario_id,
         subscenarios,
         weather_iteration,
