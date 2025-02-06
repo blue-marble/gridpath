@@ -41,6 +41,7 @@ def create_variable_profile_csvs(
     units_table,
     param_name,
     raw_data_table,
+    no_hydro_iteration=False,
 ):
     conn = connect_to_database(db_path=db_path)
 
@@ -96,6 +97,7 @@ def create_variable_profile_csvs(
                 output_directory,
                 param_name,
                 raw_data_table,
+                no_hydro_iteration,
             ]
             for timeseries_name in timeseries_project_unit_dict.keys()
             for project in timeseries_project_unit_dict[timeseries_name].keys()
@@ -122,6 +124,7 @@ def create_project_csv(
     output_directory,
     param_name,
     raw_data_table,
+    no_hydro_iteration=False,
 ):
     # Connect to database
     conn = connect_to_database(db_path=db_path)
@@ -165,10 +168,11 @@ def create_project_csv(
         # We're assuming draws are days, so multiplying the draw
         # number by 24 here, then adding hour of day to get the
         # timepoint ID
+        hydro_iter_sql = "" if no_hydro_iteration else "0 AS hydro_iteration,"
         project_query = (
             f"""
-                SELECT {weather_iteration} AS weather_iteration, 
-                0 AS hydro_iteration,
+                SELECT {weather_iteration} AS weather_iteration,  
+                {hydro_iter_sql}
                 {stage_id} AS stage_id,
                 ({draw_number}-1)*24+hour_of_day AS timepoint, 
                 sum(weighted_{param_name}) as {param_name}
@@ -232,6 +236,7 @@ def create_project_csv_pool(pool_datum):
         output_directory,
         param_name,
         raw_data_table,
+        no_hydro_iteration,
     ] = pool_datum
 
     create_project_csv(
@@ -247,4 +252,5 @@ def create_project_csv_pool(pool_datum):
         output_directory=output_directory,
         param_name=param_name,
         raw_data_table=raw_data_table,
+        no_hydro_iteration=no_hydro_iteration,
     )
