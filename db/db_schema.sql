@@ -2562,6 +2562,8 @@ CREATE TABLE inputs_project_availability
     availability_type                              VARCHAR(32),
     exogenous_availability_independent_scenario_id INTEGER,
     exogenous_availability_weather_scenario_id     INTEGER,
+    exogenous_availability_independent_bt_hrz_scenario_id INTEGER,
+    exogenous_availability_weather_bt_hrz_scenario_id     INTEGER,
     endogenous_availability_scenario_id            INTEGER,
     PRIMARY KEY (project_availability_scenario_id, project, availability_type)
 );

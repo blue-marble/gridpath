@@ -1,6 +1,6 @@
 project,availability_type,exogenous_availability_independent_scenario_id,exogenous_availability_weather_scenario_id,exogenous_availability_independent_bt_hrz_scenario_id,exogenous_availability_weather_bt_hrz_scenario_id,endogenous_availability_scenario_id
 Nuclear,exogenous,,,,,
-Coal,exogenous,1,,,,
+Coal,exogenous,2,,1,1,
 Gas_CCGT,exogenous,,,,,
 Gas_CT,exogenous,,,,,
 Wind,exogenous,,,,,
