@@ -562,22 +562,17 @@ def load_var_profile_inputs(
 
 # TODO: consolidate with horizon equivalent methods below
 TIMEPOINT_INDEX_QUERY_PARAMS = {
-    "select_columns": "prj_tbl.timepoint",
-    "project_operational_table": "project_operational_timepoints",
+    "select_columns": "timepoint",
     "index_columns": "timepoint",
     "index_join_table": "inputs_temporal",
     "index_columns_join_table": "timepoint",
-    "join_expression": "prj_tbl.timepoint = index_join_tbl.timepoint",
 }
 
 BT_HRZ_INDEX_QUERY_PARAMS = {
-    "select_columns": "prj_tbl.balancing_type_project, prj_tbl.horizon",
-    "project_operational_table": "project_operational_horizons",
+    "select_columns": "balancing_type_project, horizon",
     "index_columns": "balancing_type_project, horizon",
     "index_join_table": "inputs_temporal_horizon_timepoints",
     "index_columns_join_table": "balancing_type_horizon, horizon",
-    "join_expression": "prj_tbl.balancing_type_project = "
-    "index_join_tbl.balancing_type_horizon AND prj_tbl.horizon = index_join_tbl.horizon",
 }
 
 
@@ -699,7 +694,7 @@ def get_prj_temporal_index_opr_inputs_from_db(
 def get_prj_indx_inputs_with_iterations_sql(
     subscenarios,
     opr_index_dict,
-    table,
+    inputs_table,
     data_columns,
     subscenario_id_column,
     op_type,
@@ -720,53 +715,41 @@ def get_prj_indx_inputs_with_iterations_sql(
     """
 
     select_columns = opr_index_dict["select_columns"]
-    project_operational_table = opr_index_dict["project_operational_table"]
     index_columns = opr_index_dict["index_columns"]
     index_join_table = opr_index_dict["index_join_table"]
     index_columns_join_table = opr_index_dict["index_columns_join_table"]
-    join_expression = opr_index_dict["join_expression"]
 
-    # TODO: see note below; can produce this problem by having two scenarios
-    #  one in which the project is spec and one new
-    # NOTE: There can be cases where a resource is both in specified capacity
-    # table and in new build table, but depending on capacity type you'd only
-    # use one of them, so filtering with OR is not 100% correct.
     sql = f"""
         SELECT project, {select_columns}, {data_columns}
-        FROM 
-        -- Use DISTINCT in case there are spinup/lookahead timepoints, 
-        -- which will show up more than once otherwise
-            (SELECT DISTINCT project, stage_id, {index_columns}
-            FROM {project_operational_table}
+        FROM {inputs_table}
+        -- Portfolio projects only
+        WHERE project IN (
+            SELECT project FROM inputs_project_portfolios
             WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
-            AND project_operational_chars_scenario_id = {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
-            AND temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
-            AND (project_specified_capacity_scenario_id = {subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID}
-                 OR project_new_cost_scenario_id = {subscenarios.PROJECT_NEW_COST_SCENARIO_ID})
-            AND stage_id = {stage}
-            ) as prj_tbl
-        INNER JOIN (
-            SELECT project, {subscenario_id_column}
+        )
+        -- Optype projects from this opchar ID only
+        AND project IN (
+            SELECT project
             FROM inputs_project_operational_chars
             WHERE project_operational_chars_scenario_id = {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
             AND operational_type = '{op_type}'
+        )
+        -- Relevant optype opchar ID
+        AND (project, {subscenario_id_column}) IN (
+            SELECT project, {subscenario_id_column}
+            FROM inputs_project_operational_chars
+            WHERE project_operational_chars_scenario_id = {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
             {project_filter}
-            ) AS op_type_projects_with_btype_and_opchar_id
-        USING (project)
-        LEFT OUTER JOIN
-            {table}
-        USING ({subscenario_id_column}, project, stage_id, {index_columns})
-        JOIN (
+        )
+        -- Relevant temporal index
+        AND ({index_columns}) IN (
             SELECT {index_columns_join_table}
             FROM {index_join_table}
             WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
             AND subproblem_id = {subproblem}
             AND stage_id = {stage}
-        ) as index_join_tbl
-        ON (
-            {join_expression}
         )
-        WHERE weather_iteration = {weather_iteration_to_use}
+        AND weather_iteration = {weather_iteration_to_use}
         AND hydro_iteration = {hydro_iteration_to_use}
         """
 
@@ -803,7 +786,7 @@ def make_iteration_subset_project_list_query(
         sql = get_prj_indx_inputs_with_iterations_sql(
             subscenarios=subscenarios,
             opr_index_dict=opr_index_dict,
-            table=table,
+            inputs_table=table,
             data_columns=data_columns,
             subscenario_id_column=subscenario_id_column,
             op_type=op_type,
@@ -984,90 +967,6 @@ def load_hydro_opchars(
     data_portal.data()["{}_max_power_fraction".format(op_type)] = max
 
 
-def get_hydro_inputs_from_database(
-    subscenarios,
-    hydro_iteration,
-    availability_iteration,
-    subproblem,
-    stage,
-    conn,
-    op_type,
-):
-    """
-    Get the hydro-specific operational characteristics from the
-    inputs_project_hydro_operational_chars input table.
-
-    Select only budgets/min/max of projects in the portfolio
-    Select only budgets/min/max of projects with 'op_type'
-    Select only budgets/min/max for horizons from the correct temporal
-    scenario and subproblem
-    Select only horizons on periods when the project is operational
-    (periods with existing project capacity for existing projects or
-    with costs specified for new projects)
-
-    :param subscenarios: SubScenarios object with all subscenario info
-    :param subproblem:
-    :param stage:
-    :param conn: database connection
-    :param op_type:
-    :return: cursor object with query results
-    """
-
-    c = conn.cursor()
-
-    sql = f"""
-        SELECT project, prj_tbl.balancing_type_project, prj_tbl.horizon, 
-        average_power_fraction, 
-        min_power_fraction,
-        max_power_fraction
-        FROM 
-        -- Get the relevant operatonal project / balancing type / horizons 
-        -- based on the portfolio, opchars, and temporal scenario ID 
-            (SELECT project, stage_id, balancing_type_project, horizon
-            FROM project_operational_horizons
-            WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
-            AND project_operational_chars_scenario_id = {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
-            AND temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
-            AND (project_specified_capacity_scenario_id = {subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID}
-                 OR project_new_cost_scenario_id = {subscenarios.PROJECT_NEW_COST_SCENARIO_ID})
-            AND stage_id = {stage}
-            ) as prj_tbl
-        -- Find the opchars for this project from the opchar table and hydro 
-        -- opchar scenario ID
-        INNER JOIN (
-            SELECT project, hydro_operational_chars_scenario_id
-            FROM inputs_project_operational_chars
-            WHERE project_operational_chars_scenario_id = {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
-            AND operational_type = '{op_type}'
-            ) AS hydro_char
-        USING (project)
-        LEFT OUTER JOIN
-            inputs_project_hydro_operational_chars
-        USING (hydro_operational_chars_scenario_id, project, stage_id, 
-        balancing_type_project, horizon)
-        -- Only select relevant balancing type / horizons based on the 
-        -- temporal scenario ID subproblem structure -- for that we need the 
-        -- horizon_timepoints table
-        JOIN (
-            SELECT DISTINCT balancing_type_horizon, horizon
-            FROM inputs_temporal_horizon_timepoints
-            WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
-            AND subproblem_id = {subproblem}
-            AND stage_id = {stage}
-        ) as hrz_tmp_tbl
-        ON (
-            prj_tbl.balancing_type_project = balancing_type_horizon
-            AND prj_tbl.horizon = hrz_tmp_tbl.horizon
-        )
-        WHERE hydro_iteration = {hydro_iteration}
-        ;
-    """
-
-    hydro_chars = c.execute(sql)
-
-    return hydro_chars
-
-
 def validate_hydro_opchars(
     scenario_id,
     subscenarios,
@@ -1088,14 +987,20 @@ def validate_hydro_opchars(
     :param op_type:
     :return:
     """
-    hydro_chars = get_hydro_inputs_from_database(
-        subscenarios,
-        hydro_iteration,
-        availability_iteration,
-        subproblem,
-        stage,
-        conn,
-        op_type,
+
+    hydro_chars = get_prj_temporal_index_opr_inputs_from_db(
+        subscenarios=subscenarios,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        conn=conn,
+        op_type="gen_hydro_must_take",
+        table="inputs_project_hydro_operational_chars",
+        subscenario_id_column="hydro_operational_chars_scenario_id",
+        data_column="average_power_fraction, min_power_fraction, " "max_power_fraction",
+        opr_index_dict=BT_HRZ_INDEX_QUERY_PARAMS,
     )
 
     # Convert input data into pandas DataFrame

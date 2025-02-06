@@ -1081,10 +1081,6 @@ CREATE TABLE inputs_geography_water_network
     water_node_from                      TEXT,
     water_node_to                        TEXT,
     water_link_flow_transport_time_hours FLOAT,
-    allow_water_link_min_flow_violation  INTEGER,
-    min_flow_violation_penalty_cost      FLOAT,
-    allow_water_link_max_flow_violation  INTEGER,
-    max_flow_violation_penalty_cost      FLOAT,
     PRIMARY KEY (water_network_scenario_id, water_link),
     FOREIGN KEY (water_network_scenario_id) REFERENCES
         subscenarios_geography_water_network (water_network_scenario_id)
@@ -1101,18 +1097,26 @@ CREATE TABLE subscenarios_system_water_node_reservoirs
 DROP TABLE IF EXISTS inputs_system_water_node_reservoirs;
 CREATE TABLE inputs_system_water_node_reservoirs
 (
-    water_node_reservoir_scenario_id INTEGER,
-    water_node                       TEXT,
-    target_volume_scenario_id        INTEGER,
-    target_release_scenario_id       INTEGER,
-    minimum_volume_volumeunit        FLOAT,
-    maximum_volume_volumeunit        FLOAT,
-    max_spill                        FLOAT,
-    evaporation_coefficient          FLOAT,
-    elevation_type                   TEXT,
-    constant_elevation               FLOAT,
-    exogenous_elevation_id           INTEGER,
-    volume_to_elevation_curve_id     INTEGER,
+    water_node_reservoir_scenario_id        INTEGER,
+    water_node                              TEXT,
+    max_powerhouse_release_vol_unit_per_sec FLOAT,
+    max_spill_vol_unit_per_sec              FLOAT,
+    max_total_outflow_vol_unit_per_sec      FLOAT,
+    target_volume_scenario_id               INTEGER,
+    target_release_scenario_id              INTEGER,
+    allow_target_release_violation          INTEGER,
+    target_release_violation_cost           FLOAT,
+    minimum_volume_volumeunit               FLOAT,
+    maximum_volume_volumeunit               FLOAT,
+    allow_min_volume_violation              INTEGER,
+    min_volume_violation_cost               FLOAT,
+    allow_max_volume_violation              INTEGER,
+    max_volume_violation_cost               INTEGER,
+    evaporation_coefficient                 FLOAT,
+    elevation_type                          TEXT,
+    constant_elevation                      FLOAT,
+    exogenous_elevation_id                  INTEGER,
+    volume_to_elevation_curve_id            INTEGER,
     PRIMARY KEY (water_node_reservoir_scenario_id, water_node),
     FOREIGN KEY (water_node_reservoir_scenario_id) REFERENCES
         subscenarios_system_water_node_reservoirs (water_node_reservoir_scenario_id),
@@ -1231,7 +1235,6 @@ CREATE TABLE inputs_system_water_node_reservoirs_target_releases
     FOREIGN KEY (water_node, target_release_scenario_id) REFERENCES
         subscenarios_system_water_node_reservoirs_target_releases
             (water_node, target_release_scenario_id)
-
 );
 
 
@@ -1286,16 +1289,128 @@ CREATE TABLE subscenarios_system_water_flows
 DROP TABLE IF EXISTS inputs_system_water_flows;
 CREATE TABLE inputs_system_water_flows
 (
-    water_flow_scenario_id  INTEGER,
-    water_link              TEXT,
-    hydro_iteration         INTEGER DEFAULT 0 NOT NULL,
-    timepoint               FLOAT,
-    min_flow_vol_per_second TEXT,
-    max_flow_vol_per_second INTEGER,
-    PRIMARY KEY (water_flow_scenario_id, water_link, timepoint,
-                 hydro_iteration),
+    water_flow_scenario_id                  INTEGER,
+    water_link                              TEXT,
+    default_min_flow_vol_per_sec            FLOAT,
+    allow_water_link_min_flow_violation     INTEGER,
+    min_flow_violation_penalty_cost         FLOAT,
+    allow_water_link_max_flow_violation     INTEGER,
+    max_flow_violation_penalty_cost         FLOAT,
+    allow_water_link_hrz_min_flow_violation INTEGER,
+    hrz_min_flow_violation_penalty_cost     FLOAT,
+    allow_water_link_hrz_max_flow_violation INTEGER,
+    hrz_max_flow_violation_penalty_cost     FLOAT,
+    water_flow_timepoint_bounds_scenario_id INTEGER,
+    water_flow_horizon_bounds_scenario_id   INTEGER,
+    water_flow_ramp_limit_scenario_id       INTEGER,
+    PRIMARY KEY (water_flow_scenario_id, water_link),
     FOREIGN KEY (water_flow_scenario_id) REFERENCES
         subscenarios_system_water_flows (water_flow_scenario_id)
+);
+
+
+DROP TABLE IF EXISTS subscenarios_system_water_flows_timepoint_bounds;
+CREATE TABLE subscenarios_system_water_flows_timepoint_bounds
+(
+    water_link                              TEXT,
+    water_flow_timepoint_bounds_scenario_id INTEGER,
+    name                                    VARCHAR(32),
+    description                             VARCHAR(128),
+    PRIMARY KEY (water_link, water_flow_timepoint_bounds_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_system_water_flows_timepoint_bounds;
+CREATE TABLE inputs_system_water_flows_timepoint_bounds
+(
+    water_link                              TEXT,
+    water_flow_timepoint_bounds_scenario_id INTEGER,
+    timepoint                               FLOAT,
+    min_tmp_flow_vol_per_second             FLOAT,
+    max_tmp_flow_vol_per_second             FLOAT,
+    PRIMARY KEY (water_link, water_flow_timepoint_bounds_scenario_id,
+                 timepoint),
+    FOREIGN KEY (water_link, water_flow_timepoint_bounds_scenario_id) REFERENCES
+        subscenarios_system_water_flows_timepoint_bounds
+            (water_link, water_flow_timepoint_bounds_scenario_id)
+);
+
+
+DROP TABLE IF EXISTS subscenarios_system_water_flows_horizon_bounds;
+CREATE TABLE subscenarios_system_water_flows_horizon_bounds
+(
+    water_link                            TEXT,
+    water_flow_horizon_bounds_scenario_id INTEGER,
+    name                                  VARCHAR(32),
+    description                           VARCHAR(128),
+    PRIMARY KEY (water_link, water_flow_horizon_bounds_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_system_water_flows_horizon_bounds;
+CREATE TABLE inputs_system_water_flows_horizon_bounds
+(
+    water_link                            TEXT,
+    water_flow_horizon_bounds_scenario_id INTEGER,
+    balancing_type                        TEXT,
+    horizon                               INTEGER,
+    min_bt_hrz_flow_avg_vol_per_second    FLOAT,
+    max_bt_hrz_flow_avg_vol_per_second    FLOAT,
+    PRIMARY KEY (water_link, water_flow_horizon_bounds_scenario_id,
+                 balancing_type, horizon),
+    FOREIGN KEY (water_link, water_flow_horizon_bounds_scenario_id) REFERENCES
+        subscenarios_system_water_flows_horizon_bounds
+            (water_link, water_flow_horizon_bounds_scenario_id)
+);
+
+-- Water flow ramp limits
+DROP TABLE IF EXISTS subscenarios_system_water_flow_ramp_limits;
+CREATE TABLE subscenarios_system_water_flow_ramp_limits
+(
+    water_link                        TEXT,
+    water_flow_ramp_limit_scenario_id INTEGER,
+    name                              VARCHAR(32),
+    description                       VARCHAR(128),
+    PRIMARY KEY (water_link, water_flow_ramp_limit_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_system_water_flow_ramp_limits;
+CREATE TABLE inputs_system_water_flow_ramp_limits
+(
+    water_link                        TEXT,
+    water_flow_ramp_limit_scenario_id INTEGER,
+    ramp_limit_name                   TEXT,
+    ramp_limit_up_or_down             INTEGER, -- 1 for upramp, -1 for downramp
+    ramp_limit_n_hours                FLOAT,
+    PRIMARY KEY (water_link, water_flow_ramp_limit_scenario_id,
+                 ramp_limit_name),
+    FOREIGN KEY (water_link, water_flow_ramp_limit_scenario_id) REFERENCES
+        subscenarios_system_water_flow_ramp_limits
+            (water_link, water_flow_ramp_limit_scenario_id)
+);
+
+DROP TABLE IF EXISTS subscenarios_system_water_flow_ramp_limit_bt_hrz_values;
+CREATE TABLE subscenarios_system_water_flow_ramp_limit_bt_hrz_values
+(
+    water_link                        TEXT,
+    water_flow_ramp_limit_scenario_id INTEGER,
+    name                              VARCHAR(32),
+    description                       VARCHAR(128),
+    PRIMARY KEY (water_link, water_flow_ramp_limit_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_system_water_flow_ramp_limit_bt_hrz_values;
+CREATE TABLE inputs_system_water_flow_ramp_limit_bt_hrz_values
+(
+    water_link                        TEXT,
+    water_flow_ramp_limit_scenario_id INTEGER,
+    ramp_limit_name                   TEXT,
+    balancing_type                    TEXT,
+    horizon                           INTEGER,
+    allowed_flow_delta_vol_per_sec    FLOAT,
+    PRIMARY KEY (water_link, water_flow_ramp_limit_scenario_id,
+                 ramp_limit_name, balancing_type, horizon),
+    FOREIGN KEY (water_link, water_flow_ramp_limit_scenario_id) REFERENCES
+        subscenarios_system_water_flow_ramp_limits
+            (water_link, water_flow_ramp_limit_scenario_id)
 );
 
 -- Water nodes
@@ -2098,6 +2213,7 @@ CREATE TABLE inputs_project_hydro_operational_chars
 (
     project                             VARCHAR(64),
     hydro_operational_chars_scenario_id INTEGER,
+    weather_iteration                   INTEGER,
     hydro_iteration                     INTEGER DEFAULT 0 NOT NULL,
     stage_id                            INTEGER,
     balancing_type_project              VARCHAR(64),
@@ -2106,11 +2222,32 @@ CREATE TABLE inputs_project_hydro_operational_chars
     min_power_fraction                  FLOAT,
     max_power_fraction                  FLOAT,
     PRIMARY KEY (project, hydro_operational_chars_scenario_id,
-                 hydro_iteration, stage_id,
+                 weather_iteration, hydro_iteration, stage_id,
                  balancing_type_project, horizon),
     FOREIGN KEY (project, hydro_operational_chars_scenario_id) REFERENCES
         subscenarios_project_hydro_operational_chars
             (project, hydro_operational_chars_scenario_id)
+);
+
+DROP TABLE IF EXISTS
+    subscenarios_project_hydro_operational_chars_iterations;
+CREATE TABLE subscenarios_project_hydro_operational_chars_iterations
+(
+    project                             VARCHAR(64),
+    hydro_operational_chars_scenario_id INTEGER,
+    name                                VARCHAR(32),
+    description                         VARCHAR(128),
+    PRIMARY KEY (project, hydro_operational_chars_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_hydro_operational_chars_iterations;
+CREATE TABLE inputs_project_hydro_operational_chars_iterations
+(
+    project                             TEXT,
+    hydro_operational_chars_scenario_id INTEGER,
+    varies_by_weather_iteration         INTEGER,
+    varies_by_hydro_iteration           INTEGER,
+    PRIMARY KEY (project, hydro_operational_chars_scenario_id)
 );
 
 -- Energy profiles
@@ -2425,6 +2562,8 @@ CREATE TABLE inputs_project_availability
     availability_type                              VARCHAR(32),
     exogenous_availability_independent_scenario_id INTEGER,
     exogenous_availability_weather_scenario_id     INTEGER,
+    exogenous_availability_independent_bt_hrz_scenario_id INTEGER,
+    exogenous_availability_weather_bt_hrz_scenario_id     INTEGER,
     endogenous_availability_scenario_id            INTEGER,
     PRIMARY KEY (project_availability_scenario_id, project, availability_type)
 );
@@ -2472,37 +2611,70 @@ CREATE TABLE inputs_project_availability_exogenous_weather
     project                                    VARCHAR(64),
     exogenous_availability_weather_scenario_id INTEGER,
     weather_iteration                          INTEGER,
-    hydro_iteration                            INTEGER,
     stage_id                                   INTEGER,
     timepoint                                  INTEGER,
     availability_derate_weather                FLOAT,
     PRIMARY KEY (project, exogenous_availability_weather_scenario_id,
-                 weather_iteration, hydro_iteration, stage_id, timepoint),
+                 weather_iteration, stage_id, timepoint),
     FOREIGN KEY (project, exogenous_availability_weather_scenario_id)
         REFERENCES subscenarios_project_availability_exogenous_weather
             (project, exogenous_availability_weather_scenario_id)
 );
 
--- TODO: remove no iterations param and consolidate here
-DROP TABLE IF EXISTS
-    subscenarios_project_availability_exogenous_weather_iterations;
-CREATE TABLE subscenarios_project_availability_exogenous_weather_iterations
+
+DROP TABLE IF EXISTS subscenarios_project_availability_exogenous_independent_bt_hrz;
+CREATE TABLE subscenarios_project_availability_exogenous_independent_bt_hrz
 (
-    project                                    VARCHAR(64),
-    exogenous_availability_weather_scenario_id INTEGER,
-    name                                       VARCHAR(32),
-    description                                VARCHAR(128),
-    PRIMARY KEY (project, exogenous_availability_weather_scenario_id)
+    project                                               VARCHAR(64),
+    exogenous_availability_independent_bt_hrz_scenario_id INTEGER,
+    name                                                  VARCHAR(32),
+    description                                           VARCHAR(128),
+    PRIMARY KEY (project, exogenous_availability_independent_bt_hrz_scenario_id)
 );
 
-DROP TABLE IF EXISTS inputs_project_availability_exogenous_weather_iterations;
-CREATE TABLE inputs_project_availability_exogenous_weather_iterations
+DROP TABLE IF EXISTS inputs_project_availability_exogenous_independent_bt_hrz;
+CREATE TABLE inputs_project_availability_exogenous_independent_bt_hrz
 (
-    project                                    TEXT,
-    exogenous_availability_weather_scenario_id INTEGER,
-    varies_by_weather_iteration                INTEGER,
-    varies_by_hydro_iteration                  INTEGER,
-    PRIMARY KEY (project, exogenous_availability_weather_scenario_id)
+    project                                               VARCHAR(64),
+    exogenous_availability_independent_bt_hrz_scenario_id INTEGER,
+    availability_iteration                                INTEGER,
+    stage_id                                              INTEGER,
+    balancing_type_project                                TEXT,
+    horizon                                               INTEGER,
+    availability_derate_independent_bt_hrz                FLOAT,
+    PRIMARY KEY (project, exogenous_availability_independent_bt_hrz_scenario_id,
+                 availability_iteration, stage_id, balancing_type_project,
+                 horizon),
+    FOREIGN KEY (project, exogenous_availability_independent_bt_hrz_scenario_id)
+        REFERENCES subscenarios_project_availability_exogenous_independent_bt_hrz
+            (project, exogenous_availability_independent_bt_hrz_scenario_id)
+);
+
+DROP TABLE IF EXISTS subscenarios_project_availability_exogenous_weather_bt_hrz;
+CREATE TABLE subscenarios_project_availability_exogenous_weather_bt_hrz
+(
+    project                                           VARCHAR(64),
+    exogenous_availability_weather_bt_hrz_scenario_id INTEGER,
+    name                                              VARCHAR(32),
+    description                                       VARCHAR(128),
+    PRIMARY KEY (project, exogenous_availability_weather_bt_hrz_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_availability_exogenous_weather_bt_hrz;
+CREATE TABLE inputs_project_availability_exogenous_weather_bt_hrz
+(
+    project                                           VARCHAR(64),
+    exogenous_availability_weather_bt_hrz_scenario_id INTEGER,
+    weather_iteration                                 INTEGER,
+    stage_id                                          INTEGER,
+    balancing_type_project                                TEXT,
+    horizon                                               INTEGER,
+    availability_derate_weather_bt_hrz                FLOAT,
+    PRIMARY KEY (project, exogenous_availability_weather_bt_hrz_scenario_id,
+                 weather_iteration, stage_id, balancing_type_project, horizon),
+    FOREIGN KEY (project, exogenous_availability_weather_bt_hrz_scenario_id)
+        REFERENCES subscenarios_project_availability_exogenous_weather_bt_hrz
+            (project, exogenous_availability_weather_bt_hrz_scenario_id)
 );
 
 
@@ -6159,7 +6331,9 @@ CREATE TABLE results_system_lf_reserves_up
     timepoint_weight             FLOAT,
     number_of_hours_in_timepoint FLOAT,
     spinup_or_lookahead          INTEGER,
-    violation_mw                 FLOAT,
+    reserve_requirement_mw       FLOAT,
+    reserve_provision_mw         FLOAT,
+    reserve_violation_mw         FLOAT,
     dual                         FLOAT,
     marginal_price_per_mw        FLOAT,
     PRIMARY KEY (scenario_id, lf_reserves_up_ba, weather_iteration,
@@ -6184,7 +6358,9 @@ CREATE TABLE results_system_lf_reserves_down
     timepoint_weight             FLOAT,
     number_of_hours_in_timepoint FLOAT,
     spinup_or_lookahead          INTEGER,
-    violation_mw                 FLOAT,
+    reserve_requirement_mw       FLOAT,
+    reserve_provision_mw         FLOAT,
+    reserve_violation_mw         FLOAT,
     dual                         FLOAT,
     marginal_price_per_mw        FLOAT,
     PRIMARY KEY (scenario_id, lf_reserves_down_ba, weather_iteration,
@@ -6209,7 +6385,9 @@ CREATE TABLE results_system_regulation_up
     timepoint_weight             FLOAT,
     number_of_hours_in_timepoint FLOAT,
     spinup_or_lookahead          INTEGER,
-    violation_mw                 FLOAT,
+    reserve_requirement_mw       FLOAT,
+    reserve_provision_mw         FLOAT,
+    reserve_violation_mw         FLOAT,
     dual                         FLOAT,
     marginal_price_per_mw        FLOAT,
     PRIMARY KEY (scenario_id, regulation_up_ba, weather_iteration,
@@ -6234,7 +6412,9 @@ CREATE TABLE results_system_regulation_down
     timepoint_weight             FLOAT,
     number_of_hours_in_timepoint FLOAT,
     spinup_or_lookahead          INTEGER,
-    violation_mw                 FLOAT,
+    reserve_requirement_mw       FLOAT,
+    reserve_provision_mw         FLOAT,
+    reserve_violation_mw         FLOAT,
     dual                         FLOAT,
     marginal_price_per_mw        FLOAT,
     PRIMARY KEY (scenario_id, regulation_down_ba, weather_iteration,
@@ -6259,7 +6439,9 @@ CREATE TABLE results_system_frequency_response
     timepoint_weight             FLOAT,
     number_of_hours_in_timepoint FLOAT,
     spinup_or_lookahead          INTEGER,
-    violation_mw                 FLOAT,
+    reserve_requirement_mw       FLOAT,
+    reserve_provision_mw         FLOAT,
+    reserve_violation_mw         FLOAT,
     dual                         FLOAT,
     marginal_price_per_mw        FLOAT,
     PRIMARY KEY (scenario_id, frequency_response_ba, weather_iteration,
@@ -6286,7 +6468,9 @@ CREATE TABLE results_system_frequency_response_partial
     timepoint_weight              FLOAT,
     number_of_hours_in_timepoint  FLOAT,
     spinup_or_lookahead           INTEGER,
-    violation_mw                  FLOAT,
+    reserve_requirement_mw        FLOAT,
+    reserve_provision_mw          FLOAT,
+    reserve_violation_mw          FLOAT,
     dual                          FLOAT,
     marginal_price_per_mw         FLOAT,
     PRIMARY KEY (scenario_id, frequency_response_partial_ba,
@@ -6311,7 +6495,9 @@ CREATE TABLE results_system_spinning_reserves
     timepoint_weight             FLOAT,
     number_of_hours_in_timepoint FLOAT,
     spinup_or_lookahead          INTEGER,
-    violation_mw                 FLOAT,
+    reserve_requirement_mw       FLOAT,
+    reserve_provision_mw         FLOAT,
+    reserve_violation_mw         FLOAT,
     dual                         FLOAT,
     marginal_price_per_mw        FLOAT,
     PRIMARY KEY (scenario_id, spinning_reserves_ba, weather_iteration,
@@ -6738,6 +6924,8 @@ CREATE TABLE results_system_water_node_timepoint
     timepoint                                      INTEGER,
     starting_elevation                             FLOAT,
     starting_volume                                FLOAT,
+    min_volume_violation                           FLOAT,
+    max_volume_violation                           FLOAT,
     exogenous_water_inflow_rate_vol_per_sec        FLOAT,
     endogenous_water_inflow_rate_vol_per_sec       FLOAT,
     gross_water_inflow_rate_vol_per_sec            FLOAT,
@@ -6829,6 +7017,11 @@ CREATE TABLE results_system_costs
     Total_Policy_Target_Balance_Penalty_Costs               FLOAT,
     Total_Min_Flow_Violation_Penalty_Cost                   FLOAT,
     Total_Max_Flow_Violation_Penalty_Cost                   FLOAT,
+    Total_Release_Violation_Penalty_Cost                    FLOAT,
+    Total_Min_Water_Storage_Violation_Penalty_Cost          FLOAT,
+    Total_Max_Water_Storage_Violation_Penalty_Cost          FLOAT,
+    Total_Hrz_Min_Flow_Violation_Penalty_Cost               FLOAT,
+    Total_Hrz_Max_Flow_Violation_Penalty_Cost               FLOAT,
     PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
                  availability_iteration, subproblem_id, stage_id)
 );

@@ -100,6 +100,8 @@ def generic_export_results(
     d,
     reserve_type,
     reserve_zone_set,
+    reserve_requirement_expression,
+    total_reserve_provision_expression,
     reserve_violation_expression,
 ):
     """
@@ -150,7 +152,9 @@ def generic_export_results(
                 "number_years_represented",
                 "timepoint_weight",
                 "number_of_hours_in_timepoint",
-                "violation_mw",
+                "reserve_requirement_mw",
+                "reserve_provision_mw",
+                "reserve_violation_mw",
                 "dual",
                 "marginal_price_per_mw",
             ]
@@ -165,6 +169,8 @@ def generic_export_results(
                     m.number_years_represented[m.period[tmp]],
                     m.tmp_weight[tmp],
                     m.hrs_in_tmp[tmp],
+                    value(getattr(m, reserve_requirement_expression)[ba, tmp]),
+                    value(getattr(m, total_reserve_provision_expression)[ba, tmp]),
                     value(getattr(m, reserve_violation_expression)[ba, tmp]),
                     (
                         duals_wrapper(m, getattr(m, duals_map[reserve_type])[ba, tmp])

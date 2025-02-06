@@ -136,6 +136,7 @@ def create_weather_availability_profile_csvs_pool(pool_datum):
         param_name="availability_derate_weather",
         raw_data_table_name="raw_data_unit_availability_weather_derates",
         raw_data_units_table_name="raw_data_unit_availability_params",
+        no_hydro_iteration=True,
     )
 
 

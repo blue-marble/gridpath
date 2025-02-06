@@ -1560,6 +1560,30 @@ class TestExamples(unittest.TestCase):
         scenario_name = "open_data"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
+    def test_hydro_system_exog_elev_w_travel_time_and_max_halfday_flows(self):
+        """
+        :return:
+        """
+
+        scenario_name = "hydro_system_exog_elev_w_travel_time_and_max_halfday_flows"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_hydro_system_w_ramp_limits(self):
+        """
+        :return:
+        """
+
+        scenario_name = "hydro_system_w_ramp_limits"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_test_w_bt_hrz_avl(self):
+        """
+        :return:
+        """
+
+        scenario_name = "test_w_bt_hrz_avl"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
     @classmethod
     def tearDownClass(cls):
         os.remove(DB_PATH)

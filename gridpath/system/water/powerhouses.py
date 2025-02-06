@@ -287,8 +287,6 @@ def write_model_inputs(
     conn,
 ):
     """
-    Get inputs from database and write out the model input
-    water_flow_bounds.tab file.
     :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:

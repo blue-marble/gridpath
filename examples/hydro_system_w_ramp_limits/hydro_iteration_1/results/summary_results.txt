@@ -1,0 +1,10 @@
+##### SUMMARY RESULTS FOR SCENARIO *hydro_system_w_ramp_limits* #####
+
+### CAPACITY RESULTS ###
+
+### OPERATIONAL RESULTS ###
+
+--> Energy Production <--
+                              Annual Energy (MWh)  % Total Power
+load_zone period technology                                     
+Zone1     2026   Hydro_Water           798,513.42         100.00

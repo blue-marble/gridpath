@@ -1,4 +1,4 @@
-# Copyright 2016-2024 Blue Marble Analytics LLC.
+# Copyright 2016-2025 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -259,6 +259,8 @@ def export_results(
     results_columns = [
         "starting_elevation",
         "starting_volume",
+        "min_volume_violation",
+        "max_volume_violation",
         "exogenous_water_inflow_rate_vol_per_sec",
         "endogenous_water_inflow_rate_vol_per_sec",
         "gross_water_inflow_rate_vol_per_sec",
@@ -278,6 +280,16 @@ def export_results(
             ),
             (
                 value(m.Reservoir_Starting_Volume_WaterVolumeUnit[wn, tmp])
+                if wn in m.WATER_NODES_W_RESERVOIRS
+                else None
+            ),
+            (
+                value(m.Min_Reservoir_Storage_Violation[wn, tmp])
+                if wn in m.WATER_NODES_W_RESERVOIRS
+                else None
+            ),
+            (
+                value(m.Max_Reservoir_Storage_Violation[wn, tmp])
                 if wn in m.WATER_NODES_W_RESERVOIRS
                 else None
             ),
@@ -326,7 +338,49 @@ def export_results(
             "system_water_node_timepoint.csv",
         ),
         sep=",",
-        index=True,
+        index=False,
+    )
+
+    results_columns = [
+        "reservoir_target_release_avg_flow_volunit_per_sec",
+        "total_target_release_violation_volunit",
+        "avg_target_release_violation_flow_volunit_per_sec",
+    ]
+    data = [
+        [
+            wn,
+            bt,
+            hrz,
+            m.reservoir_target_release_avg_flow_volunit_per_sec[wn, bt, hrz],
+            value(m.Target_Release_Violation_VolUnit[wn, bt, hrz]),
+            value(m.Target_Release_Violation_VolUnit[wn, bt, hrz])
+            / sum(3600 * m.hrs_in_tmp[tmp] for tmp in m.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]),
+        ]
+        for (
+            wn,
+            bt,
+            hrz,
+        ) in m.WATER_NODE_RESERVOIR_BT_HRZS_WITH_TOTAL_RELEASE_REQUIREMENTS
+    ]
+    results_df = create_results_df(
+        index_columns=["water_node", "balancing_type", "horizon"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    results_df.to_csv(
+        os.path.join(
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "results",
+            "system_water_node_bt_hrz.csv",
+        ),
+        sep=",",
+        index=False,
     )
 
 

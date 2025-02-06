@@ -519,7 +519,7 @@ def export_results(
         [
             lz,
             tmp,
-            m.LZ_Load_in_Tmp[lz, tmp],
+            value(m.LZ_Load_in_Tmp[lz, tmp]),
         ]
         for lz in getattr(m, "LOAD_ZONES")
         for tmp in getattr(m, "TMPS")

@@ -223,6 +223,98 @@ class TestExogenousAvailabilityType(unittest.TestCase):
             expected_availability_derate_w, actual_availability_derate_w
         )
 
+        # Set: AVL_EXOG_PRJ_BT_HRZ_W_INDEPENDENT_DERATES
+        expected_bt_hrz_ind_derates_set = [
+            ("Coal", "day", 202001),
+            ("Nuclear", "day", 203001),
+        ]
+        actual_bt_hrz_ind_derates_set = [
+            (prj, bt, hrz)
+            for (prj, bt, hrz) in instance.AVL_EXOG_PRJ_BT_HRZ_W_INDEPENDENT_DERATES
+        ]
+        self.assertListEqual(
+            expected_bt_hrz_ind_derates_set, actual_bt_hrz_ind_derates_set
+        )
+
+        # Param: avl_exog_cap_derate_independent_bt_hrz
+        expected_avl_exog_cap_derate_independent_bt_hrz = {
+            ("Coal", "day", 202001): 0.3,
+            ("Nuclear", "day", 203001): 0.5,
+        }
+        actual_avl_exog_cap_derate_independent_bt_hrz = {
+            (prj, bt, hrz): instance.avl_exog_cap_derate_independent_bt_hrz[
+                prj, bt, hrz
+            ]
+            for (prj, bt, hrz) in instance.AVL_EXOG_PRJ_BT_HRZ_W_INDEPENDENT_DERATES
+        }
+        self.assertDictEqual(
+            expected_avl_exog_cap_derate_independent_bt_hrz,
+            actual_avl_exog_cap_derate_independent_bt_hrz,
+        )
+
+        # Set: AVL_EXOG_PRJ_BT_HRZ_W_WEATHER_DERATES
+        expected_bt_hrz_ind_derates_set = [
+            ("Coal", "day", 202001),
+            ("Nuclear", "day", 203001),
+        ]
+        actual_bt_hrz_ind_derates_set = [
+            (prj, bt, hrz)
+            for (prj, bt, hrz) in instance.AVL_EXOG_PRJ_BT_HRZ_W_WEATHER_DERATES
+        ]
+        self.assertListEqual(
+            expected_bt_hrz_ind_derates_set, actual_bt_hrz_ind_derates_set
+        )
+
+        # Param: avl_exog_cap_derate_weather_bt_hrz
+        expected_avl_exog_cap_derate_weather_bt_hrz = {
+            ("Coal", "day", 202001): 0.5,
+            ("Nuclear", "day", 203001): 0.3,
+        }
+        actual_avl_exog_cap_derate_weather_bt_hrz = {
+            (prj, bt, hrz): instance.avl_exog_cap_derate_weather_bt_hrz[prj, bt, hrz]
+            for (prj, bt, hrz) in instance.AVL_EXOG_PRJ_BT_HRZ_W_WEATHER_DERATES
+        }
+        self.assertDictEqual(
+            expected_avl_exog_cap_derate_weather_bt_hrz,
+            actual_avl_exog_cap_derate_weather_bt_hrz,
+        )
+
+        # Param: avl_exog_cap_derate_independent_bt_hrz_by_tmp
+        expected_avl_exog_cap_derate_ind_bt_hrz_by_tmp = defaults
+
+        for tmp in range(20200101, 20200125):
+            expected_avl_exog_cap_derate_ind_bt_hrz_by_tmp["Coal", tmp] = 0.3
+        for tmp in range(20300101, 20300125):
+            expected_avl_exog_cap_derate_ind_bt_hrz_by_tmp["Nuclear", tmp] = 0.5
+
+        actual_avl_exog_cap_derate_ind_bt_hrz_by_tmp = {
+            (prj, tmp): instance.avl_exog_cap_derate_independent_bt_hrz_by_tmp[prj, tmp]
+            for (prj, tmp) in instance.AVL_EXOG_OPR_TMPS
+        }
+
+        self.assertDictEqual(
+            expected_avl_exog_cap_derate_ind_bt_hrz_by_tmp,
+            actual_avl_exog_cap_derate_ind_bt_hrz_by_tmp,
+        )
+
+        # Param: avl_exog_cap_derate_weather_bt_hrz_by_tmp
+        expected_avl_exog_cap_derate_weather_bt_hrz_by_tmp = defaults
+
+        for tmp in range(20200101, 20200125):
+            expected_avl_exog_cap_derate_weather_bt_hrz_by_tmp["Coal", tmp] = 0.5
+        for tmp in range(20300101, 20300125):
+            expected_avl_exog_cap_derate_weather_bt_hrz_by_tmp["Nuclear", tmp] = 0.3
+
+        actual_avl_exog_cap_derate_weather_bt_hrz_by_tmp = {
+            (prj, tmp): instance.avl_exog_cap_derate_weather_bt_hrz_by_tmp[prj, tmp]
+            for (prj, tmp) in instance.AVL_EXOG_OPR_TMPS
+        }
+
+        self.assertDictEqual(
+            expected_avl_exog_cap_derate_weather_bt_hrz_by_tmp,
+            actual_avl_exog_cap_derate_weather_bt_hrz_by_tmp,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

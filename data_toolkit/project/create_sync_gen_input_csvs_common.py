@@ -29,14 +29,17 @@ def create_profile_csvs(
     param_name,
     raw_data_table_name,
     raw_data_units_table_name,
+    no_hydro_iteration=False,
 ):
     conn = connect_to_database(db_path=db_path)
 
     # Get the weighted cap factor for each of the project's constituent units,
     # get the UNION of these tables, and then find the project cap factor
     # with SUM and GROUP BY
+    hydro_iter_sql = "" if no_hydro_iteration else "0 AS hydro_iteration,"
     query = f"""
-        SELECT year AS weather_iteration, 0 AS hydro_iteration,
+        SELECT year AS weather_iteration, 
+        {hydro_iter_sql}
         {stage_id} AS stage_id, 
         hour_of_year as timepoint, sum(weighted_{param_name}) as {param_name}
             FROM (

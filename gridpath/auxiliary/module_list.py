@@ -266,6 +266,7 @@ def all_modules_list():
         "objective.system.reliability.local_capacity"
         ".aggregate_local_capacity_violation_penalties",
         "objective.system.aggregate_market_revenue_and_costs",
+        "objective.system.water.aggregate_reservoir_violation_penalty_costs",
         "objective.system.water.aggregate_flow_violation_penalty_costs",
         "objective.max_npv",
     ]
@@ -492,6 +493,7 @@ def optional_modules_list():
             "system.water.water_node_balance",
             "system.water.water_flows",
             "system.water.powerhouses",
+            "objective.system.water.aggregate_reservoir_violation_penalty_costs",
             "objective.system.water.aggregate_flow_violation_penalty_costs",
         ],
         "tuning": [

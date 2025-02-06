@@ -157,6 +157,7 @@ def main(args=None):
         units_table="raw_data_unit_availability_params",
         param_name="availability_derate_weather",
         raw_data_table="raw_data_unit_availability_weather_derates",
+        no_hydro_iteration=True,
     )
 
 

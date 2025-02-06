@@ -82,6 +82,8 @@ def export_results(
         d=d,
         reserve_type="regulation_down",
         reserve_zone_set="REGULATION_DOWN_ZONES",
+        reserve_requirement_expression="Reg_Down_Requirement",
+        total_reserve_provision_expression="Total_Regulation_Down_Provision_MW",
         reserve_violation_expression="Regulation_Down_Violation_MW_Expression",
     )
 
