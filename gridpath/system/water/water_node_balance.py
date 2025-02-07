@@ -338,7 +338,7 @@ def export_results(
             "system_water_node_timepoint.csv",
         ),
         sep=",",
-        index=False,
+        index=True,
     )
 
     results_columns = [
@@ -380,7 +380,7 @@ def export_results(
             "system_water_node_bt_hrz.csv",
         ),
         sep=",",
-        index=False,
+        index=True,
     )
 
 
