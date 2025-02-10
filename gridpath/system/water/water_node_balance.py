@@ -59,7 +59,7 @@ def add_model_components(
     """
 
     # ### Expressions ### #
-    def node_inflow_rate_init(mod, wn, tmp):
+    def endogenous_node_inflow_rate_init(mod, wn, tmp):
         """
         Exogenous inflow to node + sum of flow on all links to note in the
         timepoint of arrival
@@ -71,12 +71,29 @@ def add_model_components(
                     wl, mod.departure_timepoint[wl, tmp], tmp
                 ]
 
-        return mod.exogenous_water_inflow_rate_vol_per_sec[wn, tmp] + endogenous_flows
+        return endogenous_flows
+
+    m.Endogenous_Water_Node_Inflow_Rate_Vol_Per_Sec = Expression(
+        m.WATER_NODES,
+        m.TMPS,
+        initialize=endogenous_node_inflow_rate_init,
+    )
+
+    def gross_node_inflow_rate_init(mod, wn, tmp):
+        """
+        Exogenous inflow to node + sum of flow on all links to note in the
+        timepoint of arrival
+        """
+
+        return (
+            mod.exogenous_water_inflow_rate_vol_per_sec[wn, tmp]
+            + mod.Endogenous_Water_Node_Inflow_Rate_Vol_Per_Sec[wn, tmp]
+        )
 
     m.Gross_Water_Node_Inflow_Rate_Vol_Per_Sec = Expression(
         m.WATER_NODES,
         m.TMPS,
-        initialize=node_inflow_rate_init,
+        initialize=gross_node_inflow_rate_init,
     )
 
     def node_outflow_rate_init(mod, wn, tmp):
@@ -294,11 +311,7 @@ def export_results(
                 else None
             ),
             m.exogenous_water_inflow_rate_vol_per_sec[wn, tmp],
-            sum(
-                value(m.Water_Link_Flow_Rate_Vol_per_Sec[wl, dep_tmp, arr_tmp])
-                for (wl, dep_tmp, arr_tmp) in m.WATER_LINK_DEPARTURE_ARRIVAL_TMPS
-                if wl in m.WATER_LINKS_TO_BY_WATER_NODE[wn] and arr_tmp == tmp
-            ),
+            value(m.Endogenous_Water_Node_Inflow_Rate_Vol_Per_Sec[wn, tmp]),
             value(m.Gross_Water_Node_Inflow_Rate_Vol_Per_Sec[wn, tmp]),
             value(
                 m.Discharge_Water_to_Powerhouse_Rate_Vol_Per_Sec[wn, tmp]
