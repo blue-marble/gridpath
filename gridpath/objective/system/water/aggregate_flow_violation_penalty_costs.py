@@ -41,7 +41,9 @@ def add_model_components(
         :return:
         """
         return sum(
-            mod.Water_Link_Min_Flow_Violation_Expression[wl, dep_tmp, arr_tmp]
+            mod.Water_Link_Min_Flow_Violation_Vol_per_Sec_Expression[
+                wl, dep_tmp, arr_tmp
+            ]
             * mod.min_flow_violation_penalty_cost[wl]
             * mod.hrs_in_tmp[dep_tmp]
             * mod.tmp_weight[dep_tmp]
@@ -60,7 +62,9 @@ def add_model_components(
         :return:
         """
         return sum(
-            mod.Water_Link_Max_Flow_Violation_Expression[wl, dep_tmp, arr_tmp]
+            mod.Water_Link_Max_Flow_Violation_Vol_per_Sec_Expression[
+                wl, dep_tmp, arr_tmp
+            ]
             * mod.max_flow_violation_penalty_cost[wl]
             * mod.hrs_in_tmp[dep_tmp]
             * mod.tmp_weight[dep_tmp]
@@ -100,7 +104,7 @@ def add_model_components(
         :return:
         """
         return sum(
-            mod.Water_Link_Hrz_Max_Flow_Violation_Expression[r, bt, h]
+            mod.Water_Link_Hrz_Max_Flow_Violation_Avg_Vol_per_Sec_Expression[r, bt, h]
             * mod.hrz_max_flow_violation_penalty_cost[r]
             * mod.number_years_represented[mod.period[mod.last_hrz_tmp[bt, h]]]
             * mod.discount_factor[mod.period[mod.last_hrz_tmp[bt, h]]]

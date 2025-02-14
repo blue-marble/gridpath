@@ -117,6 +117,8 @@ def add_model_components(
         within=NonNegativeReals,
     )
 
+    # Threshold upstream inflow above which max horizon flows will be adjusted
+    # If not specified, defaults to infinity, so no adjustment will be made
     m.threshold_side_stream_avg_vol_per_second = Param(
         m.WATER_LINKS_W_BT_HRZ_MAX_FLOW_CONSTRAINT,
         within=NonNegativeReals,
@@ -242,18 +244,18 @@ def add_model_components(
         m.WATER_LINK_DEPARTURE_ARRIVAL_TMPS, within=NonNegativeReals
     )
 
-    m.Water_Link_Min_Flow_Violation = Var(
+    m.Water_Link_Min_Flow_Violation_Vol_per_Sec = Var(
         m.WATER_LINK_DEPARTURE_ARRIVAL_TMPS, within=NonNegativeReals
     )
-    m.Water_Link_Max_Flow_Violation = Var(
+    m.Water_Link_Max_Flow_Violation_Vol_per_Sec = Var(
         m.WATER_LINK_DEPARTURE_ARRIVAL_TMPS, within=NonNegativeReals
     )
 
-    m.Water_Link_Hrz_Min_Flow_Violation = Var(
+    m.Water_Link_Hrz_Min_Flow_Violation_Avg_Vol_per_Sec = Var(
         m.WATER_LINKS_W_BT_HRZ_MIN_FLOW_CONSTRAINT, within=NonNegativeReals
     )
 
-    m.Water_Link_Hrz_Max_Flow_Violation = Var(
+    m.Water_Link_Hrz_Max_Flow_Violation_Avg_Vol_per_Sec = Var(
         m.WATER_LINKS_W_BT_HRZ_MAX_FLOW_CONSTRAINT, within=NonNegativeReals
     )
 
@@ -266,11 +268,11 @@ def add_model_components(
         :return:
         """
         if mod.allow_water_link_min_flow_violation[wl]:
-            return mod.Water_Link_Min_Flow_Violation[wl, dep_tmp, arr_tmp]
+            return mod.Water_Link_Min_Flow_Violation_Vol_per_Sec[wl, dep_tmp, arr_tmp]
         else:
             return 0
 
-    m.Water_Link_Min_Flow_Violation_Expression = Expression(
+    m.Water_Link_Min_Flow_Violation_Vol_per_Sec_Expression = Expression(
         m.WATER_LINK_DEPARTURE_ARRIVAL_TMPS,
         initialize=min_flow_violation_expression_init,
     )
@@ -284,11 +286,11 @@ def add_model_components(
         :return:
         """
         if mod.allow_water_link_max_flow_violation[wl]:
-            return mod.Water_Link_Max_Flow_Violation[wl, dep_tmp, arr_tmp]
+            return mod.Water_Link_Max_Flow_Violation_Vol_per_Sec[wl, dep_tmp, arr_tmp]
         else:
             return 0
 
-    m.Water_Link_Max_Flow_Violation_Expression = Expression(
+    m.Water_Link_Max_Flow_Violation_Vol_per_Sec_Expression = Expression(
         m.WATER_LINK_DEPARTURE_ARRIVAL_TMPS,
         initialize=max_flow_violation_expression_init,
     )
@@ -303,11 +305,11 @@ def add_model_components(
         :return:
         """
         if mod.allow_water_link_hrz_min_flow_violation[wl]:
-            return mod.Water_Link_Hrz_Min_Flow_Violation[wl, bt, hrz]
+            return mod.Water_Link_Hrz_Min_Flow_Violation_Avg_Vol_per_Sec[wl, bt, hrz]
         else:
             return 0
 
-    m.Water_Link_Hrz_Min_Flow_Violation_Expression = Expression(
+    m.Water_Link_Hrz_Min_Flow_Violation_Avg_Vol_per_Sec_Expression = Expression(
         m.WATER_LINKS_W_BT_HRZ_MIN_FLOW_CONSTRAINT,
         initialize=hrz_min_flow_violation_expression_init,
     )
@@ -322,11 +324,11 @@ def add_model_components(
         :return:
         """
         if mod.allow_water_link_hrz_max_flow_violation[wl]:
-            return mod.Water_Link_Hrz_Max_Flow_Violation[wl, bt, hrz]
+            return mod.Water_Link_Hrz_Max_Flow_Violation_Avg_Vol_per_Sec[wl, bt, hrz]
         else:
             return 0
 
-    m.Water_Link_Hrz_Max_Flow_Violation_Expression = Expression(
+    m.Water_Link_Hrz_Max_Flow_Violation_Avg_Vol_per_Sec_Expression = Expression(
         m.WATER_LINKS_W_BT_HRZ_MAX_FLOW_CONSTRAINT,
         initialize=hrz_max_flow_violation_expression_init,
     )
@@ -335,7 +337,9 @@ def add_model_components(
     def min_tmp_flow_rule(mod, wl, dep_tmp, arr_tmp):
         return (
             mod.Water_Link_Flow_Rate_Vol_per_Sec[wl, dep_tmp, arr_tmp]
-            + mod.Water_Link_Min_Flow_Violation_Expression[wl, dep_tmp, arr_tmp]
+            + mod.Water_Link_Min_Flow_Violation_Vol_per_Sec_Expression[
+                wl, dep_tmp, arr_tmp
+            ]
             >= mod.min_tmp_flow_vol_per_second[wl, dep_tmp]
         )
 
@@ -346,7 +350,9 @@ def add_model_components(
     def max_tmp_flow_rule(mod, wl, dep_tmp, arr_tmp):
         return (
             mod.Water_Link_Flow_Rate_Vol_per_Sec[wl, dep_tmp, arr_tmp]
-            - mod.Water_Link_Max_Flow_Violation_Expression[wl, dep_tmp, arr_tmp]
+            - mod.Water_Link_Max_Flow_Violation_Vol_per_Sec_Expression[
+                wl, dep_tmp, arr_tmp
+            ]
             <= mod.max_tmp_flow_vol_per_second[wl, dep_tmp]
         )
 
@@ -357,12 +363,17 @@ def add_model_components(
     def min_total_hrz_flow_constraint_rule(mod, wl, bt, hrz):
         """ """
         return sum(
-            mod.Water_Link_Flow_Rate_Vol_per_Sec[
-                wl, dep_tmp, mod.arrival_timepoint[wl, dep_tmp]
-            ]
+            (
+                mod.Water_Link_Flow_Rate_Vol_per_Sec[
+                    wl, dep_tmp, mod.arrival_timepoint[wl, dep_tmp]
+                ]
+                + mod.Water_Link_Hrz_Min_Flow_Violation_Avg_Vol_per_Sec_Expression[
+                    wl, bt, hrz
+                ]
+            )
             * mod.hrs_in_tmp[dep_tmp]
             for dep_tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
-        ) + mod.Water_Link_Hrz_Min_Flow_Violation_Expression[wl, bt, hrz] >= sum(
+        ) >= sum(
             mod.min_bt_hrz_flow_avg_vol_per_second[wl, bt, hrz] * mod.hrs_in_tmp[tmp]
             for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
         )
@@ -383,19 +394,31 @@ def add_model_components(
     )
 
     def max_total_hrz_flow_constraint_rule(mod, wl, bt, hrz):
-        """ """
+        """
+        Rule for max flows over a horizon. The max is a parameter by bt-hrz
+        plus an optional adjustment for upstream exogenous inflows (requires
+        a mapping to be provided of water nodes upstream from water link wl)
+        above a threshold inflow amount (
+        threshold_side_stream_avg_vol_per_second). If the latter are not
+        specified, the max_bt_hrz_flow_avg_vol_per_second will bind.
+        """
         upstream_exogenous_inflows = sum(
             mod.exogenous_water_inflow_rate_vol_per_sec[wn, tmp] * mod.hrs_in_tmp[tmp]
             for wn in mod.UPSTREAM_WATER_NODES_BY_WATER_LINK[wl]
             for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
         )
         return sum(
-            mod.Water_Link_Flow_Rate_Vol_per_Sec[
-                wl, dep_tmp, mod.arrival_timepoint[wl, dep_tmp]
-            ]
+            (
+                mod.Water_Link_Flow_Rate_Vol_per_Sec[
+                    wl, dep_tmp, mod.arrival_timepoint[wl, dep_tmp]
+                ]
+                - mod.Water_Link_Hrz_Max_Flow_Violation_Avg_Vol_per_Sec_Expression[
+                    wl, bt, hrz
+                ]
+            )
             * mod.hrs_in_tmp[dep_tmp]
             for dep_tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
-        ) - mod.Water_Link_Hrz_Max_Flow_Violation_Expression[wl, bt, hrz] <= sum(
+        ) <= sum(
             mod.max_bt_hrz_flow_avg_vol_per_second[wl, bt, hrz] * mod.hrs_in_tmp[tmp]
             for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
         ) + max(
@@ -1033,29 +1056,37 @@ def export_results(
     :param d:
     :return:
     """
-    results_columns = [
+    tmp_results_columns = [
         "water_flow_vol_per_sec",
         "water_flow_min_violation_vol_per_sec",
         "water_flow_max_violation_vol_per_sec",
     ]
-    data = [
+    tmp_data = [
         [
             wl,
             dep_tmp,
             arr_tmp,
             value(m.Water_Link_Flow_Rate_Vol_per_Sec[wl, dep_tmp, arr_tmp]),
-            value(m.Water_Link_Min_Flow_Violation_Expression[wl, dep_tmp, arr_tmp]),
-            value(m.Water_Link_Max_Flow_Violation_Expression[wl, dep_tmp, arr_tmp]),
+            value(
+                m.Water_Link_Min_Flow_Violation_Vol_per_Sec_Expression[
+                    wl, dep_tmp, arr_tmp
+                ]
+            ),
+            value(
+                m.Water_Link_Max_Flow_Violation_Vol_per_Sec_Expression[
+                    wl, dep_tmp, arr_tmp
+                ]
+            ),
         ]
         for (wl, dep_tmp, arr_tmp) in m.WATER_LINK_DEPARTURE_ARRIVAL_TMPS
     ]
-    results_df = create_results_df(
+    tmp_results_df = create_results_df(
         index_columns=["water_link", "departure_timepoint", "arrival_timepoint"],
-        results_columns=results_columns,
-        data=data,
+        results_columns=tmp_results_columns,
+        data=tmp_data,
     )
 
-    results_df.to_csv(
+    tmp_results_df.to_csv(
         os.path.join(
             scenario_directory,
             weather_iteration,
@@ -1065,6 +1096,89 @@ def export_results(
             stage,
             "results",
             "system_water_link_timepoint.csv",
+        ),
+        sep=",",
+        index=True,
+    )
+
+    hrz_results_columns = [
+        "hrs_in_bt_hrz",
+        "max_allowed_avg_flow",
+        "threshold_side_stream_avg_vol_per_second",
+        "upstream_exogenous_inflows_avg_vol_per_second",
+        "adjusted_max_allowed_avg_flow",
+        "actual_avg_flow_vol_per_second",
+        "violation_expression_avg_flow_vol_per_second",
+    ]
+    hrz_data = [
+        [
+            wl,
+            bt,
+            hrz,
+            # hrs_in_bt_hrz
+            sum(m.hrs_in_tmp[tmp] for tmp in m.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]),
+            # max_allowed_avg_flow
+            m.max_bt_hrz_flow_avg_vol_per_second[wl, bt, hrz],
+            # threshold_side_stream_avg_vol_per_second
+            m.threshold_side_stream_avg_vol_per_second[wl, bt, hrz],
+            # upstream_exogenous_inflows_avg_vol_per_second
+            sum(
+                m.exogenous_water_inflow_rate_vol_per_sec[wn, tmp] * m.hrs_in_tmp[tmp]
+                for wn in m.UPSTREAM_WATER_NODES_BY_WATER_LINK[wl]
+                for tmp in m.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
+            )
+            / sum(m.hrs_in_tmp[tmp] for tmp in m.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]),
+            # actual_avg_flow_vol_per_second
+            sum(
+                value(
+                    m.Water_Link_Flow_Rate_Vol_per_Sec[
+                        wl, dep_tmp, m.arrival_timepoint[wl, dep_tmp]
+                    ]
+                )
+                * m.hrs_in_tmp[dep_tmp]
+                for dep_tmp in m.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
+            )
+            / sum(m.hrs_in_tmp[tmp] for tmp in m.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]),
+            # adjusted_max_allowed_avg_flow
+            m.max_bt_hrz_flow_avg_vol_per_second[wl, bt, hrz]
+            + max(
+                (
+                    sum(
+                        m.exogenous_water_inflow_rate_vol_per_sec[wn, tmp]
+                        * m.hrs_in_tmp[tmp]
+                        for wn in m.UPSTREAM_WATER_NODES_BY_WATER_LINK[wl]
+                        for tmp in m.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
+                    )
+                    / sum(m.hrs_in_tmp[tmp] for tmp in m.TMPS_BY_BLN_TYPE_HRZ[bt, hrz])
+                    - m.threshold_side_stream_avg_vol_per_second[wl, bt, hrz]
+                ),
+                0,
+            ),
+            # violation_expression
+            value(
+                m.Water_Link_Hrz_Max_Flow_Violation_Avg_Vol_per_Sec_Expression[
+                    wl, bt, hrz
+                ]
+            ),
+        ]
+        for (wl, bt, hrz) in m.WATER_LINKS_W_BT_HRZ_MAX_FLOW_CONSTRAINT
+    ]
+    hrz_results_df = create_results_df(
+        index_columns=["water_link", "balancing_type", "horizon"],
+        results_columns=hrz_results_columns,
+        data=hrz_data,
+    )
+
+    hrz_results_df.to_csv(
+        os.path.join(
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "results",
+            "system_water_link_bt_hrz.csv",
         ),
         sep=",",
         index=True,
