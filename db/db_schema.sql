@@ -1354,8 +1354,32 @@ CREATE TABLE inputs_system_water_flows_horizon_bounds
     horizon                               INTEGER,
     min_bt_hrz_flow_avg_vol_per_second    FLOAT,
     max_bt_hrz_flow_avg_vol_per_second    FLOAT,
+    threshold_side_stream_avg_vol_per_second FLOAT,
     PRIMARY KEY (water_link, water_flow_horizon_bounds_scenario_id,
                  balancing_type, horizon),
+    FOREIGN KEY (water_link, water_flow_horizon_bounds_scenario_id) REFERENCES
+        subscenarios_system_water_flows_horizon_bounds
+            (water_link, water_flow_horizon_bounds_scenario_id)
+);
+
+DROP TABLE IF EXISTS subscenarios_system_water_flows_horizon_bounds_upstream_node_map;
+CREATE TABLE subscenarios_system_water_flows_horizon_bounds_upstream_node_map
+(
+    water_link                            TEXT,
+    water_flow_horizon_bounds_scenario_id INTEGER,
+    name                                  VARCHAR(32),
+    description                           VARCHAR(128),
+    PRIMARY KEY (water_link, water_flow_horizon_bounds_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_system_water_flows_horizon_bounds_upstream_node_map;
+CREATE TABLE inputs_system_water_flows_horizon_bounds_upstream_node_map
+(
+    water_link                            TEXT,
+    water_flow_horizon_bounds_scenario_id INTEGER,
+    upstream_water_node                         TEXT,
+    PRIMARY KEY (water_link, water_flow_horizon_bounds_scenario_id ,
+                 upstream_water_node),
     FOREIGN KEY (water_link, water_flow_horizon_bounds_scenario_id) REFERENCES
         subscenarios_system_water_flows_horizon_bounds
             (water_link, water_flow_horizon_bounds_scenario_id)

@@ -1,2 +1,2 @@
-water_link	balancing_type	horizon	max_tmp_flow_vol_per_second
-Water_Link_12	day	202001	100
+water_link	balancing_type	horizon	max_bt_hrz_flow_avg_vol_per_second	threshold_side_stream_avg_vol_per_second
+Water_Link_12	day	202001	100	.
