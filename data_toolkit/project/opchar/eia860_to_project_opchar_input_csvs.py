@@ -229,6 +229,8 @@ def make_opchar_sql_str(
     technology="NULL",
     operational_type="NULL",
     balancing_type_project="NULL",
+    demand_side="NULL",
+    distribution_loss_factor="NULL",
     variable_om_cost_per_mwh="NULL",
     variable_om_cost_by_period_scenario_id="NULL",
     variable_om_cost_by_timepoint_scenario_id="NULL",
@@ -301,6 +303,8 @@ def make_opchar_sql_str(
      {technology} AS technology,
      {operational_type} AS operational_type,
      {balancing_type_project} AS balancing_type_project,
+     {demand_side} AS demand_side,
+     {distribution_loss_factor} AS distribution_loss_factor,
      {variable_om_cost_per_mwh} AS variable_om_cost_per_mwh,
      {variable_om_cost_by_period_scenario_id} AS variable_om_cost_by_period_scenario_id,
      {variable_om_cost_by_timepoint_scenario_id} AS 

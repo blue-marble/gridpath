@@ -261,9 +261,9 @@ def add_model_components(
         """
         # TODO: replace static_load here with post EE variable
         # TODO: allow less than or equal constraint here?
-        return mod.EnergyLoadFollowing_Provide_Power_MW[prj, tmp] == mod.LZ_Static_Load_in_Tmp[
-            mod.load_zone[prj], tmp
-        ] - (
+        return mod.EnergyLoadFollowing_Provide_Power_MW[
+            prj, tmp
+        ] == mod.LZ_Static_Load_in_Tmp[mod.load_zone[prj], tmp] - (
             mod.base_net_requirement_mwh[prj, mod.period[tmp]]
             - mod.Energy_MWh[prj, mod.period[tmp]]
         ) / sum(

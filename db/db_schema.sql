@@ -5419,6 +5419,8 @@ CREATE TABLE results_project_period
     availability_type                      VARCHAR(64),
     operational_type                       VARCHAR(64),
     technology                             VARCHAR(32),
+    demand_side                            INTEGER,
+    distribution_loss_factor               FLOAT,
     load_zone                              VARCHAR(32),
     energy_target_zone                     VARCHAR(32),
     instantaneous_penetration_zone         VARCHAR(32),
@@ -5532,6 +5534,8 @@ CREATE TABLE results_project_timepoint
     load_zone                                       VARCHAR(32),
     carbon_cap_zone                                 VARCHAR(32),
     technology                                      VARCHAR(32),
+    demand_side                                     INTEGER,
+    distribution_loss_factor                        FLOAT,
     capacity_mw                                     FLOAT,
     power_mw                                        FLOAT, -- grid net power in case there's curtailment and/or aux cons
     scheduled_curtailment_mw                        FLOAT,

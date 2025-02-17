@@ -87,7 +87,7 @@ create_hydro_iteration_input_csvs,overwrite,,1,1
 eia860_to_project_opchar_input_csvs,database,./open_data_raw_temp.db,,
 eia860_to_project_opchar_input_csvs,study_year,2026,,
 eia860_to_project_opchar_input_csvs,region,Region1,,
-eia860_to_project_opchar_input_csvs,output_directory,../db/csvs_test_examples/project/project_operational_chars,,
+eia860_to_project_opchar_input_csvs,output_directory,../db/csvs_test_examples/project/opchar,,
 eia860_to_project_opchar_input_csvs,project_operational_chars_scenario_id,38,,
 eia860_to_project_opchar_input_csvs,project_operational_chars_scenario_name,open_data,,
 eia860_to_project_opchar_input_csvs,project_fuel_scenario_id,1,,
