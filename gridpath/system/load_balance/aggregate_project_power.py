@@ -39,7 +39,7 @@ def add_model_components(
     :param m: the Pyomo abstract model object we are adding the components to
     :param d: the DynamicComponents class object we are adding components to
 
-    Here, we add the *Power_Production_in_Zone_MW* expression -- an
+    Here, we add the *Bulk_Power_Production_in_Zone_MW* expression -- an
     aggregation of power production by all operational projects in each load
     zone *z* and timepoint *tmp* --and add it to the dynamic load-balance
     production components that will go into the load balance constraint in
@@ -50,17 +50,25 @@ def add_model_components(
     """
 
     # Add power generation to load balance constraint
-    # TODO: is this better done with a set intersection (all projects in the
-    #  zone intersected with all operational project sin the timepoint)
-    def total_power_production_rule(mod, z, tmp):
+    def total_bulk_system_power_production_rule(mod, z, tmp):
+        """
+        Note that this is the total power from the perspective of the bulk
+        system (project power production is multiplied by (1 +
+        distribution_loss_factor)). If a resource is producing power on the
+        distribution side (and hence does not incur distribution losses),
+        we'll adjust the power production from the bulk system perspective
+        based on the distribution_loss_factor. Similarly, if the resource is
+        increasing demand on the distribution side (negative power production),
+        a higher total demand will be seen on the bulk system side.
+        """
         return sum(
-            mod.Power_Provision_MW[g, tmp]
-            for g in mod.OPR_PRJS_IN_TMP[tmp]
-            if mod.load_zone[g] == z
+            mod.Power_Provision_MW[prj, tmp] * (1 + mod.distribution_loss_factor[prj])
+            for prj in mod.OPR_PRJS_IN_TMP[tmp]
+            if mod.load_zone[prj] == z
         )
 
-    m.Power_Production_in_Zone_MW = Expression(
-        m.LOAD_ZONES, m.TMPS, rule=total_power_production_rule
+    m.Bulk_Power_Production_in_Zone_MW = Expression(
+        m.LOAD_ZONES, m.TMPS, rule=total_bulk_system_power_production_rule
     )
 
     record_dynamic_components(dynamic_components=d)
@@ -73,7 +81,7 @@ def record_dynamic_components(dynamic_components):
 
     """
     getattr(dynamic_components, load_balance_production_components).append(
-        "Power_Production_in_Zone_MW"
+        "Bulk_Power_Production_in_Zone_MW"
     )
 
 
@@ -104,7 +112,7 @@ def export_results(
         [
             lz,
             tmp,
-            value(m.Power_Production_in_Zone_MW[lz, tmp]),
+            value(m.Bulk_Power_Production_in_Zone_MW[lz, tmp]),
         ]
         for lz in getattr(m, "LOAD_ZONES")
         for tmp in getattr(m, "TMPS")
