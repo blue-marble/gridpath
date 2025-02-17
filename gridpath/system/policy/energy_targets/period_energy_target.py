@@ -76,7 +76,7 @@ def add_model_components(
         # target; if no map provided, the percentage_target is 0
         if mod.PERIOD_ENERGY_TARGET_ZONE_LOAD_ZONES:
             total_period_static_load = sum(
-                mod.LZ_Load_in_Tmp[lz, tmp] * mod.hrs_in_tmp[tmp] * mod.tmp_weight[tmp]
+                mod.LZ_Static_Load_in_Tmp[lz, tmp] * mod.hrs_in_tmp[tmp] * mod.tmp_weight[tmp]
                 for (
                     _energy_target_zone,
                     lz,

@@ -34,7 +34,7 @@ def record_dynamic_components(dynamic_components):
     This method adds the static load to the load balance dynamic components.
     """
     getattr(dynamic_components, load_balance_consumption_components).append(
-        "LZ_Load_in_Tmp"
+        "LZ_Static_Load_in_Tmp"
     )
 
 
@@ -54,7 +54,7 @@ def add_model_components(
 
     Here, we add profiles for the various load components that must be defined
     for each load zone *z* and timepoint *tmp*. These profiles are summed
-    into the *LZ_Load_in_Tmp* expression, which in turn is added to the
+    into the *LZ_Static_Load_in_Tmp* expression, which in turn is added to the
     dynamic load-balance consumption components that will go into the load
     balance constraint in the *load_balance* module (i.e. the constraint's RHS).
 
@@ -121,7 +121,7 @@ def add_model_components(
     +-------------------------------------------------------------------------+
     | Expressions                                                             |
     +=========================================================================+
-    | | :code:`LZ_Load_in_Tmp`                                                |
+    | | :code:`LZ_Static_Load_in_Tmp`                                                |
     | | *Defined over*: :code:`LOAD_ZONES, TMPS`                              |
     |                                                                         |
     | The total load (sum of all load components) for this load zone and      |
@@ -229,7 +229,7 @@ def add_model_components(
         # print(lz_load_in_tmp)
         return lz_load_in_tmp
 
-    m.LZ_Load_in_Tmp = Expression(
+    m.LZ_Static_Load_in_Tmp = Expression(
         m.LOAD_ZONES, m.TMPS, initialize=total_static_load_from_components_init
     )
 
@@ -519,7 +519,7 @@ def export_results(
         [
             lz,
             tmp,
-            value(m.LZ_Load_in_Tmp[lz, tmp]),
+            value(m.LZ_Static_Load_in_Tmp[lz, tmp]),
         ]
         for lz in getattr(m, "LOAD_ZONES")
         for tmp in getattr(m, "TMPS")

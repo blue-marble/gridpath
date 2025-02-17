@@ -1812,6 +1812,8 @@ CREATE TABLE inputs_project_operational_chars
     technology                                VARCHAR(32),
     operational_type                          VARCHAR(32),
     balancing_type_project                    VARCHAR(32),
+    demand_side                               INTEGER,
+    distribution_loss_factor                  FLOAT,
     variable_om_cost_per_mwh                  FLOAT,   -- simple variable O&M
     variable_om_cost_by_period_scenario_id    INTEGER, -- determines by period simple variable O&M
     variable_om_cost_by_timepoint_scenario_id INTEGER, -- determines by tmp simple variable O&M
