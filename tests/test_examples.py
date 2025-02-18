@@ -1584,6 +1584,14 @@ class TestExamples(unittest.TestCase):
         scenario_name = "test_w_bt_hrz_avl"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
+    def test_dsm_examples(self):
+        """
+        :return:
+        """
+        scenario_name = "dsm_examples"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+
     @classmethod
     def tearDownClass(cls):
         os.remove(DB_PATH)
