@@ -89,24 +89,15 @@ def add_model_components(
     # Expressions
     ###########################################################################
 
-    def power_provision_rule(mod, prj, tmp):
+    def project_power_provision_rule(mod, prj, tmp):
         """
-        **Expression Name**: Bulk_Power_Provision_MW
+        **Expression Name**: Project_Power_Provision_MW
         **Defined Over**: PRJ_OPR_TMPS
 
         Power provision is a variable for some generators, but not others; get
         the appropriate expression for each generator based on its operational
         type. This is a project-level variable that is not yet adjusted for
         distribution system losses to get bulk system equivalent power.
-
-        This is power production from the perspective of the bulk system (
-        project power production is multiplied by (1 +
-        distribution_loss_factor)). If a resource is producing power on the
-        distribution side (and hence does not incur distribution losses),
-        we'll adjust the power production from the bulk system perspective
-        based on the distribution_loss_factor. Similarly, if the resource is
-        increasing demand on the distribution side (negative power production),
-        a higher total demand will be seen on the bulk system side.
         """
         gen_op_type = mod.operational_type[prj]
         if hasattr(imported_operational_modules[gen_op_type], "power_provision_rule"):
@@ -116,11 +107,27 @@ def add_model_components(
         else:
             return op_type_init.power_provision_rule(mod, prj, tmp)
 
-    m.Project_Power_Provision_MW = Expression(m.PRJ_OPR_TMPS, rule=power_provision_rule)
+    m.Project_Power_Provision_MW = Expression(
+        m.PRJ_OPR_TMPS, rule=project_power_provision_rule
+    )
+
+    def bulk_power_provision_rule(mod, prj, tmp):
+        """
+        This is power production from the perspective of the bulk system (
+        project power production is multiplied by (1 +
+        distribution_loss_factor)). If a resource is producing power on the
+        distribution side (and hence does not incur distribution losses),
+        we'll adjust the power production from the bulk system perspective
+        based on the distribution_loss_factor. Similarly, if the resource is
+        increasing demand on the distribution side (negative power production),
+        a higher total demand will be seen on the bulk system side.
+        """
+        return mod.Project_Power_Provision_MW[prj, tmp] / (
+            1 + mod.distribution_loss_factor[prj]
+        )
+
     m.Bulk_Power_Provision_MW = Expression(
-        m.PRJ_OPR_TMPS,
-        rule=lambda mod, prj, tmp: mod.Project_Power_Provision_MW[prj, tmp]
-        / (1 + mod.distribution_loss_factor[prj]),
+        m.PRJ_OPR_TMPS, rule=bulk_power_provision_rule
     )
 
 
