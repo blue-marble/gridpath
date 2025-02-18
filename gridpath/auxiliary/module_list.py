@@ -142,7 +142,7 @@ def all_modules_list():
         "system.load_balance",
         "system.load_balance.static_load_requirement",
         "system.load_balance.aggregate_project_power",
-        "system.load_balance.aggregate_demand_side_power",
+        "system.load_balance.aggregate_load_modifier_power",
         "system.load_balance.load_following",
         "system.load_balance.aggregate_transmission_power",
         "transmission.operations.export_penalty_costs",

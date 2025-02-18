@@ -49,7 +49,7 @@ PREREQUISITE_MODULE_NAMES = [
     "project.operations.power",
     "project.operations.fuel_burn",
     "system.load_balance.static_load_requirement",
-    "system.load_balance.aggregate_demand_side_power",
+    "system.load_balance.aggregate_load_modifier_power",
     "project.operations.instantaneous_penetration_contributions",
     "system.policy.instantaneous_penetration.instantaneous_penetration_requirements",
     "system.policy.instantaneous_penetration.instantaneous_penetration_aggregation",

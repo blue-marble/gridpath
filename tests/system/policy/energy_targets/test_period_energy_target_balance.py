@@ -49,7 +49,7 @@ PREREQUISITE_MODULE_NAMES = [
     "project.operations.operational_types",
     "project.operations.power",
     "project.operations.energy_target_contributions",
-    "system.load_balance.aggregate_demand_side_power",
+    "system.load_balance.aggregate_load_modifier_power",
     "system.policy.energy_targets.period_energy_target",
     "system.policy.energy_targets.aggregate_period_energy_target_contributions",
 ]

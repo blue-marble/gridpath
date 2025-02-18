@@ -1812,8 +1812,8 @@ CREATE TABLE inputs_project_operational_chars
     technology                                VARCHAR(32),
     operational_type                          VARCHAR(32),
     balancing_type_project                    VARCHAR(32),
-    demand_side                               INTEGER,
-    distribution_loss_factor                  FLOAT,
+    load_modifier                               INTEGER,
+    distribution_loss_adjustment_factor                  FLOAT,
     variable_om_cost_per_mwh                  FLOAT,   -- simple variable O&M
     variable_om_cost_by_period_scenario_id    INTEGER, -- determines by period simple variable O&M
     variable_om_cost_by_timepoint_scenario_id INTEGER, -- determines by tmp simple variable O&M
@@ -4007,7 +4007,7 @@ CREATE TABLE inputs_system_load_components
     load_zone                               VARCHAR(32),
     load_component                          TEXT,
     load_level_default                      FLOAT, -- defaults to infinity in model
-    load_component_distribution_loss_factor FLOAT, --default to 0 in model
+    load_component_distribution_loss_adjustment_factor FLOAT, --default to 0 in model
     PRIMARY KEY (load_components_scenario_id, load_zone, load_component)
 );
 
@@ -5420,8 +5420,8 @@ CREATE TABLE results_project_period
     availability_type                      VARCHAR(64),
     operational_type                       VARCHAR(64),
     technology                             VARCHAR(32),
-    demand_side                            INTEGER,
-    distribution_loss_factor               FLOAT,
+    load_modifier                            INTEGER,
+    distribution_loss_adjustment_factor               FLOAT,
     load_zone                              VARCHAR(32),
     energy_target_zone                     VARCHAR(32),
     instantaneous_penetration_zone         VARCHAR(32),
@@ -5535,8 +5535,8 @@ CREATE TABLE results_project_timepoint
     load_zone                                       VARCHAR(32),
     carbon_cap_zone                                 VARCHAR(32),
     technology                                      VARCHAR(32),
-    demand_side                                     INTEGER,
-    distribution_loss_factor                        FLOAT,
+    load_modifier                                     INTEGER,
+    distribution_loss_adjustment_factor                        FLOAT,
     capacity_mw                                     FLOAT,
     project_power_mw                                FLOAT, -- project-level
     power_mw                                        FLOAT, -- bulk-system-level
@@ -6201,8 +6201,8 @@ CREATE TABLE results_system_load_zone_timepoint
     number_of_hours_in_timepoint      FLOAT,
     spinup_or_lookahead               INTEGER,
     static_load_mw                    FLOAT,
-    demand_side_power_mw              FLOAT,
-    demand_side_adjusted_load_mw      FLOAT,
+    load_modifier_power_mw              FLOAT,
+    load_modifier_adjusted_load_mw      FLOAT,
     total_power_mw                    FLOAT,
     net_imports_mw                    FLOAT,
     net_market_purchases_mw           FLOAT,

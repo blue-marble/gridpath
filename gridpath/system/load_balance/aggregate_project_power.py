@@ -54,7 +54,7 @@ def add_model_components(
         """
         Note that this is the total power from the perspective of the bulk
         system (project power production has been multiplied by (1 +
-        distribution_loss_factor)).
+        distribution_loss_adjustment_factor)).
         """
         return sum(
             mod.Bulk_Power_Provision_MW[prj, tmp]

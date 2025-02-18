@@ -50,7 +50,7 @@ PREREQUISITE_MODULE_NAMES = [
     "project.operations.fuel_burn",
     "project.operations.energy_target_contributions",
     "system.load_balance.static_load_requirement",
-    "system.load_balance.aggregate_demand_side_power",
+    "system.load_balance.aggregate_load_modifier_power",
     "system.policy.energy_targets.horizon_energy_target",
     "system.policy.energy_targets.aggregate_horizon_energy_target_contributions",
     "system.policy.energy_targets.horizon_energy_target_balance",

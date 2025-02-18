@@ -126,7 +126,7 @@ class TestLoadRequirement(unittest.TestCase):
         )
         self.assertDictEqual(expected_defult, actual_default)
 
-        # Param: load_component_distribution_loss_factor
+        # Param: load_component_distribution_loss_adjustment_factor
         expected_dist_loss = OrderedDict(
             sorted(
                 {
@@ -140,7 +140,12 @@ class TestLoadRequirement(unittest.TestCase):
         actual_dist_loss = OrderedDict(
             sorted(
                 {
-                    (z, cmp): instance.load_component_distribution_loss_factor[z, cmp]
+                    (
+                        z,
+                        cmp,
+                    ): instance.load_component_distribution_loss_adjustment_factor[
+                        z, cmp
+                    ]
                     for (z, cmp) in instance.LOAD_ZONE_LOAD_CMPNTS_ALL
                 }.items()
             )

@@ -50,7 +50,7 @@ PREREQUISITE_MODULE_NAMES = [
     "project.operations.operational_types",
     "project.operations.power",
     "project.operations.instantaneous_penetration_contributions",
-    "system.load_balance.aggregate_demand_side_power",
+    "system.load_balance.aggregate_load_modifier_power",
 ]
 NAME_OF_MODULE_BEING_TESTED = (
     "system.policy.instantaneous_penetration.instantaneous_penetration_requirements"

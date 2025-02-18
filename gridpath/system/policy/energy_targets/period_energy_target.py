@@ -75,7 +75,7 @@ def add_model_components(
         # If we have a map of RPS zones to load zones, apply the percentage
         # target; if no map provided, the percentage_target is 0
         if mod.PERIOD_ENERGY_TARGET_ZONE_LOAD_ZONES:
-            total_period_demand_side_adjusted_load = sum(
+            total_period_load_modifier_adjusted_load = sum(
                 mod.LZ_Demand_Side_Adjusted_Load_in_Tmp[lz, tmp]
                 * mod.hrs_in_tmp[tmp]
                 * mod.tmp_weight[tmp]
@@ -89,7 +89,7 @@ def add_model_components(
             )
             percentage_target = (
                 mod.period_energy_target_fraction[energy_target_zone, period]
-                * total_period_demand_side_adjusted_load
+                * total_period_load_modifier_adjusted_load
             )
         else:
             percentage_target = 0

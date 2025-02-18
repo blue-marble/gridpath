@@ -49,7 +49,7 @@ PREREQUISITE_MODULE_NAMES = [
     "project.operations.operational_types",
     "project.operations.power",
     "system.load_balance.static_load_requirement",
-    "system.load_balance.aggregate_demand_side_power",
+    "system.load_balance.aggregate_load_modifier_power",
     "system.reserves.requirement.lf_reserves_down",
 ]
 NAME_OF_MODULE_BEING_TESTED = "system.reserves.aggregation.lf_reserves_down"

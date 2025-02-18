@@ -115,15 +115,15 @@ def add_model_components(
         """
         This is power production from the perspective of the bulk system (
         project power production is multiplied by (1 +
-        distribution_loss_factor)). If a resource is producing power on the
+        distribution_loss_adjustment_factor)). If a resource is producing power on the
         distribution side (and hence does not incur distribution losses),
         we'll adjust the power production from the bulk system perspective
-        based on the distribution_loss_factor. Similarly, if the resource is
+        based on the distribution_loss_adjustment_factor. Similarly, if the resource is
         increasing demand on the distribution side (negative power production),
         a higher total demand will be seen on the bulk system side.
         """
-        return mod.Project_Power_Provision_MW[prj, tmp] / (
-            1 + mod.distribution_loss_factor[prj]
+        return mod.Project_Power_Provision_MW[prj, tmp] * (
+            1 + mod.distribution_loss_adjustment_factor[prj]
         )
 
     m.Bulk_Power_Provision_MW = Expression(

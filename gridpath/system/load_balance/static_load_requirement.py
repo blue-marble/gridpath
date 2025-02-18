@@ -144,7 +144,7 @@ def add_model_components(
         initialize="undefined",
     )
     # Distribution loss factor
-    m.load_component_distribution_loss_factor = Param(
+    m.load_component_distribution_loss_adjustment_factor = Param(
         m.LOAD_ZONE_LOAD_CMPNTS_ALL, within=NonNegativeReals, default=0
     )
 
@@ -228,7 +228,9 @@ def add_model_components(
                     load_zone, timepoint, component
                 ] * (
                     1
-                    + mod.load_component_distribution_loss_factor[load_zone, component]
+                    + mod.load_component_distribution_loss_adjustment_factor[
+                        load_zone, component
+                    ]
                 )
                 if (load_zone, timepoint) not in lz_load_in_tmp.keys():
                     lz_load_in_tmp[(load_zone, timepoint)] = (
@@ -299,7 +301,7 @@ def load_model_data(
         index=m.LOAD_ZONE_LOAD_CMPNTS_ALL,
         param=(
             m.load_level_default,
-            m.load_component_distribution_loss_factor,
+            m.load_component_distribution_loss_adjustment_factor,
         ),
     )
 
@@ -375,7 +377,7 @@ def get_inputs_from_database(
     c2 = conn.cursor()
     ld_comp_defaults = c2.execute(
         f"""SELECT load_zone, load_component, load_level_default, 
-        load_component_distribution_loss_factor
+        load_component_distribution_loss_adjustment_factor
             FROM inputs_system_load_components
             INNER JOIN
             -- Get only relevant load zones

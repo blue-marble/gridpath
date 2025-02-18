@@ -40,7 +40,7 @@ def add_model_components(
     """
 
     # Add power generation to load balance constraint
-    def total_demand_side_power_production_rule(mod, z, tmp):
+    def total_load_modifier_power_production_rule(mod, z, tmp):
         """
         Note that this is the total demand side power from the perspective of
         the bulk system.
@@ -48,21 +48,21 @@ def add_model_components(
         return sum(
             mod.Bulk_Power_Provision_MW[prj, tmp]
             for prj in mod.OPR_PRJS_IN_TMP[tmp]
-            if mod.load_zone[prj] == z and mod.demand_side[prj] == 1
+            if mod.load_zone[prj] == z and mod.load_modifier[prj] == 1
         )
 
     m.Demand_Side_Power_Production_in_Zone_MW = Expression(
-        m.LOAD_ZONES, m.TMPS, rule=total_demand_side_power_production_rule
+        m.LOAD_ZONES, m.TMPS, rule=total_load_modifier_power_production_rule
     )
 
-    def demand_side_adjusted_load_init(mod, lz, tmp):
+    def load_modifier_adjusted_load_init(mod, lz, tmp):
         return (
             mod.LZ_Bulk_Static_Load_in_Tmp[lz, tmp]
             - mod.Demand_Side_Power_Production_in_Zone_MW[lz, tmp]
         )
 
     m.LZ_Demand_Side_Adjusted_Load_in_Tmp = Expression(
-        m.LOAD_ZONES, m.TMPS, initialize=demand_side_adjusted_load_init
+        m.LOAD_ZONES, m.TMPS, initialize=load_modifier_adjusted_load_init
     )
 
 
@@ -87,8 +87,8 @@ def export_results(
     """
 
     results_columns = [
-        "demand_side_power_mw",
-        "demand_side_adjusted_load_mw",
+        "load_modifier_power_mw",
+        "load_modifier_adjusted_load_mw",
     ]
     data = [
         [

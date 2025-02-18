@@ -48,7 +48,7 @@ PREREQUISITE_MODULE_NAMES = [
     "project.operations.operational_types",
     "project.operations.power",
     "system.load_balance.static_load_requirement",
-    "system.load_balance.aggregate_demand_side_power",
+    "system.load_balance.aggregate_load_modifier_power",
 ]
 NAME_OF_MODULE_BEING_TESTED = "system.policy.energy_targets.horizon_energy_target"
 IMPORTED_PREREQ_MODULES = list()
