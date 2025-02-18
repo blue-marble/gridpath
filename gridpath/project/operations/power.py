@@ -101,30 +101,6 @@ def add_model_components(
 
     m.Power_Provision_MW = Expression(m.PRJ_OPR_TMPS, rule=power_provision_rule)
 
-    # def energy_limit_in_period_constraint_rule(mod, prj, tmp):
-    #     """
-    #     **Constraint**: Energy_Limit_in_Period_Constraint
-    #     **Defined Over**: PRJ_OPR_PRDS
-    #
-    #     Power provision is a variable for some generators, but not others; get
-    #     the appropriate expression for each generator based on its operational
-    #     type.
-    #     """
-    #     gen_op_type = mod.operational_type[prj]
-    #     if hasattr(
-    #         imported_operational_modules[gen_op_type],
-    #         "energy_limit_in_period_constraint_rule",
-    #     ):
-    #         return imported_operational_modules[
-    #             gen_op_type
-    #         ].energy_limit_in_period_constraint_rule(mod, prj, tmp)
-    #     else:
-    #         return op_type_init.energy_limit_in_period_constraint_rule(mod, prj, tmp)
-    #
-    # m.Energy_Limit_in_Period_Constraint = Constraint(
-    #     m.PRJ_OPR_PRDS, rule=energy_limit_in_period_constraint_rule
-    # )
-
 
 # Input-Output
 ###############################################################################

@@ -107,7 +107,7 @@ def generic_add_model_components(
         if getattr(mod, reserve_zone_load_zone_set):
             percentage_target = sum(
                 getattr(mod, reserve_requirement_percent_param)[reserve_zone]
-                * mod.LZ_Static_Load_in_Tmp[lz, tmp]
+                * mod.LZ_Demand_Side_Adjusted_Load_in_Tmp[lz, tmp]
                 for (_reserve_zone, lz) in getattr(mod, reserve_zone_load_zone_set)
                 if _reserve_zone == reserve_zone
             )

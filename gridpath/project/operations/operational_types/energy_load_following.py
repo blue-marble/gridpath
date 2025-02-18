@@ -13,9 +13,6 @@
 # limitations under the License.
 
 """
-This operational type shapes energy on a horizon basis, based on min power, 
-max power, and total energy for the horizon. It limits total energy over the 
-period to the Energy_MWh for the project.
 
 """
 
@@ -251,29 +248,6 @@ def add_model_components(
 
     # Constraints
     ###########################################################################
-
-    def load_following_rule(mod, prj, tmp):
-        """
-        **Constraint Name**: EnergyLoadFollowing_Power_Constraint
-        **Enforced Over**: ENERGY_LOAD_FOLLOWING_OPR_TMPS
-
-        Meet everything above a flat block a
-        """
-        # TODO: replace static_load here with post EE variable
-        # TODO: allow less than or equal constraint here?
-        return mod.EnergyLoadFollowing_Provide_Power_MW[
-            prj, tmp
-        ] == mod.LZ_Static_Load_in_Tmp[mod.load_zone[prj], tmp] - (
-            mod.base_net_requirement_mwh[prj, mod.period[tmp]]
-            - mod.Energy_MWh[prj, mod.period[tmp]]
-        ) / sum(
-            mod.hrs_in_tmp[prd_tmp] * mod.tmp_weight[prd_tmp]
-            for prd_tmp in mod.TMPS_IN_PRD[mod.period[tmp]]
-        )
-
-    m.EnergyLoadFollowing_Power_Constraint = Constraint(
-        m.ENERGY_LOAD_FOLLOWING_OPR_TMPS, rule=load_following_rule
-    )
 
     # def tmps_by_prd_month_rule(mod, prd, month):
     #     tmps_list = []

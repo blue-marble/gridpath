@@ -75,8 +75,8 @@ def add_model_components(
         # If we have a map of RPS zones to load zones, apply the percentage
         # target; if no map provided, the fraction_target is 0
         if mod.HORIZON_ENERGY_TARGET_ZONE_LOAD_ZONES:
-            total_bt_horizon_static_load = sum(
-                mod.LZ_Static_Load_in_Tmp[lz, tmp]
+            total_bt_horizon_demand_side_adjusted_load = sum(
+                mod.LZ_Demand_Side_Adjusted_Load_in_Tmp[lz, tmp]
                 * mod.hrs_in_tmp[tmp]
                 * mod.tmp_weight[tmp]
                 for (
@@ -89,7 +89,7 @@ def add_model_components(
             )
             fraction_target = (
                 mod.horizon_energy_target_fraction[energy_target_zone, bt, h]
-                * total_bt_horizon_static_load
+                * total_bt_horizon_demand_side_adjusted_load
             )
         else:
             fraction_target = 0

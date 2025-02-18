@@ -6199,6 +6199,8 @@ CREATE TABLE results_system_load_zone_timepoint
     number_of_hours_in_timepoint      FLOAT,
     spinup_or_lookahead               INTEGER,
     static_load_mw                    FLOAT,
+    demand_side_power_mw              FLOAT,
+    demand_side_adjusted_load_mw      FLOAT,
     total_power_mw                    FLOAT,
     net_imports_mw                    FLOAT,
     net_market_purchases_mw           FLOAT,

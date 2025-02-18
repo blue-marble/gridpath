@@ -39,6 +39,7 @@ PREREQUISITE_MODULE_NAMES = [
     "project.operations",
     "project.operations.reserves.lf_reserves_down",
     "system.load_balance.static_load_requirement",
+    "system.load_balance.aggregate_demand_side_power",
 ]
 NAME_OF_MODULE_BEING_TESTED = "system.reserves.requirement.lf_reserves_down"
 IMPORTED_PREREQ_MODULES = list()

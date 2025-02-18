@@ -32,7 +32,6 @@ PREREQUISITE_MODULE_NAMES = [
     "geography.load_zones",
     "system.load_balance.static_load_requirement",
     "geography.energy_target_zones",
-    "system.policy.energy_targets.period_energy_target",
     "geography.water_network",
     "system.water.water_system_params",
     "system.water.water_flows",

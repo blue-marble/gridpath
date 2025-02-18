@@ -429,16 +429,6 @@ def online_capacity_rule(mod, g, tmp):
     return mod.Capacity_MW[g, mod.period[tmp]] * mod.Availability_Derate[g, tmp]
 
 
-# def energy_limit_in_period_constraint_rule(mod, prj, prd):
-#     return (
-#         sum(
-#             mod.Power_Provision_MW[prj, tmp] * mod.hrs_in_tmp[tmp] * mod.tmp_weight[tmp]
-#             for tmp in mod.TMPS_IN_PRD[prd]
-#         )
-#         <= mod.Energy_MWh[prj, prd]
-#     )
-
-
 def variable_om_cost_rule(mod, prj, tmp):
     """
     By default the variable cost is the power provision (for load balancing

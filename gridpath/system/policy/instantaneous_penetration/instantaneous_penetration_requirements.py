@@ -112,7 +112,7 @@ def add_model_components(
         if mod.INST_PEN_ZONE_LZ:
             percentage_target = sum(
                 mod.inst_pen_min_percent_load[inst_pen_zone]
-                * mod.LZ_Static_Load_in_Tmp[lz, tmp]
+                * mod.LZ_Demand_Side_Adjusted_Load_in_Tmp[lz, tmp]
                 for (_inst_pen_zone, lz) in mod.INSTANTANEOUS_PENETRATION_ZONES
                 * mod.LOAD_ZONES
                 if _inst_pen_zone == inst_pen_zone
@@ -163,7 +163,7 @@ def add_model_components(
         if mod.INST_PEN_ZONE_LZ:
             percentage_target = sum(
                 mod.inst_pen_max_percent_load[inst_pen_zone]
-                * mod.LZ_Static_Load_in_Tmp[lz, tmp]
+                * mod.LZ_Demand_Side_Adjusted_Load_in_Tmp[lz, tmp]
                 for (_inst_pen_zone, lz) in mod.INSTANTANEOUS_PENETRATION_ZONES
                 * mod.LOAD_ZONES
                 if _inst_pen_zone == inst_pen_zone
