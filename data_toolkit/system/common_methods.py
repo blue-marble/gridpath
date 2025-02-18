@@ -62,7 +62,8 @@ def create_load_components_scenario_csv(
     query = f"""
             SELECT load_zone, 
             '{load_component_name}' AS load_component, 
-            NULL AS load_level_default
+            NULL AS load_level_default, 
+            NULL AS load_component_distribution_loss_factor
             FROM user_defined_load_zone_units
             ;
             """

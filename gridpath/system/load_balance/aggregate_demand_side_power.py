@@ -63,7 +63,7 @@ def add_model_components(
 
     def demand_side_adjusted_load_init(mod, lz, tmp):
         return (
-            mod.LZ_Static_Load_in_Tmp[lz, tmp]
+            mod.LZ_Bulk_Static_Load_in_Tmp[lz, tmp]
             - mod.Demand_Side_Power_Production_in_Zone_MW[lz, tmp]
         )
 
