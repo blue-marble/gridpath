@@ -125,7 +125,7 @@ def add_model_components(
             # Project contributions to requirement based on power output
             prj_pwr_contribution = sum(
                 mod.inst_pen_min_ratio_power_req[inst_pen_zone, prj]
-                * mod.Power_Provision_MW[prj, tmp]
+                * mod.Bulk_Power_Provision_MW[prj, tmp]
                 for (_inst_pen_zone, prj) in mod.INST_PEN_PRJ_CONTRIBUTION
                 if _inst_pen_zone == inst_pen_zone
                 if (prj, tmp) in mod.PRJ_OPR_TMPS
@@ -176,7 +176,7 @@ def add_model_components(
             # Project contributions to requirement based on power output
             prj_pwr_contribution = sum(
                 mod.inst_pen_max_ratio_power_req[inst_pen_zone, prj]
-                * mod.Power_Provision_MW[prj, tmp]
+                * mod.Bulk_Power_Provision_MW[prj, tmp]
                 for (_inst_pen_zone, prj) in mod.INST_PEN_PRJ_CONTRIBUTION
                 if _inst_pen_zone == inst_pen_zone
                 if (prj, tmp) in mod.PRJ_OPR_TMPS

@@ -5538,7 +5538,8 @@ CREATE TABLE results_project_timepoint
     demand_side                                     INTEGER,
     distribution_loss_factor                        FLOAT,
     capacity_mw                                     FLOAT,
-    power_mw                                        FLOAT, -- grid net power in case there's curtailment and/or aux cons
+    project_power_mw                                FLOAT, -- project-level
+    power_mw                                        FLOAT, -- bulk-system-level
     scheduled_curtailment_mw                        FLOAT,
     subhourly_curtailment_mw                        FLOAT,
     subhourly_energy_delivered_mw                   FLOAT,

@@ -47,7 +47,7 @@ def add_model_components(
     +-------------------------------------------------------------------------+
     | Expressions                                                             |
     +=========================================================================+
-    | | :code:`Power_Provision_MW`                                            |
+    | | :code:`Project_Power_Provision_MW`                                    |
     | | *Defined over*: :code:`PRJ_OPR_TMPS`                                  |
     |                                                                         |
     | Defines the power a project is producing in each of its operational     |
@@ -58,6 +58,13 @@ def add_model_components(
     | operational_type will be producing power equal to its capacity while a  |
     | dispatchable project will have a variable in its power provision        |
     | expression. This expression will then be used by other modules.         |
+    +-------------------------------------------------------------------------+
+    | | :code:`Bulk_Power_Provision_MW`                                       |
+    | | *Defined over*: :code:`PRJ_OPR_TMPS`                                  |
+    |                                                                         |
+    | Defines the power a project is producing in each of its operational     |
+    | timepoints from the bulk system perspective (adjusted for distribution  |
+    | losses.                                                                 |
     +-------------------------------------------------------------------------+
 
     """
@@ -84,12 +91,22 @@ def add_model_components(
 
     def power_provision_rule(mod, prj, tmp):
         """
-        **Expression Name**: Power_Provision_MW
+        **Expression Name**: Bulk_Power_Provision_MW
         **Defined Over**: PRJ_OPR_TMPS
 
         Power provision is a variable for some generators, but not others; get
         the appropriate expression for each generator based on its operational
-        type.
+        type. This is a project-level variable that is not yet adjusted for
+        distribution system losses to get bulk system equivalent power.
+
+        This is power production from the perspective of the bulk system (
+        project power production is multiplied by (1 +
+        distribution_loss_factor)). If a resource is producing power on the
+        distribution side (and hence does not incur distribution losses),
+        we'll adjust the power production from the bulk system perspective
+        based on the distribution_loss_factor. Similarly, if the resource is
+        increasing demand on the distribution side (negative power production),
+        a higher total demand will be seen on the bulk system side.
         """
         gen_op_type = mod.operational_type[prj]
         if hasattr(imported_operational_modules[gen_op_type], "power_provision_rule"):
@@ -99,7 +116,12 @@ def add_model_components(
         else:
             return op_type_init.power_provision_rule(mod, prj, tmp)
 
-    m.Power_Provision_MW = Expression(m.PRJ_OPR_TMPS, rule=power_provision_rule)
+    m.Project_Power_Provision_MW = Expression(m.PRJ_OPR_TMPS, rule=power_provision_rule)
+    m.Bulk_Power_Provision_MW = Expression(
+        m.PRJ_OPR_TMPS,
+        rule=lambda mod, prj, tmp: mod.Project_Power_Provision_MW[prj, tmp]
+        / (1 + mod.distribution_loss_factor[prj]),
+    )
 
 
 # Input-Output
@@ -129,14 +151,13 @@ def export_results(
     Nothing
     """
 
-    results_columns = [
-        "power_mw",
-    ]
+    results_columns = ["project_power_mw", "power_mw"]
     data = [
         [
             prj,
             tmp,
-            value(m.Power_Provision_MW[prj, tmp]),
+            value(m.Project_Power_Provision_MW[prj, tmp]),
+            value(m.Bulk_Power_Provision_MW[prj, tmp]),
         ]
         for (prj, tmp) in m.PRJ_OPR_TMPS
     ]

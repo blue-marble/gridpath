@@ -108,7 +108,7 @@ def add_model_components(
     def actual_power_provision_in_horizon_rule(mod, prj, bt, h):
         """ """
         return sum(
-            mod.Power_Provision_MW[prj, tmp] * mod.hrs_in_tmp[tmp] * mod.tmp_weight[tmp]
+            mod.Project_Power_Provision_MW[prj, tmp] * mod.hrs_in_tmp[tmp] * mod.tmp_weight[tmp]
             for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, h]
         )
 
