@@ -185,6 +185,7 @@ def add_model_components(
         within=NonNegativeReals,
     )
 
+    # Expressions
     # TODO: implement the correct calculation; depends on area, which depends
     #  on elevation
     # Losses
@@ -192,19 +193,6 @@ def add_model_components(
         m.WATER_NODES_W_RESERVOIRS,
         m.TMPS,
         initialize=lambda mod, r, tmp: mod.evaporation_coefficient[r],
-    )
-
-    # TODO: add evaporative losses
-    def gross_reservoir_release(mod, wn_w_r, tmp):
-        return (
-            mod.Discharge_Water_to_Powerhouse_Rate_Vol_Per_Sec[wn_w_r, tmp]
-            + mod.Spill_Water_Rate_Vol_Per_Sec[wn_w_r, tmp]
-        )
-
-    m.Gross_Reservoir_Release_Rate_Vol_Per_Sec = Expression(
-        m.WATER_NODES_W_RESERVOIRS,
-        m.TMPS,
-        initialize=gross_reservoir_release,
     )
 
     # Slack variables
@@ -223,15 +211,37 @@ def add_model_components(
     )
 
     # Expressions
-    # def ending_volume_init(mod, wn, tmp):
-    #     inflow = get_total_inflow_for_reservoir_tracking_volunit(mod, wn, tmp)
-    #     outflow = get_total_reservoir_release_volunit(mod, wn, tmp)
-    #
-    #     return mod.Reservoir_Starting_Volume_WaterVolumeUnit[wn, tmp] + inflow - outflow
-    #
-    # m.Reservoir_Ending_Volume_WaterVolumeUnit = Expression(
-    #     m.WATER_NODES_W_RESERVOIRS, m.TMPS, initialize=ending_volume_init
-    # )
+    # TODO: add evaporative losses
+    def gross_reservoir_release(mod, wn_w_r, tmp):
+        return (
+            mod.Discharge_Water_to_Powerhouse_Rate_Vol_Per_Sec[wn_w_r, tmp]
+            + mod.Spill_Water_Rate_Vol_Per_Sec[wn_w_r, tmp]
+        )
+
+    m.Gross_Reservoir_Release_Rate_Vol_Per_Sec = Expression(
+        m.WATER_NODES_W_RESERVOIRS,
+        m.TMPS,
+        initialize=gross_reservoir_release,
+    )
+
+    def get_total_reservoir_release_volunit(mod, wn, tmp):
+        outflow_in_tmp = (
+            mod.Gross_Reservoir_Release_Rate_Vol_Per_Sec[wn, tmp]
+            * 3600
+            * mod.hrs_in_tmp[tmp]
+        )
+
+        return outflow_in_tmp
+
+    def ending_volume_init(mod, wn, tmp):
+        inflow = get_total_inflow_for_reservoir_tracking_volunit(mod, wn, tmp)
+        outflow = get_total_reservoir_release_volunit(mod, wn, tmp)
+
+        return mod.Reservoir_Starting_Volume_WaterVolumeUnit[wn, tmp] + inflow - outflow
+
+    m.Reservoir_Ending_Volume_WaterVolumeUnit = Expression(
+        m.WATER_NODES_W_RESERVOIRS, m.TMPS, initialize=ending_volume_init
+    )
 
     # ### Constraints ### #
 
@@ -452,16 +462,6 @@ def add_model_components(
     m.Reservoir_Storage_Tracking_Constraint = Constraint(
         m.WATER_NODES_W_RESERVOIRS, m.TMPS, rule=reservoir_storage_tracking_rule
     )
-
-
-def get_total_reservoir_release_volunit(mod, wn, tmp):
-    outflow_in_tmp = (
-        mod.Gross_Reservoir_Release_Rate_Vol_Per_Sec[wn, tmp]
-        * 3600
-        * mod.hrs_in_tmp[tmp]
-    )
-
-    return outflow_in_tmp
 
 
 def load_model_data(
