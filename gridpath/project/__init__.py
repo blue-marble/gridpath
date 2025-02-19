@@ -182,7 +182,7 @@ def add_model_components(
     # TODO: considering technology is only used on the results side, should we
     # keep it here?
 
-    m.load_modifier = Param(m.PROJECTS, within=[0, 1], default=0)
+    m.load_modifier_flag = Param(m.PROJECTS, within=[0, 1], default=0)
     m.distribution_loss_adjustment_factor = Param(
         m.PROJECTS, within=NonNegativeReals, default=0
     )
@@ -223,7 +223,7 @@ def load_model_data(
             "availability_type",
             "operational_type",
             "balancing_type_project",
-            "load_modifier",
+            "load_modifier_flag",
             "distribution_loss_adjustment_factor",
         ),
         param=(
@@ -232,7 +232,7 @@ def load_model_data(
             m.availability_type,
             m.operational_type,
             m.balancing_type_project,
-            m.load_modifier,
+            m.load_modifier_flag,
             m.distribution_loss_adjustment_factor,
         ),
     )
@@ -311,7 +311,7 @@ def export_results(
             "availability_type",
             "operational_type",
             "technology",
-            "load_modifier",
+            "load_modifier_flag",
             "distribution_loss_adjustment_factor",
             "load_zone",
         ],
@@ -323,7 +323,7 @@ def export_results(
                 m.availability_type[prj],
                 m.operational_type[prj],
                 m.technology[prj],
-                m.load_modifier[prj],
+                m.load_modifier_flag[prj],
                 m.distribution_loss_adjustment_factor[prj],
                 m.load_zone[prj],
             ]
@@ -351,7 +351,7 @@ def export_results(
             "number_of_hours_in_timepoint",
             "load_zone",
             "technology",
-            "load_modifier",
+            "load_modifier_flag",
             "distribution_loss_adjustment_factor",
             "capacity_mw",
         ],
@@ -369,7 +369,7 @@ def export_results(
                 m.hrs_in_tmp[tmp],
                 m.load_zone[prj],
                 m.technology[prj],
-                m.load_modifier[prj],
+                m.load_modifier_flag[prj],
                 m.distribution_loss_adjustment_factor[prj],
                 value(m.Capacity_MW[prj, m.period[tmp]]),
             ]
@@ -409,7 +409,7 @@ def get_inputs_from_database(
 
     projects = c.execute(
         """SELECT project, capacity_type, availability_type, operational_type, 
-        balancing_type_project, load_modifier, distribution_loss_adjustment_factor, 
+        balancing_type_project, load_modifier_flag, distribution_loss_adjustment_factor, 
         technology, load_zone
         FROM
         -- Get only the subset of projects in the portfolio with their 
@@ -436,7 +436,7 @@ def get_inputs_from_database(
         -- and variable cost for these projects depending ont the 
         -- project_operational_chars_scenario_id
         (SELECT project, operational_type, balancing_type_project, 
-        load_modifier, distribution_loss_adjustment_factor, technology
+        load_modifier_flag, distribution_loss_adjustment_factor, technology
         FROM inputs_project_operational_chars
         WHERE project_operational_chars_scenario_id = {}) as prj_chars
         USING (project)
@@ -525,7 +525,7 @@ def write_model_inputs(
                 "availability_type",
                 "operational_type",
                 "balancing_type_project",
-                "load_modifier",
+                "load_modifier_flag",
                 "distribution_loss_adjustment_factor",
                 "technology",
                 "load_zone",

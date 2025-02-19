@@ -48,7 +48,7 @@ def add_model_components(
         return sum(
             mod.Bulk_Power_Provision_MW[prj, tmp]
             for prj in mod.OPR_PRJS_IN_TMP[tmp]
-            if mod.load_zone[prj] == z and mod.load_modifier[prj] == 1
+            if mod.load_zone[prj] == z and mod.load_modifier_flag[prj] == 1
         )
 
     m.Demand_Side_Power_Production_in_Zone_MW = Expression(
