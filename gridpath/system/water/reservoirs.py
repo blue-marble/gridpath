@@ -104,7 +104,7 @@ def add_model_components(
 
     # ### Parameters ###
     # Volume targets
-    m.reservoir_target_volume = Param(
+    m.reservoir_target_starting_volume = Param(
         m.WATER_NODE_RESERVOIR_TMPS_W_TARGET_VOLUME, within=NonNegativeReals
     )
 
@@ -256,7 +256,7 @@ def add_model_components(
         """ """
         return (
             mod.Reservoir_Starting_Volume_WaterVolumeUnit[wn_w_r, tmp]
-            == mod.reservoir_target_volume[wn_w_r, tmp]
+            == mod.reservoir_target_starting_volume[wn_w_r, tmp]
         )
 
     m.Reservoir_Target_Storage_Constraint = Constraint(
@@ -413,13 +413,13 @@ def load_model_data(
         subproblem,
         stage,
         "inputs",
-        "reservoir_target_volumes.tab",
+        "reservoir_target_starting_volumes.tab",
     )
     if os.path.exists(fname):
         data_portal.load(
             filename=fname,
             index=m.WATER_NODE_RESERVOIR_TMPS_W_TARGET_VOLUME,
-            param=m.reservoir_target_volume,
+            param=m.reservoir_target_starting_volume,
         )
 
     rel_fname = os.path.join(
@@ -530,7 +530,7 @@ def get_inputs_from_database(
 
     c1 = conn.cursor()
     target_volumes = c1.execute(
-        f"""SELECT water_node, timepoint, reservoir_target_volume
+        f"""SELECT water_node, timepoint, reservoir_target_starting_volume
         FROM inputs_system_water_node_reservoirs_target_volumes
         WHERE (water_node, target_volume_scenario_id)
         IN (SELECT water_node, target_volume_scenario_id
@@ -692,7 +692,7 @@ def write_model_inputs(
                 subproblem,
                 stage,
                 "inputs",
-                "reservoir_target_volumes.tab",
+                "reservoir_target_starting_volumes.tab",
             ),
             "w",
             newline="",
@@ -700,7 +700,9 @@ def write_model_inputs(
             writer = csv.writer(f, delimiter="\t", lineterminator="\n")
 
             # Write header
-            writer.writerow(["reservoir", "timepoint", "reservoir_target_volume"])
+            writer.writerow(
+                ["reservoir", "timepoint", "reservoir_target_starting_volume"]
+            )
 
             for row in target_volumes_list:
                 writer.writerow(row)

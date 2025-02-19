@@ -124,14 +124,14 @@ class TestReservoirs(unittest.TestCase):
 
         self.assertListEqual(expected_r_tmp, actual_r_tmp)
 
-        # Param: reservoir_target_volume
+        # Param: reservoir_target_starting_volume
         expected_te = {
             ("Water_Node_1", 20200101): 110000,
             ("Water_Node_2", 20200101): 7500,
             ("Water_Node_3", 20200101): 3600,
         }
         actual_te = {
-            (r, tmp): instance.reservoir_target_volume[r, tmp]
+            (r, tmp): instance.reservoir_target_starting_volume[r, tmp]
             for (r, tmp) in instance.WATER_NODE_RESERVOIR_TMPS_W_TARGET_VOLUME
         }
         self.assertDictEqual(expected_te, actual_te)

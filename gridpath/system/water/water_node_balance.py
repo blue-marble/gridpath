@@ -110,7 +110,6 @@ def add_model_components(
         initialize=node_outflow_rate_init,
     )
 
-    # ### Constraints ### #
     def get_total_inflow_for_reservoir_tracking_volunit(mod, wn, tmp):
         """
         Total inflow is exogenous inflow at node plus sum of endogenous
@@ -133,6 +132,17 @@ def add_model_components(
 
         return outflow_in_tmp
 
+    def ending_volume_init(mod, wn, tmp):
+        inflow = get_total_inflow_for_reservoir_tracking_volunit(mod, wn, tmp)
+        outflow = get_total_reservoir_release_volunit(mod, wn, tmp)
+
+        return mod.Reservoir_Starting_Volume_WaterVolumeUnit[wn, tmp] + inflow - outflow
+
+    m.Reservoir_Ending_Volume_WaterVolumeUnit = Expression(
+        m.WATER_NODES_W_RESERVOIRS, m.TMPS, initialize=ending_volume_init
+    )
+
+    # ### Constraints ### #
     def reservoir_storage_tracking_rule(mod, wn, tmp):
         """ """
         # No constraint in the first timepoint of a linear horizon (no
