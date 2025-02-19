@@ -51,17 +51,17 @@ def add_model_components(
             if mod.load_zone[prj] == z and mod.load_modifier_flag[prj] == 1
         )
 
-    m.Demand_Side_Power_Production_in_Zone_MW = Expression(
+    m.Load_Modifier_Power_Production_in_Zone_MW = Expression(
         m.LOAD_ZONES, m.TMPS, rule=total_load_modifier_power_production_rule
     )
 
     def load_modifier_adjusted_load_init(mod, lz, tmp):
         return (
             mod.LZ_Bulk_Static_Load_in_Tmp[lz, tmp]
-            - mod.Demand_Side_Power_Production_in_Zone_MW[lz, tmp]
+            - mod.Load_Modifier_Power_Production_in_Zone_MW[lz, tmp]
         )
 
-    m.LZ_Demand_Side_Adjusted_Load_in_Tmp = Expression(
+    m.LZ_Modified_Load_in_Tmp = Expression(
         m.LOAD_ZONES, m.TMPS, initialize=load_modifier_adjusted_load_init
     )
 
@@ -94,8 +94,8 @@ def export_results(
         [
             lz,
             tmp,
-            value(m.Demand_Side_Power_Production_in_Zone_MW[lz, tmp]),
-            value(m.LZ_Demand_Side_Adjusted_Load_in_Tmp[lz, tmp]),
+            value(m.Load_Modifier_Power_Production_in_Zone_MW[lz, tmp]),
+            value(m.LZ_Modified_Load_in_Tmp[lz, tmp]),
         ]
         for lz in getattr(m, "LOAD_ZONES")
         for tmp in getattr(m, "TMPS")

@@ -46,7 +46,7 @@ def add_model_components(
         if mod.operational_type[prj] == "energy_load_following":
             return mod.EnergyLoadFollowing_Provide_Power_MW[
                 prj, tmp
-            ] == mod.LZ_Demand_Side_Adjusted_Load_in_Tmp[mod.load_zone[prj], tmp] - (
+            ] == mod.LZ_Modified_Load_in_Tmp[mod.load_zone[prj], tmp] - (
                 mod.base_net_requirement_mwh[prj, mod.period[tmp]]
                 - mod.Energy_MWh[prj, mod.period[tmp]]
             ) / sum(
