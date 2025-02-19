@@ -120,7 +120,10 @@ class TestReservoirs(unittest.TestCase):
         actual_r_tmp = sorted(
             [
                 (r, tmp)
-                for (r, tmp) in instance.WATER_NODE_RESERVOIR_TMPS_W_TARGET_STARTING_VOLUME
+                for (
+                    r,
+                    tmp,
+                ) in instance.WATER_NODE_RESERVOIR_TMPS_W_TARGET_STARTING_VOLUME
             ]
         )
 
@@ -135,6 +138,18 @@ class TestReservoirs(unittest.TestCase):
         actual_te = {
             (r, tmp): instance.reservoir_target_starting_volume[r, tmp]
             for (r, tmp) in instance.WATER_NODE_RESERVOIR_TMPS_W_TARGET_STARTING_VOLUME
+        }
+        self.assertDictEqual(expected_te, actual_te)
+
+        # Param: reservoir_target_ending_volume
+        expected_te = {
+            ("Water_Node_1", 20200101): 120000,
+            ("Water_Node_2", 20200101): 8000,
+            ("Water_Node_3", 20200101): 4000,
+        }
+        actual_te = {
+            (r, tmp): instance.reservoir_target_ending_volume[r, tmp]
+            for (r, tmp) in instance.WATER_NODE_RESERVOIR_TMPS_W_TARGET_ENDING_VOLUME
         }
         self.assertDictEqual(expected_te, actual_te)
 
