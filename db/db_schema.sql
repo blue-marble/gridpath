@@ -1202,7 +1202,7 @@ CREATE TABLE inputs_system_water_node_reservoirs_target_volumes
     target_volume_scenario_id INTEGER,
     hydro_iteration           INTEGER DEFAULT 0 NOT NULL,
     timepoint                 FLOAT,
-    reservoir_target_volume   DECIMAL,
+    reservoir_target_starting_volume   DECIMAL,
     PRIMARY KEY (water_node, target_volume_scenario_id, timepoint,
                  hydro_iteration),
     FOREIGN KEY (water_node, target_volume_scenario_id) REFERENCES
