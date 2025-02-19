@@ -30,8 +30,9 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.operations.horizons",
     "geography.water_network",
     "system.water.water_system_params",
-    "system.water.water_flows",
     "system.water.water_nodes",
+    "system.water.water_flows",
+    "system.water.water_node_inflows_outflows",
     "system.water.reservoirs",
 ]
 NAME_OF_MODULE_BEING_TESTED = "system.water.water_node_balance"

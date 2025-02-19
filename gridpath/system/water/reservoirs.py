@@ -37,6 +37,10 @@ from gridpath.auxiliary.auxiliary import (
     load_subtype_modules,
 )
 from gridpath.auxiliary.db_interface import directories_to_db_values
+from gridpath.project.common_functions import (
+    check_if_first_timepoint,
+    check_boundary_type,
+)
 
 
 def add_model_components(
@@ -218,6 +222,17 @@ def add_model_components(
         m.WATER_NODES_W_RESERVOIRS, m.TMPS, within=NonNegativeReals, initialize=0
     )
 
+    # Expressions
+    # def ending_volume_init(mod, wn, tmp):
+    #     inflow = get_total_inflow_for_reservoir_tracking_volunit(mod, wn, tmp)
+    #     outflow = get_total_reservoir_release_volunit(mod, wn, tmp)
+    #
+    #     return mod.Reservoir_Starting_Volume_WaterVolumeUnit[wn, tmp] + inflow - outflow
+    #
+    # m.Reservoir_Ending_Volume_WaterVolumeUnit = Expression(
+    #     m.WATER_NODES_W_RESERVOIRS, m.TMPS, initialize=ending_volume_init
+    # )
+
     # ### Constraints ### #
 
     def max_powerhouse_discharge_constraint_rule(mod, wn_w_r, tmp):
@@ -362,6 +377,91 @@ def add_model_components(
     m.Reservoir_Starting_Elevation_ElevationUnit = Expression(
         m.WATER_NODES_W_RESERVOIRS, m.TMPS, rule=elevation_rule
     )
+
+    def get_total_inflow_for_reservoir_tracking_volunit(mod, wn, tmp):
+        """
+        Total inflow is exogenous inflow at node plus sum of endogenous
+        inflows from all links to node
+        """
+        inflow_in_tmp = (
+            mod.Gross_Water_Node_Inflow_Rate_Vol_Per_Sec[wn, tmp]
+            * 3600
+            * mod.hrs_in_tmp[tmp]
+        )
+
+        return inflow_in_tmp
+
+    def reservoir_storage_tracking_rule(mod, wn, tmp):
+        """ """
+        # No constraint in the first timepoint of a linear horizon (no
+        # previous timepoints for tracking reservoir levels)
+        if check_if_first_timepoint(
+            mod=mod, tmp=tmp, balancing_type=mod.water_system_balancing_type
+        ) and check_boundary_type(
+            mod=mod,
+            tmp=tmp,
+            balancing_type=mod.water_system_balancing_type,
+            boundary_type="linear",
+        ):
+            return Constraint.Skip
+        # TODO: add linked horizons
+        elif check_if_first_timepoint(
+            mod=mod, tmp=tmp, balancing_type=mod.water_system_balancing_type
+        ) and check_boundary_type(
+            mod=mod,
+            tmp=tmp,
+            balancing_type=mod.water_system_balancing_type,
+            boundary_type="linked",
+        ):
+            current_tmp_starting_water_volume = None
+            prev_tmp_starting_water_volume = None
+
+            # Inflows and releases
+            prev_tmp_inflow = None
+            prev_tmp_outflow = None
+            raise (
+                UserWarning(
+                    "Linked horizons have not been implemented for "
+                    "water system feature."
+                )
+            )
+        else:
+            current_tmp_starting_water_volume = (
+                mod.Reservoir_Starting_Volume_WaterVolumeUnit[wn, tmp]
+            )
+            prev_tmp_starting_water_volume = (
+                mod.Reservoir_Starting_Volume_WaterVolumeUnit[
+                    wn, mod.prev_tmp[tmp, mod.water_system_balancing_type]
+                ]
+            )
+
+            # Inflows and releases; these are already calculated
+            # based on per sec flows and hours in the timepoint
+            prev_tmp_inflow = get_total_inflow_for_reservoir_tracking_volunit(
+                mod, wn, mod.prev_tmp[tmp, mod.water_system_balancing_type]
+            )
+
+            prev_tmp_outflow = get_total_reservoir_release_volunit(
+                mod, wn, mod.prev_tmp[tmp, mod.water_system_balancing_type]
+            )
+
+        return current_tmp_starting_water_volume == (
+            prev_tmp_starting_water_volume + prev_tmp_inflow - prev_tmp_outflow
+        )
+
+    m.Reservoir_Storage_Tracking_Constraint = Constraint(
+        m.WATER_NODES_W_RESERVOIRS, m.TMPS, rule=reservoir_storage_tracking_rule
+    )
+
+
+def get_total_reservoir_release_volunit(mod, wn, tmp):
+    outflow_in_tmp = (
+        mod.Gross_Reservoir_Release_Rate_Vol_Per_Sec[wn, tmp]
+        * 3600
+        * mod.hrs_in_tmp[tmp]
+    )
+
+    return outflow_in_tmp
 
 
 def load_model_data(

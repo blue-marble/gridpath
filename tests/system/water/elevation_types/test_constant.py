@@ -33,6 +33,8 @@ PREREQUISITE_MODULE_NAMES = [
     "geography.water_network",
     "system.water.water_system_params",
     "system.water.water_nodes",
+    "system.water.water_flows",
+    "system.water.water_node_inflows_outflows",
     # "system.water.reservoirs",
 ]
 # Components added based on elevation_type by system.water.reservoirs module
