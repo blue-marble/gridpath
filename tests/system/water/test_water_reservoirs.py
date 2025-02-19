@@ -110,7 +110,7 @@ class TestReservoirs(unittest.TestCase):
 
         self.assertListEqual(expected_r_n, actual_r_n)
 
-        # Set: WATER_NODE_WATER_NODE_RESERVOIR_TMPS_W_TARGET_VOLUME
+        # Set: WATER_NODE_WATER_NODE_RESERVOIR_TMPS_W_TARGET_STARTING_VOLUME
         expected_r_tmp = [
             ("Water_Node_1", 20200101),
             ("Water_Node_2", 20200101),
@@ -120,7 +120,7 @@ class TestReservoirs(unittest.TestCase):
         actual_r_tmp = sorted(
             [
                 (r, tmp)
-                for (r, tmp) in instance.WATER_NODE_RESERVOIR_TMPS_W_TARGET_VOLUME
+                for (r, tmp) in instance.WATER_NODE_RESERVOIR_TMPS_W_TARGET_STARTING_VOLUME
             ]
         )
 
@@ -134,7 +134,7 @@ class TestReservoirs(unittest.TestCase):
         }
         actual_te = {
             (r, tmp): instance.reservoir_target_starting_volume[r, tmp]
-            for (r, tmp) in instance.WATER_NODE_RESERVOIR_TMPS_W_TARGET_VOLUME
+            for (r, tmp) in instance.WATER_NODE_RESERVOIR_TMPS_W_TARGET_STARTING_VOLUME
         }
         self.assertDictEqual(expected_te, actual_te)
 
