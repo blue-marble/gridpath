@@ -202,7 +202,7 @@ def export_results(
             prj,
             tmp,
             m.instantaneous_penetration_zone[prj],
-            value(m.Power_Provision_MW[prj, tmp]),
+            value(m.Bulk_Power_Provision_MW[prj, tmp]),
         ]
         for (prj, tmp) in m.INST_PEN_PRJ_OPR_TMP
     ]

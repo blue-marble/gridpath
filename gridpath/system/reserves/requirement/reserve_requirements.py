@@ -107,7 +107,7 @@ def generic_add_model_components(
         if getattr(mod, reserve_zone_load_zone_set):
             percentage_target = sum(
                 getattr(mod, reserve_requirement_percent_param)[reserve_zone]
-                * mod.LZ_Load_in_Tmp[lz, tmp]
+                * mod.LZ_Modified_Load_in_Tmp[lz, tmp]
                 for (_reserve_zone, lz) in getattr(mod, reserve_zone_load_zone_set)
                 if _reserve_zone == reserve_zone
             )
@@ -119,7 +119,7 @@ def generic_add_model_components(
             # Project contributions to requirement based on power output
             prj_pwr_contribution = sum(
                 getattr(mod, prj_power_param)[reserve_zone, prj]
-                * mod.Power_Provision_MW[prj, tmp]
+                * mod.Bulk_Power_Provision_MW[prj, tmp]
                 for (_reserve_zone, prj) in getattr(mod, ba_prj_req_contribution_set)
                 if _reserve_zone == reserve_zone
                 if (prj, tmp) in mod.PRJ_OPR_TMPS

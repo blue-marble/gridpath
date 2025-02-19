@@ -50,6 +50,7 @@ PREREQUISITE_MODULE_NAMES = [
     "project.capacity.potential",
     "project.operations.operational_types",
     "project.operations.power",
+    "system.load_balance.aggregate_load_modifier_power",
     "system.policy.instantaneous_penetration.instantaneous_penetration_requirements",
     "project.operations.instantaneous_penetration_contributions",
     "system.policy.instantaneous_penetration.instantaneous_penetration_aggregation",

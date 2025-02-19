@@ -126,6 +126,32 @@ class TestLoadRequirement(unittest.TestCase):
         )
         self.assertDictEqual(expected_defult, actual_default)
 
+        # Param: load_component_distribution_loss_adjustment_factor
+        expected_dist_loss = OrderedDict(
+            sorted(
+                {
+                    ("Zone1", "all"): 0.05,
+                    ("Zone2", "all"): 0,
+                    ("Zone3", "all"): 0,
+                    ("Zone4", "all"): 0,
+                }.items()
+            )
+        )
+        actual_dist_loss = OrderedDict(
+            sorted(
+                {
+                    (
+                        z,
+                        cmp,
+                    ): instance.load_component_distribution_loss_adjustment_factor[
+                        z, cmp
+                    ]
+                    for (z, cmp) in instance.LOAD_ZONE_LOAD_CMPNTS_ALL
+                }.items()
+            )
+        )
+        self.assertDictEqual(expected_dist_loss, actual_dist_loss)
+
         # Set: LOAD_ZONE_TMP_LOAD_CMPNTS_ALL
         expected_lz_tmp_lc_all = sorted(
             [

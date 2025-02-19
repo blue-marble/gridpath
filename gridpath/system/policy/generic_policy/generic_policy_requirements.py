@@ -80,8 +80,10 @@ def add_model_components(
         # If we have a map of policy zones to load zones, apply the percentage
         # target; if no map provided, the fraction_target is 0
         if mod.POLICIES_ZONE_LOAD_ZONES:
-            total_bt_horizon_load = sum(
-                mod.LZ_Load_in_Tmp[lz, tmp] * mod.hrs_in_tmp[tmp] * mod.tmp_weight[tmp]
+            total_bt_horizon_load_modifier_adjusted_load = sum(
+                mod.LZ_Modified_Load_in_Tmp[lz, tmp]
+                * mod.hrs_in_tmp[tmp]
+                * mod.tmp_weight[tmp]
                 for (
                     _policy_name,
                     _policy_requirement_zone,
@@ -94,7 +96,7 @@ def add_model_components(
             )
             fraction_target = (
                 mod.policy_requirement_f_load_coeff[policy_name, policy_zone, bt, h]
-                * total_bt_horizon_load
+                * total_bt_horizon_load_modifier_adjusted_load
             )
         else:
             fraction_target = 0

@@ -24,6 +24,9 @@ from pyomo.environ import Set, Param, Any, NonNegativeReals, Expression, value
 from gridpath.auxiliary.db_interface import directories_to_db_values
 from gridpath.auxiliary.dynamic_components import load_balance_consumption_components
 from gridpath.common_functions import create_results_df
+from gridpath.project.operations.operational_types.common_functions import (
+    write_tab_file_model_inputs,
+)
 from gridpath.system.load_balance import LOAD_ZONE_TMP_DF
 
 
@@ -34,7 +37,7 @@ def record_dynamic_components(dynamic_components):
     This method adds the static load to the load balance dynamic components.
     """
     getattr(dynamic_components, load_balance_consumption_components).append(
-        "LZ_Load_in_Tmp"
+        "LZ_Bulk_Static_Load_in_Tmp"
     )
 
 
@@ -54,7 +57,7 @@ def add_model_components(
 
     Here, we add profiles for the various load components that must be defined
     for each load zone *z* and timepoint *tmp*. These profiles are summed
-    into the *LZ_Load_in_Tmp* expression, which in turn is added to the
+    into the *LZ_Bulk_Static_Load_in_Tmp* expression, which in turn is added to the
     dynamic load-balance consumption components that will go into the load
     balance constraint in the *load_balance* module (i.e. the constraint's RHS).
 
@@ -121,7 +124,7 @@ def add_model_components(
     +-------------------------------------------------------------------------+
     | Expressions                                                             |
     +=========================================================================+
-    | | :code:`LZ_Load_in_Tmp`                                                |
+    | | :code:`LZ_Bulk_Static_Load_in_Tmp`                                                |
     | | *Defined over*: :code:`LOAD_ZONES, TMPS`                              |
     |                                                                         |
     | The total load (sum of all load components) for this load zone and      |
@@ -139,6 +142,10 @@ def add_model_components(
         m.LOAD_ZONE_LOAD_CMPNTS_ALL,
         within=NonNegativeReals | {"undefined"},
         initialize="undefined",
+    )
+    # Distribution loss factor
+    m.load_component_distribution_loss_adjustment_factor = Param(
+        m.LOAD_ZONE_LOAD_CMPNTS_ALL, within=NonNegativeReals, default=0
     )
 
     # All load_zone-tmp-load_component combinations
@@ -217,19 +224,27 @@ def add_model_components(
                 """
                 )
             else:
+                distribution_loss_adjusted_load = mod.component_static_load_mw[
+                    load_zone, timepoint, component
+                ] * (
+                    1
+                    + mod.load_component_distribution_loss_adjustment_factor[
+                        load_zone, component
+                    ]
+                )
                 if (load_zone, timepoint) not in lz_load_in_tmp.keys():
                     lz_load_in_tmp[(load_zone, timepoint)] = (
-                        mod.component_static_load_mw[load_zone, timepoint, component]
+                        distribution_loss_adjusted_load
                     )
                 else:
                     lz_load_in_tmp[
                         (load_zone, timepoint)
-                    ] += mod.component_static_load_mw[load_zone, timepoint, component]
+                    ] += distribution_loss_adjusted_load
 
         # print(lz_load_in_tmp)
         return lz_load_in_tmp
 
-    m.LZ_Load_in_Tmp = Expression(
+    m.LZ_Bulk_Static_Load_in_Tmp = Expression(
         m.LOAD_ZONES, m.TMPS, initialize=total_static_load_from_components_init
     )
 
@@ -281,10 +296,13 @@ def load_model_data(
             subproblem,
             stage,
             "inputs",
-            "load_level_defaults.tab",
+            "load_component_params.tab",
         ),
         index=m.LOAD_ZONE_LOAD_CMPNTS_ALL,
-        param=m.load_level_default,
+        param=(
+            m.load_level_default,
+            m.load_component_distribution_loss_adjustment_factor,
+        ),
     )
 
 
@@ -358,7 +376,8 @@ def get_inputs_from_database(
 
     c2 = conn.cursor()
     ld_comp_defaults = c2.execute(
-        f"""SELECT load_zone, load_component, load_level_default
+        f"""SELECT load_zone, load_component, load_level_default, 
+        load_component_distribution_loss_adjustment_factor
             FROM inputs_system_load_components
             INNER JOIN
             -- Get only relevant load zones
@@ -433,7 +452,7 @@ def write_model_inputs(
         weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
     )
 
-    loads, ld_comp_defaults = get_inputs_from_database(
+    loads, load_component_params = get_inputs_from_database(
         scenario_id,
         subscenarios,
         db_weather_iteration,
@@ -444,52 +463,32 @@ def write_model_inputs(
         conn,
     )
 
-    with open(
-        os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "inputs",
-            "load_mw.tab",
-        ),
-        "w",
-        newline="",
-    ) as load_tab_file:
-        writer = csv.writer(load_tab_file, delimiter="\t", lineterminator="\n")
+    # Load timeseries
+    load_file = "load_mw.tab"
+    write_tab_file_model_inputs(
+        scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        fname=load_file,
+        data=loads,
+    )
 
-        # Write header
-        writer.writerow(["LOAD_ZONES", "timepoint", "load_component", "load_mw"])
-
-        for row in loads:
-            writer.writerow(row)
-
-    with open(
-        os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "inputs",
-            "load_level_defaults.tab",
-        ),
-        "w",
-        newline="",
-    ) as load_level_default_tab_file:
-        writer = csv.writer(
-            load_level_default_tab_file, delimiter="\t", lineterminator="\n"
-        )
-
-        # Write header
-        writer.writerow(["load_zone", "load_component", "load_level_default"])
-
-        for row in ld_comp_defaults:
-            replace_nulls = ["." if i is None else i for i in row]
-            writer.writerow(replace_nulls)
+    # Load component params
+    load_component_params_file = "load_component_params.tab"
+    write_tab_file_model_inputs(
+        scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        fname=load_component_params_file,
+        data=load_component_params,
+        replace_nulls=True,
+    )
 
 
 def export_results(
@@ -519,7 +518,7 @@ def export_results(
         [
             lz,
             tmp,
-            value(m.LZ_Load_in_Tmp[lz, tmp]),
+            value(m.LZ_Bulk_Static_Load_in_Tmp[lz, tmp]),
         ]
         for lz in getattr(m, "LOAD_ZONES")
         for tmp in getattr(m, "TMPS")

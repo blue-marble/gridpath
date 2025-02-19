@@ -1,4 +1,4 @@
-LOAD_ZONES	timepoint	load_component	load_mw
+load_zone	timepoint	load_component	load_mw
 Zone1	20200101	all	6.0
 Zone1	20200102	all	6.0
 Zone1	20200103	all	6.0

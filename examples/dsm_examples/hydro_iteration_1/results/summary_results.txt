@@ -1,0 +1,16 @@
+##### SUMMARY RESULTS FOR SCENARIO *dsm_examples* #####
+
+### CAPACITY RESULTS ###
+
+--> New Generation Capacity <--
+                             New Capacity (MW)
+load_zone technology period                   
+Zone1     DSM        2026                39.10
+
+### OPERATIONAL RESULTS ###
+
+--> Energy Production <--
+                             Annual Energy (MWh)  % Total Power
+load_zone period technology                                    
+Zone1     2026   DSM                   70,134.75           8.78
+                 GEN                  728,378.67          91.22

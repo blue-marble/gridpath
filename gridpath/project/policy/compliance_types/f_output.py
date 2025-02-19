@@ -38,7 +38,7 @@ def add_model_components(
 def contribution_in_timepoint(mod, prj, policy, zone, tmp):
     """ """
     return (
-        mod.f_slope[prj, policy, zone] * mod.Power_Provision_MW[prj, tmp]
+        mod.f_slope[prj, policy, zone] * mod.Bulk_Power_Provision_MW[prj, tmp]
         + mod.f_intercept[prj, policy, zone]
     )
 

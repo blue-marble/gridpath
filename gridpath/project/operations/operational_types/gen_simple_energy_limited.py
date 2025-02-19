@@ -265,10 +265,6 @@ def add_model_components(
     # Constraints
     ###########################################################################
 
-    m.GenSimpleEnergyLimited_Energy_in_Period_Constraint = Constraint(
-        m.GEN_SIMPLE_ENERGY_LIMITED_OPR_PRDS, rule=energy_in_period_rule
-    )
-
     m.GenSimpleEnergyLimited_Max_Power_Constraint = Constraint(
         m.GEN_SIMPLE_ENERGY_LIMITED_OPR_TMPS, rule=max_power_rule
     )
@@ -294,10 +290,12 @@ def add_model_components(
 def energy_limit_in_period_constraint_rule(mod, prj, prd):
     return (
         sum(
-            mod.Power_Provision_MW[prj, tmp] * mod.hrs_in_tmp[tmp] * mod.tmp_weight[tmp]
+            mod.GenSimpleEnergyLimited_Provide_Power_MW[prj, tmp]
+            * mod.hrs_in_tmp[tmp]
+            * mod.tmp_weight[tmp]
             for tmp in mod.TMPS_IN_PRD[prd]
         )
-        <= mod.Energy_Storage_Capacity_MWh[prj, prd]
+        <= mod.Energy_MWh[prj, prd]
     )
 
 

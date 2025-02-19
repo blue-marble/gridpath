@@ -112,7 +112,7 @@ def add_model_components(
         if mod.INST_PEN_ZONE_LZ:
             percentage_target = sum(
                 mod.inst_pen_min_percent_load[inst_pen_zone]
-                * mod.LZ_Load_in_Tmp[lz, tmp]
+                * mod.LZ_Modified_Load_in_Tmp[lz, tmp]
                 for (_inst_pen_zone, lz) in mod.INSTANTANEOUS_PENETRATION_ZONES
                 * mod.LOAD_ZONES
                 if _inst_pen_zone == inst_pen_zone
@@ -125,7 +125,7 @@ def add_model_components(
             # Project contributions to requirement based on power output
             prj_pwr_contribution = sum(
                 mod.inst_pen_min_ratio_power_req[inst_pen_zone, prj]
-                * mod.Power_Provision_MW[prj, tmp]
+                * mod.Bulk_Power_Provision_MW[prj, tmp]
                 for (_inst_pen_zone, prj) in mod.INST_PEN_PRJ_CONTRIBUTION
                 if _inst_pen_zone == inst_pen_zone
                 if (prj, tmp) in mod.PRJ_OPR_TMPS
@@ -163,7 +163,7 @@ def add_model_components(
         if mod.INST_PEN_ZONE_LZ:
             percentage_target = sum(
                 mod.inst_pen_max_percent_load[inst_pen_zone]
-                * mod.LZ_Load_in_Tmp[lz, tmp]
+                * mod.LZ_Modified_Load_in_Tmp[lz, tmp]
                 for (_inst_pen_zone, lz) in mod.INSTANTANEOUS_PENETRATION_ZONES
                 * mod.LOAD_ZONES
                 if _inst_pen_zone == inst_pen_zone
@@ -176,7 +176,7 @@ def add_model_components(
             # Project contributions to requirement based on power output
             prj_pwr_contribution = sum(
                 mod.inst_pen_max_ratio_power_req[inst_pen_zone, prj]
-                * mod.Power_Provision_MW[prj, tmp]
+                * mod.Bulk_Power_Provision_MW[prj, tmp]
                 for (_inst_pen_zone, prj) in mod.INST_PEN_PRJ_CONTRIBUTION
                 if _inst_pen_zone == inst_pen_zone
                 if (prj, tmp) in mod.PRJ_OPR_TMPS
