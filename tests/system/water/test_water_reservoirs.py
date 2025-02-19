@@ -31,6 +31,8 @@ PREREQUISITE_MODULE_NAMES = [
     "geography.water_network",
     "system.water.water_system_params",
     "system.water.water_nodes",
+    "system.water.water_flows",
+    "system.water.water_node_inflows_outflows",
 ]
 NAME_OF_MODULE_BEING_TESTED = "system.water.reservoirs"
 IMPORTED_PREREQ_MODULES = list()
@@ -108,7 +110,7 @@ class TestReservoirs(unittest.TestCase):
 
         self.assertListEqual(expected_r_n, actual_r_n)
 
-        # Set: WATER_NODE_WATER_NODE_RESERVOIR_TMPS_W_TARGET_VOLUME
+        # Set: WATER_NODE_WATER_NODE_RESERVOIR_TMPS_W_TARGET_STARTING_VOLUME
         expected_r_tmp = [
             ("Water_Node_1", 20200101),
             ("Water_Node_2", 20200101),
@@ -118,21 +120,36 @@ class TestReservoirs(unittest.TestCase):
         actual_r_tmp = sorted(
             [
                 (r, tmp)
-                for (r, tmp) in instance.WATER_NODE_RESERVOIR_TMPS_W_TARGET_VOLUME
+                for (
+                    r,
+                    tmp,
+                ) in instance.WATER_NODE_RESERVOIR_TMPS_W_TARGET_STARTING_VOLUME
             ]
         )
 
         self.assertListEqual(expected_r_tmp, actual_r_tmp)
 
-        # Param: reservoir_target_volume
+        # Param: reservoir_target_starting_volume
         expected_te = {
             ("Water_Node_1", 20200101): 110000,
             ("Water_Node_2", 20200101): 7500,
             ("Water_Node_3", 20200101): 3600,
         }
         actual_te = {
-            (r, tmp): instance.reservoir_target_volume[r, tmp]
-            for (r, tmp) in instance.WATER_NODE_RESERVOIR_TMPS_W_TARGET_VOLUME
+            (r, tmp): instance.reservoir_target_starting_volume[r, tmp]
+            for (r, tmp) in instance.WATER_NODE_RESERVOIR_TMPS_W_TARGET_STARTING_VOLUME
+        }
+        self.assertDictEqual(expected_te, actual_te)
+
+        # Param: reservoir_target_ending_volume
+        expected_te = {
+            ("Water_Node_1", 20200101): 120000,
+            ("Water_Node_2", 20200101): 8000,
+            ("Water_Node_3", 20200101): 4000,
+        }
+        actual_te = {
+            (r, tmp): instance.reservoir_target_ending_volume[r, tmp]
+            for (r, tmp) in instance.WATER_NODE_RESERVOIR_TMPS_W_TARGET_ENDING_VOLUME
         }
         self.assertDictEqual(expected_te, actual_te)
 

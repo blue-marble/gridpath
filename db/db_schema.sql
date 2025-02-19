@@ -1198,11 +1198,12 @@ CREATE TABLE subscenarios_system_water_node_reservoirs_target_volumes
 DROP TABLE IF EXISTS inputs_system_water_node_reservoirs_target_volumes;
 CREATE TABLE inputs_system_water_node_reservoirs_target_volumes
 (
-    water_node                TEXT,
-    target_volume_scenario_id INTEGER,
-    hydro_iteration           INTEGER DEFAULT 0 NOT NULL,
-    timepoint                 FLOAT,
-    reservoir_target_volume   DECIMAL,
+    water_node                       TEXT,
+    target_volume_scenario_id        INTEGER,
+    hydro_iteration                  INTEGER DEFAULT 0 NOT NULL,
+    timepoint                        FLOAT,
+    reservoir_target_starting_volume DECIMAL,
+    reservoir_target_ending_volume   DECIMAL,
     PRIMARY KEY (water_node, target_volume_scenario_id, timepoint,
                  hydro_iteration),
     FOREIGN KEY (water_node, target_volume_scenario_id) REFERENCES
@@ -1348,12 +1349,12 @@ CREATE TABLE subscenarios_system_water_flows_horizon_bounds
 DROP TABLE IF EXISTS inputs_system_water_flows_horizon_bounds;
 CREATE TABLE inputs_system_water_flows_horizon_bounds
 (
-    water_link                            TEXT,
-    water_flow_horizon_bounds_scenario_id INTEGER,
-    balancing_type                        TEXT,
-    horizon                               INTEGER,
-    min_bt_hrz_flow_avg_vol_per_second    FLOAT,
-    max_bt_hrz_flow_avg_vol_per_second    FLOAT,
+    water_link                               TEXT,
+    water_flow_horizon_bounds_scenario_id    INTEGER,
+    balancing_type                           TEXT,
+    horizon                                  INTEGER,
+    min_bt_hrz_flow_avg_vol_per_second       FLOAT,
+    max_bt_hrz_flow_avg_vol_per_second       FLOAT,
     threshold_side_stream_avg_vol_per_second FLOAT,
     PRIMARY KEY (water_link, water_flow_horizon_bounds_scenario_id,
                  balancing_type, horizon),
@@ -1377,8 +1378,8 @@ CREATE TABLE inputs_system_water_flows_horizon_bounds_upstream_node_map
 (
     water_link                            TEXT,
     water_flow_horizon_bounds_scenario_id INTEGER,
-    upstream_water_node                         TEXT,
-    PRIMARY KEY (water_link, water_flow_horizon_bounds_scenario_id ,
+    upstream_water_node                   TEXT,
+    PRIMARY KEY (water_link, water_flow_horizon_bounds_scenario_id,
                  upstream_water_node),
     FOREIGN KEY (water_link, water_flow_horizon_bounds_scenario_id) REFERENCES
         subscenarios_system_water_flows_horizon_bounds
@@ -2581,14 +2582,14 @@ CREATE TABLE subscenarios_project_availability
 DROP TABLE IF EXISTS inputs_project_availability;
 CREATE TABLE inputs_project_availability
 (
-    project_availability_scenario_id               INTEGER,
-    project                                        VARCHAR(64),
-    availability_type                              VARCHAR(32),
-    exogenous_availability_independent_scenario_id INTEGER,
-    exogenous_availability_weather_scenario_id     INTEGER,
+    project_availability_scenario_id                      INTEGER,
+    project                                               VARCHAR(64),
+    availability_type                                     VARCHAR(32),
+    exogenous_availability_independent_scenario_id        INTEGER,
+    exogenous_availability_weather_scenario_id            INTEGER,
     exogenous_availability_independent_bt_hrz_scenario_id INTEGER,
     exogenous_availability_weather_bt_hrz_scenario_id     INTEGER,
-    endogenous_availability_scenario_id            INTEGER,
+    endogenous_availability_scenario_id                   INTEGER,
     PRIMARY KEY (project_availability_scenario_id, project, availability_type)
 );
 
@@ -2691,8 +2692,8 @@ CREATE TABLE inputs_project_availability_exogenous_weather_bt_hrz
     exogenous_availability_weather_bt_hrz_scenario_id INTEGER,
     weather_iteration                                 INTEGER,
     stage_id                                          INTEGER,
-    balancing_type_project                                TEXT,
-    horizon                                               INTEGER,
+    balancing_type_project                            TEXT,
+    horizon                                           INTEGER,
     availability_derate_weather_bt_hrz                FLOAT,
     PRIMARY KEY (project, exogenous_availability_weather_bt_hrz_scenario_id,
                  weather_iteration, stage_id, balancing_type_project, horizon),

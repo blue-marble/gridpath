@@ -36,6 +36,7 @@ PREREQUISITE_MODULE_NAMES = [
     "geography.water_network",
     "system.water.water_system_params",
     "system.water.water_flows",
+    "system.water.water_node_inflows_outflows",
     "system.water.water_nodes",
     "system.water.reservoirs",
     "system.water.powerhouses",

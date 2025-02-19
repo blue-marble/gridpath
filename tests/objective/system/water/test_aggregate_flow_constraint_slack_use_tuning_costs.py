@@ -32,6 +32,7 @@ PREREQUISITE_MODULE_NAMES = [
     "geography.water_network",
     "system.water.water_system_params",
     "system.water.water_flows",
+    "system.water.water_node_inflows_outflows",
 ]
 NAME_OF_MODULE_BEING_TESTED = (
     "objective.system.water.aggregate_flow_constraint_slack_use_tuning_costs"
