@@ -1128,17 +1128,6 @@ def export_results(
                 for tmp in m.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
             )
             / sum(m.hrs_in_tmp[tmp] for tmp in m.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]),
-            # actual_avg_flow_vol_per_second
-            sum(
-                value(
-                    m.Water_Link_Flow_Rate_Vol_per_Sec[
-                        wl, dep_tmp, m.arrival_timepoint[wl, dep_tmp]
-                    ]
-                )
-                * m.hrs_in_tmp[dep_tmp]
-                for dep_tmp in m.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
-            )
-            / sum(m.hrs_in_tmp[tmp] for tmp in m.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]),
             # adjusted_max_allowed_avg_flow
             m.max_bt_hrz_flow_avg_vol_per_second[wl, bt, hrz]
             + max(
@@ -1154,6 +1143,17 @@ def export_results(
                 ),
                 0,
             ),
+            # actual_avg_flow_vol_per_second
+            sum(
+                value(
+                    m.Water_Link_Flow_Rate_Vol_per_Sec[
+                        wl, dep_tmp, m.arrival_timepoint[wl, dep_tmp]
+                    ]
+                )
+                * m.hrs_in_tmp[dep_tmp]
+                for dep_tmp in m.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
+            )
+            / sum(m.hrs_in_tmp[tmp] for tmp in m.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]),
             # violation_expression
             value(
                 m.Water_Link_Hrz_Max_Flow_Violation_Avg_Vol_per_Sec_Expression[
