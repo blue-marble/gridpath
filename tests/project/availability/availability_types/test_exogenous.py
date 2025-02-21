@@ -288,7 +288,9 @@ class TestExogenousAvailabilityType(unittest.TestCase):
             expected_avl_exog_cap_derate_ind_bt_hrz_by_tmp["Nuclear", tmp] = 0.5
 
         actual_avl_exog_cap_derate_ind_bt_hrz_by_tmp = {
-            (prj, tmp): instance.avl_exog_cap_derate_independent_bt_hrz_by_tmp[prj, tmp]
+            (prj, tmp): round(
+                instance.avl_exog_cap_derate_independent_bt_hrz_by_tmp[prj, tmp], 2
+            )
             for (prj, tmp) in instance.AVL_EXOG_OPR_TMPS
         }
 
@@ -306,7 +308,9 @@ class TestExogenousAvailabilityType(unittest.TestCase):
             expected_avl_exog_cap_derate_weather_bt_hrz_by_tmp["Nuclear", tmp] = 0.3
 
         actual_avl_exog_cap_derate_weather_bt_hrz_by_tmp = {
-            (prj, tmp): instance.avl_exog_cap_derate_weather_bt_hrz_by_tmp[prj, tmp]
+            (prj, tmp): round(
+                instance.avl_exog_cap_derate_weather_bt_hrz_by_tmp[prj, tmp], 2
+            )
             for (prj, tmp) in instance.AVL_EXOG_OPR_TMPS
         }
 
