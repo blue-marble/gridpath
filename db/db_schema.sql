@@ -2201,17 +2201,6 @@ CREATE TABLE inputs_project_variable_generator_profiles
             (project, variable_generator_profile_scenario_id)
 );
 
-DROP TABLE IF EXISTS
-    subscenarios_project_variable_generator_profiles_iterations;
-CREATE TABLE subscenarios_project_variable_generator_profiles_iterations
-(
-    project                                VARCHAR(64),
-    variable_generator_profile_scenario_id INTEGER,
-    name                                   VARCHAR(32),
-    description                            VARCHAR(128),
-    PRIMARY KEY (project, variable_generator_profile_scenario_id)
-);
-
 DROP TABLE IF EXISTS inputs_project_variable_generator_profiles_iterations;
 CREATE TABLE inputs_project_variable_generator_profiles_iterations
 (
@@ -2252,17 +2241,6 @@ CREATE TABLE inputs_project_hydro_operational_chars
     FOREIGN KEY (project, hydro_operational_chars_scenario_id) REFERENCES
         subscenarios_project_hydro_operational_chars
             (project, hydro_operational_chars_scenario_id)
-);
-
-DROP TABLE IF EXISTS
-    subscenarios_project_hydro_operational_chars_iterations;
-CREATE TABLE subscenarios_project_hydro_operational_chars_iterations
-(
-    project                             VARCHAR(64),
-    hydro_operational_chars_scenario_id INTEGER,
-    name                                VARCHAR(32),
-    description                         VARCHAR(128),
-    PRIMARY KEY (project, hydro_operational_chars_scenario_id)
 );
 
 DROP TABLE IF EXISTS inputs_project_hydro_operational_chars_iterations;
@@ -6037,7 +6015,8 @@ CREATE TABLE results_transmission_period
     fixed_cost                           FLOAT,
     capacity_cost_wo_spinup_or_lookahead FLOAT,
     PRIMARY KEY (scenario_id, transmission_line, period, weather_iteration,
-                 hydro_iteration, subproblem_id, stage_id)
+                 hydro_iteration, availability_iteration, subproblem_id,
+                 stage_id)
 );
 
 
