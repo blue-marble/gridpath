@@ -143,48 +143,66 @@ def add_model_components(
     # Make timepoint params from the bt-hrz params
     # Note that if timepoints fall within multiple bt-hrz with derates,
     # the derates will be additive
-    def hrz_cap_derate_weather_by_tmp_init(mod, prj, tmp):
+    def hrz_cap_derate_weather_by_tmp_init(mod):
         """
         Note that if timepoints fall within multiple bt-hrz with derates,
         the bt-hrz derates will be additive.
         """
-        availability_reduction = 0
-        for _prj, bt, hrz in mod.AVL_EXOG_PRJ_BT_HRZ_W_WEATHER_DERATES:
-            for _tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]:
-                if _prj == prj and _tmp == tmp:
-                    availability_reduction += (
+        availability_reduction_dict = {}
+        for prj, bt, hrz in mod.AVL_EXOG_PRJ_BT_HRZ_W_WEATHER_DERATES:
+            for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]:
+                if (prj, tmp) not in availability_reduction_dict.keys():
+                    availability_reduction_dict[(prj, tmp)] = (
+                        1 - mod.avl_exog_cap_derate_weather_bt_hrz[prj, bt, hrz]
+                    )
+                else:
+                    availability_reduction_dict[(prj, tmp)] += (
                         1 - mod.avl_exog_cap_derate_weather_bt_hrz[prj, bt, hrz]
                     )
 
-        availability = 1 - availability_reduction
-        return availability
+        availability_dict = {
+            (prj, tmp): 1 - availability_reduction_dict[(prj, tmp)]
+            for (prj, tmp) in availability_reduction_dict.keys()
+        }
+
+        return availability_dict
 
     m.avl_exog_cap_derate_weather_bt_hrz_by_tmp = Param(
         m.AVL_EXOG_OPR_TMPS,
         within=NonNegativeReals,
         initialize=hrz_cap_derate_weather_by_tmp_init,
+        default=1,
     )
 
-    def hrz_cap_derate_independent_by_tmp_init(mod, prj, tmp):
+    def hrz_cap_derate_independent_by_tmp_init(mod):
         """
         Note that if timepoints fall within multiple bt-hrz with derates,
         the bt-hrz derates will be additive.
         """
-        availability_reduction = 0
-        for _prj, bt, hrz in mod.AVL_EXOG_PRJ_BT_HRZ_W_INDEPENDENT_DERATES:
-            for _tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]:
-                if _prj == prj and _tmp == tmp:
-                    availability_reduction += (
+        availability_reduction_dict = {}
+        for prj, bt, hrz in mod.AVL_EXOG_PRJ_BT_HRZ_W_INDEPENDENT_DERATES:
+            for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]:
+                if (prj, tmp) not in availability_reduction_dict.keys():
+                    availability_reduction_dict[(prj, tmp)] = (
+                        1 - mod.avl_exog_cap_derate_independent_bt_hrz[prj, bt, hrz]
+                    )
+                else:
+                    availability_reduction_dict[(prj, tmp)] += (
                         1 - mod.avl_exog_cap_derate_independent_bt_hrz[prj, bt, hrz]
                     )
 
-        availability = 1 - availability_reduction
-        return availability
+        availability_dict = {
+            (prj, tmp): 1 - availability_reduction_dict[(prj, tmp)]
+            for (prj, tmp) in availability_reduction_dict.keys()
+        }
+
+        return availability_dict
 
     m.avl_exog_cap_derate_independent_bt_hrz_by_tmp = Param(
         m.AVL_EXOG_OPR_TMPS,
         within=NonNegativeReals,
         initialize=hrz_cap_derate_independent_by_tmp_init,
+        default=1,
     )
 
 
