@@ -77,7 +77,9 @@ def add_model_components(
         :return:
         """
         return sum(
-            mod.Power_Provision_MW[g, tmp] * mod.hrs_in_tmp[tmp] * mod.tmp_weight[tmp]
+            mod.Bulk_Power_Provision_MW[g, tmp]
+            * mod.hrs_in_tmp[tmp]
+            * mod.tmp_weight[tmp]
             for (g, tmp) in mod.PERFORMANCE_STANDARD_OPR_TMPS
             if g in mod.PERFORMANCE_STANDARD_PRJS_BY_PERFORMANCE_STANDARD_ZONE[z]
             and tmp in mod.TMPS_IN_PRD[p]

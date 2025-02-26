@@ -32,7 +32,23 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.operations.horizons",
     "geography.load_zones",
     "geography.energy_target_zones",
+    "geography.water_network",
+    "system.water.water_system_params",
+    "system.water.water_flows",
+    "system.water.water_nodes",
+    "system.water.reservoirs",
+    "system.water.water_node_balance",
+    "system.water.powerhouses",
+    "project",
+    "project.capacity.capacity",
+    "project.availability.availability",
+    "project.fuels",
+    "project.operations",
+    "project.capacity.potential",
+    "project.operations.operational_types",
+    "project.operations.power",
     "system.load_balance.static_load_requirement",
+    "system.load_balance.aggregate_load_modifier_power",
 ]
 NAME_OF_MODULE_BEING_TESTED = "system.policy.energy_targets.period_energy_target"
 IMPORTED_PREREQ_MODULES = list()

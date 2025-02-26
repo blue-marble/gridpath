@@ -38,6 +38,7 @@ PREREQUISITE_MODULE_NAMES = [
     "project.operations",
     "project.operations.reserves.lf_reserves_down",
     "system.load_balance.static_load_requirement",
+    "system.load_balance.aggregate_load_modifier_power",
     "system.reserves.requirement.lf_reserves_down",
     "system.reserves.aggregation.lf_reserves_down",
 ]

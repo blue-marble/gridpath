@@ -3193,8 +3193,8 @@ def variable_om_cost_rule(mod, g, tmp, Bin_or_Lin):
     commitment decisions can have the second component.
 
     We need to explicitly have the op type method here because of auxiliary
-    consumption. The default method takes Power_Provision_MW multiplied by
-    the variable cost, and Power_Provision_MW is equal to Provide_Power_MW
+    consumption. The default method takes Project_Power_Provision_MW multiplied by
+    the variable cost, and Project_Power_Provision_MW is equal to Provide_Power_MW
     minus the auxiliary consumption. The variable cost should be applied to
     the gross power.
     """

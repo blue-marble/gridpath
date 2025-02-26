@@ -47,7 +47,7 @@ def add_model_components(
         :return:
         """
         return sum(
-            mod.Power_Provision_MW[g, tmp]
+            mod.Bulk_Power_Provision_MW[g, tmp]
             for g in mod.INST_PEN_PRJ_OPERATIONAL_IN_TIMEPOINT[tmp]
             if mod.instantaneous_penetration_zone[g] == z
         )
