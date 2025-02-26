@@ -296,6 +296,8 @@ def make_opchar_sql_str(
     nonfuel_carbon_emissions_per_mwh="NULL",
     powerhouse="NULL",
     generator_efficiency="NULL",
+    linked_load_component="NULL",
+    load_modifier_profile_scenario_id="NULL",
 ):
     """ """
 
@@ -372,7 +374,9 @@ def make_opchar_sql_str(
      {stor_exog_state_of_charge_scenario_id} AS stor_exog_state_of_charge_scenario_id,
      {nonfuel_carbon_emissions_per_mwh} AS nonfuel_carbon_emissions_per_mwh,
      {powerhouse} AS powerhouse,
-     {generator_efficiency} AS generator_efficiency
+     {generator_efficiency} AS generator_efficiency,
+     {linked_load_component} AS linked_load_component,
+     {load_modifier_profile_scenario_id} AS load_modifier_profile_scenario_id
     """
 
     return opchar_sql_str
