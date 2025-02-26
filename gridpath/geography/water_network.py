@@ -93,6 +93,17 @@ def add_model_components(
         m.WATER_LINKS, within=NonNegativeReals, default=0
     )
 
+    m.WATER_NODES = Set(
+        initialize=lambda mod: list(
+            sorted(
+                set(
+                    [mod.water_node_from[wl] for wl in mod.WATER_LINKS]
+                    + [mod.water_node_to[wl] for wl in mod.WATER_LINKS]
+                )
+            )
+        )
+    )
+
 
 def load_model_data(
     m,

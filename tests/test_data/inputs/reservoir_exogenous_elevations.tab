@@ -1,4 +1,4 @@
-reservoir	timepoint	reservoir_target_volume
+reservoir	timepoint	reservoir_target_starting_volume
 Water_Node_1	20200101	1100
 Water_Node_1	20200102	1100
 Water_Node_1	20200103	1100

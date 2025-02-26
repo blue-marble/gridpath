@@ -291,6 +291,8 @@ def read_all_csv_subscenarios_from_dir_and_insert_into_db(
     subscenario,
     table,
     inputs_dir,
+    skip_subscenario_info,
+    skip_subscenario_data,
     use_project_method,
     sub_input_column,
     cols_to_exclude_str,
@@ -335,8 +337,8 @@ def read_all_csv_subscenarios_from_dir_and_insert_into_db(
             csv_file=csv_file,
             use_project_method=use_project_method,
             sub_input_column=sub_input_column,
-            skip_subscenario_info=False,
-            skip_subscenario_data=False,
+            skip_subscenario_info=skip_subscenario_info,
+            skip_subscenario_data=skip_subscenario_data,
             cols_to_exclude_str=cols_to_exclude_str,
             custom_method=custom_method,
         )
@@ -554,7 +556,7 @@ def determine_tables_to_delete_from(csv_structure, subscenario):
         ):
             input_tables.append("inputs_{}".format(row["table"]))
         # Add base table/subscenario for project-level inputs
-        if int(row["sub_input"]):
+        if int(row["sub_input_flag"]):
             sub_input_flag = True
             base_table = row["base_table"]
             base_subscenario = row["base_subscenario"]
@@ -570,6 +572,7 @@ def determine_tables_to_delete_from(csv_structure, subscenario):
             "inputs_temporal_subproblems_stages",
             "inputs_temporal_periods",
             "inputs_temporal",
+            "inputs_temporal_iterations",
             "inputs_temporal_horizons",
             "inputs_temporal_horizon_timepoints_start_end",
             "inputs_temporal_horizon_timepoints",
@@ -737,8 +740,9 @@ def confirm_and_temp_update_affected_tables(
             base_table_update_sql = """
                 UPDATE {} SET {} = NULL WHERE {} = ? and {} = ?
             """.format(
-                base_table, subscenario, base_subscenario, project_type
+                base_table, subscenario, base_subscenario, sub_input_flag
             )
+
             spin_on_database_lock(
                 conn=conn,
                 cursor=c,
@@ -863,52 +867,39 @@ def generic_delete_subscenario(
     # Create the SQL delete statements for the subscenario info and input
     # tables
     if not sub_input_flag:
-        delete_data = (subscenario_id,)
         del_inputs_sql_list = [
+            f"""
+            DELETE FROM {table}
+            WHERE {subscenario} = {subscenario_id};
             """
-            DELETE FROM {}
-            WHERE {} = ?;
-            """.format(
-                table, subscenario
-            )
             for table in input_tables
         ]
-        del_subscenario_sql = """
-            DELETE FROM {}
-            WHERE {} = ?;
-            """.format(
-            subscenario_table, subscenario
-        )
+        del_subscenario_sql = f"""
+            DELETE FROM {subscenario_table}
+            WHERE {subscenario} = {subscenario_id};
+            """
     else:
-        delete_data = (
-            project,
-            subscenario_id,
-        )
         del_inputs_sql_list = [
+            f"""
+            DELETE FROM {table}
+            WHERE {sub_input_column} = '{project}'
+            AND {subscenario} = {subscenario_id};
             """
-            DELETE FROM {}
-            WHERE {} = ?
-            AND {} = ?;
-            """.format(
-                table, sub_input_column, subscenario
-            )
             for table in input_tables
         ]
-        del_subscenario_sql = """
-                    DELETE FROM {}
-                    WHERE {} = ?
-                    AND {} = ?;
-                    """.format(
-            subscenario_table, project_type, subscenario
-        )
+        del_subscenario_sql = f"""
+                    DELETE FROM {subscenario_table}
+                    WHERE {sub_input_column} = '{project}'
+                    AND {subscenario} = {subscenario_id};
+                    """
 
     # Delete the inputs and subscenario info
     for del_inputs_sql in del_inputs_sql_list:
         spin_on_database_lock(
-            conn=conn, cursor=c, sql=del_inputs_sql, data=delete_data, many=False
+            conn=conn, cursor=c, sql=del_inputs_sql, data=[], many=False
         )
     spin_on_database_lock(
-        conn=conn, cursor=c, sql=del_subscenario_sql, data=delete_data, many=False
+        conn=conn, cursor=c, sql=del_subscenario_sql, data=[], many=False
     )
 
     c.close()
@@ -1053,25 +1044,27 @@ def load_all_subscenario_ids_from_dir_to_subscenario_table(
     Load all data for a subscenario (i.e. all subscenario IDs) from a
     directory.
     """
-    if subscenario_type == "simple":
+    (
+        skip_subscenario_info,
+        skip_subscenario_data,
+    ) = determine_whether_to_skip_subscenario_info_and_or_data(
+        subscenario_type=subscenario_type
+    )
+    if subscenario_type in ["simple", "skip_subscenario"]:
         read_all_csv_subscenarios_from_dir_and_insert_into_db(
             conn=conn,
             quiet=quiet,
             subscenario=subscenario,
             table=table,
             inputs_dir=inputs_dir,
+            skip_subscenario_info=skip_subscenario_info,
+            skip_subscenario_data=skip_subscenario_data,
             use_project_method=sub_input_flag,
             sub_input_column=sub_input_column,
             cols_to_exclude_str=cols_to_exclude_str,
             custom_method=custom_method,
         )
     elif subscenario_type in ["dir_subsc_only", "dir_main", "dir_aux"]:
-        (
-            skip_subscenario_info,
-            skip_subscenario_data,
-        ) = determine_whether_to_skip_subscenario_info_and_or_data(
-            subscenario_type=subscenario_type
-        )
         read_all_dir_subscenarios_from_dir_and_insert_into_db(
             conn=conn,
             quiet=quiet,
@@ -1125,7 +1118,7 @@ def load_single_subscenario_id_from_dir_to_subscenario_table(
         project=project, sub_input_flag=sub_input_flag, subscenario=subscenario
     )
 
-    if subscenario_type == "simple":
+    if subscenario_type in ["simple", "skip_subscenario"]:
         if not sub_input_flag:
             file_startswith = str(subscenario_id_to_load)
             description_delimiter = "_"
@@ -1167,7 +1160,11 @@ def load_single_subscenario_id_from_dir_to_subscenario_table(
             custom_method=custom_method,
         )
 
-    elif subscenario_type in ["dir_subsc_only", "dir_main", "dir_aux"]:
+    elif subscenario_type in [
+        "dir_subsc_only",
+        "dir_main",
+        "dir_aux",
+    ]:
         subscenario_directories = [
             d
             for d in sorted(next(os.walk(inputs_dir))[1])
@@ -1212,10 +1209,11 @@ def determine_whether_to_skip_subscenario_info_and_or_data(subscenario_type):
     if subscenario_type == "dir_subsc_only":
         skip_subscenario_info = False
         skip_subscenario_data = True
-    elif subscenario_type == "dir_aux":
+    elif subscenario_type in ["dir_aux", "skip_subscenario"]:
         skip_subscenario_info = True
         skip_subscenario_data = False
     else:
+        # For simple and dir_main, we load both info and data
         skip_subscenario_info = False
         skip_subscenario_data = False
 

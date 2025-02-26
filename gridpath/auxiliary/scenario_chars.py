@@ -126,6 +126,23 @@ class ScenarioStructure(object):
             ]
         )
 
+        # For determining whether we can parallelize
+        self.N_SUBPROBLEMS = self.calculate_n_subproblems(
+            iteration_structure=iteration_structure,
+            subproblem_stage_structure=subproblem_stage_structure,
+        )
+
+    def calculate_n_subproblems(self, iteration_structure, subproblem_stage_structure):
+        # Total subproblems to determine parallelization
+        n_subproblems = 0
+        for w in iteration_structure.keys():
+            for h in iteration_structure[w].keys():
+                for a in iteration_structure[w][h]:
+                    for s in subproblem_stage_structure.keys():
+                        n_subproblems += 1
+
+        return n_subproblems
+
 
 class ScenarioDirectoryStructure(object):
     def __init__(self, scenario_structure):

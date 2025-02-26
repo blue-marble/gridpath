@@ -287,10 +287,13 @@ def run_optimization_for_subproblem_stage(
                     scenario_directory.split("/")[-1]
                 )
             )
-            if subproblem_directory != "":
-                print("--- subproblem {}".format(subproblem_directory))
-            if stage_directory != "":
-                print("--- stage {}".format(stage_directory))
+            current_suproblem = os.path.join(
+                weather_iteration_directory,
+                hydro_iteration_directory,
+                availability_iteration_directory,
+                subproblem_directory,
+            )
+            print(f"--- subproblem {current_suproblem}")
 
         # We're expecting subproblem and stage to be strings downstream from here
         subproblem_directory = str(subproblem_directory)
@@ -591,7 +594,7 @@ def run_scenario(
         n_parallel_subproblems = 1
 
     # If only a single subproblem, run main problem
-    if len(list(scenario_structure.SUBPROBLEM_STAGES.keys())) == 1:
+    if scenario_structure.N_SUBPROBLEMS == 1:
         if n_parallel_subproblems > 1:
             warnings.warn(
                 "GridPath WARNING: only a single subproblem in "
@@ -682,6 +685,11 @@ def run_scenario(
                                     subproblem,
                                 )
                             ] = manager.dict()
+
+            # If we have more processes requested than subproblems, don't launch
+            # the unnecessary processes by reducing n_parallel_subproblems here
+            if n_parallel_subproblems > scenario_structure.N_SUBPROBLEMS:
+                n_parallel_subproblems = scenario_structure.N_SUBPROBLEMS
 
             # Pool must use spawn to work properly on Linux
             pool = get_context("spawn").Pool(n_parallel_subproblems)

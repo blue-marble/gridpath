@@ -79,19 +79,6 @@ def add_model_components(
     | parameter defaults to 0.                                                |
     +-------------------------------------------------------------------------+
     """
-
-    # #### Sets #### #
-    m.WATER_NODES = Set(
-        initialize=lambda mod: list(
-            sorted(
-                set(
-                    [mod.water_node_from[wl] for wl in mod.WATER_LINKS]
-                    + [mod.water_node_to[wl] for wl in mod.WATER_LINKS]
-                )
-            )
-        )
-    )
-
     # #### Parameters #### #
     # Inflow rate, defined in volume units per second
     m.exogenous_water_inflow_rate_vol_per_sec = Param(

@@ -1,2 +1,2 @@
-﻿hydro_iteration,timepoint,reservoir_target_volume
-1,1,62.5
+﻿hydro_iteration,timepoint,reservoir_target_starting_volume,reservoir_target_ending_volume
+1,1,62.5,
