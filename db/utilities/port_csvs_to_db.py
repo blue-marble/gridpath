@@ -150,6 +150,13 @@ def parse_arguments(args):
         help="Delete prior data. Defaults to False.",
     )
     parser.add_argument(
+        "--turn_off_fk",
+        default=False,
+        action="store_true",
+        help="Turn off foreign key enforcement. Can be helpful when trying to "
+        "delete and reload data, but please proceed with caution.",
+    )
+    parser.add_argument(
         "--quiet",
         default=False,
         action="store_true",
@@ -427,6 +434,10 @@ def main(args=None):
 
     # connect to database
     conn = connect_to_database(db_path=db_path)
+
+    # Turn off foreign keys if requested
+    if parsed_args.turn_off_fk:
+        conn.execute("PRAGMA foreign_keys=OFF;")
 
     # Load all data in directory
     if (
