@@ -279,7 +279,7 @@ def power_delta_rule(mod, prj, tmp):
         pass
     else:
         return power_provision_rule(mod, prj, tmp) - power_provision_rule(
-            mod, prj, mod.prev_tmp[tmp]
+            mod, prj, mod.prev_tmp[tmp, mod.balancing_type_project[prj]]
         )
 
 

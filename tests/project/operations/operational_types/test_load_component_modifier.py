@@ -1,4 +1,4 @@
-# Copyright 2016-2023 Blue Marble Analytics LLC.
+# Copyright 2016-2025 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,13 +13,14 @@
 # limitations under the License.
 
 
-from collections import OrderedDict
 from importlib import import_module
 import os.path
+import pandas as pd
 import sys
 import unittest
 
 from tests.common_functions import create_abstract_model, add_components_and_load_data
+from tests.project.operations.common_functions import get_project_operational_timepoints
 
 TEST_DATA_DIRECTORY = os.path.join(
     os.path.dirname(__file__), "..", "..", "..", "test_data"
@@ -31,33 +32,16 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.investment.periods",
     "temporal.operations.horizons",
     "geography.load_zones",
-    "geography.energy_target_zones",
-    "geography.water_network",
-    "system.water.water_system_params",
-    "system.water.water_nodes",
-    "system.water.water_flows",
-    "system.water.water_node_inflows_outflows",
-    "system.water.reservoirs",
-    "system.water.water_node_balance",
-    "system.water.powerhouses",
+    "system.load_balance",
     "system.load_balance.static_load_requirement",
     "project",
     "project.capacity.capacity",
     "project.availability.availability",
     "project.fuels",
     "project.operations",
-    "project.capacity.potential",
-    "project.operations.operational_types",
-    "project.operations.power",
-    "project.operations.fuel_burn",
-    "project.operations.energy_target_contributions",
-    "system.load_balance.aggregate_load_modifier_power",
-    "system.policy.energy_targets.period_energy_target",
-    "system.policy.energy_targets.aggregate_period_energy_target_contributions",
-    "system.policy.energy_targets.period_energy_target_balance",
 ]
 NAME_OF_MODULE_BEING_TESTED = (
-    "objective.system.policy.aggregate_period_energy_target_violation_penalties"
+    "project.operations.operational_types.load_component_modifier"
 )
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
@@ -76,7 +60,7 @@ except ImportError:
     print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED + " to test.")
 
 
-class TestObjectiveRPSPenalties(unittest.TestCase):
+class TestLoadComponentModifier(unittest.TestCase):
     """ """
 
     def test_add_model_components(self):
@@ -111,9 +95,9 @@ class TestObjectiveRPSPenalties(unittest.TestCase):
             stage="",
         )
 
-    def test_data_loaded_correctly(self):
+    def test_data_load_correctly(self):
         """
-        Test components initialized with expected data
+        Test that are data loaded are as expected
         :return:
         """
         m, data = add_components_and_load_data(
@@ -127,6 +111,71 @@ class TestObjectiveRPSPenalties(unittest.TestCase):
             stage="",
         )
         instance = m.create_instance(data)
+
+        # Sets: LOAD_COMPONENT_MODIFIER_PRJS
+        expected_projects = ["DSM_Load_Component_Modifier"]
+        actual_projects = sorted([p for p in instance.LOAD_COMPONENT_MODIFIER_PRJS])
+        self.assertListEqual(expected_projects, actual_projects)
+
+        # LOAD_COMPONENT_MODIFIER_PRJS_OPR_TMPS
+        expected_tmps = sorted(get_project_operational_timepoints(expected_projects))
+        actual_tmps = sorted(
+            [tmp for tmp in instance.LOAD_COMPONENT_MODIFIER_PRJS_OPR_TMPS]
+        )
+        self.assertListEqual(expected_tmps, actual_tmps)
+
+        # LOAD_COMPONENT_MODIFIER_PRJS_OPR_PRDS
+        expected_prds = [
+            ("DSM_Load_Component_Modifier", 2020),
+            ("DSM_Load_Component_Modifier", 2030),
+        ]
+        actual_prds = sorted(
+            [prd for prd in instance.LOAD_COMPONENT_MODIFIER_PRJS_OPR_PRDS]
+        )
+        self.assertListEqual(expected_prds, actual_prds)
+
+        # Param: load_component_modifier_linked_load_component
+        expected_load_component_modifier_linked_load_component = {
+            "DSM_Load_Component_Modifier": "all",
+        }
+        actual_load_component_modifier_linked_load_component = {
+            prj: instance.load_component_modifier_linked_load_component[prj]
+            for prj in instance.LOAD_COMPONENT_MODIFIER_PRJS
+        }
+        self.assertDictEqual(
+            expected_load_component_modifier_linked_load_component,
+            actual_load_component_modifier_linked_load_component,
+        )
+
+        # Param: load_component_modifier_fraction
+        all_df = pd.read_csv(
+            os.path.join(
+                TEST_DATA_DIRECTORY, "inputs", "load_component_modifier_fractions.tab"
+            ),
+            sep="\t",
+        )
+
+        vnc_df = all_df[all_df["project"].isin(expected_projects)]
+        expected_fractions = vnc_df.set_index(["project", "timepoint"]).to_dict()[
+            "fraction"
+        ]
+
+        actual_fractions = {
+            (g, tmp): instance.load_component_modifier_fraction[g, tmp]
+            for (g, tmp) in instance.LOAD_COMPONENT_MODIFIER_PRJS_OPR_TMPS
+        }
+        self.assertDictEqual(expected_fractions, actual_fractions)
+
+        # Param: load_component_peak_load_in_period
+        expected_peak = {
+            ("DSM_Load_Component_Modifier", 2020): 50,
+            ("DSM_Load_Component_Modifier", 2030): 50,
+        }
+        actual_peak = {
+            (prj, prd): instance.load_component_peak_load_in_period[prj, prd]
+            for (prj, prd) in instance.LOAD_COMPONENT_MODIFIER_PRJS_OPR_PRDS
+        }
+        self.assertDictEqual(expected_peak, actual_peak)
 
 
 if __name__ == "__main__":

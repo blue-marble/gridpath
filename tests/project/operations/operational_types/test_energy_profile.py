@@ -140,8 +140,9 @@ class TestEnergyProfile(unittest.TestCase):
 
         actual_cap_factor = {
             (g, tmp): instance.energy_profile_energy_fraction[g, tmp]
-            for (g, tmp) in instance.energy_profile_energy_fraction
+            for (g, tmp) in instance.ENERGY_PROFILE_OPR_TMPS
         }
+
         self.assertDictEqual(expected_cap_factor, actual_cap_factor)
 
 
