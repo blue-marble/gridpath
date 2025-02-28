@@ -268,9 +268,9 @@ gridpath.project.capacity.operational_types.dr
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: gridpath.project.operations.operational_types.dr.add_model_components
 
-gridpath.project.capacity.operational_types.dac
+gridpath.project.capacity.operational_types.dispatchable_load
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.operations.operational_types.dac.add_model_components
+.. automodule:: gridpath.project.operations.operational_types.dispatchable_load.add_model_components
 
 Load Balance
 ============

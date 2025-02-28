@@ -6,4 +6,4 @@ DSM_EE,DSM_EE,gen_var_must_take,day,1,0.05,0,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 DSM_EV,DSM_EV,gen_var_must_take,day,1,0.05,0,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,1,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 DSM_Load_Shed,DSM_Load_Shed,gen_var_must_take,day,1,0.05,0,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,1,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 DSM_Load_Component_Modifier,DSM_Load_Component_Modifier,load_component_modifier,day,1,0.05,0,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,half1,1
-DSM_Dispatchable_Load,DSM_Dispatchable_Load,dac,day,1,,0,,1,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+DSM_Dispatchable_Load,DSM_Dispatchable_Load,dispatchable_load,day,1,,0,,1,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,

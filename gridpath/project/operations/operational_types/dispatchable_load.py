@@ -67,13 +67,13 @@ def add_model_components(
     +-------------------------------------------------------------------------+
     | Sets                                                                    |
     +=========================================================================+
-    | | :code:`DAC`                                                           |
+    | | :code:`DISPATCHABLE_LOAD_PRJS`                                                           |
     |                                                                         |
-    | The set of generators of the :code:`dac` operational type.              |
+    | The set of generators of the :code:`dispatchable_load` operational type.              |
     +-------------------------------------------------------------------------+
-    | | :code:`DAC_OPR_TMPS`                                                  |
+    | | :code:`DISPATCHABLE_LOAD_PRJS_OPR_TMPS`                                                  |
     |                                                                         |
-    | Two-dimensional set with projects of the :code:`dac` operational type   |
+    | Two-dimensional set with projects of the :code:`dispatchable_load` operational type   |
     | and their operational timepoints.                                       |
     +-------------------------------------------------------------------------+
 
@@ -82,8 +82,8 @@ def add_model_components(
     +-------------------------------------------------------------------------+
     | Variables                                                               |
     +=========================================================================+
-    | | :code:`DAC_Consume_Power_MW`                                          |
-    | | *Defined over*: :code:`DAC_OPR_TMPS`                                  |
+    | | :code:`DispatchableLoadPrj_Consume_Power_MW`                                          |
+    | | *Defined over*: :code:`DISPATCHABLE_LOAD_PRJS_OPR_TMPS`                                  |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
     | Power consumption in MW from this project in each timepoint in which    |
@@ -98,8 +98,8 @@ def add_model_components(
     +=========================================================================+
     | Power                                                                   |
     +-------------------------------------------------------------------------+
-    | | :code:`DAC_Max_Power_Constraint`                                      |
-    | | *Defined over*: :code:`DAC_OPR_TMPS`                                  |
+    | | :code:`DispatchableLoadPrj_Max_Power_Constraint`                                      |
+    | | *Defined over*: :code:`DISPATCHABLE_LOAD_PRJS_OPR_TMPS`                                  |
     |                                                                         |
     | Limits the power consumption to the available capacity.                 |
     +-------------------------------------------------------------------------+
@@ -109,30 +109,37 @@ def add_model_components(
     # Sets
     ###########################################################################
 
-    m.DAC = Set(
+    m.DISPATCHABLE_LOAD_PRJS = Set(
         within=m.PROJECTS,
         initialize=lambda mod: subset_init_by_param_value(
-            mod, "PROJECTS", "operational_type", "dac"
+            mod, "PROJECTS", "operational_type", "dispatchable_load"
         ),
     )
 
-    m.DAC_OPR_TMPS = Set(
+    m.DISPATCHABLE_LOAD_PRJS_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
         initialize=lambda mod: subset_init_by_set_membership(
-            mod=mod, superset="PRJ_OPR_TMPS", index=0, membership_set=mod.DAC
+            mod=mod,
+            superset="PRJ_OPR_TMPS",
+            index=0,
+            membership_set=mod.DISPATCHABLE_LOAD_PRJS,
         ),
     )
 
     # Variables
     ###########################################################################
 
-    m.DAC_Consume_Power_MW = Var(m.DAC_OPR_TMPS, within=NonNegativeReals)
+    m.DispatchableLoadPrj_Consume_Power_MW = Var(
+        m.DISPATCHABLE_LOAD_PRJS_OPR_TMPS, within=NonNegativeReals
+    )
 
     # Constraints
     ###########################################################################
 
-    m.DAC_Max_Power_Constraint = Constraint(m.DAC_OPR_TMPS, rule=max_power_rule)
+    m.DispatchableLoadPrj_Max_Power_Constraint = Constraint(
+        m.DISPATCHABLE_LOAD_PRJS_OPR_TMPS, rule=max_power_rule
+    )
 
 
 # Constraint Formulation Rules
@@ -142,13 +149,13 @@ def add_model_components(
 # Power
 def max_power_rule(mod, g, tmp):
     """
-    **Constraint Name**: DAC_Max_Power_Constraint
-    **Enforced Over**: DAC_OPR_TMPS
+    **Constraint Name**: DispatchableLoadPrj_Max_Power_Constraint
+    **Enforced Over**: DISPATCHABLE_LOAD_PRJS_OPR_TMPS
 
     Power consumption cannot exceed capacity.
     """
     return (
-        mod.DAC_Consume_Power_MW[g, tmp]
+        mod.DispatchableLoadPrj_Consume_Power_MW[g, tmp]
         <= mod.Capacity_MW[g, mod.period[tmp]] * mod.Availability_Derate[g, tmp]
     )
 
@@ -159,9 +166,9 @@ def max_power_rule(mod, g, tmp):
 
 def power_provision_rule(mod, prj, tmp):
     """
-    Power provision from DAC is the negative of the power consumption.
+    Power provision from DISPATCHABLE_LOAD_PRJS is the negative of the power consumption.
     """
-    return -mod.DAC_Consume_Power_MW[prj, tmp]
+    return -mod.DispatchableLoadPrj_Consume_Power_MW[prj, tmp]
 
 
 def variable_om_cost_rule(mod, prj, tmp):
@@ -169,7 +176,10 @@ def variable_om_cost_rule(mod, prj, tmp):
     Must be defined rather than take the default, as Project_Power_Provision_MW
     for this operational type is negative downstream.
     """
-    return mod.DAC_Consume_Power_MW[prj, tmp] * mod.variable_om_cost_per_mwh[prj]
+    return (
+        mod.DispatchableLoadPrj_Consume_Power_MW[prj, tmp]
+        * mod.variable_om_cost_per_mwh[prj]
+    )
 
 
 def variable_om_by_period_cost_rule(mod, prj, tmp):
@@ -178,9 +188,10 @@ def variable_om_by_period_cost_rule(mod, prj, tmp):
     for this operational type is negative downstream.
     """
     return (
-        mod.DAC_Consume_Power_MW[prj, tmp]
+        mod.DispatchableLoadPrj_Consume_Power_MW[prj, tmp]
         * mod.variable_om_cost_per_mwh_by_period[prj, mod.period[tmp]]
     )
+
 
 def variable_om_by_timepoint_cost_rule(mod, prj, tmp):
     """
@@ -188,7 +199,7 @@ def variable_om_by_timepoint_cost_rule(mod, prj, tmp):
     for this operational type is negative downstream.
     """
     return (
-        mod.DAC_Consume_Power_MW[prj, tmp]
+        mod.DispatchableLoadPrj_Consume_Power_MW[prj, tmp]
         * mod.variable_om_cost_per_mwh_by_timepoint[prj, tmp]
     )
 
@@ -203,7 +214,7 @@ def fuel_burn_rule(mod, prj, tmp):
     if prj in mod.FUEL_PRJS:
         return (
             mod.fuel_burn_slope_mmbtu_per_mwh[prj, mod.period[tmp], 0]
-            * mod.DAC_Consume_Power_MW[prj, tmp]
+            * mod.DispatchableLoadPrj_Consume_Power_MW[prj, tmp]
         )
     else:
         return 0
@@ -233,8 +244,8 @@ def power_delta_rule(mod, g, tmp):
         pass
     else:
         return (
-            mod.DAC_Consume_Power_MW[g, tmp]
-            - mod.DAC_Consume_Power_MW[
+            mod.DispatchableLoadPrj_Consume_Power_MW[g, tmp]
+            - mod.DispatchableLoadPrj_Consume_Power_MW[
                 g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
             ]
         )
@@ -274,7 +285,7 @@ def load_model_data(
         availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
-        op_type="dac",
+        op_type="dispatchable_load",
     )
 
 
@@ -311,7 +322,7 @@ def validate_inputs(
         subproblem,
         stage,
         conn,
-        "dac",
+        "dispatchable_load",
     )
 
     # Other module specific validations
@@ -334,7 +345,7 @@ def validate_inputs(
         WHERE project_portfolio_scenario_id = {}
         """.format(
             subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
-            "dac",
+            "dispatchable_load",
             subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
         )
     )
@@ -356,6 +367,6 @@ def validate_inputs(
         severity="Mid",
         errors=validate_single_input(
             df=hr_df,
-            msg="dac can only have one load point (constant heat rate).",
+            msg="dispatchable_load can only have one load point (constant heat rate).",
         ),
     )

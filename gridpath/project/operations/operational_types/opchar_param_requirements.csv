@@ -1,4 +1,4 @@
-﻿char,type,dr,gen_always_on,gen_commit_bin,gen_commit_cap,gen_commit_lin,gen_hydro,gen_hydro_must_take,gen_must_run,gen_simple,gen_var,gen_var_must_take,stor,gen_var_stor_hyb,fuel_prod,dac,flex_load,gen_hydro_water,energy_profile,energy_hrz_shaping,energy_load_following,energy_slice_hrz_shaping,load_component_modifier
+﻿char,type,dr,gen_always_on,gen_commit_bin,gen_commit_cap,gen_commit_lin,gen_hydro,gen_hydro_must_take,gen_must_run,gen_simple,gen_var,gen_var_must_take,stor,gen_var_stor_hyb,fuel_prod,dispatchable_load,flex_load,gen_hydro_water,energy_profile,energy_hrz_shaping,energy_load_following,energy_slice_hrz_shaping,load_component_modifier
 min_stable_level_fraction,float,,required,required,required,required,,,,,,,,,,,,,,,,,
 unit_size_mw,float,,required,,required,,,,,,,,,,,,,,,,,,
 startup_plus_ramp_up_rate,float,,,,optional,,,,,,,,,,,,,,,,,,
