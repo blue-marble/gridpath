@@ -5,3 +5,4 @@ DSM_Flat_Load_Reduction,,,gen_new_lin
 DSM_EE,,,gen_new_lin
 DSM_EV,,,gen_new_lin
 DSM_Load_Shed,,,gen_new_lin
+DSM_Load_Component_Modifier,,,gen_new_lin

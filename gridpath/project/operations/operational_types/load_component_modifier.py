@@ -19,7 +19,7 @@ based on 1) the project capacity relative to the load component peak load and
 values indicate a load reduction and negative values indicate a load increase.
 """
 
-from pyomo.environ import Param, Set, Reals, Constraint, Var
+from pyomo.environ import Param, Set, Reals, Constraint, Var, Any
 import warnings
 
 from gridpath.auxiliary.auxiliary import (
@@ -63,12 +63,12 @@ def add_model_components(
     +-------------------------------------------------------------------------+
     | Sets                                                                    |
     +=========================================================================+
-    | | :code:`LOAD_COMPONENT_MODIFIER`                                       |
+    | | :code:`LOAD_COMPONENT_MODIFIER_PRJS`                                       |
     |                                                                         |
     | The set of generators of the :code:`load_component_modifier`            |
     | operational type.                                                       |
     +-------------------------------------------------------------------------+
-    | | :code:`LOAD_COMPONENT_MODIFIER_OPR_TMPS`                              |
+    | | :code:`LOAD_COMPONENT_MODIFIER_PRJS_OPR_TMPS`                              |
     |                                                                         |
     | Two-dimensional set with generators of the                              |
     | :code:`load_component_modifier` operational type and their operational  |
@@ -81,7 +81,7 @@ def add_model_components(
     | Required Input Params                                                   |
     +=========================================================================+
     | | :code:`load_component_modifier_fraction`                            |
-    | | *Defined over*: :code:`LOAD_COMPONENT_MODIFIER`                       |
+    | | *Defined over*: :code:`LOAD_COMPONENT_MODIFIER_PRJS`                       |
     | | *Within*: :code:`Reals`                                               |
     |                                                                         |
     | The project's power output in each operational timepoint as a fraction  |
@@ -93,21 +93,32 @@ def add_model_components(
     # Sets
     ###########################################################################
 
-    m.LOAD_COMPONENT_MODIFIER = Set(
+    m.LOAD_COMPONENT_MODIFIER_PRJS = Set(
         within=m.PROJECTS,
         initialize=lambda mod: subset_init_by_param_value(
             mod, "PROJECTS", "operational_type", "load_component_modifier"
         ),
     )
 
-    m.LOAD_COMPONENT_MODIFIER_OPR_TMPS = Set(
+    m.LOAD_COMPONENT_MODIFIER_PRJS_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
         initialize=lambda mod: subset_init_by_set_membership(
             mod=mod,
             superset="PRJ_OPR_TMPS",
             index=0,
-            membership_set=mod.LOAD_COMPONENT_MODIFIER,
+            membership_set=mod.LOAD_COMPONENT_MODIFIER_PRJS,
+        ),
+    )
+
+    # Derived sets
+    m.LOAD_COMPONENT_MODIFIER_PRJS_OPR_PRDS = Set(
+        within=m.PRJ_OPR_PRDS,
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod,
+            superset="PRJ_OPR_PRDS",
+            index=0,
+            membership_set=mod.LOAD_COMPONENT_MODIFIER_PRJS,
         ),
     )
 
@@ -115,22 +126,17 @@ def add_model_components(
     ###########################################################################
 
     m.load_component_modifier_linked_load_component = Param(
-        m.LOAD_COMPONENT_MODIFIER,
-        within=lambda mod, prj: [
-            comp
-            for (lz, comp) in mod.LOAD_ZONE_LOAD_CMPNTS_ALL
-            if mod.load_zone[prj] == lz
-        ],
+        m.LOAD_COMPONENT_MODIFIER_PRJS,
+        within=Any,
     )
 
     m.load_component_modifier_fraction = Param(
-        m.LOAD_COMPONENT_MODIFIER_OPR_TMPS, within=Reals
+        m.LOAD_COMPONENT_MODIFIER_PRJS_OPR_TMPS, within=Reals
     )
 
     # Derived params
     m.load_component_peak_load_in_period = Param(
-        m.LOAD_COMPONENT_MODIFIER,
-        m.PRDS,
+        m.LOAD_COMPONENT_MODIFIER_PRJS_OPR_PRDS,
         initialize=lambda mod, prj, prd: max(
             [
                 mod.component_static_load_mw[
@@ -138,13 +144,13 @@ def add_model_components(
                     tmp,
                     mod.load_component_modifier_linked_load_component[prj],
                 ]
-                for tmp in mod.TMPS_BY_PRD[prd]
+                for tmp in mod.TMPS_IN_PRD[prd]
             ]
         ),
     )
 
     m.Load_Component_Modifier_Fraction_Invested = Var(
-        m.LOAD_COMPONENT_MODIFIER, m.PRDS, bounds=(0, 1), initialize=0
+        m.LOAD_COMPONENT_MODIFIER_PRJS_OPR_PRDS, bounds=(0, 1), initialize=0
     )
 
     # Constraints
@@ -158,7 +164,7 @@ def add_model_components(
         )
 
     m.Load_Component_Modifier_Fraction_Invested_Constraint = Constraint(
-        m.PRJ_OPR_PRDS, rule=fraction_invested_constraint_rule
+        m.LOAD_COMPONENT_MODIFIER_PRJS_OPR_PRDS, rule=fraction_invested_constraint_rule
     )
 
     # TODO: remove this constraint once input validation is in place that
@@ -166,8 +172,8 @@ def add_model_components(
     #  type
     def no_upward_reserve_rule(mod, g, tmp):
         """
-        **Constraint Name**: GenVarMustTake_No_Upward_Reserves_Constraint
-        **Enforced Over**: LOAD_COMPONENT_MODIFIER_OPR_TMPS
+        **Constraint Name**: LoadComponentModifier_No_Upward_Reserves_Constraint
+        **Enforced Over**: LOAD_COMPONENT_MODIFIER_PRJS_OPR_TMPS
 
         Upward reserves should be zero in every operational timepoint.
         """
@@ -190,16 +196,16 @@ def add_model_components(
         else:
             return Constraint.Skip
 
-    m.GenVarMustTake_No_Upward_Reserves_Constraint = Constraint(
-        m.LOAD_COMPONENT_MODIFIER_OPR_TMPS, rule=no_upward_reserve_rule
+    m.LoadComponentModifier_No_Upward_Reserves_Constraint = Constraint(
+        m.LOAD_COMPONENT_MODIFIER_PRJS_OPR_TMPS, rule=no_upward_reserve_rule
     )
 
     # TODO: remove this constraint once input validation is in place that
     #  does not allow specifying a reserve_zone if 'load_component_modifier' type
     def no_downward_reserve_rule(mod, g, tmp):
         """
-        **Constraint Name**: GenVarMustTake_No_Downward_Reserves_Constraint
-        **Enforced Over**: LOAD_COMPONENT_MODIFIER_OPR_TMPS
+        **Constraint Name**: LoadComponentModifier_No_Downward_Reserves_Constraint
+        **Enforced Over**: LOAD_COMPONENT_MODIFIER_PRJS_OPR_TMPS
 
         Downward reserves should be zero in every operational timepoint.
         """
@@ -222,8 +228,8 @@ def add_model_components(
         else:
             return Constraint.Skip
 
-    m.GenVarMustTake_No_Downward_Reserves_Constraint = Constraint(
-        m.LOAD_COMPONENT_MODIFIER_OPR_TMPS, rule=no_downward_reserve_rule
+    m.LoadComponentModifier_No_Downward_Reserves_Constraint = Constraint(
+        m.LOAD_COMPONENT_MODIFIER_PRJS_OPR_TMPS, rule=no_downward_reserve_rule
     )
 
 
@@ -273,7 +279,8 @@ def power_delta_rule(mod, prj, tmp):
         pass
     else:
         return power_provision_rule(mod, prj, tmp) - power_provision_rule(
-            mod, prj, mod.prev_tmp[tmp])
+            mod, prj, mod.prev_tmp[tmp]
+        )
 
 
 # Inputs-Outputs
@@ -323,7 +330,7 @@ def load_model_data(
         stage=stage,
         op_type="load_component_modifier",
         tab_filename="load_component_modifier_fractions.tab",
-        param_name="load_component_modifier_fraction",
+        param_name="fraction",
     )
 
 
@@ -367,8 +374,8 @@ def get_model_inputs_from_database(
         stage=db_stage,
         conn=conn,
         op_type="load_component_modifier",
-        table="inputs_project_variable_generator_profiles",
-        subscenario_id_column="timepoint_profile_scenario_id",
+        table="inputs_project_load_modifier_profiles",
+        subscenario_id_column="load_modifier_profile_scenario_id",
         data_column="fraction",
     )
 
@@ -407,7 +414,7 @@ def write_model_inputs(
         stage,
         conn,
     )
-    fname = "load_modifier_fractions.tab"
+    fname = "load_component_modifier_fractions.tab"
 
     write_tab_file_model_inputs(
         scenario_directory,
