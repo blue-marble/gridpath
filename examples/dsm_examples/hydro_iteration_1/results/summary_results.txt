@@ -3,14 +3,22 @@
 ### CAPACITY RESULTS ###
 
 --> New Generation Capacity <--
-                             New Capacity (MW)
-load_zone technology period                   
-Zone1     DSM        2026                85.73
+                                              New Capacity (MW)
+load_zone technology                  period                   
+Zone1     DSM_EE                      2026                10.00
+          DSM_Flat_Load_Reduction     2026                10.00
+          DSM_Load_Component_Modifier 2026                55.73
+          DSM_Load_Shed               2026                10.00
 
 ### OPERATIONAL RESULTS ###
 
 --> Energy Production <--
-                             Annual Energy (MWh)  % Total Power
-load_zone period technology                                    
-Zone1     2026   DSM                  127,310.21          15.94
-                 GEN                  671,203.21          84.06
+                                              Annual Energy (MWh)  % Total Power
+load_zone period technology                                                     
+Zone1     2026   DSM_Dispatchable_Load                 -32,850.00          -4.11
+                 DSM_EE                                 59,787.00           7.49
+                 DSM_EV                                      0.00           0.00
+                 DSM_Flat_Load_Reduction                 9,198.00           1.15
+                 DSM_Load_Component_Modifier            57,175.46           7.16
+                 DSM_Load_Shed                           1,149.75           0.14
+                 GEN                                   704,053.21          88.17

@@ -1,4 +1,4 @@
-# Copyright 2016-2023 Blue Marble Analytics LLC.
+# Copyright 2016-2025 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,11 +13,15 @@
 # limitations under the License.
 
 """
-This operational type describes direct air capture facilities that consume power in 
-order to capture carbon from the atmosphere. Note that this should be modeled to burn
-a fuel with a negative emissions intensity and they do require a simple heat rate.
-Also note that projects of this type must be assigned a carbon cap zone in order to
-contribute net negative emissions to the carbon constraint.
+This operational type describes dispatchable loads. Their "power output" is
+subtracted from the power-production side of the load-balance constraints.
+
+Projects of this type may have a heat rate associated with them, for example
+to model direct air capture facilities that consume power in order to capture
+carbon from the atmosphere. Note that this should be modeled to burn
+a fuel with a negative emissions intensity and they do require a simple heat
+rate. Also note that projects of this type must be assigned a carbon cap zone
+in order to contribute net negative emissions to the carbon constraint.
 """
 
 from pyomo.environ import (
@@ -153,24 +157,56 @@ def max_power_rule(mod, g, tmp):
 ###############################################################################
 
 
-def power_provision_rule(mod, g, tmp):
+def power_provision_rule(mod, prj, tmp):
     """
     Power provision from DAC is the negative of the power consumption.
     """
-    return -mod.DAC_Consume_Power_MW[g, tmp]
+    return -mod.DAC_Consume_Power_MW[prj, tmp]
 
 
-def fuel_burn_rule(mod, g, tmp):
+def variable_om_cost_rule(mod, prj, tmp):
+    """
+    Must be defined rather than take the default, as Project_Power_Provision_MW
+    for this operational type is negative downstream.
+    """
+    return mod.DAC_Consume_Power_MW[prj, tmp] * mod.variable_om_cost_per_mwh[prj]
+
+
+def variable_om_by_period_cost_rule(mod, prj, tmp):
+    """
+    Must be defined rather than take the default, as Project_Power_Provision_MW
+    for this operational type is negative downstream.
+    """
+    return (
+        mod.DAC_Consume_Power_MW[prj, tmp]
+        * mod.variable_om_cost_per_mwh_by_period[prj, mod.period[tmp]]
+    )
+
+def variable_om_by_timepoint_cost_rule(mod, prj, tmp):
+    """
+    Must be defined rather than take the default, as Project_Power_Provision_MW
+    for this operational type is negative downstream.
+    """
+    return (
+        mod.DAC_Consume_Power_MW[prj, tmp]
+        * mod.variable_om_cost_per_mwh_by_timepoint[prj, tmp]
+    )
+
+
+def fuel_burn_rule(mod, prj, tmp):
     """
     Fuel burn is the product of the fuel burn slope and the power output. The
     project fuel burn is later multiplied by the fuel emissions intensity to get the
     total captured emissions, so fuel_burn_slope x emissions_intensity should equal
     the amount of emissions captured per unit of consumed power.
     """
-    return (
-        mod.fuel_burn_slope_mmbtu_per_mwh[g, mod.period[tmp], 0]
-        * mod.DAC_Consume_Power_MW[g, tmp]
-    )
+    if prj in mod.FUEL_PRJS:
+        return (
+            mod.fuel_burn_slope_mmbtu_per_mwh[prj, mod.period[tmp], 0]
+            * mod.DAC_Consume_Power_MW[prj, tmp]
+        )
+    else:
+        return 0
 
 
 def power_delta_rule(mod, g, tmp):
@@ -320,6 +356,6 @@ def validate_inputs(
         severity="Mid",
         errors=validate_single_input(
             df=hr_df,
-            msg="dac can only have one load " "point (constant heat rate).",
+            msg="dac can only have one load point (constant heat rate).",
         ),
     )
