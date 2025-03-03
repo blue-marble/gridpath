@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-Aggregate delivered energy-target-eligible power from the project-timepoint 
+Aggregate delivered energy-target-eligible power from the project-timepoint
 level to the energy-target zone - balancing type - horizon level.
 """
 

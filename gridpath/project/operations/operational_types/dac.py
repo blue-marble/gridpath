@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-This operational type describes direct air capture facilities that consume power in 
+This operational type describes direct air capture facilities that consume power in
 order to capture carbon from the atmosphere. Note that this should be modeled to burn
 a fuel with a negative emissions intensity and they do require a simple heat rate.
 Also note that projects of this type must be assigned a carbon cap zone in order to
