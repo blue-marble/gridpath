@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-Add project-level components for downward load-following reserves that also 
+Add project-level components for downward load-following reserves that also
 depend on operational type
 """
 

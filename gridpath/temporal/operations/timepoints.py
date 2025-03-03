@@ -26,7 +26,7 @@ timepoints that are not modeled explicitly (e.g. use a 24-hour period per month
 to represent the whole month using the number of days in that month for the
 weight of each of the 24 timepoints). Note that all costs incurred at the
 timepoint level are multiplied by the period-level number_years_represented
-and discount_factor parameters in the objective function. At the period 
+and discount_factor parameters in the objective function. At the period
 level we use annualized capacity costs (and multiply those by the number of
 years in a period), so we must also annualize operational costs incurred at
 the timepoint level. In other words, we must use the timepoint weights
@@ -37,11 +37,11 @@ therefore equal the number of hours in a year (8760, 8766, or 8784). This
 will then get multiplied by the number of years in a period and period
 discount rate to get the total operational costs.
 
-For example, if you are representing a 10-year period with a single day at a 
-24-hour timepoint resolution, the timepoint weight for each of the 24 
+For example, if you are representing a 10-year period with a single day at a
+24-hour timepoint resolution, the timepoint weight for each of the 24
 timepoints would need to be 365. Timepoint-level costs will be multiplied by 10
-automatically to account for the length of the period. If you are 
-representing a 1-year period with a single day at a 24-hour resolution, 
+automatically to account for the length of the period. If you are
+representing a 1-year period with a single day at a 24-hour resolution,
 the timepoint weight would still be 365, and timepoint-level costs will get
 multiplied by 1 automatically to account for the length of the period.
 If you are representing a 0.25-year period with a single day at a 24-hour

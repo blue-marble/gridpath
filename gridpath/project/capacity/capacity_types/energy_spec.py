@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-Specified energy-only project. The energy will be shaped by the operational 
+Specified energy-only project. The energy will be shaped by the operational
 type.
 
 """

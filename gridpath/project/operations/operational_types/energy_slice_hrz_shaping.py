@@ -13,11 +13,11 @@
 # limitations under the License.
 
 """
-This operational type shapes energy on a horizon basis based on a min, max, 
-average energy and its slice of the full potential of a project. It can only 
-be paired with the energy_new_lin capacity type and must have a potential 
-associated with it based on which the slice will be determined. Operating 
-cahractersitcs are based on the full potential. This type limits total energy 
+This operational type shapes energy on a horizon basis based on a min, max,
+average energy and its slice of the full potential of a project. It can only
+be paired with the energy_new_lin capacity type and must have a potential
+associated with it based on which the slice will be determined. Operating
+cahractersitcs are based on the full potential. This type limits total energy
 over the period to the Energy_MWh for the project.
 
 """
