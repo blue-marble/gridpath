@@ -13,8 +13,8 @@
 # limitations under the License.
 
 """
-This operational type shapes energy on a horizon basis, based on min power, 
-max power, and total energy for the horizon. It limits total energy over the 
+This operational type shapes energy on a horizon basis, based on min power,
+max power, and total energy for the horizon. It limits total energy over the
 period to the Energy_MWh for the project.
 
 """

@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-Storage projects with additional constraints on deliverability based on their 
+Storage projects with additional constraints on deliverability based on their
 duration
 """
 

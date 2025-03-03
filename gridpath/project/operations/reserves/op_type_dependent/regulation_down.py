@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-Add project-level components for downward regulation reserves that also 
+Add project-level components for downward regulation reserves that also
 depend on operational type
 """
 
