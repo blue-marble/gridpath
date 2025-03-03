@@ -25,7 +25,6 @@ Costs for this operational type include variable O&M costs.
 
 """
 
-import csv
 import os.path
 from pyomo.environ import (
     Var,
@@ -410,7 +409,6 @@ def ramp_up_variable_constraint_rule(mod, g, tmp):
             "WARNING: linked horizons not impelmented for " "gen_hydro_water!!!"
         )
     else:
-        # TODO: change gen types to year_linear
         return (
             mod.GenHydroWater_Ramp_Up_MW[g, tmp]
             >= mod.GenHydroWater_Power_MW[g, tmp]
@@ -440,7 +438,6 @@ def ramp_down_variable_constraint_rule(mod, g, tmp):
             "WARNING: linked horizons not impelmented for " "gen_hydro_water!!!"
         )
     else:
-        # TODO: change ramps to linear
         return (
             mod.GenHydroWater_Ramp_Down_MW[g, tmp]
             >= mod.GenHydroWater_Power_MW[
@@ -674,31 +671,8 @@ def export_results(
     :param d:
     :return:
     """
-    with open(
-        os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "results",
-            "ramps.csv",
-        ),
-        "w",
-        newline="",
-    ) as f:
-        writer = csv.writer(f, delimiter="\t", lineterminator="\n")
-        writer.writerow(["project", "power", "ramp"])
-        for prj, tmp in sorted(mod.GEN_HYDRO_WATER_OPR_TMPS):
-            writer.writerow(
-                [
-                    prj,
-                    value(mod.GenHydroWater_Power_MW[prj, tmp]),
-                    value(mod.GenHydroWater_Ramp_Up_MW[prj, tmp]),
-                ]
-            )
 
+    pass
     # # Dispatch results added to project_timepoint.csv via add_to_prj_tmp_results()
     # # If there's a linked_subproblems_map CSV file, check which of the
     # # current subproblem TMPS we should export results for to link to the
