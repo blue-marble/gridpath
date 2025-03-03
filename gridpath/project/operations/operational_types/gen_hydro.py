@@ -623,7 +623,7 @@ def ramp_down_rule(mod, g, tmp):
             prev_tmp_curtailment = mod.GenHydro_Curtail_MW[
                 g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
             ]
-        # If you can ramp down the the total project's capacity within the
+        # If you can ramp down the total project's capacity within the
         # previous timepoint, skip the constraint (it won't bind)
         if mod.gen_hydro_ramp_down_when_on_rate[g] * 60 * prev_tmp_hrs_in_tmp >= 1:
             return Constraint.Skip
