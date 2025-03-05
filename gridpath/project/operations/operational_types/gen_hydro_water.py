@@ -145,7 +145,7 @@ def add_model_components(
 
         return tmp_ramp_rate_dict
 
-    m.gen_hydro_water_bt_hrz_ramp_up_limit_mw_per_hour_by_tmp = Param(
+    m.gen_hydro_water_bt_hrz_ramp_up_limit_mw_per_tmp = Param(
         m.GEN_HYDRO_WATER_OPR_TMPS,
         within=NonNegativeReals,
         initialize=hrz_ramp_rate_up_by_tmp_init,
@@ -167,7 +167,7 @@ def add_model_components(
 
         return tmp_ramp_rate_dict
 
-    m.gen_hydro_water_bt_hrz_ramp_down_limit_mw_per_hour_by_tmp = Param(
+    m.gen_hydro_water_bt_hrz_ramp_down_limit_mw_per_tmp = Param(
         m.GEN_HYDRO_WATER_OPR_TMPS,
         within=NonNegativeReals,
         initialize=hrz_ramp_rate_down_by_tmp_init,
@@ -420,9 +420,7 @@ def enforce_bt_hrz_ramp_up_rate_constraint_rule(mod, g, tmp):
                 g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
             ]
 
-        if mod.gen_hydro_water_bt_hrz_ramp_up_limit_mw_per_hour_by_tmp[g, tmp] == float(
-            "inf"
-        ):
+        if mod.gen_hydro_water_bt_hrz_ramp_up_limit_mw_per_tmp[g, tmp] == float("inf"):
             return Constraint.Skip
         else:
             return (
@@ -430,7 +428,7 @@ def enforce_bt_hrz_ramp_up_rate_constraint_rule(mod, g, tmp):
                 + mod.GenHydroWater_Upwards_Reserves_MW[g, tmp]
             ) - (
                 prev_tmp_power - prev_tmp_downwards_reserves
-            ) <= mod.gen_hydro_water_bt_hrz_ramp_up_limit_mw_per_hour_by_tmp[
+            ) <= mod.gen_hydro_water_bt_hrz_ramp_up_limit_mw_per_tmp[
                 g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
             ]
 
@@ -463,15 +461,15 @@ def enforce_bt_hrz_ramp_down_rate_constraint_rule(mod, g, tmp):
                 g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
             ]
 
-        if mod.gen_hydro_water_bt_hrz_ramp_down_limit_mw_per_hour_by_tmp[
-            g, tmp
-        ] == float("inf"):
+        if mod.gen_hydro_water_bt_hrz_ramp_down_limit_mw_per_tmp[g, tmp] == float(
+            "inf"
+        ):
             return Constraint.Skip
         else:
             return (prev_tmp_power + prev_tmp_upwards_reserves) - (
                 mod.GenHydroWater_Power_MW[g, tmp]
                 - mod.GenHydroWater_Downwards_Reserves_MW[g, tmp]
-            ) <= mod.gen_hydro_water_bt_hrz_ramp_down_limit_mw_per_hour_by_tmp[
+            ) <= mod.gen_hydro_water_bt_hrz_ramp_down_limit_mw_per_tmp[
                 g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
             ]
 
