@@ -199,14 +199,29 @@ def add_model_components(
     )
 
     def tmp_ramp_limit_init(mod):
+        """
+        If multiple bt-hrz include this timepoint, apply the min of the
+        values (the most binding)
+        """
         tmp_ramp_limits = {}
         for water_link, ramp_limit, bt, hrz in mod.WATER_LINK_RAMP_LIMITS_BT_HRZ:
             for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]:
-                tmp_ramp_limits[(water_link, ramp_limit, tmp)] = (
-                    mod.water_link_ramp_limit_bt_hrz_allowed_flow_delta[
-                        water_link, ramp_limit, bt, hrz
+                if (water_link, ramp_limit, tmp) not in tmp_ramp_limits.keys():
+                    tmp_ramp_limits[(water_link, ramp_limit, tmp)] = [
+                        mod.water_link_ramp_limit_bt_hrz_allowed_flow_delta[
+                            water_link, ramp_limit, bt, hrz
+                        ]
                     ]
-                )
+                else:
+                    tmp_ramp_limits[(water_link, ramp_limit, tmp)].append(
+                        mod.water_link_ramp_limit_bt_hrz_allowed_flow_delta[
+                            water_link, ramp_limit, bt, hrz
+                        ]
+                    )
+
+        # Apply min
+        for k in tmp_ramp_limits:
+            tmp_ramp_limits[k] = min([v for v in tmp_ramp_limits[k]])
 
         return tmp_ramp_limits
 
