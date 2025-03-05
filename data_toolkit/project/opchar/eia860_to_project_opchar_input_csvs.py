@@ -249,6 +249,8 @@ def make_opchar_sql_str(
     ramp_down_when_on_rate="NULL",
     ramp_up_violation_penalty="NULL",
     ramp_down_violation_penalty="NULL",
+    bt_hrz_ramp_up_rate_limit_scenario_id="NULL",
+    bt_hrz_ramp_down_rate_limit_scenario_id="NULL",
     total_ramp_up_limit_scenario_id="NULL",
     total_ramp_down_limit_scenario_id="NULL",
     min_up_time_hours="NULL",
@@ -326,6 +328,10 @@ def make_opchar_sql_str(
      {ramp_down_when_on_rate} AS ramp_down_when_on_rate,	
      {ramp_up_violation_penalty} AS ramp_up_violation_penalty,
      {ramp_down_violation_penalty} AS ramp_down_violation_penalty,
+     {bt_hrz_ramp_up_rate_limit_scenario_id} AS 
+     bt_hrz_ramp_up_rate_limit_scenario_id,
+     {bt_hrz_ramp_down_rate_limit_scenario_id} AS 
+     bt_hrz_ramp_down_rate_limit_scenario_id,
      {total_ramp_up_limit_scenario_id} AS total_ramp_up_limit_scenario_id,
      {total_ramp_down_limit_scenario_id} AS total_ramp_down_limit_scenario_id,
      {min_up_time_hours} AS min_up_time_hours,

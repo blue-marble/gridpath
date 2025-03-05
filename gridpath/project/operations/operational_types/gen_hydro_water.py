@@ -114,6 +114,66 @@ def add_model_components(
         m.GEN_HYDRO_WATER, within=PercentFraction, default=1
     )
 
+    # Ramp rate limits by horizon timpepoint
+    # This rate is in MW/hour
+    m.GEN_HYDRO_WATER_BT_HRZ_W_BT_HRZ_RAMP_UP_RATE_LIMITS = Set(
+        dimen=3, within=m.GEN_HYDRO_WATER * m.BLN_TYPE_HRZS
+    )
+    m.gen_hydro_water_bt_hrz_ramp_up_limit_mw_per_hour = Param(
+        m.GEN_HYDRO_WATER_BT_HRZ_W_BT_HRZ_RAMP_UP_RATE_LIMITS, within=NonNegativeReals
+    )
+
+    m.GEN_HYDRO_WATER_BT_HRZ_W_BT_HRZ_RAMP_DOWN_RATE_LIMITS = Set(
+        dimen=3, within=m.GEN_HYDRO_WATER * m.BLN_TYPE_HRZS
+    )
+    m.gen_hydro_water_bt_hrz_ramp_down_limit_mw_per_hour = Param(
+        m.GEN_HYDRO_WATER_BT_HRZ_W_BT_HRZ_RAMP_DOWN_RATE_LIMITS, within=NonNegativeReals
+    )
+
+    def hrz_ramp_rate_up_by_tmp_init(mod):
+        """
+        BT-hrz value assigned to each timepoint in the BT-hrz
+        Rate is adjusted for the duration of the timepoint
+        """
+        tmp_ramp_rate_dict = {}
+        for prj, bt, hrz in mod.GEN_HYDRO_WATER_BT_HRZ_W_BT_HRZ_RAMP_UP_RATE_LIMITS:
+            for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]:
+                tmp_ramp_rate_dict[(prj, tmp)] = (
+                    mod.gen_hydro_water_bt_hrz_ramp_up_limit_mw_per_hour[prj, bt, hrz]
+                    * mod.hrs_in_tmp[tmp]
+                )
+
+        return tmp_ramp_rate_dict
+
+    m.gen_hydro_water_bt_hrz_ramp_up_limit_mw_per_hour_by_tmp = Param(
+        m.GEN_HYDRO_WATER_OPR_TMPS,
+        within=NonNegativeReals,
+        initialize=hrz_ramp_rate_up_by_tmp_init,
+        default=float("inf"),
+    )
+
+    def hrz_ramp_rate_down_by_tmp_init(mod):
+        """
+        BT-hrz value assigned to each timepoint in the BT-hrz
+        Rate is adjusted for the duration of the timepoint
+        """
+        tmp_ramp_rate_dict = {}
+        for prj, bt, hrz in mod.GEN_HYDRO_WATER_BT_HRZ_W_BT_HRZ_RAMP_DOWN_RATE_LIMITS:
+            for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]:
+                tmp_ramp_rate_dict[(prj, tmp)] = (
+                    mod.gen_hydro_water_bt_hrz_ramp_down_limit_mw_per_hour[prj, bt, hrz]
+                    * mod.hrs_in_tmp[tmp]
+                )
+
+        return tmp_ramp_rate_dict
+
+    m.gen_hydro_water_bt_hrz_ramp_down_limit_mw_per_hour_by_tmp = Param(
+        m.GEN_HYDRO_WATER_OPR_TMPS,
+        within=NonNegativeReals,
+        initialize=hrz_ramp_rate_down_by_tmp_init,
+        default=float("inf"),
+    )
+
     m.GEN_HYDRO_WATER_BT_HRZ_W_TOTAL_RAMP_UP_LIMITS = Set(
         dimen=3, within=m.GEN_HYDRO_WATER * m.BLN_TYPE_HRZS
     )
@@ -208,6 +268,14 @@ def add_model_components(
 
     m.GenHydroWater_Ramp_Down_Variable_Constraint = Constraint(
         m.GEN_HYDRO_WATER_OPR_TMPS, rule=ramp_down_variable_constraint_rule
+    )
+
+    m.GenHydroWater_BT_Hrz_Ramp_Up_Rate_Constraint = Constraint(
+        m.GEN_HYDRO_WATER_OPR_TMPS, rule=enforce_bt_hrz_ramp_up_rate_constraint_rule
+    )
+
+    m.GenHydroWater_BT_Hrz_Ramp_Down_Rate_Constraint = Constraint(
+        m.GEN_HYDRO_WATER_OPR_TMPS, rule=enforce_bt_hrz_ramp_down_rate_constraint_rule
     )
 
     m.GenHydroWater_Total_Ramp_Up_Constraint = Constraint(
@@ -321,6 +389,90 @@ def enforce_ramp_up_constraint_rule(mod, g, tmp):
                 g, mod.period[tmp]
             ] * mod.Availability_Derate[
                 g, tmp
+            ]
+
+
+def enforce_bt_hrz_ramp_up_rate_constraint_rule(mod, g, tmp):
+    """ """
+    if check_if_boundary_type_and_first_timepoint(
+        mod=mod,
+        tmp=tmp,
+        balancing_type=mod.balancing_type_project[g],
+        boundary_type="linear",
+    ):
+        return Constraint.Skip
+    else:
+        if check_if_boundary_type_and_first_timepoint(
+            mod=mod,
+            tmp=tmp,
+            balancing_type=mod.balancing_type_project[g],
+            boundary_type="linked",
+        ):
+            raise UserWarning(
+                "GridPath WARNING: linked horizons not "
+                "implemented for gen_hydro_water"
+            )
+        else:
+            prev_tmp_power = mod.GenHydroWater_Power_MW[
+                g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+            ]
+            prev_tmp_downwards_reserves = mod.GenHydroWater_Downwards_Reserves_MW[
+                g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+            ]
+
+        if mod.gen_hydro_water_bt_hrz_ramp_up_limit_mw_per_hour_by_tmp[g, tmp] == float(
+            "inf"
+        ):
+            return Constraint.Skip
+        else:
+            return (
+                mod.GenHydroWater_Power_MW[g, tmp]
+                + mod.GenHydroWater_Upwards_Reserves_MW[g, tmp]
+            ) - (
+                prev_tmp_power - prev_tmp_downwards_reserves
+            ) <= mod.gen_hydro_water_bt_hrz_ramp_up_limit_mw_per_hour_by_tmp[
+                g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+            ]
+
+
+def enforce_bt_hrz_ramp_down_rate_constraint_rule(mod, g, tmp):
+    """ """
+    if check_if_boundary_type_and_first_timepoint(
+        mod=mod,
+        tmp=tmp,
+        balancing_type=mod.balancing_type_project[g],
+        boundary_type="linear",
+    ):
+        return Constraint.Skip
+    else:
+        if check_if_boundary_type_and_first_timepoint(
+            mod=mod,
+            tmp=tmp,
+            balancing_type=mod.balancing_type_project[g],
+            boundary_type="linked",
+        ):
+            raise UserWarning(
+                "GridPath WARNING: linked horizons not "
+                "implemented for gen_hydro_water"
+            )
+        else:
+            prev_tmp_power = mod.GenHydroWater_Power_MW[
+                g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+            ]
+            prev_tmp_upwards_reserves = mod.GenHydroWater_Upwards_Reserves_MW[
+                g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+            ]
+
+        if mod.gen_hydro_water_bt_hrz_ramp_down_limit_mw_per_hour_by_tmp[
+            g, tmp
+        ] == float("inf"):
+            return Constraint.Skip
+        else:
+            return (prev_tmp_power + prev_tmp_upwards_reserves) - (
+                mod.GenHydroWater_Power_MW[g, tmp]
+                - mod.GenHydroWater_Downwards_Reserves_MW[g, tmp]
+            ) <= mod.gen_hydro_water_bt_hrz_ramp_down_limit_mw_per_hour_by_tmp[
+                g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
             ]
 
 
@@ -573,8 +725,42 @@ def load_model_data(
         op_type="gen_hydro_water",
     )
 
-    # Total ramp up limits
+    # BT-hrz ramp up rate limits
+    bt_hrz_ramp_up_rate_limits_filename = os.path.join(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+        "gen_hydro_water_bt_hrz_ramp_up_rate_limits.tab",
+    )
+    if os.path.exists(bt_hrz_ramp_up_rate_limits_filename):
+        data_portal.load(
+            filename=bt_hrz_ramp_up_rate_limits_filename,
+            index=m.GEN_HYDRO_WATER_BT_HRZ_W_BT_HRZ_RAMP_UP_RATE_LIMITS,
+            param=m.gen_hydro_water_bt_hrz_ramp_up_limit_mw_per_hour,
+        )
 
+    bt_hrz_ramp_down_rate_limits_filename = os.path.join(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+        "gen_hydro_water_bt_hrz_ramp_down_rate_limits.tab",
+    )
+    if os.path.exists(bt_hrz_ramp_down_rate_limits_filename):
+        data_portal.load(
+            filename=bt_hrz_ramp_down_rate_limits_filename,
+            index=m.GEN_HYDRO_WATER_BT_HRZ_W_BT_HRZ_RAMP_DOWN_RATE_LIMITS,
+            param=m.gen_hydro_water_bt_hrz_ramp_down_limit_mw_per_hour,
+        )
+
+    # Total ramp up limits
     total_ramp_up_limits_filename = os.path.join(
         scenario_directory,
         weather_iteration,
@@ -757,6 +943,62 @@ def get_model_inputs_from_database(
         weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
     )
 
+    bt_hrz_ramp_up_rate_limits_sql = f"""
+        SELECT project, balancing_type, horizon, ramp_up_rate_limit_mw_per_hour
+            FROM inputs_project_bt_hrz_ramp_up_rate_limits
+            WHERE 1=1
+            AND project IN (
+                SELECT project
+                FROM inputs_project_portfolios
+                WHERE project_portfolio_scenario_id = 
+                {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
+            )
+            AND (project, bt_hrz_ramp_up_rate_limit_scenario_id) in (
+                SELECT project, bt_hrz_ramp_up_rate_limit_scenario_id
+                FROM inputs_project_operational_chars
+                WHERE project_operational_chars_scenario_id = 
+                {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
+            )
+            AND (balancing_type, horizon)
+            IN (SELECT DISTINCT balancing_type_horizon, horizon
+                FROM inputs_temporal_horizon_timepoints
+                WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+                AND subproblem_id = {db_subproblem}
+                )
+            ;
+            """
+
+    c3 = conn.cursor()
+    bt_hrz_ramp_up_rate_limits = c3.execute(bt_hrz_ramp_up_rate_limits_sql)
+
+    bt_hrz_ramp_down_rate_limits_sql = f"""
+        SELECT project, balancing_type, horizon, ramp_down_rate_limit_mw_per_hour
+            FROM inputs_project_bt_hrz_ramp_down_rate_limits
+            WHERE 1=1
+            AND project IN (
+                SELECT project
+                FROM inputs_project_portfolios
+                WHERE project_portfolio_scenario_id = 
+                {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
+            )
+            AND (project, bt_hrz_ramp_down_rate_limit_scenario_id) in (
+                SELECT project, bt_hrz_ramp_down_rate_limit_scenario_id
+                FROM inputs_project_operational_chars
+                WHERE project_operational_chars_scenario_id = 
+                {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
+            )
+            AND (balancing_type, horizon)
+            IN (SELECT DISTINCT balancing_type_horizon, horizon
+                FROM inputs_temporal_horizon_timepoints
+                WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+                AND subproblem_id = {db_subproblem}
+                )
+            ;
+            """
+
+    c4 = conn.cursor()
+    bt_hrz_ramp_down_rate_limits = c4.execute(bt_hrz_ramp_down_rate_limits_sql)
+
     total_ramp_up_limits_sql = f"""
         SELECT project, balancing_type, horizon, total_ramp_up_limit_mw
             FROM inputs_project_total_ramp_up_limits
@@ -813,7 +1055,12 @@ def get_model_inputs_from_database(
     c2 = conn.cursor()
     total_ramp_down_limits = c2.execute(total_ramp_down_limits_sql)
 
-    return total_ramp_up_limits, total_ramp_down_limits
+    return (
+        bt_hrz_ramp_up_rate_limits,
+        bt_hrz_ramp_down_rate_limits,
+        total_ramp_up_limits,
+        total_ramp_down_limits,
+    )
 
 
 def write_model_inputs(
@@ -838,7 +1085,12 @@ def write_model_inputs(
     :return:
     """
 
-    total_ramp_up_limits, total_ramp_down_limits = get_model_inputs_from_database(
+    (
+        bt_hrz_ramp_up_rate_limits,
+        bt_hrz_ramp_down_rate_limits,
+        total_ramp_up_limits,
+        total_ramp_down_limits,
+    ) = get_model_inputs_from_database(
         scenario_id,
         subscenarios,
         weather_iteration,
@@ -847,6 +1099,30 @@ def write_model_inputs(
         subproblem,
         stage,
         conn,
+    )
+
+    fname = "gen_hydro_water_bt_hrz_ramp_up_rate_limits.tab"
+    write_tab_file_model_inputs(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        fname,
+        bt_hrz_ramp_up_rate_limits,
+    )
+
+    fname = "gen_hydro_water_bt_hrz_ramp_down_rate_limits.tab"
+    write_tab_file_model_inputs(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        fname,
+        bt_hrz_ramp_down_rate_limits,
     )
 
     fname = "gen_hydro_water_total_ramp_up_limits.tab"

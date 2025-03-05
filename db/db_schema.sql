@@ -1833,6 +1833,8 @@ CREATE TABLE inputs_project_operational_chars
     ramp_down_when_on_rate                    FLOAT,   -- frac capacity per min
     ramp_up_violation_penalty                 FLOAT,   -- leave NULL for hard constraints
     ramp_down_violation_penalty               FLOAT,   -- leave NULL for hard constraints
+    bt_hrz_ramp_up_rate_limit_scenario_id     INTEGER,
+    bt_hrz_ramp_down_rate_limit_scenario_id   INTEGER,
     total_ramp_up_limit_scenario_id           INTEGER,
     total_ramp_down_limit_scenario_id         INTEGER,
     min_up_time_hours                         INTEGER,
@@ -1936,6 +1938,14 @@ CREATE TABLE inputs_project_operational_chars
             (project, peak_deviation_demand_charge_scenario_id),
     FOREIGN KEY (project, cap_factor_limits_scenario_id) REFERENCES
         subscenarios_project_cap_factor_limits (project, cap_factor_limits_scenario_id),
+    FOREIGN KEY (project, bt_hrz_ramp_up_rate_limit_scenario_id) REFERENCES
+        subscenarios_project_bt_hrz_ramp_up_rate_limits (
+            project, bt_hrz_ramp_up_rate_limit_scenario_id
+                                                        ),
+    FOREIGN KEY (project, bt_hrz_ramp_down_rate_limit_scenario_id) REFERENCES
+        subscenarios_project_bt_hrz_ramp_down_rate_limits (
+            project, bt_hrz_ramp_down_rate_limit_scenario_id
+                                                        ),
     FOREIGN KEY (project, total_ramp_up_limit_scenario_id) REFERENCES
         subscenarios_project_total_ramp_up_limits (project, total_ramp_up_limit_scenario_id),
     FOREIGN KEY (project, total_ramp_down_limit_scenario_id) REFERENCES
@@ -2550,6 +2560,58 @@ CREATE TABLE inputs_project_cap_factor_limits
                  horizon),
     FOREIGN KEY (project, cap_factor_limits_scenario_id) REFERENCES
         subscenarios_project_cap_factor_limits (project, cap_factor_limits_scenario_id)
+);
+
+-- Bt-hrz ramp up rate limits
+DROP TABLE IF EXISTS subscenarios_project_bt_hrz_ramp_up_rate_limits;
+CREATE TABLE subscenarios_project_bt_hrz_ramp_up_rate_limits
+(
+    project                         VARCHAR(64),
+    bt_hrz_ramp_up_rate_limit_scenario_id INTEGER,
+    name                            VARCHAR(32),
+    description                     VARCHAR(128),
+    PRIMARY KEY (project, bt_hrz_ramp_up_rate_limit_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_bt_hrz_ramp_up_rate_limits;
+CREATE TABLE inputs_project_bt_hrz_ramp_up_rate_limits
+(
+    project                         VARCHAR(64),
+    bt_hrz_ramp_up_rate_limit_scenario_id INTEGER,
+    balancing_type                  INTEGER,
+    horizon                         FLOAT,
+    ramp_up_rate_limit_mw_per_hour  FLOAT,
+    PRIMARY KEY (project, bt_hrz_ramp_up_rate_limit_scenario_id,
+                 balancing_type, horizon),
+    FOREIGN KEY (project, bt_hrz_ramp_up_rate_limit_scenario_id) REFERENCES
+        subscenarios_project_bt_hrz_ramp_up_rate_limits
+            (project, bt_hrz_ramp_up_rate_limit_scenario_id)
+);
+
+-- Bt-hrz ramp down rate limits
+DROP TABLE IF EXISTS subscenarios_project_bt_hrz_ramp_down_rate_limits;
+CREATE TABLE subscenarios_project_bt_hrz_ramp_down_rate_limits
+(
+    project                         VARCHAR(64),
+    bt_hrz_ramp_down_rate_limit_scenario_id INTEGER,
+    name                            VARCHAR(32),
+    description                     VARCHAR(128),
+    PRIMARY KEY (project, bt_hrz_ramp_down_rate_limit_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_bt_hrz_ramp_down_rate_limits;
+CREATE TABLE inputs_project_bt_hrz_ramp_down_rate_limits
+(
+    project                         VARCHAR(64),
+    bt_hrz_ramp_down_rate_limit_scenario_id INTEGER,
+    balancing_type                  INTEGER,
+    horizon                         FLOAT,
+    ramp_down_rate_limit_mw_per_hour  FLOAT,
+    PRIMARY KEY (project, bt_hrz_ramp_down_rate_limit_scenario_id,
+                 balancing_type, horizon),
+    FOREIGN KEY (project, bt_hrz_ramp_down_rate_limit_scenario_id) REFERENCES
+        subscenarios_project_bt_hrz_ramp_down_rate_limits
+            (project, bt_hrz_ramp_down_rate_limit_scenario_id)
 );
 
 -- Total ramp up limits
