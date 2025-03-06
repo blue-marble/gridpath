@@ -76,14 +76,14 @@ def add_model_components(
     m.allow_water_link_hrz_min_flow_violation = Param(
         m.WATER_LINKS, within=Boolean, default=0
     )
-    m.hrz_min_flow_violation_penalty_cost = Param(
+    m.hrz_min_flow_violation_penalty_cost_per_hour = Param(
         m.WATER_LINKS, within=NonNegativeReals, default=0
     )
 
     m.allow_water_link_hrz_max_flow_violation = Param(
         m.WATER_LINKS, within=Boolean, default=0
     )
-    m.hrz_max_flow_violation_penalty_cost = Param(
+    m.hrz_max_flow_violation_penalty_cost_per_hour = Param(
         m.WATER_LINKS, within=NonNegativeReals, default=0
     )
 
@@ -607,9 +607,9 @@ def load_model_data(
             m.allow_water_link_max_flow_violation,
             m.max_flow_violation_penalty_cost,
             m.allow_water_link_hrz_min_flow_violation,
-            m.hrz_min_flow_violation_penalty_cost,
+            m.hrz_min_flow_violation_penalty_cost_per_hour,
             m.allow_water_link_hrz_max_flow_violation,
-            m.hrz_max_flow_violation_penalty_cost,
+            m.hrz_max_flow_violation_penalty_cost_per_hour,
         ),
     )
 
@@ -715,9 +715,9 @@ def get_inputs_from_database(
         allow_water_link_max_flow_violation,
         max_flow_violation_penalty_cost,
         allow_water_link_hrz_min_flow_violation,
-        hrz_min_flow_violation_penalty_cost,
+        hrz_min_flow_violation_penalty_cost_per_hour,
         allow_water_link_hrz_max_flow_violation,
-        hrz_max_flow_violation_penalty_cost
+        hrz_max_flow_violation_penalty_cost_per_hour
         FROM inputs_system_water_flows
         WHERE water_flow_scenario_id = {subscenarios.WATER_FLOW_SCENARIO_ID}
         AND water_link IN (

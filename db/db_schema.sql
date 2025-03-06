@@ -1290,20 +1290,20 @@ CREATE TABLE subscenarios_system_water_flows
 DROP TABLE IF EXISTS inputs_system_water_flows;
 CREATE TABLE inputs_system_water_flows
 (
-    water_flow_scenario_id                  INTEGER,
-    water_link                              TEXT,
-    default_min_flow_vol_per_sec            FLOAT,
-    allow_water_link_min_flow_violation     INTEGER,
-    min_flow_violation_penalty_cost         FLOAT,
-    allow_water_link_max_flow_violation     INTEGER,
-    max_flow_violation_penalty_cost         FLOAT,
-    allow_water_link_hrz_min_flow_violation INTEGER,
-    hrz_min_flow_violation_penalty_cost     FLOAT,
-    allow_water_link_hrz_max_flow_violation INTEGER,
-    hrz_max_flow_violation_penalty_cost     FLOAT,
-    water_flow_timepoint_bounds_scenario_id INTEGER,
-    water_flow_horizon_bounds_scenario_id   INTEGER,
-    water_flow_ramp_limit_scenario_id       INTEGER,
+    water_flow_scenario_id                       INTEGER,
+    water_link                                   TEXT,
+    default_min_flow_vol_per_sec                 FLOAT,
+    allow_water_link_min_flow_violation          INTEGER,
+    min_flow_violation_penalty_cost              FLOAT,
+    allow_water_link_max_flow_violation          INTEGER,
+    max_flow_violation_penalty_cost              FLOAT,
+    allow_water_link_hrz_min_flow_violation      INTEGER,
+    hrz_min_flow_violation_penalty_cost_per_hour FLOAT,
+    allow_water_link_hrz_max_flow_violation      INTEGER,
+    hrz_max_flow_violation_penalty_cost_per_hour FLOAT,
+    water_flow_timepoint_bounds_scenario_id      INTEGER,
+    water_flow_horizon_bounds_scenario_id        INTEGER,
+    water_flow_ramp_limit_scenario_id            INTEGER,
     PRIMARY KEY (water_flow_scenario_id, water_link),
     FOREIGN KEY (water_flow_scenario_id) REFERENCES
         subscenarios_system_water_flows (water_flow_scenario_id)
@@ -1940,12 +1940,14 @@ CREATE TABLE inputs_project_operational_chars
         subscenarios_project_cap_factor_limits (project, cap_factor_limits_scenario_id),
     FOREIGN KEY (project, bt_hrz_ramp_up_rate_limit_scenario_id) REFERENCES
         subscenarios_project_bt_hrz_ramp_up_rate_limits (
-            project, bt_hrz_ramp_up_rate_limit_scenario_id
-                                                        ),
+                                                         project,
+                                                         bt_hrz_ramp_up_rate_limit_scenario_id
+            ),
     FOREIGN KEY (project, bt_hrz_ramp_down_rate_limit_scenario_id) REFERENCES
         subscenarios_project_bt_hrz_ramp_down_rate_limits (
-            project, bt_hrz_ramp_down_rate_limit_scenario_id
-                                                        ),
+                                                           project,
+                                                           bt_hrz_ramp_down_rate_limit_scenario_id
+            ),
     FOREIGN KEY (project, total_ramp_up_limit_scenario_id) REFERENCES
         subscenarios_project_total_ramp_up_limits (project, total_ramp_up_limit_scenario_id),
     FOREIGN KEY (project, total_ramp_down_limit_scenario_id) REFERENCES
@@ -2566,21 +2568,21 @@ CREATE TABLE inputs_project_cap_factor_limits
 DROP TABLE IF EXISTS subscenarios_project_bt_hrz_ramp_up_rate_limits;
 CREATE TABLE subscenarios_project_bt_hrz_ramp_up_rate_limits
 (
-    project                         VARCHAR(64),
+    project                               VARCHAR(64),
     bt_hrz_ramp_up_rate_limit_scenario_id INTEGER,
-    name                            VARCHAR(32),
-    description                     VARCHAR(128),
+    name                                  VARCHAR(32),
+    description                           VARCHAR(128),
     PRIMARY KEY (project, bt_hrz_ramp_up_rate_limit_scenario_id)
 );
 
 DROP TABLE IF EXISTS inputs_project_bt_hrz_ramp_up_rate_limits;
 CREATE TABLE inputs_project_bt_hrz_ramp_up_rate_limits
 (
-    project                         VARCHAR(64),
+    project                               VARCHAR(64),
     bt_hrz_ramp_up_rate_limit_scenario_id INTEGER,
-    balancing_type                  INTEGER,
-    horizon                         FLOAT,
-    ramp_up_rate_limit_mw_per_hour  FLOAT,
+    balancing_type                        INTEGER,
+    horizon                               FLOAT,
+    ramp_up_rate_limit_mw_per_hour        FLOAT,
     PRIMARY KEY (project, bt_hrz_ramp_up_rate_limit_scenario_id,
                  balancing_type, horizon),
     FOREIGN KEY (project, bt_hrz_ramp_up_rate_limit_scenario_id) REFERENCES
@@ -2592,21 +2594,21 @@ CREATE TABLE inputs_project_bt_hrz_ramp_up_rate_limits
 DROP TABLE IF EXISTS subscenarios_project_bt_hrz_ramp_down_rate_limits;
 CREATE TABLE subscenarios_project_bt_hrz_ramp_down_rate_limits
 (
-    project                         VARCHAR(64),
+    project                                 VARCHAR(64),
     bt_hrz_ramp_down_rate_limit_scenario_id INTEGER,
-    name                            VARCHAR(32),
-    description                     VARCHAR(128),
+    name                                    VARCHAR(32),
+    description                             VARCHAR(128),
     PRIMARY KEY (project, bt_hrz_ramp_down_rate_limit_scenario_id)
 );
 
 DROP TABLE IF EXISTS inputs_project_bt_hrz_ramp_down_rate_limits;
 CREATE TABLE inputs_project_bt_hrz_ramp_down_rate_limits
 (
-    project                         VARCHAR(64),
+    project                                 VARCHAR(64),
     bt_hrz_ramp_down_rate_limit_scenario_id INTEGER,
-    balancing_type                  INTEGER,
-    horizon                         FLOAT,
-    ramp_down_rate_limit_mw_per_hour  FLOAT,
+    balancing_type                          INTEGER,
+    horizon                                 FLOAT,
+    ramp_down_rate_limit_mw_per_hour        FLOAT,
     PRIMARY KEY (project, bt_hrz_ramp_down_rate_limit_scenario_id,
                  balancing_type, horizon),
     FOREIGN KEY (project, bt_hrz_ramp_down_rate_limit_scenario_id) REFERENCES
