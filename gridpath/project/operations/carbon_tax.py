@@ -17,7 +17,7 @@
 import csv
 import os.path
 import pandas as pd
-from pyomo.environ import Param, Set, NonNegativeReals, Expression, value, PositiveReals
+from pyomo.environ import Param, Set, NonNegativeReals, Expression, value, PositiveReals, Reals
 
 from gridpath.auxiliary.auxiliary import (
     cursor_to_df,
@@ -177,7 +177,7 @@ def add_model_components(
     m.carbon_tax_zone = Param(m.CARBON_TAX_PRJS, within=m.CARBON_TAX_ZONES)
 
     m.carbon_tax_allowance = Param(
-        m.CARBON_TAX_PRJS, m.FUEL_GROUPS, m.PERIODS, within=NonNegativeReals, default=0
+        m.CARBON_TAX_PRJS, m.FUEL_GROUPS, m.PERIODS, within=Reals, default=0
     )
 
     m.carbon_tax_allowance_average_heat_rate = Param(
