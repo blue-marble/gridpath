@@ -171,7 +171,7 @@ def add_model_components(
             if _r == r and tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]:
                 vals.append(mod.hrz_maximum_volume_volumeunit[_r, bt, hrz])
 
-        tmp_val = max(vals)
+        tmp_val = min(vals)
 
         return tmp_val
 
@@ -186,7 +186,7 @@ def add_model_components(
             if _r == r and tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]:
                 vals.append(mod.hrz_minimum_volume_volumeunit[_r, bt, hrz])
 
-        tmp_val = min(vals)
+        tmp_val = max(vals)
 
         return tmp_val
 
