@@ -1112,6 +1112,7 @@ CREATE TABLE inputs_system_water_node_reservoirs
     min_volume_violation_cost               FLOAT,
     allow_max_volume_violation              INTEGER,
     max_volume_violation_cost               INTEGER,
+    volume_hrz_bounds_scenario_id           INTEGER,
     evaporation_coefficient                 FLOAT,
     elevation_type                          TEXT,
     constant_elevation                      FLOAT,
@@ -1125,7 +1126,10 @@ CREATE TABLE inputs_system_water_node_reservoirs
             (water_node, target_volume_scenario_id),
     FOREIGN KEY (water_node, target_release_scenario_id) REFERENCES
         subscenarios_system_water_node_reservoirs_target_releases
-            (water_node, target_release_scenario_id)
+            (water_node, target_release_scenario_id),
+    FOREIGN KEY (water_node, volume_hrz_bounds_scenario_id) REFERENCES
+        subscenarios_system_water_node_reservoirs_volume_horizon_bounds
+            (water_node, volume_hrz_bounds_scenario_id)
 --     FOREIGN KEY (reservoir, evaporation_coefficient_scenario_id) REFERENCES
 --         subscenarios_system_water_node_reservoirs_evaporaton_coefficient
 --             (reservoir, evaporation_coefficient_scenario_id)
@@ -1236,6 +1240,34 @@ CREATE TABLE inputs_system_water_node_reservoirs_target_releases
     FOREIGN KEY (water_node, target_release_scenario_id) REFERENCES
         subscenarios_system_water_node_reservoirs_target_releases
             (water_node, target_release_scenario_id)
+);
+
+
+DROP TABLE IF EXISTS
+    subscenarios_system_water_node_reservoirs_volume_horizon_bounds;
+CREATE TABLE subscenarios_system_water_node_reservoirs_volume_horizon_bounds
+(
+    water_node                 TEXT,
+    volume_hrz_bounds_scenario_id INTEGER,
+    name                       VARCHAR(32),
+    description                VARCHAR(128),
+    PRIMARY KEY (water_node, volume_hrz_bounds_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_system_water_node_reservoirs_volume_horizon_bounds;
+CREATE TABLE inputs_system_water_node_reservoirs_volume_horizon_bounds
+(
+    water_node                    TEXT,
+    volume_hrz_bounds_scenario_id INTEGER,
+    balancing_type                TEXT,
+    horizon                       INTEGER,
+    maximum_volume_volumeunit     DECIMAL,
+    minimum_volume_volumeunit     DECIMAL,
+    PRIMARY KEY (water_node, volume_hrz_bounds_scenario_id,
+                 balancing_type, horizon),
+    FOREIGN KEY (water_node, volume_hrz_bounds_scenario_id) REFERENCES
+        subscenarios_system_water_node_reservoirs_volume_horizon_bounds
+            (water_node, volume_hrz_bounds_scenario_id)
 );
 
 
