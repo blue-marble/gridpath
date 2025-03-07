@@ -417,6 +417,102 @@ def export_results(
                 )
 
 
+def export_summary_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
+):
+    """
+    Export all results from the PROJECT_CAPACITY_DF and PROJECT_OPERATIONS_DF
+    that various modules have added to
+    """
+
+    purchases_dict = {}
+    sales_dict = {}
+    for z, mrkt in m.LZ_MARKETS:
+        for prd in m.PERIODS:
+            for tmp in m.TMPS_IN_PRD[prd]:
+                month = m.month[tmp]
+
+                # Purchases
+                purchases = (
+                    value(
+                        m.Net_Market_Purchased_Power[z, mrkt, tmp] * m.hrs_in_tmp[tmp]
+                    )
+                    if value(m.Net_Market_Purchased_Power[z, mrkt, tmp]) > 0
+                    else 0
+                )
+                if (z, mrkt, prd, month) not in purchases_dict.keys():
+                    purchases_dict[z, mrkt, prd, month] = purchases
+                else:
+                    purchases_dict[z, mrkt, prd, month] += purchases
+
+                # Sales
+                sales = (
+                    -value(
+                        m.Net_Market_Purchased_Power[z, mrkt, tmp] * m.hrs_in_tmp[tmp]
+                    )
+                    if value(m.Net_Market_Purchased_Power[z, mrkt, tmp]) < 0
+                    else 0
+                )
+                if (z, mrkt, prd, month) not in sales_dict.keys():
+                    sales_dict[z, mrkt, prd, month] = sales
+                else:
+                    sales_dict[z, mrkt, prd, month] += sales
+
+    market_summary_df = pd.DataFrame(
+        columns=[
+            "load_zone",
+            "market",
+            "period",
+            "month",
+            "purchases_mwh",
+            "sales_mwh",
+        ],
+        data=[
+            [
+                z,
+                mrkt,
+                prd,
+                month,
+                purchases_dict[z, mrkt, prd, month],
+                sales_dict[z, mrkt, prd, month],
+            ]
+            for (z, mrkt, prd, month) in purchases_dict.keys()  # purchase and
+            # sales dict keys are the same
+        ],
+    ).set_index(
+        [
+            "load_zone",
+            "market",
+            "period",
+            "month",
+        ]
+    )
+
+    market_summary_df.sort_index(inplace=True)
+
+    market_summary_df.to_csv(
+        os.path.join(
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "results",
+            "system_market_summary.csv",
+        ),
+        sep=",",
+        index=True,
+    )
+
+
 def import_results_into_database(
     scenario_id,
     weather_iteration,
