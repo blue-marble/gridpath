@@ -148,6 +148,7 @@ def add_model_components(
         m.WATER_NODES_W_RESERVOIRS, within=NonNegativeReals, default=0
     )
 
+    # TODO: horizon volume bounds need tests
     m.WATER_NODE_RESERVOIR_BT_HRZS_WITH_MAX_VOL_REQUIRMENTS = Set(
         dimen=3, within=m.WATER_NODES_W_RESERVOIRS * m.BLN_TYPE_HRZS
     )
@@ -182,7 +183,7 @@ def add_model_components(
     def min_volume_by_tmp_init(mod, r, tmp):
         vals = [mod.minimum_volume_volumeunit[r]]
 
-        for _r, bt, hrz in mod.WATER_NODE_RESERVOIR_BT_HRZS_WITH_MAX_VOL_REQUIRMENTS:
+        for _r, bt, hrz in mod.WATER_NODE_RESERVOIR_BT_HRZS_WITH_MIN_VOL_REQUIRMENTS:
             if _r == r and tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]:
                 vals.append(mod.hrz_minimum_volume_volumeunit[_r, bt, hrz])
 

@@ -1261,8 +1261,8 @@ CREATE TABLE inputs_system_water_node_reservoirs_volume_horizon_bounds
     volume_hrz_bounds_scenario_id INTEGER,
     balancing_type                TEXT,
     horizon                       INTEGER,
-    maximum_volume_volumeunit     DECIMAL,
     minimum_volume_volumeunit     DECIMAL,
+    maximum_volume_volumeunit     DECIMAL,
     PRIMARY KEY (water_node, volume_hrz_bounds_scenario_id,
                  balancing_type, horizon),
     FOREIGN KEY (water_node, volume_hrz_bounds_scenario_id) REFERENCES
