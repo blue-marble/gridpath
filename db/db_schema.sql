@@ -6513,6 +6513,27 @@ CREATE TABLE results_system_market_participation
                  stage_id, timepoint)
 );
 
+
+DROP TABLE IF EXISTS results_system_market_summary;
+CREATE TABLE results_system_market_summary
+(
+    scenario_id                  INTEGER,
+    weather_iteration            INTEGER,
+    hydro_iteration              INTEGER,
+    availability_iteration       INTEGER,
+    subproblem_id                INTEGER,
+    stage_id                     INTEGER,
+    load_zone                    VARCHAR(32),
+    market                       VARCHAR(32),
+    period                       INTEGER,
+    month                        INTEGER,
+    purchases_mwh              FLOAT,
+    sales_mwh     FLOAT,
+    PRIMARY KEY (scenario_id, load_zone, market, weather_iteration,
+                 hydro_iteration, availability_iteration, subproblem_id,
+                 stage_id, period, month)
+);
+
 DROP TABLE IF EXISTS results_system_lf_reserves_up;
 CREATE TABLE results_system_lf_reserves_up
 (
