@@ -66,7 +66,7 @@ def add_model_components(
         )
 
     m.Total_Tx_Simple_Losses_Penalty_Cost = Expression(
-        rule=total_export_penalty_cost_rule
+        rule=total_simple_losses_tuning_cost_rule
     )
 
     record_dynamic_components(dynamic_components=d)
