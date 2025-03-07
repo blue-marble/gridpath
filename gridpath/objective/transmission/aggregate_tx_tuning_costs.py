@@ -54,6 +54,21 @@ def add_model_components(
 
     m.Total_Export_Penalty_Cost = Expression(rule=total_export_penalty_cost_rule)
 
+    def total_simple_losses_tuning_cost_rule(mod):
+        """ """
+        return sum(
+            mod.Tx_Simple_Losses_Penalty_Cost[tx, tmp]
+            * mod.hrs_in_tmp[tmp]
+            * mod.tmp_weight[tmp]
+            * mod.number_years_represented[mod.period[tmp]]
+            * mod.discount_factor[mod.period[tmp]]
+            for (tx, tmp) in mod.TX_OPR_TMPS
+        )
+
+    m.Total_Tx_Simple_Losses_Penalty_Cost = Expression(
+        rule=total_export_penalty_cost_rule
+    )
+
     record_dynamic_components(dynamic_components=d)
 
 
@@ -65,3 +80,6 @@ def record_dynamic_components(dynamic_components):
     """
 
     getattr(dynamic_components, cost_components).append("Total_Export_Penalty_Cost")
+    getattr(dynamic_components, cost_components).append(
+        "Total_Tx_Simple_Losses_Penalty_Cost"
+    )
