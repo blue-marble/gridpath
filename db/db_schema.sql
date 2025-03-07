@@ -1004,17 +1004,47 @@ CREATE TABLE subscenarios_market_volume
 DROP TABLE IF EXISTS inputs_market_volume;
 CREATE TABLE inputs_market_volume
 (
-    market_volume_scenario_id  INTEGER,
-    market                     VARCHAR(32),
-    stage_id                   INTEGER,
-    timepoint                  INTEGER,
-    max_market_sales           FLOAT,
-    max_market_purchases       FLOAT,
-    max_final_market_sales     FLOAT,
-    max_final_market_purchases FLOAT,
-    PRIMARY KEY (market_volume_scenario_id, market, stage_id, timepoint),
+    market_volume_scenario_id         INTEGER,
+    market                            TEXT,
+    market_volume_profile_scenario_id INTEGER,
+    varies_by_weather_iteration       INTEGER,
+    varies_by_hydro_iteration         INTEGER,
+    PRIMARY KEY (market_volume_scenario_id, market,
+                 market_volume_profile_scenario_id),
     FOREIGN KEY (market_volume_scenario_id) REFERENCES
         subscenarios_market_volume (market_volume_scenario_id)
+);
+
+
+DROP TABLE IF EXISTS subscenarios_market_volume_profiles;
+CREATE TABLE subscenarios_market_volume_profiles
+(
+    market                            TEXT,
+    market_volume_profile_scenario_id INTEGER,
+    name                              VARCHAR(32),
+    description                       VARCHAR(128),
+    PRIMARY KEY (market, market_volume_profile_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_market_volume_profiles;
+CREATE TABLE inputs_market_volume_profiles
+(
+    market                            VARCHAR(32),
+    market_volume_profile_scenario_id INTEGER,
+    weather_iteration                 INTEGER,
+    hydro_iteration                   INTEGER,
+    stage_id                          INTEGER,
+    timepoint                         INTEGER,
+    max_market_sales                  FLOAT,
+    max_market_purchases              FLOAT,
+    max_final_market_sales            FLOAT,
+    max_final_market_purchases        FLOAT,
+    PRIMARY KEY (market, market_volume_profile_scenario_id,
+                 weather_iteration, hydro_iteration, stage_id,
+                 timepoint),
+    FOREIGN KEY (market, market_volume_profile_scenario_id) REFERENCES
+        subscenarios_market_volume_profiles
+            (market, market_volume_profile_scenario_id)
 );
 
 
@@ -1247,10 +1277,10 @@ DROP TABLE IF EXISTS
     subscenarios_system_water_node_reservoirs_volume_horizon_bounds;
 CREATE TABLE subscenarios_system_water_node_reservoirs_volume_horizon_bounds
 (
-    water_node                 TEXT,
+    water_node                    TEXT,
     volume_hrz_bounds_scenario_id INTEGER,
-    name                       VARCHAR(32),
-    description                VARCHAR(128),
+    name                          VARCHAR(32),
+    description                   VARCHAR(128),
     PRIMARY KEY (water_node, volume_hrz_bounds_scenario_id)
 );
 
