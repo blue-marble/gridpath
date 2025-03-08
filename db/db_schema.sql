@@ -3997,6 +3997,7 @@ CREATE TABLE inputs_transmission_operational_chars
     transmission_line                          VARCHAR(64),
     operational_type                           VARCHAR(32),
     tx_simple_loss_factor                      FLOAT,
+    losses_tuning_cost_per_mw                  FLOAT,
     reactance_ohms                             FLOAT,
     PRIMARY KEY (transmission_operational_chars_scenario_id, transmission_line),
     FOREIGN KEY (transmission_operational_chars_scenario_id) REFERENCES
@@ -7224,6 +7225,7 @@ CREATE TABLE results_system_costs
     Total_Import_Carbon_Tuning_Cost                         FLOAT,
     Total_Market_Net_Cost                                   FLOAT,
     Total_Export_Penalty_Cost                               FLOAT,
+    Total_Tx_Simple_Losses_Penalty_Cost                     FLOAT,
     Total_Horizon_Fuel_Burn_Min_Abs_Penalty_Costs           FLOAT,
     Total_Horizon_Fuel_Burn_Max_Abs_Penalty_Costs           FLOAT,
     Total_Horizon_Fuel_Burn_Max_Rel_Penalty_Costs           FLOAT,

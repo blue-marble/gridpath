@@ -73,6 +73,7 @@ def parse_arguments(args):
     parser.add_argument("-db", "--database", default="../../open_data_raw.db")
     parser.add_argument("-r", "--region", default="WECC")
     parser.add_argument("-l", "--tx_simple_loss_factor", default=0.02)
+    parser.add_argument("-l_tuning", "--losses_tuning_cost_per_mw", default=0)
     parser.add_argument(
         "-o",
         "--output_directory",
@@ -97,6 +98,7 @@ def parse_arguments(args):
 def get_tx_opchar(
     unique_tx_lines,
     tx_simple_loss_factor,
+    losses_tuning_cost_per_mw,
     output_directory,
     subscenario_id,
     subscenario_name,
@@ -104,6 +106,7 @@ def get_tx_opchar(
     df = pd.DataFrame(unique_tx_lines, columns=["transmission_line"])
     df["operational_type"] = "tx_simple"
     df["tx_simple_loss_factor"] = tx_simple_loss_factor
+    df["losses_tuning_cost_per_mw"] = losses_tuning_cost_per_mw
     df["reactance_ohms"] = None
 
     df.to_csv(
@@ -133,6 +136,7 @@ def main(args=None):
     get_tx_opchar(
         unique_tx_lines=unique_tx_lines,
         tx_simple_loss_factor=parsed_args.tx_simple_loss_factor,
+        losses_tuning_cost_per_mw=parsed_args.losses_tuning_cost_per_mw,
         output_directory=parsed_args.output_directory,
         subscenario_id=parsed_args.transmission_operational_chars_scenario_id,
         subscenario_name=parsed_args.transmission_operational_chars_scenario_name,
