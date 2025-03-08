@@ -6546,8 +6546,10 @@ CREATE TABLE results_system_market_summary
     market                       VARCHAR(32),
     period                       INTEGER,
     month                        INTEGER,
-    purchases_mwh              FLOAT,
-    sales_mwh     FLOAT,
+    purchases_mwh                FLOAT,
+    sales_mwh                    FLOAT,
+    costs                        FLOAT,
+    revenue                      FLOAT,
     PRIMARY KEY (scenario_id, load_zone, market, weather_iteration,
                  hydro_iteration, availability_iteration, subproblem_id,
                  stage_id, period, month)
