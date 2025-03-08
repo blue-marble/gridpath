@@ -6381,6 +6381,24 @@ CREATE TABLE results_system_load_zone_timepoint
                  timepoint)
 );
 
+DROP TABLE IF EXISTS results_system_load_zone_period_load_summary;
+CREATE TABLE results_system_load_zone_period_load_summary
+(
+    scenario_id                       INTEGER,
+    weather_iteration                 INTEGER,
+    hydro_iteration                   INTEGER,
+    availability_iteration            INTEGER,
+    subproblem_id                     INTEGER,
+    stage_id                          INTEGER,
+    load_zone                         VARCHAR(32),
+    period                            INTEGER,
+    total_static_load_mwh FLOAT,
+    max_static_load_mw FLOAT,
+    PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
+                 availability_iteration, subproblem_id, stage_id, load_zone,
+                 period)
+);
+
 DROP TABLE IF EXISTS results_system_load_zone_timepoint_loss_of_load_summary;
 CREATE TABLE results_system_load_zone_timepoint_loss_of_load_summary
 (
