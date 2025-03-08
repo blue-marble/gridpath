@@ -433,7 +433,9 @@ def export_summary_results(
     """
 
     purchases_dict = {}
+    costs_dict = {}
     sales_dict = {}
+    revenue_dict = {}
     for z, mrkt in m.LZ_MARKETS:
         for prd in m.PERIODS:
             for tmp in m.TMPS_IN_PRD[prd]:
@@ -441,9 +443,9 @@ def export_summary_results(
 
                 # Purchases
                 purchases = (
-                    value(
-                        m.Net_Market_Purchased_Power[z, mrkt, tmp] * m.hrs_in_tmp[tmp]
-                    )
+                    value(m.Net_Market_Purchased_Power[z, mrkt, tmp])
+                    * m.tmp_weight[tmp]
+                    * m.hrs_in_tmp[tmp]
                     if value(m.Net_Market_Purchased_Power[z, mrkt, tmp]) > 0
                     else 0
                 )
@@ -452,11 +454,25 @@ def export_summary_results(
                 else:
                     purchases_dict[z, mrkt, prd, month] += purchases
 
+                # Costs
+                costs = (
+                    value(m.Net_Market_Purchased_Power[z, mrkt, tmp])
+                    * m.tmp_weight[tmp]
+                    * m.hrs_in_tmp[tmp]
+                    * m.market_price[mrkt, tmp]
+                    if value(m.Net_Market_Purchased_Power[z, mrkt, tmp]) > 0
+                    else 0
+                )
+                if (z, mrkt, prd, month) not in costs_dict.keys():
+                    costs_dict[z, mrkt, prd, month] = costs
+                else:
+                    costs_dict[z, mrkt, prd, month] += costs
+
                 # Sales
                 sales = (
-                    -value(
-                        m.Net_Market_Purchased_Power[z, mrkt, tmp] * m.hrs_in_tmp[tmp]
-                    )
+                    -value(m.Net_Market_Purchased_Power[z, mrkt, tmp])
+                    * m.tmp_weight[tmp]
+                    * m.hrs_in_tmp[tmp]
                     if value(m.Net_Market_Purchased_Power[z, mrkt, tmp]) < 0
                     else 0
                 )
@@ -464,6 +480,20 @@ def export_summary_results(
                     sales_dict[z, mrkt, prd, month] = sales
                 else:
                     sales_dict[z, mrkt, prd, month] += sales
+
+                # Revenue
+                revenue = (
+                    -value(m.Net_Market_Purchased_Power[z, mrkt, tmp])
+                    * m.tmp_weight[tmp]
+                    * m.hrs_in_tmp[tmp]
+                    * m.market_price[mrkt, tmp]
+                    if value(m.Net_Market_Purchased_Power[z, mrkt, tmp]) < 0
+                    else 0
+                )
+                if (z, mrkt, prd, month) not in revenue_dict.keys():
+                    revenue_dict[z, mrkt, prd, month] = revenue
+                else:
+                    revenue_dict[z, mrkt, prd, month] += revenue
 
     market_summary_df = pd.DataFrame(
         columns=[
@@ -473,6 +503,8 @@ def export_summary_results(
             "month",
             "purchases_mwh",
             "sales_mwh",
+            "costs",
+            "revenue",
         ],
         data=[
             [
@@ -482,6 +514,8 @@ def export_summary_results(
                 month,
                 purchases_dict[z, mrkt, prd, month],
                 sales_dict[z, mrkt, prd, month],
+                costs_dict[z, mrkt, prd, month],
+                revenue_dict[z, mrkt, prd, month],
             ]
             for (z, mrkt, prd, month) in purchases_dict.keys()  # purchase and
             # sales dict keys are the same
