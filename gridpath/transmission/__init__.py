@@ -294,7 +294,8 @@ def get_inputs_from_database(
     transmission_lines = c.execute(
         """SELECT transmission_line, capacity_type, 
         availability_type, operational_type,
-        load_zone_from, load_zone_to, tx_simple_loss_factor, reactance_ohms
+        load_zone_from, load_zone_to, tx_simple_loss_factor, 
+        losses_tuning_cost_per_mw, reactance_ohms
         FROM inputs_transmission_portfolios
         
         LEFT OUTER JOIN
@@ -312,7 +313,7 @@ def get_inputs_from_database(
         
         LEFT OUTER JOIN
             (SELECT transmission_line, operational_type, 
-            tx_simple_loss_factor, reactance_ohms
+            tx_simple_loss_factor, losses_tuning_cost_per_mw, reactance_ohms
             FROM inputs_transmission_operational_chars
             WHERE transmission_operational_chars_scenario_id = {opchar})
         USING (transmission_line)
@@ -405,6 +406,7 @@ def write_model_inputs(
                 "load_zone_from",
                 "load_zone_to",
                 "tx_simple_loss_factor",
+                "losses_tuning_cost_per_mw",
                 "reactance_ohms",
             ]
         )

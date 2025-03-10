@@ -102,21 +102,21 @@ def add_model_components(
     | Required Input Params                                                   |
     +=========================================================================+
     | | :code:`gen_hydro_must_take_max_power_fraction`                        |
-    | | *Defined over*: :code:`GEN_HYDRO_MUST_TAKE_OPR_BT_HRZS`                  |
+    | | *Defined over*: :code:`GEN_HYDRO_MUST_TAKE_OPR_BT_HRZS`               |
     | | *Within*: :code:`Reals`                                               |
     |                                                                         |
     | The project's maximum power output in each operational horizon as a     |
     | fraction of its available capacity.                                     |
     +-------------------------------------------------------------------------+
     | | :code:`gen_hydro_must_take_min_power_fraction`                        |
-    | | *Defined over*: :code:`GEN_HYDRO_MUST_TAKE_OPR_BT_HRZS`                  |
+    | | *Defined over*: :code:`GEN_HYDRO_MUST_TAKE_OPR_BT_HRZS`               |
     | | *Within*: :code:`Reals`                                               |
     |                                                                         |
     | The project's minimum power output in each operational horizon as a     |
     | fraction of its available capacity.                                     |
     +-------------------------------------------------------------------------+
     | | :code:`gen_hydro_must_take_average_power_fraction`                    |
-    | | *Defined over*: :code:`GEN_HYDRO_MUST_TAKE_OPR_BT_HRZS`                  |
+    | | *Defined over*: :code:`GEN_HYDRO_MUST_TAKE_OPR_BT_HRZS`               |
     | | *Within*: :code:`Reals`                                               |
     |                                                                         |
     | The project's avarage power output in each operational horizon as a     |
@@ -131,16 +131,16 @@ def add_model_components(
     +=========================================================================+
     | | :code:`gen_hydro_must_take_ramp_up_when_on_rate`                      |
     | | *Defined over*: :code:`GEN_HYDRO_MUST_TAKE`                           |
-    | | *Within*: :code:`PercentFraction`                                     |
-    | | *Default*: :code:`1`                                                  |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:``inf                                                |
     |                                                                         |
     | The project's upward ramp rate limit during operations, defined as a    |
     | fraction of its capacity per minute.                                    |
     +-------------------------------------------------------------------------+
     | | :code:`gen_hydro_must_take_ramp_down_when_on_rate`                    |
     | | *Defined over*: :code:`GEN_HYDRO_MUST_TAKE`                           |
-    | | *Within*: :code:`PercentFraction`                                     |
-    | | *Default*: :code:`1`                                                  |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`inf`                                                |
     |                                                                         |
     | The project's downward ramp rate limit during operations, defined as a  |
     | fraction of its capacity per minute.                                    |
@@ -298,11 +298,11 @@ def add_model_components(
     ###########################################################################
 
     m.gen_hydro_must_take_ramp_up_when_on_rate = Param(
-        m.GEN_HYDRO_MUST_TAKE, within=PercentFraction, default=1
+        m.GEN_HYDRO_MUST_TAKE, within=NonNegativeReals, default=float("inf")
     )
 
     m.gen_hydro_must_take_ramp_down_when_on_rate = Param(
-        m.GEN_HYDRO_MUST_TAKE, within=PercentFraction, default=1
+        m.GEN_HYDRO_MUST_TAKE, within=NonNegativeReals, default=float("inf")
     )
 
     m.gen_hydro_must_take_aux_consumption_frac_capacity = Param(
@@ -534,26 +534,19 @@ def ramp_up_rule(mod, g, tmp):
             prev_tmp_downwards_reserves = mod.GenHydroMustTake_Downwards_Reserves_MW[
                 g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
             ]
-        # If you can ramp up the the total project's capacity within the
-        # previous timepoint, skip the constraint (it won't bind)
-        if (
-            mod.gen_hydro_must_take_ramp_up_when_on_rate[g] * 60 * prev_tmp_hrs_in_tmp
-            >= 1
-        ):
-            return Constraint.Skip
-        else:
-            return (
-                mod.GenHydroMustTake_Gross_Power_MW[g, tmp]
-                + mod.GenHydroMustTake_Upwards_Reserves_MW[g, tmp]
-            ) - (
-                prev_tmp_power - prev_tmp_downwards_reserves
-            ) <= mod.gen_hydro_must_take_ramp_up_when_on_rate[
-                g
-            ] * 60 * prev_tmp_hrs_in_tmp * mod.Capacity_MW[
-                g, mod.period[tmp]
-            ] * mod.Availability_Derate[
-                g, tmp
-            ]
+
+        return (
+            mod.GenHydroMustTake_Gross_Power_MW[g, tmp]
+            + mod.GenHydroMustTake_Upwards_Reserves_MW[g, tmp]
+        ) - (
+            prev_tmp_power - prev_tmp_downwards_reserves
+        ) <= mod.gen_hydro_must_take_ramp_up_when_on_rate[
+            g
+        ] * 60 * prev_tmp_hrs_in_tmp * mod.Capacity_MW[
+            g, mod.period[tmp]
+        ] * mod.Availability_Derate[
+            g, tmp
+        ]
 
 
 def ramp_down_rule(mod, g, tmp):
@@ -599,26 +592,19 @@ def ramp_down_rule(mod, g, tmp):
             prev_tmp_upwards_reserves = mod.GenHydroMustTake_Upwards_Reserves_MW[
                 g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
             ]
-        # If you can ramp down the the total project's capacity within the
-        # previous timepoint, skip the constraint (it won't bind)
-        if (
-            mod.gen_hydro_must_take_ramp_down_when_on_rate[g] * 60 * prev_tmp_hrs_in_tmp
-            >= 1
-        ):
-            return Constraint.Skip
-        else:
-            return (
-                mod.GenHydroMustTake_Gross_Power_MW[g, tmp]
-                - mod.GenHydroMustTake_Downwards_Reserves_MW[g, tmp]
-            ) - (
-                prev_tmp_power + prev_tmp_upwards_reserves
-            ) >= -mod.gen_hydro_must_take_ramp_down_when_on_rate[
-                g
-            ] * 60 * prev_tmp_hrs_in_tmp * mod.Capacity_MW[
-                g, mod.period[tmp]
-            ] * mod.Availability_Derate[
-                g, tmp
-            ]
+
+        return (
+            mod.GenHydroMustTake_Gross_Power_MW[g, tmp]
+            - mod.GenHydroMustTake_Downwards_Reserves_MW[g, tmp]
+        ) - (
+            prev_tmp_power + prev_tmp_upwards_reserves
+        ) >= -mod.gen_hydro_must_take_ramp_down_when_on_rate[
+            g
+        ] * 60 * prev_tmp_hrs_in_tmp * mod.Capacity_MW[
+            g, mod.period[tmp]
+        ] * mod.Availability_Derate[
+            g, tmp
+        ]
 
 
 # Operational Type Methods

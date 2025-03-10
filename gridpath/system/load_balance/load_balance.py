@@ -258,6 +258,7 @@ def export_summary_results(
     :return:
     """
 
+    # TODO: add dynamic load to these summaries when implemented
     lz_tmp_df = pd.DataFrame(
         columns=[
             "load_zone",
@@ -305,6 +306,53 @@ def export_summary_results(
             stage,
             "results",
             "system_load_zone_timepoint_loss_of_load_summary.csv",
+        ),
+        sep=",",
+        index=True,
+    )
+
+    # Total and max load by load zone
+    lz_total_df = pd.DataFrame(
+        columns=[
+            "load_zone",
+            "period",
+            "total_static_load_mwh",
+            "max_static_load_mw",
+        ],
+        data=[
+            [
+                z,
+                prd,
+                sum(
+                    value(m.LZ_Bulk_Static_Load_in_Tmp[z, tmp])
+                    * m.tmp_weight[tmp]
+                    * m.hrs_in_tmp[tmp]
+                    for tmp in m.TMPS_IN_PRD[prd]
+                ),
+                max(
+                    [
+                        value(m.LZ_Bulk_Static_Load_in_Tmp[z, tmp])
+                        for tmp in m.TMPS_IN_PRD[prd]
+                    ]
+                ),
+            ]
+            for z in getattr(m, "LOAD_ZONES")
+            for prd in getattr(m, "PERIODS")
+        ],
+    ).set_index(["load_zone", "period"])
+
+    lz_total_df.sort_index(inplace=True)
+
+    lz_total_df.to_csv(
+        os.path.join(
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "results",
+            "system_load_zone_period_load_summary.csv",
         ),
         sep=",",
         index=True,

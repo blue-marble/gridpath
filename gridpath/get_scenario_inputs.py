@@ -99,8 +99,13 @@ def write_model_inputs(
         )
         n_parallel_subproblems = 1
 
-    if len(scenario_structure.SUBPROBLEM_STAGES) == 1 and n_parallel_subproblems > 1:
-        warnings.warn("Only one subproblem in scenario. Parallelization not possible.")
+    # Check number of subproblems
+    if scenario_structure.N_SUBPROBLEMS == 1:
+        if n_parallel_subproblems > 1:
+            warnings.warn(
+                "GridPath WARNING: only a single subproblem in "
+                "scenario. No parallelization possible."
+            )
         n_parallel_subproblems = 1
 
     # If no parallelization requested, loop through the iterations

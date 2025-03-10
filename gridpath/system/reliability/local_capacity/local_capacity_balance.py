@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-Constraint total local capacity contribution to be more than or equal to the 
+Constraint total local capacity contribution to be more than or equal to the
 requirement.
 """
 

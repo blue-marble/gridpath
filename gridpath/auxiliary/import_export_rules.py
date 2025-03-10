@@ -92,4 +92,10 @@ import_export_rules = {
         "summarize": True,
         "import": import_rule_use,
     },
+    "summary_only": {
+        "export": lambda instance, quiet: False,
+        "export_summary": lambda instance: True,
+        "summarize": lambda scenario_directory, weather_iteration, hydro_iteration, availability_iteration, subproblem, stage, quiet,: False,
+        "import": lambda results_directory, quiet: True,
+    },
 }

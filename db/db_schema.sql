@@ -1004,17 +1004,47 @@ CREATE TABLE subscenarios_market_volume
 DROP TABLE IF EXISTS inputs_market_volume;
 CREATE TABLE inputs_market_volume
 (
-    market_volume_scenario_id  INTEGER,
-    market                     VARCHAR(32),
-    stage_id                   INTEGER,
-    timepoint                  INTEGER,
-    max_market_sales           FLOAT,
-    max_market_purchases       FLOAT,
-    max_final_market_sales     FLOAT,
-    max_final_market_purchases FLOAT,
-    PRIMARY KEY (market_volume_scenario_id, market, stage_id, timepoint),
+    market_volume_scenario_id         INTEGER,
+    market                            TEXT,
+    market_volume_profile_scenario_id INTEGER,
+    varies_by_weather_iteration       INTEGER,
+    varies_by_hydro_iteration         INTEGER,
+    PRIMARY KEY (market_volume_scenario_id, market,
+                 market_volume_profile_scenario_id),
     FOREIGN KEY (market_volume_scenario_id) REFERENCES
         subscenarios_market_volume (market_volume_scenario_id)
+);
+
+
+DROP TABLE IF EXISTS subscenarios_market_volume_profiles;
+CREATE TABLE subscenarios_market_volume_profiles
+(
+    market                            TEXT,
+    market_volume_profile_scenario_id INTEGER,
+    name                              VARCHAR(32),
+    description                       VARCHAR(128),
+    PRIMARY KEY (market, market_volume_profile_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_market_volume_profiles;
+CREATE TABLE inputs_market_volume_profiles
+(
+    market                            VARCHAR(32),
+    market_volume_profile_scenario_id INTEGER,
+    weather_iteration                 INTEGER,
+    hydro_iteration                   INTEGER,
+    stage_id                          INTEGER,
+    timepoint                         INTEGER,
+    max_market_sales                  FLOAT,
+    max_market_purchases              FLOAT,
+    max_final_market_sales            FLOAT,
+    max_final_market_purchases        FLOAT,
+    PRIMARY KEY (market, market_volume_profile_scenario_id,
+                 weather_iteration, hydro_iteration, stage_id,
+                 timepoint),
+    FOREIGN KEY (market, market_volume_profile_scenario_id) REFERENCES
+        subscenarios_market_volume_profiles
+            (market, market_volume_profile_scenario_id)
 );
 
 
@@ -1112,6 +1142,7 @@ CREATE TABLE inputs_system_water_node_reservoirs
     min_volume_violation_cost               FLOAT,
     allow_max_volume_violation              INTEGER,
     max_volume_violation_cost               INTEGER,
+    volume_hrz_bounds_scenario_id           INTEGER,
     evaporation_coefficient                 FLOAT,
     elevation_type                          TEXT,
     constant_elevation                      FLOAT,
@@ -1125,7 +1156,10 @@ CREATE TABLE inputs_system_water_node_reservoirs
             (water_node, target_volume_scenario_id),
     FOREIGN KEY (water_node, target_release_scenario_id) REFERENCES
         subscenarios_system_water_node_reservoirs_target_releases
-            (water_node, target_release_scenario_id)
+            (water_node, target_release_scenario_id),
+    FOREIGN KEY (water_node, volume_hrz_bounds_scenario_id) REFERENCES
+        subscenarios_system_water_node_reservoirs_volume_horizon_bounds
+            (water_node, volume_hrz_bounds_scenario_id)
 --     FOREIGN KEY (reservoir, evaporation_coefficient_scenario_id) REFERENCES
 --         subscenarios_system_water_node_reservoirs_evaporaton_coefficient
 --             (reservoir, evaporation_coefficient_scenario_id)
@@ -1239,6 +1273,34 @@ CREATE TABLE inputs_system_water_node_reservoirs_target_releases
 );
 
 
+DROP TABLE IF EXISTS
+    subscenarios_system_water_node_reservoirs_volume_horizon_bounds;
+CREATE TABLE subscenarios_system_water_node_reservoirs_volume_horizon_bounds
+(
+    water_node                    TEXT,
+    volume_hrz_bounds_scenario_id INTEGER,
+    name                          VARCHAR(32),
+    description                   VARCHAR(128),
+    PRIMARY KEY (water_node, volume_hrz_bounds_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_system_water_node_reservoirs_volume_horizon_bounds;
+CREATE TABLE inputs_system_water_node_reservoirs_volume_horizon_bounds
+(
+    water_node                    TEXT,
+    volume_hrz_bounds_scenario_id INTEGER,
+    balancing_type                TEXT,
+    horizon                       INTEGER,
+    minimum_volume_volumeunit     DECIMAL,
+    maximum_volume_volumeunit     DECIMAL,
+    PRIMARY KEY (water_node, volume_hrz_bounds_scenario_id,
+                 balancing_type, horizon),
+    FOREIGN KEY (water_node, volume_hrz_bounds_scenario_id) REFERENCES
+        subscenarios_system_water_node_reservoirs_volume_horizon_bounds
+            (water_node, volume_hrz_bounds_scenario_id)
+);
+
+
 
 -- DROP TABLE IF EXISTS subscenarios_system_water_node_reservoirs_maximum_elevation;
 -- CREATE TABLE subscenarios_system_water_node_reservoirs_maximum_elevation
@@ -1290,20 +1352,20 @@ CREATE TABLE subscenarios_system_water_flows
 DROP TABLE IF EXISTS inputs_system_water_flows;
 CREATE TABLE inputs_system_water_flows
 (
-    water_flow_scenario_id                  INTEGER,
-    water_link                              TEXT,
-    default_min_flow_vol_per_sec            FLOAT,
-    allow_water_link_min_flow_violation     INTEGER,
-    min_flow_violation_penalty_cost         FLOAT,
-    allow_water_link_max_flow_violation     INTEGER,
-    max_flow_violation_penalty_cost         FLOAT,
-    allow_water_link_hrz_min_flow_violation INTEGER,
-    hrz_min_flow_violation_penalty_cost     FLOAT,
-    allow_water_link_hrz_max_flow_violation INTEGER,
-    hrz_max_flow_violation_penalty_cost     FLOAT,
-    water_flow_timepoint_bounds_scenario_id INTEGER,
-    water_flow_horizon_bounds_scenario_id   INTEGER,
-    water_flow_ramp_limit_scenario_id       INTEGER,
+    water_flow_scenario_id                       INTEGER,
+    water_link                                   TEXT,
+    default_min_flow_vol_per_sec                 FLOAT,
+    allow_water_link_min_flow_violation          INTEGER,
+    min_flow_violation_penalty_cost              FLOAT,
+    allow_water_link_max_flow_violation          INTEGER,
+    max_flow_violation_penalty_cost              FLOAT,
+    allow_water_link_hrz_min_flow_violation      INTEGER,
+    hrz_min_flow_violation_penalty_cost_per_hour FLOAT,
+    allow_water_link_hrz_max_flow_violation      INTEGER,
+    hrz_max_flow_violation_penalty_cost_per_hour FLOAT,
+    water_flow_timepoint_bounds_scenario_id      INTEGER,
+    water_flow_horizon_bounds_scenario_id        INTEGER,
+    water_flow_ramp_limit_scenario_id            INTEGER,
     PRIMARY KEY (water_flow_scenario_id, water_link),
     FOREIGN KEY (water_flow_scenario_id) REFERENCES
         subscenarios_system_water_flows (water_flow_scenario_id)
@@ -1829,10 +1891,14 @@ CREATE TABLE inputs_project_operational_chars
     startup_fuel_mmbtu_per_mw                 FLOAT,
     startup_plus_ramp_up_rate                 FLOAT,   -- Not used for gen_commit_lin/bin!
     shutdown_plus_ramp_down_rate              FLOAT,
-    ramp_up_when_on_rate                      FLOAT,
-    ramp_down_when_on_rate                    FLOAT,
+    ramp_up_when_on_rate                      FLOAT,   -- frac capacity per min
+    ramp_down_when_on_rate                    FLOAT,   -- frac capacity per min
     ramp_up_violation_penalty                 FLOAT,   -- leave NULL for hard constraints
     ramp_down_violation_penalty               FLOAT,   -- leave NULL for hard constraints
+    bt_hrz_ramp_up_rate_limit_scenario_id     INTEGER,
+    bt_hrz_ramp_down_rate_limit_scenario_id   INTEGER,
+    total_ramp_up_limit_scenario_id           INTEGER,
+    total_ramp_down_limit_scenario_id         INTEGER,
     min_up_time_hours                         INTEGER,
     min_up_time_violation_penalty             FLOAT,   -- leave NULL for hard constraint
     min_down_time_hours                       INTEGER,
@@ -1936,6 +2002,21 @@ CREATE TABLE inputs_project_operational_chars
             (project, peak_deviation_demand_charge_scenario_id),
     FOREIGN KEY (project, cap_factor_limits_scenario_id) REFERENCES
         subscenarios_project_cap_factor_limits (project, cap_factor_limits_scenario_id),
+    FOREIGN KEY (project, bt_hrz_ramp_up_rate_limit_scenario_id) REFERENCES
+        subscenarios_project_bt_hrz_ramp_up_rate_limits (
+                                                         project,
+                                                         bt_hrz_ramp_up_rate_limit_scenario_id
+            ),
+    FOREIGN KEY (project, bt_hrz_ramp_down_rate_limit_scenario_id) REFERENCES
+        subscenarios_project_bt_hrz_ramp_down_rate_limits (
+                                                           project,
+                                                           bt_hrz_ramp_down_rate_limit_scenario_id
+            ),
+    FOREIGN KEY (project, total_ramp_up_limit_scenario_id) REFERENCES
+        subscenarios_project_total_ramp_up_limits (project, total_ramp_up_limit_scenario_id),
+    FOREIGN KEY (project, total_ramp_down_limit_scenario_id) REFERENCES
+        subscenarios_project_total_ramp_down_limits
+            (project, total_ramp_down_limit_scenario_id),
     FOREIGN KEY (project, load_modifier_profile_scenario_id) REFERENCES
         subscenarios_project_load_modifier_profiles (project,
                                                      load_modifier_profile_scenario_id),
@@ -2589,6 +2670,110 @@ CREATE TABLE inputs_project_cap_factor_limits
                  horizon),
     FOREIGN KEY (project, cap_factor_limits_scenario_id) REFERENCES
         subscenarios_project_cap_factor_limits (project, cap_factor_limits_scenario_id)
+);
+
+-- Bt-hrz ramp up rate limits
+DROP TABLE IF EXISTS subscenarios_project_bt_hrz_ramp_up_rate_limits;
+CREATE TABLE subscenarios_project_bt_hrz_ramp_up_rate_limits
+(
+    project                               VARCHAR(64),
+    bt_hrz_ramp_up_rate_limit_scenario_id INTEGER,
+    name                                  VARCHAR(32),
+    description                           VARCHAR(128),
+    PRIMARY KEY (project, bt_hrz_ramp_up_rate_limit_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_bt_hrz_ramp_up_rate_limits;
+CREATE TABLE inputs_project_bt_hrz_ramp_up_rate_limits
+(
+    project                               VARCHAR(64),
+    bt_hrz_ramp_up_rate_limit_scenario_id INTEGER,
+    balancing_type                        INTEGER,
+    horizon                               FLOAT,
+    ramp_up_rate_limit_mw_per_hour        FLOAT,
+    PRIMARY KEY (project, bt_hrz_ramp_up_rate_limit_scenario_id,
+                 balancing_type, horizon),
+    FOREIGN KEY (project, bt_hrz_ramp_up_rate_limit_scenario_id) REFERENCES
+        subscenarios_project_bt_hrz_ramp_up_rate_limits
+            (project, bt_hrz_ramp_up_rate_limit_scenario_id)
+);
+
+-- Bt-hrz ramp down rate limits
+DROP TABLE IF EXISTS subscenarios_project_bt_hrz_ramp_down_rate_limits;
+CREATE TABLE subscenarios_project_bt_hrz_ramp_down_rate_limits
+(
+    project                                 VARCHAR(64),
+    bt_hrz_ramp_down_rate_limit_scenario_id INTEGER,
+    name                                    VARCHAR(32),
+    description                             VARCHAR(128),
+    PRIMARY KEY (project, bt_hrz_ramp_down_rate_limit_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_bt_hrz_ramp_down_rate_limits;
+CREATE TABLE inputs_project_bt_hrz_ramp_down_rate_limits
+(
+    project                                 VARCHAR(64),
+    bt_hrz_ramp_down_rate_limit_scenario_id INTEGER,
+    balancing_type                          INTEGER,
+    horizon                                 FLOAT,
+    ramp_down_rate_limit_mw_per_hour        FLOAT,
+    PRIMARY KEY (project, bt_hrz_ramp_down_rate_limit_scenario_id,
+                 balancing_type, horizon),
+    FOREIGN KEY (project, bt_hrz_ramp_down_rate_limit_scenario_id) REFERENCES
+        subscenarios_project_bt_hrz_ramp_down_rate_limits
+            (project, bt_hrz_ramp_down_rate_limit_scenario_id)
+);
+
+-- Total ramp up limits
+DROP TABLE IF EXISTS subscenarios_project_total_ramp_up_limits;
+CREATE TABLE subscenarios_project_total_ramp_up_limits
+(
+    project                         VARCHAR(64),
+    total_ramp_up_limit_scenario_id INTEGER,
+    name                            VARCHAR(32),
+    description                     VARCHAR(128),
+    PRIMARY KEY (project, total_ramp_up_limit_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_total_ramp_up_limits;
+CREATE TABLE inputs_project_total_ramp_up_limits
+(
+    project                         VARCHAR(64),
+    total_ramp_up_limit_scenario_id INTEGER,
+    balancing_type                  INTEGER,
+    horizon                         FLOAT,
+    total_ramp_up_limit_mw          FLOAT,
+    PRIMARY KEY (project, total_ramp_up_limit_scenario_id,
+                 balancing_type, horizon),
+    FOREIGN KEY (project, total_ramp_up_limit_scenario_id) REFERENCES
+        subscenarios_project_total_ramp_up_limits
+            (project, total_ramp_up_limit_scenario_id)
+);
+
+-- Total ramp down limits
+DROP TABLE IF EXISTS subscenarios_project_total_ramp_down_limits;
+CREATE TABLE subscenarios_project_total_ramp_down_limits
+(
+    project                           VARCHAR(64),
+    total_ramp_down_limit_scenario_id INTEGER,
+    name                              VARCHAR(32),
+    description                       VARCHAR(128),
+    PRIMARY KEY (project, total_ramp_down_limit_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_total_ramp_down_limits;
+CREATE TABLE inputs_project_total_ramp_down_limits
+(
+    project                           VARCHAR(64),
+    total_ramp_down_limit_scenario_id INTEGER,
+    balancing_type                    INTEGER,
+    horizon                           FLOAT,
+    total_ramp_down_limit_mw          FLOAT,
+    PRIMARY KEY (project, total_ramp_down_limit_scenario_id,
+                 balancing_type, horizon),
+    FOREIGN KEY (project, total_ramp_down_limit_scenario_id) REFERENCES
+        subscenarios_project_total_ramp_down_limits
+            (project, total_ramp_down_limit_scenario_id)
 );
 
 
@@ -3858,6 +4043,7 @@ CREATE TABLE inputs_transmission_operational_chars
     transmission_line                          VARCHAR(64),
     operational_type                           VARCHAR(32),
     tx_simple_loss_factor                      FLOAT,
+    losses_tuning_cost_per_mw                  FLOAT,
     reactance_ohms                             FLOAT,
     PRIMARY KEY (transmission_operational_chars_scenario_id, transmission_line),
     FOREIGN KEY (transmission_operational_chars_scenario_id) REFERENCES
@@ -6241,6 +6427,24 @@ CREATE TABLE results_system_load_zone_timepoint
                  timepoint)
 );
 
+DROP TABLE IF EXISTS results_system_load_zone_period_load_summary;
+CREATE TABLE results_system_load_zone_period_load_summary
+(
+    scenario_id                       INTEGER,
+    weather_iteration                 INTEGER,
+    hydro_iteration                   INTEGER,
+    availability_iteration            INTEGER,
+    subproblem_id                     INTEGER,
+    stage_id                          INTEGER,
+    load_zone                         VARCHAR(32),
+    period                            INTEGER,
+    total_static_load_mwh FLOAT,
+    max_static_load_mw FLOAT,
+    PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
+                 availability_iteration, subproblem_id, stage_id, load_zone,
+                 period)
+);
+
 DROP TABLE IF EXISTS results_system_load_zone_timepoint_loss_of_load_summary;
 CREATE TABLE results_system_load_zone_timepoint_loss_of_load_summary
 (
@@ -6372,6 +6576,29 @@ CREATE TABLE results_system_market_participation
     PRIMARY KEY (scenario_id, load_zone, market, weather_iteration,
                  hydro_iteration, availability_iteration, subproblem_id,
                  stage_id, timepoint)
+);
+
+
+DROP TABLE IF EXISTS results_system_market_summary;
+CREATE TABLE results_system_market_summary
+(
+    scenario_id                  INTEGER,
+    weather_iteration            INTEGER,
+    hydro_iteration              INTEGER,
+    availability_iteration       INTEGER,
+    subproblem_id                INTEGER,
+    stage_id                     INTEGER,
+    load_zone                    VARCHAR(32),
+    market                       VARCHAR(32),
+    period                       INTEGER,
+    month                        INTEGER,
+    purchases_mwh                FLOAT,
+    sales_mwh                    FLOAT,
+    costs                        FLOAT,
+    revenue                      FLOAT,
+    PRIMARY KEY (scenario_id, load_zone, market, weather_iteration,
+                 hydro_iteration, availability_iteration, subproblem_id,
+                 stage_id, period, month)
 );
 
 DROP TABLE IF EXISTS results_system_lf_reserves_up;
@@ -7064,6 +7291,7 @@ CREATE TABLE results_system_costs
     Total_Import_Carbon_Tuning_Cost                         FLOAT,
     Total_Market_Net_Cost                                   FLOAT,
     Total_Export_Penalty_Cost                               FLOAT,
+    Total_Tx_Simple_Losses_Penalty_Cost                     FLOAT,
     Total_Horizon_Fuel_Burn_Min_Abs_Penalty_Costs           FLOAT,
     Total_Horizon_Fuel_Burn_Max_Abs_Penalty_Costs           FLOAT,
     Total_Horizon_Fuel_Burn_Max_Rel_Penalty_Costs           FLOAT,
