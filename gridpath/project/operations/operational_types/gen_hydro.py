@@ -136,16 +136,16 @@ def add_model_components(
     +=========================================================================+
     | | :code:`gen_hydro_ramp_up_when_on_rate`                                |
     | | *Defined over*: :code:`GEN_HYDRO`                                     |
-    | | *Within*: :code:`PercentFraction`                                     |
-    | | *Default*: :code:`1`                                                  |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`inf`                                                |
     |                                                                         |
     | The project's upward ramp rate limit during operations, defined as a    |
     | fraction of its capacity per minute.                                    |
     +-------------------------------------------------------------------------+
     | | :code:`gen_hydro_ramp_down_when_on_rate`                              |
     | | *Defined over*: :code:`GEN_HYDRO`                                     |
-    | | *Within*: :code:`PercentFraction`                                     |
-    | | *Default*: :code:`1`                                                  |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`inf`                                                |
     |                                                                         |
     | The project's downward ramp rate limit during operations, defined as a  |
     | fraction of its capacity per minute.                                    |
@@ -315,11 +315,11 @@ def add_model_components(
     ###########################################################################
 
     m.gen_hydro_ramp_up_when_on_rate = Param(
-        m.GEN_HYDRO, within=PercentFraction, default=1
+        m.GEN_HYDRO, within=NonNegativeReals, default=float("inf")
     )
 
     m.gen_hydro_ramp_down_when_on_rate = Param(
-        m.GEN_HYDRO, within=PercentFraction, default=1
+        m.GEN_HYDRO, within=NonNegativeReals, default=float("inf")
     )
 
     m.gen_hydro_aux_consumption_frac_capacity = Param(
@@ -559,23 +559,19 @@ def ramp_up_rule(mod, g, tmp):
             prev_tmp_curtailment = mod.GenHydro_Curtail_MW[
                 g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
             ]
-        # If you can ramp up the the total project's capacity within the
-        # previous timepoint, skip the constraint (it won't bind)
-        if mod.gen_hydro_ramp_up_when_on_rate[g] * 60 * prev_tmp_hrs_in_tmp >= 1:
-            return Constraint.Skip
-        else:
-            return (
-                mod.GenHydro_Gross_Power_MW[g, tmp]
-                + mod.GenHydro_Upwards_Reserves_MW[g, tmp]
-            ) - (
-                prev_tmp_power + prev_tmp_curtailment - prev_tmp_downwards_reserves
-            ) <= mod.gen_hydro_ramp_up_when_on_rate[
-                g
-            ] * 60 * prev_tmp_hrs_in_tmp * mod.Capacity_MW[
-                g, mod.period[tmp]
-            ] * mod.Availability_Derate[
-                g, tmp
-            ]
+
+        return (
+            mod.GenHydro_Gross_Power_MW[g, tmp]
+            + mod.GenHydro_Upwards_Reserves_MW[g, tmp]
+        ) - (
+            prev_tmp_power + prev_tmp_curtailment - prev_tmp_downwards_reserves
+        ) <= mod.gen_hydro_ramp_up_when_on_rate[
+            g
+        ] * 60 * prev_tmp_hrs_in_tmp * mod.Capacity_MW[
+            g, mod.period[tmp]
+        ] * mod.Availability_Derate[
+            g, tmp
+        ]
 
 
 def ramp_down_rule(mod, g, tmp):
@@ -623,23 +619,19 @@ def ramp_down_rule(mod, g, tmp):
             prev_tmp_curtailment = mod.GenHydro_Curtail_MW[
                 g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
             ]
-        # If you can ramp down the total project's capacity within the
-        # previous timepoint, skip the constraint (it won't bind)
-        if mod.gen_hydro_ramp_down_when_on_rate[g] * 60 * prev_tmp_hrs_in_tmp >= 1:
-            return Constraint.Skip
-        else:
-            return (
-                mod.GenHydro_Gross_Power_MW[g, tmp]
-                - mod.GenHydro_Downwards_Reserves_MW[g, tmp]
-            ) - (
-                prev_tmp_power + prev_tmp_curtailment + prev_tmp_upwards_reserves
-            ) >= -mod.gen_hydro_ramp_down_when_on_rate[
-                g
-            ] * 60 * prev_tmp_hrs_in_tmp * mod.Capacity_MW[
-                g, mod.period[tmp]
-            ] * mod.Availability_Derate[
-                g, tmp
-            ]
+
+        return (
+            mod.GenHydro_Gross_Power_MW[g, tmp]
+            - mod.GenHydro_Downwards_Reserves_MW[g, tmp]
+        ) - (
+            prev_tmp_power + prev_tmp_curtailment + prev_tmp_upwards_reserves
+        ) >= -mod.gen_hydro_ramp_down_when_on_rate[
+            g
+        ] * 60 * prev_tmp_hrs_in_tmp * mod.Capacity_MW[
+            g, mod.period[tmp]
+        ] * mod.Availability_Derate[
+            g, tmp
+        ]
 
 
 def max_curtailment_rule(mod, g, tmp):
