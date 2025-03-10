@@ -17,7 +17,15 @@
 import csv
 import os.path
 import pandas as pd
-from pyomo.environ import Param, Set, NonNegativeReals, Expression, value, PositiveReals, Reals
+from pyomo.environ import (
+    Param,
+    Set,
+    NonNegativeReals,
+    Expression,
+    value,
+    PositiveReals,
+    Reals,
+)
 
 from gridpath.auxiliary.auxiliary import (
     cursor_to_df,
