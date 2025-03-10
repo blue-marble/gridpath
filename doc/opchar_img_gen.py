@@ -13,8 +13,8 @@
 # limitations under the License.
 
 """
-This script generates the images (SVG and PNG) of the table of operational 
-characteristics with the corresponding project operational types for 
+This script generates the images (SVG and PNG) of the table of operational
+characteristics with the corresponding project operational types for
 inclusion into the documentation.
 
 """

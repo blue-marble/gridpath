@@ -14,9 +14,9 @@
 
 """
 Tuning costs to prevent undesirable behavior when problem is degenerate.
-E.g. since the cost incurred by hydro over the course of a horizon is the same 
-regardless of exact dispatch, cases may arise when the project is ramped 
-unnecessarily unless there's a cost on the ramp. This aggregates the tuning 
+E.g. since the cost incurred by hydro over the course of a horizon is the same
+regardless of exact dispatch, cases may arise when the project is ramped
+unnecessarily unless there's a cost on the ramp. This aggregates the tuning
 costs imposed on hydro to prevent this behavior.
 """
 

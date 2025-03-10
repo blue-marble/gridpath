@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-Aggregate simple PRM contribution from the project level to the PRM zone level 
+Aggregate simple PRM contribution from the project level to the PRM zone level
 for each period.
 """
 
