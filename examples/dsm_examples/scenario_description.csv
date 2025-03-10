@@ -1,4 +1,4 @@
-scenario_id,142
+scenario_id,143
 scenario_name,dsm_examples
 of_transmission,
 of_transmission_hurdle_rates,
@@ -113,7 +113,7 @@ transmission_capacity_group_scenario_id,NULL
 transmission_carbon_cap_zone_scenario_id,NULL
 transmission_simultaneous_flow_limit_scenario_id,NULL
 transmission_simultaneous_flow_limit_line_group_scenario_id,NULL
-load_scenario_id,7
+load_scenario_id,9
 lf_reserves_up_scenario_id,NULL
 lf_reserves_down_scenario_id,NULL
 regulation_up_scenario_id,NULL

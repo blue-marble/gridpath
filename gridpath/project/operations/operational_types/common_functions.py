@@ -491,6 +491,7 @@ def load_var_profile_inputs(
         "gen_var",
         "gen_var_stor_hyb",
         "energy_profile",
+        "load_component_modifier",
     ]
     other_var_op_types = set(var_op_types) - set([op_type])
     assert op_type in var_op_types
@@ -1207,6 +1208,7 @@ def get_optype_inputs_from_db(scenario_id, subscenarios, conn, op_type):
         "partial_availability_threshold",
         "powerhouse",
         "generator_efficiency",
+        "linked_load_component",
     ]
 
     sql = """SELECT {}

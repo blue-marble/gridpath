@@ -40,6 +40,7 @@ PREREQUISITE_MODULE_NAMES = [
     "system.water.reservoirs",
     "system.water.water_node_balance",
     "system.water.powerhouses",
+    "system.load_balance.static_load_requirement",
     "project",
     "project.capacity.capacity",
     "project.availability.availability",
@@ -49,7 +50,6 @@ PREREQUISITE_MODULE_NAMES = [
     "project.operations.operational_types",
     "project.operations.power",
     "project.operations.fuel_burn",
-    "system.load_balance.static_load_requirement",
     "system.load_balance.aggregate_load_modifier_power",
     "project.operations.instantaneous_penetration_contributions",
     "system.policy.instantaneous_penetration.instantaneous_penetration_requirements",
@@ -76,7 +76,7 @@ except ImportError:
     print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED + " to test.")
 
 
-class TestObjectiveRPSPenalties(unittest.TestCase):
+class TestObjectiveInstPenPenalties(unittest.TestCase):
     """ """
 
     def test_add_model_components(self):

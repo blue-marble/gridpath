@@ -1946,6 +1946,8 @@ CREATE TABLE inputs_project_operational_chars
     nonfuel_carbon_emissions_per_mwh          FLOAT,
     powerhouse                                TEXT,
     generator_efficiency                      FLOAT,
+    linked_load_component                     TEXT,
+    load_modifier_profile_scenario_id         INTEGER,
     PRIMARY KEY (project_operational_chars_scenario_id, project),
     FOREIGN KEY (project_operational_chars_scenario_id) REFERENCES
         subscenarios_project_operational_chars (project_operational_chars_scenario_id),
@@ -2015,6 +2017,9 @@ CREATE TABLE inputs_project_operational_chars
     FOREIGN KEY (project, total_ramp_down_limit_scenario_id) REFERENCES
         subscenarios_project_total_ramp_down_limits
             (project, total_ramp_down_limit_scenario_id),
+    FOREIGN KEY (project, load_modifier_profile_scenario_id) REFERENCES
+        subscenarios_project_load_modifier_profiles (project,
+                                                     load_modifier_profile_scenario_id),
     FOREIGN KEY (operational_type) REFERENCES mod_operational_types
         (operational_type)
 );
@@ -2547,6 +2552,47 @@ CREATE TABLE inputs_project_base_net_requirements
     FOREIGN KEY (project, base_net_requirement_scenario_id) REFERENCES
         subscenarios_project_base_net_requirements
             (project, base_net_requirement_scenario_id)
+);
+
+DROP TABLE IF EXISTS subscenarios_project_load_modifier_profiles;
+CREATE TABLE subscenarios_project_load_modifier_profiles
+(
+    project                           VARCHAR(64),
+    load_modifier_profile_scenario_id INTEGER,
+    name                              VARCHAR(32),
+    description                       VARCHAR(128),
+    PRIMARY KEY (project, load_modifier_profile_scenario_id)
+);
+
+-- Variable generator profiles by weather year and stage
+-- (Subproblem is omitted, as timepoints in a temporal scenario ID must be
+-- unique -- they can then be subdivided into different subproblems for other
+-- temporal scenario IDs)
+DROP TABLE IF EXISTS inputs_project_load_modifier_profiles;
+CREATE TABLE inputs_project_load_modifier_profiles
+(
+    project                           VARCHAR(64),
+    load_modifier_profile_scenario_id INTEGER,
+    weather_iteration                 INTEGER,
+    hydro_iteration                   INTEGER,
+    stage_id                          INTEGER,
+    timepoint                         INTEGER,
+    fraction                          FLOAT,
+    PRIMARY KEY (project, load_modifier_profile_scenario_id,
+                 weather_iteration, hydro_iteration, stage_id, timepoint),
+    FOREIGN KEY (project, load_modifier_profile_scenario_id) REFERENCES
+        subscenarios_project_load_modifier_profiles
+            (project, load_modifier_profile_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_load_modifier_profiles_iterations;
+CREATE TABLE inputs_project_load_modifier_profiles_iterations
+(
+    project                           TEXT,
+    load_modifier_profile_scenario_id INTEGER,
+    varies_by_weather_iteration       INTEGER,
+    varies_by_hydro_iteration         INTEGER,
+    PRIMARY KEY (project, load_modifier_profile_scenario_id)
 );
 
 

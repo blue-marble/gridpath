@@ -40,6 +40,7 @@ PREREQUISITE_MODULE_NAMES = [
     "system.water.reservoirs",
     "system.water.water_node_balance",
     "system.water.powerhouses",
+    "system.load_balance.static_load_requirement",
     "project",
     "project.capacity.capacity",
     "project.availability.availability",
@@ -48,7 +49,6 @@ PREREQUISITE_MODULE_NAMES = [
     "project.capacity.potential",
     "project.operations.operational_types",
     "project.operations.power",
-    "system.load_balance.static_load_requirement",
     "system.load_balance.aggregate_load_modifier_power",
 ]
 NAME_OF_MODULE_BEING_TESTED = "system.policy.energy_targets.horizon_energy_target"
