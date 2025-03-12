@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-Simple local capacity contribution where each local project contributes a 
+Simple local capacity contribution where each local project contributes a
 fraction of its installed capacity.
 """
 

@@ -14,10 +14,10 @@
 
 """
 The **gridpath.project.operations.cycle_select** module is a project-level
-module that adds to the formulation components that describe cycle selection 
-constraints, i.e. mutually exclusive syncing of projects. An example might be a plant 
-that can be operated in either simple cycle or combined cycle mode. This plant would 
-be described by multiple projects with mutually exclusive Sync variables, i.e. only 
+module that adds to the formulation components that describe cycle selection
+constraints, i.e. mutually exclusive syncing of projects. An example might be a plant
+that can be operated in either simple cycle or combined cycle mode. This plant would
+be described by multiple projects with mutually exclusive Sync variables, i.e. only
 one of the projects can be synced at any time.
 """
 

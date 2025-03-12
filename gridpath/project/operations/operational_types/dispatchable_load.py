@@ -67,14 +67,14 @@ def add_model_components(
     +-------------------------------------------------------------------------+
     | Sets                                                                    |
     +=========================================================================+
-    | | :code:`DISPATCHABLE_LOAD_PRJS`                                                           |
+    | | :code:`DISPATCHABLE_LOAD_PRJS`                                        |
     |                                                                         |
-    | The set of generators of the :code:`dispatchable_load` operational type.              |
+    | The set of generators of the :code:`dispatchable_load` operational type.|
     +-------------------------------------------------------------------------+
-    | | :code:`DISPATCHABLE_LOAD_PRJS_OPR_TMPS`                                                  |
+    | | :code:`DISPATCHABLE_LOAD_PRJS_OPR_TMPS`                               |
     |                                                                         |
-    | Two-dimensional set with projects of the :code:`dispatchable_load` operational type   |
-    | and their operational timepoints.                                       |
+    | Two-dimensional set with projects of the :code:`dispatchable_load`      |
+    | operational type and their operational timepoints.                      |
     +-------------------------------------------------------------------------+
 
     |
@@ -82,8 +82,8 @@ def add_model_components(
     +-------------------------------------------------------------------------+
     | Variables                                                               |
     +=========================================================================+
-    | | :code:`DispatchableLoadPrj_Consume_Power_MW`                                          |
-    | | *Defined over*: :code:`DISPATCHABLE_LOAD_PRJS_OPR_TMPS`                                  |
+    | | :code:`DispatchableLoadPrj_Consume_Power_MW`                          |
+    | | *Defined over*: :code:`DISPATCHABLE_LOAD_PRJS_OPR_TMPS`               |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
     | Power consumption in MW from this project in each timepoint in which    |
@@ -98,8 +98,8 @@ def add_model_components(
     +=========================================================================+
     | Power                                                                   |
     +-------------------------------------------------------------------------+
-    | | :code:`DispatchableLoadPrj_Max_Power_Constraint`                                      |
-    | | *Defined over*: :code:`DISPATCHABLE_LOAD_PRJS_OPR_TMPS`                                  |
+    | | :code:`DispatchableLoadPrj_Max_Power_Constraint`                      |
+    | | *Defined over*: :code:`DISPATCHABLE_LOAD_PRJS_OPR_TMPS`               |
     |                                                                         |
     | Limits the power consumption to the available capacity.                 |
     +-------------------------------------------------------------------------+
@@ -166,7 +166,8 @@ def max_power_rule(mod, g, tmp):
 
 def power_provision_rule(mod, prj, tmp):
     """
-    Power provision from DISPATCHABLE_LOAD_PRJS is the negative of the power consumption.
+    Power provision from DISPATCHABLE_LOAD_PRJS is the negative of the power
+    consumption.
     """
     return -mod.DispatchableLoadPrj_Consume_Power_MW[prj, tmp]
 

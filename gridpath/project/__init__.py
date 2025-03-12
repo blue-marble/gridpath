@@ -85,8 +85,8 @@ def add_model_components(
     | | *Within*: :code:`["dr", "gen_always_on", "gen_commit_bin",`           |
     | | :code:`"gen_commit_cap", "gen_commit_lin", "gen_hydro",`              |
     | | :code:`"gen_hydro_must_take", "gen_must_run", "gen_simple",`          |
-    | | :code:`"gen_var", "gen_var_must_take", "stor", "fuel_prod", "dispatchable_load",`   |
-    | | :code:`"flex_load"]`                                                  |
+    | | :code:`"gen_var", "gen_var_must_take", "stor", "fuel_prod",`          |
+    | | :code:`"dispatchable_load", "flex_load"]`                             |
     |                                                                         |
     | This param describes each project's operational type, which determines  |
     | how the project operates, e.g. whether it is fuel-based dispatchable    |

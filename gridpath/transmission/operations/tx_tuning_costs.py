@@ -54,3 +54,18 @@ def add_model_components(
     m.Export_Penalty_Cost = Expression(
         m.LOAD_ZONES, m.TMPS, rule=export_penalty_cost_rule
     )
+
+    # Losses
+    def losses_tuning_cost_rule(mod, line, tmp):
+        # TODO: implement for binary also
+        if mod.tx_operational_type[line] in ["tx_simple"]:
+            return (
+                mod.TxSimple_Losses_LZ_From_MW[line, tmp]
+                + mod.TxSimple_Losses_LZ_To_MW[line, tmp]
+            ) * mod.losses_tuning_cost_per_mw[line]
+        else:
+            return 0
+
+    m.Tx_Simple_Losses_Penalty_Cost = Expression(
+        m.TX_OPR_TMPS, rule=losses_tuning_cost_rule
+    )

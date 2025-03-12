@@ -39,8 +39,9 @@ PREREQUISITE_MODULE_NAMES = [
     "transmission.operations.operational_types",
     "transmission.operations.operations",
     "system.load_balance.aggregate_transmission_power",
+    "transmission.operations.tx_tuning_costs",
 ]
-NAME_OF_MODULE_BEING_TESTED = "transmission.operations.export_penalty_costs"
+NAME_OF_MODULE_BEING_TESTED = "objective.transmission.aggregate_tx_tuning_costs"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:

@@ -184,7 +184,7 @@ def add_model_components(
     # Params
     ###########################################################################
     m.tx_simple_loss_factor = Param(m.TX_SIMPLE, within=PercentFraction, default=0)
-
+    m.losses_tuning_cost_per_mw = Param(m.TX_SIMPLE, within=NonNegativeReals, default=0)
     # Variables
     ###########################################################################
 
@@ -415,12 +415,20 @@ def load_model_data(
             "transmission_lines.tab",
         ),
         sep="\t",
-        usecols=["transmission_line", "tx_operational_type", "tx_simple_loss_factor"],
+        usecols=[
+            "transmission_line",
+            "tx_operational_type",
+            "tx_simple_loss_factor",
+            "losses_tuning_cost_per_mw",
+        ],
     )
     df = df[df["tx_operational_type"] == "tx_simple"]
 
     # Dict of loss factor by tx_simple line based on raw data
     loss_factor_raw = dict(zip(df["transmission_line"], df["tx_simple_loss_factor"]))
+    loss_tuning_raw = dict(
+        zip(df["transmission_line"], df["losses_tuning_cost_per_mw"])
+    )
 
     # Convert loss factors to float and remove any missing data (will
     # default to 0 in the model)
@@ -430,5 +438,12 @@ def load_model_data(
         if loss_factor_raw[line] != "."
     }
 
+    loss_tuning = {
+        line: float(loss_tuning_raw[line])
+        for line in loss_tuning_raw
+        if loss_tuning_raw[line] != "."
+    }
+
     # Load data
     data_portal.data()["tx_simple_loss_factor"] = loss_factor
+    data_portal.data()["losses_tuning_cost_per_mw"] = loss_tuning

@@ -1,4 +1,4 @@
-# Copyright 2016-2023 Blue Marble Analytics LLC.
+# Copyright 2016-2025 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -144,6 +144,35 @@ class TestStor(unittest.TestCase):
             for prj in instance.GEN_HYDRO_WATER
         }
         self.assertDictEqual(expected_eff, actual_eff)
+
+        # GEN_HYDRO_WATER_BT_HRZ_W_TOTAL_RAMP_UP_LIMITS
+        expected_bh_ramp_up = [("Hydro_System_Gen1", "day", 202001)]
+        actual_bh_ramp_up = sorted(
+            [
+                (prj, bt, hrz)
+                for (
+                    prj,
+                    bt,
+                    hrz,
+                ) in instance.GEN_HYDRO_WATER_BT_HRZ_W_TOTAL_RAMP_UP_LIMITS
+            ]
+        )
+        self.assertListEqual(expected_bh_ramp_up, actual_bh_ramp_up)
+
+        # Param: gen_hydro_water_total_ramp_up_limit_mw
+        expected_gen_hydro_water_total_ramp_up_limit_mw = {
+            ("Hydro_System_Gen1", "day", 202001): 0
+        }
+        actual_gen_hydro_water_total_ramp_up_limit_mw = {
+            (prj, bt, hrz): instance.gen_hydro_water_total_ramp_up_limit_mw[
+                prj, bt, hrz
+            ]
+            for (prj, bt, hrz) in instance.GEN_HYDRO_WATER_BT_HRZ_W_TOTAL_RAMP_UP_LIMITS
+        }
+        self.assertDictEqual(
+            expected_gen_hydro_water_total_ramp_up_limit_mw,
+            actual_gen_hydro_water_total_ramp_up_limit_mw,
+        )
 
 
 if __name__ == "__main__":

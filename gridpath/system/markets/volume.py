@@ -1,4 +1,4 @@
-# Copyright 2016-2023 Blue Marble Analytics LLC.
+# Copyright 2016-2025 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -153,46 +153,76 @@ def get_inputs_from_database(
     """
 
     c = conn.cursor()
-
-    # Get load zones and their markets; only include load zones that are
-    # in the load_zone_scenario_id and markets that are in the
-    # market_scenario_id
-    market_limits = c.execute(
-        """
-        SELECT market, timepoint, max_market_sales, max_market_purchases,
-        max_final_market_sales, max_final_market_purchases
-        -- Get prices for included markets only
-        FROM (
+    market_list = c.execute(
+        f"""
+        SELECT market, 
+        market_volume_profile_scenario_id,
+        varies_by_weather_iteration, 
+        varies_by_hydro_iteration
+        FROM inputs_market_volume
+        WHERE market_volume_scenario_id = {subscenarios.MARKET_VOLUME_SCENARIO_ID}
+        -- Get volume for included markets only
+        AND market in (
             SELECT market
             FROM inputs_geography_markets
-            WHERE market_scenario_id = ?
-        ) as market_tbl
-        -- Get prices for included timepoints only
-        CROSS JOIN (
-            SELECT stage_id, timepoint from inputs_temporal
-            WHERE temporal_scenario_id = ?
-            AND subproblem_id = ?
-            AND stage_id = ?
-        ) as tmp_tbl
-        LEFT OUTER JOIN (
-            SELECT market, stage_id, timepoint, max_market_sales, max_market_purchases,
-            max_final_market_sales, max_final_market_purchases
-            FROM inputs_market_volume
-            WHERE market_volume_scenario_id = ?
-        ) as price_tbl
-        USING (market, stage_id, timepoint)
-        ;
-        """,
-        (
-            subscenarios.MARKET_SCENARIO_ID,
-            subscenarios.TEMPORAL_SCENARIO_ID,
-            subproblem,
-            stage,
-            subscenarios.MARKET_VOLUME_SCENARIO_ID,
-        ),
-    )
+            WHERE market_scenario_id = {subscenarios.MARKET_SCENARIO_ID}
+        )
+        """
+    ).fetchall()
 
-    return market_limits
+    # Loop over the markets for the final query since volume don't all vary
+    # by the same iteration types
+    n_markets = len(market_list)
+    query_all = str()
+    n = 1
+    for (
+        market,
+        market_volume_profile_scenario_id,
+        varies_by_weather_iteration,
+        varies_by_hydro_iteration,
+    ) in market_list:
+        union_str = "UNION" if n < n_markets else ""
+
+        weather_iteration_to_use = (
+            weather_iteration if varies_by_weather_iteration else 0
+        )
+        hydro_iteration_to_use = hydro_iteration if varies_by_hydro_iteration else 0
+
+        query_market = f"""
+            -- Select market name explicitly here to print even if volume 
+            -- are not found for the relevant timepoints
+            SELECT '{market}' AS market, timepoint, 
+                max_market_sales, max_market_purchases,
+                max_final_market_sales, max_final_market_purchases
+            -- Get volumes for scenario's timepoints only
+            FROM (
+                SELECT stage_id, timepoint 
+                FROM inputs_temporal
+                WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+                AND subproblem_id = {subproblem}
+                AND stage_id = {stage}
+            ) as tmp_tbl
+            LEFT OUTER JOIN (
+                SELECT market, stage_id, timepoint, 
+                max_market_sales, max_market_purchases,
+                max_final_market_sales, max_final_market_purchases
+                FROM inputs_market_volume_profiles
+                WHERE market = '{market}'
+                AND market_volume_profile_scenario_id = {market_volume_profile_scenario_id}
+                AND hydro_iteration = {hydro_iteration_to_use}
+                AND weather_iteration = {weather_iteration_to_use}
+            ) as volume_tbl
+            USING (stage_id, timepoint)
+            {union_str}
+            """
+
+        query_all += query_market
+        n += 1
+
+    c1 = conn.cursor()
+    volume = c1.execute(query_all)
+
+    return volume
 
 
 def write_model_inputs(

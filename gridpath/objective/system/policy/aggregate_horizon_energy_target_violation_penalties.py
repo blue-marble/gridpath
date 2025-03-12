@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-This module adds horizon energy-target shortage penalty costs to the objective 
+This module adds horizon energy-target shortage penalty costs to the objective
 function.
 """
 
