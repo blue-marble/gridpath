@@ -1948,6 +1948,7 @@ CREATE TABLE inputs_project_operational_chars
     generator_efficiency                      FLOAT,
     linked_load_component                     TEXT,
     load_modifier_profile_scenario_id         INTEGER,
+    load_component_shift_bounds_scenario_id   INTEGER,
     PRIMARY KEY (project_operational_chars_scenario_id, project),
     FOREIGN KEY (project_operational_chars_scenario_id) REFERENCES
         subscenarios_project_operational_chars (project_operational_chars_scenario_id),
@@ -2593,6 +2594,35 @@ CREATE TABLE inputs_project_load_modifier_profiles_iterations
     varies_by_weather_iteration       INTEGER,
     varies_by_hydro_iteration         INTEGER,
     PRIMARY KEY (project, load_modifier_profile_scenario_id)
+);
+
+
+-- Hydro operational characteristics
+DROP TABLE IF EXISTS subscenarios_project_load_component_shift_bounds;
+CREATE TABLE subscenarios_project_load_component_shift_bounds
+(
+    project                                 VARCHAR(64),
+    load_component_shift_bounds_scenario_id INTEGER,
+    name                                    VARCHAR(32),
+    description                             VARCHAR(128),
+    PRIMARY KEY (project, load_component_shift_bounds_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_load_component_shift_bounds;
+CREATE TABLE inputs_project_load_component_shift_bounds
+(
+    project                                 VARCHAR(64),
+    load_component_shift_bounds_scenario_id INTEGER,
+    balancing_type_project                  VARCHAR(64), -- does not need to
+    -- match project balancing type; column like this for legacy reasons
+    horizon                                 INTEGER,
+    min_load_mw                             FLOAT,
+    max_load_mw                             FLOAT,
+    PRIMARY KEY (project, load_component_shift_bounds_scenario_id,
+                 balancing_type_project, horizon),
+    FOREIGN KEY (project, load_component_shift_bounds_scenario_id) REFERENCES
+        subscenarios_project_load_component_shift_bounds
+            (project, load_component_shift_bounds_scenario_id)
 );
 
 
@@ -6430,16 +6460,16 @@ CREATE TABLE results_system_load_zone_timepoint
 DROP TABLE IF EXISTS results_system_load_zone_period_load_summary;
 CREATE TABLE results_system_load_zone_period_load_summary
 (
-    scenario_id                       INTEGER,
-    weather_iteration                 INTEGER,
-    hydro_iteration                   INTEGER,
-    availability_iteration            INTEGER,
-    subproblem_id                     INTEGER,
-    stage_id                          INTEGER,
-    load_zone                         VARCHAR(32),
-    period                            INTEGER,
-    total_static_load_mwh FLOAT,
-    max_static_load_mw FLOAT,
+    scenario_id            INTEGER,
+    weather_iteration      INTEGER,
+    hydro_iteration        INTEGER,
+    availability_iteration INTEGER,
+    subproblem_id          INTEGER,
+    stage_id               INTEGER,
+    load_zone              VARCHAR(32),
+    period                 INTEGER,
+    total_static_load_mwh  FLOAT,
+    max_static_load_mw     FLOAT,
     PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
                  availability_iteration, subproblem_id, stage_id, load_zone,
                  period)
@@ -6582,20 +6612,20 @@ CREATE TABLE results_system_market_participation
 DROP TABLE IF EXISTS results_system_market_summary;
 CREATE TABLE results_system_market_summary
 (
-    scenario_id                  INTEGER,
-    weather_iteration            INTEGER,
-    hydro_iteration              INTEGER,
-    availability_iteration       INTEGER,
-    subproblem_id                INTEGER,
-    stage_id                     INTEGER,
-    load_zone                    VARCHAR(32),
-    market                       VARCHAR(32),
-    period                       INTEGER,
-    month                        INTEGER,
-    purchases_mwh                FLOAT,
-    sales_mwh                    FLOAT,
-    costs                        FLOAT,
-    revenue                      FLOAT,
+    scenario_id            INTEGER,
+    weather_iteration      INTEGER,
+    hydro_iteration        INTEGER,
+    availability_iteration INTEGER,
+    subproblem_id          INTEGER,
+    stage_id               INTEGER,
+    load_zone              VARCHAR(32),
+    market                 VARCHAR(32),
+    period                 INTEGER,
+    month                  INTEGER,
+    purchases_mwh          FLOAT,
+    sales_mwh              FLOAT,
+    costs                  FLOAT,
+    revenue                FLOAT,
     PRIMARY KEY (scenario_id, load_zone, market, weather_iteration,
                  hydro_iteration, availability_iteration, subproblem_id,
                  stage_id, period, month)

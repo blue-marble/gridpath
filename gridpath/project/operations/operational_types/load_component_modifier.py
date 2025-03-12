@@ -135,7 +135,7 @@ def add_model_components(
     )
 
     # Derived params
-    m.load_component_peak_load_in_period = Param(
+    m.load_component_modifier_load_component_peak_load_in_period = Param(
         m.LOAD_COMPONENT_MODIFIER_PRJS_OPR_PRDS,
         initialize=lambda mod, prj, prd: max(
             [
@@ -160,7 +160,7 @@ def add_model_components(
         return (
             mod.Load_Component_Modifier_Fraction_Invested[prj, prd]
             == mod.Capacity_MW[prj, prd]
-            / mod.load_component_peak_load_in_period[prj, prd]
+            / mod.load_component_modifier_load_component_peak_load_in_period[prj, prd]
         )
 
     m.Load_Component_Modifier_Fraction_Invested_Constraint = Constraint(

@@ -13,10 +13,11 @@
 # limitations under the License.
 
 """
-This operational type is linked to a specific load component that it modifies 
-based on 1) the project capacity relative to the load component peak load and 
-2) a load modification profile (fractional reduction or increase); positive
-values indicate a load reduction and negative values indicate a load increase.
+This operational type is linked to a specific load component that it modifies
+by removing the static load profile for this load component from the load
+balance constraint and adding a modified load profile to the load balance
+constraint that is determined as follows:
+1)
 """
 
 from pyomo.environ import Param, Set, Reals, Constraint, Var, Any, NonNegativeReals
@@ -63,15 +64,15 @@ def add_model_components(
     +-------------------------------------------------------------------------+
     | Sets                                                                    |
     +=========================================================================+
-    | | :code:`LOAD_COMPONENT_SHIFT_PRJS`                                       |
+    | | :code:`LOAD_COMPONENT_SHIFT_PRJS`                                     |
     |                                                                         |
-    | The set of generators of the :code:`load_component_shift`            |
+    | The set of generators of the :code:`load_component_shift`               |
     | operational type.                                                       |
     +-------------------------------------------------------------------------+
-    | | :code:`LOAD_COMPONENT_SHIFT_PRJS_OPR_TMPS`                              |
+    | | :code:`LOAD_COMPONENT_SHIFT_PRJS_OPR_TMPS`                            |
     |                                                                         |
     | Two-dimensional set with generators of the                              |
-    | :code:`load_component_shift` operational type and their operational  |
+    | :code:`load_component_shift` operational type and their operational     |
     | timepoints.                                                             |
     +-------------------------------------------------------------------------+
 
@@ -80,8 +81,8 @@ def add_model_components(
     +-------------------------------------------------------------------------+
     | Required Input Params                                                   |
     +=========================================================================+
-    | | :code:`load_component_shift_fraction`                            |
-    | | *Defined over*: :code:`LOAD_COMPONENT_SHIFT_PRJS`                       |
+    | | :code:`load_component_shift_fraction`                                 |
+    | | *Defined over*: :code:`LOAD_COMPONENT_SHIFT_PRJS`                     |
     | | *Within*: :code:`Reals`                                               |
     |                                                                         |
     | The project's power output in each operational timepoint as a fraction  |
@@ -140,8 +141,15 @@ def add_model_components(
         within=Any,
     )
 
+    m.load_component_shift_min_load_mw = Param(
+        m.LOAD_COMPONENT_SHIFT_PRJS_BT_HRZS, within=NonNegativeReals
+    )
+
+    m.load_component_shift_max_load_mw = Param(
+        m.LOAD_COMPONENT_SHIFT_PRJS_BT_HRZS, within=NonNegativeReals
+    )
+
     # Derived params
-    # TODO: change the param name in load_component_modifier
     m.load_component_shift_load_component_peak_load_in_period = Param(
         m.LOAD_COMPONENT_SHIFT_PRJS_OPR_PRDS,
         initialize=lambda mod, prj, prd: max(
@@ -154,6 +162,49 @@ def add_model_components(
                 for tmp in mod.TMPS_IN_PRD[prd]
             ]
         ),
+    )
+
+    def load_bounds_by_tmp_init(mod, prj, tmp):
+        min_vals = [mod.load_component_shift_min_load_mw[prj]]
+        max_vals = [mod.load_component_shift_max_load_mw[prj]]
+
+        for _prj, bt, hrz in mod.LOAD_COMPONENT_SHIFT_PRJS_BT_HRZS:
+            if _prj == prj and tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]:
+                min_vals.append(mod.load_component_shift_min_load_mw[_prj, bt, hrz])
+                max_vals.append(mod.load_component_shift_max_load_mw[_prj, bt, hrz])
+
+        if len(min_vals) > 1 or len(max_vals) > 1:
+            raise ValueError(
+                f"""More than one value per timepoints specified
+                 for bounds for load_component_shift project {prj}, 
+                 timepoint {tmp}. Please ensure you don't have 
+                 overlapping horizons."""
+            )
+
+        # Assuming single value in lists after errors caught above
+        tmp_val_min = min_vals[0]
+        tmp_val_max = max_vals[0]
+
+        return tmp_val_min, tmp_val_max
+
+    m.load_component_shift_min_load_mw_by_tmp = Param(
+        m.LOAD_COMPONENT_SHIFT_PRJS_OPR_TMPS,
+        initialize=lambda mod, prj, tmp: load_bounds_by_tmp_init(mod, prj, tmp)[0],
+        default=lambda mod, prj, tmp: mod.component_static_load_mw[
+            mod.load_zone[prj],
+            tmp,
+            mod.load_component_shift_linked_load_component[prj],
+        ],
+    )
+
+    m.load_component_shift_max_load_mw_by_tmp = Param(
+        m.LOAD_COMPONENT_SHIFT_PRJS_OPR_TMPS,
+        initialize=lambda mod, prj, tmp: load_bounds_by_tmp_init(mod, prj, tmp)[1],
+        default=lambda mod, prj, tmp: mod.component_static_load_mw[
+            mod.load_zone[prj],
+            tmp,
+            mod.load_component_shift_linked_load_component[prj],
+        ],
     )
 
     # Variables
@@ -170,6 +221,10 @@ def add_model_components(
     ###########################################################################
 
     def fraction_invested_constraint_rule(mod, prj, prd):
+        """
+        Limits the capacity of this project to the peak load because
+        Load_Component_Shift_Fraction_Invested is bounded to (0,1).
+        """
         return (
             mod.Load_Component_Shift_Fraction_Invested[prj, prd]
             == mod.Capacity_MW[prj, prd]
@@ -180,21 +235,45 @@ def add_model_components(
         m.LOAD_COMPONENT_SHIFT_PRJS_OPR_PRDS, rule=fraction_invested_constraint_rule
     )
 
-    def energy_budget_rule(mod, prj, hrz):
+    def energy_budget_rule(mod, prj, bt, hrz):
+        """
+        Sets the total energy consumption to equal the static load energy
+        consumption for each horizon.
+        """
         return sum(
             mod.component_static_load_mw[
                 mod.load_zone[prj],
                 tmp,
                 mod.load_component_shift_linked_load_component[prj],
             ]
-            for tmp in mod.BT_HRZ_TMPS[mod.balancing_type_project[prj], hrz]
+            for tmp in mod.BT_HRZ_TMPS[bt, hrz]
         ) == sum(
             mod.Load_Component_Shift_Add_Load_MW[prj, tmp]
-            for tmp in mod.BT_HRZ_TMPS[mod.balancing_type_project[prj], hrz]
+            for tmp in mod.BT_HRZ_TMPS[bt, hrz]
         )
 
     m.Load_Component_Shift_Energy_Balance_Constraint = Constraint(
         m.LOAD_COMPONENT_SHIFT_PRJS_OPR_BT_HRZS, rule=energy_budget_rule
+    )
+
+    def min_demand_rule(mod, prj, tmp):
+        return (
+            mod.Load_Component_Shift_Add_Load_MW[prj, tmp]
+            >= mod.load_component_shift_min_load_mw_by_tmp[prj, tmp]
+        )
+
+    m.Load_Component_Shift_Min_Demand_Constraint = Constraint(
+        m.LOAD_COMPONENT_SHIFT_PRJS_OPR_PRDS, rule=min_demand_rule
+    )
+
+    def max_demand_rule(mod, prj, tmp):
+        return (
+            mod.Load_Component_Shift_Add_Load_MW[prj, tmp]
+            <= mod.load_component_shift_max_load_mw_by_tmp[prj, tmp]
+        )
+
+    m.Load_Component_Shift_Max_Demand_Constraint = Constraint(
+        m.LOAD_COMPONENT_SHIFT_PRJS_OPR_PRDS, rule=max_demand_rule
     )
 
     # TODO: remove this constraint once input validation is in place that
@@ -269,8 +348,8 @@ def add_model_components(
 
 def power_provision_rule(mod, prj, tmp):
     """
-    Power provision from variable must-take generators is their capacity times
-    the capacity factor in each timepoint.
+    Add static load to power production (remove from load) and subtract the
+    shifted load (add to load).
     """
 
     return (
@@ -281,6 +360,7 @@ def power_provision_rule(mod, prj, tmp):
             mod.load_component_shift_linked_load_component[prj],
         ]
     )
+
 
 def variable_om_cost_rule(mod, prj, tmp):
     """
@@ -313,6 +393,7 @@ def variable_om_by_timepoint_cost_rule(mod, prj, tmp):
         mod.Load_Component_Shift_Add_Load_MW[prj, tmp]
         * mod.variable_om_cost_per_mwh_by_timepoint[prj, tmp]
     )
+
 
 def power_delta_rule(mod, prj, tmp):
     """
