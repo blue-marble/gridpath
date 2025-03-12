@@ -2608,21 +2608,35 @@ CREATE TABLE subscenarios_project_load_component_shift_bounds
     PRIMARY KEY (project, load_component_shift_bounds_scenario_id)
 );
 
+
 DROP TABLE IF EXISTS inputs_project_load_component_shift_bounds;
 CREATE TABLE inputs_project_load_component_shift_bounds
 (
     project                                 VARCHAR(64),
     load_component_shift_bounds_scenario_id INTEGER,
+    weather_iteration                       INTEGER,
+    hydro_iteration                         INTEGER,
     balancing_type_project                  VARCHAR(64), -- does not need to
     -- match project balancing type; column like this for legacy reasons
     horizon                                 INTEGER,
     min_load_mw                             FLOAT,
     max_load_mw                             FLOAT,
     PRIMARY KEY (project, load_component_shift_bounds_scenario_id,
+                 weather_iteration, hydro_iteration,
                  balancing_type_project, horizon),
     FOREIGN KEY (project, load_component_shift_bounds_scenario_id) REFERENCES
         subscenarios_project_load_component_shift_bounds
             (project, load_component_shift_bounds_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_load_component_shift_bounds_iterations;
+CREATE TABLE inputs_project_load_component_shift_bounds_iterations
+(
+    project                                 VARCHAR(64),
+    load_component_shift_bounds_scenario_id INTEGER,
+    varies_by_weather_iteration             INTEGER,
+    varies_by_hydro_iteration               INTEGER,
+    PRIMARY KEY (project, load_component_shift_bounds_scenario_id)
 );
 
 

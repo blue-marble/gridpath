@@ -20,6 +20,7 @@ constraint that is determined as follows:
 1)
 """
 
+import os.path
 from pyomo.environ import Param, Set, Reals, Constraint, Var, Any, NonNegativeReals
 import warnings
 
@@ -45,6 +46,7 @@ from gridpath.project.operations.operational_types.common_functions import (
     validate_opchars,
     validate_var_profiles,
     load_optype_model_data,
+    BT_HRZ_INDEX_QUERY_PARAMS,
 )
 
 
@@ -123,14 +125,8 @@ def add_model_components(
         ),
     )
 
-    m.LOAD_COMPONENT_SHIFT_PRJS_OPR_BT_HRZS = Set(
-        within=m.LOAD_COMPONENT_SHIFT_PRJS * m.BLN_TYPE_HRZS,
-        initialize=lambda mod: [
-            (prj, bt, hrz)
-            for prj in mod.LOAD_COMPONENT_SHIFT_PRJS
-            for (bt, hrz) in mod.BLN_TYPE_HRZS
-            if mod.balancing_type_project[prj] == bt
-        ],
+    m.LOAD_COMPONENT_SHIFT_PRJS_BT_HRZS = Set(
+        dimen=3, within=m.LOAD_COMPONENT_SHIFT_PRJS * m.BLN_TYPE_HRZS
     )
 
     # Required Params
@@ -165,8 +161,8 @@ def add_model_components(
     )
 
     def load_bounds_by_tmp_init(mod, prj, tmp):
-        min_vals = [mod.load_component_shift_min_load_mw[prj]]
-        max_vals = [mod.load_component_shift_max_load_mw[prj]]
+        min_vals = []
+        max_vals = []
 
         for _prj, bt, hrz in mod.LOAD_COMPONENT_SHIFT_PRJS_BT_HRZS:
             if _prj == prj and tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]:
@@ -214,7 +210,7 @@ def add_model_components(
     )
 
     m.Load_Component_Shift_Add_Load_MW = Var(
-        m.LOAD_COMPONENT_SHIFT_PRJS_OPR_PRDS, within=NonNegativeReals
+        m.LOAD_COMPONENT_SHIFT_PRJS_OPR_TMPS, within=NonNegativeReals
     )
 
     # Constraints
@@ -246,14 +242,14 @@ def add_model_components(
                 tmp,
                 mod.load_component_shift_linked_load_component[prj],
             ]
-            for tmp in mod.BT_HRZ_TMPS[bt, hrz]
+            for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
         ) == sum(
             mod.Load_Component_Shift_Add_Load_MW[prj, tmp]
-            for tmp in mod.BT_HRZ_TMPS[bt, hrz]
+            for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
         )
 
     m.Load_Component_Shift_Energy_Balance_Constraint = Constraint(
-        m.LOAD_COMPONENT_SHIFT_PRJS_OPR_BT_HRZS, rule=energy_budget_rule
+        m.LOAD_COMPONENT_SHIFT_PRJS_BT_HRZS, rule=energy_budget_rule
     )
 
     def min_demand_rule(mod, prj, tmp):
@@ -263,7 +259,7 @@ def add_model_components(
         )
 
     m.Load_Component_Shift_Min_Demand_Constraint = Constraint(
-        m.LOAD_COMPONENT_SHIFT_PRJS_OPR_PRDS, rule=min_demand_rule
+        m.LOAD_COMPONENT_SHIFT_PRJS_OPR_TMPS, rule=min_demand_rule
     )
 
     def max_demand_rule(mod, prj, tmp):
@@ -273,7 +269,7 @@ def add_model_components(
         )
 
     m.Load_Component_Shift_Max_Demand_Constraint = Constraint(
-        m.LOAD_COMPONENT_SHIFT_PRJS_OPR_PRDS, rule=max_demand_rule
+        m.LOAD_COMPONENT_SHIFT_PRJS_OPR_TMPS, rule=max_demand_rule
     )
 
     # TODO: remove this constraint once input validation is in place that
@@ -460,17 +456,23 @@ def load_model_data(
         op_type="load_component_shift",
     )
 
-    load_var_profile_inputs(
-        data_portal=data_portal,
-        scenario_directory=scenario_directory,
-        weather_iteration=weather_iteration,
-        hydro_iteration=hydro_iteration,
-        availability_iteration=availability_iteration,
-        subproblem=subproblem,
-        stage=stage,
-        op_type="load_component_shift",
-        tab_filename="load_component_shift_fractions.tab",
-        param_name="fraction",
+    # Load data
+    data_portal.load(
+        filename=os.path.join(
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "load_component_shift_bounds.tab",
+        ),
+        index=mod.LOAD_COMPONENT_SHIFT_PRJS_BT_HRZS,
+        param=(
+            mod.load_component_shift_min_load_mw,
+            mod.load_component_shift_max_load_mw,
+        ),
     )
 
 
@@ -505,7 +507,7 @@ def get_model_inputs_from_database(
         weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
     )
 
-    prj_tmp_data = get_prj_temporal_index_opr_inputs_from_db(
+    prj_bt_hrz_data = get_prj_temporal_index_opr_inputs_from_db(
         subscenarios=subscenarios,
         weather_iteration=db_weather_iteration,
         hydro_iteration=db_hydro_iteration,
@@ -514,12 +516,13 @@ def get_model_inputs_from_database(
         stage=db_stage,
         conn=conn,
         op_type="load_component_shift",
-        table="inputs_project_load_modifier_profiles",
-        subscenario_id_column="load_modifier_profile_scenario_id",
-        data_column="fraction",
+        table="inputs_project_load_component_shift_bounds",
+        subscenario_id_column="load_component_shift_bounds_scenario_id",
+        data_column="min_load_mw, max_load_mw",
+        opr_index_dict=BT_HRZ_INDEX_QUERY_PARAMS,
     )
 
-    return prj_tmp_data
+    return prj_bt_hrz_data
 
 
 def write_model_inputs(
@@ -554,7 +557,7 @@ def write_model_inputs(
         stage,
         conn,
     )
-    fname = "load_component_shift_fractions.tab"
+    fname = "load_component_shift_bounds.tab"
 
     write_tab_file_model_inputs(
         scenario_directory,

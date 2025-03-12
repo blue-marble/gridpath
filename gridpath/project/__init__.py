@@ -173,6 +173,7 @@ def add_model_components(
             "energy_load_following",
             "energy_slice_hrz_shaping",
             "load_component_modifier",
+            "load_component_shift",
         ],
     )
     m.availability_type = Param(

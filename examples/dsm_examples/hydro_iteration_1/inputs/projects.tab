@@ -4,6 +4,7 @@ DSM_EE	gen_new_lin	exogenous	gen_var_must_take	day	1	0.05	DSM_EE	Zone1	0.0	.	.	.
 DSM_EV	gen_new_lin	exogenous	gen_var_must_take	day	1	0.05	DSM_EV	Zone1	0.0	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.
 DSM_Flat_Load_Reduction	gen_new_lin	exogenous	gen_var_must_take	day	1	0.05	DSM_Flat_Load_Reduction	Zone1	0.0	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.
 DSM_Load_Component_Modifier	gen_new_lin	exogenous	load_component_modifier	day	1	0.05	DSM_Load_Component_Modifier	Zone1	0.0	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	half1
+DSM_Load_Component_Shift	gen_new_lin	exogenous	load_component_shift	day	1	0.05	DSM_Load_Component_Shift	Zone1	0.0	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	half2
 DSM_Load_Shed	gen_new_lin	exogenous	gen_var_must_take	day	1	0.05	DSM_Load_Shed	Zone1	0.0	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.
 Gen_Simple_HighCost	gen_spec	exogenous	gen_simple	day	.	.	GEN	Zone1	2.0	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.
 Gen_Simple_LowCost	gen_spec	exogenous	gen_simple	day	.	.	GEN	Zone1	1.0	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.

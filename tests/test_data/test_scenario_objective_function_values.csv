@@ -141,4 +141,4 @@ hydro_system_exog_elev_w_travel_time_and_max_halfday_flows,"{('', 'hydro_iterati
 hydro_system_w_ramp_limits,"{('', 'hydro_iteration_1', '', 1): {1: 0.0}}","{('', 'hydro_iteration_1', '', 1): {1: -0.0}}",,
 test_w_bt_hrz_avl,"{('', '', '', 1): {1: -11138261748043.703}}","{('', '', '', 1): {1: -11138261748043.703}}",,
 hydro_system_exog_elev_w_gen_ramp_limits,"{('', 'hydro_iteration_1', '', 1): {1: 0.0}}","{('', 'hydro_iteration_1', '', 1): {1: -0.0}}",,
-dsm_examples,"{('', 'hydro_iteration_1', '', 1): {1: -375638.94015}}","{('', 'hydro_iteration_1', '', 1): {1: -375638.94015}}",,
+dsm_examples,"{('', 'hydro_iteration_1', '', 1): {1: -375638.94015}}","{('', 'hydro_iteration_1', '', 1): {1: -375638.94015000004}}",,

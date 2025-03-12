@@ -492,6 +492,7 @@ def load_var_profile_inputs(
         "gen_var_stor_hyb",
         "energy_profile",
         "load_component_modifier",
+        "load_component_shift",
     ]
     other_var_op_types = set(var_op_types) - set([op_type])
     assert op_type in var_op_types
@@ -687,6 +688,7 @@ def get_prj_temporal_index_opr_inputs_from_db(
         all_projects_sql = all_projects_sql[: len(all_projects_sql) - 7]
 
     c = conn.cursor()
+
     prj_tmp_data = c.execute(all_projects_sql)
 
     return prj_tmp_data
