@@ -1,4 +1,4 @@
-# Copyright 2016-2024 Blue Marble Analytics LLC.
+# Copyright 2016-2025 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -218,7 +218,7 @@ def add_model_components(
     +-------------------------------------------------------------------------+
     | | :code:`variable_om_cost_per_mwh_by_timepoint`                         |
     | | *Defined over*: :code:`VAR_OM_COST_BY_TMP_PRJ_TMPS`                   |
-    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Within*: :code:`Reals`                                               |
     | | *Default*: :code:`0`                                                  |
     |                                                                         |
     | The project's variable operations and maintenance cost per MWh of       |
@@ -483,7 +483,7 @@ def add_model_components(
     )
 
     m.variable_om_cost_per_mwh_by_timepoint = Param(
-        m.VAR_OM_COST_BY_TMP_PRJ_TMPS, within=NonNegativeReals, default=0
+        m.VAR_OM_COST_BY_TMP_PRJ_TMPS, within=Reals, default=0
     )
 
     m.vom_slope_cost_per_mwh = Param(
