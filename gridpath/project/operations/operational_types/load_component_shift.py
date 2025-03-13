@@ -203,6 +203,11 @@ def add_model_components(
         ],
     )
 
+    # Optional params
+    m.load_component_shift_efficiency_factor = Param(
+        m.LOAD_COMPONENT_SHIFT_PRJS, default=1
+    )
+
     # Variables
     ###########################################################################
     m.Load_Component_Shift_Fraction_Invested = Var(
@@ -236,20 +241,24 @@ def add_model_components(
         Sets the total energy consumption to equal the static load energy
         consumption for each horizon.
         """
-        return sum(
-            mod.component_static_load_mw[
-                mod.load_zone[prj],
-                tmp,
-                mod.load_component_shift_linked_load_component[prj],
-            ]
-            * mod.hrs_in_tmp[tmp]
-            * mod.tmp_weight[tmp]
-            for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
-        ) == sum(
-            mod.Load_Component_Shift_Add_Load_MW[prj, tmp]
-            * mod.hrs_in_tmp[tmp]
-            * mod.tmp_weight[tmp]
-            for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
+        return (
+            sum(
+                mod.component_static_load_mw[
+                    mod.load_zone[prj],
+                    tmp,
+                    mod.load_component_shift_linked_load_component[prj],
+                ]
+                * mod.hrs_in_tmp[tmp]
+                * mod.tmp_weight[tmp]
+                for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
+            )
+            == sum(
+                mod.Load_Component_Shift_Add_Load_MW[prj, tmp]
+                * mod.hrs_in_tmp[tmp]
+                * mod.tmp_weight[tmp]
+                for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
+            )
+            * mod.load_component_shift_efficiency_factor[prj]
         )
 
     m.Load_Component_Shift_Energy_Balance_Constraint = Constraint(

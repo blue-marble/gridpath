@@ -1949,6 +1949,7 @@ CREATE TABLE inputs_project_operational_chars
     linked_load_component                     TEXT,
     load_modifier_profile_scenario_id         INTEGER,
     load_component_shift_bounds_scenario_id   INTEGER,
+    efficiency_factor                         FLOAT,
     PRIMARY KEY (project_operational_chars_scenario_id, project),
     FOREIGN KEY (project_operational_chars_scenario_id) REFERENCES
         subscenarios_project_operational_chars (project_operational_chars_scenario_id),

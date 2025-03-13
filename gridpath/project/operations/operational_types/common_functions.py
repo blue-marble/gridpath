@@ -1211,6 +1211,7 @@ def get_optype_inputs_from_db(scenario_id, subscenarios, conn, op_type):
         "powerhouse",
         "generator_efficiency",
         "linked_load_component",
+        "efficiency_factor",
     ]
 
     sql = """SELECT {}
