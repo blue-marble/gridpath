@@ -178,34 +178,41 @@ def add_model_components(
             )
 
         # Assuming single value in lists after errors caught above
-        tmp_val_min = min_vals[0]
-        tmp_val_max = max_vals[0]
+        # Check if the list contains a value; if not, set the min and max to
+        # the static load (no shifting)
+        if min_vals:
+            tmp_val_min = min_vals[0]
+        else:
+            tmp_val_min = mod.component_static_load_mw[
+                mod.load_zone[prj],
+                tmp,
+                mod.load_component_shift_linked_load_component[prj],
+            ]
+        if max_vals:
+            tmp_val_max = max_vals[0]
+        else:
+            tmp_val_max = mod.component_static_load_mw[
+                mod.load_zone[prj],
+                tmp,
+                mod.load_component_shift_linked_load_component[prj],
+            ]
 
         return tmp_val_min, tmp_val_max
 
     m.load_component_shift_min_load_mw_by_tmp = Param(
         m.LOAD_COMPONENT_SHIFT_PRJS_OPR_TMPS,
         initialize=lambda mod, prj, tmp: load_bounds_by_tmp_init(mod, prj, tmp)[0],
-        default=lambda mod, prj, tmp: mod.component_static_load_mw[
-            mod.load_zone[prj],
-            tmp,
-            mod.load_component_shift_linked_load_component[prj],
-        ],
     )
 
     m.load_component_shift_max_load_mw_by_tmp = Param(
         m.LOAD_COMPONENT_SHIFT_PRJS_OPR_TMPS,
         initialize=lambda mod, prj, tmp: load_bounds_by_tmp_init(mod, prj, tmp)[1],
-        default=lambda mod, prj, tmp: mod.component_static_load_mw[
-            mod.load_zone[prj],
-            tmp,
-            mod.load_component_shift_linked_load_component[prj],
-        ],
     )
 
     # Optional params
+    ###########################################################################
     m.load_component_shift_efficiency_factor = Param(
-        m.LOAD_COMPONENT_SHIFT_PRJS, default=1
+        m.LOAD_COMPONENT_SHIFT_PRJS, within=NonNegativeReals, default=1
     )
 
     # Variables
