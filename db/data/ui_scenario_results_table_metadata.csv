@@ -27,4 +27,5 @@ results_transmission_period_new_build,1,Transmission New Build Capacity
 results_transmission_carbon_emissions,1,Transmission Carbon Emissions
 results_transmission_costs_capacity,1,Transmission Capacity Costs
 results_transmission_hurdle_costs,1,Transmission Hurdle Costs
+results_transmission_hurdle_costs_by_timepoint,1,Transmission Hurdle Costs By Timepoint
 results_transmission_timepoint,1,Transmission Operations

@@ -38,10 +38,8 @@ PREREQUISITE_MODULE_NAMES = [
     "transmission.availability.availability",
     "transmission.operations.operational_types",
     "transmission.operations.operations",
-    "transmission.operations.hurdle_costs",
-    "transmission.operations.hurdle_costs_by_timepoint",
 ]
-NAME_OF_MODULE_BEING_TESTED = "objective.transmission.aggregate_hurdle_costs"
+NAME_OF_MODULE_BEING_TESTED = "transmission.operations.hurdle_costs_by_timepoint"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -59,7 +57,7 @@ except ImportError:
     print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED + " to test.")
 
 
-class TestTxAggregateCosts(unittest.TestCase):
+class TestTxHurdleCosts(unittest.TestCase):
     """ """
 
     def test_add_model_components(self):
@@ -110,3 +108,54 @@ class TestTxAggregateCosts(unittest.TestCase):
             stage="",
         )
         instance = m.create_instance(data)
+
+        # Param: hurdle_rate_pos_dir_per_mwh
+        data = []
+        for period in ["2020", "2030"]:
+            for day in ["01", "02"]:
+                for hour in range(24):
+                    str_hour = "0" + str(hour + 1)
+                    timepoint = int(f"{period}{day}{str_hour[-2:]}")
+                    data = data + [
+                        (("Tx1", timepoint), 5),
+                        (("Tx2", timepoint), 0),
+                        (("Tx3", timepoint), 0),
+                        (("Tx_New", timepoint), 0 if str(timepoint).startswith("2020") else 1),
+                        (("Tx_binary_1", timepoint), 0),
+                    ]
+        expected_hurdle_rate_pos = OrderedDict(sorted(data))
+        actual_hurdle_rate_pos = OrderedDict(
+            sorted(
+                [
+                    ((tx, tmp), instance.hurdle_rate_by_tmp_pos_dir_per_mwh[tx, tmp])
+                    for (tx, tmp) in instance.TX_OPR_TMPS
+                ]
+            )
+        )
+        self.assertDictEqual(expected_hurdle_rate_pos, actual_hurdle_rate_pos)
+
+        # Param: hurdle_rate_neg_dir_per_mwh
+        data = []
+        for period in ["2020", "2030"]:
+            for day in ["01", "02"]:
+                for hour in range(24):
+                    str_hour = "0" + str(hour + 1)
+                    timepoint = int(f"{period}{day}{str_hour[-2:]}")
+                    data = data + [
+                        (("Tx1", timepoint), 6),
+                        (("Tx2", timepoint), 0),
+                        (("Tx3", timepoint), 0),
+                        (("Tx_New", timepoint), 0 if str(timepoint).startswith("2020") else 1),
+                        (("Tx_binary_1", timepoint), 0),
+                    ]
+
+        expected_hurdle_rate_neg = OrderedDict(sorted(data))
+        actual_hurdle_rate_neg = OrderedDict(
+            sorted(
+                [
+                    ((tx, tmp), instance.hurdle_rate_by_tmp_neg_dir_per_mwh[tx, tmp])
+                    for (tx, tmp) in instance.TX_OPR_TMPS
+                ]
+            )
+        )
+        self.assertDictEqual(expected_hurdle_rate_neg, actual_hurdle_rate_neg)

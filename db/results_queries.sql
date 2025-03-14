@@ -202,7 +202,8 @@ variable_om_cost/1000000 as variable_om_cost_millions,
 startup_cost/1000000 as startup_cost_millions,
 shutdown_cost/1000000 as shutdown_cost_millions,
 hurdle_cost/1000000 as hurdle_cost_millions,
-capacity_cost/1000000 + fuel_cost/1000000 + variable_om_cost/1000000 + startup_cost/1000000 + shutdown_cost/1000000 + hurdle_cost/1000000 as total_cost_millions
+hurdle_cost_by_timepoint/1000000 as hurdle_cost_by_timepoint_millions,
+capacity_cost/1000000 + fuel_cost/1000000 + variable_om_cost/1000000 + startup_cost/1000000 + shutdown_cost/1000000 + hurdle_cost/1000000 + hurdle_cost_by_timepoint/1000000 as total_cost_millions
 FROM
 (SELECT scenario_id, period, sum(capacity_cost) AS capacity_cost
 FROM  results_project_period
@@ -222,6 +223,12 @@ JOIN
 FROM
 results_transmission_hurdle_costs
 GROUP BY scenario_id, period) AS hurdle_costs
+USING (scenario_id, period)
+JOIN
+(SELECT scenario_id, period, sum((hurdle_cost_by_timepoint_positive_direction+hurdle_cost_by_timepoint_negative_direction) * timepoint_weight * number_of_hours_in_timepoint) AS hurdle_cost_by_timepoint
+FROM
+results_transmission_hurdle_costs_by_timepoint
+GROUP BY scenario_id, period) AS hurdle_cost_by_timepoint
 USING (scenario_id, period)
 JOIN scenarios
 USING (scenario_id)

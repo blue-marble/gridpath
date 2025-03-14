@@ -9,6 +9,7 @@ fuels,1,Fuels
 transmission_capacity,1,Transmission Capacity
 transmission_opchar,1,Transmission Operational Characteristics
 transmission_hurdle_rates,1,Transmission Hurdle Rates
+transmission_hurdle_rates_by_timepoint,1,Transmission Hurdle Rates By Timepoint
 transmission_sim_flow_limits,1,Transmission Simultaneous Flow Limits
 load_following_up,1,Load Following Up
 load_following_down,1,Load Following Down

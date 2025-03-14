@@ -4076,6 +4076,29 @@ CREATE TABLE inputs_transmission_hurdle_rates
         subscenarios_transmission_hurdle_rates (transmission_hurdle_rate_scenario_id)
 );
 
+-- Hurdle rates
+DROP TABLE IF EXISTS subscenarios_transmission_hurdle_rates_by_timepoint;
+CREATE TABLE subscenarios_transmission_hurdle_rates_by_timepoint
+(
+    transmission_hurdle_rate_by_timepoint_scenario_id   INTEGER PRIMARY KEY AUTOINCREMENT,
+    name                                                VARCHAR(32),
+    description                                         VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_transmission_hurdle_rates_by_timepoint;
+CREATE TABLE inputs_transmission_hurdle_rates_by_timepoint
+(
+    transmission_hurdle_rate_by_timepoint_scenario_id   INTEGER,
+    transmission_line                                   VARCHAR(64),
+    timepoint                                           INTEGER,
+    hurdle_rate_by_timepoint_positive_direction_per_mwh FLOAT,
+    hurdle_rate_by_timepoint_negative_direction_per_mwh FLOAT,
+    PRIMARY KEY (transmission_hurdle_rate_by_timepoint_scenario_id, transmission_line,
+                 timepoint),
+    FOREIGN KEY (transmission_hurdle_rate_by_timepoint_scenario_id) REFERENCES
+        subscenarios_transmission_hurdle_rates_by_timepoint (transmission_hurdle_rate_by_timepoint_scenario_id)
+);
+
 -- Group capacity requirements
 -- Requirements
 DROP TABLE IF EXISTS subscenarios_transmission_capacity_group_requirements;
@@ -5174,6 +5197,7 @@ CREATE TABLE scenarios
     run_end_time                                                TIME,
     of_transmission                                             INTEGER,
     of_transmission_hurdle_rates                                INTEGER,
+    of_transmission_hurdle_rates_by_timepoint                   INTEGER,
     of_simultaneous_flow_limits                                 INTEGER,
     of_lf_reserves_up                                           INTEGER,
     of_lf_reserves_down                                         INTEGER,
@@ -5278,6 +5302,7 @@ CREATE TABLE scenarios
     transmission_availability_scenario_id                       INTEGER,
     transmission_operational_chars_scenario_id                  INTEGER,
     transmission_hurdle_rate_scenario_id                        INTEGER,
+    transmission_hurdle_rate_by_timepoint_scenario_id           INTEGER,
     transmission_new_potential_scenario_id                      INTEGER,
     transmission_flow_scenario_id                               INTEGER,
     transmission_capacity_group_requirement_scenario_id         INTEGER,
@@ -5506,6 +5531,9 @@ CREATE TABLE scenarios
     FOREIGN KEY (transmission_hurdle_rate_scenario_id) REFERENCES
         subscenarios_transmission_hurdle_rates
             (transmission_hurdle_rate_scenario_id),
+    FOREIGN KEY (transmission_hurdle_rate_by_timepoint_scenario_id) REFERENCES
+        subscenarios_transmission_hurdle_rates_by_timepoint
+            (transmission_hurdle_rate_by_timepoint_scenario_id),
     FOREIGN KEY (transmission_new_potential_scenario_id) REFERENCES
         subscenarios_transmission_new_potential (transmission_new_potential_scenario_id),
     FOREIGN KEY (transmission_flow_scenario_id) REFERENCES
@@ -6326,6 +6354,8 @@ CREATE TABLE results_transmission_timepoint
     transmission_losses_lz_to                        FLOAT,
     hurdle_cost_positive_direction                   FLOAT,
     hurdle_cost_negative_direction                   FLOAT,
+    hurdle_cost_by_timepoint_positive_direction      FLOAT,
+    hurdle_cost_by_timepoint_negative_direction      FLOAT,
     transmission_target_zone                         VARCHAR(32),
     transmission_target_energy_positive_direction_mw FLOAT,
     transmission_target_energy_negative_direction_mw FLOAT,
@@ -6370,6 +6400,23 @@ CREATE TABLE results_transmission_hurdle_costs_agg
     spinup_or_lookahead    INTEGER,
     tx_hurdle_cost         FLOAT,
     PRIMARY KEY (scenario_id, load_zone, period, weather_iteration,
+                 hydro_iteration, subproblem_id, stage_id, spinup_or_lookahead)
+);
+-- Transmission Costs - Aggregated
+DROP TABLE IF EXISTS results_transmission_hurdle_costs_by_timepoint_agg;
+CREATE TABLE results_transmission_hurdle_costs_by_timepoint_agg
+(
+    scenario_id                 INTEGER,
+    load_zone                   VARCHAR(64),
+    timepoint                   INTEGER,
+    weather_iteration           INTEGER,
+    hydro_iteration             INTEGER,
+    availability_iteration      INTEGER,
+    subproblem_id               INTEGER,
+    stage_id                    INTEGER,
+    spinup_or_lookahead         INTEGER,
+    tx_hurdle_cost_by_timepoint FLOAT,
+    PRIMARY KEY (scenario_id, load_zone, timepoint, weather_iteration,
                  hydro_iteration, subproblem_id, stage_id, spinup_or_lookahead)
 );
 
@@ -7355,6 +7402,8 @@ SELECT scenario_id,
        CASE WHEN of_transmission THEN 'yes' ELSE 'no' END                 AS feature_transmission,
        CASE WHEN of_transmission_hurdle_rates = 1 THEN 'yes' ELSE 'no' END
                                                                           AS feature_transmission_hurdle_rates,
+       CASE WHEN of_transmission_hurdle_rates_by_timepoint = 1 THEN 'yes' ELSE 'no' END
+                                                                          AS feature_transmission_hurdle_rates_by_timepoint,
        CASE WHEN of_simultaneous_flow_limits THEN 'yes' ELSE 'no' END
                                                                           AS feature_simultaneous_flow_limits,
        CASE WHEN of_lf_reserves_up THEN 'yes' ELSE 'no' END
@@ -7427,6 +7476,7 @@ SELECT scenario_id,
        subscenarios_transmission_operational_chars.name
                                                                           AS transmission_operational_chars,
        subscenarios_transmission_hurdle_rates.name                        AS transmission_hurdle_rates,
+       subscenarios_transmission_hurdle_rates_by_timepoint.name           AS transmission_hurdle_rates_by_timepoint,
        subscenarios_transmission_new_potential.name                       AS transmission_new_potential,
        subscenarios_transmission_carbon_cap_zones.name
                                                                           AS transmission_carbon_cap_zones,
@@ -7533,6 +7583,8 @@ FROM scenarios
                    USING (transmission_operational_chars_scenario_id)
          LEFT JOIN subscenarios_transmission_hurdle_rates
                    USING (transmission_hurdle_rate_scenario_id)
+         LEFT JOIN subscenarios_transmission_hurdle_rates_by_timepoint
+                   USING (transmission_hurdle_rate_by_timepoint_scenario_id)
          LEFT JOIN subscenarios_transmission_new_potential
                    USING (transmission_new_potential_scenario_id)
          LEFT JOIN subscenarios_transmission_carbon_cap_zones
@@ -7869,7 +7921,8 @@ SELECT a.scenario_id,
        startup_cost,
        shutdown_cost,
        tx_capacity_cost,
-       tx_hurdle_cost
+       tx_hurdle_cost,
+       tx_hurdle_cost_by_timepoint
 FROM results_project_costs_capacity_agg AS a
 
          LEFT JOIN
@@ -7909,6 +7962,16 @@ FROM results_project_costs_capacity_agg AS a
          AND a.load_zone = d.load_zone
          AND a.spinup_or_lookahead = d.spinup_or_lookahead
          )
+
+         LEFT JOIN
+     results_transmission_hurdle_costs_by_timepoint_agg as e
+     ON (a.scenario_id = d.scenario_id
+         AND a.subproblem_id = d.subproblem_id
+         AND a.stage_id = d.stage_id
+         AND a.period = d.period
+         AND a.load_zone = d.load_zone
+         AND a.spinup_or_lookahead = d.spinup_or_lookahead
+         )
 ;
 
 
@@ -7927,19 +7990,21 @@ SELECT a.scenario_id,
        shutdown_cost,
        tx_capacity_cost,
        tx_hurdle_cost,
+       tx_hurdle_cost_by_timepoint,
        deliverable_capacity_cost
 FROM (SELECT scenario_id,
              subproblem_id,
              stage_id,
              period,
              spinup_or_lookahead,
-             SUM(capacity_cost)    AS capacity_cost,
-             SUM(variable_om_cost) AS variable_om_cost,
-             SUM(fuel_cost)        AS fuel_cost,
-             SUM(startup_cost)     AS startup_cost,
-             SUM(shutdown_cost)    AS shutdown_cost,
-             SUM(tx_capacity_cost) AS tx_capacity_cost,
-             SUM(tx_hurdle_cost)   AS tx_hurdle_cost
+             SUM(capacity_cost)                 AS capacity_cost,
+             SUM(variable_om_cost)              AS variable_om_cost,
+             SUM(fuel_cost)                     AS fuel_cost,
+             SUM(startup_cost)                  AS startup_cost,
+             SUM(shutdown_cost)                 AS shutdown_cost,
+             SUM(tx_capacity_cost)              AS tx_capacity_cost,
+             SUM(tx_hurdle_cost)                AS tx_hurdle_cost,
+             SUM(tx_hurdle_cost_by_timepoint)   AS tx_hurdle_cost_by_timepoint
       FROM results_costs_by_period_load_zone
       GROUP BY scenario_id, subproblem_id, stage_id, period,
                spinup_or_lookahead) AS a
