@@ -363,9 +363,16 @@ def get_inputs_from_database(
     cap_grp_tx = c2.execute(
         """
         SELECT transmission_capacity_group, transmission_line
+        (SELECT transmission_line FROM inputs_transmission_portfolios
+        WHERE transmission_portfolio_scenario_id = {}) AS prj_tbl
+        INNER JOIN 
+        (SELECT transmission_capacity_group, transmission_line
         FROM inputs_transmission_capacity_groups
-        WHERE transmission_capacity_group_scenario_id = {}
+        WHERE transmission_capacity_group_scenario_id = {})
+        AS cap_group_tbl
+        USING (transmission_line);
         """.format(
+            subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID,
             subscenarios.TRANSMISSION_CAPACITY_GROUP_SCENARIO_ID
         )
     )
