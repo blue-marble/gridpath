@@ -38,7 +38,7 @@ PREREQUISITE_MODULE_NAMES = [
     "project.fuels",
     "project.operations",
 ]
-NAME_OF_MODULE_BEING_TESTED = "project.operations.operational_types.dac"
+NAME_OF_MODULE_BEING_TESTED = "project.operations.operational_types.dispatchable_load"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -56,7 +56,7 @@ except ImportError:
     print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED + " to test.")
 
 
-class TestDAC(unittest.TestCase):
+class TestDispatchableLoad(unittest.TestCase):
     """ """
 
     def assertDictAlmostEqual(self, d1, d2, msg=None, places=7):
@@ -123,17 +123,21 @@ class TestDAC(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: DAC
-        expected_dac_set = sorted(["DAC"])
-        actual_dac_set = sorted([prj for prj in instance.DAC])
-        self.assertListEqual(expected_dac_set, actual_dac_set)
+        # Set: DISPATCHABLE_LOAD_PRJS
+        expected_dispatchable_load_set = sorted(["DAC"])
+        actual_dispatchable_load_set = sorted(
+            [prj for prj in instance.DISPATCHABLE_LOAD_PRJS]
+        )
+        self.assertListEqual(
+            expected_dispatchable_load_set, actual_dispatchable_load_set
+        )
 
-        # Set: DAC_OPR_TMPS
+        # Set: DISPATCHABLE_LOAD_PRJS_OPR_TMPS
         expected_operational_timpoints_by_project = sorted(
-            get_project_operational_timepoints(expected_dac_set)
+            get_project_operational_timepoints(expected_dispatchable_load_set)
         )
         actual_operational_timepoints_by_project = sorted(
-            [(g, tmp) for (g, tmp) in instance.DAC_OPR_TMPS]
+            [(g, tmp) for (g, tmp) in instance.DISPATCHABLE_LOAD_PRJS_OPR_TMPS]
         )
         self.assertListEqual(
             expected_operational_timpoints_by_project,
