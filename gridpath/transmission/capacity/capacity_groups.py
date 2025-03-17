@@ -374,7 +374,7 @@ def get_inputs_from_database(
         USING (transmission_line);
         """.format(
             subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID,
-            subscenarios.TRANSMISSION_CAPACITY_GROUP_SCENARIO_ID
+            subscenarios.TRANSMISSION_CAPACITY_GROUP_SCENARIO_ID,
         )
     )
 
