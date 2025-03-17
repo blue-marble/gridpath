@@ -46,7 +46,28 @@ def add_model_components(
         :return:
         """
         return sum(
-            (mod.Hurdle_Cost_Pos_Dir[tx, tmp] + mod.Hurdle_Cost_Neg_Dir[tx, tmp])
+            (
+                (
+                    mod.Hurdle_Cost_Pos_Dir[tx, tmp]
+                    if hasattr(mod, "Hurdle_Cost_Pos_Dir")
+                    else 0
+                )
+                + (
+                    mod.Hurdle_Cost_Neg_Dir[tx, tmp]
+                    if hasattr(mod, "Hurdle_Cost_Neg_Dir")
+                    else 0
+                )
+                + (
+                    mod.Hurdle_Cost_By_Tmp_Pos_Dir[tx, tmp]
+                    if hasattr(mod, "Hurdle_Cost_By_Tmp_Pos_Dir")
+                    else 0
+                )
+                + (
+                    mod.Hurdle_Cost_By_Tmp_Neg_Dir[tx, tmp]
+                    if hasattr(mod, "Hurdle_Cost_By_Tmp_Neg_Dir")
+                    else 0
+                )
+            )
             * mod.hrs_in_tmp[tmp]
             * mod.tmp_weight[tmp]
             * mod.number_years_represented[mod.period[tmp]]

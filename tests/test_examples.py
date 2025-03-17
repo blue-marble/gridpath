@@ -1159,6 +1159,30 @@ class TestExamples(unittest.TestCase):
         scenario_name = "2periods_new_build_2zones_transmission_w_hurdle_rates"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
+    def test_example_2periods_new_build_2zones_transmission_w_hurdle_rates_by_timepoint(
+        self,
+    ):
+        """
+        Check validation and objective function value of
+        "2periods_new_build_2zones_transmission_w_hurdle_rates_by_timepoint" example
+        :return:
+        """
+        scenario_name = (
+            "2periods_new_build_2zones_transmission_w_hurdle_rates_by_timepoint"
+        )
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_2periods_new_build_2zones_transmission_w_hurdle_rates_by_timepoint_and_period(
+        self,
+    ):
+        """
+        Check validation and objective function value of
+        "2periods_new_build_2zones_transmission_w_hurdle_rates_by_timepoint_and_period" example
+        :return:
+        """
+        scenario_name = "2periods_new_build_2zones_transmission_w_hurdle_rates_by_timepoint_and_period"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
     def test_example_2periods_new_build_simple_prm_2loadzones_newtx_w_transfers_w_subsidies(
         self,
     ):

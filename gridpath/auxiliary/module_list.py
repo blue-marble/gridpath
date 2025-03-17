@@ -138,6 +138,7 @@ def all_modules_list():
         "transmission.operations.transmission_flow_limits",
         "transmission.operations.consolidate_results",
         "transmission.operations.hurdle_costs",
+        "transmission.operations.hurdle_costs_by_timepoint",
         "transmission.operations.simultaneous_flow_limits",
         "transmission.operations.carbon_emissions",
         "transmission.reliability.capacity_transfer_links",
@@ -520,7 +521,9 @@ def cross_feature_modules_list():
     cross_modules = {
         ("transmission", "transmission_hurdle_rates"): [
             "transmission.operations.hurdle_costs",
-            "objective.transmission.aggregate_hurdle_costs",
+        ],
+        ("transmission", "transmission_hurdle_rates_by_timepoint"): [
+            "transmission.operations.hurdle_costs_by_timepoint",
         ],
         ("transmission", "carbon_cap", "track_carbon_imports"): [
             "system.policy.carbon_cap" ".aggregate_transmission_carbon_emissions",
@@ -587,6 +590,9 @@ def feature_shared_modules_list():
         ("transmission_target", "horizon_transmission_target"): [
             "geography.transmission_target_zones",
             "transmission.operations.transmission_target_contributions",
+        ],
+        ("transmission_hurdle_rates", "transmission_hurdle_rates_by_timepoint"): [
+            "objective.transmission.aggregate_hurdle_costs",
         ],
     }
 

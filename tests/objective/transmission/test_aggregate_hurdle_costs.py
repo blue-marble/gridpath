@@ -39,6 +39,7 @@ PREREQUISITE_MODULE_NAMES = [
     "transmission.operations.operational_types",
     "transmission.operations.operations",
     "transmission.operations.hurdle_costs",
+    "transmission.operations.hurdle_costs_by_timepoint",
 ]
 NAME_OF_MODULE_BEING_TESTED = "objective.transmission.aggregate_hurdle_costs"
 IMPORTED_PREREQ_MODULES = list()
