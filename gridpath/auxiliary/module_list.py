@@ -522,7 +522,7 @@ def cross_feature_modules_list():
         ("transmission", "transmission_hurdle_rates"): [
             "transmission.operations.hurdle_costs",
         ],
-        ("transmission" "transmission_hurdle_rates_by_timepoint"): [
+        ("transmission", "transmission_hurdle_rates_by_timepoint"): [
             "transmission.operations.hurdle_costs_by_timepoint",
         ],
         ("transmission", "carbon_cap", "track_carbon_imports"): [

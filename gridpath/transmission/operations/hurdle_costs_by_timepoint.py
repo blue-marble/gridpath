@@ -266,7 +266,7 @@ def export_results(
         "hurdle_cost_by_timepoint_negative_direction",
     ]
     data = [
-        [tx, tmp, m.Hurdle_Cost_by_tmp_Pos_Dir[tx, tmp], m.Hurdle_Cost_by_tmp_Neg_Dir[tx, tmp]]
+        [tx, tmp, m.Hurdle_Cost_By_Tmp_Pos_Dir[tx, tmp], m.Hurdle_Cost_By_Tmp_Neg_Dir[tx, tmp]]
         for (tx, tmp) in m.TX_OPR_TMPS
     ]
     cost_df = create_results_df(
@@ -430,38 +430,38 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
     # Aggregate hurdle costs by period, load zone, and spinup_or_lookahead
     agg_sql = """
         INSERT INTO results_transmission_hurdle_costs_by_timepoint_agg
-        (scenario_id, subproblem_id, stage_id, period, load_zone, 
-        spinup_or_lookahead, tx_hurdle_cost)
+        (scenario_id, subproblem_id, stage_id, timepoint, load_zone, 
+        spinup_or_lookahead, tx_hurdle_cost_by_timepoint)
         
-        SELECT scenario_id, subproblem_id, stage_id, period, load_zone, 
+        SELECT scenario_id, subproblem_id, stage_id, timepoint, load_zone, 
         spinup_or_lookahead,
         (pos_dir_hurdle_cost_by_tmp + neg_dir_hurdle_cost_by_tmp) AS tx_hurdle_cost_by_timepoint
         
         FROM
         
-        (SELECT scenario_id, subproblem_id, stage_id, period, 
+        (SELECT scenario_id, subproblem_id, stage_id, timepoint, 
         load_zone_to AS load_zone, spinup_or_lookahead,
         SUM(hurdle_cost_by_timepoint_positive_direction * timepoint_weight * 
         number_of_hours_in_timepoint) AS pos_dir_hurdle_cost_by_tmp
         FROM results_transmission_timepoint
         WHERE scenario_id = ?
-        GROUP BY subproblem_id, stage_id, period, load_zone, spinup_or_lookahead
-        ORDER BY subproblem_id, stage_id, period, load_zone, spinup_or_lookahead
+        GROUP BY subproblem_id, stage_id, timepoint, load_zone, spinup_or_lookahead
+        ORDER BY subproblem_id, stage_id, timepoint, load_zone, spinup_or_lookahead
         ) AS pos_dir_hurdle_costs_by_tmp
         
         INNER JOIN
         
-        (SELECT scenario_id, subproblem_id, stage_id, period, 
+        (SELECT scenario_id, subproblem_id, stage_id, timepoint, 
         load_zone_from AS load_zone, spinup_or_lookahead,
         SUM(hurdle_cost_by_timepoint_negative_direction * timepoint_weight * 
         number_of_hours_in_timepoint) AS neg_dir_hurdle_cost_by_tmp
         FROM results_transmission_timepoint
         WHERE scenario_id = ?
-        GROUP BY subproblem_id, stage_id, period, load_zone, spinup_or_lookahead
-        ORDER BY subproblem_id, stage_id, period, load_zone, spinup_or_lookahead
+        GROUP BY subproblem_id, stage_id, timepoint, load_zone, spinup_or_lookahead
+        ORDER BY subproblem_id, stage_id, timepoint, load_zone, spinup_or_lookahead
         ) AS neg_dir_hurdle_costs_by_tmp
         
-        USING (scenario_id, subproblem_id, stage_id, period, load_zone, 
+        USING (scenario_id, subproblem_id, stage_id, timepoint, load_zone, 
         spinup_or_lookahead)
         ;"""
 
