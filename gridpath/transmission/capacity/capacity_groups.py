@@ -362,7 +362,8 @@ def get_inputs_from_database(
     c2 = conn.cursor()
     cap_grp_tx = c2.execute(
         """
-        SELECT transmission_capacity_group, transmission_line
+        SELECT DISTINCT transmission_capacity_group, transmission_line
+        FROM
         (SELECT transmission_line FROM inputs_transmission_portfolios
         WHERE transmission_portfolio_scenario_id = {}) AS prj_tbl
         INNER JOIN 
