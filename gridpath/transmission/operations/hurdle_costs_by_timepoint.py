@@ -237,7 +237,10 @@ def load_model_data(
             "hurdle_rate_by_timepoint_positive_direction_per_mwh",
             "hurdle_rate_by_timepoint_negative_direction_per_mwh",
         ),
-        param=(m.hurdle_rate_by_tmp_pos_dir_per_mwh, m.hurdle_rate_by_tmp_neg_dir_per_mwh),
+        param=(
+            m.hurdle_rate_by_tmp_pos_dir_per_mwh,
+            m.hurdle_rate_by_tmp_neg_dir_per_mwh,
+        ),
     )
 
 
@@ -266,7 +269,12 @@ def export_results(
         "hurdle_cost_by_timepoint_negative_direction",
     ]
     data = [
-        [tx, tmp, m.Hurdle_Cost_By_Tmp_Pos_Dir[tx, tmp], m.Hurdle_Cost_By_Tmp_Neg_Dir[tx, tmp]]
+        [
+            tx,
+            tmp,
+            m.Hurdle_Cost_By_Tmp_Pos_Dir[tx, tmp],
+            m.Hurdle_Cost_By_Tmp_Neg_Dir[tx, tmp],
+        ]
         for (tx, tmp) in m.TX_OPR_TMPS
     ]
     cost_df = create_results_df(

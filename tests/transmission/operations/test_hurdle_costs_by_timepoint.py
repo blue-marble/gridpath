@@ -120,7 +120,10 @@ class TestTxHurdleCosts(unittest.TestCase):
                         (("Tx1", timepoint), 5),
                         (("Tx2", timepoint), 0),
                         (("Tx3", timepoint), 0),
-                        (("Tx_New", timepoint), 0 if str(timepoint).startswith("2020") else 1),
+                        (
+                            ("Tx_New", timepoint),
+                            0 if str(timepoint).startswith("2020") else 1,
+                        ),
                         (("Tx_binary_1", timepoint), 0),
                     ]
         expected_hurdle_rate_pos = OrderedDict(sorted(data))
@@ -145,7 +148,10 @@ class TestTxHurdleCosts(unittest.TestCase):
                         (("Tx1", timepoint), 6),
                         (("Tx2", timepoint), 0),
                         (("Tx3", timepoint), 0),
-                        (("Tx_New", timepoint), 0 if str(timepoint).startswith("2020") else 1),
+                        (
+                            ("Tx_New", timepoint),
+                            0 if str(timepoint).startswith("2020") else 1,
+                        ),
                         (("Tx_binary_1", timepoint), 0),
                     ]
 
