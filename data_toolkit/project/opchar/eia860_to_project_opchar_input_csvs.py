@@ -302,6 +302,8 @@ def make_opchar_sql_str(
     generator_efficiency="NULL",
     linked_load_component="NULL",
     load_modifier_profile_scenario_id="NULL",
+    load_component_shift_bounds_scenario_id="NULL",
+    efficiency_factor="NULL",
 ):
     """ """
 
@@ -386,7 +388,10 @@ def make_opchar_sql_str(
      {powerhouse} AS powerhouse,
      {generator_efficiency} AS generator_efficiency,
      {linked_load_component} AS linked_load_component,
-     {load_modifier_profile_scenario_id} AS load_modifier_profile_scenario_id
+     {load_modifier_profile_scenario_id} AS load_modifier_profile_scenario_id,
+     {load_component_shift_bounds_scenario_id} AS 
+     load_component_shift_bounds_scenario_id,
+     {efficiency_factor} AS efficiency_factor
     """
 
     return opchar_sql_str

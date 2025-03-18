@@ -1608,16 +1608,13 @@ class TestExamples(unittest.TestCase):
         scenario_name = "test_w_bt_hrz_avl"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
-    def test_dsm_examples(self):
-        """
-        :return:
-        """
-        scenario_name = "dsm_examples"
-        self.validate_and_test_example_generic(scenario_name=scenario_name)
-
     def test_hydro_system_exog_elev_w_gen_ramp_limits(self):
         """ """
         scenario_name = "hydro_system_exog_elev_w_gen_ramp_limits"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_dsm_examples(self):
+        scenario_name = "dsm_examples"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     @classmethod

@@ -147,6 +147,8 @@ class TestGenSpec(unittest.TestCase):
                 ("Hydro_System_Gen1", 2030),
                 ("DSM_Load_Component_Modifier", 2020),
                 ("DSM_Load_Component_Modifier", 2030),
+                ("DSM_Load_Component_Shift", 2020),
+                ("DSM_Load_Component_Shift", 2030),
             ]
         )
         actual_proj_period_set = sorted(
@@ -200,6 +202,8 @@ class TestGenSpec(unittest.TestCase):
                     ("Hydro_System_Gen1", 2030): 100,
                     ("DSM_Load_Component_Modifier", 2020): 1,
                     ("DSM_Load_Component_Modifier", 2030): 1,
+                    ("DSM_Load_Component_Shift", 2020): 1,
+                    ("DSM_Load_Component_Shift", 2030): 1,
                 }.items()
             )
         )
@@ -258,6 +262,8 @@ class TestGenSpec(unittest.TestCase):
                     ("Hydro_System_Gen1", 2030): 0,
                     ("DSM_Load_Component_Modifier", 2020): 0,
                     ("DSM_Load_Component_Modifier", 2030): 0,
+                    ("DSM_Load_Component_Shift", 2020): 0,
+                    ("DSM_Load_Component_Shift", 2030): 0,
                 }.items()
             )
         )

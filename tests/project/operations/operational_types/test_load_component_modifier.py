@@ -166,13 +166,18 @@ class TestLoadComponentModifier(unittest.TestCase):
         }
         self.assertDictEqual(expected_fractions, actual_fractions)
 
-        # Param: load_component_peak_load_in_period
+        # Param: load_component_modifier_load_component_peak_load_in_period
         expected_peak = {
             ("DSM_Load_Component_Modifier", 2020): 50,
             ("DSM_Load_Component_Modifier", 2030): 50,
         }
         actual_peak = {
-            (prj, prd): instance.load_component_peak_load_in_period[prj, prd]
+            (
+                prj,
+                prd,
+            ): instance.load_component_modifier_load_component_peak_load_in_period[
+                prj, prd
+            ]
             for (prj, prd) in instance.LOAD_COMPONENT_MODIFIER_PRJS_OPR_PRDS
         }
         self.assertDictEqual(expected_peak, actual_peak)
