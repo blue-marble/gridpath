@@ -244,53 +244,38 @@ def add_model_components(
         initialize=0,
     )
 
+    # Auxiliary variable we will set equal to
+    # LZ_Modified_Load_in_Tmp[mod.load_zone[prj], tmp] downstream, after we
+    # have created the load balance variables
+    m.EnergyLoadFollowing_LZ_Load_in_Tmp = Var(
+        m.ENERGY_LOAD_FOLLOWING_OPR_TMPS, within=NonNegativeReals
+    )
+
     # Constraints
     ###########################################################################
 
-    # def tmps_by_prd_month_rule(mod, prd, month):
-    #     tmps_list = []
-    #     for tmp in mod.TMPS_IN_PRD[prd]:
-    #         if mod.month[tmp] == month:
-    #             tmps_list.append(tmp)
-    #
-    #     return tmps_list
-    #
-    # m.TMPS_BY_PRD_MONTH = Set(m.PERIODS, m.MONTHS, initialize=tmps_by_prd_month_rule)
-    #
-    # def prd_mnth_tmps_rule(mod):
-    #     prd_mnth_tmp_list = []
-    #     for prd in mod.PERIODS:
-    #         for month in mod.MONTHS:
-    #             for tmp in mod.TMPS_IN_PRD[prd]:
-    #                 if mod.month[tmp] == month:
-    #                     prd_mnth_tmp_list.append((prd, month, tmp))
-    #
-    #     return prd_mnth_tmp_list
-    #
-    # m.PRD_MONTH_TMPS = Set(dimen=3, initialize=prd_mnth_tmps_rule)
-    #
-    # def monthly_peak_deviation_rule(mod, prj, prd, mnth, tmp):
-    #     if mod.energy_load_following_peak_deviation_demand_charge == 0:
-    #         return Constraint.Skip
-    #     else:
-    #         return mod.EnergyLoadFollowing_Peak_Deviation_in_Month[
-    #             prj, prd, mnth
-    #         ] >= (
-    #             mod.EnergyLoadFollowing_Provide_Power_MW[prj, tmp]
-    #             - sum(
-    #                 mod.EnergyLoadFollowing_Provide_Power_MW[prj, _tmp]
-    #                 for _tmp in mod.TMPS_BY_PRD_MONTH[prd, mnth]
-    #             )
-    #             / sum(
-    #                 mod.hrs_in_tmp[_tmp] * mod.tmp_weight[_tmp]
-    #                 for _tmp in mod.TMPS_BY_PRD_MONTH[prd, mnth]
-    #             )
-    #         )
-    #
-    # m.EnergyLoadFollowing_Peak_Deviation_in_Month_Constraint = Constraint(
-    #     m.ENERGY_LOAD_FOLLOWING, m.PRD_MONTH_TMPS,
-    # rule=monthly_peak_deviation_rule
-    # )
+    def load_following_rule(mod, prj, tmp):
+        """
+        **Constraint Name**: EnergyLoadFollowing_Power_Constraint
+        **Enforced Over**: ENERGY_LOAD_FOLLOWING_OPR_TMPS
+
+        Meet everything above a flat block of energy equal to the
+        base_net_requirement minus the project energy averaged over the
+        period
+        """
+        return mod.EnergyLoadFollowing_Provide_Power_MW[
+            prj, tmp
+        ] == mod.EnergyLoadFollowing_LZ_Load_in_Tmp[prj, tmp] - (
+            mod.base_net_requirement_mwh[prj, mod.period[tmp]]
+            - mod.Energy_MWh[prj, mod.period[tmp]]
+        ) / sum(
+            mod.hrs_in_tmp[prd_tmp] * mod.tmp_weight[prd_tmp]
+            for prd_tmp in mod.TMPS_IN_PRD[mod.period[tmp]]
+        )
+
+    m.EnergyLoadFollowing_Power_Constraint = Constraint(
+        m.ENERGY_LOAD_FOLLOWING_OPR_TMPS, rule=load_following_rule
+    )
 
     def monthly_peak_deviation_rule(mod, prj, tmp):
         if mod.energy_load_following_peak_deviation_demand_charge == 0:
@@ -316,26 +301,6 @@ def add_model_components(
 
     m.EnergyLoadFollowing_Peak_Deviation_in_Month_Constraint = Constraint(
         m.ENERGY_LOAD_FOLLOWING_OPR_TMPS, rule=monthly_peak_deviation_rule
-    )
-
-    def total_energy_constraint(mod, prj, prd):
-        """
-        This constraint is somewhat redundant, but here to prevent degeneracy
-        issues when Energy_MWh does not have a cost associated it and could
-        be set arbitrarily high.
-        """
-        return (
-            sum(
-                mod.EnergyLoadFollowing_Provide_Power_MW[prj, tmp]
-                * mod.hrs_in_tmp[tmp]
-                * mod.tmp_weight[tmp]
-                for tmp in mod.TMPS_IN_PRD[prd]
-            )
-            == mod.Energy_MWh[prj, prd]
-        )
-
-    m.EnergyLoadFollowing_Total_Energy_in_Period_Constraint = Constraint(
-        m.ENERGY_LOAD_FOLLOWING_OPR_PRDS, rule=total_energy_constraint
     )
 
 
