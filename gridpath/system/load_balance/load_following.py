@@ -41,21 +41,18 @@ def add_model_components(
         **Constraint Name**: EnergyLoadFollowing_Power_Constraint
         **Enforced Over**: ENERGY_LOAD_FOLLOWING_OPR_TMPS
 
-        Meet everything above a flat block a
+        Set the load following load variable to the actual load. We need the
+        former upstream, as the load balance components have not yet been
+        added when adding the energy_load_following optype components.
         """
         if mod.operational_type[prj] == "energy_load_following":
-            return mod.EnergyLoadFollowing_Provide_Power_MW[
-                prj, tmp
-            ] == mod.LZ_Modified_Load_in_Tmp[mod.load_zone[prj], tmp] - (
-                mod.base_net_requirement_mwh[prj, mod.period[tmp]]
-                - mod.Energy_MWh[prj, mod.period[tmp]]
-            ) / sum(
-                mod.hrs_in_tmp[prd_tmp] * mod.tmp_weight[prd_tmp]
-                for prd_tmp in mod.TMPS_IN_PRD[mod.period[tmp]]
+            return (
+                mod.EnergyLoadFollowing_LZ_Load_in_Tmp[prj, tmp]
+                == mod.LZ_Modified_Load_in_Tmp[mod.load_zone[prj], tmp]
             )
         else:
             return Constraint.Skip
 
-    m.EnergyLoadFollowing_Power_Constraint = Constraint(
+    m.EnergyLoadFollowing_Constraint = Constraint(
         m.PRJ_OPR_TMPS, rule=load_following_rule
     )
