@@ -2066,14 +2066,28 @@ CREATE TABLE inputs_project_variable_om_cost_by_timepoint
 (
     project                                   VARCHAR(64),
     variable_om_cost_by_timepoint_scenario_id INTEGER,
-    timepoint                                 INTEGER, -- 0 means it's the same for all tmps
+    weather_iteration                         INTEGER,
+    hydro_iteration                           INTEGER,
+    timepoint                                 INTEGER,
     variable_om_cost_by_timepoint             FLOAT,
-    PRIMARY KEY (project, variable_om_cost_by_timepoint_scenario_id, timepoint),
+    PRIMARY KEY (project, variable_om_cost_by_timepoint_scenario_id,
+                 weather_iteration, hydro_iteration, timepoint),
     FOREIGN KEY (project, variable_om_cost_by_timepoint_scenario_id)
         REFERENCES subscenarios_project_variable_om_cost_by_timepoint (
                                                                        project,
                                                                        variable_om_cost_by_timepoint_scenario_id
             )
+);
+
+DROP TABLE IF EXISTS inputs_project_variable_om_cost_by_timepoint_iterations;
+CREATE TABLE inputs_project_variable_om_cost_by_timepoint_iterations
+(
+    project                                   VARCHAR(64),
+    variable_om_cost_by_timepoint_scenario_id INTEGER,
+    varies_by_weather_iteration               INTEGER,
+    varies_by_hydro_iteration                 INTEGER,
+    PRIMARY KEY (project, variable_om_cost_by_timepoint_scenario_id,
+                 varies_by_weather_iteration, varies_by_hydro_iteration)
 );
 
 -- Project fuels

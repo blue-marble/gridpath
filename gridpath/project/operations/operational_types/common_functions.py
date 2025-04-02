@@ -722,6 +722,9 @@ def get_prj_indx_inputs_with_iterations_sql(
     index_join_table = opr_index_dict["index_join_table"]
     index_columns_join_table = opr_index_dict["index_columns_join_table"]
 
+    optype_filter = (
+        f"""AND operational_type = '{op_type}'""" if op_type != "all" else ""
+    )
     sql = f"""
         SELECT project, {select_columns}, {data_columns}
         FROM {inputs_table}
@@ -735,7 +738,7 @@ def get_prj_indx_inputs_with_iterations_sql(
             SELECT project
             FROM inputs_project_operational_chars
             WHERE project_operational_chars_scenario_id = {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
-            AND operational_type = '{op_type}'
+            {optype_filter}
         )
         -- Relevant optype opchar ID
         AND (project, {subscenario_id_column}) IN (

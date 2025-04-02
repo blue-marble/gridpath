@@ -53,6 +53,9 @@ from gridpath.auxiliary.validations import (
     validate_startup_shutdown_rate_inputs,
 )
 from gridpath.project.common_functions import append_to_input_file
+from gridpath.project.operations.operational_types.common_functions import (
+    get_prj_temporal_index_opr_inputs_from_db,
+)
 
 
 def add_model_components(
@@ -941,7 +944,6 @@ def get_inputs_from_database(
     :param conn: database connection
     :return:
     """
-
     c = conn.cursor()
     proj_opchar = c.execute(
         """
@@ -1010,36 +1012,18 @@ def get_inputs_from_database(
         """
     )
 
-    var_om_by_tmp_c = conn.cursor()
-    var_om_by_tmp = var_om_by_tmp_c.execute(
-        f"""
-        SELECT project, timepoint, variable_om_cost_by_timepoint
-        FROM inputs_project_portfolios
-        -- select the correct operational characteristics subscenario
-        INNER JOIN
-        (SELECT project, variable_om_cost_by_timepoint_scenario_id
-        FROM inputs_project_operational_chars
-        WHERE project_operational_chars_scenario_id = {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
-        ) AS op_char
-        USING(project)
-        -- select only matching projects
-        INNER JOIN
-        inputs_project_variable_om_cost_by_timepoint
-        USING(project, variable_om_cost_by_timepoint_scenario_id)
-        -- Get only the subset of projects in the portfolio based on the 
-        -- project_portfolio_scenario_id 
-        WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
-        AND (
-            timepoint = 0
-            OR timepoint in (
-            SELECT timepoint
-            FROM inputs_temporal
-            WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
-            AND subproblem_id = {subproblem}
-            AND stage_id = {stage}
-            )
-        )
-        """
+    var_om_by_tmp = get_prj_temporal_index_opr_inputs_from_db(
+        subscenarios=subscenarios,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        conn=conn,
+        op_type="all",
+        table="inputs_project_variable_om_cost_by_timepoint",
+        subscenario_id_column="variable_om_cost_by_timepoint_scenario_id",
+        data_column="variable_om_cost_by_timepoint",
     )
 
     c5 = conn.cursor()
