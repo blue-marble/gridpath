@@ -1,7 +1,8 @@
-scenario_id,118
+scenario_id,120
 scenario_name,test_tx_flow_w_simflow
 of_transmission,1
 of_transmission_hurdle_rates,
+of_transmission_hurdle_rates_by_timepoint,
 of_simultaneous_flow_limits,1
 of_lf_reserves_up,1
 of_lf_reserves_down,1
@@ -106,6 +107,7 @@ transmission_new_cost_scenario_id,NULL
 transmission_availability_scenario_id,1
 transmission_operational_chars_scenario_id,1
 transmission_hurdle_rate_scenario_id,NULL
+transmission_hurdle_rate_by_timepoint_scenario_id,NULL
 transmission_new_potential_scenario_id,NULL
 transmission_flow_scenario_id,1
 transmission_capacity_group_requirement_scenario_id,NULL

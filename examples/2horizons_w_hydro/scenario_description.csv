@@ -2,6 +2,7 @@ scenario_id,17
 scenario_name,2horizons_w_hydro
 of_transmission,
 of_transmission_hurdle_rates,
+of_transmission_hurdle_rates_by_timepoint,
 of_simultaneous_flow_limits,
 of_lf_reserves_up,1
 of_lf_reserves_down,1
@@ -106,6 +107,7 @@ transmission_new_cost_scenario_id,NULL
 transmission_availability_scenario_id,NULL
 transmission_operational_chars_scenario_id,NULL
 transmission_hurdle_rate_scenario_id,NULL
+transmission_hurdle_rate_by_timepoint_scenario_id,NULL
 transmission_new_potential_scenario_id,NULL
 transmission_flow_scenario_id,NULL
 transmission_capacity_group_requirement_scenario_id,NULL
