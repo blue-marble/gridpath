@@ -22,3 +22,4 @@ energy_load_following,
 energy_slice_hrz_shaping,
 load_component_modifier,
 load_component_shift,
+gen_simple_no_load_balance_power
