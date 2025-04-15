@@ -5939,6 +5939,8 @@ CREATE TABLE results_project_policy_zone_timepoint
     policy_name            TEXT,
     policy_zone            TEXT,
     timepoint              INTEGER,
+    timepoint_weight       FLOAT,
+    hours_in_timepoint     FLOAT,
     period                 INTEGER,
     subproblem_id          INTEGER,
     stage_id               INTEGER,
