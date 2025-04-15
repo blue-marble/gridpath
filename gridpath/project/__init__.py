@@ -86,7 +86,7 @@ def add_model_components(
     | | :code:`"gen_commit_cap", "gen_commit_lin", "gen_hydro",`              |
     | | :code:`"gen_hydro_must_take", "gen_must_run", "gen_simple",`          |
     | | :code:`"gen_var", "gen_var_must_take", "stor", "fuel_prod",`          |
-    | | :code:`"dispatchable_load", "flex_load"]`                             |
+    | | :code:`"dispatchable_load", "flex_load", "gen_simple_no_load_balance_power"]`                             |
     |                                                                         |
     | This param describes each project's operational type, which determines  |
     | how the project operates, e.g. whether it is fuel-based dispatchable    |
@@ -174,6 +174,7 @@ def add_model_components(
             "energy_slice_hrz_shaping",
             "load_component_modifier",
             "load_component_shift",
+            "gen_simple_no_load_balance_power",
         ],
     )
     m.availability_type = Param(

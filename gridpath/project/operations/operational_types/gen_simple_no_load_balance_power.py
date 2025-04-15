@@ -1,4 +1,4 @@
-# Copyright 2016-2023 Blue Marble Analytics LLC.
+# Copyright 2016-2025 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,14 +16,10 @@
 This operational type describes generators that can vary their output
 between zero and full capacity in every timepoint in which they are available
 (i.e. they have a power output variable but no commitment variables associated
-with them).
+with them). However, this power does not count toward the load balance
+constraint.
 
-The heat rate of these generators does not degrade below full load and they
-can be allowed to provide upward and/or downward reserves subject to
-available headroom and footroom. Ramp limits can be optionally specified.
-
-Costs for this operational type include fuel costs, variable O&M costs, and
-startup and shutdown costs.
+Costs for this operational type variable O&M costs.
 
 """
 
@@ -78,18 +74,18 @@ def add_model_components(
     +-------------------------------------------------------------------------+
     | Sets                                                                    |
     +=========================================================================+
-    | | :code:`GEN_SIMPLE`                                                    |
+    | | :code:`GEN_SIMPLE_NO_LOAD_BALANCE_POWER`                                                    |
     |                                                                         |
-    | The set of generators of the :code:`gen_simple` operational type.       |
+    | The set of generators of the :code:`gen_simple_no_load_balance_power` operational type.       |
     +-------------------------------------------------------------------------+
-    | | :code:`GEN_SIMPLE_OPR_TMPS`                                           |
+    | | :code:`GEN_SIMPLE_NO_LOAD_BALANCE_POWER_OPR_TMPS`                                           |
     |                                                                         |
-    | Two-dimensional set with generators of the :code:`gen_simple`           |
+    | Two-dimensional set with generators of the :code:`gen_simple_no_load_balance_power`           |
     | operational type and their operational timepoints.                      |
     +-------------------------------------------------------------------------+
-    | | :code:`GEN_SIMPLE_LINKED_TMPS`                                        |
+    | | :code:`GEN_SIMPLE_NO_LOAD_BALANCE_POWER_LINKED_TMPS`                                        |
     |                                                                         |
-    | Two-dimensional set with generators of the :code:`gen_simple`           |
+    | Two-dimensional set with generators of the :code:`gen_simple_no_load_balance_power`           |
     | operational type and their linked timepoints.                           |
     +-------------------------------------------------------------------------+
 
@@ -98,16 +94,16 @@ def add_model_components(
     +-------------------------------------------------------------------------+
     | Optional Input Params                                                   |
     +=========================================================================+
-    | | :code:`gen_simple_ramp_up_when_on_rate`                               |
-    | | *Defined over*: :code:`GEN_SIMPLE`                                    |
+    | | :code:`gen_simple_no_load_balance_power_ramp_up_when_on_rate`                               |
+    | | *Defined over*: :code:`GEN_SIMPLE_NO_LOAD_BALANCE_POWER`                                    |
     | | *Within*: :code:`PercentFraction`                                     |
     | | *Default*: :code:`1`                                                  |
     |                                                                         |
     | The project's upward ramp rate limit during operations, defined as a    |
     | fraction of its capacity per minute.                                    |
     +-------------------------------------------------------------------------+
-    | | :code:`gen_simple_ramp_down_when_on_rate`                             |
-    | | *Defined over*: :code:`GEN_SIMPLE`                                    |
+    | | :code:`gen_simple_no_load_balance_power_ramp_down_when_on_rate`                             |
+    | | *Defined over*: :code:`GEN_SIMPLE_NO_LOAD_BALANCE_POWER`                                    |
     | | *Within*: :code:`PercentFraction`                                     |
     | | *Default*: :code:`1`                                                  |
     |                                                                         |
@@ -120,20 +116,20 @@ def add_model_components(
     +-------------------------------------------------------------------------+
     | Linked Input Params                                                     |
     +=========================================================================+
-    | | :code:`gen_simple_linked_power`                                       |
-    | | *Defined over*: :code:`GEN_SIMPLE_LINKED_TMPS`                        |
+    | | :code:`gen_simple_no_load_balance_power_linked_power`                                       |
+    | | *Defined over*: :code:`GEN_SIMPLE_NO_LOAD_BALANCE_POWER_LINKED_TMPS`                        |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
     | The project's power provision in the linked timepoints.                 |
     +-------------------------------------------------------------------------+
-    | | :code:`gen_simple_linked_upwards_reserves`                            |
-    | | *Defined over*: :code:`GEN_SIMPLE_LINKED_TMPS`                        |
+    | | :code:`gen_simple_no_load_balance_power_linked_upwards_reserves`                            |
+    | | *Defined over*: :code:`GEN_SIMPLE_NO_LOAD_BALANCE_POWER_LINKED_TMPS`                        |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
     | The project's upward reserve provision in the linked timepoints.        |
     +-------------------------------------------------------------------------+
-    | | :code:`gen_simple_linked_downwards_reserves`                          |
-    | | *Defined over*: :code:`GEN_SIMPLE_LINKED_TMPS`                        |
+    | | :code:`gen_simple_no_load_balance_power_linked_downwards_reserves`                          |
+    | | *Defined over*: :code:`GEN_SIMPLE_NO_LOAD_BALANCE_POWER_LINKED_TMPS`                        |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
     | The project's downward reserve provision in the linked timepoints.      |
@@ -144,8 +140,8 @@ def add_model_components(
     +-------------------------------------------------------------------------+
     | Variables                                                               |
     +=========================================================================+
-    | | :code:`GenSimple_Provide_Power_MW`                                    |
-    | | *Defined over*: :code:`GEN_SIMPLE_OPR_TMPS`                           |
+    | | :code:`GenSimpleNoLoadBalancePower_Provide_Power_MW`                                    |
+    | | *Defined over*: :code:`GEN_SIMPLE_NO_LOAD_BALANCE_POWER_OPR_TMPS`                           |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
     | Power provision in MW from this project in each timepoint in which the  |
@@ -159,30 +155,30 @@ def add_model_components(
     +=========================================================================+
     | Power                                                                   |
     +-------------------------------------------------------------------------+
-    | | :code:`GenSimple_Max_Power_Constraint`                                |
-    | | *Defined over*: :code:`GEN_SIMPLE_OPR_TMPS`                           |
+    | | :code:`GenSimpleNoLoadBalancePower_Max_Power_Constraint`                                |
+    | | *Defined over*: :code:`GEN_SIMPLE_NO_LOAD_BALANCE_POWER_OPR_TMPS`                           |
     |                                                                         |
     | Limits the power plus upward reserves to the available capacity.        |
     +-------------------------------------------------------------------------+
-    | | :code:`GenSimple_Min_Power_Constraint`                                |
-    | | *Defined over*: :code:`GEN_SIMPLE_OPR_TMPS`                           |
+    | | :code:`GenSimpleNoLoadBalancePower_Min_Power_Constraint`                                |
+    | | *Defined over*: :code:`GEN_SIMPLE_NO_LOAD_BALANCE_POWER_OPR_TMPS`                           |
     |                                                                         |
     | Power provision minus downward reserves should exceed the minimum       |
     | stable level for the project.                                           |
     +-------------------------------------------------------------------------+
     | Ramps                                                                   |
     +-------------------------------------------------------------------------+
-    | | :code:`GenSimple_Ramp_Up_Constraint`                                  |
-    | | *Defined over*: :code:`GEN_SIMPLE_OPR_TMPS`                           |
+    | | :code:`GenSimpleNoLoadBalancePower_Ramp_Up_Constraint`                                  |
+    | | *Defined over*: :code:`GEN_SIMPLE_NO_LOAD_BALANCE_POWER_OPR_TMPS`                           |
     |                                                                         |
     | Limits the allowed project upward ramp based on the                     |
-    | :code:`gen_simple_ramp_up_when_on_rate`.                                |
+    | :code:`gen_simple_no_load_balance_power_ramp_up_when_on_rate`.                                |
     +-------------------------------------------------------------------------+
-    | | :code:`GenSimple_Ramp_Down_Constraint`                                |
-    | | *Defined over*: :code:`GEN_SIMPLE_OPR_TMPS`                           |
+    | | :code:`GenSimpleNoLoadBalancePower_Ramp_Down_Constraint`                                |
+    | | *Defined over*: :code:`GEN_SIMPLE_NO_LOAD_BALANCE_POWER_OPR_TMPS`                           |
     |                                                                         |
     | Limits the allowed project downward ramp based on the                   |
-    | :code:`gen_simple_ramp_down_when_on_rate`.                              |
+    | :code:`gen_simple_no_load_balance_power_ramp_down_when_on_rate`.                              |
     +-------------------------------------------------------------------------+
 
     """
@@ -190,85 +186,61 @@ def add_model_components(
     # Sets
     ###########################################################################
 
-    m.GEN_SIMPLE = Set(
+    m.GEN_SIMPLE_NO_LOAD_BALANCE_POWER = Set(
         within=m.PROJECTS,
         initialize=lambda mod: subset_init_by_param_value(
-            mod, "PROJECTS", "operational_type", "gen_simple"
+            mod, "PROJECTS", "operational_type", "gen_simple_no_load_balance_power"
         ),
     )
 
-    m.GEN_SIMPLE_OPR_TMPS = Set(
+    m.GEN_SIMPLE_NO_LOAD_BALANCE_POWER_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
         initialize=lambda mod: subset_init_by_set_membership(
-            mod=mod, superset="PRJ_OPR_TMPS", index=0, membership_set=mod.GEN_SIMPLE
+            mod=mod,
+            superset="PRJ_OPR_TMPS",
+            index=0,
+            membership_set=mod.GEN_SIMPLE_NO_LOAD_BALANCE_POWER,
         ),
     )
 
-    m.GEN_SIMPLE_LINKED_TMPS = Set(dimen=2)
-
-    # Optional Params
-    ###########################################################################
-
-    m.gen_simple_ramp_up_when_on_rate = Param(
-        m.GEN_SIMPLE, within=PercentFraction, default=1
-    )
-    m.gen_simple_ramp_down_when_on_rate = Param(
-        m.GEN_SIMPLE, within=PercentFraction, default=1
-    )
-
-    # Linked Params
-    ###########################################################################
-
-    m.gen_simple_linked_power = Param(m.GEN_SIMPLE_LINKED_TMPS, within=NonNegativeReals)
-
-    m.gen_simple_linked_upwards_reserves = Param(
-        m.GEN_SIMPLE_LINKED_TMPS, within=NonNegativeReals
-    )
-
-    m.gen_simple_linked_downwards_reserves = Param(
-        m.GEN_SIMPLE_LINKED_TMPS, within=NonNegativeReals
-    )
+    m.GEN_SIMPLE_NO_LOAD_BALANCE_POWER_LINKED_TMPS = Set(dimen=2)
 
     # Variables
     ###########################################################################
 
-    m.GenSimple_Provide_Power_MW = Var(m.GEN_SIMPLE_OPR_TMPS, within=NonNegativeReals)
+    m.GenSimpleNoLoadBalancePower_Provide_Power_MW = Var(
+        m.GEN_SIMPLE_NO_LOAD_BALANCE_POWER_OPR_TMPS, within=NonNegativeReals
+    )
 
     # Expressions
     ###########################################################################
 
+    # TODO: remove ramp rates from optional params in CSV
+    # TODO: add warning about reserves
     def upwards_reserve_rule(mod, g, tmp):
-        return sum(getattr(mod, c)[g, tmp] for c in getattr(d, headroom_variables)[g])
+        return 0
 
-    m.GenSimple_Upwards_Reserves_MW = Expression(
-        m.GEN_SIMPLE_OPR_TMPS, rule=upwards_reserve_rule
+    m.GenSimpleNoLoadBalancePower_Upwards_Reserves_MW = Expression(
+        m.GEN_SIMPLE_NO_LOAD_BALANCE_POWER_OPR_TMPS, rule=upwards_reserve_rule
     )
 
     def downwards_reserve_rule(mod, g, tmp):
-        return sum(getattr(mod, c)[g, tmp] for c in getattr(d, footroom_variables)[g])
+        return 0
 
-    m.GenSimple_Downwards_Reserves_MW = Expression(
-        m.GEN_SIMPLE_OPR_TMPS, rule=downwards_reserve_rule
+    m.GenSimpleNoLoadBalancePower_Downwards_Reserves_MW = Expression(
+        m.GEN_SIMPLE_NO_LOAD_BALANCE_POWER_OPR_TMPS, rule=downwards_reserve_rule
     )
 
     # Constraints
     ###########################################################################
 
-    m.GenSimple_Max_Power_Constraint = Constraint(
-        m.GEN_SIMPLE_OPR_TMPS, rule=max_power_rule
+    m.GenSimpleNoLoadBalancePower_Max_Power_Constraint = Constraint(
+        m.GEN_SIMPLE_NO_LOAD_BALANCE_POWER_OPR_TMPS, rule=max_power_rule
     )
 
-    m.GenSimple_Min_Power_Constraint = Constraint(
-        m.GEN_SIMPLE_OPR_TMPS, rule=min_power_rule
-    )
-
-    m.GenSimple_Ramp_Up_Constraint = Constraint(
-        m.GEN_SIMPLE_OPR_TMPS, rule=ramp_up_rule
-    )
-
-    m.GenSimple_Ramp_Down_Constraint = Constraint(
-        m.GEN_SIMPLE_OPR_TMPS, rule=ramp_down_rule
+    m.GenSimpleNoLoadBalancePower_Min_Power_Constraint = Constraint(
+        m.GEN_SIMPLE_NO_LOAD_BALANCE_POWER_OPR_TMPS, rule=min_power_rule
     )
 
 
@@ -279,149 +251,25 @@ def add_model_components(
 # Power
 def max_power_rule(mod, g, tmp):
     """
-    **Constraint Name**: GenSimple_Max_Power_Constraint
-    **Enforced Over**: GEN_SIMPLE_OPR_TMPS
+    **Constraint Name**: GenSimpleNoLoadBalancePower_Max_Power_Constraint
+    **Enforced Over**: GEN_SIMPLE_NO_LOAD_BALANCE_POWER_OPR_TMPS
 
     Power plus upward services cannot exceed capacity.
     """
     return (
-        mod.GenSimple_Provide_Power_MW[g, tmp]
-        + mod.GenSimple_Upwards_Reserves_MW[g, tmp]
+        mod.GenSimpleNoLoadBalancePower_Provide_Power_MW[g, tmp]
         <= mod.Capacity_MW[g, mod.period[tmp]] * mod.Availability_Derate[g, tmp]
     )
 
 
 def min_power_rule(mod, g, tmp):
     """
-    **Constraint Name**: GenSimple_Min_Power_Constraint
-    **Enforced Over**: GEN_SIMPLE_OPR_TMPS
+    **Constraint Name**: GenSimpleNoLoadBalancePower_Min_Power_Constraint
+    **Enforced Over**: GEN_SIMPLE_NO_LOAD_BALANCE_POWER_OPR_TMPS
 
     Power minus downward services cannot be below zero.
     """
-    return (
-        mod.GenSimple_Provide_Power_MW[g, tmp]
-        - mod.GenSimple_Downwards_Reserves_MW[g, tmp]
-        >= 0
-    )
-
-
-# Ramps
-def ramp_up_rule(mod, g, tmp):
-    """
-    **Constraint Name**: GenSimple_Ramp_Up_Constraint
-    **Enforced Over**: GEN_SIMPLE_OPR_TMPS
-
-    Difference between power generation of consecutive timepoints, adjusted
-    for reserve provision in current and previous timepoint, has to obey
-    ramp up rate limits.
-
-    We assume that a unit has to reach its setpoint at the start of the
-    timepoint; as such, the ramping between 2 timepoints is assumed to
-    take place during the duration of the first timepoint, and the
-    ramp rate limit is adjusted for the duration of the first timepoint.
-    """
-    if check_if_boundary_type_and_first_timepoint(
-        mod=mod,
-        tmp=tmp,
-        balancing_type=mod.balancing_type_project[g],
-        boundary_type="linear",
-    ):
-        return Constraint.Skip
-    else:
-        if check_if_boundary_type_and_first_timepoint(
-            mod=mod,
-            tmp=tmp,
-            balancing_type=mod.balancing_type_project[g],
-            boundary_type="linked",
-        ):
-            prev_tmp_hrs_in_tmp = mod.hrs_in_linked_tmp[0]
-            prev_tmp_power = mod.gen_simple_linked_power[g, 0]
-            prev_tmp_downwards_reserves = mod.gen_simple_linked_downwards_reserves[g, 0]
-        else:
-            prev_tmp_hrs_in_tmp = mod.hrs_in_tmp[
-                mod.prev_tmp[tmp, mod.balancing_type_project[g]]
-            ]
-            prev_tmp_power = mod.GenSimple_Provide_Power_MW[
-                g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
-            ]
-            prev_tmp_downwards_reserves = mod.GenSimple_Downwards_Reserves_MW[
-                g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
-            ]
-        # If ramp rate limits, adjusted for timepoint duration, allow you to
-        # ramp up the full operable range between timepoints, constraint won't
-        # bind, so skip
-        if mod.gen_simple_ramp_up_when_on_rate[g] * 60 * prev_tmp_hrs_in_tmp >= 1:
-            return Constraint.Skip
-        else:
-            return (
-                mod.GenSimple_Provide_Power_MW[g, tmp]
-                + mod.GenSimple_Upwards_Reserves_MW[g, tmp]
-                - (prev_tmp_power - prev_tmp_downwards_reserves)
-                <= mod.gen_simple_ramp_up_when_on_rate[g]
-                * 60
-                * prev_tmp_hrs_in_tmp
-                * mod.Capacity_MW[g, mod.period[tmp]]
-                * mod.Availability_Derate[g, tmp]
-            )
-
-
-def ramp_down_rule(mod, g, tmp):
-    """
-    **Constraint Name**: GenSimple_Ramp_Down_Constraint
-    **Enforced Over**: GEN_SIMPLE_OPR_TMPS
-
-    Difference between power generation of consecutive timepoints, adjusted
-    for reserve provision in current and previous timepoint, has to obey
-    ramp down rate limits.
-
-    We assume that a unit has to reach its setpoint at the start of the
-    timepoint; as such, the ramping between 2 timepoints is assumed to
-    take place during the duration of the first timepoint, and the
-    ramp rate limit is adjusted for the duration of the first timepoint.
-    """
-    if check_if_boundary_type_and_first_timepoint(
-        mod=mod,
-        tmp=tmp,
-        balancing_type=mod.balancing_type_project[g],
-        boundary_type="linear",
-    ):
-        return Constraint.Skip
-    else:
-        if check_if_boundary_type_and_first_timepoint(
-            mod=mod,
-            tmp=tmp,
-            balancing_type=mod.balancing_type_project[g],
-            boundary_type="linked",
-        ):
-            prev_tmp_hrs_in_tmp = mod.hrs_in_linked_tmp[0]
-            prev_tmp_power = mod.gen_simple_linked_power[g, 0]
-            prev_tmp_upwards_reserves = mod.gen_simple_linked_upwards_reserves[g, 0]
-        else:
-            prev_tmp_hrs_in_tmp = mod.hrs_in_tmp[
-                mod.prev_tmp[tmp, mod.balancing_type_project[g]]
-            ]
-            prev_tmp_power = mod.GenSimple_Provide_Power_MW[
-                g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
-            ]
-            prev_tmp_upwards_reserves = mod.GenSimple_Upwards_Reserves_MW[
-                g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
-            ]
-        # If ramp rate limits, adjusted for timepoint duration, allow you to
-        # ramp down the full operable range between timepoints, constraint
-        # won't bind, so skip
-        if mod.gen_simple_ramp_down_when_on_rate[g] * 60 * prev_tmp_hrs_in_tmp >= 1:
-            return Constraint.Skip
-        else:
-            return (
-                mod.GenSimple_Provide_Power_MW[g, tmp]
-                - mod.GenSimple_Downwards_Reserves_MW[g, tmp]
-                - (prev_tmp_power + prev_tmp_upwards_reserves)
-                >= -mod.gen_simple_ramp_down_when_on_rate[g]
-                * 60
-                * prev_tmp_hrs_in_tmp
-                * mod.Capacity_MW[g, mod.period[tmp]]
-                * mod.Availability_Derate[g, tmp]
-            )
+    return mod.GenSimpleNoLoadBalancePower_Provide_Power_MW[g, tmp] >= 0
 
 
 # Operational Type Methods
@@ -430,22 +278,9 @@ def ramp_down_rule(mod, g, tmp):
 
 def power_provision_rule(mod, g, tmp):
     """
-    Power provision from simple generators is an endogenous variable.
+    Power does not count toward load balance.
     """
-    return mod.GenSimple_Provide_Power_MW[g, tmp]
-
-
-def fuel_burn_rule(mod, g, tmp):
-    """
-    Fuel burn is the product of the fuel burn slope and the power output. For
-    simple generators we assume only one average heat rate is specified in
-    heat_rate_curves.tab, so the fuel burn slope is equal to the specified
-    heat rate and the intercept is zero.
-    """
-    return (
-        mod.fuel_burn_slope_mmbtu_per_mwh[g, mod.period[tmp], 0]
-        * mod.GenSimple_Provide_Power_MW[g, tmp]
-    )
+    return 0
 
 
 def power_delta_rule(mod, g, tmp):
@@ -472,8 +307,8 @@ def power_delta_rule(mod, g, tmp):
         pass
     else:
         return (
-            mod.GenSimple_Provide_Power_MW[g, tmp]
-            - mod.GenSimple_Provide_Power_MW[
+            mod.GenSimpleNoLoadBalancePower_Provide_Power_MW[g, tmp]
+            - mod.GenSimpleNoLoadBalancePower_Provide_Power_MW[
                 g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
             ]
         )
@@ -513,30 +348,8 @@ def load_model_data(
         availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
-        op_type="gen_simple",
+        op_type="gen_simple_no_load_balance_power",
     )
-
-    # Linked timepoint params
-    linked_inputs_filename = os.path.join(
-        scenario_directory,
-        weather_iteration,
-        hydro_iteration,
-        availability_iteration,
-        subproblem,
-        stage,
-        "inputs",
-        "gen_simple_linked_timepoint_params.tab",
-    )
-    if os.path.exists(linked_inputs_filename):
-        data_portal.load(
-            filename=linked_inputs_filename,
-            index=mod.GEN_SIMPLE_LINKED_TMPS,
-            param=(
-                mod.gen_simple_linked_power,
-                mod.gen_simple_linked_upwards_reserves,
-                mod.gen_simple_linked_downwards_reserves,
-            ),
-        )
 
 
 def export_results(
@@ -577,7 +390,7 @@ def export_results(
                 next_subproblem,
                 stage,
                 "inputs",
-                "gen_simple_linked_timepoint_params.tab",
+                "gen_simple_no_load_balance_power_linked_timepoint_params.tab",
             ),
             "w",
             newline="",
@@ -592,15 +405,36 @@ def export_results(
                     "linked_downward_reserves",
                 ]
             )
-            for p, tmp in sorted(mod.GEN_SIMPLE_OPR_TMPS):
+            for p, tmp in sorted(mod.GEN_SIMPLE_NO_LOAD_BALANCE_POWER_OPR_TMPS):
                 if tmp in tmps_to_link:
                     writer.writerow(
                         [
                             p,
                             tmp_linked_tmp_dict[tmp],
-                            max(value(mod.GenSimple_Provide_Power_MW[p, tmp]), 0),
-                            max(value(mod.GenSimple_Upwards_Reserves_MW[p, tmp]), 0),
-                            max(value(mod.GenSimple_Downwards_Reserves_MW[p, tmp]), 0),
+                            max(
+                                value(
+                                    mod.GenSimpleNoLoadBalancePower_Provide_Power_MW[
+                                        p, tmp
+                                    ]
+                                ),
+                                0,
+                            ),
+                            max(
+                                value(
+                                    mod.GenSimpleNoLoadBalancePower_Upwards_Reserves_MW[
+                                        p, tmp
+                                    ]
+                                ),
+                                0,
+                            ),
+                            max(
+                                value(
+                                    mod.GenSimpleNoLoadBalancePower_Downwards_Reserves_MW[
+                                        p, tmp
+                                    ]
+                                ),
+                                0,
+                            ),
                         ]
                     )
 
@@ -638,7 +472,7 @@ def validate_inputs(
         subproblem,
         stage,
         conn,
-        "gen_simple",
+        "gen_simple_no_load_balance_power",
     )
 
     # Other module specific validations
@@ -661,7 +495,7 @@ def validate_inputs(
         WHERE project_portfolio_scenario_id = {}
         """.format(
             subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
-            "gen_simple",
+            "gen_simple_no_load_balance_power",
             subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
         )
     )
@@ -683,6 +517,7 @@ def validate_inputs(
         severity="Mid",
         errors=validate_single_input(
             df=hr_df,
-            msg="gen_simple can only have one load " "point (constant heat rate).",
+            msg="gen_simple_no_load_balance_power can only have one load "
+            "point (constant heat rate).",
         ),
     )
