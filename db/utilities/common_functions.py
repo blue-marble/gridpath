@@ -1112,7 +1112,12 @@ def load_single_subscenario_id_from_dir_to_subscenario_table(
 
     Load data for a particular (project-)subscenario ID from a directory.
     """
-
+    (
+        skip_subscenario_info,
+        skip_subscenario_data,
+    ) = determine_whether_to_skip_subscenario_info_and_or_data(
+        subscenario_type=subscenario_type
+    )
     # Verify project-sub_input_flag alignment
     verify_sub_input_flag_project_alignment(
         project=project, sub_input_flag=sub_input_flag, subscenario=subscenario
@@ -1154,8 +1159,8 @@ def load_single_subscenario_id_from_dir_to_subscenario_table(
             csv_file=csv_file,
             use_project_method=sub_input_flag,
             sub_input_column=sub_input_column,
-            skip_subscenario_info=False,
-            skip_subscenario_data=False,
+            skip_subscenario_info=skip_subscenario_info,
+            skip_subscenario_data=skip_subscenario_data,
             cols_to_exclude_str=cols_to_exclude_str,
             custom_method=custom_method,
         )
@@ -1176,13 +1181,6 @@ def load_single_subscenario_id_from_dir_to_subscenario_table(
             raise ValueError(
                 "Only one CSV file must have ID ".format(subscenario_id_to_load)
             )
-
-        (
-            skip_subscenario_info,
-            skip_subscenario_data,
-        ) = determine_whether_to_skip_subscenario_info_and_or_data(
-            subscenario_type=subscenario_type
-        )
 
         get_subscenario_data_and_insert_into_db(
             conn=conn,
