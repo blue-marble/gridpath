@@ -216,9 +216,7 @@ class TestFuelBurnLimitBalancingAreas(unittest.TestCase):
         actual_penalty = OrderedDict(
             sorted(
                 {
-                    ba: instance.fuel_burn_relative_max_violation_penalty_per_unit[
-                        ba
-                    ]
+                    ba: instance.fuel_burn_relative_max_violation_penalty_per_unit[ba]
                     for ba in instance.FUEL_BURN_LIMIT_BAS
                 }.items()
             )

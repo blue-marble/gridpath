@@ -69,9 +69,7 @@ def add_model_components(
         m.FUEL_BURN_LIMIT_BAS,
         within=m.FUEL_PRJS,
         initialize=lambda mod, ba: [
-            prj
-            for (prj, bln_a) in mod.PRJ_FUEL_BURN_LIMIT_BAS
-            if ba == bln_a
+            prj for (prj, bln_a) in mod.PRJ_FUEL_BURN_LIMIT_BAS if ba == bln_a
         ],
     )
 
@@ -79,9 +77,7 @@ def add_model_components(
         m.FUEL_BURN_LIMIT_BAS,
         within=m.FUELS,
         initialize=lambda mod, ba: [
-            f
-            for (f, bln_a) in mod.FUEL_FUEL_BURN_LIMIT_BAS
-            if ba == bln_a
+            f for (f, bln_a) in mod.FUEL_FUEL_BURN_LIMIT_BAS if ba == bln_a
         ],
     )
 
@@ -186,6 +182,7 @@ def load_model_data(
 
     data_portal.data()["PRJ_FUEL_BURN_LIMIT_BAS"] = {None: project_list_no_dupl}
     data_portal.data()["FUEL_FUEL_BURN_LIMIT_BAS"] = {None: fuel_list_no_dupl}
+
 
 # Database
 ###############################################################################

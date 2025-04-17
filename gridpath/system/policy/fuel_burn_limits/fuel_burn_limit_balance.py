@@ -49,14 +49,12 @@ def add_model_components(
     :param d:
     :return:
     """
-    m.Total_Horizon_Fuel_Burn_By_Fuel_BA_from_All_Sources_Expression = (
-        Expression(
-            m.FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT,
-            rule=lambda mod, ba, bt, h: sum(
-                getattr(mod, component)[ba, bt, h]
-                for component in getattr(d, fuel_burn_balance_components)
-            ),
-        )
+    m.Total_Horizon_Fuel_Burn_By_Fuel_BA_from_All_Sources_Expression = Expression(
+        m.FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT,
+        rule=lambda mod, ba, bt, h: sum(
+            getattr(mod, component)[ba, bt, h]
+            for component in getattr(d, fuel_burn_balance_components)
+        ),
     )
 
     # Absolute constraints on fuel burn
@@ -239,20 +237,17 @@ def export_results(
             ),
             (
                 value(m.Fuel_Burn_Min_Shortage_Abs_Unit_Expression[z, bt, h])
-                if (z, bt, h)
-                in m.FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MIN_ABS_LIMIT
+                if (z, bt, h) in m.FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MIN_ABS_LIMIT
                 else None
             ),
             (
                 value(m.Fuel_Burn_Max_Overage_Abs_Unit_Expression[z, bt, h])
-                if (z, bt, h)
-                in m.FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MAX_ABS_LIMIT
+                if (z, bt, h) in m.FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MAX_ABS_LIMIT
                 else None
             ),
             (
                 value(m.Fuel_Burn_Max_Overage_Rel_Unit_Expression[z, bt, h])
-                if (z, bt, h)
-                in m.FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MAX_REL_LIMIT
+                if (z, bt, h) in m.FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MAX_REL_LIMIT
                 else None
             ),
             (
