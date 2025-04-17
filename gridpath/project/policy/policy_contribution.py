@@ -72,6 +72,7 @@ def add_model_components(
             "f_output",
             "f_capacity",
             "flat_horizon",
+            "stor_losses"
         ],
     )
 
