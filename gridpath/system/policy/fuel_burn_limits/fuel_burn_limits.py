@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-Fuel burn limit for each fuel and fuel burn balancing area.
+Fuel burn limit for each fuel burn balancing area.
 """
 
 import csv
@@ -45,63 +45,56 @@ def add_model_components(
     :return:
     """
 
-    m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT = Set(
-        dimen=4, within=m.FUEL_BURN_LIMIT_BAS * m.BLN_TYPE_HRZS
+    m.FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT = Set(
+        dimen=3, within=m.FUEL_BURN_LIMIT_BAS * m.BLN_TYPE_HRZS
     )
     m.fuel_burn_min_unit = Param(
-        m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT,
+        m.FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT,
         within=Reals,
         default=Negative_Infinity,
     )
     m.fuel_burn_max_unit = Param(
-        m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT,
+        m.FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT,
         within=NonNegativeReals,
         default=Infinity,
-    )
-    m.relative_fuel_burn_max_fuel = Param(
-        m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT,
-        within=Any,
-        default="undefined",
     )
     m.relative_fuel_burn_max_ba = Param(
-        m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT,
+        m.FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT,
         within=Any,
         default="undefined",
     )
-
     m.fraction_of_relative_fuel_burn_max_fuel_ba = Param(
-        m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT,
+        m.FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT,
         within=NonNegativeReals,
         default=Infinity,
     )
 
-    m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MIN_ABS_LIMIT = Set(
-        dimen=4,
+    m.FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MIN_ABS_LIMIT = Set(
+        dimen=3,
         initialize=lambda mod: [
-            (f, ba, bt, h)
-            for (f, ba, bt, h) in mod.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT
-            if mod.fuel_burn_min_unit[f, ba, bt, h] != Negative_Infinity
+            (ba, bt, h)
+            for (ba, bt, h) in mod.FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT
+            if mod.fuel_burn_min_unit[ba, bt, h] != Negative_Infinity
         ],
     )
 
-    m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MAX_ABS_LIMIT = Set(
-        dimen=4,
+    m.FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MAX_ABS_LIMIT = Set(
+        dimen=3,
         initialize=lambda mod: [
-            (f, ba, bt, h)
-            for (f, ba, bt, h) in mod.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT
-            if mod.fuel_burn_max_unit[f, ba, bt, h] != Infinity
+            (ba, bt, h)
+            for (ba, bt, h) in mod.FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT
+            if mod.fuel_burn_max_unit[ba, bt, h] != Infinity
         ],
     )
 
-    m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MAX_REL_LIMIT = Set(
-        dimen=4,
+    m.FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MAX_REL_LIMIT = Set(
+        dimen=3,
         initialize=lambda mod: [
-            (f, ba, bt, h)
-            for (f, ba, bt, h) in mod.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT
+            (ba, bt, h)
+            for (ba, bt, h) in mod.FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT
             if (
-                mod.relative_fuel_burn_max_fuel[f, ba, bt, h] != "undefined"
-                and mod.relative_fuel_burn_max_ba[f, ba, bt, h] != "undefined"
-                and mod.fraction_of_relative_fuel_burn_max_fuel_ba[f, ba, bt, h]
+                mod.relative_fuel_burn_max_ba[ba, bt, h] != "undefined"
+                and mod.fraction_of_relative_fuel_burn_max_fuel_ba[ba, bt, h]
                 != Infinity
             )
         ],
@@ -140,11 +133,10 @@ def load_model_data(
             "inputs",
             "fuel_burn_limits.tab",
         ),
-        index=m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT,
+        index=m.FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT,
         param=(
             m.fuel_burn_min_unit,
             m.fuel_burn_max_unit,
-            m.relative_fuel_burn_max_fuel,
             m.relative_fuel_burn_max_ba,
             m.fraction_of_relative_fuel_burn_max_fuel_ba,
         ),
@@ -171,8 +163,8 @@ def get_inputs_from_database(
 
     c = conn.cursor()
     fuel_burn_limits = c.execute(
-        """SELECT fuel, fuel_burn_limit_ba, balancing_type_horizon, horizon, 
-        fuel_burn_min_unit, fuel_burn_max_unit, relative_fuel_burn_max_fuel, 
+        """SELECT fuel_burn_limit_ba, balancing_type_horizon, horizon, 
+        fuel_burn_min_unit, fuel_burn_max_unit,
         relative_fuel_burn_max_ba, fraction_of_relative_fuel_burn_max_fuel_ba
         FROM inputs_system_fuel_burn_limits
         JOIN
@@ -181,26 +173,12 @@ def get_inputs_from_database(
         WHERE temporal_scenario_id = {temporal_scenario_id}) as relevant_horizons
         USING (balancing_type_horizon, horizon)
         JOIN
-        (SELECT fuel, fuel_burn_limit_ba
+        (SELECT fuel_burn_limit_ba
         FROM inputs_geography_fuel_burn_limit_balancing_areas
         WHERE fuel_burn_limit_ba_scenario_id = {fuel_burn_limit_ba_scenario_id}
-        AND fuel in (
-        SELECT DISTINCT fuel
-        FROM inputs_project_fuels
-        WHERE (project, project_fuel_scenario_id) in (
-            SELECT DISTINCT project, project_fuel_scenario_id
-            FROM inputs_project_operational_chars
-            WHERE project_operational_chars_scenario_id = {project_operational_chars_scenario_id}
-            AND project in (
-            SELECT DISTINCT project
-            FROM inputs_project_portfolios
-            WHERE project_portfolio_scenario_id = {project_portfolio_scenario_id}
-            )
-        )
-        )
         ) as 
         relevant_zones
-        USING (fuel, fuel_burn_limit_ba)
+        USING (fuel_burn_limit_ba)
         WHERE fuel_burn_limit_scenario_id = {fuel_burn_limit_scenario_id}
         AND subproblem_id = {subproblem_id}
         AND stage_id = {stage_id};
@@ -208,8 +186,6 @@ def get_inputs_from_database(
             temporal_scenario_id=subscenarios.TEMPORAL_SCENARIO_ID,
             fuel_burn_limit_ba_scenario_id=subscenarios.FUEL_BURN_LIMIT_BA_SCENARIO_ID,
             fuel_burn_limit_scenario_id=subscenarios.FUEL_BURN_LIMIT_SCENARIO_ID,
-            project_operational_chars_scenario_id=subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
-            project_portfolio_scenario_id=subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
             subproblem_id=subproblem,
             stage_id=stage,
         )
@@ -238,8 +214,6 @@ def validate_inputs(
     """
     pass
     # Validation to be added
-    # carbon_cap_targets = get_inputs_from_database(
-    #     scenario_id, subscenarios, subproblem, stage, conn)
 
 
 def write_model_inputs(
@@ -304,13 +278,11 @@ def write_model_inputs(
         # Write header
         writer.writerow(
             [
-                "fuel",
                 "fuel_burn_limit_ba",
                 "balancing_type",
                 "horizon",
                 "fuel_burn_min_unit",
                 "fuel_burn_max_unit",
-                "relative_fuel_burn_max_fuel",
                 "relative_fuel_burn_max_ba",
                 "fraction_of_relative_fuel_burn_max_fuel_ba",
             ]

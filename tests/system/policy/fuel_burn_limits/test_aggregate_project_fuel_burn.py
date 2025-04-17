@@ -126,19 +126,32 @@ class TestAggregateProjectFuelBurn(unittest.TestCase):
         # Set: PRJ_FUEL_BURN_LIMIT_BAS
         expected_prj_fuel_ba = sorted(
             [
-                ("Gas_CCGT", "Gas", "Zone1"),
-                ("Coal", "Coal", "Zone1"),
-                ("Gas_CT", "Gas", "Zone1"),
-                ("Gas_CCGT_New", "Gas", "Zone1"),
-                ("Gas_CCGT_New_Binary", "Gas", "Zone1"),
-                ("Gas_CT_New", "Gas", "Zone1"),
-                ("Coal_z2", "Coal", "Zone2"),
+                ("Gas_CCGT", "Zone1"),
+                ("Coal", "Zone1"),
+                ("Gas_CT", "Zone1"),
+                ("Gas_CCGT_New", "Zone1"),
+                ("Gas_CCGT_New_Binary", "Zone1"),
+                ("Gas_CT_New", "Zone1"),
+                ("Coal_z2", "Zone2"),
             ]
         )
         actual_prj_fuel_ba = sorted(
-            [(prj, f, ba) for (prj, f, ba) in instance.PRJ_FUEL_BURN_LIMIT_BAS]
+            [(prj, ba) for (prj, ba) in instance.PRJ_FUEL_BURN_LIMIT_BAS]
         )
         self.assertListEqual(expected_prj_fuel_ba, actual_prj_fuel_ba)
+
+        # Set: FUEL_FUEL_BURN_LIMIT_BAS
+        expected_fuel_fuel_ba = sorted(
+            [
+                ("Gas", "Zone1"),
+                ("Coal", "Zone1"),
+                ("Coal", "Zone2"),
+            ]
+        )
+        actual_fuel_fuel_ba = sorted(
+            [(f, ba) for (f, ba) in instance.FUEL_FUEL_BURN_LIMIT_BAS]
+        )
+        self.assertListEqual(expected_fuel_fuel_ba, actual_fuel_fuel_ba)
 
         # Set: PRJ_FUELS_WITH_LIMITS
         expected_prj_fuel_w_limits = sorted(
@@ -159,22 +172,21 @@ class TestAggregateProjectFuelBurn(unittest.TestCase):
 
         # Set: PRJS_BY_FUEL_BA
         expected_prj_by_fuel_ba = {
-            ("Gas", "Zone1"): sorted(
+            "Zone1": sorted(
                 [
                     "Gas_CCGT",
                     "Gas_CT",
                     "Gas_CCGT_New",
                     "Gas_CCGT_New_Binary",
                     "Gas_CT_New",
+                    "Coal",
                 ]
             ),
-            ("Coal", "Zone1"): sorted(["Coal"]),
-            ("Coal", "Zone2"): sorted(["Coal_z2"]),
-            ("Nuclear", "Zone1"): sorted([]),
+            "Zone2": sorted(["Coal_z2"]),
         }
         actual_prj_by_fuel_ba = {
-            (f, ba): sorted([prj for prj in instance.PRJS_BY_FUEL_BA[f, ba]])
-            for (f, ba) in instance.PRJS_BY_FUEL_BA
+            ba: sorted([prj for prj in instance.PRJS_BY_FUEL_BA[ba]])
+            for ba in instance.PRJS_BY_FUEL_BA
         }
 
         self.assertDictEqual(expected_prj_by_fuel_ba, actual_prj_by_fuel_ba)

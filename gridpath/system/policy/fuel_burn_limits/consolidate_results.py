@@ -29,7 +29,7 @@ def export_results(
     d,
 ):
     """
-    Export all results from the CARBON_CAP_ZONE_PRD_DF that various modules
+    Export all results from the FUEL_BURN_LIMITS_DF that various modules
     have added to
     """
 

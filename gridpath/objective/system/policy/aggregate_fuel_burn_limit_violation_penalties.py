@@ -41,16 +41,15 @@ def add_model_components(
 
     def total_penalty_costs_min_abs_rule(mod):
         return sum(
-            mod.Fuel_Burn_Min_Shortage_Abs_Unit_Expression[f, ba, bt, h]
-            * mod.fuel_burn_min_violation_penalty_per_unit[f, ba]
+            mod.Fuel_Burn_Min_Shortage_Abs_Unit_Expression[ba, bt, h]
+            * mod.fuel_burn_min_violation_penalty_per_unit[ba]
             * mod.number_years_represented[mod.period[mod.last_hrz_tmp[bt, h]]]
             * mod.discount_factor[mod.period[mod.last_hrz_tmp[bt, h]]]
             for (
-                f,
                 ba,
                 bt,
                 h,
-            ) in mod.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MIN_ABS_LIMIT
+            ) in mod.FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MIN_ABS_LIMIT
         )
 
     m.Total_Horizon_Fuel_Burn_Min_Abs_Penalty_Costs = Expression(
@@ -59,16 +58,15 @@ def add_model_components(
 
     def total_penalty_costs_max_abs_rule(mod):
         return sum(
-            mod.Fuel_Burn_Max_Overage_Abs_Unit_Expression[f, ba, bt, h]
-            * mod.fuel_burn_max_violation_penalty_per_unit[f, ba]
+            mod.Fuel_Burn_Max_Overage_Abs_Unit_Expression[ba, bt, h]
+            * mod.fuel_burn_max_violation_penalty_per_unit[ba]
             * mod.number_years_represented[mod.period[mod.last_hrz_tmp[bt, h]]]
             * mod.discount_factor[mod.period[mod.last_hrz_tmp[bt, h]]]
             for (
-                f,
                 ba,
                 bt,
                 h,
-            ) in mod.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MAX_ABS_LIMIT
+            ) in mod.FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MAX_ABS_LIMIT
         )
 
     m.Total_Horizon_Fuel_Burn_Max_Abs_Penalty_Costs = Expression(
@@ -77,16 +75,15 @@ def add_model_components(
 
     def total_penalty_costs_rel_rule(mod):
         return sum(
-            mod.Fuel_Burn_Max_Overage_Rel_Unit_Expression[f, ba, bt, h]
-            * mod.fuel_burn_relative_max_violation_penalty_per_unit[f, ba]
+            mod.Fuel_Burn_Max_Overage_Rel_Unit_Expression[ba, bt, h]
+            * mod.fuel_burn_relative_max_violation_penalty_per_unit[ba]
             * mod.number_years_represented[mod.period[mod.last_hrz_tmp[bt, h]]]
             * mod.discount_factor[mod.period[mod.last_hrz_tmp[bt, h]]]
             for (
-                f,
                 ba,
                 bt,
                 h,
-            ) in mod.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MAX_REL_LIMIT
+            ) in mod.FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MAX_REL_LIMIT
         )
 
     m.Total_Horizon_Fuel_Burn_Max_Rel_Penalty_Costs = Expression(

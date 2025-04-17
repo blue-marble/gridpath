@@ -37,7 +37,6 @@ def export_results(
     # Zone-period DF
     df = pd.DataFrame(
         columns=[
-            "fuel",
             "fuel_burn_limit_ba",
             "balancing_type",
             "horizon",
@@ -46,18 +45,16 @@ def export_results(
         ],
         data=[
             [
-                f,
                 z,
                 bt,
                 h,
                 m.number_years_represented[m.period[m.last_hrz_tmp[bt, h]]],
                 m.discount_factor[m.period[m.last_hrz_tmp[bt, h]]],
             ]
-            for (f, z, bt, h) in m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT
+            for (z, bt, h) in m.FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT
         ],
     ).set_index(
         [
-            "fuel",
             "fuel_burn_limit_ba",
             "balancing_type",
             "horizon",

@@ -1061,7 +1061,6 @@ DROP TABLE IF EXISTS inputs_geography_fuel_burn_limit_balancing_areas;
 CREATE TABLE inputs_geography_fuel_burn_limit_balancing_areas
 (
     fuel_burn_limit_ba_scenario_id          INTEGER,
-    fuel                                    VARCHAR(32),
     fuel_burn_limit_ba                      VARCHAR(32),
     min_allow_violation                     INTEGER DEFAULT 0, -- constraint is hard by default
     min_violation_penalty_per_unit          FLOAT   DEFAULT 0,
@@ -1069,7 +1068,7 @@ CREATE TABLE inputs_geography_fuel_burn_limit_balancing_areas
     max_violation_penalty_per_unit          FLOAT   DEFAULT 0,
     relative_max_allow_violation            INTEGER DEFAULT 0, -- constraint is hard by default
     relative_max_violation_penalty_per_unit FLOAT   DEFAULT 0,
-    PRIMARY KEY (fuel_burn_limit_ba_scenario_id, fuel, fuel_burn_limit_ba),
+    PRIMARY KEY (fuel_burn_limit_ba_scenario_id, fuel_burn_limit_ba),
     FOREIGN KEY (fuel_burn_limit_ba_scenario_id) REFERENCES
         subscenarios_geography_fuel_burn_limit_balancing_areas (fuel_burn_limit_ba_scenario_id)
 );
@@ -3395,7 +3394,7 @@ CREATE TABLE inputs_project_carbon_credits_purchase_zones
 );
 
 -- Project fuel burn limit balancing areas
--- Which projects contribute to the fuel / fuel BA limit
+-- Which projects contribute to the fuel BA limit
 -- This table can include all project with NULLs for projects not
 -- contributing or just the contributing projects
 DROP TABLE IF EXISTS subscenarios_project_fuel_burn_limit_balancing_areas;
@@ -3411,12 +3410,33 @@ CREATE TABLE inputs_project_fuel_burn_limit_balancing_areas
 (
     project_fuel_burn_limit_ba_scenario_id INTEGER,
     project                                VARCHAR(64),
-    fuel                                   VARCHAR(32),
     fuel_burn_limit_ba                     VARCHAR(32),
-    PRIMARY KEY (project_fuel_burn_limit_ba_scenario_id, project, fuel,
-                 fuel_burn_limit_ba),
+    PRIMARY KEY (project_fuel_burn_limit_ba_scenario_id, project, fuel_burn_limit_ba),
     FOREIGN KEY (project_fuel_burn_limit_ba_scenario_id) REFERENCES
         subscenarios_project_fuel_burn_limit_balancing_areas (project_fuel_burn_limit_ba_scenario_id)
+);
+
+-- Fuel fuel burn limit balancing areas
+-- Which fuel contribute to the fuel BA limit
+-- This table can include all fuels with NULLs for fuels not
+-- contributing or just the contributing fuels
+DROP TABLE IF EXISTS subscenarios_fuel_fuel_burn_limit_balancing_areas;
+CREATE TABLE subscenarios_fuel_fuel_burn_limit_balancing_areas
+(
+    fuel_fuel_burn_limit_ba_scenario_id INTEGER PRIMARY KEY,
+    name                                   VARCHAR(32),
+    description                            VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_fuel_fuel_burn_limit_balancing_areas;
+CREATE TABLE inputs_fuel_fuel_burn_limit_balancing_areas
+(
+    fuel_fuel_burn_limit_ba_scenario_id INTEGER,
+    fuel                                VARCHAR(64),
+    fuel_burn_limit_ba                     VARCHAR(32),
+    PRIMARY KEY (fuel_fuel_burn_limit_ba_scenario_id, fuel, fuel_burn_limit_ba),
+    FOREIGN KEY (fuel_fuel_burn_limit_ba_scenario_id) REFERENCES
+        subscenarios_fuel_fuel_burn_limit_balancing_areas (fuel_fuel_burn_limit_ba_scenario_id)
 );
 
 -- Project PRM zones
@@ -5157,7 +5177,6 @@ DROP TABLE IF EXISTS inputs_system_fuel_burn_limits;
 CREATE TABLE inputs_system_fuel_burn_limits
 (
     fuel_burn_limit_scenario_id                INTEGER,
-    fuel                                       VARCHAR(32),
     fuel_burn_limit_ba                         VARCHAR(32),
     subproblem_id                              INTEGER,
     stage_id                                   INTEGER,
@@ -5165,10 +5184,9 @@ CREATE TABLE inputs_system_fuel_burn_limits
     horizon                                    INTEGER,
     fuel_burn_min_unit                         FLOAT,
     fuel_burn_max_unit                         FLOAT,
-    relative_fuel_burn_max_fuel                VARCHAR(32),
     relative_fuel_burn_max_ba                  VARCHAR(32),
     fraction_of_relative_fuel_burn_max_fuel_ba FLOAT,
-    PRIMARY KEY (fuel_burn_limit_scenario_id, fuel, fuel_burn_limit_ba,
+    PRIMARY KEY (fuel_burn_limit_scenario_id, fuel_burn_limit_ba,
                  subproblem_id, stage_id, balancing_type_horizon, horizon)
 );
 
@@ -5332,6 +5350,7 @@ CREATE TABLE scenarios
     project_carbon_credits_purchase_zone_scenario_id            INTEGER,
     project_carbon_credits_scenario_id                          INTEGER,
     project_fuel_burn_limit_ba_scenario_id                      INTEGER,
+    fuel_fuel_burn_limit_ba_scenario_id                         INTEGER,
     project_policy_zone_scenario_id                             INTEGER,
     project_prm_zone_scenario_id                                INTEGER,
     prm_capacity_transfer_scenario_id                           INTEGER,
@@ -5521,6 +5540,9 @@ CREATE TABLE scenarios
     FOREIGN KEY (project_fuel_burn_limit_ba_scenario_id) REFERENCES
         subscenarios_project_fuel_burn_limit_balancing_areas
             (project_fuel_burn_limit_ba_scenario_id),
+    FOREIGN KEY (fuel_fuel_burn_limit_ba_scenario_id) REFERENCES
+        subscenarios_fuel_fuel_burn_limit_balancing_areas
+            (fuel_fuel_burn_limit_ba_scenario_id),
     FOREIGN KEY (project_policy_zone_scenario_id) REFERENCES
         subscenarios_project_policy_zones (project_policy_zone_scenario_id),
     FOREIGN KEY (project_prm_zone_scenario_id) REFERENCES
@@ -7140,11 +7162,9 @@ CREATE TABLE results_system_fuel_burn_limits
     horizon                                        INTEGER,
     number_years_represented                       FLOAT, -- based on period of last horizon timepoint
     discount_factor                                FLOAT, -- based on period of last horizon timepoint
-    fuel                                           VARCHAR(32),
     fuel_burn_limit_ba                             VARCHAR(32),
     fuel_burn_min_unit                             FLOAT,
     fuel_burn_max_unit                             FLOAT,
-    relative_fuel_burn_max_fuel                    FLOAT,
     relative_fuel_burn_max_ba                      FLOAT,
     fraction_of_relative_fuel_burn_max_fuel_ba     FLOAT,
     total_fuel_burn_unit                           FLOAT,
@@ -7159,7 +7179,7 @@ CREATE TABLE results_system_fuel_burn_limits
     rel_fuel_burn_limit_marginal_cost_per_unit     FLOAT,
     PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
                  availability_iteration, subproblem_id, stage_id,
-                 balancing_type, horizon, fuel, fuel_burn_limit_ba)
+                 balancing_type, horizon, fuel_burn_limit_ba)
 );
 
 -- Generic policy

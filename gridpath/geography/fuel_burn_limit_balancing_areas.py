@@ -14,7 +14,7 @@
 
 """
 Balancing areas where fuel constraints are enforced; these can be different from the
-load zones and other balancing areas. Note that these are also differentiated by fuel.
+load zones and other balancing areas.
 """
 
 import csv
@@ -41,7 +41,7 @@ def add_model_components(
     :return:
     """
 
-    m.FUEL_BURN_LIMIT_BAS = Set(dimen=2)  # fuel and BA
+    m.FUEL_BURN_LIMIT_BAS = Set()
 
     m.fuel_burn_min_allow_violation = Param(
         m.FUEL_BURN_LIMIT_BAS, within=Boolean, default=0
@@ -119,26 +119,12 @@ def get_inputs_from_database(
 
     c = conn.cursor()
     fuel_burn_limit_bas = c.execute(
-        """SELECT fuel, fuel_burn_limit_ba, min_allow_violation, 
+        """SELECT fuel_burn_limit_ba, min_allow_violation, 
         min_violation_penalty_per_unit, max_allow_violation, 
         max_violation_penalty_per_unit, relative_max_allow_violation, 
         relative_max_violation_penalty_per_unit
         FROM inputs_geography_fuel_burn_limit_balancing_areas
-        WHERE fuel_burn_limit_ba_scenario_id = {fuel_burn_limit_ba_scenario_id}
-        AND fuel in (
-        SELECT DISTINCT fuel
-        FROM inputs_project_fuels
-        WHERE (project, project_fuel_scenario_id) in (
-            SELECT DISTINCT project, project_fuel_scenario_id
-            FROM inputs_project_operational_chars
-            WHERE project_operational_chars_scenario_id = {project_operational_chars_scenario_id}
-            AND project in (
-            SELECT DISTINCT project
-            FROM inputs_project_portfolios
-            WHERE project_portfolio_scenario_id = {project_portfolio_scenario_id}
-            )
-        )
-        );
+        WHERE fuel_burn_limit_ba_scenario_id = {fuel_burn_limit_ba_scenario_id};
         """.format(
             fuel_burn_limit_ba_scenario_id=subscenarios.FUEL_BURN_LIMIT_BA_SCENARIO_ID,
             project_operational_chars_scenario_id=subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
@@ -233,7 +219,6 @@ def write_model_inputs(
         # Write header
         writer.writerow(
             [
-                "fuel",
                 "fuel_burn_limit_ba",
                 "min_allow_violation",
                 "min_violation_penalty_per_unit",
