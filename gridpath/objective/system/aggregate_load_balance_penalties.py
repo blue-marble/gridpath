@@ -65,6 +65,17 @@ def add_model_components(
         m.LOAD_ZONES, m.TMPS, rule=max_unserved_load_penalty_constraint_rule
     )
 
+    dsm_curtailment_penalties = {
+        2026: 34.81,
+        2027: 33.86,
+        2028: 33.00,
+        2029: 32.19,
+        2030: 31.51,
+        2035: 28.30,
+        2040: 25.43,
+        2045: 22.85,
+    }
+
     def total_penalty_costs_rule(mod):
         return sum(
             (
@@ -72,6 +83,7 @@ def add_model_components(
                 * mod.unserved_energy_penalty_per_mwh[z]
                 + mod.Overgeneration_MW_Expression[z, tmp]
                 * mod.overgeneration_penalty_per_mw[z]
+                * dsm_curtailment_penalties[mod.period[tmp]]
             )
             * mod.hrs_in_tmp[tmp]
             * mod.tmp_weight[tmp]
