@@ -1009,6 +1009,11 @@ def get_inputs_from_database(
         -- Get only the subset of projects in the portfolio based on the 
         -- project_portfolio_scenario_id 
         WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
+        AND period in (
+            SELECT DISTINCT period
+            FROM inputs_temporal_periods
+            WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+        )
         """
     )
 
