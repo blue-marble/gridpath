@@ -319,6 +319,7 @@ def import_results_into_database(
             conn=db,
             cursor=c,
             scenario_id=scenario_id,
+            weather_iteration=weather_iteration,
             hydro_iteration=hydro_iteration,
             availability_iteration=availability_iteration,
             subproblem=subproblem,
