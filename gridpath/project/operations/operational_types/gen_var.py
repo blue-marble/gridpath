@@ -429,14 +429,30 @@ def subhourly_energy_delivered_rule(mod, g, tmp):
     return mod.GenVar_Subhourly_Energy_Delivered_MW[g, tmp]
 
 
+dsm_curtailment_penalties = {
+    2026: 34.81,
+    2027: 33.86,
+    2028: 33.00,
+    2029: 32.19,
+    2030: 31.51,
+    2035: 28.30,
+    2040: 25.43,
+    2045: 22.85,
+}
+
+
 def curtailment_cost_rule(mod, g, tmp):
     """
     Apply curtailment cost to scheduled and subhourly curtailment
     """
     return (
-        mod.GenVar_Scheduled_Curtailment_MW[g, tmp]
-        + mod.GenVar_Subhourly_Curtailment_MW[g, tmp]
-    ) * mod.curtailment_cost_per_pwh[g]
+        (
+            mod.GenVar_Scheduled_Curtailment_MW[g, tmp]
+            + mod.GenVar_Subhourly_Curtailment_MW[g, tmp]
+        )
+        * mod.curtailment_cost_per_pwh[g]
+        * dsm_curtailment_penalties[mod.period[tmp]]
+    )
 
 
 def power_delta_rule(mod, g, tmp):
