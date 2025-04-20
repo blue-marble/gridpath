@@ -7200,6 +7200,8 @@ CREATE TABLE results_system_policy_requirements
     horizon                                   INTEGER,
     policy_requirement                        FLOAT,
     policy_requirement_f_load_coeff           FLOAT,
+    pre_load_modifier_load_in_hrz             FLOAT,
+    post_load_modifier_load_in_hrz            FLOAT,
     policy_requirement_calculated_in_horizon  FLOAT,
     policy_requirement_shortage               FLOAT,
     dual                                      FLOAT,
