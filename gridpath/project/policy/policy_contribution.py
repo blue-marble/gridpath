@@ -134,7 +134,7 @@ def add_model_components(
     #         return compliance_type_init.contribution_in_horizon(mod, prj, policy, bt, h)
     #
     # m.Policy_Contribution_in_Horizon = Expression(
-    #     m.PRJ_POLICY_ZONE_OPR_TMPSS, rule=contribution_in_timepoint
+    #     m.PRJ_POLICY_ZONE_OPR_TMPSS, rule=contribution_in_horizon
     # )
 
 
@@ -244,7 +244,6 @@ def export_results(
     """
 
     results_columns = [
-        "period",
         "policy_contribution",
     ]
     data = [
@@ -253,6 +252,8 @@ def export_results(
             p,
             z,
             tmp,
+            m.tmp_weight[tmp],
+            m.hrs_in_tmp[tmp],
             m.period[tmp],
             value(m.Policy_Contribution_in_Timepoint[prj, p, z, tmp]),
         ]
@@ -260,7 +261,15 @@ def export_results(
     ]
 
     results_df = create_results_df(
-        index_columns=["project", "policy_name", "policy_zone", "timepoint"],
+        index_columns=[
+            "project",
+            "policy_name",
+            "policy_zone",
+            "timepoint",
+            "timepoint_weight",
+            "hours_in_timepoint",
+            "period",
+        ],
         results_columns=results_columns,
         data=data,
     )

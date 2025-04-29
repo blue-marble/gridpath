@@ -98,6 +98,8 @@ def export_results(
     """
 
     results_columns = [
+        "pre_load_modifier_load_in_hrz",
+        "post_load_modifier_load_in_hrz",
         "policy_requirement_calculated_in_horizon",
         "policy_requirement_shortage",
         "dual",
@@ -109,6 +111,32 @@ def export_results(
             z,
             bt,
             h,
+            sum(
+                value(m.LZ_Bulk_Static_Load_in_Tmp[lz, tmp])
+                * m.hrs_in_tmp[tmp]
+                * m.tmp_weight[tmp]
+                for (
+                    _policy_name,
+                    _policy_requirement_zone,
+                    lz,
+                ) in m.POLICIES_ZONE_LOAD_ZONES
+                if (_policy_name, _policy_requirement_zone) == (p, z)
+                for tmp in m.TMPS
+                if tmp in m.TMPS_BY_BLN_TYPE_HRZ[bt, h]
+            ),
+            sum(
+                value(m.LZ_Modified_Load_in_Tmp[lz, tmp])
+                * m.hrs_in_tmp[tmp]
+                * m.tmp_weight[tmp]
+                for (
+                    _policy_name,
+                    _policy_requirement_zone,
+                    lz,
+                ) in m.POLICIES_ZONE_LOAD_ZONES
+                if (_policy_name, _policy_requirement_zone) == (p, z)
+                for tmp in m.TMPS
+                if tmp in m.TMPS_BY_BLN_TYPE_HRZ[bt, h]
+            ),
             value(m.Policy_Zone_Horizon_Requirement[p, z, bt, h]),
             value(m.Policy_Requirement_Shortage_Expression[p, z, bt, h]),
             (
