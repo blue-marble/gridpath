@@ -1,4 +1,4 @@
-fuel,fuel_burn_limit_ba,min_allow_violation,min_violation_penalty_per_unit,max_allow_violation,max_violation_penalty_per_unit,relative_max_allow_violation,relative_max_violation_penalty_per_unit
-Gas,Gas_Burn_BA,0,0,0,0,0,0
-Coal,Coal_Burn_BA,0,0,0,0,0,0
-Hydrogen,Hydrogen_Burn_BA,0,0,0,0,0,0
+fuel_burn_limit_ba,min_allow_violation,min_violation_penalty_per_unit,max_allow_violation,max_violation_penalty_per_unit,relative_max_allow_violation,relative_max_violation_penalty_per_unit
+Gas_Burn_BA,0,0,0,0,0,0
+Coal_Burn_BA,0,0,0,0,0,0
+Hydrogen_Burn_BA,0,0,0,0,0,0
