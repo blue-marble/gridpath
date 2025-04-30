@@ -127,6 +127,7 @@ class TestRECs(unittest.TestCase):
                 ("Wind_z2", "RPS", "RPSZone1"),
                 ("Gas_CCGT", "Carbon", "CarbonZone1"),
                 ("Coal", "Carbon", "CarbonZone1"),
+                ("Battery", "RPS", "RPSZone1"),
             ]
         )
         actual_prj_policy_zones = sorted(
@@ -145,6 +146,7 @@ class TestRECs(unittest.TestCase):
                     ("Wind_z2", "RPS", "RPSZone1"): "f_output",
                     ("Gas_CCGT", "Carbon", "CarbonZone1"): "f_output",
                     ("Coal", "Carbon", "CarbonZone1"): "f_output",
+                    ("Battery", "RPS", "RPSZone1"): "stor_losses",
                 }.items()
             )
         )

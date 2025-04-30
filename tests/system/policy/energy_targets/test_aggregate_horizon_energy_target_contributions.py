@@ -33,7 +33,6 @@ PREREQUISITE_MODULE_NAMES = [
     "geography.load_zones",
     "system.load_balance.static_load_requirement",
     "geography.energy_target_zones",
-    "system.policy.energy_targets.horizon_energy_target",
     "geography.water_network",
     "system.water.water_system_params",
     "system.water.water_nodes",
@@ -51,9 +50,11 @@ PREREQUISITE_MODULE_NAMES = [
     "project.operations.operational_types",
     "project.operations.power",
     "project.operations.energy_target_contributions",
+    "system.load_balance.aggregate_load_modifier_power",
+    "system.policy.energy_targets.horizon_energy_target",
 ]
 NAME_OF_MODULE_BEING_TESTED = (
-    "system.policy.energy_targets" ".aggregate_horizon_energy_target_contributions"
+    "system.policy.energy_targets.aggregate_horizon_energy_target_contributions"
 )
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:

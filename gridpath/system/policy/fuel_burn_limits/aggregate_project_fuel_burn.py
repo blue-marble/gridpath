@@ -20,7 +20,7 @@ period level.
 import csv
 import os.path
 from pyomo.environ import Param, Set, Expression
-
+import pandas as pd
 from gridpath.auxiliary.db_interface import directories_to_db_values
 from gridpath.auxiliary.dynamic_components import fuel_burn_balance_components
 
@@ -41,16 +41,19 @@ def add_model_components(
     :param d:
     :return:
     """
-    m.PRJ_FUEL_BURN_LIMIT_BAS = Set(dimen=3)
+    m.PRJ_FUEL_BURN_LIMIT_BAS = Set(dimen=2)
+
+    m.FUEL_FUEL_BURN_LIMIT_BAS = Set(dimen=2)
 
     m.PRJ_FUELS_WITH_LIMITS = Set(
         dimen=2,
         within=m.PROJECTS * m.FUELS,
-        initialize=lambda mod: sorted(
-            list(
-                set([(prj, f) for (prj, f, ba) in mod.PRJ_FUEL_BURN_LIMIT_BAS]),
-            )
-        ),
+        initialize=lambda mod: [
+            (prj, f)
+            for (prj, ba) in mod.PRJ_FUEL_BURN_LIMIT_BAS
+            for (f, _ba) in mod.FUEL_FUEL_BURN_LIMIT_BAS
+            if _ba == ba and (prj, f) in mod.FUEL_PRJ_FUELS
+        ],
     )
 
     m.FUEL_PRJS_FUEL_WITH_LIMITS_OPR_TMPS = Set(
@@ -65,16 +68,22 @@ def add_model_components(
     m.PRJS_BY_FUEL_BA = Set(
         m.FUEL_BURN_LIMIT_BAS,
         within=m.FUEL_PRJS,
-        initialize=lambda mod, f, ba: [
-            prj
-            for (prj, fuel, bln_a) in mod.PRJ_FUEL_BURN_LIMIT_BAS
-            if f == fuel and ba == bln_a
+        initialize=lambda mod, ba: [
+            prj for (prj, bln_a) in mod.PRJ_FUEL_BURN_LIMIT_BAS if ba == bln_a
         ],
     )
 
-    def total_period_fuel_burn_by_fuel_burn_limit_ba_rule(mod, f, ba, bt, h):
+    m.FUELS_BY_FUEL_BA = Set(
+        m.FUEL_BURN_LIMIT_BAS,
+        within=m.FUELS,
+        initialize=lambda mod, ba: [
+            f for (f, bln_a) in mod.FUEL_FUEL_BURN_LIMIT_BAS if ba == bln_a
+        ],
+    )
+
+    def total_period_fuel_burn_by_fuel_burn_limit_ba_rule(mod, ba, bt, h):
         """
-        Calculate total fuel burn from all projects in a fuel / fuel balancing area.
+        Calculate total fuel burn from all projects in a fuel balancing area.
 
         :param mod:
         :param z:
@@ -89,13 +98,13 @@ def add_model_components(
             * mod.hrs_in_tmp[tmp]
             * mod.tmp_weight[tmp]
             for (prj, fuel, tmp) in mod.FUEL_PRJS_FUEL_WITH_LIMITS_OPR_TMPS
-            if prj in mod.PRJS_BY_FUEL_BA[f, ba]  # find projects for this fuel/BA
-            and fuel == f  # only get the fuel burn for this fuel
+            if prj in mod.PRJS_BY_FUEL_BA[ba]  # find projects for this BA
+            if fuel in mod.FUELS_BY_FUEL_BA[ba]  # find fuel for this BA
             and tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, h]  # only tmps in relevant horizon
         )
 
-    m.Total_Horizon_Fuel_Burn_By_Fuel_and_Fuel_BA_Unit = Expression(
-        m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT,
+    m.Total_Horizon_Fuel_Burn_By_Fuel_BA_Unit = Expression(
+        m.FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT,
         rule=total_period_fuel_burn_by_fuel_burn_limit_ba_rule,
     )
 
@@ -110,7 +119,7 @@ def record_dynamic_components(dynamic_components):
     """
 
     getattr(dynamic_components, fuel_burn_balance_components).append(
-        "Total_Horizon_Fuel_Burn_By_Fuel_and_Fuel_BA_Unit"
+        "Total_Horizon_Fuel_Burn_By_Fuel_BA_Unit"
     )
 
 
@@ -139,8 +148,11 @@ def load_model_data(
     :param stage:
     :return:
     """
-    data_portal.load(
-        filename=os.path.join(
+    project_list = list()
+    fuel_list = list()
+
+    _df = pd.read_csv(
+        os.path.join(
             scenario_directory,
             weather_iteration,
             hydro_iteration,
@@ -148,10 +160,28 @@ def load_model_data(
             subproblem,
             stage,
             "inputs",
-            "project_fuel_burn_limit_bas.tab",
+            "project_and_fuels_fuel_burn_limit_bas.tab",
         ),
-        set=m.PRJ_FUEL_BURN_LIMIT_BAS,
+        sep="\t",
+        usecols=[
+            "project",
+            "fuel",
+            "fuel_burn_limit_ba",
+        ],
     )
+    for r in zip(
+        _df["project"],
+        _df["fuel"],
+        _df["fuel_burn_limit_ba"],
+    ):
+        project_list.append((r[0], r[2]))
+        fuel_list.append((r[1], r[2]))
+
+    project_list_no_dupl = list(dict.fromkeys(project_list))
+    fuel_list_no_dupl = list(dict.fromkeys(fuel_list))
+
+    data_portal.data()["PRJ_FUEL_BURN_LIMIT_BAS"] = {None: project_list_no_dupl}
+    data_portal.data()["FUEL_FUEL_BURN_LIMIT_BAS"] = {None: fuel_list_no_dupl}
 
 
 # Database
@@ -188,20 +218,28 @@ def get_inputs_from_database(
             WHERE project_portfolio_scenario_id = {project_portfolio_scenario_id}
         ) as prj_tbl
         LEFT OUTER JOIN 
-        -- Get fuels and BAs for those projects
-        (SELECT project, fuel, fuel_burn_limit_ba
+        -- Get BAs for those projects
+        (SELECT project, fuel_burn_limit_ba
             FROM inputs_project_fuel_burn_limit_balancing_areas
             WHERE project_fuel_burn_limit_ba_scenario_id = {project_fuel_burn_limit_ba_scenario_id}
-        ) as prj_cc_zone_tbl
+        ) as prj_fbl_tbl
         USING (project)
-        -- Filter out projects whose fuel and BA is not one included in 
+        -- Filter out projects whose BA is not one included in 
         -- our fuel_burn_limit_ba_scenario_id
         INNER JOIN (
-            SELECT fuel, fuel_burn_limit_ba
+            SELECT fuel_burn_limit_ba
                 FROM inputs_geography_fuel_burn_limit_balancing_areas
                 WHERE fuel_burn_limit_ba_scenario_id = {fuel_burn_limit_ba_scenario_id}
-                AND fuel in (
-                SELECT DISTINCT fuel
+        )
+        USING (fuel_burn_limit_ba)
+        LEFT OUTER JOIN
+        (SELECT fuel, fuel_burn_limit_ba
+            FROM inputs_fuel_fuel_burn_limit_balancing_areas
+            WHERE fuel_fuel_burn_limit_ba_scenario_id = {fuel_fuel_burn_limit_ba_scenario_id}
+        ) as fuel_fbl_tbl
+        USING (fuel_burn_limit_ba)
+        INNER JOIN (
+            SELECT DISTINCT fuel
                 FROM inputs_project_fuels
                 WHERE (project, project_fuel_scenario_id) in (
                     SELECT DISTINCT project, project_fuel_scenario_id
@@ -213,13 +251,13 @@ def get_inputs_from_database(
                     WHERE project_portfolio_scenario_id = {project_portfolio_scenario_id}
                     )
                 )
-                )
-                )
-        USING (fuel, fuel_burn_limit_ba);
+        )
+        USING (fuel);
         """.format(
             project_portfolio_scenario_id=subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
             project_fuel_burn_limit_ba_scenario_id=subscenarios.PROJECT_FUEL_BURN_LIMIT_BA_SCENARIO_ID,
             fuel_burn_limit_ba_scenario_id=subscenarios.FUEL_BURN_LIMIT_BA_SCENARIO_ID,
+            fuel_fuel_burn_limit_ba_scenario_id=subscenarios.FUEL_FUEL_BURN_LIMIT_BA_SCENARIO_ID,
             project_operational_chars_scenario_id=subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
         )
     )
@@ -279,7 +317,7 @@ def write_model_inputs(
             subproblem,
             stage,
             "inputs",
-            "project_fuel_burn_limit_bas.tab",
+            "project_and_fuels_fuel_burn_limit_bas.tab",
         ),
         "w",
         newline="",

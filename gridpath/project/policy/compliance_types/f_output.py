@@ -38,7 +38,7 @@ def add_model_components(
 def contribution_in_timepoint(mod, prj, policy, zone, tmp):
     """ """
     return (
-        mod.f_slope[prj, policy, zone] * mod.Power_Provision_MW[prj, tmp]
+        mod.f_slope[prj, policy, zone] * mod.Bulk_Power_Provision_MW[prj, tmp]
         + mod.f_intercept[prj, policy, zone]
     )
 
@@ -116,7 +116,7 @@ def load_model_data(
         for row in reader:
             if (row[0], row[1], row[2]) in project_subset:
                 f_slope_dict[(row[0], row[1], row[2])] = float(row[4])
-                f_intercept_dict[(row[0], row[1], row[2])] = int(float(row[5]))
+                f_intercept_dict[(row[0], row[1], row[2])] = float(row[5])
 
     data_portal.data()["f_slope"] = f_slope_dict
     data_portal.data()["f_intercept"] = f_intercept_dict

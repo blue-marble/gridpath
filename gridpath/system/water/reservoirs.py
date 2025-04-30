@@ -1,4 +1,4 @@
-# Copyright 2016-2024 Blue Marble Analytics LLC.
+# Copyright 2016-2025 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -146,6 +146,53 @@ def add_model_components(
 
     m.max_volume_violation_cost = Param(
         m.WATER_NODES_W_RESERVOIRS, within=NonNegativeReals, default=0
+    )
+
+    # TODO: horizon volume bounds need tests
+    m.WATER_NODE_RESERVOIR_BT_HRZS_WITH_MAX_VOL_REQUIRMENTS = Set(
+        dimen=3, within=m.WATER_NODES_W_RESERVOIRS * m.BLN_TYPE_HRZS
+    )
+
+    m.WATER_NODE_RESERVOIR_BT_HRZS_WITH_MIN_VOL_REQUIRMENTS = Set(
+        dimen=3, within=m.WATER_NODES_W_RESERVOIRS * m.BLN_TYPE_HRZS
+    )
+
+    m.hrz_maximum_volume_volumeunit = Param(
+        m.WATER_NODE_RESERVOIR_BT_HRZS_WITH_MAX_VOL_REQUIRMENTS, within=NonNegativeReals
+    )
+
+    m.hrz_minimum_volume_volumeunit = Param(
+        m.WATER_NODE_RESERVOIR_BT_HRZS_WITH_MIN_VOL_REQUIRMENTS, within=NonNegativeReals
+    )
+
+    def max_volume_by_tmp_init(mod, r, tmp):
+        vals = [mod.maximum_volume_volumeunit[r]]
+
+        for _r, bt, hrz in mod.WATER_NODE_RESERVOIR_BT_HRZS_WITH_MAX_VOL_REQUIRMENTS:
+            if _r == r and tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]:
+                vals.append(mod.hrz_maximum_volume_volumeunit[_r, bt, hrz])
+
+        tmp_val = min(vals)
+
+        return tmp_val
+
+    m.maximum_volume_volumeunit_by_tmp = Param(
+        m.WATER_NODES_W_RESERVOIRS, m.TMPS, initialize=max_volume_by_tmp_init
+    )
+
+    def min_volume_by_tmp_init(mod, r, tmp):
+        vals = [mod.minimum_volume_volumeunit[r]]
+
+        for _r, bt, hrz in mod.WATER_NODE_RESERVOIR_BT_HRZS_WITH_MIN_VOL_REQUIRMENTS:
+            if _r == r and tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]:
+                vals.append(mod.hrz_minimum_volume_volumeunit[_r, bt, hrz])
+
+        tmp_val = max(vals)
+
+        return tmp_val
+
+    m.minimum_volume_volumeunit_by_tmp = Param(
+        m.WATER_NODES_W_RESERVOIRS, m.TMPS, initialize=min_volume_by_tmp_init
     )
 
     # Release targets
@@ -317,7 +364,7 @@ def add_model_components(
             mod.Reservoir_Starting_Volume_WaterVolumeUnit[r, tmp]
             + mod.Min_Reservoir_Storage_Violation[r, tmp]
             * mod.allow_max_volume_violation[r]
-            >= mod.minimum_volume_volumeunit[r]
+            >= mod.minimum_volume_volumeunit_by_tmp[r, tmp]
         )
 
     m.Minimum_Water_Storage_Constraint = Constraint(
@@ -329,7 +376,7 @@ def add_model_components(
     def reservoir_storage_max_bound_constraint_rule(mod, r, tmp):
         return (
             mod.Reservoir_Starting_Volume_WaterVolumeUnit[r, tmp]
-            <= mod.maximum_volume_volumeunit[r]
+            <= mod.maximum_volume_volumeunit_by_tmp[r, tmp]
             + mod.Max_Reservoir_Storage_Violation[r, tmp]
             * mod.allow_min_volume_violation[r]
         )
@@ -528,6 +575,42 @@ def load_model_data(
         ),
     )
 
+    hrz_max_vol_fname = os.path.join(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+        "reservoir_max_volume_by_horizon.tab",
+    )
+
+    if os.path.exists(hrz_max_vol_fname):
+        data_portal.load(
+            filename=hrz_max_vol_fname,
+            index=m.WATER_NODE_RESERVOIR_BT_HRZS_WITH_MAX_VOL_REQUIRMENTS,
+            param=m.hrz_maximum_volume_volumeunit,
+        )
+
+    hrz_min_vol_fname = os.path.join(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+        "reservoir_min_volume_by_horizon.tab",
+    )
+
+    if os.path.exists(hrz_min_vol_fname):
+        data_portal.load(
+            filename=hrz_min_vol_fname,
+            index=m.WATER_NODE_RESERVOIR_BT_HRZS_WITH_MIN_VOL_REQUIRMENTS,
+            param=m.hrz_minimum_volume_volumeunit,
+        )
+
     starting_volume_fname = os.path.join(
         scenario_directory,
         weather_iteration,
@@ -668,6 +751,50 @@ def get_inputs_from_database(
         """
     )
 
+    c4 = conn.cursor()
+    hrz_max_volumes = c4.execute(
+        f"""SELECT water_node, balancing_type, horizon, maximum_volume_volumeunit
+            FROM inputs_system_water_node_reservoirs_volume_horizon_bounds
+            WHERE (water_node, volume_hrz_bounds_scenario_id)
+            IN (SELECT water_node, volume_hrz_bounds_scenario_id
+                FROM inputs_system_water_node_reservoirs
+                WHERE water_node_reservoir_scenario_id = 
+                {subscenarios.WATER_NODE_RESERVOIR_SCENARIO_ID}
+            )
+            AND (balancing_type, horizon)
+            IN (SELECT DISTINCT balancing_type_horizon, horizon
+                FROM inputs_temporal_horizon_timepoints
+                WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+                AND subproblem_id = {subproblem}
+                AND stage_id = {stage}
+            )
+            AND maximum_volume_volumeunit IS NOT NULL
+            ;
+            """
+    )
+
+    c5 = conn.cursor()
+    hrz_min_volumes = c5.execute(
+        f"""SELECT water_node, balancing_type, horizon, minimum_volume_volumeunit
+            FROM inputs_system_water_node_reservoirs_volume_horizon_bounds
+            WHERE (water_node, volume_hrz_bounds_scenario_id)
+            IN (SELECT water_node, volume_hrz_bounds_scenario_id
+                FROM inputs_system_water_node_reservoirs
+                WHERE water_node_reservoir_scenario_id = 
+                {subscenarios.WATER_NODE_RESERVOIR_SCENARIO_ID}
+            )
+            AND (balancing_type, horizon)
+            IN (SELECT DISTINCT balancing_type_horizon, horizon
+                FROM inputs_temporal_horizon_timepoints
+                WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+                AND subproblem_id = {subproblem}
+                AND stage_id = {stage}
+            )
+            AND minimum_volume_volumeunit IS NOT NULL
+            ;
+            """
+    )
+
     c1 = conn.cursor()
     target_starting_volumes = c1.execute(
         f"""SELECT water_node, timepoint, reservoir_target_starting_volume
@@ -734,7 +861,14 @@ def get_inputs_from_database(
             """
     )
 
-    return reservoirs, target_starting_volumes, target_ending_volumes, target_releases
+    return (
+        reservoirs,
+        hrz_max_volumes,
+        hrz_min_volumes,
+        target_starting_volumes,
+        target_ending_volumes,
+        target_releases,
+    )
 
 
 def validate_inputs(
@@ -793,17 +927,22 @@ def write_model_inputs(
         weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
     )
 
-    reservoirs, target_starting_volumes, target_ending_volumes, target_releases = (
-        get_inputs_from_database(
-            scenario_id,
-            subscenarios,
-            db_weather_iteration,
-            db_hydro_iteration,
-            db_availability_iteration,
-            db_subproblem,
-            db_stage,
-            conn,
-        )
+    (
+        reservoirs,
+        hrz_max_volumes,
+        hrz_min_volumes,
+        target_starting_volumes,
+        target_ending_volumes,
+        target_releases,
+    ) = get_inputs_from_database(
+        scenario_id,
+        subscenarios,
+        db_weather_iteration,
+        db_hydro_iteration,
+        db_availability_iteration,
+        db_subproblem,
+        db_stage,
+        conn,
     )
 
     write_tab_file_model_inputs(
@@ -816,6 +955,28 @@ def write_model_inputs(
         fname="water_node_reservoirs.tab",
         data=reservoirs,
         replace_nulls=True,
+    )
+
+    write_tab_file_model_inputs(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        fname="reservoir_max_volume_by_horizon.tab",
+        data=hrz_max_volumes,
+    )
+
+    write_tab_file_model_inputs(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        fname="reservoir_min_volume_by_horizon.tab",
+        data=hrz_min_volumes,
     )
 
     write_tab_file_model_inputs(

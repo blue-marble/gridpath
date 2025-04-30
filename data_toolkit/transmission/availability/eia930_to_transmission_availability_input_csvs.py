@@ -18,7 +18,7 @@ Form EIA 930 Transmission Availability
 **************************************
 
 Create availability type CSV for a EIA930-based project portfolio. Availability
-types are set to 'exogenous' for all transmission lines with no exogenous 
+types are set to 'exogenous' for all transmission lines with no exogenous
 profiles specified (i.e., always available).
 
 .. note:: The query in this module is consistent with the project selection

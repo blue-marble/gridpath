@@ -36,3 +36,12 @@ Gen22,Zone1
 Gen31,Zone1
 Gen32,Zone1
 Load_Following_Product,Zone1
+Gen_Simple_LowCost,Zone1
+Gen_Simple_HighCost,Zone1
+DSM_Flat_Load_Reduction,Zone1
+DSM_EE,Zone1
+DSM_EV,Zone1
+DSM_Load_Shed,Zone1
+DSM_Load_Component_Modifier,Zone1
+DSM_Dispatchable_Load,Zone1
+DSM_Load_Component_Shift,Zone1

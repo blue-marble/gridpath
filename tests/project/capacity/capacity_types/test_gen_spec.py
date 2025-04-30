@@ -145,11 +145,18 @@ class TestGenSpec(unittest.TestCase):
                 ("Flex_Load", 2030),
                 ("Hydro_System_Gen1", 2020),
                 ("Hydro_System_Gen1", 2030),
+                ("DSM_Load_Component_Modifier", 2020),
+                ("DSM_Load_Component_Modifier", 2030),
+                ("DSM_Load_Component_Shift", 2020),
+                ("DSM_Load_Component_Shift", 2030),
+                ("Gen_Simple_No_Load_Balance_Power", 2020),
+                ("Gen_Simple_No_Load_Balance_Power", 2030),
             ]
         )
         actual_proj_period_set = sorted(
             [(prj, period) for (prj, period) in instance.GEN_SPEC_OPR_PRDS]
         )
+
         self.assertListEqual(expected_proj_period_set, actual_proj_period_set)
 
         # Params: gen_spec_capacity_mw
@@ -195,6 +202,12 @@ class TestGenSpec(unittest.TestCase):
                     ("Flex_Load", 2030): 20,
                     ("Hydro_System_Gen1", 2020): 100,
                     ("Hydro_System_Gen1", 2030): 100,
+                    ("DSM_Load_Component_Modifier", 2020): 1,
+                    ("DSM_Load_Component_Modifier", 2030): 1,
+                    ("DSM_Load_Component_Shift", 2020): 1,
+                    ("DSM_Load_Component_Shift", 2030): 1,
+                    ("Gen_Simple_No_Load_Balance_Power", 2020): 100,
+                    ("Gen_Simple_No_Load_Balance_Power", 2030): 100,
                 }.items()
             )
         )
@@ -251,6 +264,12 @@ class TestGenSpec(unittest.TestCase):
                     ("Flex_Load", 2030): 0.0,
                     ("Hydro_System_Gen1", 2020): 0,
                     ("Hydro_System_Gen1", 2030): 0,
+                    ("DSM_Load_Component_Modifier", 2020): 0,
+                    ("DSM_Load_Component_Modifier", 2030): 0,
+                    ("DSM_Load_Component_Shift", 2020): 0,
+                    ("DSM_Load_Component_Shift", 2030): 0,
+                    ("Gen_Simple_No_Load_Balance_Power", 2020): 0,
+                    ("Gen_Simple_No_Load_Balance_Power", 2030): 0,
                 }.items()
             )
         )

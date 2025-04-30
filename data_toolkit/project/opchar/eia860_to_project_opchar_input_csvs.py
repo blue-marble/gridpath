@@ -229,6 +229,8 @@ def make_opchar_sql_str(
     technology="NULL",
     operational_type="NULL",
     balancing_type_project="NULL",
+    load_modifier_flag="NULL",
+    distribution_loss_adjustment_factor="NULL",
     variable_om_cost_per_mwh="NULL",
     variable_om_cost_by_period_scenario_id="NULL",
     variable_om_cost_by_timepoint_scenario_id="NULL",
@@ -247,6 +249,10 @@ def make_opchar_sql_str(
     ramp_down_when_on_rate="NULL",
     ramp_up_violation_penalty="NULL",
     ramp_down_violation_penalty="NULL",
+    bt_hrz_ramp_up_rate_limit_scenario_id="NULL",
+    bt_hrz_ramp_down_rate_limit_scenario_id="NULL",
+    total_ramp_up_limit_scenario_id="NULL",
+    total_ramp_down_limit_scenario_id="NULL",
     min_up_time_hours="NULL",
     min_up_time_violation_penalty="NULL",
     min_down_time_hours="NULL",
@@ -294,6 +300,10 @@ def make_opchar_sql_str(
     nonfuel_carbon_emissions_per_mwh="NULL",
     powerhouse="NULL",
     generator_efficiency="NULL",
+    linked_load_component="NULL",
+    load_modifier_profile_scenario_id="NULL",
+    load_component_shift_bounds_scenario_id="NULL",
+    efficiency_factor="NULL",
 ):
     """ """
 
@@ -301,6 +311,8 @@ def make_opchar_sql_str(
      {technology} AS technology,
      {operational_type} AS operational_type,
      {balancing_type_project} AS balancing_type_project,
+     {load_modifier_flag} AS load_modifier_flag,
+     {distribution_loss_adjustment_factor} AS distribution_loss_adjustment_factor,
      {variable_om_cost_per_mwh} AS variable_om_cost_per_mwh,
      {variable_om_cost_by_period_scenario_id} AS variable_om_cost_by_period_scenario_id,
      {variable_om_cost_by_timepoint_scenario_id} AS 
@@ -319,7 +331,13 @@ def make_opchar_sql_str(
      {ramp_up_when_on_rate} AS ramp_up_when_on_rate,
      {ramp_down_when_on_rate} AS ramp_down_when_on_rate,	
      {ramp_up_violation_penalty} AS ramp_up_violation_penalty,
-     {ramp_down_violation_penalty} AS ramp_down_violation_penalty,	
+     {ramp_down_violation_penalty} AS ramp_down_violation_penalty,
+     {bt_hrz_ramp_up_rate_limit_scenario_id} AS 
+     bt_hrz_ramp_up_rate_limit_scenario_id,
+     {bt_hrz_ramp_down_rate_limit_scenario_id} AS 
+     bt_hrz_ramp_down_rate_limit_scenario_id,
+     {total_ramp_up_limit_scenario_id} AS total_ramp_up_limit_scenario_id,
+     {total_ramp_down_limit_scenario_id} AS total_ramp_down_limit_scenario_id,
      {min_up_time_hours} AS min_up_time_hours,
      {min_up_time_violation_penalty} AS min_up_time_violation_penalty,	
      {min_down_time_hours} AS min_down_time_hours,
@@ -368,7 +386,12 @@ def make_opchar_sql_str(
      {stor_exog_state_of_charge_scenario_id} AS stor_exog_state_of_charge_scenario_id,
      {nonfuel_carbon_emissions_per_mwh} AS nonfuel_carbon_emissions_per_mwh,
      {powerhouse} AS powerhouse,
-     {generator_efficiency} AS generator_efficiency
+     {generator_efficiency} AS generator_efficiency,
+     {linked_load_component} AS linked_load_component,
+     {load_modifier_profile_scenario_id} AS load_modifier_profile_scenario_id,
+     {load_component_shift_bounds_scenario_id} AS 
+     load_component_shift_bounds_scenario_id,
+     {efficiency_factor} AS efficiency_factor
     """
 
     return opchar_sql_str

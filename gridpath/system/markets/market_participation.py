@@ -417,6 +417,136 @@ def export_results(
                 )
 
 
+def export_summary_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
+):
+    """
+    Export all results from the PROJECT_CAPACITY_DF and PROJECT_OPERATIONS_DF
+    that various modules have added to
+    """
+
+    purchases_dict = {}
+    costs_dict = {}
+    sales_dict = {}
+    revenue_dict = {}
+    for z, mrkt in m.LZ_MARKETS:
+        for prd in m.PERIODS:
+            for tmp in m.TMPS_IN_PRD[prd]:
+                month = m.month[tmp]
+
+                # Purchases
+                purchases = (
+                    value(m.Net_Market_Purchased_Power[z, mrkt, tmp])
+                    * m.tmp_weight[tmp]
+                    * m.hrs_in_tmp[tmp]
+                    if value(m.Net_Market_Purchased_Power[z, mrkt, tmp]) > 0
+                    else 0
+                )
+                if (z, mrkt, prd, month) not in purchases_dict.keys():
+                    purchases_dict[z, mrkt, prd, month] = purchases
+                else:
+                    purchases_dict[z, mrkt, prd, month] += purchases
+
+                # Costs
+                costs = (
+                    value(m.Net_Market_Purchased_Power[z, mrkt, tmp])
+                    * m.tmp_weight[tmp]
+                    * m.hrs_in_tmp[tmp]
+                    * m.market_price[mrkt, tmp]
+                    if value(m.Net_Market_Purchased_Power[z, mrkt, tmp]) > 0
+                    else 0
+                )
+                if (z, mrkt, prd, month) not in costs_dict.keys():
+                    costs_dict[z, mrkt, prd, month] = costs
+                else:
+                    costs_dict[z, mrkt, prd, month] += costs
+
+                # Sales
+                sales = (
+                    -value(m.Net_Market_Purchased_Power[z, mrkt, tmp])
+                    * m.tmp_weight[tmp]
+                    * m.hrs_in_tmp[tmp]
+                    if value(m.Net_Market_Purchased_Power[z, mrkt, tmp]) < 0
+                    else 0
+                )
+                if (z, mrkt, prd, month) not in sales_dict.keys():
+                    sales_dict[z, mrkt, prd, month] = sales
+                else:
+                    sales_dict[z, mrkt, prd, month] += sales
+
+                # Revenue
+                revenue = (
+                    -value(m.Net_Market_Purchased_Power[z, mrkt, tmp])
+                    * m.tmp_weight[tmp]
+                    * m.hrs_in_tmp[tmp]
+                    * m.market_price[mrkt, tmp]
+                    if value(m.Net_Market_Purchased_Power[z, mrkt, tmp]) < 0
+                    else 0
+                )
+                if (z, mrkt, prd, month) not in revenue_dict.keys():
+                    revenue_dict[z, mrkt, prd, month] = revenue
+                else:
+                    revenue_dict[z, mrkt, prd, month] += revenue
+
+    market_summary_df = pd.DataFrame(
+        columns=[
+            "load_zone",
+            "market",
+            "period",
+            "month",
+            "purchases_mwh",
+            "sales_mwh",
+            "costs",
+            "revenue",
+        ],
+        data=[
+            [
+                z,
+                mrkt,
+                prd,
+                month,
+                purchases_dict[z, mrkt, prd, month],
+                sales_dict[z, mrkt, prd, month],
+                costs_dict[z, mrkt, prd, month],
+                revenue_dict[z, mrkt, prd, month],
+            ]
+            for (z, mrkt, prd, month) in purchases_dict.keys()  # purchase and
+            # sales dict keys are the same
+        ],
+    ).set_index(
+        [
+            "load_zone",
+            "market",
+            "period",
+            "month",
+        ]
+    )
+
+    market_summary_df.sort_index(inplace=True)
+
+    market_summary_df.to_csv(
+        os.path.join(
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "results",
+            "system_market_summary.csv",
+        ),
+        sep=",",
+        index=True,
+    )
+
+
 def import_results_into_database(
     scenario_id,
     weather_iteration,
@@ -450,4 +580,18 @@ def import_results_into_database(
         quiet=quiet,
         results_directory=results_directory,
         which_results="system_market_participation",
+    )
+
+    import_csv(
+        conn=db,
+        cursor=c,
+        scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        quiet=quiet,
+        results_directory=results_directory,
+        which_results="system_market_summary",
     )

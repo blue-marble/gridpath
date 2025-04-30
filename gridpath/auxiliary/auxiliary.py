@@ -186,7 +186,10 @@ def cursor_to_df(cursor):
     :return:
     """
     df = pd.DataFrame(
-        data=cursor.fetchall(), columns=[s[0] for s in cursor.description]
+        data=cursor.fetchall(),
+        columns=(
+            [s[0] for s in cursor.description] if cursor.description is not None else []
+        ),
     )
     return df
 

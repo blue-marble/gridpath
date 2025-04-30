@@ -1,0 +1,9 @@
+transmission_line,timepoint,hurdle_rate_by_timepoint_positive_direction_per_mwh,hurdle_rate_by_timepoint_negative_direction_per_mwh
+Tx1,20200101,5,5
+Tx1,20200102,5,5
+Tx1,20300101,5,5
+Tx1,20300102,5,5
+Tx_new,20200101,5,5
+Tx_new,20200102,5,5
+Tx_new,20300101,5,5
+Tx_new,20300102,5,5

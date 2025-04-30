@@ -1,4 +1,4 @@
-LOAD_ZONES	timepoint	load_component	load_mw
+load_zone	timepoint	load_component	load_mw
 Zone1	1	all	1533.945464
 Zone1	2	all	1530.884808
 Zone1	3	all	1540.62326

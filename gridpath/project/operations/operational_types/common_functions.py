@@ -491,6 +491,8 @@ def load_var_profile_inputs(
         "gen_var",
         "gen_var_stor_hyb",
         "energy_profile",
+        "load_component_modifier",
+        "load_component_shift",
     ]
     other_var_op_types = set(var_op_types) - set([op_type])
     assert op_type in var_op_types
@@ -686,6 +688,7 @@ def get_prj_temporal_index_opr_inputs_from_db(
         all_projects_sql = all_projects_sql[: len(all_projects_sql) - 7]
 
     c = conn.cursor()
+
     prj_tmp_data = c.execute(all_projects_sql)
 
     return prj_tmp_data
@@ -719,6 +722,9 @@ def get_prj_indx_inputs_with_iterations_sql(
     index_join_table = opr_index_dict["index_join_table"]
     index_columns_join_table = opr_index_dict["index_columns_join_table"]
 
+    optype_filter = (
+        f"""AND operational_type = '{op_type}'""" if op_type != "all" else ""
+    )
     sql = f"""
         SELECT project, {select_columns}, {data_columns}
         FROM {inputs_table}
@@ -732,7 +738,7 @@ def get_prj_indx_inputs_with_iterations_sql(
             SELECT project
             FROM inputs_project_operational_chars
             WHERE project_operational_chars_scenario_id = {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
-            AND operational_type = '{op_type}'
+            {optype_filter}
         )
         -- Relevant optype opchar ID
         AND (project, {subscenario_id_column}) IN (
@@ -1207,6 +1213,8 @@ def get_optype_inputs_from_db(scenario_id, subscenarios, conn, op_type):
         "partial_availability_threshold",
         "powerhouse",
         "generator_efficiency",
+        "linked_load_component",
+        "efficiency_factor",
     ]
 
     sql = """SELECT {}

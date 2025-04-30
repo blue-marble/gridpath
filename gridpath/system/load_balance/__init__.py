@@ -114,3 +114,17 @@ def import_results_into_database(
         results_directory=results_directory,
         which_results="system_load_zone_timepoint_loss_of_load_summary",
     )
+
+    import_csv(
+        conn=db,
+        cursor=c,
+        scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        quiet=quiet,
+        results_directory=results_directory,
+        which_results="system_load_zone_period_load_summary",
+    )

@@ -12,10 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-
-
-"""
+""" """
 
 import os.path
 import pandas as pd
@@ -58,7 +55,7 @@ def export_summary_results(
                 m.technology[prj],
                 m.load_zone[prj],
                 sum(
-                    value(m.Power_Provision_MW[_prj, tmp])
+                    value(m.Bulk_Power_Provision_MW[_prj, tmp])
                     for (_prj, tmp) in m.PRJ_OPR_TMPS
                     if _prj == prj
                 ),
