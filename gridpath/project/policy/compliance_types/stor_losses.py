@@ -27,6 +27,7 @@ def add_model_components(
     stage,
 ):
     """ """
+    # Not actually initialized or used for now
     m.STOR_LOSSES_PROJECT_POLICY_ZONES = Set(dimen=3, within=m.PROJECT_POLICY_ZONES)
 
 
