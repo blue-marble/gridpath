@@ -17,14 +17,16 @@ This operational type describes generators that can vary their output
 between zero and full capacity in every timepoint in which they are available
 (i.e. they have a power output variable but no commitment variables associated
 with them). However, this power does not count toward the load balance
-constraint.
+constraint (but may be used in other constraints such as policy requirements).
 
-Costs for this operational type variable O&M costs.
+Costs for this operational type include variable O&M costs.
 
 """
 
 import csv
 import os
+import warnings
+
 from pyomo.environ import (
     Set,
     Var,
@@ -74,65 +76,16 @@ def add_model_components(
     +-------------------------------------------------------------------------+
     | Sets                                                                    |
     +=========================================================================+
-    | | :code:`GEN_SIMPLE_NO_LOAD_BALANCE_POWER`                                                    |
+    | | :code:`GEN_SIMPLE_NO_LOAD_BALANCE_POWER`                              |
     |                                                                         |
-    | The set of generators of the :code:`gen_simple_no_load_balance_power` operational type.       |
+    | The set of generators of the :code:`gen_simple_no_load_balance_power`   |
+    |operational type.                                                        |
     +-------------------------------------------------------------------------+
-    | | :code:`GEN_SIMPLE_NO_LOAD_BALANCE_POWER_OPR_TMPS`                                           |
+    | | :code:`GEN_SIMPLE_NO_LOAD_BALANCE_POWER_OPR_TMPS`                     |
     |                                                                         |
-    | Two-dimensional set with generators of the :code:`gen_simple_no_load_balance_power`           |
-    | operational type and their operational timepoints.                      |
-    +-------------------------------------------------------------------------+
-    | | :code:`GEN_SIMPLE_NO_LOAD_BALANCE_POWER_LINKED_TMPS`                                        |
-    |                                                                         |
-    | Two-dimensional set with generators of the :code:`gen_simple_no_load_balance_power`           |
-    | operational type and their linked timepoints.                           |
-    +-------------------------------------------------------------------------+
-
-    |
-
-    +-------------------------------------------------------------------------+
-    | Optional Input Params                                                   |
-    +=========================================================================+
-    | | :code:`gen_simple_no_load_balance_power_ramp_up_when_on_rate`                               |
-    | | *Defined over*: :code:`GEN_SIMPLE_NO_LOAD_BALANCE_POWER`                                    |
-    | | *Within*: :code:`PercentFraction`                                     |
-    | | *Default*: :code:`1`                                                  |
-    |                                                                         |
-    | The project's upward ramp rate limit during operations, defined as a    |
-    | fraction of its capacity per minute.                                    |
-    +-------------------------------------------------------------------------+
-    | | :code:`gen_simple_no_load_balance_power_ramp_down_when_on_rate`                             |
-    | | *Defined over*: :code:`GEN_SIMPLE_NO_LOAD_BALANCE_POWER`                                    |
-    | | *Within*: :code:`PercentFraction`                                     |
-    | | *Default*: :code:`1`                                                  |
-    |                                                                         |
-    | The project's downward ramp rate limit during operations, defined as a  |
-    | fraction of its capacity per minute.                                    |
-    +-------------------------------------------------------------------------+
-
-    |
-
-    +-------------------------------------------------------------------------+
-    | Linked Input Params                                                     |
-    +=========================================================================+
-    | | :code:`gen_simple_no_load_balance_power_linked_power`                                       |
-    | | *Defined over*: :code:`GEN_SIMPLE_NO_LOAD_BALANCE_POWER_LINKED_TMPS`                        |
-    | | *Within*: :code:`NonNegativeReals`                                    |
-    |                                                                         |
-    | The project's power provision in the linked timepoints.                 |
-    +-------------------------------------------------------------------------+
-    | | :code:`gen_simple_no_load_balance_power_linked_upwards_reserves`                            |
-    | | *Defined over*: :code:`GEN_SIMPLE_NO_LOAD_BALANCE_POWER_LINKED_TMPS`                        |
-    | | *Within*: :code:`NonNegativeReals`                                    |
-    |                                                                         |
-    | The project's upward reserve provision in the linked timepoints.        |
-    +-------------------------------------------------------------------------+
-    | | :code:`gen_simple_no_load_balance_power_linked_downwards_reserves`                          |
-    | | *Defined over*: :code:`GEN_SIMPLE_NO_LOAD_BALANCE_POWER_LINKED_TMPS`                        |
-    | | *Within*: :code:`NonNegativeReals`                                    |
-    |                                                                         |
-    | The project's downward reserve provision in the linked timepoints.      |
+    | Two-dimensional set with generators of the                              |
+    | :code:`gen_simple_no_load_balance_power` operational type and their     |
+    | operational timepoints.                                                 |
     +-------------------------------------------------------------------------+
 
     |
@@ -140,8 +93,8 @@ def add_model_components(
     +-------------------------------------------------------------------------+
     | Variables                                                               |
     +=========================================================================+
-    | | :code:`GenSimpleNoLoadBalancePower_Provide_Power_MW`                                    |
-    | | *Defined over*: :code:`GEN_SIMPLE_NO_LOAD_BALANCE_POWER_OPR_TMPS`                           |
+    | | :code:`GenSimpleNoLoadBalancePower_Provide_Power_MW`                  |
+    | | *Defined over*: :code:`GEN_SIMPLE_NO_LOAD_BALANCE_POWER_OPR_TMPS`     |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
     | Power provision in MW from this project in each timepoint in which the  |
@@ -155,30 +108,16 @@ def add_model_components(
     +=========================================================================+
     | Power                                                                   |
     +-------------------------------------------------------------------------+
-    | | :code:`GenSimpleNoLoadBalancePower_Max_Power_Constraint`                                |
-    | | *Defined over*: :code:`GEN_SIMPLE_NO_LOAD_BALANCE_POWER_OPR_TMPS`                           |
+    | | :code:`GenSimpleNoLoadBalancePower_Max_Power_Constraint`              |
+    | | *Defined over*: :code:`GEN_SIMPLE_NO_LOAD_BALANCE_POWER_OPR_TMPS`     |
     |                                                                         |
     | Limits the power plus upward reserves to the available capacity.        |
     +-------------------------------------------------------------------------+
-    | | :code:`GenSimpleNoLoadBalancePower_Min_Power_Constraint`                                |
-    | | *Defined over*: :code:`GEN_SIMPLE_NO_LOAD_BALANCE_POWER_OPR_TMPS`                           |
+    | | :code:`GenSimpleNoLoadBalancePower_Min_Power_Constraint`              |
+    | | *Defined over*: :code:`GEN_SIMPLE_NO_LOAD_BALANCE_POWER_OPR_TMPS`     |
     |                                                                         |
     | Power provision minus downward reserves should exceed the minimum       |
     | stable level for the project.                                           |
-    +-------------------------------------------------------------------------+
-    | Ramps                                                                   |
-    +-------------------------------------------------------------------------+
-    | | :code:`GenSimpleNoLoadBalancePower_Ramp_Up_Constraint`                                  |
-    | | *Defined over*: :code:`GEN_SIMPLE_NO_LOAD_BALANCE_POWER_OPR_TMPS`                           |
-    |                                                                         |
-    | Limits the allowed project upward ramp based on the                     |
-    | :code:`gen_simple_no_load_balance_power_ramp_up_when_on_rate`.                                |
-    +-------------------------------------------------------------------------+
-    | | :code:`GenSimpleNoLoadBalancePower_Ramp_Down_Constraint`                                |
-    | | *Defined over*: :code:`GEN_SIMPLE_NO_LOAD_BALANCE_POWER_OPR_TMPS`                           |
-    |                                                                         |
-    | Limits the allowed project downward ramp based on the                   |
-    | :code:`gen_simple_no_load_balance_power_ramp_down_when_on_rate`.                              |
     +-------------------------------------------------------------------------+
 
     """
@@ -204,8 +143,6 @@ def add_model_components(
         ),
     )
 
-    m.GEN_SIMPLE_NO_LOAD_BALANCE_POWER_LINKED_TMPS = Set(dimen=2)
-
     # Variables
     ###########################################################################
 
@@ -216,20 +153,66 @@ def add_model_components(
     # Expressions
     ###########################################################################
 
-    # TODO: remove ramp rates from optional params in CSV
-    # TODO: add warning about reserves
-    def upwards_reserve_rule(mod, g, tmp):
-        return 0
+    # TODO: remove this constraint once input validation is in place that
+    #  does not allow specifying a reserve_zone if 'gen_must_run' type
+    def no_upward_reserve_rule(mod, g, tmp):
+        """
+        **Constraint Name**: GenMustRun_No_Upward_Reserves_Constraint
+        **Enforced Over**: GEN_MUST_RUN_OPR_TMPS
 
-    m.GenSimpleNoLoadBalancePower_Upwards_Reserves_MW = Expression(
-        m.GEN_SIMPLE_NO_LOAD_BALANCE_POWER_OPR_TMPS, rule=upwards_reserve_rule
+        Upward reserves should be zero in every operational timepoint.
+        """
+        if getattr(d, headroom_variables)[g]:
+            warnings.warn(
+                """project {} is of the 'gen_must_run' operational type and 
+                should not be assigned any upward reserve BAs since it cannot 
+                provide upward reserves. Please replace the upward reserve BA 
+                for project {} with '.' (no value) in projects.tab. Model will 
+                add constraint to ensure project {} cannot provide upward 
+                reserves.
+                """.format(
+                    g, g, g
+                )
+            )
+            return (
+                sum(getattr(mod, c)[g, tmp] for c in getattr(d, headroom_variables)[g])
+                == 0
+            )
+        else:
+            return Constraint.Skip
+
+    m.GenSimpleNoLoadBalancePower_No_Upward_Reserves_Constraint = Constraint(
+        m.GEN_SIMPLE_NO_LOAD_BALANCE_POWER_OPR_TMPS, rule=no_upward_reserve_rule
     )
 
-    def downwards_reserve_rule(mod, g, tmp):
-        return 0
+    def no_downward_reserve_rule(mod, g, tmp):
+        """
+        **Constraint Name**: GenMustRun_No_Downward_Reserves_Constraint
+        **Enforced Over**: GEN_MUST_RUN_OPR_TMPS
 
-    m.GenSimpleNoLoadBalancePower_Downwards_Reserves_MW = Expression(
-        m.GEN_SIMPLE_NO_LOAD_BALANCE_POWER_OPR_TMPS, rule=downwards_reserve_rule
+        Downward reserves should be zero in every operational timepoint.
+        """
+        if getattr(d, footroom_variables)[g]:
+            warnings.warn(
+                """project {} is of the 'gen_must_run' operational type and 
+                should not be assigned any downward reserve BAs since it cannot
+                provide upwards reserves. Please replace the downward reserve 
+                BA for project {} with '.' (no value) in projects.tab. Model 
+                will add constraint to ensure project {} cannot provide 
+                downward reserves.
+                """.format(
+                    g, g, g
+                )
+            )
+            return (
+                sum(getattr(mod, c)[g, tmp] for c in getattr(d, footroom_variables)[g])
+                == 0
+            )
+        else:
+            return Constraint.Skip
+
+    m.GenSimpleNoLoadBalancePower_No_Downward_Reserves_Constraint = Constraint(
+        m.GEN_SIMPLE_NO_LOAD_BALANCE_POWER_OPR_TMPS, rule=no_downward_reserve_rule
     )
 
     # Constraints
@@ -237,10 +220,6 @@ def add_model_components(
 
     m.GenSimpleNoLoadBalancePower_Max_Power_Constraint = Constraint(
         m.GEN_SIMPLE_NO_LOAD_BALANCE_POWER_OPR_TMPS, rule=max_power_rule
-    )
-
-    m.GenSimpleNoLoadBalancePower_Min_Power_Constraint = Constraint(
-        m.GEN_SIMPLE_NO_LOAD_BALANCE_POWER_OPR_TMPS, rule=min_power_rule
     )
 
 
@@ -260,16 +239,6 @@ def max_power_rule(mod, g, tmp):
         mod.GenSimpleNoLoadBalancePower_Provide_Power_MW[g, tmp]
         <= mod.Capacity_MW[g, mod.period[tmp]] * mod.Availability_Derate[g, tmp]
     )
-
-
-def min_power_rule(mod, g, tmp):
-    """
-    **Constraint Name**: GenSimpleNoLoadBalancePower_Min_Power_Constraint
-    **Enforced Over**: GEN_SIMPLE_NO_LOAD_BALANCE_POWER_OPR_TMPS
-
-    Power minus downward services cannot be below zero.
-    """
-    return mod.GenSimpleNoLoadBalancePower_Provide_Power_MW[g, tmp] >= 0
 
 
 # Operational Type Methods
@@ -349,175 +318,4 @@ def load_model_data(
         subproblem=subproblem,
         stage=stage,
         op_type="gen_simple_no_load_balance_power",
-    )
-
-
-def export_results(
-    mod,
-    d,
-    scenario_directory,
-    weather_iteration,
-    hydro_iteration,
-    availability_iteration,
-    subproblem,
-    stage,
-):
-    """
-    :param scenario_directory:
-    :param subproblem:
-    :param stage:
-    :param mod:
-    :param d:
-    :return:
-    """
-    # If there's a linked_subproblems_map CSV file, check which of the
-    # current subproblem TMPS we should export results for to link to the
-    # next subproblem
-    tmps_to_link, tmp_linked_tmp_dict = check_for_tmps_to_link(
-        scenario_directory=scenario_directory, subproblem=subproblem, stage=stage
-    )
-
-    # If the list of timepoints to link is not empty, write the linked
-    # timepoint results for this module in the next subproblem's input
-    # directory
-    if tmps_to_link:
-        next_subproblem = str(int(subproblem) + 1)
-
-        # Export params by project and timepoint
-        with open(
-            os.path.join(
-                scenario_directory,
-                next_subproblem,
-                stage,
-                "inputs",
-                "gen_simple_no_load_balance_power_linked_timepoint_params.tab",
-            ),
-            "w",
-            newline="",
-        ) as f:
-            writer = csv.writer(f, delimiter="\t", lineterminator="\n")
-            writer.writerow(
-                [
-                    "project",
-                    "linked_timepoint",
-                    "linked_provide_power",
-                    "linked_upward_reserves",
-                    "linked_downward_reserves",
-                ]
-            )
-            for p, tmp in sorted(mod.GEN_SIMPLE_NO_LOAD_BALANCE_POWER_OPR_TMPS):
-                if tmp in tmps_to_link:
-                    writer.writerow(
-                        [
-                            p,
-                            tmp_linked_tmp_dict[tmp],
-                            max(
-                                value(
-                                    mod.GenSimpleNoLoadBalancePower_Provide_Power_MW[
-                                        p, tmp
-                                    ]
-                                ),
-                                0,
-                            ),
-                            max(
-                                value(
-                                    mod.GenSimpleNoLoadBalancePower_Upwards_Reserves_MW[
-                                        p, tmp
-                                    ]
-                                ),
-                                0,
-                            ),
-                            max(
-                                value(
-                                    mod.GenSimpleNoLoadBalancePower_Downwards_Reserves_MW[
-                                        p, tmp
-                                    ]
-                                ),
-                                0,
-                            ),
-                        ]
-                    )
-
-
-# Validation
-###############################################################################
-
-
-def validate_inputs(
-    scenario_id,
-    subscenarios,
-    weather_iteration,
-    hydro_iteration,
-    availability_iteration,
-    subproblem,
-    stage,
-    conn,
-):
-    """
-    Get inputs from database and validate the inputs
-    :param subscenarios: SubScenarios object with all subscenario info
-    :param subproblem:
-    :param stage:
-    :param conn: database connection
-    :return:
-    """
-
-    # Validate operational chars table inputs
-    validate_opchars(
-        scenario_id,
-        subscenarios,
-        weather_iteration,
-        hydro_iteration,
-        availability_iteration,
-        subproblem,
-        stage,
-        conn,
-        "gen_simple_no_load_balance_power",
-    )
-
-    # Other module specific validations
-
-    c = conn.cursor()
-    heat_rates = c.execute(
-        """
-        SELECT project, load_point_fraction
-        FROM inputs_project_portfolios
-        INNER JOIN
-        (SELECT project, operational_type, heat_rate_curves_scenario_id
-        FROM inputs_project_operational_chars
-        WHERE project_operational_chars_scenario_id = {}
-        AND operational_type = '{}') AS op_char
-        USING(project)
-        INNER JOIN
-        (SELECT project, heat_rate_curves_scenario_id, load_point_fraction
-        FROM inputs_project_heat_rate_curves) as heat_rates
-        USING(project, heat_rate_curves_scenario_id)
-        WHERE project_portfolio_scenario_id = {}
-        """.format(
-            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
-            "gen_simple_no_load_balance_power",
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-        )
-    )
-
-    # Convert inputs to dataframe
-    hr_df = cursor_to_df(heat_rates)
-
-    # Check that there is only one load point (constant heat rate)
-    write_validation_to_database(
-        conn=conn,
-        scenario_id=scenario_id,
-        weather_iteration=weather_iteration,
-        hydro_iteration=hydro_iteration,
-        availability_iteration=availability_iteration,
-        subproblem_id=subproblem,
-        stage_id=stage,
-        gridpath_module=__name__,
-        db_table="inputs_project_heat_rate_curves",
-        severity="Mid",
-        errors=validate_single_input(
-            df=hr_df,
-            msg="gen_simple_no_load_balance_power can only have one load "
-            "point (constant heat rate).",
-        ),
     )
