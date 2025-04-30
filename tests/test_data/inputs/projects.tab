@@ -37,3 +37,4 @@ Energy_LF	Zone1	energy_spec	exogenous	1	energy_load_following	day	.	.	.	.	.	.	.	
 Energy_Slice_Hrz_Shaping	Zone1	energy_new_lin	exogenous	1	energy_slice_hrz_shaping	day	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.
 DSM_Load_Component_Modifier	Zone1	gen_spec	exogenous	0	load_component_modifier	day	1	0.05	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	all	.
 DSM_Load_Component_Shift	Zone1	gen_spec	exogenous	0	load_component_shift	day	1	0.05	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	all	0.95
+Gen_Simple_No_Load_Balance_Power	Zone1	gen_spec	exogenous	0	gen_simple_no_load_balance_power	day	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.
