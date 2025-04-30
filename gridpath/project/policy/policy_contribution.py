@@ -68,11 +68,7 @@ def add_model_components(
     m.PROJECT_POLICY_ZONES = Set(dimen=3, within=m.PROJECTS * m.POLICIES_ZONES)
     m.compliance_type = Param(
         m.PROJECT_POLICY_ZONES,
-        within=[
-            "f_output",
-            "f_capacity",
-            "flat_horizon",
-        ],
+        within=["f_output", "f_capacity", "flat_horizon", "stor_losses"],
     )
 
     # Add any components specific to the PRM modules
