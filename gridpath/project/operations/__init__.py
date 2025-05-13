@@ -799,7 +799,7 @@ def load_model_data(
         None: list(data_portal.data()["min_down_time_violation_penalty"].keys())
     }
 
-    # Variable O&M by period and timepoint
+    # Curtailment costs (by project/period)
     project_curtailment_cost_file = os.path.join(
         scenario_directory,
         weather_iteration,
