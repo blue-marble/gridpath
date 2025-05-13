@@ -688,7 +688,11 @@ def scheduled_curtailment_rule(mod, g, tmp):
 
 def curtailment_cost_rule(mod, g, tmp):
     """ """
-    return mod.GenHydro_Curtail_MW[g, tmp] * mod.curtailment_cost_per_pwh[g]
+    return mod.GenHydro_Curtail_MW[g, tmp] * (
+        mod.curtailment_cost_per_powerunithour[g, mod.period[tmp]]
+        if (g, mod.period[tmp]) in mod.CURTAILMENT_COST_PRJ_PRDS
+        else 0
+    )
 
 
 def power_delta_rule(mod, g, tmp):
