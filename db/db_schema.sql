@@ -1919,7 +1919,7 @@ CREATE TABLE inputs_project_operational_chars
     aux_consumption_frac_power                FLOAT,
     last_commitment_stage                     INTEGER,
     variable_generator_profile_scenario_id    INTEGER, -- determines var profiles
-    curtailment_cost_per_pwh                  FLOAT,   -- curtailment cost per unit-powerXhour
+    curtailment_cost_scenario_id              INTEGER,
     hydro_operational_chars_scenario_id       INTEGER, -- determines hydro MWa, min, max
     energy_profile_scenario_id                INTEGER,
     energy_hrz_shaping_scenario_id            INTEGER,
@@ -1980,6 +1980,9 @@ CREATE TABLE inputs_project_operational_chars
     FOREIGN KEY (project, variable_generator_profile_scenario_id) REFERENCES
         subscenarios_project_variable_generator_profiles
             (project, variable_generator_profile_scenario_id),
+    FOREIGN KEY (project, curtailment_cost_scenario_id) REFERENCES
+        subscenarios_project_curtailment_cost
+            (project, curtailment_cost_scenario_id),
     FOREIGN KEY (project, stor_exog_state_of_charge_scenario_id) REFERENCES
         subscenarios_project_stor_exog_state_of_charge
             (project, stor_exog_state_of_charge_scenario_id),
@@ -2312,6 +2315,29 @@ CREATE TABLE inputs_project_variable_generator_profiles_iterations
     varies_by_weather_iteration            INTEGER,
     varies_by_hydro_iteration              INTEGER,
     PRIMARY KEY (project, variable_generator_profile_scenario_id)
+);
+
+-- Variable O&M by period
+DROP TABLE IF EXISTS subscenarios_project_curtailment_cost;
+CREATE TABLE subscenarios_project_curtailment_cost
+(
+    project                                VARCHAR(32),
+    curtailment_cost_scenario_id           INTEGER,
+    name                                   VARCHAR(32),
+    description                            VARCHAR(128),
+    PRIMARY KEY (project, curtailment_cost_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_curtailment_cost;
+CREATE TABLE inputs_project_curtailment_cost
+(
+    project                                VARCHAR(64),
+    curtailment_cost_scenario_id           INTEGER,
+    period                                 INTEGER, -- 0 means it's the same for all periods
+    curtailment_cost_per_powerunithour     FLOAT,
+    PRIMARY KEY (project, curtailment_cost_scenario_id, period),
+    FOREIGN KEY (project, curtailment_cost_scenario_id) REFERENCES
+        subscenarios_project_curtailment_cost (project,curtailment_cost_scenario_id)
 );
 
 -- Hydro operational characteristics

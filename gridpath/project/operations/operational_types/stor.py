@@ -1065,7 +1065,11 @@ def curtailment_cost_rule(mod, g, tmp):
             / mod.stor_discharging_efficiency[g]
             + mod.Stor_Charge_MW[g, tmp] * (1.0 - mod.stor_charging_efficiency[g])
         )
-        * mod.curtailment_cost_per_pwh[g]
+        * (
+            mod.curtailment_cost_per_powerunithour[g, mod.period[tmp]]
+            if (g, mod.period[tmp]) in mod.CURTAILMENT_COST_PRJ_PRDS
+            else 0
+        )
         * mod.stor_losses_factor_curtailment
     )
 
