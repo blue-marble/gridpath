@@ -535,18 +535,21 @@ def ramp_up_rule(mod, g, tmp):
                 g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
             ]
 
-        return (
-            mod.GenHydroMustTake_Gross_Power_MW[g, tmp]
-            + mod.GenHydroMustTake_Upwards_Reserves_MW[g, tmp]
-        ) - (
-            prev_tmp_power - prev_tmp_downwards_reserves
-        ) <= mod.gen_hydro_must_take_ramp_up_when_on_rate[
-            g
-        ] * 60 * prev_tmp_hrs_in_tmp * mod.Capacity_MW[
-            g, mod.period[tmp]
-        ] * mod.Availability_Derate[
-            g, tmp
-        ]
+        if mod.gen_hydro_must_take_ramp_up_when_on_rate[g] == float("inf"):
+            return Constraint.Skip
+        else:
+            return (
+                mod.GenHydroMustTake_Gross_Power_MW[g, tmp]
+                + mod.GenHydroMustTake_Upwards_Reserves_MW[g, tmp]
+            ) - (
+                prev_tmp_power - prev_tmp_downwards_reserves
+            ) <= mod.gen_hydro_must_take_ramp_up_when_on_rate[
+                g
+            ] * 60 * prev_tmp_hrs_in_tmp * mod.Capacity_MW[
+                g, mod.period[tmp]
+            ] * mod.Availability_Derate[
+                g, tmp
+            ]
 
 
 def ramp_down_rule(mod, g, tmp):
@@ -593,18 +596,21 @@ def ramp_down_rule(mod, g, tmp):
                 g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
             ]
 
-        return (
-            mod.GenHydroMustTake_Gross_Power_MW[g, tmp]
-            - mod.GenHydroMustTake_Downwards_Reserves_MW[g, tmp]
-        ) - (
-            prev_tmp_power + prev_tmp_upwards_reserves
-        ) >= -mod.gen_hydro_must_take_ramp_down_when_on_rate[
-            g
-        ] * 60 * prev_tmp_hrs_in_tmp * mod.Capacity_MW[
-            g, mod.period[tmp]
-        ] * mod.Availability_Derate[
-            g, tmp
-        ]
+        if mod.gen_hydro_must_take_ramp_down_when_on_rate[g] == float("inf"):
+            return Constraint.Skip
+        else:
+            return (
+                mod.GenHydroMustTake_Gross_Power_MW[g, tmp]
+                - mod.GenHydroMustTake_Downwards_Reserves_MW[g, tmp]
+            ) - (
+                prev_tmp_power + prev_tmp_upwards_reserves
+            ) >= -mod.gen_hydro_must_take_ramp_down_when_on_rate[
+                g
+            ] * 60 * prev_tmp_hrs_in_tmp * mod.Capacity_MW[
+                g, mod.period[tmp]
+            ] * mod.Availability_Derate[
+                g, tmp
+            ]
 
 
 # Operational Type Methods
