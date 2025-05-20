@@ -1,0 +1,14 @@
+##### SUMMARY RESULTS FOR SCENARIO *test_w_hydro_ramp_limits* #####
+
+### CAPACITY RESULTS ###
+
+### OPERATIONAL RESULTS ###
+
+--> Energy Production <--
+                             Annual Energy (MWh)  % Total Power
+load_zone period technology                                    
+Zone1     2020   Coal                   4,730.40           3.60
+                 Gas                   43,449.60          33.07
+                 Hydro                 26,280.00          20.00
+                 Nuclear               52,560.00          40.00
+                 Wind                   4,380.00           3.33

@@ -246,7 +246,9 @@ def make_opchar_sql_str(
     startup_plus_ramp_up_rate="NULL",
     shutdown_plus_ramp_down_rate="NULL",
     ramp_up_when_on_rate="NULL",
+    ramp_up_when_on_rate_monthly_adjustment_scenario_id="NULL",
     ramp_down_when_on_rate="NULL",
+    ramp_down_when_on_rate_monthly_adjustment_scenario_id="NULL",
     ramp_up_violation_penalty="NULL",
     ramp_down_violation_penalty="NULL",
     bt_hrz_ramp_up_rate_limit_scenario_id="NULL",
@@ -327,9 +329,13 @@ def make_opchar_sql_str(
      {shutdown_cost_per_mw} AS shutdown_cost_per_mw,
      {startup_fuel_mmbtu_per_mw} AS startup_fuel_mmbtu_per_mw,	
      {startup_plus_ramp_up_rate} AS startup_plus_ramp_up_rate,
-     {shutdown_plus_ramp_down_rate} AS shutdown_plus_ramp_down_rate,	
+     {shutdown_plus_ramp_down_rate} AS shutdown_plus_ramp_down_rate,
      {ramp_up_when_on_rate} AS ramp_up_when_on_rate,
-     {ramp_down_when_on_rate} AS ramp_down_when_on_rate,	
+     {ramp_up_when_on_rate_monthly_adjustment_scenario_id} AS 
+     ramp_up_when_on_rate_monthly_adjustment_scenario_id,
+     {ramp_down_when_on_rate} AS ramp_down_when_on_rate,
+      {ramp_down_when_on_rate_monthly_adjustment_scenario_id} AS 
+     ramp_down_when_on_rate_monthly_adjustment_scenario_id,		
      {ramp_up_violation_penalty} AS ramp_up_violation_penalty,
      {ramp_down_violation_penalty} AS ramp_down_violation_penalty,
      {bt_hrz_ramp_up_rate_limit_scenario_id} AS 
