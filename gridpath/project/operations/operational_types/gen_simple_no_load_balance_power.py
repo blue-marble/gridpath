@@ -252,6 +252,30 @@ def power_provision_rule(mod, g, tmp):
     return 0
 
 
+def variable_om_cost_rule(mod, g, tmp):
+    """
+    Variable cost is incurred on all power produced (including what's
+    curtailed).
+    """
+    return mod.GenSimpleNoLoadBalancePower_Provide_Power_MW[g, tmp] * mod.variable_om_cost_per_mwh[g]
+
+
+def variable_om_by_period_cost_rule(mod, prj, tmp):
+    """ """
+    return (
+        mod.GenSimpleNoLoadBalancePower_Provide_Power_MW[prj, tmp]
+        * mod.variable_om_cost_per_mwh_by_period[prj, mod.period[tmp]]
+    )
+
+
+def variable_om_by_timepoint_cost_rule(mod, prj, tmp):
+    """ """
+    return (
+        mod.GenSimpleNoLoadBalancePower_Provide_Power_MW[prj, tmp]
+        * mod.variable_om_cost_per_mwh_by_timepoint[prj, tmp]
+    )
+
+
 def power_delta_rule(mod, g, tmp):
     """
     This rule is only used in tuning costs, so fine to skip for linked
