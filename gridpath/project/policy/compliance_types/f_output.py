@@ -47,10 +47,13 @@ def contribution_in_timepoint(mod, prj, policy, zone, tmp):
         )
     else:
         f_intercept = mod.f_intercept[prj, policy, zone]
-    return (
-        mod.f_slope[prj, policy, zone] * mod.Bulk_Power_Provision_MW[prj, tmp]
-        + f_intercept
+
+    power = (
+        mod.Bulk_Power_Provision_MW[prj, tmp]
+        if mod.operational_type[prj] != "gen_simple_no_load_balance_power"
+        else mod.GenSimpleNoLoadBalancePower_Provide_Power_MW[prj, tmp]
     )
+    return mod.f_slope[prj, policy, zone] * power + f_intercept
 
 
 # IO
