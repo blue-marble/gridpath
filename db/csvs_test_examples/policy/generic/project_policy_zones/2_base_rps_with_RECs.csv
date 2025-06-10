@@ -1,0 +1,10 @@
+project,policy_name,policy_zone,compliance_type,f_slope,f_intercept
+Wind,RPS,RPSZone1,f_output,1,0
+Solar,RPS,RPSZone1,f_output,1,0
+Wind_z2,RPS,RPSZone1,f_output,1,0
+Solar_z2,RPS,RPSZone1,f_output,1,0
+Wind_new,RPS,RPSZone1,f_output,1,0
+Wind_new_z2,RPS,RPSZone1,f_output,1,0
+Battery,RPS,RPSZone1,f_output,1,0
+Wind,Policy2,Policy2_Zone1,f_output,1,0
+RECs,RPS,RPSZone1,f_output,1,0

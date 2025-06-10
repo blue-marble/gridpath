@@ -75,7 +75,7 @@ def add_model_components(
         dimen=4, initialize=prj_policy_zone_opr_tmps_init
     )
 
-    def policy_power_provision_rule(mod, prj, tmp):
+    def policy_power_provision_rule(mod, prj, policy_zone, policy, tmp):
         """
         If a policy power provision rule is specified in the operational
         type, use that; otherwise, use the Bulk_Power_Provision_MW for the
@@ -87,7 +87,7 @@ def add_model_components(
         ):
             return imported_operational_modules[
                 gen_op_type
-            ].policy_power_provision_rule(mod, prj, tmp)
+            ].policy_power_provision_rule(mod, prj, policy_zone, policy, tmp)
         else:
             return mod.Bulk_Power_Provision_MW[prj, tmp]
 

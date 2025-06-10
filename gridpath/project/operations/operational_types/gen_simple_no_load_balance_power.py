@@ -254,12 +254,12 @@ def power_provision_rule(mod, g, tmp):
     return 0
 
 
-def policy_power_provision_rule(mod, g, tmp):
+def policy_power_provision_rule(mod, prj, policy_zone, policy, tmp):
     """
     Power does count toward generic policy. NOTE: this is only implemented in
     policy package, not in old RPS packages, etc.
     """
-    return mod.GenSimpleNoLoadBalancePower_Provide_Power_MW[g, tmp]
+    return mod.GenSimpleNoLoadBalancePower_Provide_Power_MW[prj, tmp]
 
 
 def variable_om_cost_rule(mod, g, tmp):
