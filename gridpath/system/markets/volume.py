@@ -40,12 +40,20 @@ def add_model_components(
     m.max_final_market_sales = Param(m.MARKETS, m.TMPS, default=Infinity)
     m.max_final_market_purchases = Param(m.MARKETS, m.TMPS, default=Infinity)
 
-    # Params limiting total transactaiosn across all markets
-    m.max_total_net_market_purchases = Param(
+    # Params limiting total transactions across all markets in a timepoint
+    m.max_total_net_market_purchases_in_tmp = Param(
         m.TMPS, within=NonNegativeReals, default=Infinity
     )
-    m.max_total_net_market_sales = Param(
+    m.max_total_net_market_sales_in_tmp = Param(
         m.TMPS, within=NonNegativeReals, default=Infinity
+    )
+
+    # Params limiting total transactions across all markets in a period
+    m.max_total_net_market_purchases_in_prd = Param(
+        m.PERIODS, within=NonNegativeReals, default=Infinity
+    )
+    m.max_total_net_market_sales_in_prd = Param(
+        m.PERIODS, within=NonNegativeReals, default=Infinity
     )
 
     # Constrain total net purchases in the current stage
@@ -60,20 +68,20 @@ def add_model_components(
         m.MARKETS, m.TMPS, initialize=total_net_market_purchases_init
     )
 
-    def max_market_sales_rule(mod, hub, tmp):
+    def max_market_sales_rule(mod, market, tmp):
         return (
-            mod.Total_Net_Market_Purchased_Power[hub, tmp]
-            >= -mod.max_market_sales[hub, tmp]
+            mod.Total_Net_Market_Purchased_Power[market, tmp]
+            >= -mod.max_market_sales[market, tmp]
         )
 
     m.Max_Market_Sales_Constraint = Constraint(
         m.MARKETS, m.TMPS, rule=max_market_sales_rule
     )
 
-    def max_market_purchases_rule(mod, hub, tmp):
+    def max_market_purchases_rule(mod, market, tmp):
         return (
-            mod.Total_Net_Market_Purchased_Power[hub, tmp]
-            <= mod.max_market_purchases[hub, tmp]
+            mod.Total_Net_Market_Purchased_Power[market, tmp]
+            <= mod.max_market_purchases[market, tmp]
         )
 
     m.Max_Market_Purchases_Constraint = Constraint(
@@ -93,20 +101,20 @@ def add_model_components(
         m.MARKETS, m.TMPS, rule=total_final_net_market_purchases_init
     )
 
-    def max_final_market_sales_rule(mod, hub, tmp):
+    def max_final_market_sales_rule(mod, market, tmp):
         return (
-            mod.Total_Final_Net_Market_Purchased_Power[hub, tmp]
-            >= -mod.max_final_market_sales[hub, tmp]
+            mod.Total_Final_Net_Market_Purchased_Power[market, tmp]
+            >= -mod.max_final_market_sales[market, tmp]
         )
 
     m.Max_Final_Market_Sales_Constraint = Constraint(
         m.MARKETS, m.TMPS, rule=max_final_market_sales_rule
     )
 
-    def max_final_market_purchases_rule(mod, hub, tmp):
+    def max_final_market_purchases_rule(mod, market, tmp):
         return (
-            mod.Total_Final_Net_Market_Purchased_Power[hub, tmp]
-            <= mod.max_final_market_purchases[hub, tmp]
+            mod.Total_Final_Net_Market_Purchased_Power[market, tmp]
+            <= mod.max_final_market_purchases[market, tmp]
         )
 
     m.Max_Final_Market_Purchases_Constraint = Constraint(
@@ -117,8 +125,11 @@ def add_model_components(
     # import limit or total sales limit in a timepoint)
     def total_purchases_in_tmp_constraint_rule(mod, tmp):
         return (
-            sum(mod.Total_Net_Market_Purchased_Power[hub, tmp] for hub in mod.MARKETS)
-            <= mod.max_total_net_market_purchases[tmp]
+            sum(
+                mod.Total_Net_Market_Purchased_Power[market, tmp]
+                for market in mod.MARKETS
+            )
+            <= mod.max_total_net_market_purchases_in_tmp[tmp]
         )
 
     m.Total_Purchases_in_Tmp_Constraint = Constraint(
@@ -127,12 +138,50 @@ def add_model_components(
 
     def total_sales_in_tmp_constraint_rule(mod, tmp):
         return (
-            sum(mod.Total_Net_Market_Purchased_Power[hub, tmp] for hub in mod.MARKETS)
-            >= -mod.max_total_net_market_sales[tmp]
+            sum(
+                mod.Total_Net_Market_Purchased_Power[market, tmp]
+                for market in mod.MARKETS
+            )
+            >= -mod.max_total_net_market_sales_in_tmp[tmp]
         )
 
     m.Aggregate_Sales_in_Tmp_Constraint = Constraint(
         m.TMPS, rule=total_sales_in_tmp_constraint_rule
+    )
+
+    # Period-level totals
+    # Constraints on total transactions across all markets (e.g., a total
+    # import limit or total sales limit in a timepoint)
+    def total_purchases_in_prd_constraint_rule(mod, prd):
+        return (
+            sum(
+                mod.Total_Net_Market_Purchased_Power[market, tmp]
+                * mod.hrs_in_tmp[tmp]
+                * mod.tmp_weight[tmp]
+                for market in mod.MARKETS
+                for tmp in mod.TMPS_IN_PRD[prd]
+            )
+            <= mod.max_total_net_market_purchases_in_prd[prd]
+        )
+
+    m.Total_Purchases_in_Prd_Constraint = Constraint(
+        m.PERIODS, rule=total_purchases_in_prd_constraint_rule
+    )
+
+    def total_sales_in_prd_constraint_rule(mod, prd):
+        return (
+            sum(
+                mod.Total_Net_Market_Purchased_Power[market, tmp]
+                * mod.hrs_in_tmp[tmp]
+                * mod.tmp_weight[tmp]
+                for market in mod.MARKETS
+                for tmp in mod.TMPS_IN_PRD[prd]
+            )
+            >= -mod.max_total_net_market_sales_in_prd[prd]
+        )
+
+    m.Aggregate_Sales_in_Prd_Constraint = Constraint(
+        m.PERIODS, rule=total_sales_in_prd_constraint_rule
     )
 
 
@@ -166,7 +215,7 @@ def load_model_data(
         ),
     )
 
-    agg_volume_filename = os.path.join(
+    total_volume_in_tmp_filename = os.path.join(
         scenario_directory,
         weather_iteration,
         hydro_iteration,
@@ -176,10 +225,32 @@ def load_model_data(
         "inputs",
         "market_volume_totals_in_tmp.tab",
     )
-    if os.path.exists(agg_volume_filename):
+    if os.path.exists(total_volume_in_tmp_filename):
         data_portal.load(
-            filename=agg_volume_filename, param=(
-                m.max_total_net_market_purchases, m.max_total_net_market_sales)
+            filename=total_volume_in_tmp_filename,
+            param=(
+                m.max_total_net_market_purchases_in_tmp,
+                m.max_total_net_market_sales_in_tmp,
+            ),
+        )
+
+    total_volume_in_prd_filename = os.path.join(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+        "market_volume_totals_in_prd.tab",
+    )
+    if os.path.exists(total_volume_in_prd_filename):
+        data_portal.load(
+            filename=total_volume_in_prd_filename,
+            param=(
+                m.max_total_net_market_purchases_in_prd,
+                m.max_total_net_market_sales_in_prd,
+            ),
         )
 
 
@@ -271,9 +342,10 @@ def get_inputs_from_database(
     c1 = conn.cursor()
     volume = c1.execute(query_all)
 
+    # Timepoint totals
     totals_in_tmp_query = f"""
-        SELECT timepoint, max_total_net_market_purchases, 
-        max_total_net_market_sales
+        SELECT timepoint, max_total_net_market_purchases_in_tmp, 
+        max_total_net_market_sales_in_tmp
         FROM inputs_market_volume_totals_in_tmp
         WHERE market_volume_total_in_tmp_scenario_id = 
         {subscenarios.MARKET_VOLUME_TOTAL_IN_TMP_SCENARIO_ID}
@@ -282,7 +354,19 @@ def get_inputs_from_database(
     tot_in_tmp_c = conn.cursor()
     totals_in_tmp_agg = tot_in_tmp_c.execute(totals_in_tmp_query)
 
-    return volume, totals_in_tmp_agg
+    # Period totals
+    totals_in_prd_query = f"""
+        SELECT period, max_total_net_market_purchases_in_prd, 
+        max_total_net_market_sales_in_prd
+        FROM inputs_market_volume_totals_in_prd
+        WHERE market_volume_total_in_prd_scenario_id = 
+        {subscenarios.MARKET_VOLUME_TOTAL_IN_PRD_SCENARIO_ID}
+        ;
+    """
+    tot_in_prd_c = conn.cursor()
+    totals_in_prd_agg = tot_in_prd_c.execute(totals_in_prd_query)
+
+    return volume, totals_in_tmp_agg, totals_in_prd_agg
 
 
 def write_model_inputs(
@@ -317,7 +401,7 @@ def write_model_inputs(
         weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
     )
 
-    market_limits, totals_in_tmp = get_inputs_from_database(
+    market_limits, totals_in_tmp, totals_in_prd = get_inputs_from_database(
         scenario_id,
         subscenarios,
         db_weather_iteration,
@@ -367,5 +451,17 @@ def write_model_inputs(
         stage=stage,
         fname="market_volume_totals_in_tmp.tab",
         data=totals_in_tmp,
+        replace_nulls=True,
+    )
+
+    write_tab_file_model_inputs(
+        scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        fname="market_volume_totals_in_prd.tab",
+        data=totals_in_prd,
         replace_nulls=True,
     )

@@ -1053,8 +1053,8 @@ DROP TABLE IF EXISTS subscenarios_market_volume_totals_in_tmp;
 CREATE TABLE subscenarios_market_volume_totals_in_tmp
 (
     market_volume_total_in_tmp_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name                                VARCHAR(32),
-    description                         VARCHAR(128)
+    name                                   VARCHAR(32),
+    description                            VARCHAR(128)
 );
 
 -- These are limits applied to the sum of participation all markets in
@@ -1063,12 +1063,35 @@ DROP TABLE IF EXISTS inputs_market_volume_totals_in_tmp;
 CREATE TABLE inputs_market_volume_totals_in_tmp
 (
     market_volume_total_in_tmp_scenario_id INTEGER,
-    timepoint                           FLOAT,
-    max_total_net_market_purchases      FLOAT,
-    max_total_net_market_sales      FLOAT,
+    timepoint                              FLOAT,
+    max_total_net_market_purchases_in_tmp  FLOAT,
+    max_total_net_market_sales_in_tmp      FLOAT,
     PRIMARY KEY (market_volume_total_in_tmp_scenario_id, timepoint),
     FOREIGN KEY (market_volume_total_in_tmp_scenario_id) REFERENCES
         subscenarios_market_volume_totals_in_tmp (market_volume_total_in_tmp_scenario_id)
+);
+
+-- By prd
+DROP TABLE IF EXISTS subscenarios_market_volume_totals_in_prd;
+CREATE TABLE subscenarios_market_volume_totals_in_prd
+(
+    market_volume_total_in_prd_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name                                   VARCHAR(32),
+    description                            VARCHAR(128)
+);
+
+-- These are limits applied to the sum of participation all markets in
+-- the respective timepoint
+DROP TABLE IF EXISTS inputs_market_volume_totals_in_prd;
+CREATE TABLE inputs_market_volume_totals_in_prd
+(
+    market_volume_total_in_prd_scenario_id INTEGER,
+    period                                 FLOAT,
+    max_total_net_market_purchases_in_prd  FLOAT,
+    max_total_net_market_sales_in_prd      FLOAT,
+    PRIMARY KEY (market_volume_total_in_prd_scenario_id, period),
+    FOREIGN KEY (market_volume_total_in_prd_scenario_id) REFERENCES
+        subscenarios_market_volume_totals_in_prd (market_volume_total_in_prd_scenario_id)
 );
 
 -- Fuel balancing areas
@@ -5521,7 +5544,8 @@ CREATE TABLE scenarios
     elcc_surface_scenario_id                                    INTEGER,
     market_price_scenario_id                                    INTEGER,
     market_volume_scenario_id                                   INTEGER,
-    market_volume_total_in_tmp_scenario_id                         INTEGER,
+    market_volume_total_in_tmp_scenario_id                      INTEGER,
+    market_volume_total_in_prd_scenario_id                      INTEGER,
     water_node_reservoir_scenario_id                            INTEGER,
     water_flow_scenario_id                                      INTEGER,
     water_inflow_scenario_id                                    INTEGER,
@@ -5802,6 +5826,9 @@ CREATE TABLE scenarios
     FOREIGN KEY (market_volume_total_in_tmp_scenario_id) REFERENCES
         subscenarios_market_volume_totals_in_tmp
             (market_volume_total_in_tmp_scenario_id),
+    FOREIGN KEY (market_volume_total_in_prd_scenario_id) REFERENCES
+        subscenarios_market_volume_totals_in_prd
+            (market_volume_total_in_prd_scenario_id),
     FOREIGN KEY (water_node_reservoir_scenario_id) REFERENCES
         subscenarios_system_water_node_reservoirs (water_node_reservoir_scenario_id),
     FOREIGN KEY (water_flow_scenario_id) REFERENCES
