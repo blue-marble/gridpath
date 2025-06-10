@@ -1,4 +1,4 @@
-# Copyright 2016-2024 Blue Marble Analytics LLC.
+# Copyright 2016-2025 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 import csv
 import os.path
 import pandas as pd
-from pyomo.environ import Param, Reals, Set
+from pyomo.environ import Param, Reals, Set, Expression
 
 
 def add_model_components(
@@ -31,14 +31,27 @@ def add_model_components(
     """ """
     m.FOUTPUT_PROJECT_POLICY_ZONES = Set(dimen=3, within=m.PROJECT_POLICY_ZONES)
     m.f_slope = Param(m.FOUTPUT_PROJECT_POLICY_ZONES, within=Reals, default=0)
-    m.f_intercept = Param(m.PROJECT_POLICY_ZONES, within=Reals, default=0)
+    m.f_intercept = Param(m.FOUTPUT_PROJECT_POLICY_ZONES, within=Reals, default=0)
+
+    def zero_intercept_with_zero_capacity_rule(mod, prj, policy, zone, prd):
+        if prd not in mod.OPR_PRDS_BY_PRJ[prj]:
+            return 0
+        else:
+            return mod.f_intercept[prj, policy, zone] * mod.Capacity_MW[prj, prd]
+
+    m.F_Intercept_Expression = Expression(
+        m.FOUTPUT_PROJECT_POLICY_ZONES,
+        m.PERIODS,
+        initialize=zero_intercept_with_zero_capacity_rule,
+    )
 
 
 # Compliance type methods
 def contribution_in_timepoint(mod, prj, policy, zone, tmp):
     """ """
-    return mod.f_slope[prj, policy, zone] * mod.Bulk_Power_Provision_MW[prj, tmp] + (
-        mod.f_intercept[prj, policy, zone] if tmp in mod.PRJ_OPR_TMPS else 0
+    return (
+        mod.f_slope[prj, policy, zone] * mod.Bulk_Power_Provision_MW[prj, tmp]
+        + mod.F_Intercept_Expression[prj, policy, zone, mod.period[tmp]]
     )
 
 
@@ -66,33 +79,6 @@ def load_model_data(
     """
 
     project_subset = list()
-
-    dynamic_components = pd.read_csv(
-        os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "inputs",
-            "project_policy_zones.tab",
-        ),
-        sep="\t",
-        usecols=["project", "policy_name", "policy_zone", "compliance_type"],
-    )
-
-    for row in zip(
-        dynamic_components["project"],
-        dynamic_components["policy_name"],
-        dynamic_components["policy_zone"],
-        dynamic_components["compliance_type"],
-    ):
-        if row[3] == "f_output":
-            project_subset.append((row[0], row[1], row[2]))
-
-    data_portal.data()["FOUTPUT_PROJECT_POLICY_ZONES"] = {None: project_subset}
-
     f_slope_dict = {}
     f_intercept_dict = {}
 
@@ -111,11 +97,12 @@ def load_model_data(
     ) as f:
         reader = csv.reader(f, delimiter="\t", lineterminator="\n")
         next(reader)
-
         for row in reader:
-            if (row[0], row[1], row[2]) in project_subset:
+            if row[3] == "f_output":
+                project_subset.append((row[0], row[1], row[2]))
                 f_slope_dict[(row[0], row[1], row[2])] = float(row[4])
                 f_intercept_dict[(row[0], row[1], row[2])] = float(row[5])
 
+    data_portal.data()["FOUTPUT_PROJECT_POLICY_ZONES"] = {None: project_subset}
     data_portal.data()["f_slope"] = f_slope_dict
     data_portal.data()["f_intercept"] = f_intercept_dict
