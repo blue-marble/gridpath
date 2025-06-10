@@ -1047,27 +1047,28 @@ CREATE TABLE inputs_market_volume_profiles
             (market, market_volume_profile_scenario_id)
 );
 
--- Aggregate limits
-DROP TABLE IF EXISTS subscenarios_market_volume_totals;
-CREATE TABLE subscenarios_market_volume_totals
+-- Total limits over all markets
+-- By tmp
+DROP TABLE IF EXISTS subscenarios_market_volume_totals_in_tmp;
+CREATE TABLE subscenarios_market_volume_totals_in_tmp
 (
-    market_volume_total_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    market_volume_total_in_tmp_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
     name                                VARCHAR(32),
     description                         VARCHAR(128)
 );
 
 -- These are limits applied to the sum of participation all markets in
 -- the respective timepoint
-DROP TABLE IF EXISTS inputs_market_volume_totals;
-CREATE TABLE inputs_market_volume_totals
+DROP TABLE IF EXISTS inputs_market_volume_totals_in_tmp;
+CREATE TABLE inputs_market_volume_totals_in_tmp
 (
-    market_volume_total_scenario_id INTEGER,
+    market_volume_total_in_tmp_scenario_id INTEGER,
     timepoint                           FLOAT,
     max_total_net_market_purchases      FLOAT,
     max_total_net_market_sales      FLOAT,
-    PRIMARY KEY (market_volume_total_scenario_id, timepoint),
-    FOREIGN KEY (market_volume_total_scenario_id) REFERENCES
-        subscenarios_market_volume_totals (market_volume_total_scenario_id)
+    PRIMARY KEY (market_volume_total_in_tmp_scenario_id, timepoint),
+    FOREIGN KEY (market_volume_total_in_tmp_scenario_id) REFERENCES
+        subscenarios_market_volume_totals_in_tmp (market_volume_total_in_tmp_scenario_id)
 );
 
 -- Fuel balancing areas
@@ -5520,7 +5521,7 @@ CREATE TABLE scenarios
     elcc_surface_scenario_id                                    INTEGER,
     market_price_scenario_id                                    INTEGER,
     market_volume_scenario_id                                   INTEGER,
-    market_volume_total_scenario_id                         INTEGER,
+    market_volume_total_in_tmp_scenario_id                         INTEGER,
     water_node_reservoir_scenario_id                            INTEGER,
     water_flow_scenario_id                                      INTEGER,
     water_inflow_scenario_id                                    INTEGER,
@@ -5798,9 +5799,9 @@ CREATE TABLE scenarios
         subscenarios_market_prices (market_price_scenario_id),
     FOREIGN KEY (market_volume_scenario_id) REFERENCES
         subscenarios_market_volume (market_volume_scenario_id),
-    FOREIGN KEY (market_volume_total_scenario_id) REFERENCES
-        subscenarios_market_volume_totals
-            (market_volume_total_scenario_id),
+    FOREIGN KEY (market_volume_total_in_tmp_scenario_id) REFERENCES
+        subscenarios_market_volume_totals_in_tmp
+            (market_volume_total_in_tmp_scenario_id),
     FOREIGN KEY (water_node_reservoir_scenario_id) REFERENCES
         subscenarios_system_water_node_reservoirs (water_node_reservoir_scenario_id),
     FOREIGN KEY (water_flow_scenario_id) REFERENCES

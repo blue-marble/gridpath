@@ -274,9 +274,9 @@ def get_inputs_from_database(
     totals_in_tmp_query = f"""
         SELECT timepoint, max_total_net_market_purchases, 
         max_total_net_market_sales
-        FROM inputs_market_volume_totals
-        WHERE market_volume_total_scenario_id = 
-        {subscenarios.MARKET_VOLUME_TOTAL_SCENARIO_ID}
+        FROM inputs_market_volume_totals_in_tmp
+        WHERE market_volume_total_in_tmp_scenario_id = 
+        {subscenarios.MARKET_VOLUME_TOTAL_IN_TMP_SCENARIO_ID}
         ;
     """
     tot_in_tmp_c = conn.cursor()
