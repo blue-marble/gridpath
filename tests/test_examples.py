@@ -1626,6 +1626,15 @@ class TestExamples(unittest.TestCase):
         scenario_name = "test_w_hydro_ramp_limits"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
+    def test_example_2periods_new_build_generic_policy_recs(self):
+        """
+        Check validation and objective function value of
+        "2periods_new_build_rps_recs" example
+        :return:
+        """
+        scenario_name = "2periods_new_build_generic_policy_recs"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
     @classmethod
     def tearDownClass(cls):
         os.remove(DB_PATH)

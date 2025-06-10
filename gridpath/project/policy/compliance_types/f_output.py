@@ -14,8 +14,10 @@
 
 import csv
 import os.path
-import pandas as pd
 from pyomo.environ import Param, Reals, Set, Expression
+
+from gridpath.auxiliary.auxiliary import get_required_subtype_modules
+from gridpath.project.operations.common_functions import load_operational_type_modules
 
 
 def add_model_components(
@@ -45,12 +47,61 @@ def add_model_components(
         initialize=zero_intercept_with_zero_capacity_rule,
     )
 
+    # Get any non-standard policy contributions (not Bulk_Power_Provision_MW)
+    required_operational_modules = get_required_subtype_modules(
+        scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        which_type="operational_type",
+    )
+
+    imported_operational_modules = load_operational_type_modules(
+        required_operational_modules
+    )
+
+    def prj_policy_zone_opr_tmps_init(mod):
+        opr_tmps = list()
+        for prj, policy, zone in mod.FOUTPUT_PROJECT_POLICY_ZONES:
+            for _prj, tmp in mod.PRJ_OPR_TMPS:
+                if prj == _prj:
+                    opr_tmps.append((prj, policy, zone, tmp))
+
+        return opr_tmps
+
+    m.FOUTPUT_PRJ_POLICY_ZONE_OPR_TMPS = Set(
+        dimen=4, initialize=prj_policy_zone_opr_tmps_init
+    )
+
+    def policy_power_provision_rule(mod, prj, policy_zone, policy, tmp):
+        """
+        If a policy power provision rule is specified in the operational
+        type, use that; otherwise, use the Bulk_Power_Provision_MW for the
+        project.
+        """
+        gen_op_type = mod.operational_type[prj]
+        if hasattr(
+            imported_operational_modules[gen_op_type], "policy_power_provision_rule"
+        ):
+            return imported_operational_modules[
+                gen_op_type
+            ].policy_power_provision_rule(mod, prj, policy_zone, policy, tmp)
+        else:
+            return mod.Bulk_Power_Provision_MW[prj, tmp]
+
+    m.F_Output_Policy_Power_Provision_MW = Expression(
+        m.FOUTPUT_PRJ_POLICY_ZONE_OPR_TMPS, rule=policy_power_provision_rule
+    )
+
 
 # Compliance type methods
 def contribution_in_timepoint(mod, prj, policy, zone, tmp):
     """ """
     return (
-        mod.f_slope[prj, policy, zone] * mod.Bulk_Power_Provision_MW[prj, tmp]
+        mod.f_slope[prj, policy, zone]
+        * mod.F_Output_Policy_Power_Provision_MW[prj, policy, zone, tmp]
         + mod.F_Intercept_Expression[prj, policy, zone, mod.period[tmp]]
     )
 
