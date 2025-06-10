@@ -40,6 +40,14 @@ def add_model_components(
     m.max_final_market_sales = Param(m.MARKETS, m.TMPS, default=Infinity)
     m.max_final_market_purchases = Param(m.MARKETS, m.TMPS, default=Infinity)
 
+    # Params limiting total transactaiosn across all markets
+    m.max_total_net_market_purchases = Param(
+        m.TMPS, within=NonNegativeReals, default=Infinity
+    )
+    m.max_total_net_market_sales = Param(
+        m.TMPS, within=NonNegativeReals, default=Infinity
+    )
+
     # Constrain total net purchases in the current stage
     def total_net_market_purchases_init(mod, market, tmp):
         return sum(
@@ -105,19 +113,26 @@ def add_model_components(
         m.MARKETS, m.TMPS, rule=max_final_market_purchases_rule
     )
 
-    # TODO: temporary aggregate purchases to move
-    m.max_aggregate_market_purchases = Param(
-        m.TMPS, within=NonNegativeReals, default=float("inf")
-    )
-
-    def aggregate_market_purchases_constraint_rule(mod, tmp):
+    # Constraints on total transactions across all markets (e.g., a total
+    # import limit or total sales limit in a timepoint)
+    def total_purchases_in_tmp_constraint_rule(mod, tmp):
         return (
             sum(mod.Total_Net_Market_Purchased_Power[hub, tmp] for hub in mod.MARKETS)
-            <= mod.max_aggregate_market_purchases[tmp]
+            <= mod.max_total_net_market_purchases[tmp]
         )
 
-    m.Aggregate_Market_Purchases_Constraint = Constraint(
-        m.TMPS, rule=aggregate_market_purchases_constraint_rule
+    m.Total_Purchases_in_Tmp_Constraint = Constraint(
+        m.TMPS, rule=total_purchases_in_tmp_constraint_rule
+    )
+
+    def total_sales_in_tmp_constraint_rule(mod, tmp):
+        return (
+            sum(mod.Total_Net_Market_Purchased_Power[hub, tmp] for hub in mod.MARKETS)
+            >= -mod.max_total_net_market_sales[tmp]
+        )
+
+    m.Aggregate_Sales_in_Tmp_Constraint = Constraint(
+        m.TMPS, rule=total_sales_in_tmp_constraint_rule
     )
 
 
@@ -159,11 +174,12 @@ def load_model_data(
         subproblem,
         stage,
         "inputs",
-        "market_volume_aggregate.tab",
+        "market_volume_totals_in_tmp.tab",
     )
     if os.path.exists(agg_volume_filename):
         data_portal.load(
-            filename=agg_volume_filename, param=m.max_aggregate_market_purchases
+            filename=agg_volume_filename, param=(
+                m.max_total_net_market_purchases, m.max_total_net_market_sales)
         )
 
 
@@ -255,17 +271,18 @@ def get_inputs_from_database(
     c1 = conn.cursor()
     volume = c1.execute(query_all)
 
-    agg_query = f"""
-        SELECT timepoint, max_aggregate_market_purchases
-        FROM inputs_market_volume_aggregate
-        WHERE market_volume_aggregate_scenario_id = 
-        {subscenarios.MARKET_VOLUME_AGGREGATE_SCENARIO_ID}
+    totals_in_tmp_query = f"""
+        SELECT timepoint, max_total_net_market_purchases, 
+        max_total_net_market_sales
+        FROM inputs_market_volume_totals
+        WHERE market_volume_total_scenario_id = 
+        {subscenarios.MARKET_VOLUME_TOTAL_SCENARIO_ID}
         ;
     """
-    agg_c = conn.cursor()
-    volume_agg = agg_c.execute(agg_query)
+    tot_in_tmp_c = conn.cursor()
+    totals_in_tmp_agg = tot_in_tmp_c.execute(totals_in_tmp_query)
 
-    return volume, volume_agg
+    return volume, totals_in_tmp_agg
 
 
 def write_model_inputs(
@@ -300,7 +317,7 @@ def write_model_inputs(
         weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
     )
 
-    market_limits, volume_agg = get_inputs_from_database(
+    market_limits, totals_in_tmp = get_inputs_from_database(
         scenario_id,
         subscenarios,
         db_weather_iteration,
@@ -348,7 +365,7 @@ def write_model_inputs(
         availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
-        fname="market_volume_aggregate.tab",
-        data=volume_agg,
+        fname="market_volume_totals_in_tmp.tab",
+        data=totals_in_tmp,
         replace_nulls=True,
     )
