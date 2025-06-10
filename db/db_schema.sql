@@ -5193,9 +5193,8 @@ CREATE TABLE inputs_project_policy_zones
     policy_name                     TEXT,
     policy_zone                     TEXT,
     compliance_type                 TEXT,
-    f_slope                         FLOAT, -- may eventually want to use IDs
-    -- and be able to vary some of these by a temporal index
-    f_intercept                     FLOAT,
+    f_slope                         FLOAT, -- frac power in tmp
+    f_intercept                     FLOAT, -- frac capacity in tmp
     PRIMARY KEY (project_policy_zone_scenario_id, project, policy_name,
                  policy_zone),
     FOREIGN KEY (project_policy_zone_scenario_id) REFERENCES
