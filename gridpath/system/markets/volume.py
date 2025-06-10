@@ -14,9 +14,12 @@
 
 import csv
 import os.path
-from pyomo.environ import Expression, Param, Constraint
+from pyomo.environ import Expression, Param, Constraint, NonNegativeReals
 
 from gridpath.auxiliary.db_interface import directories_to_db_values
+from gridpath.project.operations.operational_types.common_functions import (
+    write_tab_file_model_inputs,
+)
 
 Infinity = float("inf")
 
@@ -102,6 +105,21 @@ def add_model_components(
         m.MARKETS, m.TMPS, rule=max_final_market_purchases_rule
     )
 
+    # TODO: temporary aggregate purchases to move
+    m.max_aggregate_market_purchases = Param(
+        m.TMPS, within=NonNegativeReals, default=float("inf")
+    )
+
+    def aggregate_market_purchases_constraint_rule(mod, tmp):
+        return (
+            sum(mod.Total_Net_Market_Purchased_Power[hub, tmp] for hub in mod.MARKETS)
+            <= mod.max_aggregate_market_purchases[tmp]
+        )
+
+    m.Aggregate_Market_Purchases_Constraint = Constraint(
+        m.TMPS, rule=aggregate_market_purchases_constraint_rule
+    )
+
 
 def load_model_data(
     m,
@@ -132,6 +150,21 @@ def load_model_data(
             m.max_final_market_purchases,
         ),
     )
+
+    agg_volume_filename = os.path.join(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+        "market_volume_aggregate.tab",
+    )
+    if os.path.exists(agg_volume_filename):
+        data_portal.load(
+            filename=agg_volume_filename, param=m.max_aggregate_market_purchases
+        )
 
 
 def get_inputs_from_database(
@@ -222,7 +255,17 @@ def get_inputs_from_database(
     c1 = conn.cursor()
     volume = c1.execute(query_all)
 
-    return volume
+    agg_query = f"""
+        SELECT timepoint, max_aggregate_market_purchases
+        FROM inputs_market_volume_aggregate
+        WHERE market_volume_aggregate_scenario_id = 
+        {subscenarios.MARKET_VOLUME_AGGREGATE_SCENARIO_ID}
+        ;
+    """
+    agg_c = conn.cursor()
+    volume_agg = agg_c.execute(agg_query)
+
+    return volume, volume_agg
 
 
 def write_model_inputs(
@@ -257,7 +300,7 @@ def write_model_inputs(
         weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
     )
 
-    market_limits = get_inputs_from_database(
+    market_limits, volume_agg = get_inputs_from_database(
         scenario_id,
         subscenarios,
         db_weather_iteration,
@@ -297,3 +340,15 @@ def write_model_inputs(
         for row in market_limits:
             replace_nulls = ["." if i is None else i for i in row]
             writer.writerow(replace_nulls)
+
+    write_tab_file_model_inputs(
+        scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        fname="market_volume_aggregate.tab",
+        data=volume_agg,
+        replace_nulls=True,
+    )
