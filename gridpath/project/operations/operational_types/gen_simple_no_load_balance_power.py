@@ -17,7 +17,9 @@ This operational type describes generators that can vary their output
 between zero and full capacity in every timepoint in which they are available
 (i.e. they have a power output variable but no commitment variables associated
 with them). However, this power does not count toward the load balance
-constraint (but may be used in other constraints such as policy requirements).
+constraint, but may be used in other constraints such as policy requirements.
+IMPORTANT: this is available ot be used with the generic policy package only,
+not with the older policy packages.
 
 Costs for this operational type include variable O&M costs.
 
@@ -252,12 +254,23 @@ def power_provision_rule(mod, g, tmp):
     return 0
 
 
+def policy_power_provision_rule(mod, g, tmp):
+    """
+    Power does count toward generic policy. NOTE: this is only implemented in
+    policy package, not in old RPS packages, etc.
+    """
+    return mod.GenSimpleNoLoadBalancePower_Provide_Power_MW[g, tmp]
+
+
 def variable_om_cost_rule(mod, g, tmp):
     """
     Variable cost is incurred on all power produced (including what's
     curtailed).
     """
-    return mod.GenSimpleNoLoadBalancePower_Provide_Power_MW[g, tmp] * mod.variable_om_cost_per_mwh[g]
+    return (
+        mod.GenSimpleNoLoadBalancePower_Provide_Power_MW[g, tmp]
+        * mod.variable_om_cost_per_mwh[g]
+    )
 
 
 def variable_om_by_period_cost_rule(mod, prj, tmp):
