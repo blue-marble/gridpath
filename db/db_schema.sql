@@ -1047,6 +1047,52 @@ CREATE TABLE inputs_market_volume_profiles
             (market, market_volume_profile_scenario_id)
 );
 
+-- Total limits over all markets
+-- By tmp
+DROP TABLE IF EXISTS subscenarios_market_volume_totals_in_tmp;
+CREATE TABLE subscenarios_market_volume_totals_in_tmp
+(
+    market_volume_total_in_tmp_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name                                   VARCHAR(32),
+    description                            VARCHAR(128)
+);
+
+-- These are limits applied to the sum of participation all markets in
+-- the respective timepoint
+DROP TABLE IF EXISTS inputs_market_volume_totals_in_tmp;
+CREATE TABLE inputs_market_volume_totals_in_tmp
+(
+    market_volume_total_in_tmp_scenario_id INTEGER,
+    timepoint                              FLOAT,
+    max_total_net_market_purchases_in_tmp  FLOAT,
+    max_total_net_market_sales_in_tmp      FLOAT,
+    PRIMARY KEY (market_volume_total_in_tmp_scenario_id, timepoint),
+    FOREIGN KEY (market_volume_total_in_tmp_scenario_id) REFERENCES
+        subscenarios_market_volume_totals_in_tmp (market_volume_total_in_tmp_scenario_id)
+);
+
+-- By prd
+DROP TABLE IF EXISTS subscenarios_market_volume_totals_in_prd;
+CREATE TABLE subscenarios_market_volume_totals_in_prd
+(
+    market_volume_total_in_prd_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name                                   VARCHAR(32),
+    description                            VARCHAR(128)
+);
+
+-- These are limits applied to the sum of participation all markets in
+-- the respective timepoint
+DROP TABLE IF EXISTS inputs_market_volume_totals_in_prd;
+CREATE TABLE inputs_market_volume_totals_in_prd
+(
+    market_volume_total_in_prd_scenario_id INTEGER,
+    period                                 FLOAT,
+    max_total_net_market_purchases_in_prd  FLOAT,
+    max_total_net_market_sales_in_prd      FLOAT,
+    PRIMARY KEY (market_volume_total_in_prd_scenario_id, period),
+    FOREIGN KEY (market_volume_total_in_prd_scenario_id) REFERENCES
+        subscenarios_market_volume_totals_in_prd (market_volume_total_in_prd_scenario_id)
+);
 
 -- Fuel balancing areas
 DROP TABLE IF EXISTS subscenarios_geography_fuel_burn_limit_balancing_areas;
@@ -1869,88 +1915,88 @@ CREATE TABLE subscenarios_project_operational_chars
 DROP TABLE IF EXISTS inputs_project_operational_chars;
 CREATE TABLE inputs_project_operational_chars
 (
-    project_operational_chars_scenario_id                       INTEGER,
-    project                                                     VARCHAR(64),
-    technology                                                  VARCHAR(32),
-    operational_type                                            VARCHAR(32),
-    balancing_type_project                                      VARCHAR(32),
-    load_modifier_flag                                          INTEGER,
-    distribution_loss_adjustment_factor                         FLOAT,
-    variable_om_cost_per_mwh                                    FLOAT,   -- simple variable O&M
-    variable_om_cost_by_period_scenario_id                      INTEGER, -- determines by period simple variable O&M
-    variable_om_cost_by_timepoint_scenario_id                   INTEGER, -- determines by tmp simple variable O&M
-    project_fuel_scenario_id                                    INTEGER,
-    heat_rate_curves_scenario_id                                INTEGER, -- determined heat rate curve
-    variable_om_curves_scenario_id                              INTEGER, -- determined variable O&M curve
-    startup_chars_scenario_id                                   INTEGER, -- determines startup ramp chars
-    min_stable_level_fraction                                   FLOAT,
-    unit_size_mw                                                FLOAT,
-    startup_cost_per_mw                                         FLOAT,
-    shutdown_cost_per_mw                                        FLOAT,
-    startup_fuel_mmbtu_per_mw                                   FLOAT,
-    startup_plus_ramp_up_rate                                   FLOAT,   -- Not used for gen_commit_lin/bin!
-    shutdown_plus_ramp_down_rate                                FLOAT,
-    ramp_up_when_on_rate                                        FLOAT,   -- frac capacity per min
-    ramp_up_when_on_rate_monthly_adjustment_scenario_id    INTEGER,
-    ramp_down_when_on_rate                                      FLOAT,   -- frac capacity per min
+    project_operational_chars_scenario_id                 INTEGER,
+    project                                               VARCHAR(64),
+    technology                                            VARCHAR(32),
+    operational_type                                      VARCHAR(32),
+    balancing_type_project                                VARCHAR(32),
+    load_modifier_flag                                    INTEGER,
+    distribution_loss_adjustment_factor                   FLOAT,
+    variable_om_cost_per_mwh                              FLOAT,   -- simple variable O&M
+    variable_om_cost_by_period_scenario_id                INTEGER, -- determines by period simple variable O&M
+    variable_om_cost_by_timepoint_scenario_id             INTEGER, -- determines by tmp simple variable O&M
+    project_fuel_scenario_id                              INTEGER,
+    heat_rate_curves_scenario_id                          INTEGER, -- determined heat rate curve
+    variable_om_curves_scenario_id                        INTEGER, -- determined variable O&M curve
+    startup_chars_scenario_id                             INTEGER, -- determines startup ramp chars
+    min_stable_level_fraction                             FLOAT,
+    unit_size_mw                                          FLOAT,
+    startup_cost_per_mw                                   FLOAT,
+    shutdown_cost_per_mw                                  FLOAT,
+    startup_fuel_mmbtu_per_mw                             FLOAT,
+    startup_plus_ramp_up_rate                             FLOAT,   -- Not used for gen_commit_lin/bin!
+    shutdown_plus_ramp_down_rate                          FLOAT,
+    ramp_up_when_on_rate                                  FLOAT,   -- frac capacity per min
+    ramp_up_when_on_rate_monthly_adjustment_scenario_id   INTEGER,
+    ramp_down_when_on_rate                                FLOAT,   -- frac capacity per min
     ramp_down_when_on_rate_monthly_adjustment_scenario_id INTEGER,
-    ramp_up_violation_penalty                                   FLOAT,   -- leave NULL for hard constraints
-    ramp_down_violation_penalty                                 FLOAT,   -- leave NULL for hard constraints
-    bt_hrz_ramp_up_rate_limit_scenario_id                       INTEGER,
-    bt_hrz_ramp_down_rate_limit_scenario_id                     INTEGER,
-    total_ramp_up_limit_scenario_id                             INTEGER,
-    total_ramp_down_limit_scenario_id                           INTEGER,
-    min_up_time_hours                                           INTEGER,
-    min_up_time_violation_penalty                               FLOAT,   -- leave NULL for hard constraint
-    min_down_time_hours                                         INTEGER,
-    min_down_time_violation_penalty                             FLOAT,   -- leave NULL for hard constraint
-    cycle_selection_scenario_id                                 INTEGER,
-    supplemental_firing_scenario_id                             INTEGER,
-    allow_startup_shutdown_power                                INTEGER, -- defaults to 0 in the model if not specified
-    storage_efficiency                                          FLOAT,   -- hourly losses from storage; default 1 (no losses)
-    charging_efficiency                                         FLOAT,
-    discharging_efficiency                                      FLOAT,
-    charging_capacity_multiplier                                FLOAT,   -- default 1 in model if not specified
-    discharging_capacity_multiplier                             FLOAT,   -- default 1 in model if not specified
-    soc_penalty_cost_per_energyunit                             FLOAT,
-    soc_last_tmp_penalty_cost_per_energyunit                    FLOAT,
-    flex_load_static_profile_scenario_id                        INTEGER,
-    minimum_duration_hours                                      FLOAT,
-    maximum_duration_hours                                      FLOAT,
-    aux_consumption_frac_capacity                               FLOAT,
-    aux_consumption_frac_power                                  FLOAT,
-    last_commitment_stage                                       INTEGER,
-    variable_generator_profile_scenario_id                      INTEGER, -- determines var profiles
-    curtailment_cost_scenario_id                                INTEGER,
-    hydro_operational_chars_scenario_id                         INTEGER, -- determines hydro MWa, min, max
-    energy_profile_scenario_id                                  INTEGER,
-    energy_hrz_shaping_scenario_id                              INTEGER,
-    energy_slice_hrz_shaping_scenario_id                        INTEGER,
-    base_net_requirement_scenario_id                            INTEGER,
-    peak_deviation_demand_charge_scenario_id                    INTEGER,
-    lf_reserves_up_derate                                       FLOAT,
-    lf_reserves_down_derate                                     FLOAT,
-    regulation_up_derate                                        FLOAT,
-    regulation_down_derate                                      FLOAT,
-    frequency_response_derate                                   FLOAT,
-    spinning_reserves_derate                                    FLOAT,
-    lf_reserves_up_ramp_rate                                    FLOAT,
-    lf_reserves_down_ramp_rate                                  FLOAT,
-    regulation_up_ramp_rate                                     FLOAT,
-    regulation_down_ramp_rate                                   FLOAT,
-    frequency_response_ramp_rate                                FLOAT,
-    spinning_reserves_ramp_rate                                 FLOAT,
-    powerunithour_per_fuelunit                                  FLOAT,
-    cap_factor_limits_scenario_id                               INTEGER,
-    partial_availability_threshold                              FLOAT,
-    stor_exog_state_of_charge_scenario_id                       INTEGER, -- determines storage SOC
-    nonfuel_carbon_emissions_per_mwh                            FLOAT,
-    powerhouse                                                  TEXT,
-    generator_efficiency                                        FLOAT,
-    linked_load_component                                       TEXT,
-    load_modifier_profile_scenario_id                           INTEGER,
-    load_component_shift_bounds_scenario_id                     INTEGER,
-    efficiency_factor                                           FLOAT,
+    ramp_up_violation_penalty                             FLOAT,   -- leave NULL for hard constraints
+    ramp_down_violation_penalty                           FLOAT,   -- leave NULL for hard constraints
+    bt_hrz_ramp_up_rate_limit_scenario_id                 INTEGER,
+    bt_hrz_ramp_down_rate_limit_scenario_id               INTEGER,
+    total_ramp_up_limit_scenario_id                       INTEGER,
+    total_ramp_down_limit_scenario_id                     INTEGER,
+    min_up_time_hours                                     INTEGER,
+    min_up_time_violation_penalty                         FLOAT,   -- leave NULL for hard constraint
+    min_down_time_hours                                   INTEGER,
+    min_down_time_violation_penalty                       FLOAT,   -- leave NULL for hard constraint
+    cycle_selection_scenario_id                           INTEGER,
+    supplemental_firing_scenario_id                       INTEGER,
+    allow_startup_shutdown_power                          INTEGER, -- defaults to 0 in the model if not specified
+    storage_efficiency                                    FLOAT,   -- hourly losses from storage; default 1 (no losses)
+    charging_efficiency                                   FLOAT,
+    discharging_efficiency                                FLOAT,
+    charging_capacity_multiplier                          FLOAT,   -- default 1 in model if not specified
+    discharging_capacity_multiplier                       FLOAT,   -- default 1 in model if not specified
+    soc_penalty_cost_per_energyunit                       FLOAT,
+    soc_last_tmp_penalty_cost_per_energyunit              FLOAT,
+    flex_load_static_profile_scenario_id                  INTEGER,
+    minimum_duration_hours                                FLOAT,
+    maximum_duration_hours                                FLOAT,
+    aux_consumption_frac_capacity                         FLOAT,
+    aux_consumption_frac_power                            FLOAT,
+    last_commitment_stage                                 INTEGER,
+    variable_generator_profile_scenario_id                INTEGER, -- determines var profiles
+    curtailment_cost_scenario_id                          INTEGER,
+    hydro_operational_chars_scenario_id                   INTEGER, -- determines hydro MWa, min, max
+    energy_profile_scenario_id                            INTEGER,
+    energy_hrz_shaping_scenario_id                        INTEGER,
+    energy_slice_hrz_shaping_scenario_id                  INTEGER,
+    base_net_requirement_scenario_id                      INTEGER,
+    peak_deviation_demand_charge_scenario_id              INTEGER,
+    lf_reserves_up_derate                                 FLOAT,
+    lf_reserves_down_derate                               FLOAT,
+    regulation_up_derate                                  FLOAT,
+    regulation_down_derate                                FLOAT,
+    frequency_response_derate                             FLOAT,
+    spinning_reserves_derate                              FLOAT,
+    lf_reserves_up_ramp_rate                              FLOAT,
+    lf_reserves_down_ramp_rate                            FLOAT,
+    regulation_up_ramp_rate                               FLOAT,
+    regulation_down_ramp_rate                             FLOAT,
+    frequency_response_ramp_rate                          FLOAT,
+    spinning_reserves_ramp_rate                           FLOAT,
+    powerunithour_per_fuelunit                            FLOAT,
+    cap_factor_limits_scenario_id                         INTEGER,
+    partial_availability_threshold                        FLOAT,
+    stor_exog_state_of_charge_scenario_id                 INTEGER, -- determines storage SOC
+    nonfuel_carbon_emissions_per_mwh                      FLOAT,
+    powerhouse                                            TEXT,
+    generator_efficiency                                  FLOAT,
+    linked_load_component                                 TEXT,
+    load_modifier_profile_scenario_id                     INTEGER,
+    load_component_shift_bounds_scenario_id               INTEGER,
+    efficiency_factor                                     FLOAT,
     PRIMARY KEY (project_operational_chars_scenario_id, project),
     FOREIGN KEY (project_operational_chars_scenario_id) REFERENCES
         subscenarios_project_operational_chars (project_operational_chars_scenario_id),
@@ -2867,10 +2913,10 @@ DROP TABLE IF EXISTS
     subscenarios_project_ramp_up_when_on_rate_monthly_adjustments;
 CREATE TABLE subscenarios_project_ramp_up_when_on_rate_monthly_adjustments
 (
-    project                                                  VARCHAR(64),
+    project                                             VARCHAR(64),
     ramp_up_when_on_rate_monthly_adjustment_scenario_id INTEGER,
-    name                                                     VARCHAR(32),
-    description                                              VARCHAR(128),
+    name                                                VARCHAR(32),
+    description                                         VARCHAR(128),
     PRIMARY KEY (project,
                  ramp_up_when_on_rate_monthly_adjustment_scenario_id)
 );
@@ -2879,10 +2925,10 @@ CREATE TABLE subscenarios_project_ramp_up_when_on_rate_monthly_adjustments
 DROP TABLE IF EXISTS inputs_project_ramp_up_when_on_rate_monthly_adjustments;
 CREATE TABLE inputs_project_ramp_up_when_on_rate_monthly_adjustments
 (
-    project                                                  VARCHAR(64),
+    project                                             VARCHAR(64),
     ramp_up_when_on_rate_monthly_adjustment_scenario_id INTEGER,
-    month                                                    INTEGER,
-    monthly_adjustment                                       FLOAT,
+    month                                               INTEGER,
+    monthly_adjustment                                  FLOAT,
     PRIMARY KEY (project,
                  ramp_up_when_on_rate_monthly_adjustment_scenario_id,
                  month),
@@ -2895,10 +2941,10 @@ CREATE TABLE inputs_project_ramp_up_when_on_rate_monthly_adjustments
 DROP TABLE IF EXISTS subscenarios_project_ramp_down_when_on_rate_monthly_adjustments;
 CREATE TABLE subscenarios_project_ramp_down_when_on_rate_monthly_adjustments
 (
-    project                                                     VARCHAR(64),
+    project                                               VARCHAR(64),
     ramp_down_when_on_rate_monthly_adjustment_scenario_id INTEGER,
-    name                                                        VARCHAR(32),
-    description                                                 VARCHAR(128),
+    name                                                  VARCHAR(32),
+    description                                           VARCHAR(128),
     PRIMARY KEY (project,
                  ramp_down_when_on_rate_monthly_adjustment_scenario_id)
 );
@@ -2907,10 +2953,10 @@ CREATE TABLE subscenarios_project_ramp_down_when_on_rate_monthly_adjustments
 DROP TABLE IF EXISTS inputs_project_ramp_down_when_on_rate_monthly_adjustments;
 CREATE TABLE inputs_project_ramp_down_when_on_rate_monthly_adjustments
 (
-    project                                                     VARCHAR(64),
+    project                                               VARCHAR(64),
     ramp_down_when_on_rate_monthly_adjustment_scenario_id INTEGER,
-    month                                                       INTEGER,
-    monthly_adjustment                                          FLOAT,
+    month                                                 INTEGER,
+    monthly_adjustment                                    FLOAT,
     PRIMARY KEY (project,
                  ramp_down_when_on_rate_monthly_adjustment_scenario_id,
                  month),
@@ -5498,6 +5544,8 @@ CREATE TABLE scenarios
     elcc_surface_scenario_id                                    INTEGER,
     market_price_scenario_id                                    INTEGER,
     market_volume_scenario_id                                   INTEGER,
+    market_volume_total_in_tmp_scenario_id                      INTEGER,
+    market_volume_total_in_prd_scenario_id                      INTEGER,
     water_node_reservoir_scenario_id                            INTEGER,
     water_flow_scenario_id                                      INTEGER,
     water_inflow_scenario_id                                    INTEGER,
@@ -5775,6 +5823,12 @@ CREATE TABLE scenarios
         subscenarios_market_prices (market_price_scenario_id),
     FOREIGN KEY (market_volume_scenario_id) REFERENCES
         subscenarios_market_volume (market_volume_scenario_id),
+    FOREIGN KEY (market_volume_total_in_tmp_scenario_id) REFERENCES
+        subscenarios_market_volume_totals_in_tmp
+            (market_volume_total_in_tmp_scenario_id),
+    FOREIGN KEY (market_volume_total_in_prd_scenario_id) REFERENCES
+        subscenarios_market_volume_totals_in_prd
+            (market_volume_total_in_prd_scenario_id),
     FOREIGN KEY (water_node_reservoir_scenario_id) REFERENCES
         subscenarios_system_water_node_reservoirs (water_node_reservoir_scenario_id),
     FOREIGN KEY (water_flow_scenario_id) REFERENCES
