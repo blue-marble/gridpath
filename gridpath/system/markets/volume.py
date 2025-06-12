@@ -349,6 +349,11 @@ def get_inputs_from_database(
         FROM inputs_market_volume_totals_in_tmp
         WHERE market_volume_total_in_tmp_scenario_id = 
         {subscenarios.MARKET_VOLUME_TOTAL_IN_TMP_SCENARIO_ID}
+        AND timepoint in (
+            SELECT timepoint
+            FROM inputs_temporal
+            WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+        )
         ;
     """
     tot_in_tmp_c = conn.cursor()
@@ -361,6 +366,11 @@ def get_inputs_from_database(
         FROM inputs_market_volume_totals_in_prd
         WHERE market_volume_total_in_prd_scenario_id = 
         {subscenarios.MARKET_VOLUME_TOTAL_IN_PRD_SCENARIO_ID}
+        AND period in (
+            SELECT period
+            FROM inputs_temporal_periods
+            WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID} 
+        )
         ;
     """
     tot_in_prd_c = conn.cursor()
