@@ -681,11 +681,14 @@ def power_provision_rule(mod, s, tmp):
 def rec_provision_rule(mod, g, tmp):
     """
     If modeled as eligible for RPS, losses incurred by storage (the sum
-    over all timepoints of total discharging minus total charging) will count
-    against the RPS (i.e. increase RPS requirement). By default all losses
-    count against the RPS, but this can be derated with the
-    stor_losses_factor_in_energy_target parameter (can be between 0 and 1 with default
-    of 1). Storage MUST be modeled as eligible for RPS for this rule to apply.
+    over all timepoints of total charging minus total discharging) will count
+    against the RPS (i.e. increase RPS requirement, we take the negative of
+    the losses as the contribution of the storage to the RPS). By default
+     all losses count against the RPS, but this can be derated with the
+    stor_losses_factor_in_energy_target parameter (can be between 0 and 1 with
+    default of 1). Storage MUST be modeled as eligible for RPS for this rule
+    to apply.
+
     Modeling storage this way can be necessary to avoid having storage behave
     as load (e.g. by charging and discharging at the same time) in order to
     absorb RPS-eligible energy that would otherwise be curtailed, making it
@@ -718,6 +721,56 @@ def variable_om_by_timepoint_cost_rule(mod, prj, tmp):
         mod.Stor_Discharge_MW[prj, tmp]
         * mod.variable_om_cost_per_mwh_by_timepoint[prj, tmp]
     )
+
+
+def curtailment_cost_rule(mod, g, tmp):
+    """
+    Apply curtailment cost to round trip storage loss: to balance
+    against curtailment of variable projects.
+
+    Downstream this is summed over all timepoints, so losses from storage (
+    the sum of all discharging minus the sum of all charging) will incur the
+    curtailment cost. By default all losses incur the curtailment cost,
+    but this can be derated with the stor_losses_factor_curtailment parameter
+    (default of 1).
+
+    Modeling storage this way can be necessary to avoid having storage behave
+    as load (e.g. by charging and discharging at the same time) in order to
+    absorb energy that would otherwise be curtailed and incur a cost, making it
+    appear as if it were delivered to load.
+    """
+    return (
+        (mod.Stor_Charge_MW[g, tmp] - mod.Stor_Discharge_MW[g, tmp])
+        * (
+            mod.curtailment_cost_per_powerunithour[g, mod.period[tmp]]
+            if (g, mod.period[tmp]) in mod.CURTAILMENT_COST_PRJ_PRDS
+            else 0
+        )
+        * mod.stor_losses_factor_curtailment
+    )
+
+
+def soc_penalty_cost_rule(mod, prj, tmp):
+    """ """
+    return mod.soc_penalty_cost_per_energyunit[prj] * (
+        mod.Energy_Storage_Capacity_MWh[prj, mod.period[tmp]]
+        * mod.Availability_Derate[prj, tmp]
+        - mod.Stor_Ending_Energy_in_Storage_MWh[prj, tmp]
+    )
+
+
+def soc_last_tmp_penalty_cost_rule(mod, prj, tmp):
+    """ """
+    if check_if_last_timepoint(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[prj]
+    ):
+        return mod.soc_last_tmp_penalty_cost_per_energyunit[prj] * (
+            mod.Energy_Storage_Capacity_MWh[prj, mod.period[tmp]]
+            * mod.Availability_Derate[prj, tmp]
+            - mod.Stor_Ending_Energy_in_Storage_MWh[prj, tmp]
+        )
+    else:
+        return 0
 
 
 def power_delta_rule(mod, g, tmp):
@@ -1051,50 +1104,6 @@ def validate_inputs(
         conn,
         "stor",
     )
-
-
-def curtailment_cost_rule(mod, g, tmp):
-    """
-    Apply curtailment cost to round trip storage loss: to balance
-    against curtailment of variable projects.
-    """
-    return (
-        (
-            mod.Stor_Discharge_MW[g, tmp]
-            * (1.0 - mod.stor_discharging_efficiency[g])
-            / mod.stor_discharging_efficiency[g]
-            + mod.Stor_Charge_MW[g, tmp] * (1.0 - mod.stor_charging_efficiency[g])
-        )
-        * (
-            mod.curtailment_cost_per_powerunithour[g, mod.period[tmp]]
-            if (g, mod.period[tmp]) in mod.CURTAILMENT_COST_PRJ_PRDS
-            else 0
-        )
-        * mod.stor_losses_factor_curtailment
-    )
-
-
-def soc_penalty_cost_rule(mod, prj, tmp):
-    """ """
-    return mod.soc_penalty_cost_per_energyunit[prj] * (
-        mod.Energy_Storage_Capacity_MWh[prj, mod.period[tmp]]
-        * mod.Availability_Derate[prj, tmp]
-        - mod.Stor_Ending_Energy_in_Storage_MWh[prj, tmp]
-    )
-
-
-def soc_last_tmp_penalty_cost_rule(mod, prj, tmp):
-    """ """
-    if check_if_last_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[prj]
-    ):
-        return mod.soc_last_tmp_penalty_cost_per_energyunit[prj] * (
-            mod.Energy_Storage_Capacity_MWh[prj, mod.period[tmp]]
-            * mod.Availability_Derate[prj, tmp]
-            - mod.Stor_Ending_Energy_in_Storage_MWh[prj, tmp]
-        )
-    else:
-        return 0
 
 
 # ### OTHER ### #
