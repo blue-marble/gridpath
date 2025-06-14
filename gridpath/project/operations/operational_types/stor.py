@@ -607,6 +607,7 @@ def max_losses_in_hrz_rule(mod, prj, bt, hrz):
         return (
             sum(
                 (mod.Stor_Charge_MW[prj, tmp] - mod.Stor_Discharge_MW[prj, tmp])
+                * mod.hrs_in_tmp[tmp]
                 for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
             )
             <= mod.stor_max_losses_in_hrz_frac_stor_energy_capacity[prj]

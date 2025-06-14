@@ -1651,6 +1651,16 @@ class TestExamples(unittest.TestCase):
         scenario_name = "test_markets_w_prd_total_limits"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
+    def test_example_test_new_build_storage_losses_limit(self):
+        """
+        Check validation and objective function value of
+        "test_new_build_storage_losses_limit" example
+        :return:
+        """
+
+        scenario_name = "test_new_build_storage_losses_limit"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
     @classmethod
     def tearDownClass(cls):
         os.remove(DB_PATH)
