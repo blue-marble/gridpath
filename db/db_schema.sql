@@ -4027,11 +4027,37 @@ CREATE TABLE inputs_transmission_carbon_cap_zones
     transmission_line                        VARCHAR(64),
     carbon_cap_zone                          VARCHAR(32),
     import_direction                         VARCHAR(8),
+    tmp_import_emissions_scenario_id         INTEGER, -- determines timepoint emissions scenario
     tx_co2_intensity_tons_per_mwh            FLOAT,
     PRIMARY KEY (transmission_carbon_cap_zone_scenario_id, transmission_line),
     FOREIGN KEY (transmission_carbon_cap_zone_scenario_id) REFERENCES
         subscenarios_transmission_carbon_cap_zones
             (transmission_carbon_cap_zone_scenario_id)
+
+);
+
+DROP TABLE IF EXISTS subscenarios_transmission_carbon_cap_timepoint_emissions;
+CREATE TABLE subscenarios_transmission_carbon_cap_timepoint_emissions
+(
+    transmission_line                               VARCHAR(64),
+    tmp_import_emissions_scenario_id                INTEGER, 
+    name                                            VARCHAR(32),
+    description                                     VARCHAR(128),
+    PRIMARY KEY (transmission_line, tmp_import_emissions_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_transmission_carbon_cap_timepoint_emissions;
+CREATE TABLE inputs_transmission_carbon_cap_timepoint_emissions
+(
+    transmission_line                               VARCHAR(64),
+    tmp_import_emissions_scenario_id                INTEGER,
+    stage_id                                        INTEGER,
+    timepoint                                       INTEGER,
+    tx_co2_intensity_tons_per_mwh_hourly                   FLOAT,
+    PRIMARY KEY (transmission_line, tmp_import_emissions_scenario_id, stage_id, timepoint),
+    FOREIGN KEY (transmission_line, tmp_import_emissions_scenario_id) REFERENCES
+        subscenarios_transmission_carbon_cap_timepoint_emissions
+            (transmission_line, tmp_import_emissions_scenario_id)
 );
 
 -- Existing transmission capacity
@@ -5717,6 +5743,9 @@ CREATE TABLE scenarios
     FOREIGN KEY (transmission_carbon_cap_zone_scenario_id)
         REFERENCES subscenarios_transmission_carbon_cap_zones
             (transmission_carbon_cap_zone_scenario_id),
+    -- FOREIGN KEY (tmp_import_emissions_scenario_id) REFERENCES
+    --     subscenarios_transmission_carbon_cap_timepoint_emissions
+    --         (tmp_import_emissions_scenario_id),
     FOREIGN KEY (transmission_simultaneous_flow_limit_scenario_id)
         REFERENCES subscenarios_transmission_simultaneous_flow_limits
             (transmission_simultaneous_flow_limit_scenario_id),
@@ -7654,6 +7683,8 @@ SELECT scenario_id,
        subscenarios_transmission_new_potential.name                       AS transmission_new_potential,
        subscenarios_transmission_carbon_cap_zones.name
                                                                           AS transmission_carbon_cap_zones,
+    --    subscenarios_transmission_carbon_cap_timepoint_emissions.name
+    --                                                                       AS transmission_carbon_cap_timepoint_emissions,
        subscenarios_transmission_simultaneous_flow_limits.name
                                                                           AS transmission_simultaneous_flow_limits,
        subscenarios_transmission_simultaneous_flow_limit_line_groups.name AS
@@ -7763,6 +7794,8 @@ FROM scenarios
                    USING (transmission_new_potential_scenario_id)
          LEFT JOIN subscenarios_transmission_carbon_cap_zones
                    USING (transmission_carbon_cap_zone_scenario_id)
+        --  LEFT JOIN subscenarios_transmission_carbon_cap_timepoint_emissions
+        --            USING (tmp_import_emissions_scenario_id)
          LEFT JOIN subscenarios_transmission_simultaneous_flow_limits
                    USING (transmission_simultaneous_flow_limit_scenario_id)
          LEFT JOIN subscenarios_transmission_simultaneous_flow_limit_line_groups

@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+### NOTE: make sure timepoints within timepoint scenario ID, check w/ where statement
+### Check other queries for exmples of where statement in query
+
 """
 Get carbon emissions on each 'carbonaceous' transmission line.
 
@@ -141,6 +144,8 @@ def add_model_components(
 
     """
 
+    ### add default param of zeros for both parameters
+
     # Sets
     ###########################################################################
 
@@ -162,8 +167,10 @@ def add_model_components(
         m.CRB_TX_LINES, within=["positive", "negative"]
     )
 
-    m.tx_co2_intensity_tons_per_mwh = Param(m.CRB_TX_LINES, within=NonNegativeReals)
+    m.tx_co2_intensity_tons_per_mwh = Param(m.CRB_TX_LINES, within=NonNegativeReals, default=0)
 
+    m.tx_co2_intensity_tons_per_mwh_hourly = Param(m.CRB_TX_OPR_TMPS,  within=NonNegativeReals, default=0)
+    
     # Derived Sets
     ###########################################################################
 
@@ -308,6 +315,31 @@ def load_model_data(
     }
 
 
+    data_portal.load(
+        filename=os.path.join(
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "transmission_timepoint_emissions.tab",
+        ),
+        select=(
+            "transmission_line",
+            "timepoint",
+            "tx_co2_intensity_tons_per_mwh_hourly",
+        ),
+        param=(
+            m.tx_co2_intensity_tons_per_mwh_hourly,
+        )
+    )
+
+    data_portal.data()["CRB_TX_OPR_TMPS"] = {
+        None: list(data_portal.data()["tx_co2_intensity_tons_per_mwh_hourly"].keys())
+    }
+
 def export_results(
     scenario_directory,
     weather_iteration,
@@ -374,17 +406,35 @@ def get_inputs_from_database(
     :return:
     """
 
-    c = conn.cursor()
+    c = conn.cursor() # NEW CURSOR FOR EACH QUERY
+
+    # transmission zones data and emissions intensity IF single fixed value
     transmission_zones = c.execute(
-        """SELECT transmission_line, carbon_cap_zone, import_direction,
-        tx_co2_intensity_tons_per_mwh
-        FROM inputs_transmission_carbon_cap_zones
+        """SELECT transmission_line, carbon_cap_zone, import_direction, tx_co2_intensity_tons_per_mwh
+            FROM inputs_transmission_carbon_cap_zones
             WHERE transmission_carbon_cap_zone_scenario_id = {}""".format(
             subscenarios.TRANSMISSION_CARBON_CAP_ZONE_SCENARIO_ID
         )
     )
 
-    return transmission_zones
+    c2 = conn.cursor()
+
+    sql = f"""
+        SELECT transmission_line, timepoint, tx_co2_intensity_tons_per_mwh_hourly
+        FROM inputs_transmission_carbon_cap_timepoint_emissions
+        WHERE stage_id = {stage} 
+        AND (transmission_line, tmp_import_emissions_scenario_id) IN (
+            SELECT transmission_line, tmp_import_emissions_scenario_id
+            FROM inputs_transmission_carbon_cap_zones
+            WHERE transmission_carbon_cap_zone_scenario_id = {subscenarios.TRANSMISSION_CARBON_CAP_ZONE_SCENARIO_ID}
+        )
+    """
+
+    tmp_import_emissions = c2.execute(
+        sql
+    )
+
+    return transmission_zones, tmp_import_emissions
 
 
 def write_model_inputs(
@@ -419,7 +469,7 @@ def write_model_inputs(
         weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
     )
 
-    transmission_zones = get_inputs_from_database(
+    transmission_zones, tmp_import_emissions = get_inputs_from_database(
         scenario_id,
         subscenarios,
         db_weather_iteration,
@@ -430,12 +480,18 @@ def write_model_inputs(
         conn,
     )
 
+    ## Update transmission_lines tab file w data in transmission_zones
+
     # Make a dict for easy access
     prj_zone_dict = dict()
     for prj, zone, direction, intensity in transmission_zones:
         prj_zone_dict[str(prj)] = (
-            (".", ".", ".") if zone is None else (str(zone), str(direction), intensity)
+            (".", ".",  ".") if zone is None else (str(zone), str(direction), intensity)
         )
+
+    # SWAP OUT WITH UDPATED TAB FILE WRITING FUNCTION
+    # Should have a set of checks...
+
 
     with open(
         os.path.join(
@@ -492,6 +548,29 @@ def write_model_inputs(
     ) as tx_file_out:
         writer = csv.writer(tx_file_out, delimiter="\t", lineterminator="\n")
         writer.writerows(new_rows)
+
+    ## Add transmission_timepoint_emissions tab file
+
+    with open(
+        os.path.join(
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "transmission_timepoint_emissions.tab",
+        ),
+        "w",
+        newline="",
+    ) as tmp_file_out:
+        writer = csv.writer(tmp_file_out, delimiter="\t", lineterminator="\n")
+        writer.writerow(["transmission_line", "timepoint", "tx_co2_intensity_tons_per_mwh_hourly"])
+
+        for row in tmp_import_emissions:
+            replace_nulls = ["." if i is None else i for i in row]
+            writer.writerow(replace_nulls)
 
 
 # Validation
