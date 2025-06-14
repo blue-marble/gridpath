@@ -1207,6 +1207,7 @@ def get_optype_inputs_from_db(scenario_id, subscenarios, conn, op_type):
         "discharging_capacity_multiplier",
         "minimum_duration_hours",
         "maximum_duration_hours",
+        "max_losses_in_hrz_frac_stor_energy_capacity",
         "aux_consumption_frac_capacity",
         "aux_consumption_frac_power",
         "powerunithour_per_fuelunit",

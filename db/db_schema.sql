@@ -1960,6 +1960,7 @@ CREATE TABLE inputs_project_operational_chars
     discharging_capacity_multiplier                       FLOAT,   -- default 1 in model if not specified
     soc_penalty_cost_per_energyunit                       FLOAT,
     soc_last_tmp_penalty_cost_per_energyunit              FLOAT,
+    max_losses_in_hrz_frac_stor_energy_capacity           FLOAT,
     flex_load_static_profile_scenario_id                  INTEGER,
     minimum_duration_hours                                FLOAT,
     maximum_duration_hours                                FLOAT,
