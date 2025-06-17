@@ -305,6 +305,28 @@ def add_model_components(
 
     m.STOR_EXOG_SOC_TMPS = Set(within=m.STOR_OPR_TMPS)
 
+    def stor_opr_bt_hrz_set_init(mod):
+        prj_bt_hrz = []
+        for prj in mod.STOR:
+            for bt, hrz in mod.BLN_TYPE_HRZS:
+                # Only take balancing types matching the project's
+                if bt == mod.balancing_type_project[prj]:
+                    # Add to the set if the timepoints in the horizon are in
+                    # the project's operational timepoints
+                    if set(
+                        [
+                            (prj, hrz_tmp)
+                            for hrz_tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
+                        ]
+                    ).issubset(mod.PRJ_OPR_TMPS):
+                        prj_bt_hrz.append((prj, bt, hrz))
+
+        return prj_bt_hrz
+
+    m.STOR_OPR_BT_HRZ = Set(
+        within=m.STOR * m.BLN_TYPE_HRZS, initialize=stor_opr_bt_hrz_set_init
+    )
+
     # Required Params
     ###########################################################################
 
@@ -331,6 +353,10 @@ def add_model_components(
 
     m.stor_exogenous_starting_state_of_charge = Param(
         m.STOR_EXOG_SOC_TMPS, within=NonNegativeReals
+    )
+
+    m.stor_max_losses_in_hrz_frac_stor_energy_capacity = Param(
+        m.STOR, within=NonNegativeReals, default=float("inf")
     )
 
     # Linked Params
@@ -401,6 +427,10 @@ def add_model_components(
 
     m.Stor_Max_Energy_in_Storage_Constraint = Constraint(
         m.STOR_OPR_TMPS, rule=max_energy_in_storage_rule
+    )
+
+    m.Stor_Max_Losses_Constraint = Constraint(
+        m.STOR_OPR_BT_HRZ, rule=max_losses_in_hrz_rule
     )
 
     # Reserves
@@ -563,6 +593,28 @@ def max_energy_in_storage_rule(mod, s, tmp):
         <= mod.Energy_Storage_Capacity_MWh[s, mod.period[tmp]]
         * mod.Availability_Derate[s, tmp]
     )
+
+
+# Max losses in horizon (e.g., to limit cycling)
+def max_losses_in_hrz_rule(mod, prj, bt, hrz):
+    """
+    Limit losses in each horizon
+    Can be used to constrain cycling or acting as load
+    """
+    if mod.stor_max_losses_in_hrz_frac_stor_energy_capacity[prj] == float("inf"):
+        return Constraint.Skip
+    else:
+        return (
+            sum(
+                (mod.Stor_Charge_MW[prj, tmp] - mod.Stor_Discharge_MW[prj, tmp])
+                * mod.hrs_in_tmp[tmp]
+                for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
+            )
+            <= mod.stor_max_losses_in_hrz_frac_stor_energy_capacity[prj]
+            * mod.Energy_Storage_Capacity_MWh[
+                prj, mod.period[mod.first_hrz_tmp[bt, hrz]]
+            ]
+        )
 
 
 # Reserves

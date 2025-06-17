@@ -269,6 +269,7 @@ def make_opchar_sql_str(
     discharging_capacity_multiplier="NULL",
     soc_penalty_cost_per_energyunit="NULL",
     soc_last_tmp_penalty_cost_per_energyunit="NULL",
+    max_losses_in_hrz_frac_stor_energy_capacity="NULL",
     flex_load_static_profile_scenario_id="NULL",
     minimum_duration_hours="NULL",
     maximum_duration_hours="NULL",
@@ -358,6 +359,8 @@ def make_opchar_sql_str(
      {discharging_capacity_multiplier} AS discharging_capacity_multiplier,	
      {soc_penalty_cost_per_energyunit} AS soc_penalty_cost_per_energyunit,
      {soc_last_tmp_penalty_cost_per_energyunit} AS soc_last_tmp_penalty_cost_per_energyunit,
+     {max_losses_in_hrz_frac_stor_energy_capacity} AS 
+     max_losses_in_hrz_frac_stor_energy_capacity,
      {flex_load_static_profile_scenario_id} AS flex_load_static_profile_scenario_id,
      {minimum_duration_hours} AS minimum_duration_hours,	
      {maximum_duration_hours} AS maximum_duration_hours,
