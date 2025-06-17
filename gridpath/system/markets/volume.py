@@ -14,7 +14,7 @@
 
 import csv
 import os.path
-from pyomo.environ import Expression, Param, Constraint, NonNegativeReals
+from pyomo.environ import Expression, Param, Constraint, NonNegativeReals, Boolean
 
 from gridpath.auxiliary.db_interface import directories_to_db_values
 from gridpath.project.operations.operational_types.common_functions import (
@@ -54,6 +54,10 @@ def add_model_components(
     )
     m.max_total_net_market_sales_in_prd = Param(
         m.PERIODS, within=NonNegativeReals, default=Infinity
+    )
+    # Based on 'stor' operational type
+    m.max_total_net_market_sales_in_prd_include_storage_losses = Param(
+        m.PERIODS, within=Boolean, default=0
     )
 
     # Constrain total net purchases in the current stage
@@ -169,15 +173,22 @@ def add_model_components(
     )
 
     def total_sales_in_prd_constraint_rule(mod, prd):
-        return (
-            sum(
-                mod.Total_Net_Market_Purchased_Power[market, tmp]
-                * mod.hrs_in_tmp[tmp]
-                * mod.tmp_weight[tmp]
-                for market in mod.MARKETS
-                for tmp in mod.TMPS_IN_PRD[prd]
-            )
-            >= -mod.max_total_net_market_sales_in_prd[prd]
+        return sum(
+            mod.Total_Net_Market_Purchased_Power[market, tmp]
+            * mod.hrs_in_tmp[tmp]
+            * mod.tmp_weight[tmp]
+            for market in mod.MARKETS
+            for tmp in mod.TMPS_IN_PRD[prd]
+        ) >= -mod.max_total_net_market_sales_in_prd[
+            prd
+        ] + mod.max_total_net_market_sales_in_prd_include_storage_losses[
+            prd
+        ] * sum(
+            (mod.Stor_Charge_MW[prj, tmp] - mod.Stor_Discharge_MW[prj, tmp])
+            * mod.hrs_in_tmp[tmp]
+            * mod.tmp_weight[tmp]
+            for (prj, tmp) in mod.PRJ_OPR_TMPS
+            if mod.operational_type[prj] == "stor" and tmp in mod.TMPS_IN_PRD[prd]
         )
 
     m.Aggregate_Sales_in_Prd_Constraint = Constraint(
@@ -250,6 +261,7 @@ def load_model_data(
             param=(
                 m.max_total_net_market_purchases_in_prd,
                 m.max_total_net_market_sales_in_prd,
+                m.max_total_net_market_sales_in_prd_include_storage_losses,
             ),
         )
 
@@ -362,7 +374,7 @@ def get_inputs_from_database(
     # Period totals
     totals_in_prd_query = f"""
         SELECT period, max_total_net_market_purchases_in_prd, 
-        max_total_net_market_sales_in_prd
+        max_total_net_market_sales_in_prd, max_total_net_market_sales_in_prd_include_storage_losses
         FROM inputs_market_volume_totals_in_prd
         WHERE market_volume_total_in_prd_scenario_id = 
         {subscenarios.MARKET_VOLUME_TOTAL_IN_PRD_SCENARIO_ID}

@@ -1089,6 +1089,7 @@ CREATE TABLE inputs_market_volume_totals_in_prd
     period                                 FLOAT,
     max_total_net_market_purchases_in_prd  FLOAT,
     max_total_net_market_sales_in_prd      FLOAT,
+    max_total_net_market_sales_in_prd_include_storage_losses INTEGER, -- Based on 'stor' operational type
     PRIMARY KEY (market_volume_total_in_prd_scenario_id, period),
     FOREIGN KEY (market_volume_total_in_prd_scenario_id) REFERENCES
         subscenarios_market_volume_totals_in_prd (market_volume_total_in_prd_scenario_id)
