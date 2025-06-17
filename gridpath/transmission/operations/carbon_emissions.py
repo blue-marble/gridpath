@@ -326,31 +326,35 @@ def load_model_data(
         None: list(data_portal.data()["tx_carbon_cap_zone"].keys())
     }
 
-
-    data_portal.load(
-        filename=os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "inputs",
-            "transmission_timepoint_emissions.tab",
-        ),
-        select=(
-            "transmission_line",
-            "timepoint",
-            "tx_co2_intensity_tons_per_mwh_hourly",
-        ),
-        param=(
-            m.tx_co2_intensity_tons_per_mwh_hourly,
-        )
+    # Check if timepoint emissions file exists before loading
+    timepoint_emissions_file = os.path.join(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+        "transmission_timepoint_emissions.tab",
     )
+    
+    # If the timepoint emissions file exists, load the data and initialize the CRB_TX_OPR_TMPS set
+    if os.path.exists(timepoint_emissions_file):
+        data_portal.load(
+            filename=timepoint_emissions_file,
+            select=(
+                "transmission_line",
+                "timepoint",
+                "tx_co2_intensity_tons_per_mwh_hourly",
+            ),
+            param=(
+                m.tx_co2_intensity_tons_per_mwh_hourly,
+            )
+        )
 
-    data_portal.data()["CRB_TX_OPR_TMPS"] = {
-        None: list(data_portal.data()["tx_co2_intensity_tons_per_mwh_hourly"].keys())
-    }
+        data_portal.data()["CRB_TX_OPR_TMPS"] = {
+            None: list(data_portal.data()["tx_co2_intensity_tons_per_mwh_hourly"].keys())
+        }
 
 def export_results(
     scenario_directory,
@@ -494,8 +498,11 @@ def write_model_inputs(
     # Make a dict for easy access
     prj_zone_dict = dict()
     for prj, zone, direction, intensity in transmission_zones:
+        # Handle blank/None values for CO2 intensity by converting to 0
+        intensity_val = 0 if intensity is None else intensity
+        # ADD FLAG HERE TO MAKE SURE THAT USER MEANT TO LEAVE BLANK
         prj_zone_dict[str(prj)] = (
-            (".", ".",  ".") if zone is None else (str(zone), str(direction), intensity)
+            (".", ".",  ".") if zone is None else (str(zone), str(direction), intensity_val)
         )
 
     # SWAP OUT WITH UDPATED TAB FILE WRITING FUNCTION
@@ -557,29 +564,30 @@ def write_model_inputs(
         writer = csv.writer(tx_file_out, delimiter="\t", lineterminator="\n")
         writer.writerows(new_rows)
 
-    # write transmission_timepoint_emissions.tab file
+    # write transmission_timepoint_emissions.tab file if there is data for the scenario ID
+    tmp_import_emissions_list = list(tmp_import_emissions)
+    
+    if tmp_import_emissions_list:
+        with open(
+            os.path.join(
+                scenario_directory,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
+                "inputs",
+                "transmission_timepoint_emissions.tab",
+            ),
+            "w",
+            newline="",
+        ) as tmp_file_out:
+            writer = csv.writer(tmp_file_out, delimiter="\t", lineterminator="\n")
+            writer.writerow(["transmission_line", "timepoint", "tx_co2_intensity_tons_per_mwh_hourly"])
 
-    with open(
-        os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "inputs",
-            "transmission_timepoint_emissions.tab",
-        ),
-        "w",
-        newline="",
-    ) as tmp_file_out:
-        writer = csv.writer(tmp_file_out, delimiter="\t", lineterminator="\n")
-        writer.writerow(["transmission_line", "timepoint", "tx_co2_intensity_tons_per_mwh_hourly"])
-
-        for row in tmp_import_emissions:
-            replace_nulls = ["." if i is None else i for i in row]
-            writer.writerow(replace_nulls)
-
+            for row in tmp_import_emissions_list:
+                replace_nulls = ["." if i is None else i for i in row]
+                writer.writerow(replace_nulls)
 
 # Validation
 ###############################################################################
