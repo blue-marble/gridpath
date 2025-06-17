@@ -102,7 +102,17 @@ def add_model_components(
     | param indicates how much emissions are added towards the carbon cap for |
     | every MWh transmitted into the carbon cap zone.                         |
     +-------------------------------------------------------------------------+
-
+    | | :code:`tx_co2_intensity_tons_per_mwh_hourly`                          |
+    | | *Defined over*: :code:`CRB_TX_OPR_TMPS`                               |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The transmission line's CO2-intensity in metric tonnes per MWh for each |
+    | timepoint. This param indicates how much emissions are added towards    |
+    | the carbon cap for every MWh transmitted into the carbon cap zone for   |
+    | each timepoint. Timepoint CO2-intensity and average CO2-intensity are   |
+    | added together to get the total CO2-intensity for each timepoint.       |
+    +-------------------------------------------------------------------------+
+    
     |
 
     +-------------------------------------------------------------------------+
@@ -143,8 +153,6 @@ def add_model_components(
     +-------------------------------------------------------------------------+
 
     """
-
-    ### add default param of zeros for both parameters
 
     # Sets
     ###########################################################################
@@ -215,7 +223,8 @@ def calculate_carbon_emissions_imports(mod, tx_line, timepoint):
     ):
         return (
             value(mod.Transmit_Power_MW[tx_line, timepoint])
-            * mod.tx_co2_intensity_tons_per_mwh[tx_line]
+            * (mod.tx_co2_intensity_tons_per_mwh[tx_line] + 
+               mod.tx_co2_intensity_tons_per_mwh_hourly[tx_line, timepoint])
         )
     elif (
         mod.carbon_cap_zone_import_direction[tx_line] == "negative"
@@ -223,7 +232,8 @@ def calculate_carbon_emissions_imports(mod, tx_line, timepoint):
     ):
         return (
             -value(mod.Transmit_Power_MW[tx_line, timepoint])
-            * mod.tx_co2_intensity_tons_per_mwh[tx_line]
+            * (mod.tx_co2_intensity_tons_per_mwh[tx_line] + 
+               mod.tx_co2_intensity_tons_per_mwh_hourly[tx_line, timepoint])
         )
     else:
         return 0
@@ -245,12 +255,14 @@ def carbon_emissions_imports_rule(mod, tx, tmp):
     if mod.carbon_cap_zone_import_direction[tx] == "positive":
         return (
             mod.Import_Carbon_Emissions_Tons[tx, tmp]
-            >= mod.Transmit_Power_MW[tx, tmp] * mod.tx_co2_intensity_tons_per_mwh[tx]
+            >= mod.Transmit_Power_MW[tx, tmp] * (mod.tx_co2_intensity_tons_per_mwh[tx] + 
+                                                 mod.tx_co2_intensity_tons_per_mwh_hourly[tx, tmp])
         )
     elif mod.carbon_cap_zone_import_direction[tx] == "negative":
         return (
             mod.Import_Carbon_Emissions_Tons[tx, tmp]
-            >= -mod.Transmit_Power_MW[tx, tmp] * mod.tx_co2_intensity_tons_per_mwh[tx]
+            >= -mod.Transmit_Power_MW[tx, tmp] * (mod.tx_co2_intensity_tons_per_mwh[tx] + 
+                                                 mod.tx_co2_intensity_tons_per_mwh_hourly[tx, tmp])
         )
     else:
         raise ValueError(
@@ -408,18 +420,17 @@ def get_inputs_from_database(
 
     c = conn.cursor() # NEW CURSOR FOR EACH QUERY
 
-    # transmission zones data and emissions intensity IF single fixed value
-    transmission_zones = c.execute(
-        """SELECT transmission_line, carbon_cap_zone, import_direction, tx_co2_intensity_tons_per_mwh
-            FROM inputs_transmission_carbon_cap_zones
-            WHERE transmission_carbon_cap_zone_scenario_id = {}""".format(
-            subscenarios.TRANSMISSION_CARBON_CAP_ZONE_SCENARIO_ID
-        )
-    )
+    sql_tzones = f"""
+        SELECT transmission_line, carbon_cap_zone, import_direction, tx_co2_intensity_tons_per_mwh
+        FROM inputs_transmission_carbon_cap_zones
+        WHERE transmission_carbon_cap_zone_scenario_id = {subscenarios.TRANSMISSION_CARBON_CAP_ZONE_SCENARIO_ID}
+    """
+
+    transmission_zones = c.execute(sql_tzones)
 
     c2 = conn.cursor()
 
-    sql = f"""
+    sql_tmp_emissions = f"""
         SELECT transmission_line, timepoint, tx_co2_intensity_tons_per_mwh_hourly
         FROM inputs_transmission_carbon_cap_timepoint_emissions
         WHERE stage_id = {stage} 
@@ -430,9 +441,7 @@ def get_inputs_from_database(
         )
     """
 
-    tmp_import_emissions = c2.execute(
-        sql
-    )
+    tmp_import_emissions = c2.execute(sql_tmp_emissions)
 
     return transmission_zones, tmp_import_emissions
 
@@ -449,8 +458,8 @@ def write_model_inputs(
     conn,
 ):
     """
-    Get inputs from database and write out the model input
-    transmission_lines.tab file.
+    Get inputs from database and write out the model inputs
+    transmission_lines.tab file and the transmission_timepoint_emissions.tab file
     :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -480,7 +489,7 @@ def write_model_inputs(
         conn,
     )
 
-    ## Update transmission_lines tab file w data in transmission_zones
+    # write transmission_lines.tab file
 
     # Make a dict for easy access
     prj_zone_dict = dict()
@@ -491,7 +500,6 @@ def write_model_inputs(
 
     # SWAP OUT WITH UDPATED TAB FILE WRITING FUNCTION
     # Should have a set of checks...
-
 
     with open(
         os.path.join(
@@ -549,7 +557,7 @@ def write_model_inputs(
         writer = csv.writer(tx_file_out, delimiter="\t", lineterminator="\n")
         writer.writerows(new_rows)
 
-    ## Add transmission_timepoint_emissions tab file
+    # write transmission_timepoint_emissions.tab file
 
     with open(
         os.path.join(
