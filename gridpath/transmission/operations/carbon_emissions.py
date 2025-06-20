@@ -1,3 +1,11 @@
+### DISCUSS
+# where statement in query for relevant timepoints
+# my handling of blanks for both inputs
+# include stage?
+# update files in test_data to comply with new file structure
+
+
+
 # Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -43,7 +51,9 @@ from gridpath.auxiliary.db_interface import (
 from gridpath.auxiliary.dynamic_components import carbon_cap_balance_emission_components
 from gridpath.common_functions import create_results_df
 from gridpath.transmission import TX_TIMEPOINT_DF
-
+from gridpath.project.operations.operational_types.common_functions import (
+    write_tab_file_model_inputs,
+)
 
 def add_model_components(
     m,
@@ -298,21 +308,24 @@ def load_model_data(
     :return:
     """
 
+    # load transmission_average_emissions.tab file
+    average_emissions_file = os.path.join(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+        "transmission_average_emissions.tab",
+    )
+
     data_portal.load(
-        filename=os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "inputs",
-            "transmission_lines.tab",
-        ),
+        filename=average_emissions_file,
         select=(
             "transmission_line",
             "carbon_cap_zone",
-            "carbon_cap_zone_import_direction",
+            "import_direction",
             "tx_co2_intensity_tons_per_mwh",
         ),
         param=(
@@ -325,6 +338,8 @@ def load_model_data(
     data_portal.data()["CRB_TX_LINES"] = {
         None: list(data_portal.data()["tx_carbon_cap_zone"].keys())
     }
+
+
 
     # Check if timepoint emissions file exists before loading
     timepoint_emissions_file = os.path.join(
@@ -444,6 +459,7 @@ def get_inputs_from_database(
             WHERE transmission_carbon_cap_zone_scenario_id = {subscenarios.TRANSMISSION_CARBON_CAP_ZONE_SCENARIO_ID}
         )
     """
+#        AND timepoint in inputs_temporal for matching scenario ID
 
     tmp_import_emissions = c2.execute(sql_tmp_emissions)
 
@@ -493,102 +509,33 @@ def write_model_inputs(
         conn,
     )
 
-    # write transmission_lines.tab file
-
-    # Make a dict for easy access
-    prj_zone_dict = dict()
-    for prj, zone, direction, intensity in transmission_zones:
-        # Handle blank/None values for CO2 intensity by converting to 0
-        intensity_val = 0 if intensity is None else intensity
-        # ADD FLAG HERE TO MAKE SURE THAT USER MEANT TO LEAVE BLANK
-        prj_zone_dict[str(prj)] = (
-            (".", ".",  ".") if zone is None else (str(zone), str(direction), intensity_val)
-        )
-
-    # SWAP OUT WITH UDPATED TAB FILE WRITING FUNCTION
-    # Should have a set of checks...
-
-    with open(
-        os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "inputs",
-            "transmission_lines.tab",
-        ),
-        "r",
-    ) as tx_file_in:
-        reader = csv.reader(tx_file_in, delimiter="\t", lineterminator="\n")
-
-        new_rows = list()
-
-        # Append column header
-        header = next(reader)
-        header.append("carbon_cap_zone")
-        header.append("carbon_cap_zone_import_direction")
-        header.append("tx_co2_intensity_tons_per_mwh")
-        new_rows.append(header)
-
-        # Append correct values
-        for row in reader:
-            # If project specified, check if zone specified or not
-            if row[0] in list(prj_zone_dict.keys()):
-                row.append(prj_zone_dict[row[0]][0])
-                row.append(prj_zone_dict[row[0]][1])
-                row.append(prj_zone_dict[row[0]][2])
-                new_rows.append(row)
-            # If project not specified, specify no zone
-            else:
-                row.append(".")
-                row.append(".")
-                row.append(".")
-                new_rows.append(row)
-
-    with open(
-        os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "inputs",
-            "transmission_lines.tab",
-        ),
-        "w",
-        newline="",
-    ) as tx_file_out:
-        writer = csv.writer(tx_file_out, delimiter="\t", lineterminator="\n")
-        writer.writerows(new_rows)
+    # write transmission_average_emissions.tab file
+    write_tab_file_model_inputs(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        fname="transmission_average_emissions.tab",
+        data=transmission_zones,
+        replace_nulls=True,
+    )
 
     # write transmission_timepoint_emissions.tab file if there is data for the scenario ID
-    tmp_import_emissions_list = list(tmp_import_emissions)
+    write_tab_file_model_inputs(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        fname="transmission_timepoint_emissions.tab",
+        data=tmp_import_emissions,
+        replace_nulls=True,
+    )
     
-    if tmp_import_emissions_list:
-        with open(
-            os.path.join(
-                scenario_directory,
-                weather_iteration,
-                hydro_iteration,
-                availability_iteration,
-                subproblem,
-                stage,
-                "inputs",
-                "transmission_timepoint_emissions.tab",
-            ),
-            "w",
-            newline="",
-        ) as tmp_file_out:
-            writer = csv.writer(tmp_file_out, delimiter="\t", lineterminator="\n")
-            writer.writerow(["transmission_line", "timepoint", "tx_co2_intensity_tons_per_mwh_hourly"])
-
-            for row in tmp_import_emissions_list:
-                replace_nulls = ["." if i is None else i for i in row]
-                writer.writerow(replace_nulls)
-
+    
 # Validation
 ###############################################################################
 
