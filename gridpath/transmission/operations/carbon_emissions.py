@@ -1,7 +1,4 @@
 ### DISCUSS
-# where statement in query for relevant timepoints
-# my handling of blanks for both inputs
-# include stage?
 # update files in test_data to comply with new file structure
 
 
@@ -452,14 +449,19 @@ def get_inputs_from_database(
     sql_tmp_emissions = f"""
         SELECT transmission_line, timepoint, tx_co2_intensity_tons_per_mwh_hourly
         FROM inputs_transmission_carbon_cap_timepoint_emissions
-        WHERE stage_id = {stage} 
-        AND (transmission_line, tmp_import_emissions_scenario_id) IN (
+        WHERE (transmission_line, tmp_import_emissions_scenario_id) IN (
             SELECT transmission_line, tmp_import_emissions_scenario_id
             FROM inputs_transmission_carbon_cap_zones
             WHERE transmission_carbon_cap_zone_scenario_id = {subscenarios.TRANSMISSION_CARBON_CAP_ZONE_SCENARIO_ID}
         )
+        AND (timepoint) IN (
+            SELECT timepoint
+            FROM inputs_temporal
+            WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+            AND subproblem_id = {subproblem}
+            AND stage_id = {stage}
+        )  
     """
-#        AND timepoint in inputs_temporal for matching scenario ID
 
     tmp_import_emissions = c2.execute(sql_tmp_emissions)
 
