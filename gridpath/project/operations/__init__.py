@@ -182,11 +182,6 @@ def add_model_components(
     |                                                                         |
     | The set of projects for which an operational constraint can be violated.|
     +-------------------------------------------------------------------------+
-    | | :code:`CURTAILMENT_COST_PRJS`                                         |
-    | | *Within*: :code:`PROJECTS`                                            |
-    |                                                                         |
-    | The set of projects that incur cost if curtailed.                       |
-    +-------------------------------------------------------------------------+
     | | :code:`SOC_PENALTY_COST_PRJS`                                         |
     | | *Within*: :code:`PROJECTS`                                            |
     |                                                                         |
@@ -316,11 +311,11 @@ def add_model_components(
     | The project's cost for violating its min down time constraint per       |
     | violation instance.                                                     |
     +-------------------------------------------------------------------------+
-    | | :code:`curtailment_cost_per_pwh`                                      |
-    | | *Defined over*: :code:`CURTAILMENT_COST_PRJS`                         |
+    | | :code:`curtailment_cost_per_powerunithour`                            |
+    | | *Defined over*: :code:`CURTAILMENT_COST_PRJS_PRDS`                    |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
-    | The project's cost of curtailment per power-unitXhour.                  |
+    | The project's cost of curtailment per power-unitXhour in a given period.|
     +-------------------------------------------------------------------------+
     | | :code:`soc_penalty_cost_per_energyunit`                               |
     | | *Defined over*: :code:`SOC_PENALTY_COST_PRJS`                         |
@@ -466,7 +461,14 @@ def add_model_components(
     )
 
     # Projects with cost of curtailment
-    m.CURTAILMENT_COST_PRJS = Set(within=m.PROJECTS)
+    # Variable O&M cost by project and period
+    m.CURTAILMENT_COST_PRJ_PRDS = Set(dimen=2, within=m.PROJECTS * m.PERIODS)
+    m.CURTAILMENT_COST_PRJS = Set(
+        within=m.PROJECTS,
+        initialize=lambda mod: sorted(
+            list(set([prj for (prj, prd) in mod.CURTAILMENT_COST_PRJ_PRDS]))
+        ),
+    )
 
     # Projects with cost based on the state of charge
     m.SOC_PENALTY_COST_PRJS = Set(within=m.PROJECTS)
@@ -529,7 +531,9 @@ def add_model_components(
         m.MIN_DOWN_TIME_VIOL_PRJS, within=NonNegativeReals
     )
 
-    m.curtailment_cost_per_pwh = Param(m.CURTAILMENT_COST_PRJS, within=NonNegativeReals)
+    m.curtailment_cost_per_powerunithour = Param(
+        m.CURTAILMENT_COST_PRJ_PRDS, within=NonNegativeReals, default=0
+    )
 
     m.soc_penalty_cost_per_energyunit = Param(
         m.SOC_PENALTY_COST_PRJS, within=NonNegativeReals
@@ -653,7 +657,6 @@ def load_model_data(
             "ramp_down_violation_penalty",
             "min_up_time_violation_penalty",
             "min_down_time_violation_penalty",
-            "curtailment_cost_per_pwh",
             "soc_penalty_cost_per_energyunit",
             "soc_last_tmp_penalty_cost_per_energyunit",
             "nonfuel_carbon_emissions_per_mwh",
@@ -667,7 +670,6 @@ def load_model_data(
             m.ramp_down_violation_penalty,
             m.min_up_time_violation_penalty,
             m.min_down_time_violation_penalty,
-            m.curtailment_cost_per_pwh,
             m.soc_penalty_cost_per_energyunit,
             m.soc_last_tmp_penalty_cost_per_energyunit,
             m.nonfuel_carbon_emissions_per_mwh,
@@ -797,9 +799,43 @@ def load_model_data(
         None: list(data_portal.data()["min_down_time_violation_penalty"].keys())
     }
 
-    data_portal.data()["CURTAILMENT_COST_PRJS"] = {
-        None: list(data_portal.data()["curtailment_cost_per_pwh"].keys())
-    }
+    # Curtailment costs (by project/period)
+    project_curtailment_cost_file = os.path.join(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+        "project_curtailment_cost.tab",
+    )
+    if os.path.exists(project_curtailment_cost_file):
+        curtailment_df = pd.read_csv(project_curtailment_cost_file, sep="\t").set_index(
+            ["project", "period"]
+        )
+        curtailment_prj_idx_list = []
+        curtailment_by_idx_dict = {}
+
+        for idx, val in curtailment_df.iterrows():
+            (prj, prd) = idx
+            if prd == 0:
+                for _prd in sorted(list(prd_set)):
+                    curtailment_prj_idx_list.append((prj, _prd))
+                    curtailment_by_idx_dict[prj, _prd] = curtailment_df.loc[prj, prd][
+                        "curtailment_cost_per_powerunithour"
+                    ]
+            else:
+                curtailment_prj_idx_list.append((prj, prd))
+                curtailment_by_idx_dict[prj, prd] = curtailment_df.loc[prj, prd][
+                    "curtailment_cost_per_powerunithour"
+                ]
+        data_portal.data()[f"CURTAILMENT_COST_PRJ_PRDS"] = {
+            None: curtailment_prj_idx_list
+        }
+        data_portal.data()[
+            "curtailment_cost_per_powerunithour"
+        ] = curtailment_by_idx_dict
 
     data_portal.data()["SOC_PENALTY_COST_PRJS"] = {
         None: list(data_portal.data()["soc_penalty_cost_per_energyunit"].keys())
@@ -964,9 +1000,10 @@ def get_inputs_from_database(
         charging_capacity_multiplier, discharging_capacity_multiplier,
         minimum_duration_hours, maximum_duration_hours,
         aux_consumption_frac_capacity, aux_consumption_frac_power,
-        last_commitment_stage, curtailment_cost_per_pwh,
+        last_commitment_stage,
         powerunithour_per_fuelunit, soc_penalty_cost_per_energyunit,
         soc_last_tmp_penalty_cost_per_energyunit,
+        max_losses_in_hrz_frac_stor_energy_capacity,
         partial_availability_threshold,
         nonfuel_carbon_emissions_per_mwh,
         powerhouse, generator_efficiency, linked_load_component,
@@ -1207,6 +1244,36 @@ def get_inputs_from_database(
         )
     )
 
+    curtailment_c = conn.cursor()
+    curtailment_cost = curtailment_c.execute(
+        f"""
+        SELECT project, period, curtailment_cost_per_powerunithour
+        FROM inputs_project_portfolios
+        -- select the correct operational characteristics subscenario
+        INNER JOIN
+        (SELECT project, curtailment_cost_scenario_id
+        FROM inputs_project_operational_chars
+        WHERE project_operational_chars_scenario_id = {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
+        ) AS op_char
+        USING(project)
+        -- select only matching projects
+        INNER JOIN
+        inputs_project_curtailment_cost
+        USING (project, curtailment_cost_scenario_id)
+        -- Get only the subset of projects in the portfolio based on the 
+        -- project_portfolio_scenario_id 
+        WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
+        AND (
+            period in (
+            SELECT DISTINCT period
+            FROM inputs_temporal_periods
+            WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+            )
+            OR period = 0 -- for all periods
+            )
+        """
+    )
+
     return (
         proj_opchar,
         var_om_by_prd,
@@ -1218,6 +1285,7 @@ def get_inputs_from_database(
         cycle_selection,
         cap_factor_limits,
         supplemental_firing,
+        curtailment_cost,
     )
 
 
@@ -1263,6 +1331,7 @@ def write_model_inputs(
         cycle_selection,
         cap_factor_limits,
         supplemental_firing,
+        curtailment_cost,
     ) = get_inputs_from_database(
         scenario_id,
         subscenarios,
@@ -1313,10 +1382,10 @@ def write_model_inputs(
         "aux_consumption_frac_capacity",
         "aux_consumption_frac_power",
         "last_commitment_stage",
-        "curtailment_cost_per_pwh",
         "powerunithour_per_fuelunit",
         "soc_penalty_cost_per_energyunit",
         "soc_last_tmp_penalty_cost_per_energyunit",
+        "max_losses_in_hrz_frac_stor_energy_capacity",
         "partial_availability_threshold",
         "nonfuel_carbon_emissions_per_mwh",
         "powerhouse",
@@ -1403,6 +1472,14 @@ def write_model_inputs(
         filename="supplemental_firing.tab",
     )
 
+    # Write curtailment cost by period file
+    curtailment_cost_df = cursor_to_df(curtailment_cost)
+    write_additional_opchar_file(
+        opchar_df=curtailment_cost_df,
+        inputs_directory=inputs_directory,
+        filename="project_curtailment_cost.tab",
+    )
+
 
 def import_results_into_database(
     scenario_id,
@@ -1475,6 +1552,7 @@ def validate_inputs(
         cycle_select,
         cap_factor_limits,
         supplemental_firing,
+        curtailment_cost,
     ) = get_inputs_from_database(
         scenario_id,
         subscenarios,
@@ -1723,6 +1801,7 @@ def validate_inputs(
         "discharging_capacity_multiplier",
         "minimum_duration_hours",
         "maximum_duration_hours",
+        "max_losses_in_hrz_frac_stor_energy_capacity",
         "aux_consumption_frac_capacity",
         "aux_consumption_frac_power",
         "partial_availability_threshold",

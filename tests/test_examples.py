@@ -1617,6 +1617,50 @@ class TestExamples(unittest.TestCase):
         scenario_name = "dsm_examples"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
+    def test_example_test_w_hydro_ramp_limits(self):
+        """
+        Check validation and objective function value of
+        "test_w_hydro_ramp_limits" example
+        :return:
+        """
+        scenario_name = "test_w_hydro_ramp_limits"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_2periods_new_build_generic_policy_recs(self):
+        """
+        Check validation and objective function value of
+        "2periods_new_build_rps_recs" example
+        :return:
+        """
+        scenario_name = "2periods_new_build_generic_policy_recs"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_markets_w_tmp_total_limits(self):
+        """
+        Check validation and objective function value of "test" example
+        :return:
+        """
+        scenario_name = "test_markets_w_tmp_total_limits"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_markets_w_prd_total_limits(self):
+        """
+        Check validation and objective function value of "test" example
+        :return:
+        """
+        scenario_name = "test_markets_w_prd_total_limits"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_new_build_storage_losses_limit(self):
+        """
+        Check validation and objective function value of
+        "test_new_build_storage_losses_limit" example
+        :return:
+        """
+
+        scenario_name = "test_new_build_storage_losses_limit"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
     @classmethod
     def tearDownClass(cls):
         os.remove(DB_PATH)

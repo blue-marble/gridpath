@@ -305,6 +305,14 @@ def add_model_components(
         m.GEN_HYDRO_MUST_TAKE, within=NonNegativeReals, default=float("inf")
     )
 
+    m.gen_hydro_must_take_ramp_up_when_on_rate_monthly_adjustment = Param(
+        m.GEN_HYDRO_MUST_TAKE, m.MONTHS, within=NonNegativeReals, default=1
+    )
+
+    m.gen_hydro_must_take_ramp_down_when_on_rate_monthly_adjustment = Param(
+        m.GEN_HYDRO_MUST_TAKE, m.MONTHS, within=NonNegativeReals, default=1
+    )
+
     m.gen_hydro_must_take_aux_consumption_frac_capacity = Param(
         m.GEN_HYDRO_MUST_TAKE, within=PercentFraction, default=0
     )
@@ -535,18 +543,23 @@ def ramp_up_rule(mod, g, tmp):
                 g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
             ]
 
-        return (
-            mod.GenHydroMustTake_Gross_Power_MW[g, tmp]
-            + mod.GenHydroMustTake_Upwards_Reserves_MW[g, tmp]
-        ) - (
-            prev_tmp_power - prev_tmp_downwards_reserves
-        ) <= mod.gen_hydro_must_take_ramp_up_when_on_rate[
-            g
-        ] * 60 * prev_tmp_hrs_in_tmp * mod.Capacity_MW[
-            g, mod.period[tmp]
-        ] * mod.Availability_Derate[
-            g, tmp
-        ]
+        if mod.gen_hydro_must_take_ramp_up_when_on_rate[g] == float("inf"):
+            return Constraint.Skip
+        else:
+            return (
+                mod.GenHydroMustTake_Gross_Power_MW[g, tmp]
+                + mod.GenHydroMustTake_Upwards_Reserves_MW[g, tmp]
+            ) - (
+                prev_tmp_power - prev_tmp_downwards_reserves
+            ) <= mod.gen_hydro_must_take_ramp_up_when_on_rate[
+                g
+            ] * mod.gen_hydro_must_take_ramp_up_when_on_rate_monthly_adjustment[
+                g, mod.month[tmp]
+            ] * 60 * prev_tmp_hrs_in_tmp * mod.Capacity_MW[
+                g, mod.period[tmp]
+            ] * mod.Availability_Derate[
+                g, tmp
+            ]
 
 
 def ramp_down_rule(mod, g, tmp):
@@ -593,18 +606,23 @@ def ramp_down_rule(mod, g, tmp):
                 g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
             ]
 
-        return (
-            mod.GenHydroMustTake_Gross_Power_MW[g, tmp]
-            - mod.GenHydroMustTake_Downwards_Reserves_MW[g, tmp]
-        ) - (
-            prev_tmp_power + prev_tmp_upwards_reserves
-        ) >= -mod.gen_hydro_must_take_ramp_down_when_on_rate[
-            g
-        ] * 60 * prev_tmp_hrs_in_tmp * mod.Capacity_MW[
-            g, mod.period[tmp]
-        ] * mod.Availability_Derate[
-            g, tmp
-        ]
+        if mod.gen_hydro_must_take_ramp_down_when_on_rate[g] == float("inf"):
+            return Constraint.Skip
+        else:
+            return (
+                mod.GenHydroMustTake_Gross_Power_MW[g, tmp]
+                - mod.GenHydroMustTake_Downwards_Reserves_MW[g, tmp]
+            ) - (
+                prev_tmp_power + prev_tmp_upwards_reserves
+            ) >= -mod.gen_hydro_must_take_ramp_down_when_on_rate[
+                g
+            ] * mod.gen_hydro_must_take_ramp_down_when_on_rate_monthly_adjustment[
+                g, mod.month[tmp]
+            ] * 60 * prev_tmp_hrs_in_tmp * mod.Capacity_MW[
+                g, mod.period[tmp]
+            ] * mod.Availability_Derate[
+                g, tmp
+            ]
 
 
 # Operational Type Methods
@@ -703,6 +721,40 @@ def load_model_data(
         op_type="gen_hydro_must_take",
         projects=projects,
     )
+
+    # Ramp up monthly adjustments
+    ramp_up_monthly_adjustments_filename = os.path.join(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+        "gen_hydro_must_take_ramp_up_rate_monthly_adjustments.tab",
+    )
+    if os.path.exists(ramp_up_monthly_adjustments_filename):
+        data_portal.load(
+            filename=ramp_up_monthly_adjustments_filename,
+            param=m.gen_hydro_must_take_ramp_up_when_on_rate_monthly_adjustment,
+        )
+
+    # Ramp down monthly adjustments
+    ramp_down_monthly_adjustments_filename = os.path.join(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+        "gen_hydro_must_take_ramp_down_rate_monthly_adjustments.tab",
+    )
+    if os.path.exists(ramp_down_monthly_adjustments_filename):
+        data_portal.load(
+            filename=ramp_down_monthly_adjustments_filename,
+            param=m.gen_hydro_must_take_ramp_down_when_on_rate_monthly_adjustment,
+        )
 
     # Linked timepoint params
     linked_inputs_filename = os.path.join(
@@ -875,11 +927,59 @@ def get_model_inputs_from_database(
         op_type="gen_hydro_must_take",
         table="inputs_project_hydro_operational_chars",
         subscenario_id_column="hydro_operational_chars_scenario_id",
-        data_column="average_power_fraction, min_power_fraction, " "max_power_fraction",
+        data_column="average_power_fraction, min_power_fraction, max_power_fraction",
         opr_index_dict=BT_HRZ_INDEX_QUERY_PARAMS,
     )
 
-    return prj_bt_hrz_data
+    ramp_up_monthly_adjustments_sql = f"""
+        SELECT project, month, monthly_adjustment
+            FROM inputs_project_ramp_up_when_on_rate_monthly_adjustments
+            WHERE 1=1
+            AND project IN (
+                SELECT project
+                FROM inputs_project_portfolios
+                WHERE project_portfolio_scenario_id = 
+                {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
+            )
+            AND (project, ramp_up_when_on_rate_monthly_adjustment_scenario_id) in (
+                SELECT project, ramp_up_when_on_rate_monthly_adjustment_scenario_id
+                FROM inputs_project_operational_chars
+                WHERE project_operational_chars_scenario_id = 
+                {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
+            )
+            ;
+            """
+
+    ramp_up_adjustments_c = conn.cursor()
+    ramp_up_monthly_adjustments = ramp_up_adjustments_c.execute(
+        ramp_up_monthly_adjustments_sql
+    )
+
+    ramp_down_monthly_adjustments_sql = f"""
+        SELECT project, month, monthly_adjustment
+            FROM inputs_project_ramp_down_when_on_rate_monthly_adjustments
+            WHERE 1=1
+            AND project IN (
+                SELECT project
+                FROM inputs_project_portfolios
+                WHERE project_portfolio_scenario_id = 
+                {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
+            )
+            AND (project, ramp_down_when_on_rate_monthly_adjustment_scenario_id) in (
+                SELECT project, ramp_down_when_on_rate_monthly_adjustment_scenario_id
+                FROM inputs_project_operational_chars
+                WHERE project_operational_chars_scenario_id = 
+                {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
+            )
+            ;
+            """
+
+    ramp_down_adjustments_c = conn.cursor()
+    ramp_down_monthly_adjustments = ramp_down_adjustments_c.execute(
+        ramp_down_monthly_adjustments_sql
+    )
+
+    return prj_bt_hrz_data, ramp_up_monthly_adjustments, ramp_down_monthly_adjustments
 
 
 def write_model_inputs(
@@ -904,17 +1004,19 @@ def write_model_inputs(
     :return:
     """
 
-    data = get_model_inputs_from_database(
-        scenario_id,
-        subscenarios,
-        weather_iteration,
-        hydro_iteration,
-        availability_iteration,
-        subproblem,
-        stage,
-        conn,
+    prj_bt_hrz_data, ramp_up_monthly_adjustments, ramp_down_monthly_adjustments = (
+        get_model_inputs_from_database(
+            scenario_id,
+            subscenarios,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            conn,
+        )
     )
-    fname = "hydro_conventional_horizon_params.tab"
+    bt_hrz_chars_fname = "hydro_conventional_horizon_params.tab"
 
     write_tab_file_model_inputs(
         scenario_directory,
@@ -923,8 +1025,36 @@ def write_model_inputs(
         availability_iteration,
         subproblem,
         stage,
-        fname,
-        data,
+        bt_hrz_chars_fname,
+        prj_bt_hrz_data,
+    )
+
+    ramp_up_monthly_adjustments_fname = (
+        "gen_hydro_must_take_ramp_up_rate_monthly_adjustments.tab"
+    )
+    write_tab_file_model_inputs(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        ramp_up_monthly_adjustments_fname,
+        ramp_up_monthly_adjustments,
+    )
+
+    ramp_down_monthly_adjustments_fname = (
+        "gen_hydro_must_take_ramp_down_rate_monthly_adjustments.tab"
+    )
+    write_tab_file_model_inputs(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        ramp_down_monthly_adjustments_fname,
+        ramp_down_monthly_adjustments,
     )
 
 

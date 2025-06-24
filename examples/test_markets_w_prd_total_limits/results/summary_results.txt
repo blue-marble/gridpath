@@ -1,0 +1,13 @@
+##### SUMMARY RESULTS FOR SCENARIO *test_markets_w_prd_total_limits* #####
+
+### CAPACITY RESULTS ###
+
+### OPERATIONAL RESULTS ###
+
+--> Energy Production <--
+                             Annual Energy (MWh)  % Total Power
+load_zone period technology                                    
+Zone1     2020   Coal                  18,688.00          15.80
+                 Gas                   36,792.00          31.11
+                 Nuclear               52,560.00          44.44
+                 Wind                  10,220.00           8.64

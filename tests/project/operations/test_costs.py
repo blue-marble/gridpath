@@ -287,11 +287,8 @@ class TestOperationalCosts(unittest.TestCase):
         self.assertListEqual(expected_opr_viol_prj_tmps, actual_opr_viol_prj_tmps)
 
         # Set: CURTAILMENT_COST_PRJ_OPR_TMPS
-        expected_curt_cost_projects = sorted(
-            projects_df[projects_df["curtailment_cost_per_pwh"] != "."][
-                "project"
-            ].tolist()
-        )
+        expected_curt_cost_projects = ["Battery", "Wind", "Wind_Battery_Hybrid"]
+
         expected_curt_cost_prj_tmps = get_project_operational_timepoints(
             expected_curt_cost_projects
         )

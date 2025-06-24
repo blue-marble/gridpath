@@ -751,7 +751,11 @@ def curtailment_cost_rule(mod, prj, tmp):
     return (
         mod.GenVarStorHyb_Scheduled_Curtailment_MW[prj, tmp]
         + mod.GenVarStorHyb_Subtimepoint_Curtailment_MW[prj, tmp]
-    ) * mod.curtailment_cost_per_pwh[prj]
+    ) * (
+        mod.curtailment_cost_per_powerunithour[prj, mod.period[tmp]]
+        if (prj, mod.period[tmp]) in mod.CURTAILMENT_COST_PRJ_PRDS
+        else 0
+    )
 
 
 def power_delta_rule(mod, prj, tmp):

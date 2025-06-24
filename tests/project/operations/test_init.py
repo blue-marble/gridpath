@@ -471,11 +471,28 @@ class TestOperationsInit(unittest.TestCase):
 
         self.assertListEqual(expected_viol_all_projects, actual_viol_all_projects)
 
+        # Set: CURTAILMENT_COST_PRJ_PRDS
+        expected_curtailment_cost_project_periods = [
+            ("Battery", 2020),
+            ("Battery", 2030),
+            ("Wind", 2020),
+            ("Wind", 2030),
+            ("Wind_Battery_Hybrid", 2020),
+            ("Wind_Battery_Hybrid", 2030),
+        ]
+
+        actual_curtailment_cost_project_periods = sorted(
+            [(prj, prd) for (prj, prd) in instance.CURTAILMENT_COST_PRJ_PRDS]
+        )
+
+        self.assertListEqual(
+            expected_curtailment_cost_project_periods,
+            actual_curtailment_cost_project_periods,
+        )
+
         # Set: CURTAILMENT_COST_PRJS
         expected_curtailment_cost_projects = sorted(
-            projects_df[projects_df["curtailment_cost_per_pwh"] != "."][
-                "project"
-            ].tolist()
+            ["Wind", "Battery", "Wind_Battery_Hybrid"]
         )
 
         actual_curtailment_cost_projects = sorted(
@@ -918,25 +935,20 @@ class TestOperationsInit(unittest.TestCase):
             expected_min_down_time_viol_by_prj, actual_min_down_time_viol_by_prj
         )
 
-        # Param: curtailment_cost_per_pwh
-        curtailment_cost_df = projects_df[
-            projects_df["curtailment_cost_per_pwh"] != "."
-        ]
-        expected_curtailment_cost_by_prj = OrderedDict(
-            sorted(
-                dict(
-                    zip(
-                        curtailment_cost_df["project"],
-                        pd.to_numeric(curtailment_cost_df["curtailment_cost_per_pwh"]),
-                    )
-                ).items()
-            )
-        )
+        # Param: curtailment_cost_per_powerunithour
+        expected_curtailment_cost_by_prj = {
+            ("Wind", 2020): 10,
+            ("Wind", 2030): 10,
+            ("Battery", 2020): 10,
+            ("Battery", 2030): 0,
+            ("Wind_Battery_Hybrid", 2020): 0,
+            ("Wind_Battery_Hybrid", 2030): 10,
+        }
         actual_curtailment_cost_by_prj = OrderedDict(
             sorted(
                 {
-                    p: instance.curtailment_cost_per_pwh[p]
-                    for p in instance.CURTAILMENT_COST_PRJS
+                    (prj, prd): instance.curtailment_cost_per_powerunithour[prj, prd]
+                    for (prj, prd) in instance.CURTAILMENT_COST_PRJ_PRDS
                 }.items()
             )
         )
