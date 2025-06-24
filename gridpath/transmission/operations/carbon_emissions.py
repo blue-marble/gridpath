@@ -440,6 +440,11 @@ def get_inputs_from_database(
         SELECT transmission_line, carbon_cap_zone, import_direction, tx_co2_intensity_tons_per_mwh
         FROM inputs_transmission_carbon_cap_zones
         WHERE transmission_carbon_cap_zone_scenario_id = {subscenarios.TRANSMISSION_CARBON_CAP_ZONE_SCENARIO_ID}
+        AND transmission_line IN (
+            SELECT transmission_line
+            FROM inputs_transmission_portfolios
+            WHERE transmission_portfolio_scenario_id = {subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID}
+        )
     """
 
     transmission_zones = c.execute(sql_tzones)
