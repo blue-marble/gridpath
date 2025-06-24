@@ -4051,10 +4051,9 @@ CREATE TABLE inputs_transmission_carbon_cap_timepoint_emissions
 (
     transmission_line                               VARCHAR(64),
     tmp_import_emissions_scenario_id                INTEGER,
-    stage_id                                        INTEGER,
     timepoint                                       INTEGER,
     tx_co2_intensity_tons_per_mwh_hourly                   FLOAT,
-    PRIMARY KEY (transmission_line, tmp_import_emissions_scenario_id, stage_id, timepoint),
+    PRIMARY KEY (transmission_line, tmp_import_emissions_scenario_id, timepoint),
     FOREIGN KEY (transmission_line, tmp_import_emissions_scenario_id) REFERENCES
         subscenarios_transmission_carbon_cap_timepoint_emissions
             (transmission_line, tmp_import_emissions_scenario_id)
