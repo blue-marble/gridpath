@@ -2,7 +2,6 @@
 # update files in test_data to comply with new file structure
 
 
-
 # Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -51,6 +50,7 @@ from gridpath.transmission import TX_TIMEPOINT_DF
 from gridpath.project.operations.operational_types.common_functions import (
     write_tab_file_model_inputs,
 )
+
 
 def add_model_components(
     m,
@@ -119,7 +119,7 @@ def add_model_components(
     | each timepoint. Timepoint CO2-intensity and average CO2-intensity are   |
     | added together to get the total CO2-intensity for each timepoint.       |
     +-------------------------------------------------------------------------+
-    
+
     |
 
     +-------------------------------------------------------------------------+
@@ -182,10 +182,14 @@ def add_model_components(
         m.CRB_TX_LINES, within=["positive", "negative"]
     )
 
-    m.tx_co2_intensity_tons_per_mwh = Param(m.CRB_TX_LINES, within=NonNegativeReals, default=0)
+    m.tx_co2_intensity_tons_per_mwh = Param(
+        m.CRB_TX_LINES, within=NonNegativeReals, default=0
+    )
 
-    m.tx_co2_intensity_tons_per_mwh_hourly = Param(m.CRB_TX_OPR_TMPS,  within=NonNegativeReals, default=0)
-    
+    m.tx_co2_intensity_tons_per_mwh_hourly = Param(
+        m.CRB_TX_OPR_TMPS, within=NonNegativeReals, default=0
+    )
+
     # Derived Sets
     ###########################################################################
 
@@ -228,19 +232,17 @@ def calculate_carbon_emissions_imports(mod, tx_line, timepoint):
         mod.carbon_cap_zone_import_direction[tx_line] == "positive"
         and value(mod.Transmit_Power_MW[tx_line, timepoint]) > 0
     ):
-        return (
-            value(mod.Transmit_Power_MW[tx_line, timepoint])
-            * (mod.tx_co2_intensity_tons_per_mwh[tx_line] + 
-               mod.tx_co2_intensity_tons_per_mwh_hourly[tx_line, timepoint])
+        return value(mod.Transmit_Power_MW[tx_line, timepoint]) * (
+            mod.tx_co2_intensity_tons_per_mwh[tx_line]
+            + mod.tx_co2_intensity_tons_per_mwh_hourly[tx_line, timepoint]
         )
     elif (
         mod.carbon_cap_zone_import_direction[tx_line] == "negative"
         and -value(mod.Transmit_Power_MW[tx_line, timepoint]) > 0
     ):
-        return (
-            -value(mod.Transmit_Power_MW[tx_line, timepoint])
-            * (mod.tx_co2_intensity_tons_per_mwh[tx_line] + 
-               mod.tx_co2_intensity_tons_per_mwh_hourly[tx_line, timepoint])
+        return -value(mod.Transmit_Power_MW[tx_line, timepoint]) * (
+            mod.tx_co2_intensity_tons_per_mwh[tx_line]
+            + mod.tx_co2_intensity_tons_per_mwh_hourly[tx_line, timepoint]
         )
     else:
         return 0
@@ -260,16 +262,18 @@ def carbon_emissions_imports_rule(mod, tx, tmp):
     line, based on its CO2-intensity.
     """
     if mod.carbon_cap_zone_import_direction[tx] == "positive":
-        return (
-            mod.Import_Carbon_Emissions_Tons[tx, tmp]
-            >= mod.Transmit_Power_MW[tx, tmp] * (mod.tx_co2_intensity_tons_per_mwh[tx] + 
-                                                 mod.tx_co2_intensity_tons_per_mwh_hourly[tx, tmp])
+        return mod.Import_Carbon_Emissions_Tons[tx, tmp] >= mod.Transmit_Power_MW[
+            tx, tmp
+        ] * (
+            mod.tx_co2_intensity_tons_per_mwh[tx]
+            + mod.tx_co2_intensity_tons_per_mwh_hourly[tx, tmp]
         )
     elif mod.carbon_cap_zone_import_direction[tx] == "negative":
-        return (
-            mod.Import_Carbon_Emissions_Tons[tx, tmp]
-            >= -mod.Transmit_Power_MW[tx, tmp] * (mod.tx_co2_intensity_tons_per_mwh[tx] + 
-                                                 mod.tx_co2_intensity_tons_per_mwh_hourly[tx, tmp])
+        return mod.Import_Carbon_Emissions_Tons[tx, tmp] >= -mod.Transmit_Power_MW[
+            tx, tmp
+        ] * (
+            mod.tx_co2_intensity_tons_per_mwh[tx]
+            + mod.tx_co2_intensity_tons_per_mwh_hourly[tx, tmp]
         )
     else:
         raise ValueError(
@@ -336,8 +340,6 @@ def load_model_data(
         None: list(data_portal.data()["tx_carbon_cap_zone"].keys())
     }
 
-
-
     # Check if timepoint emissions file exists before loading
     timepoint_emissions_file = os.path.join(
         scenario_directory,
@@ -349,7 +351,7 @@ def load_model_data(
         "inputs",
         "transmission_timepoint_emissions.tab",
     )
-    
+
     # If the timepoint emissions file exists, load the data and initialize the CRB_TX_OPR_TMPS set
     if os.path.exists(timepoint_emissions_file):
         data_portal.load(
@@ -359,14 +361,15 @@ def load_model_data(
                 "timepoint",
                 "tx_co2_intensity_tons_per_mwh_hourly",
             ),
-            param=(
-                m.tx_co2_intensity_tons_per_mwh_hourly,
-            )
+            param=(m.tx_co2_intensity_tons_per_mwh_hourly,),
         )
 
         data_portal.data()["CRB_TX_OPR_TMPS"] = {
-            None: list(data_portal.data()["tx_co2_intensity_tons_per_mwh_hourly"].keys())
+            None: list(
+                data_portal.data()["tx_co2_intensity_tons_per_mwh_hourly"].keys()
+            )
         }
+
 
 def export_results(
     scenario_directory,
@@ -434,7 +437,7 @@ def get_inputs_from_database(
     :return:
     """
 
-    c = conn.cursor() # NEW CURSOR FOR EACH QUERY
+    c = conn.cursor()  # NEW CURSOR FOR EACH QUERY
 
     sql_tzones = f"""
         SELECT transmission_line, carbon_cap_zone, import_direction, tx_co2_intensity_tons_per_mwh
@@ -541,8 +544,8 @@ def write_model_inputs(
         data=tmp_import_emissions,
         replace_nulls=True,
     )
-    
-    
+
+
 # Validation
 ###############################################################################
 

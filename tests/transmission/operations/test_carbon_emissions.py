@@ -142,7 +142,7 @@ class TestTxAggregateCarbonEmissions(unittest.TestCase):
         self.assertDictEqual(expected_dir, actual_dir)
 
         # Param: tx_co2_intensity_tons_per_mwh
-        expected_co2 = OrderedDict(sorted({"Tx1": 0.6, "Tx_New": 0.8}.items())) 
+        expected_co2 = OrderedDict(sorted({"Tx1": 0.6, "Tx_New": 0.8}.items()))
         actual_co2 = OrderedDict(
             sorted(
                 {
@@ -381,7 +381,6 @@ class TestTxAggregateCarbonEmissions(unittest.TestCase):
                 expected_hourly_co2[(tx, tmp)] = 0.1
             elif tx == "Tx_New":
                 expected_hourly_co2[(tx, tmp)] = 0.2
-
 
         actual_hourly_co2 = OrderedDict(
             sorted(
