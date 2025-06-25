@@ -316,7 +316,10 @@ def add_model_components(
 
         Can't build more than certain amount of capacity in period.
         """
-        if mod.max_new_build_power[prj, prd] == float("inf"):
+        if (
+            mod.max_new_build_power[prj, prd] == float("inf")
+            or "spec" in mod.capacity_type[prj]
+        ):
             return Constraint.Skip
         else:
             return new_capacity_rule(mod, prj, prd) <= mod.max_new_build_power[prj, prd]

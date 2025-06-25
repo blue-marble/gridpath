@@ -1,0 +1,25 @@
+##### SUMMARY RESULTS FOR SCENARIO *test_new_build_storage_losses_limit* #####
+
+### CAPACITY RESULTS ###
+
+--> New (Linear) Storage Capacity <--
+                             New (Linear) Storage Power Capacity (MW)  New (Linear) Storage Energy Capacity (MWh)
+load_zone technology period                                                                                      
+Zone1     Storage    2020                                        6.43                                       13.68
+                     2030                                        6.43                                       13.68
+
+### OPERATIONAL RESULTS ###
+
+--> Energy Production <--
+                             Annual Energy (MWh)  % Total Power
+load_zone period technology                                    
+Zone1     2020   Coal                       0.00           0.00
+                 Gas                   72,567.84          55.23
+                 Nuclear               52,560.00          40.00
+                 Storage               -5,991.84          -4.56
+                 Wind                  12,264.00           9.33
+          2030   Coal                       0.00           0.00
+                 Gas                   72,567.84          55.23
+                 Nuclear               52,560.00          40.00
+                 Storage               -5,991.84          -4.56
+                 Wind                  12,264.00           9.33
