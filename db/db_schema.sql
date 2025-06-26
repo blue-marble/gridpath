@@ -5791,9 +5791,6 @@ CREATE TABLE scenarios
     FOREIGN KEY (transmission_carbon_cap_zone_scenario_id)
         REFERENCES subscenarios_transmission_carbon_cap_zones
             (transmission_carbon_cap_zone_scenario_id),
-    -- FOREIGN KEY (tmp_import_emissions_scenario_id) REFERENCES
-    --     subscenarios_transmission_carbon_cap_timepoint_emissions
-    --         (tmp_import_emissions_scenario_id),
     FOREIGN KEY (transmission_simultaneous_flow_limit_scenario_id)
         REFERENCES subscenarios_transmission_simultaneous_flow_limits
             (transmission_simultaneous_flow_limit_scenario_id),
@@ -7737,8 +7734,6 @@ SELECT scenario_id,
        subscenarios_transmission_new_potential.name                       AS transmission_new_potential,
        subscenarios_transmission_carbon_cap_zones.name
                                                                           AS transmission_carbon_cap_zones,
-    --    subscenarios_transmission_carbon_cap_timepoint_emissions.name
-    --                                                                       AS transmission_carbon_cap_timepoint_emissions,
        subscenarios_transmission_simultaneous_flow_limits.name
                                                                           AS transmission_simultaneous_flow_limits,
        subscenarios_transmission_simultaneous_flow_limit_line_groups.name AS
@@ -7848,8 +7843,6 @@ FROM scenarios
                    USING (transmission_new_potential_scenario_id)
          LEFT JOIN subscenarios_transmission_carbon_cap_zones
                    USING (transmission_carbon_cap_zone_scenario_id)
-        --  LEFT JOIN subscenarios_transmission_carbon_cap_timepoint_emissions
-        --            USING (tmp_import_emissions_scenario_id)
          LEFT JOIN subscenarios_transmission_simultaneous_flow_limits
                    USING (transmission_simultaneous_flow_limit_scenario_id)
          LEFT JOIN subscenarios_transmission_simultaneous_flow_limit_line_groups

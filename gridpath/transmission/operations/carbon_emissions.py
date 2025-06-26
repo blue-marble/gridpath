@@ -1,7 +1,3 @@
-### DISCUSS
-# update files in test_data to comply with new file structure
-
-
 # Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,9 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-### NOTE: make sure timepoints within timepoint scenario ID, check w/ where statement
-### Check other queries for exmples of where statement in query
 
 """
 Get carbon emissions on each 'carbonaceous' transmission line.
@@ -356,19 +349,19 @@ def load_model_data(
     if os.path.exists(timepoint_emissions_file):
         data_portal.load(
             filename=timepoint_emissions_file,
-            select=(
-                "transmission_line",
-                "timepoint",
-                "tx_co2_intensity_tons_per_mwh_hourly",
-            ),
-            param=(m.tx_co2_intensity_tons_per_mwh_hourly,),
+            # select=(
+            #     "transmission_line",
+            #     "timepoint",
+            #     "tx_co2_intensity_tons_per_mwh_hourly",
+            # ),
+            param=(m.tx_co2_intensity_tons_per_mwh_hourly),
         )
 
-        data_portal.data()["CRB_TX_OPR_TMPS"] = {
-            None: list(
-                data_portal.data()["tx_co2_intensity_tons_per_mwh_hourly"].keys()
-            )
-        }
+        # data_portal.data()["CRB_TX_OPR_TMPS"] = {
+        #     None: list(
+        #         data_portal.data()["tx_co2_intensity_tons_per_mwh_hourly"].keys()
+        #     )
+        # }
 
 
 def export_results(
@@ -437,7 +430,7 @@ def get_inputs_from_database(
     :return:
     """
 
-    c = conn.cursor()  # NEW CURSOR FOR EACH QUERY
+    c = conn.cursor()  
 
     sql_tzones = f"""
         SELECT transmission_line, carbon_cap_zone, import_direction, tx_co2_intensity_tons_per_mwh
