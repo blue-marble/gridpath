@@ -374,6 +374,25 @@ class TestTxAggregateCarbonEmissions(unittest.TestCase):
         actual_tx_op_tmp = sorted([(tx, tmp) for (tx, tmp) in instance.CRB_TX_OPR_TMPS])
         self.assertListEqual(expect_tx_op_tmp, actual_tx_op_tmp)
 
+        # Param: tx_co2_intensity_tons_per_mwh_hourly
+        expected_hourly_co2 = OrderedDict()
+        for tx, tmp in expect_tx_op_tmp:
+            if tx == "Tx1":
+                expected_hourly_co2[(tx, tmp)] = 0.1
+            elif tx == "Tx_New":
+                expected_hourly_co2[(tx, tmp)] = 0.2
+
+        actual_hourly_co2 = OrderedDict(
+            sorted(
+                {
+                    (tx, tmp): instance.tx_co2_intensity_tons_per_mwh_hourly[tx, tmp]
+                    for (tx, tmp) in instance.CRB_TX_OPR_TMPS
+                }.items()
+            )
+        )
+
+        self.assertDictEqual(expected_hourly_co2, actual_hourly_co2)
+
 
 if __name__ == "__main__":
     unittest.main()

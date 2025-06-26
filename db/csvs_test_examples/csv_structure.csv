@@ -139,6 +139,7 @@ policy/carbon_cap/geography_carbon_cap_zones,carbon_cap,carbon_cap_zone_scenario
 policy/carbon_cap/project_carbon_cap_zones,carbon_cap,project_carbon_cap_zone_scenario_id,project_carbon_cap_zones,simple,,0,,,,,
 policy/carbon_cap/system_carbon_cap_targets,carbon_cap,carbon_cap_target_scenario_id,system_carbon_cap_targets,simple,,0,,,,,
 policy/carbon_cap/track_carbon_imports/transmission_carbon_cap_zones,track_carbon_imports,transmission_carbon_cap_zone_scenario_id,transmission_carbon_cap_zones,simple,,0,,,,,
+policy/carbon_cap/track_carbon_imports/transmission_carbon_cap_zones/transmission_emissions_profiles,track_carbon_imports,tmp_import_emissions_scenario_id,transmission_carbon_cap_timepoint_emissions,simple,,1,transmission_line,,,,
 policy/carbon_cap/carbon_credits,carbon_credits,carbon_cap_zones_carbon_credits_zones_scenario_id,system_carbon_cap_zones_carbon_credits_zones,simple,,0,,,,,
 policy/carbon_tax/geography_carbon_tax_zones,carbon_tax,carbon_tax_zone_scenario_id,geography_carbon_tax_zones,simple,,0,,,,,
 policy/carbon_tax/project_carbon_tax_zones,carbon_tax,project_carbon_tax_zone_scenario_id,project_carbon_tax_zones,simple,,0,,,,,

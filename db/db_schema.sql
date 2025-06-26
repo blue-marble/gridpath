@@ -4075,11 +4075,36 @@ CREATE TABLE inputs_transmission_carbon_cap_zones
     transmission_line                        VARCHAR(64),
     carbon_cap_zone                          VARCHAR(32),
     import_direction                         VARCHAR(8),
+    tmp_import_emissions_scenario_id         INTEGER, -- determines timepoint emissions scenario
     tx_co2_intensity_tons_per_mwh            FLOAT,
     PRIMARY KEY (transmission_carbon_cap_zone_scenario_id, transmission_line),
     FOREIGN KEY (transmission_carbon_cap_zone_scenario_id) REFERENCES
         subscenarios_transmission_carbon_cap_zones
             (transmission_carbon_cap_zone_scenario_id)
+
+);
+
+DROP TABLE IF EXISTS subscenarios_transmission_carbon_cap_timepoint_emissions;
+CREATE TABLE subscenarios_transmission_carbon_cap_timepoint_emissions
+(
+    transmission_line                               VARCHAR(64),
+    tmp_import_emissions_scenario_id                INTEGER, 
+    name                                            VARCHAR(32),
+    description                                     VARCHAR(128),
+    PRIMARY KEY (transmission_line, tmp_import_emissions_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_transmission_carbon_cap_timepoint_emissions;
+CREATE TABLE inputs_transmission_carbon_cap_timepoint_emissions
+(
+    transmission_line                               VARCHAR(64),
+    tmp_import_emissions_scenario_id                INTEGER,
+    timepoint                                       INTEGER,
+    tx_co2_intensity_tons_per_mwh_hourly                   FLOAT,
+    PRIMARY KEY (transmission_line, tmp_import_emissions_scenario_id, timepoint),
+    FOREIGN KEY (transmission_line, tmp_import_emissions_scenario_id) REFERENCES
+        subscenarios_transmission_carbon_cap_timepoint_emissions
+            (transmission_line, tmp_import_emissions_scenario_id)
 );
 
 -- Existing transmission capacity
