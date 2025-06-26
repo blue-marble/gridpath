@@ -349,19 +349,8 @@ def load_model_data(
     if os.path.exists(timepoint_emissions_file):
         data_portal.load(
             filename=timepoint_emissions_file,
-            # select=(
-            #     "transmission_line",
-            #     "timepoint",
-            #     "tx_co2_intensity_tons_per_mwh_hourly",
-            # ),
             param=(m.tx_co2_intensity_tons_per_mwh_hourly),
         )
-
-        # data_portal.data()["CRB_TX_OPR_TMPS"] = {
-        #     None: list(
-        #         data_portal.data()["tx_co2_intensity_tons_per_mwh_hourly"].keys()
-        #     )
-        # }
 
 
 def export_results(
@@ -430,7 +419,7 @@ def get_inputs_from_database(
     :return:
     """
 
-    c = conn.cursor()  
+    c = conn.cursor()
 
     sql_tzones = f"""
         SELECT transmission_line, carbon_cap_zone, import_direction, tx_co2_intensity_tons_per_mwh
