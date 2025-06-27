@@ -26,6 +26,7 @@ from gridpath.auxiliary.dynamic_components import carbon_tax_cost_components
 from gridpath.common_functions import create_results_df
 from gridpath.system.policy.carbon_tax import CARBON_TAX_ZONE_PRD_DF
 
+
 def add_model_components(
     m,
     d,
@@ -71,29 +72,39 @@ def add_model_components(
         rule=total_carbon_emissions_credits_rule,
     )
 
-    def credit_cost_reduction(mod, z, prd):
-        return -mod.Total_Carbon_Tax_Emissions_Credits[z, prd] * mod.carbon_tax[z, prd]
-
-    m.Total_Carbon_Tax_Credit_Cost_Reduction = Expression(
-        m.CARBON_TAX_ZONE_PERIODS_WITH_CARBON_TAX, rule=credit_cost_reduction
-    )
-
     def project_carbon_credit_max_rule(mod, tax_z, prd):
-        (mod.Total_Carbon_Tax_Emissions_Credits[tax_z, prd] <=
-        (mod.Total_Carbon_Tax_Project_Emissions[tax_z, prd]
-        - mod.Total_Carbon_Tax_Project_Allowance[tax_z, prd]) * mod.purchase_credit_max_fraction[tax_z, prd])
+        return (
+            mod.Total_Carbon_Tax_Emissions_Credits[tax_z, prd]
+            <= (
+                mod.Total_Carbon_Tax_Project_Emissions[tax_z, prd]
+                - mod.Total_Carbon_Tax_Project_Allowance[tax_z, prd]
+            )
+            * mod.purchase_credit_max_fraction[tax_z, prd]
+        )
 
     m.Max_Project_Carbon_Credits_Purchased_Constraint = Constraint(
         m.CARBON_TAX_ZONE_PERIODS_WITH_CARBON_TAX, rule=project_carbon_credit_max_rule
     )
 
     def project_carbon_credit_min_rule(mod, tax_z, prd):
-        (mod.Total_Carbon_Tax_Emissions_Credits[tax_z, prd] >=
-         (mod.Total_Carbon_Tax_Project_Emissions[tax_z, prd]
-          - mod.Total_Carbon_Tax_Project_Allowance[tax_z, prd]) * mod.purchase_credit_min_fraction[tax_z, prd])
+        return (
+            mod.Total_Carbon_Tax_Emissions_Credits[tax_z, prd]
+            >= (
+                mod.Total_Carbon_Tax_Project_Emissions[tax_z, prd]
+                - mod.Total_Carbon_Tax_Project_Allowance[tax_z, prd]
+            )
+            * mod.purchase_credit_min_fraction[tax_z, prd]
+        )
 
     m.Min_Project_Carbon_Credits_Purchased_Constraint = Constraint(
         m.CARBON_TAX_ZONE_PERIODS_WITH_CARBON_TAX, rule=project_carbon_credit_min_rule
+    )
+
+    def credit_cost_reduction(mod, z, prd):
+        return -mod.Total_Carbon_Tax_Emissions_Credits[z, prd] * mod.carbon_tax[z, prd]
+
+    m.Total_Carbon_Tax_Credit_Cost_Reduction = Expression(
+        m.CARBON_TAX_ZONE_PERIODS_WITH_CARBON_TAX, rule=credit_cost_reduction
     )
 
     record_dynamic_components(dynamic_components=d)
@@ -152,7 +163,9 @@ def get_inputs_from_database(
 
     c2 = conn.cursor()
     credit_limits = c2.execute(
-        f"""SELECT project, period, purchase_credit_min_fraction, purchase_credit_max_fraction
+        f"""SELECT project, carbon_tax_zone, period, purchase_credit_min_fraction, purchase_credit_max_fraction
+        FROM
+        (SELECT  project, period, purchase_credit_min_fraction, purchase_credit_max_fraction
         FROM inputs_project_carbon_credits_purchase_limits
         WHERE project_carbon_credits_purchase_limits_scenario_id = 
         {subscenarios.PROJECT_CARBON_CREDITS_PURCHASE_LIMITS_SCENARIO_ID}
@@ -175,12 +188,13 @@ def get_inputs_from_database(
             FROM inputs_project_portfolios
             WHERE project_portfolio_scenario_id = 
             {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
-        )  
+            )) as prj_cc_limits_tbl
         LEFT OUTER JOIN
-        -- Add project carbon tax zone based on carbon_tax_zone_scenario_id
-        inputs_geography_carbon_tax_zones
-        USING(project)
-        WHERE carbon_tax_zone_scenario_id = {subscenarios.CARBON_TAX_ZONE_SCENARIO_ID}
+            -- Add project carbon tax zone based on project_carbon_tax_zone_scenario_id
+            (SELECT project, carbon_tax_zone
+            FROM inputs_project_carbon_tax_zones
+            WHERE project_carbon_tax_zone_scenario_id = {subscenarios.PROJECT_CARBON_TAX_ZONE_SCENARIO_ID}) as prj_ct_zone_tbl
+            USING(project)
         """
     )
 
@@ -208,7 +222,7 @@ def write_model_inputs(
         weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
     )
 
-    (mapping,credit_limits) = get_inputs_from_database(
+    (mapping, credit_limits) = get_inputs_from_database(
         scenario_id,
         subscenarios,
         db_weather_iteration,
@@ -249,6 +263,7 @@ def write_model_inputs(
     )
     if not cred_lim_df.empty:
         cred_lim_df.to_csv(fpath, index=False, sep="\t")
+
 
 def load_model_data(
     m,
@@ -303,9 +318,15 @@ def load_model_data(
     if os.path.exists(cred_lim_file):
         data_portal.load(
             filename=cred_lim_file,
-            select=("carbon_tax_zone", "period", "purchase_credit_min_fraction", "purchase_credit_max_fraction"),
+            select=(
+                "carbon_tax_zone",
+                "period",
+                "purchase_credit_min_fraction",
+                "purchase_credit_max_fraction",
+            ),
             param=(m.purchase_credit_min_fraction, m.purchase_credit_max_fraction),
         )
+
 
 def export_results(
     scenario_directory,
