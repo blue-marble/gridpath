@@ -3528,6 +3528,32 @@ CREATE TABLE inputs_project_carbon_credits_purchase_zones
         subscenarios_project_carbon_credits_purchase_zones (project_carbon_credits_purchase_zone_scenario_id)
 );
 
+-- Project carbon credits purchase limits
+-- Maximum or minimum percentage of project emissions which can be accounted for using carbon credits each period
+-- This table can include all project with NULLs for projects not
+-- contributing or just the contributing projects
+DROP TABLE IF EXISTS subscenarios_project_carbon_credits_purchase_limits;
+CREATE TABLE subscenarios_project_carbon_credits_purchase_limits
+(
+    project_carbon_credits_purchase_limits_scenario_id INTEGER PRIMARY KEY,
+    name                                               VARCHAR(32),
+    description                                        VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_project_carbon_credits_purchase_limits;
+CREATE TABLE inputs_project_carbon_credits_purchase_limits
+(
+    project_carbon_credits_purchase_limits_scenario_id INTEGER,
+    project                                            VARCHAR(64),
+    period                                             FLOAT,
+    purchase_credit_min_fraction                       FLOAT,
+    purchase_credit_max_fraction                       FLOAT,
+    PRIMARY KEY (project_carbon_credits_purchase_limits_scenario_id, project,
+                 period),
+    FOREIGN KEY (project_carbon_credits_purchase_limits_scenario_id) REFERENCES
+        subscenarios_project_carbon_credits_purchase_limits (project_carbon_credits_purchase_limits_scenario_id)
+);
+
 -- Project fuel burn limit balancing areas
 -- Which projects contribute to the fuel BA limit
 -- This table can include all project with NULLs for projects not
@@ -5509,6 +5535,7 @@ CREATE TABLE scenarios
     project_performance_standard_zone_scenario_id               INTEGER,
     project_carbon_credits_generation_zone_scenario_id          INTEGER,
     project_carbon_credits_purchase_zone_scenario_id            INTEGER,
+    project_carbon_credits_purchase_limits_scenario_id          INTEGER,
     project_carbon_credits_scenario_id                          INTEGER,
     project_fuel_burn_limit_ba_scenario_id                      INTEGER,
     fuel_fuel_burn_limit_ba_scenario_id                         INTEGER,
@@ -5697,6 +5724,9 @@ CREATE TABLE scenarios
     FOREIGN KEY (project_carbon_credits_purchase_zone_scenario_id) REFERENCES
         subscenarios_project_carbon_credits_purchase_zones
             (project_carbon_credits_purchase_zone_scenario_id),
+    FOREIGN KEY (project_carbon_credits_purchase_limits_scenario_id) REFERENCES
+        subscenarios_project_carbon_credits_purchase_limits
+            (project_carbon_credits_purchase_limits_scenario_id),
     FOREIGN KEY (project_carbon_credits_scenario_id) REFERENCES
         subscenarios_project_carbon_credits
             (project_carbon_credits_scenario_id),
