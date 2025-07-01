@@ -50,7 +50,7 @@ pandas==2.2.1
 parso==0.8.4
 pathspec==0.12.1
 pexpect==4.9.0
-pillow==11.2.1
+pillow==11.3.0
 platformdirs==4.3.8
 plotly==6.1.2
 ply==3.11
