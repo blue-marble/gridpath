@@ -1059,14 +1059,17 @@ CREATE TABLE subscenarios_market_volume_totals_in_tmp
 
 -- These are limits applied to the sum of participation all markets in
 -- the respective timepoint
+-- Totals in tmp are assumed to vary by weather iteration
 DROP TABLE IF EXISTS inputs_market_volume_totals_in_tmp;
 CREATE TABLE inputs_market_volume_totals_in_tmp
 (
     market_volume_total_in_tmp_scenario_id INTEGER,
+    weather_iteration                      INTEGER,
     timepoint                              FLOAT,
     max_total_net_market_purchases_in_tmp  FLOAT,
     max_total_net_market_sales_in_tmp      FLOAT,
-    PRIMARY KEY (market_volume_total_in_tmp_scenario_id, timepoint),
+    PRIMARY KEY (market_volume_total_in_tmp_scenario_id, weather_iteration,
+                 timepoint),
     FOREIGN KEY (market_volume_total_in_tmp_scenario_id) REFERENCES
         subscenarios_market_volume_totals_in_tmp (market_volume_total_in_tmp_scenario_id)
 );
