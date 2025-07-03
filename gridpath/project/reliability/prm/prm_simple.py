@@ -22,7 +22,7 @@ defaults to 0 if not specified).
 
 import csv
 import os.path
-from pyomo.environ import Param, PercentFraction, Expression, value
+from pyomo.environ import Param, Reals, Expression, value
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.db_interface import import_csv, directories_to_db_values
@@ -53,7 +53,7 @@ def add_model_components(
     # simple PRM method (whether or not project also contributes through the
     # ELCC surface)
     m.elcc_simple_fraction = Param(
-        m.PRM_PROJECTS, m.PERIODS, within=PercentFraction, default=0
+        m.PRM_PROJECTS, m.PERIODS, within=Reals, default=0
     )
 
     def elcc_simple_rule(mod, g, p):
