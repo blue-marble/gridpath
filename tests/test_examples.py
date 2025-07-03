@@ -753,6 +753,24 @@ class TestExamples(unittest.TestCase):
         scenario_name = "test_tx_simple"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
+    def test_example_test_tx_simple_tmp_emissions(self):
+        """
+        Check validation and objective function value of
+        "test_tx_simple_tmp_emissions" example
+        :return:
+        """
+        scenario_name = "test_tx_simple_tmp_emissions"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_tx_simple_additive(self):
+        """
+        Check validation and objective function value of
+        "test_tx_simple_additive" example
+        :return:
+        """
+        scenario_name = "test_tx_simple_additive"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
     def test_example_test_startup_shutdown_rates(self):
         """
         Check validation and objective function value of
@@ -1659,6 +1677,16 @@ class TestExamples(unittest.TestCase):
         """
 
         scenario_name = "test_new_build_storage_losses_limit"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_carbon_credits_purchase_limits(self):
+        """
+        Check validation and objective function value of
+        "test_carbon_credits_purchase_limits" example
+        :return:
+        """
+
+        scenario_name = "test_carbon_credits_purchase_limits"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     @classmethod

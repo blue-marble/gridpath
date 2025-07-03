@@ -1059,14 +1059,17 @@ CREATE TABLE subscenarios_market_volume_totals_in_tmp
 
 -- These are limits applied to the sum of participation all markets in
 -- the respective timepoint
+-- Totals in tmp are assumed to vary by weather iteration
 DROP TABLE IF EXISTS inputs_market_volume_totals_in_tmp;
 CREATE TABLE inputs_market_volume_totals_in_tmp
 (
     market_volume_total_in_tmp_scenario_id INTEGER,
+    weather_iteration                      INTEGER,
     timepoint                              FLOAT,
     max_total_net_market_purchases_in_tmp  FLOAT,
     max_total_net_market_sales_in_tmp      FLOAT,
-    PRIMARY KEY (market_volume_total_in_tmp_scenario_id, timepoint),
+    PRIMARY KEY (market_volume_total_in_tmp_scenario_id, weather_iteration,
+                 timepoint),
     FOREIGN KEY (market_volume_total_in_tmp_scenario_id) REFERENCES
         subscenarios_market_volume_totals_in_tmp (market_volume_total_in_tmp_scenario_id)
 );
@@ -3528,6 +3531,32 @@ CREATE TABLE inputs_project_carbon_credits_purchase_zones
         subscenarios_project_carbon_credits_purchase_zones (project_carbon_credits_purchase_zone_scenario_id)
 );
 
+-- Project carbon credits purchase limits
+-- Maximum or minimum percentage of project emissions which can be accounted for using carbon credits each period
+-- This table can include all project with NULLs for projects not
+-- contributing or just the contributing projects
+DROP TABLE IF EXISTS subscenarios_project_carbon_credits_purchase_limits;
+CREATE TABLE subscenarios_project_carbon_credits_purchase_limits
+(
+    project_carbon_credits_purchase_limits_scenario_id INTEGER PRIMARY KEY,
+    name                                               VARCHAR(32),
+    description                                        VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_project_carbon_credits_purchase_limits;
+CREATE TABLE inputs_project_carbon_credits_purchase_limits
+(
+    project_carbon_credits_purchase_limits_scenario_id INTEGER,
+    project                                            VARCHAR(64),
+    period                                             FLOAT,
+    purchase_credit_min_fraction                       FLOAT,
+    purchase_credit_max_fraction                       FLOAT,
+    PRIMARY KEY (project_carbon_credits_purchase_limits_scenario_id, project,
+                 period),
+    FOREIGN KEY (project_carbon_credits_purchase_limits_scenario_id) REFERENCES
+        subscenarios_project_carbon_credits_purchase_limits (project_carbon_credits_purchase_limits_scenario_id)
+);
+
 -- Project fuel burn limit balancing areas
 -- Which projects contribute to the fuel BA limit
 -- This table can include all project with NULLs for projects not
@@ -4075,11 +4104,36 @@ CREATE TABLE inputs_transmission_carbon_cap_zones
     transmission_line                        VARCHAR(64),
     carbon_cap_zone                          VARCHAR(32),
     import_direction                         VARCHAR(8),
+    tmp_import_emissions_scenario_id         INTEGER, -- determines timepoint emissions scenario
     tx_co2_intensity_tons_per_mwh            FLOAT,
     PRIMARY KEY (transmission_carbon_cap_zone_scenario_id, transmission_line),
     FOREIGN KEY (transmission_carbon_cap_zone_scenario_id) REFERENCES
         subscenarios_transmission_carbon_cap_zones
             (transmission_carbon_cap_zone_scenario_id)
+
+);
+
+DROP TABLE IF EXISTS subscenarios_transmission_carbon_cap_timepoint_emissions;
+CREATE TABLE subscenarios_transmission_carbon_cap_timepoint_emissions
+(
+    transmission_line                               VARCHAR(64),
+    tmp_import_emissions_scenario_id                INTEGER, 
+    name                                            VARCHAR(32),
+    description                                     VARCHAR(128),
+    PRIMARY KEY (transmission_line, tmp_import_emissions_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_transmission_carbon_cap_timepoint_emissions;
+CREATE TABLE inputs_transmission_carbon_cap_timepoint_emissions
+(
+    transmission_line                               VARCHAR(64),
+    tmp_import_emissions_scenario_id                INTEGER,
+    timepoint                                       INTEGER,
+    tx_co2_intensity_tons_per_mwh_hourly                   FLOAT,
+    PRIMARY KEY (transmission_line, tmp_import_emissions_scenario_id, timepoint),
+    FOREIGN KEY (transmission_line, tmp_import_emissions_scenario_id) REFERENCES
+        subscenarios_transmission_carbon_cap_timepoint_emissions
+            (transmission_line, tmp_import_emissions_scenario_id)
 );
 
 -- Existing transmission capacity
@@ -5484,6 +5538,7 @@ CREATE TABLE scenarios
     project_performance_standard_zone_scenario_id               INTEGER,
     project_carbon_credits_generation_zone_scenario_id          INTEGER,
     project_carbon_credits_purchase_zone_scenario_id            INTEGER,
+    project_carbon_credits_purchase_limits_scenario_id          INTEGER,
     project_carbon_credits_scenario_id                          INTEGER,
     project_fuel_burn_limit_ba_scenario_id                      INTEGER,
     fuel_fuel_burn_limit_ba_scenario_id                         INTEGER,
@@ -5672,6 +5727,9 @@ CREATE TABLE scenarios
     FOREIGN KEY (project_carbon_credits_purchase_zone_scenario_id) REFERENCES
         subscenarios_project_carbon_credits_purchase_zones
             (project_carbon_credits_purchase_zone_scenario_id),
+    FOREIGN KEY (project_carbon_credits_purchase_limits_scenario_id) REFERENCES
+        subscenarios_project_carbon_credits_purchase_limits
+            (project_carbon_credits_purchase_limits_scenario_id),
     FOREIGN KEY (project_carbon_credits_scenario_id) REFERENCES
         subscenarios_project_carbon_credits
             (project_carbon_credits_scenario_id),

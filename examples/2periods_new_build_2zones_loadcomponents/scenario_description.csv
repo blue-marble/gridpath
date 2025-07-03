@@ -1,4 +1,4 @@
-scenario_id,134
+scenario_id,136
 scenario_name,2periods_new_build_2zones_loadcomponents
 of_transmission,
 of_transmission_hurdle_rates,
@@ -76,6 +76,7 @@ project_carbon_tax_allowance_scenario_id,NULL
 project_performance_standard_zone_scenario_id,NULL
 project_carbon_credits_generation_zone_scenario_id,NULL
 project_carbon_credits_purchase_zone_scenario_id,NULL
+project_carbon_credits_purchase_limits_scenario_id,NULL
 project_carbon_credits_scenario_id,NULL
 project_fuel_burn_limit_ba_scenario_id,NULL
 fuel_fuel_burn_limit_ba_scenario_id,NULL

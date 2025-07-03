@@ -207,24 +207,26 @@ def load_model_data(
     subproblem,
     stage,
 ):
-    data_portal.load(
-        filename=os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "inputs",
-            "market_volume.tab",
-        ),
-        param=(
-            m.max_market_sales,
-            m.max_market_purchases,
-            m.max_final_market_sales,
-            m.max_final_market_purchases,
-        ),
+    by_market_volumes_filename = os.path.join(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+        "market_volume.tab",
     )
+    if os.path.exists(by_market_volumes_filename):
+        data_portal.load(
+            filename=by_market_volumes_filename,
+            param=(
+                m.max_market_sales,
+                m.max_market_purchases,
+                m.max_final_market_sales,
+                m.max_final_market_purchases,
+            ),
+        )
 
     total_volume_in_tmp_filename = os.path.join(
         scenario_directory,
@@ -361,6 +363,7 @@ def get_inputs_from_database(
         FROM inputs_market_volume_totals_in_tmp
         WHERE market_volume_total_in_tmp_scenario_id = 
         {subscenarios.MARKET_VOLUME_TOTAL_IN_TMP_SCENARIO_ID}
+        AND weather_iteration = {weather_iteration}
         AND timepoint in (
             SELECT timepoint
             FROM inputs_temporal
@@ -434,35 +437,17 @@ def write_model_inputs(
         conn,
     )
 
-    with open(
-        os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "inputs",
-            "market_volume.tab",
-        ),
-        "w",
-        newline="",
-    ) as f:
-        writer = csv.writer(f, delimiter="\t", lineterminator="\n")
-
-        writer.writerow(
-            [
-                "market",
-                "timepoint",
-                "max_market_sales",
-                "max_market_purchases",
-                "max_final_market_sales",
-                "max_final_market_purchases",
-            ]
-        )
-        for row in market_limits:
-            replace_nulls = ["." if i is None else i for i in row]
-            writer.writerow(replace_nulls)
+    write_tab_file_model_inputs(
+        scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        fname="market_volume.tab",
+        data=market_limits,
+        replace_nulls=True,
+    )
 
     write_tab_file_model_inputs(
         scenario_directory=scenario_directory,
