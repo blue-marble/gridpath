@@ -52,9 +52,7 @@ def add_model_components(
     # The fraction of ELCC-eligible capacity that counts for the PRM via the
     # simple PRM method (whether or not project also contributes through the
     # ELCC surface)
-    m.elcc_simple_fraction = Param(
-        m.PRM_PROJECTS, m.PERIODS, within=Reals, default=0
-    )
+    m.elcc_simple_fraction = Param(m.PRM_PROJECTS, m.PERIODS, within=Reals, default=0)
 
     def elcc_simple_rule(mod, g, p):
         """
