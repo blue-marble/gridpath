@@ -3413,6 +3413,16 @@ def operational_violation_cost_rule(mod, g, tmp, bin_or_lin, Bin_or_Lin):
     )
 
 
+def capacity_providing_inertia_rule(mod, g, tmp, Bin_or_Lin):
+    """
+    Capacity online in each timepoint.
+    """
+    return (
+        getattr(mod, "GenCommit{}_Pmax_MW".format(Bin_or_Lin))[g, tmp]
+        * getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[g, tmp]
+    )
+
+
 # Input-Output
 ###############################################################################
 

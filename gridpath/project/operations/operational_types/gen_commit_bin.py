@@ -230,6 +230,14 @@ def operational_violation_cost_rule(mod, g, tmp):
     )
 
 
+def capacity_providing_inertia_rule(mod, g, tmp):
+    """
+    Capacity providing inertia for GEN_VAR project is equal to the online
+    capacity
+    """
+    return gen_commit_unit_common.capacity_providing_inertia_rule(mod, g, tmp, "Bin")
+
+
 # Input-Output
 ###############################################################################
 

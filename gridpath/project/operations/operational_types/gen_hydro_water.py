@@ -684,6 +684,19 @@ def power_delta_rule(mod, g, tmp):
         )
 
 
+def capacity_providing_inertia_rule(mod, g, tmp):
+    """
+    Capacity providing inertia for GEN_hydro_water project is set to be
+    equal to the capacity engaged (This is assumed to be sum of the power
+    output and the headroom available or the sum of the capacity of the
+    engaged turbines)
+    """
+    return (
+        mod.GenHydroWater_Power_MW[g, tmp]
+        + mod.GenHydroWater_Upwards_Reserves_MW[g, tmp]
+    )
+
+
 # Input-Output
 ###############################################################################
 

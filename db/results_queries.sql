@@ -112,6 +112,10 @@ left join
 (select scenario_id, project, period, horizon, timepoint,
 reserve_provision_mw as frq_resp_mw from results_project_frequency_response) as frq_resp_tbl
 USING (scenario_id, project, period, horizon, timepoint)
+left join
+(select scenario_id, project, period, horizon, timepoint,
+reserve_provision_mws as iner_mws from results_project_inertia_reserves) as iner_tbl
+USING (scenario_id, project, period, horizon, timepoint)
 ;
 
 -- Frequency response 'cap factor' by scenario, project, and period -- you

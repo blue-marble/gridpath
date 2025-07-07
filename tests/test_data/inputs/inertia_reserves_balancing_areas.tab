@@ -1,0 +1,3 @@
+balancing_area	allow_violation	violation_penalty_per_mws
+Zone1	1	999999999
+Zone2	1	999999999

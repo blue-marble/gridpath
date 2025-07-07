@@ -261,6 +261,14 @@ def power_delta_rule(mod, g, tmp):
     return 0
 
 
+def capacity_providing_inertia_rule(mod, g, tmp):
+    """
+    Capacity providing inertia for GEN_MUST_RUN project is equal to the online
+    capacity
+    """
+    return mod.Capacity_MW[g, mod.period[tmp]] * mod.Availability_Derate[g, tmp]
+
+
 # Input-Output
 ###############################################################################
 
@@ -412,6 +420,8 @@ def validate_inputs(
     # reserves
     projects_by_reserve = get_projects_by_reserve(scenario_id, subscenarios, conn)
     for reserve, projects_w_ba in projects_by_reserve.items():
+        if reserve == "inertia_reserves":
+            continue
         table = "inputs_project_" + reserve + "_bas"
         reserve_errors = validate_idxs(
             actual_idxs=opchar_df["project"],

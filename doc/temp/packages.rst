@@ -58,6 +58,8 @@ Modules in this package define the geographic span and resolution of the model.
     :members:
 .. automodule:: gridpath.geography.spinning_reserves_balancing_areas
     :members:
+.. automodule:: gridpath.geography.inertia_reserves_balancing_areas
+    :members:
 .. automodule:: gridpath.system.policy.instantaneous_penetration.instantaneous_penetration_requirements
     :members:
 .. automodule:: gridpath.geography.energy_target_zones
@@ -151,6 +153,8 @@ gen_hydro_must_take
 .. automodule:: gridpath.project.operations.reserves.frequency_response
     :members:
 .. automodule:: gridpath.project.operations.reserves.spinning_reserves
+    :members:
+.. automodule:: gridpath.project.operations.reserves.inertia_reserves
     :members:
 .. automodule:: gridpath.project.operations.instantaneous_penetration_contributions
     :members:
@@ -262,6 +266,8 @@ Modules in this package define system-level parameters and constraints.
     :members:
 .. automodule:: gridpath.system.reserves.requirement.spinning_reserves
     :members:
+.. automodule:: gridpath.system.reserves.requirement.inertia_reserves
+    :members:
 .. automodule:: gridpath.system.reserves.aggregation.__init__
     :members:
 .. automodule:: gridpath.system.reserves.aggregation.reserve_aggregation
@@ -278,6 +284,8 @@ Modules in this package define system-level parameters and constraints.
     :members:
 .. automodule:: gridpath.system.reserves.aggregation.spinning_reserves
     :members:
+.. automodule:: gridpath.system.reserves.aggregation.inertia_reserves
+    :members:
 .. automodule:: gridpath.system.reserves.balance.__init__
     :members:
 .. automodule:: gridpath.system.reserves.balance.reserve_balance
@@ -293,6 +301,8 @@ Modules in this package define system-level parameters and constraints.
 .. automodule:: gridpath.system.reserves.balance.frequency_response
     :members:
 .. automodule:: gridpath.system.reserves.balance.spinning_reserves
+    :members:
+.. automodule:: gridpath.system.reserves.balance.inertia_reserves
     :members:
 .. automodule:: gridpath.system.policy.__init__
     :members:
@@ -376,6 +386,9 @@ frequency_response
     :members:
 .. automodule:: gridpath.objective.system.reserve_violation_penalties.
 spinning_reserves
+    :members:
+.. automodule:: gridpath.objective.system.reserve_violation_penalties.
+inertia_reserves
     :members:
 .. automodule:: objective.system.policy.aggregate_instantaneous_penetration_violation_penalties
     :members:

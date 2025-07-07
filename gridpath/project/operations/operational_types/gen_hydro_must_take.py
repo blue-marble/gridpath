@@ -670,6 +670,19 @@ def power_delta_rule(mod, g, tmp):
         )
 
 
+def capacity_providing_inertia_rule(mod, g, tmp):
+    """
+    Capacity providing inertia for GEN_hydro_water project is set to be
+    equal to the capacity engaged (This is assumed to be sum of the power
+    output and the headroom available or the sum of the capacity of the
+    engaged turbines)
+    """
+    return (
+        mod.GenHydroMustTake_Gross_Power_MW[g, tmp]
+        + mod.GenHydroMustTake_Upwards_Reserves_MW[g, tmp]
+    )
+
+
 # Input-Output
 ###############################################################################
 
@@ -1004,17 +1017,19 @@ def write_model_inputs(
     :return:
     """
 
-    prj_bt_hrz_data, ramp_up_monthly_adjustments, ramp_down_monthly_adjustments = (
-        get_model_inputs_from_database(
-            scenario_id,
-            subscenarios,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            conn,
-        )
+    (
+        prj_bt_hrz_data,
+        ramp_up_monthly_adjustments,
+        ramp_down_monthly_adjustments,
+    ) = get_model_inputs_from_database(
+        scenario_id,
+        subscenarios,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        conn,
     )
     bt_hrz_chars_fname = "hydro_conventional_horizon_params.tab"
 

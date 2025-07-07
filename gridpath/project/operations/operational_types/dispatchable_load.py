@@ -22,10 +22,15 @@ carbon from the atmosphere. Note that this should be modeled to burn
 a fuel with a negative emissions intensity and they do require a simple heat
 rate. Also note that projects of this type must be assigned a carbon cap zone
 in order to contribute net negative emissions to the carbon constraint.
+
+Project of this type may have a consumption ratio associated with them, for example
+synchornous condenser consumes 1%-3% of their nameplate capacity in order to operate
+and produce inertia.
 """
 
 from pyomo.environ import (
     Set,
+    Param,
     Var,
     Constraint,
     NonNegativeReals,
@@ -80,6 +85,18 @@ def add_model_components(
     |
 
     +-------------------------------------------------------------------------+
+    | Linked Input Params                                                     |
+    +=========================================================================+
+    | | :code:`dispatchable_load_energy_requirement_factor_param`             |
+    | | *Defined over*: :code:`DISPATCHABLE_LOAD_PRJS`                        |
+    | | *Within*: :code:`PercentFraction`                                     |
+    |                                                                         |
+    | The project's power provision in the linked timepoints.                 |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
     | Variables                                                               |
     +=========================================================================+
     | | :code:`DispatchableLoadPrj_Consume_Power_MW`                          |
@@ -126,6 +143,17 @@ def add_model_components(
             membership_set=mod.DISPATCHABLE_LOAD_PRJS,
         ),
     )
+    # Param
+    ###########################################################################
+    # dispatchable_load_energy_requirement_derate_param is used when a project
+    # activates his capacity by using only a fraction of the power.
+    # For example, when a synchronous condenser operates it consumes 1% to 3%
+    # of its nameplate capacity so while the online capacity is 100%, it power
+    # consumption is 1%
+
+    m.dispatchable_load_energy_requirement_factor = Param(
+        m.DISPATCHABLE_LOAD_PRJS, within=PercentFraction, default=1
+    )
 
     # Variables
     ###########################################################################
@@ -154,9 +182,10 @@ def max_power_rule(mod, g, tmp):
 
     Power consumption cannot exceed capacity.
     """
-    return (
-        mod.DispatchableLoadPrj_Consume_Power_MW[g, tmp]
-        <= mod.Capacity_MW[g, mod.period[tmp]] * mod.Availability_Derate[g, tmp]
+    return mod.DispatchableLoadPrj_Consume_Power_MW[g, tmp] <= (
+        mod.Capacity_MW[g, mod.period[tmp]]
+        * mod.Availability_Derate[g, tmp]
+        * mod.dispatchable_load_energy_requirement_factor[g]
     )
 
 
@@ -250,6 +279,17 @@ def power_delta_rule(mod, g, tmp):
                 g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
             ]
         )
+
+
+def capacity_providing_inertia_rule(mod, g, tmp):
+    """
+    Capacity providing inertia for DISPATCHABLE_LOAD_PRJS is assume to be
+    proportional to the power output
+    """
+    return (
+        mod.DispatchableLoadPrj_Consume_Power_MW[g, tmp]
+        / mod.dispatchable_load_energy_requirement_factor[g]
+    )
 
 
 # Input-Output
