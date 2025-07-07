@@ -162,9 +162,7 @@ def add_model_components(
         stage,
     )
 
-    m.INERTIA_RESERVES_PROJECTS = Set(
-        within=m.PROJECTS
-    )
+    m.INERTIA_RESERVES_PROJECTS = Set(within=m.PROJECTS)
 
     m.inertia_reserves_zone = Param(
         m.INERTIA_RESERVES_PROJECTS, within=m.INERTIA_RESERVES_ZONES
@@ -176,7 +174,7 @@ def add_model_components(
             mod=mod,
             superset="PRJ_OPR_TMPS",
             index=0,
-            membership_set=mod.INERTIA_RESERVES_PROJECTS
+            membership_set=mod.INERTIA_RESERVES_PROJECTS,
         ),
     )
 

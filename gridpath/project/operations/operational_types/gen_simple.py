@@ -486,8 +486,8 @@ def capacity_providing_inertia_rule(mod, g, tmp):
     proportional to power output)
     """
     return (
-            mod.GenSimple_Provide_Power_MW[g, tmp]
-            + mod.GenSimple_Upwards_Reserves_MW[g, tmp]
+        mod.GenSimple_Provide_Power_MW[g, tmp]
+        + mod.GenSimple_Upwards_Reserves_MW[g, tmp]
     )
 
 

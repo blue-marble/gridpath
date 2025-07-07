@@ -182,13 +182,10 @@ def max_power_rule(mod, g, tmp):
 
     Power consumption cannot exceed capacity.
     """
-    return (
-        mod.DispatchableLoadPrj_Consume_Power_MW[g, tmp]
-        <= (
-                mod.Capacity_MW[g, mod.period[tmp]]
-                * mod.Availability_Derate[g, tmp]
-                * mod.dispatchable_load_energy_requirement_factor[g]
-            )
+    return mod.DispatchableLoadPrj_Consume_Power_MW[g, tmp] <= (
+        mod.Capacity_MW[g, mod.period[tmp]]
+        * mod.Availability_Derate[g, tmp]
+        * mod.dispatchable_load_energy_requirement_factor[g]
     )
 
 
@@ -290,8 +287,8 @@ def capacity_providing_inertia_rule(mod, g, tmp):
     proportional to the power output
     """
     return (
-            mod.DispatchableLoadPrj_Consume_Power_MW[g, tmp]
-            / mod.dispatchable_load_energy_requirement_factor[g]
+        mod.DispatchableLoadPrj_Consume_Power_MW[g, tmp]
+        / mod.dispatchable_load_energy_requirement_factor[g]
     )
 
 

@@ -326,9 +326,7 @@ def capacity_providing_inertia_rule(mod, g, tmp):
     capacity (this assumes that the amount of capacity that is operated is
     proportional to power output)
     """
-    return (
-            mod.GenSimpleNoLoadBalancePower_Provide_Power_MW[g, tmp]
-    )
+    return mod.GenSimpleNoLoadBalancePower_Provide_Power_MW[g, tmp]
 
 
 # Input-Output

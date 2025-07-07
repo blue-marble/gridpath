@@ -692,8 +692,8 @@ def capacity_providing_inertia_rule(mod, g, tmp):
     engaged turbines)
     """
     return (
-            mod.GenHydroWater_Power_MW[g, tmp]
-            + mod.GenHydroWater_Upwards_Reserves_MW[g, tmp]
+        mod.GenHydroWater_Power_MW[g, tmp]
+        + mod.GenHydroWater_Upwards_Reserves_MW[g, tmp]
     )
 
 

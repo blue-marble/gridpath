@@ -171,7 +171,11 @@ def save_duals(
     :param instance:
     :return:
     """
-    instance.constraint_indices["Meet_Inertia_Reserves_Constraint"] = ["zone", "timepoint", "dual"]
+    instance.constraint_indices["Meet_Inertia_Reserves_Constraint"] = [
+        "zone",
+        "timepoint",
+        "dual",
+    ]
 
 
 def import_results_into_database(

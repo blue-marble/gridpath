@@ -807,10 +807,7 @@ def capacity_providing_inertia_rule(mod, prj, tmp):
     capacity if any of it is generating
     """
     if mod.gen_var_stor_hyb_cap_factor[prj, tmp] >= 0:
-        return (
-                mod.Capacity_MW[prj, mod.period[tmp]]
-                * mod.Availability_Derate[prj, tmp]
-        )
+        return mod.Capacity_MW[prj, mod.period[tmp]] * mod.Availability_Derate[prj, tmp]
     else:
         return 0
 

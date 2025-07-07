@@ -3350,9 +3350,9 @@ def power_delta_rule(mod, g, tmp, Bin_or_Lin):
 
 def fix_commitment(mod, g, tmp, Bin_or_Lin):
     """ """
-    getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[g, tmp] = (
-        mod.fixed_commitment[g, mod.prev_stage_tmp_map[tmp]]
-    )
+    getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[
+        g, tmp
+    ] = mod.fixed_commitment[g, mod.prev_stage_tmp_map[tmp]]
     getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[g, tmp].fixed = True
 
 
@@ -3421,6 +3421,7 @@ def capacity_providing_inertia_rule(mod, g, tmp, Bin_or_Lin):
         getattr(mod, "GenCommit{}_Pmax_MW".format(Bin_or_Lin))[g, tmp]
         * getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[g, tmp]
     )
+
 
 # Input-Output
 ###############################################################################

@@ -126,9 +126,7 @@ class TestSpinningReservesReq(unittest.TestCase):
         # Param: spinning_reserves_requirement_mw
         expected_req = OrderedDict(
             sorted(
-                req_df.set_index(["ba", "timepoint"])
-                .to_dict()["requirement"]
-                .items()
+                req_df.set_index(["ba", "timepoint"]).to_dict()["requirement"].items()
             )
         )
         actual_req = OrderedDict(

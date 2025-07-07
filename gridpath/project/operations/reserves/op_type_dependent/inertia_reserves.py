@@ -89,17 +89,19 @@ def add_model_components(
         """
         gen_op_type = mod.operational_type[g]
         online_capacity_for_inertia = (
-            imported_operational_modules[gen_op_type].capacity_providing_inertia_rule(mod, g, tmp)
+            imported_operational_modules[gen_op_type].capacity_providing_inertia_rule(
+                mod, g, tmp
+            )
             if hasattr(
-                imported_operational_modules[gen_op_type], "capacity_providing_inertia_rule"
+                imported_operational_modules[gen_op_type],
+                "capacity_providing_inertia_rule",
             )
             else op_type.capacity_providing_inertia_rule(mod, g, tmp)
         )
 
         return (
             mod.Provide_Inertia_Reserves_MWs[g, tmp]
-            <= mod.inertia_reserves_inertia_constant[g]
-            * online_capacity_for_inertia
+            <= mod.inertia_reserves_inertia_constant[g] * online_capacity_for_inertia
         )
 
     m.Inertia_Reserve_Inertia_Limit_Constraint = Constraint(

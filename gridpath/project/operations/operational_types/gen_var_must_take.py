@@ -264,10 +264,7 @@ def capacity_providing_inertia_rule(mod, g, tmp):
     capacity if any of it is generating
     """
     if mod.gen_var_must_take_cap_factor[g, tmp] >= 0:
-        return (
-                mod.Capacity_MW[g, mod.period[tmp]]
-                * mod.Availability_Derate[g, tmp]
-        )
+        return mod.Capacity_MW[g, mod.period[tmp]] * mod.Availability_Derate[g, tmp]
     else:
         return 0
 

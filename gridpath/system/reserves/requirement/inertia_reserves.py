@@ -30,7 +30,7 @@ def add_model_components(
     stage,
 ):
     """
-    
+
     Treatment of Inertia reserves. This function creates model components
     related to inartia reserve requirement, including
     1) the reserve requirement by zone and timepoint, if any
@@ -58,14 +58,10 @@ def add_model_components(
     )
 
     # Requirement as percentage of load
-    m.iner_per_req = Param(
-        m.INERTIA_RESERVES_ZONES, within=PercentFraction, default=0
-    )
+    m.iner_per_req = Param(m.INERTIA_RESERVES_ZONES, within=PercentFraction, default=0)
 
     # Load zones included in the reserve percentage requirement
-    m.INER_BA_LZ = Set(
-        dimen=2, within=m.INERTIA_RESERVES_ZONES * m.LOAD_ZONES
-    )
+    m.INER_BA_LZ = Set(dimen=2, within=m.INERTIA_RESERVES_ZONES * m.LOAD_ZONES)
 
     # Projects contributing to BA requirement based on power output in the timepoint
     # and on capacity in the period
@@ -80,14 +76,13 @@ def add_model_components(
     m.iner_prj_cap_contribution = Param(
         m.INER_BA_PRJ_CONTRIBUTION, within=PercentFraction, default=0
     )
-    
+
     def reserve_requirement_rule(mod, reserve_zone, tmp):
         # If we have a map of reserve zones to load zones, apply the percentage
         # target; if no map provided, the percentage_target is 0
         if mod.INER_BA_LZ:
             percentage_target = sum(
-                mod.iner_per_req[reserve_zone]
-                * mod.LZ_Modified_Load_in_Tmp[lz, tmp]
+                mod.iner_per_req[reserve_zone] * mod.LZ_Modified_Load_in_Tmp[lz, tmp]
                 for (_reserve_zone, lz) in mod.INER_BA_LZ
                 if _reserve_zone == reserve_zone
             )
@@ -176,18 +171,20 @@ def load_model_data(
         input_dir, "inertia_reserves_tmp_requirement.tab"
     )
     if os.path.exists(by_tmp_req_filename):
-        data_portal.load(filename=by_tmp_req_filename, param=m.inertia_reserves_requirement_mw)
+        data_portal.load(
+            filename=by_tmp_req_filename, param=m.inertia_reserves_requirement_mw
+        )
 
     # If we have a RPS zone to load zone map input file, load it and the
     # percent requirement; otherwise, initialize the set as an empty list (
     # the param defaults to 0)
     map_filename = os.path.join(input_dir, "inertia_reserves_percent_map.tab")
     if os.path.exists(map_filename):
+        data_portal.load(filename=map_filename, set=m.INER_BA_LZ)
         data_portal.load(
-            filename=map_filename, set=m.INER_BA_LZ
-        )
-        data_portal.load(
-            filename=os.path.join(input_dir, "inertia_reserves_percent_requirement.tab"),
+            filename=os.path.join(
+                input_dir, "inertia_reserves_percent_requirement.tab"
+            ),
             param=m.iner_per_req,
         )
     else:
@@ -216,7 +213,6 @@ def load_model_data(
             index=m.INERTIA_RESERVES_ZONES,
             param=(m.inertia_reserves_base_frequency, m.inertia_reserves_base_rocof),
         )
-
 
 
 def get_inputs_from_database(
@@ -366,7 +362,6 @@ def get_inputs_from_database(
     return tmp_req, percentage_req, lz_mapping, project_contributions, sys_param
 
 
-
 def validate_inputs(
     scenario_id,
     subscenarios,
@@ -412,7 +407,7 @@ def write_model_inputs(
     :param conn: database connection
     :return:
     """
-    
+
     (
         db_weather_iteration,
         db_hydro_iteration,
@@ -422,8 +417,14 @@ def write_model_inputs(
     ) = directories_to_db_values(
         weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
     )
-    
-    tmp_req, percent_req, percent_map, project_contributions, sys_param = get_inputs_from_database(
+
+    (
+        tmp_req,
+        percent_req,
+        percent_map,
+        project_contributions,
+        sys_param,
+    ) = get_inputs_from_database(
         scenario_id,
         subscenarios,
         db_weather_iteration,
