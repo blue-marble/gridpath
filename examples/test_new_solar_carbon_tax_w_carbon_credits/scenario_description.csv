@@ -1,4 +1,4 @@
-scenario_id,105
+scenario_id,107
 scenario_name,test_new_solar_carbon_tax_w_carbon_credits
 of_transmission,
 of_transmission_hurdle_rates,
@@ -76,6 +76,7 @@ project_carbon_tax_allowance_scenario_id,NULL
 project_performance_standard_zone_scenario_id,NULL
 project_carbon_credits_generation_zone_scenario_id,1
 project_carbon_credits_purchase_zone_scenario_id,1
+project_carbon_credits_purchase_limits_scenario_id,NULL
 project_carbon_credits_scenario_id,1
 project_fuel_burn_limit_ba_scenario_id,NULL
 fuel_fuel_burn_limit_ba_scenario_id,NULL

@@ -987,16 +987,18 @@ def generic_insert_subscenario_data(
         else:
             headers_for_validation = [subscenario] + csv_headers
         if headers_for_validation != column_names:
+            diff_headers = list(set(headers_for_validation) - set(column_names))
+            diff_columns = list(set(column_names) - set(headers_for_validation))
             raise AssertionError(
-                """
+                f"""
                 Headers and table column names don't match.
-                Column names are {}.
-                Header names are {}.
+                Column names are {column_names}.
+                Header names are {headers_for_validation}.
                 Please ensure that your header names are the same as the 
                 database column names.
-                """.format(
-                    column_names, headers_for_validation
-                )
+                Columns that are in the headers but not in the table: {diff_headers}.
+                Columns that are in the table but not in the headers: {diff_columns}.
+                """
             )
 
     # Create the appropriate strings needed for the insert query

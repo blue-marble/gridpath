@@ -1,0 +1,21 @@
+##### SUMMARY RESULTS FOR SCENARIO *test_tx_simple_tmp_emissions* #####
+
+### CAPACITY RESULTS ###
+
+--> New Generation Capacity <--
+                             New Capacity (MW)
+load_zone technology period                   
+Zone1     Solar      2020                 2.00
+
+### OPERATIONAL RESULTS ###
+
+--> Energy Production <--
+                             Annual Energy (MWh)  % Total Power
+load_zone period technology                                    
+Zone1     2020   Coal                       0.00           0.00
+                 Gas                        0.00           0.00
+                 Nuclear               52,560.00          71.01
+                 Solar                  9,198.00          12.43
+                 Wind                  12,264.00          16.57
+Zone2     2020   Gas                   44,300.00         100.00
+Zone3     2020   Gas                  306,600.00         100.00

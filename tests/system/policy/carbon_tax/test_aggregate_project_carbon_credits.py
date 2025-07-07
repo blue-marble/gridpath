@@ -54,6 +54,7 @@ PREREQUISITE_MODULE_NAMES = [
     "project.operations.carbon_tax",
     "project.operations.carbon_credits",
     "system.policy.carbon_tax.carbon_tax",
+    "system.policy.carbon_tax.aggregate_project_carbon_emissions",
 ]
 NAME_OF_MODULE_BEING_TESTED = (
     "system.policy.carbon_tax.aggregate_project_carbon_credits"
