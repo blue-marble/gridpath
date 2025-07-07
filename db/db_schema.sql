@@ -594,6 +594,26 @@ CREATE TABLE inputs_geography_spinning_reserves_bas
         subscenarios_geography_spinning_reserves_bas (spinning_reserves_ba_scenario_id)
 );
 
+DROP TABLE IF EXISTS subscenarios_geography_inertia_reserves_bas;
+CREATE TABLE subscenarios_geography_inertia_reserves_bas
+(
+    inertia_reserves_ba_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name                             VARCHAR(32),
+    description                      VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_geography_inertia_reserves_bas;
+CREATE TABLE inputs_geography_inertia_reserves_bas
+(
+    inertia_reserves_ba_scenario_id INTEGER,
+    inertia_reserves_ba             VARCHAR(32),
+    allow_violation                 INTEGER,
+    violation_penalty_per_mws       FLOAT,
+    PRIMARY KEY (inertia_reserves_ba_scenario_id, inertia_reserves_ba),
+    FOREIGN KEY (inertia_reserves_ba_scenario_id) REFERENCES
+        subscenarios_geography_inertia_reserves_bas (inertia_reserves_ba_scenario_id)
+);
+
 -- Energy target
 -- This is the unit at which energy target requirements are met in the model; it can be
 -- different from the load zones
@@ -1982,12 +2002,14 @@ CREATE TABLE inputs_project_operational_chars
     regulation_down_derate                                FLOAT,
     frequency_response_derate                             FLOAT,
     spinning_reserves_derate                              FLOAT,
+    inertia_reserves_derate                               FLOAT,
     lf_reserves_up_ramp_rate                              FLOAT,
     lf_reserves_down_ramp_rate                            FLOAT,
     regulation_up_ramp_rate                               FLOAT,
     regulation_down_ramp_rate                             FLOAT,
     frequency_response_ramp_rate                          FLOAT,
     spinning_reserves_ramp_rate                           FLOAT,
+    inertia_constant_sec                                  FLOAT,
     powerunithour_per_fuelunit                            FLOAT,
     cap_factor_limits_scenario_id                         INTEGER,
     partial_availability_threshold                        FLOAT,
@@ -1999,6 +2021,7 @@ CREATE TABLE inputs_project_operational_chars
     load_modifier_profile_scenario_id                     INTEGER,
     load_component_shift_bounds_scenario_id               INTEGER,
     efficiency_factor                                     FLOAT,
+    energy_requirement_factor                             FLOAT,
     PRIMARY KEY (project_operational_chars_scenario_id, project),
     FOREIGN KEY (project_operational_chars_scenario_id) REFERENCES
         subscenarios_project_operational_chars (project_operational_chars_scenario_id),
@@ -3282,6 +3305,26 @@ CREATE TABLE inputs_project_spinning_reserves_bas
     FOREIGN KEY (project_spinning_reserves_ba_scenario_id)
         REFERENCES subscenarios_project_spinning_reserves_bas
             (project_spinning_reserves_ba_scenario_id)
+);
+
+DROP TABLE IF EXISTS subscenarios_project_inertia_reserves_bas;
+CREATE TABLE subscenarios_project_inertia_reserves_bas
+(
+    project_inertia_reserves_ba_scenario_id INTEGER PRIMARY KEY,
+    name                                     VARCHAR(32),
+    description                              VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_project_inertia_reserves_bas;
+CREATE TABLE inputs_project_inertia_reserves_bas
+(
+    project_inertia_reserves_ba_scenario_id INTEGER,
+    project                                  VARCHAR(64),
+    inertia_reserves_ba                     VARCHAR(32),
+    PRIMARY KEY (project_inertia_reserves_ba_scenario_id, project),
+    FOREIGN KEY (project_inertia_reserves_ba_scenario_id)
+        REFERENCES subscenarios_project_inertia_reserves_bas
+            (project_inertia_reserves_ba_scenario_id)
 );
 
 -- Project energy target zones
@@ -4908,6 +4951,83 @@ CREATE TABLE inputs_system_spinning_reserves_project
                  project)
 );
 
+
+-- inertia reserves
+DROP TABLE IF EXISTS subscenarios_system_inertia_reserves;
+CREATE TABLE subscenarios_system_inertia_reserves
+(
+    inertia_reserves_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name                          VARCHAR(32),
+    description                   VARCHAR(128)
+);
+
+-- Can include timepoints and zones other than the ones in a scenario, as
+-- correct timepoints and zones will be pulled depending on
+-- temporal_scenario_id and reserves_scenario_id
+DROP TABLE IF EXISTS inputs_system_inertia_reserves;
+CREATE TABLE inputs_system_inertia_reserves
+(
+    inertia_reserves_scenario_id INTEGER,
+    inertia_reserves_ba          VARCHAR(32),
+    stage_id                     INTEGER,
+    timepoint                    INTEGER,
+    inertia_reserves_mws         FLOAT,
+    PRIMARY KEY (inertia_reserves_scenario_id, inertia_reserves_ba, stage_id,
+                 timepoint),
+    FOREIGN KEY (inertia_reserves_scenario_id) REFERENCES
+        subscenarios_system_inertia_reserves (inertia_reserves_scenario_id)
+);
+
+-- The requirement may be specified as percent of load, in which case we also
+-- need to specify which load, i.e. specify a mapping between the reserve BA
+-- and the load zones whose load should be part of the requirement
+-- calculation (mapping should be one-to-many)
+DROP TABLE IF EXISTS inputs_system_inertia_reserves_percent;
+CREATE TABLE inputs_system_inertia_reserves_percent
+(
+    inertia_reserves_scenario_id INTEGER,
+    inertia_reserves_ba          VARCHAR(32),
+    stage_id                      INTEGER,
+    percent_load_req              FLOAT,
+    PRIMARY KEY (inertia_reserves_scenario_id, inertia_reserves_ba, stage_id)
+);
+
+DROP TABLE IF EXISTS inputs_system_inertia_reserves_percent_lz_map;
+CREATE TABLE inputs_system_inertia_reserves_percent_lz_map
+(
+    inertia_reserves_scenario_id INTEGER,
+    inertia_reserves_ba          VARCHAR(32),
+    load_zone                     VARCHAR(32),
+    PRIMARY KEY (inertia_reserves_scenario_id, inertia_reserves_ba, load_zone)
+);
+
+-- Projects can also contribute to the requirement, specified as percent of their
+-- power output in a timepoint or a percentage of their capacity
+-- Note this is additive to the by-timepoint and percent requirements
+DROP TABLE IF EXISTS inputs_system_inertia_reserves_project;
+CREATE TABLE inputs_system_inertia_reserves_project
+(
+    inertia_reserves_scenario_id INTEGER,
+    inertia_reserves_ba          VARCHAR(32),
+    stage_id                      INTEGER,
+    project                       VARCHAR(64),
+    percent_power_req             FLOAT,
+    percent_capacity_req          FLOAT,
+    PRIMARY KEY (inertia_reserves_scenario_id, inertia_reserves_ba, stage_id,
+                 project)
+);
+
+DROP TABLE IF EXISTS inputs_system_inertia_reserves_param;
+CREATE TABLE inputs_system_inertia_reserves_param
+(
+    inertia_reserves_scenario_id INTEGER,
+    inertia_reserves_ba          VARCHAR(32),
+    base_system_frequecy_hz      FLOAT,
+    maximum_rocof_hz_per_s       FLOAT,
+    PRIMARY KEY (inertia_reserves_scenario_id, inertia_reserves_ba)
+);
+
+
 -- -- Policy -- --
 
 -- Energy target requirements
@@ -5418,6 +5538,7 @@ CREATE TABLE scenarios
     of_regulation_down                                          INTEGER,
     of_frequency_response                                       INTEGER,
     of_spinning_reserves                                        INTEGER,
+    of_inertia_reserves                                         INTEGER,
     of_period_energy_target                                     INTEGER,
     of_horizon_energy_target                                    INTEGER,
     of_transmission_target                                      INTEGER,
@@ -5446,6 +5567,7 @@ CREATE TABLE scenarios
     regulation_down_ba_scenario_id                              INTEGER,
     frequency_response_ba_scenario_id                           INTEGER,
     spinning_reserves_ba_scenario_id                            INTEGER,
+    inertia_reserves_ba_scenario_id                             INTEGER,
     energy_target_zone_scenario_id                              INTEGER,
     instantaneous_penetration_zone_scenario_id                  INTEGER,
     transmission_target_zone_scenario_id                        INTEGER,
@@ -5475,6 +5597,7 @@ CREATE TABLE scenarios
     project_regulation_down_ba_scenario_id                      INTEGER,
     project_frequency_response_ba_scenario_id                   INTEGER,
     project_spinning_reserves_ba_scenario_id                    INTEGER,
+    project_inertia_reserves_ba_scenario_id                     INTEGER,
     project_energy_target_zone_scenario_id                      INTEGER,
     project_instantaneous_penetration_zone_scenario_id          INTEGER,
     tx_line_transmission_target_zone_scenario_id                INTEGER,
@@ -5531,6 +5654,7 @@ CREATE TABLE scenarios
     regulation_down_scenario_id                                 INTEGER,
     frequency_response_scenario_id                              INTEGER,
     spinning_reserves_scenario_id                               INTEGER,
+    inertia_reserves_scenario_id                                INTEGER,
     period_energy_target_scenario_id                            INTEGER,
     horizon_energy_target_scenario_id                           INTEGER,
     instantaneous_penetration_scenario_id                       INTEGER,
@@ -5574,6 +5698,8 @@ CREATE TABLE scenarios
             (frequency_response_ba_scenario_id),
     FOREIGN KEY (spinning_reserves_ba_scenario_id) REFERENCES
         subscenarios_geography_spinning_reserves_bas (spinning_reserves_ba_scenario_id),
+    FOREIGN KEY (inertia_reserves_ba_scenario_id) REFERENCES
+        subscenarios_geography_inertia_reserves_bas (inertia_reserves_ba_scenario_id),
     FOREIGN KEY (energy_target_zone_scenario_id) REFERENCES
         subscenarios_geography_energy_target_zones (energy_target_zone_scenario_id),
     FOREIGN KEY (instantaneous_penetration_zone_scenario_id) REFERENCES
@@ -5645,6 +5771,9 @@ CREATE TABLE scenarios
     FOREIGN KEY (project_spinning_reserves_ba_scenario_id) REFERENCES
         subscenarios_project_spinning_reserves_bas
             (project_spinning_reserves_ba_scenario_id),
+    FOREIGN KEY (project_inertia_reserves_ba_scenario_id) REFERENCES
+        subscenarios_project_inertia_reserves_bas
+            (project_inertia_reserves_ba_scenario_id),
     FOREIGN KEY (project_energy_target_zone_scenario_id) REFERENCES
         subscenarios_project_energy_target_zones
             (project_energy_target_zone_scenario_id),
@@ -5784,6 +5913,8 @@ CREATE TABLE scenarios
         subscenarios_system_regulation_down (regulation_down_scenario_id),
     FOREIGN KEY (spinning_reserves_scenario_id) REFERENCES
         subscenarios_system_spinning_reserves (spinning_reserves_scenario_id),
+    FOREIGN KEY (inertia_reserves_scenario_id) REFERENCES
+        subscenarios_system_inertia_reserves (inertia_reserves_scenario_id),
     FOREIGN KEY (frequency_response_scenario_id) REFERENCES
         subscenarios_system_frequency_response (frequency_response_scenario_id),
     FOREIGN KEY (period_energy_target_scenario_id) REFERENCES
@@ -6063,6 +6194,8 @@ CREATE TABLE results_project_timepoint
     frequency_response_ba                           VARCHAR(32),
     frequency_response_reserve_provision_mw         FLOAT,
     frequency_response_partial_reserve_provision_mw FLOAT,
+    inertia_reserves_ba                             VARCHAR(32),
+    inertia_reserves_reserve_provision_mws          FLOAT,
     availability_derate                             FLOAT,
     unavailability_decision                         FLOAT,
     start_unavailability                            FLOAT,
@@ -7066,6 +7199,33 @@ CREATE TABLE results_system_spinning_reserves
                  subproblem_id, stage_id, timepoint)
 );
 
+DROP TABLE IF EXISTS results_system_inertia_reserves;
+CREATE TABLE results_system_inertia_reserves
+(
+    scenario_id                  INTEGER,
+    inertia_reserves_ba         VARCHAR(32),
+    period                       INTEGER,
+    weather_iteration            INTEGER,
+    hydro_iteration              INTEGER,
+    availability_iteration       INTEGER,
+    subproblem_id                INTEGER,
+    stage_id                     INTEGER,
+    timepoint                    INTEGER,
+    discount_factor              FLOAT,
+    number_years_represented     FLOAT,
+    timepoint_weight             FLOAT,
+    number_of_hours_in_timepoint FLOAT,
+    spinup_or_lookahead          INTEGER,
+    reserve_requirement_mws      FLOAT,
+    reserve_provision_mws        FLOAT,
+    reserve_violation_mws        FLOAT,
+    dual                         FLOAT,
+    marginal_price_per_mws       FLOAT,
+    PRIMARY KEY (scenario_id, inertia_reserves_ba, weather_iteration,
+                 hydro_iteration, availability_iteration,
+                 subproblem_id, stage_id, timepoint)
+);
+
 -- Carbon emissions
 DROP TABLE IF EXISTS results_system_carbon_cap;
 CREATE TABLE results_system_carbon_cap
@@ -7551,6 +7711,7 @@ CREATE TABLE results_system_costs
     Regulation_Down_Penalty_Costs                           FLOAT,
     Regulation_Up_Penalty_Costs                             FLOAT,
     Spinning_Reserves_Penalty_Costs                         FLOAT,
+    Inertia_Reserves_Penalty_Costs                          FLOAT,
     Total_PRM_Shortage_Penalty_Costs                        FLOAT,
     Total_Local_Capacity_Shortage_Penalty_Costs             FLOAT,
     Total_Carbon_Cap_Balance_Penalty_Costs                  FLOAT,
@@ -7647,6 +7808,8 @@ SELECT scenario_id,
                                                                           AS feature_frequency_response,
        CASE WHEN of_spinning_reserves THEN 'yes' ELSE 'no' END
                                                                           AS feature_spinning_reserves,
+       CASE WHEN of_inertia_reserves THEN 'yes' ELSE 'no' END
+                                                                          AS feature_inertia_reserves,
        CASE WHEN of_period_energy_target THEN 'yes' ELSE 'no' END         AS
                                                                              feature_period_energy_target,
        CASE WHEN of_carbon_cap THEN 'yes' ELSE 'no' END
@@ -7667,6 +7830,7 @@ SELECT scenario_id,
        subscenarios_geography_regulation_up_bas.name                      AS geography_reg_up_bas,
        subscenarios_geography_regulation_down_bas.name                    AS geography_reg_down_bas,
        subscenarios_geography_spinning_reserves_bas.name                  AS geography_spin_bas,
+       subscenarios_geography_inertia_reserves_bas.name                   AS geography_iner_bas,
        subscenarios_geography_frequency_response_bas.name                 AS geography_freq_resp_bas,
        subscenarios_geography_energy_target_zones.name                    AS geography_energy_target_areas,
        subscenarios_geography_carbon_cap_zones.name                       AS carbon_cap_areas,
@@ -7683,6 +7847,7 @@ SELECT scenario_id,
        subscenarios_project_regulation_up_bas.name                        AS project_reg_up_bas,
        subscenarios_project_regulation_down_bas.name                      AS project_reg_down_bas,
        subscenarios_project_spinning_reserves_bas.name                    AS project_spin_bas,
+       subscenarios_project_inertia_reserves_bas.name                     AS project_iner_bas,
        subscenarios_project_frequency_response_bas.name                   AS project_freq_resp_bas,
        subscenarios_project_energy_target_zones.name                      AS project_energy_target_areas,
        subscenarios_project_carbon_cap_zones.name                         AS project_carbon_cap_areas,
@@ -7720,6 +7885,7 @@ SELECT scenario_id,
        subscenarios_system_regulation_up.name                             AS regulation_up_profile,
        subscenarios_system_regulation_down.name                           AS regulation_down_profile,
        subscenarios_system_spinning_reserves.name                         AS spinning_reserves_profile,
+       subscenarios_system_inertia_reserves.name                          AS inertia_reserves_profile,
        subscenarios_system_frequency_response.name                        AS frequency_response_profile,
        subscenarios_system_period_energy_targets.name                     AS period_energy_target,
        subscenarios_system_carbon_cap_targets.name                        AS carbon_cap,
@@ -7745,6 +7911,8 @@ FROM scenarios
                    USING (regulation_down_ba_scenario_id)
          LEFT JOIN subscenarios_geography_spinning_reserves_bas
                    USING (spinning_reserves_ba_scenario_id)
+         LEFT JOIN subscenarios_geography_inertia_reserves_bas
+                   USING (inertia_reserves_ba_scenario_id)
          LEFT JOIN subscenarios_geography_frequency_response_bas
                    USING (frequency_response_ba_scenario_id)
          LEFT JOIN subscenarios_geography_energy_target_zones
@@ -7774,6 +7942,8 @@ FROM scenarios
                    USING (project_regulation_down_ba_scenario_id)
          LEFT JOIN subscenarios_project_spinning_reserves_bas
                    USING (project_spinning_reserves_ba_scenario_id)
+         LEFT JOIN subscenarios_project_inertia_reserves_bas
+                   USING (project_inertia_reserves_ba_scenario_id)
          LEFT JOIN subscenarios_project_frequency_response_bas
                    USING (project_frequency_response_ba_scenario_id)
          LEFT JOIN subscenarios_project_energy_target_zones
@@ -7833,6 +8003,8 @@ FROM scenarios
                    USING (regulation_down_scenario_id)
          LEFT JOIN subscenarios_system_spinning_reserves
                    USING (spinning_reserves_scenario_id)
+         LEFT JOIN subscenarios_system_inertia_reserves
+                   USING (inertia_reserves_scenario_id)
          LEFT JOIN subscenarios_system_frequency_response
                    USING (frequency_response_scenario_id)
          LEFT JOIN subscenarios_system_period_energy_targets

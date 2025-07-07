@@ -801,6 +801,20 @@ def power_delta_rule(mod, prj, tmp):
         )
 
 
+def capacity_providing_inertia_rule(mod, prj, tmp):
+    """
+    Capacity providing inertia for GEN_VAR_STOR_HYB project is equal to the online
+    capacity if any of it is generating
+    """
+    if mod.gen_var_stor_hyb_cap_factor[prj, tmp] >= 0:
+        return (
+                mod.Capacity_MW[prj, mod.period[tmp]]
+                * mod.Availability_Derate[prj, tmp]
+        )
+    else:
+        return 0
+
+
 # Inputs-Outputs
 ###############################################################################
 

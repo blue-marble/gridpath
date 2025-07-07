@@ -523,7 +523,7 @@ DC Power Flow (*tx_dcopf*)
 Operating Reserves
 ==================
 GridPath can optionally model a range of operating reserve types, including
-regulation up and down, spinning reserves, load-following up and down, and
+regulation up and down, spinning reserves, load-following up and down, inertia reserves and
 frequency response. The implementation of each reserve type is standardized.
 The user must define the reserve balancing areas along with any penalties
 for violation of the reserve-balance constraints. For each balancing area,

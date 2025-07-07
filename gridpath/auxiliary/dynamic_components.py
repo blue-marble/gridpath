@@ -28,6 +28,7 @@ headroom_variables = "headroom_variables"
 footroom_variables = "footroom_variables"
 reserve_variable_derate_params = "reserve_variable_derate_params"
 reserve_to_energy_adjustment_params = "reserve_to_energy_adjustment_params"
+inertia_variable = "inertia_variable"
 
 prm_cost_group_sets = "prm_cost_groups"
 prm_cost_group_prm_type = "prm_cost_group_prm_type"
@@ -106,6 +107,7 @@ class DynamicComponents(object):
         # modeled and a project can provide it
         setattr(self, headroom_variables, dict())
         setattr(self, footroom_variables, dict())
+        setattr(self, inertia_variable, dict())
 
         # A reserve-provision derate parameter and a
         # reserve-to-energy-adjustment parameter could also be assigned to

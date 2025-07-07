@@ -1,0 +1,14 @@
+##### SUMMARY RESULTS FOR SCENARIO *test_inertia_reserves* #####
+
+### CAPACITY RESULTS ###
+
+### OPERATIONAL RESULTS ###
+
+--> Energy Production <--
+                                  Annual Energy (MWh)  % Total Power
+load_zone period technology                                         
+Zone1     2020   Coal                       28,032.00          18.34
+                 Gas                        70,518.00          46.13
+                 Nuclear                    52,560.00          34.38
+                 Wind                        4,380.00           2.87
+                 synch_condenser            -2,628.00          -1.72

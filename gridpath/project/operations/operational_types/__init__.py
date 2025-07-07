@@ -589,3 +589,10 @@ def soc_last_tmp_penalty_cost_rule(mod, prj, tmp):
 
 def peak_deviation_monthly_demand_charge_cost_rule(mod, prj, prd, mnth):
     return 0
+
+
+def capacity_providing_inertia_rule(mod, prj, tmp):
+    """
+    If no inertia_provision_rule is specified, the default inertia is 0.
+    """
+    return 0

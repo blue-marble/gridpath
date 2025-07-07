@@ -605,6 +605,14 @@ def power_delta_rule(mod, g, tmp):
         )
 
 
+def capacity_providing_inertia_rule(mod, g, tmp):
+    """
+    Capacity providing inertia for GEN_MUST_RUN project is equal to the online
+    capacity
+    """
+    return mod.Capacity_MW[g, mod.period[tmp]] * mod.Availability_Derate[g, tmp]
+
+
 # Input-Output
 ###############################################################################
 

@@ -290,12 +290,14 @@ def make_opchar_sql_str(
     regulation_down_derate="NULL",
     frequency_response_derate="NULL",
     spinning_reserves_derate="NULL",
+    inertia_reserves_derate="NULL",
     lf_reserves_up_ramp_rate="NULL",
     lf_reserves_down_ramp_rate="NULL",
     regulation_up_ramp_rate="NULL",
     regulation_down_ramp_rate="NULL",
     frequency_response_ramp_rate="NULL",
     spinning_reserves_ramp_rate="NULL",
+    inertia_constant_sec="NULL",
     powerunithour_per_fuelunit="NULL",
     cap_factor_limits_scenario_id="NULL",
     partial_availability_threshold="NULL",
@@ -307,6 +309,7 @@ def make_opchar_sql_str(
     load_modifier_profile_scenario_id="NULL",
     load_component_shift_bounds_scenario_id="NULL",
     efficiency_factor="NULL",
+    energy_requirement_factor="NULL",
 ):
     """ """
 
@@ -383,12 +386,14 @@ def make_opchar_sql_str(
      {regulation_down_derate} AS regulation_down_derate,
      {frequency_response_derate} AS frequency_response_derate,	
      {spinning_reserves_derate} AS spinning_reserves_derate,
+     {inertia_reserves_derate} AS inertia_reserves_derate,
      {lf_reserves_up_ramp_rate} AS lf_reserves_up_ramp_rate,	
      {lf_reserves_down_ramp_rate} AS lf_reserves_down_ramp_rate,
      {regulation_up_ramp_rate} AS regulation_up_ramp_rate,
      {regulation_down_ramp_rate} AS regulation_down_ramp_rate,
      {frequency_response_ramp_rate} AS frequency_response_ramp_rate,
      {spinning_reserves_ramp_rate} AS spinning_reserves_ramp_rate,
+     {inertia_constant_sec} AS inertia_constant_sec,
      {powerunithour_per_fuelunit} AS powerunithour_per_fuelunit,
      {cap_factor_limits_scenario_id} AS cap_factor_limits_scenario_id,
      {partial_availability_threshold} AS partial_availability_threshold,
@@ -400,7 +405,8 @@ def make_opchar_sql_str(
      {load_modifier_profile_scenario_id} AS load_modifier_profile_scenario_id,
      {load_component_shift_bounds_scenario_id} AS 
      load_component_shift_bounds_scenario_id,
-     {efficiency_factor} AS efficiency_factor
+     {efficiency_factor} AS efficiency_factor,
+     {energy_requirement_factor} AS energy_requirement_factor
     """
 
     return opchar_sql_str

@@ -22,6 +22,7 @@ results_system_regulation_down_balance,1,System Regulation Down Balance
 results_system_regulation_up_balance,1,System Regulation Up Balance
 results_system_energy_target,1,System RPS
 results_system_spinning_reserves_balance,1,System Spining Reserves Balance
+results_system_inertia_reserves_balance,1,System Inertia Reserves Balance
 results_transmission_period,1,Transmission Capacity
 results_transmission_period_new_build,1,Transmission New Build Capacity
 results_transmission_carbon_emissions,1,Transmission Carbon Emissions
