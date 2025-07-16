@@ -18,7 +18,15 @@ carbon tax zone - period level.
 """
 
 import os.path
-from pyomo.environ import Set, Expression, value, Param, PercentFraction, Constraint, NonNegativeReals
+from pyomo.environ import (
+    Set,
+    Expression,
+    value,
+    Param,
+    PercentFraction,
+    Constraint,
+    NonNegativeReals,
+)
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.db_interface import directories_to_db_values
@@ -27,6 +35,7 @@ from gridpath.common_functions import create_results_df
 from gridpath.system.policy.carbon_tax import CARBON_TAX_ZONE_PRD_DF
 
 Infinity = float("inf")
+
 
 def add_model_components(
     m,
@@ -44,11 +53,15 @@ def add_model_components(
     )
 
     m.purchase_credit_min_fraction = Param(
-        m.CARBON_TAX_ZONE_PERIODS_WITH_CARBON_TAX, within=NonNegativeReals, default=Infinity
+        m.CARBON_TAX_ZONE_PERIODS_WITH_CARBON_TAX,
+        within=NonNegativeReals,
+        default=Infinity,
     )
 
     m.purchase_credit_max_fraction = Param(
-        m.CARBON_TAX_ZONE_PERIODS_WITH_CARBON_TAX, within=NonNegativeReals, default=Infinity
+        m.CARBON_TAX_ZONE_PERIODS_WITH_CARBON_TAX,
+        within=NonNegativeReals,
+        default=Infinity,
     )
 
     def total_carbon_emissions_credits_rule(mod, tax_z, prd):
@@ -77,7 +90,11 @@ def add_model_components(
         txz_can_purchase = False
         for prj in mod.CARBON_TAX_PRJS_BY_CARBON_TAX_ZONE[tax_z]:
             for z in mod.CARBON_CREDITS_ZONES:
-                if (prj, z, prd) in mod.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES_OPR_PRDS:
+                if (
+                    prj,
+                    z,
+                    prd,
+                ) in mod.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES_OPR_PRDS:
                     if (tax_z, z) in mod.CARBON_TAX_ZONES_CARBON_CREDITS_ZONES:
                         txz_can_purchase = True
         if not txz_can_purchase:
@@ -100,11 +117,14 @@ def add_model_components(
     )
 
     def project_carbon_credit_min_rule(mod, tax_z, prd):
-
         txz_can_purchase = False
         for prj in mod.CARBON_TAX_PRJS_BY_CARBON_TAX_ZONE[tax_z]:
             for z in mod.CARBON_CREDITS_ZONES:
-                if (prj, z, prd) in mod.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES_OPR_PRDS:
+                if (
+                    prj,
+                    z,
+                    prd,
+                ) in mod.CARBON_CREDITS_PURCHASE_PRJS_CARBON_CREDITS_ZONES_OPR_PRDS:
                     if (tax_z, z) in mod.CARBON_TAX_ZONES_CARBON_CREDITS_ZONES:
                         txz_can_purchase = True
         if not txz_can_purchase:
