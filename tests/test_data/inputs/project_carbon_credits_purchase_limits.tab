@@ -1,0 +1,5 @@
+carbon_tax_zone	period	purchase_credit_min_fraction	purchase_credit_max_fraction
+Carbon_Tax_Zone1	2020	.	0.5
+Carbon_Tax_Zone1	2030	.	0.5
+Carbon_Tax_Zone2	2020	.	0.5
+Carbon_Tax_Zone2	2030	.	0.5
