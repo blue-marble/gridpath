@@ -342,25 +342,31 @@ def get_inputs_from_database(
     # Note that we calculate the hours_in_period_timepoints here by summing up the
     # number of hours in a period (within a stage and excluding
     # spinup/lookahead) across all subproblems in the temporal_scenario_id:
+
     periods = c.execute(
-        """SELECT period, discount_factor, 
+        f"""SELECT period, discount_factor, 
            period_start_year, period_end_year, hours_in_period_timepoints
-           FROM
-           (SELECT period, discount_factor,
+           FROM (
+           SELECT period, discount_factor,
            period_start_year, period_end_year
            FROM inputs_temporal_periods
-           WHERE temporal_scenario_id = {}) as main_period_tbl
+           WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+           AND period in (
+                  SELECT DISTINCT period
+                  FROM inputs_temporal
+                  WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+                  AND subproblem_id = {subproblem}
+               )
+           ) as main_period_tbl
            JOIN
            (SELECT period, sum(number_of_hours_in_timepoint*timepoint_weight) 
            as hours_in_period_timepoints
            FROM inputs_temporal
-           WHERE temporal_scenario_id = {}
+           WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
            AND spinup_or_lookahead = 0
-           AND stage_id = {}
+           AND stage_id = {stage}
            GROUP BY period) as hours_in_period_timepoints_tbl
-           USING (period);""".format(
-            subscenarios.TEMPORAL_SCENARIO_ID, subscenarios.TEMPORAL_SCENARIO_ID, stage
-        )
+           USING (period);"""
     )
 
     return periods
