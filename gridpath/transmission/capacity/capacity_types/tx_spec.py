@@ -215,24 +215,29 @@ def get_model_inputs_from_database(
     :param conn: database connection
     :return:
     """
+    db_subproblem = subproblem if subproblem != "" else 1
     c = conn.cursor()
     tx_capacities = c.execute(
-        """SELECT transmission_line, period, min_mw, max_mw, fixed_cost_per_mw_yr
+        f"""SELECT transmission_line, period, min_mw, max_mw, 
+        fixed_cost_per_mw_yr
         FROM inputs_transmission_portfolios
         CROSS JOIN
         (SELECT period
         FROM inputs_temporal_periods
-        WHERE temporal_scenario_id = {}) as relevant_periods
+        WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}) as relevant_periods
         INNER JOIN
         (SELECT transmission_line, period, min_mw, max_mw, fixed_cost_per_mw_yr
         FROM inputs_transmission_specified_capacity
-        WHERE transmission_specified_capacity_scenario_id = {} ) as capacity
+        WHERE transmission_specified_capacity_scenario_id = {subscenarios.TRANSMISSION_SPECIFIED_CAPACITY_SCENARIO_ID} ) as capacity
         USING (transmission_line, period)
-        WHERE transmission_portfolio_scenario_id = {};""".format(
-            subscenarios.TEMPORAL_SCENARIO_ID,
-            subscenarios.TRANSMISSION_SPECIFIED_CAPACITY_SCENARIO_ID,
-            subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID,
-        )
+        WHERE transmission_portfolio_scenario_id = {subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID}
+        AND period in (
+                  SELECT DISTINCT period
+                  FROM inputs_temporal
+                  WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+                  AND subproblem_id = {db_subproblem}
+               )
+        ;"""
     )
 
     return tx_capacities

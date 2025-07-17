@@ -372,18 +372,22 @@ def get_inputs_from_database(
 
     c1 = conn.cursor()
     flow_limits = c1.execute(
-        """SELECT transmission_simultaneous_flow_limit, period, max_flow_mw
+        f"""SELECT transmission_simultaneous_flow_limit, period, max_flow_mw
         FROM inputs_transmission_simultaneous_flow_limits
         INNER JOIN
         (SELECT period
          FROM inputs_temporal_periods
-         WHERE temporal_scenario_id = {}) as relevant_periods
+         WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}) as relevant_periods
          USING (period)
-         WHERE transmission_simultaneous_flow_limit_scenario_id = {};
-        """.format(
-            subscenarios.TEMPORAL_SCENARIO_ID,
-            subscenarios.TRANSMISSION_SIMULTANEOUS_FLOW_LIMIT_SCENARIO_ID,
-        )
+         WHERE transmission_simultaneous_flow_limit_scenario_id = {subscenarios.TRANSMISSION_SIMULTANEOUS_FLOW_LIMIT_SCENARIO_ID}
+         AND period in (
+                  SELECT DISTINCT period
+                  FROM inputs_temporal
+                  WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+                  AND subproblem_id = {subproblem}
+               )
+               ;
+        """
     )
 
     c2 = conn.cursor()
