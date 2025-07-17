@@ -274,7 +274,10 @@ def get_model_inputs_from_database(
     :return:
     """
     spec_params = spec_get_inputs_from_database(
-        conn=conn, subscenarios=subscenarios, capacity_type="fuel_prod_spec"
+        conn=conn,
+        subscenarios=subscenarios,
+        subproblem=subproblem,
+        capacity_type="fuel_prod_spec",
     )
 
     return spec_params

@@ -127,14 +127,16 @@ def project_vintages_relevant_in_period(
 
 
 # Specified projects common functions
-def spec_get_inputs_from_database(conn, subscenarios, capacity_type):
+def spec_get_inputs_from_database(conn, subscenarios, subproblem, capacity_type):
     """
     Get the various capacity and fixed cost parameters for projects with
     "specified" capacity types.
     """
+    db_subproblem = subproblem if subproblem != "" else 1
+
     c = conn.cursor()
     spec_project_params = c.execute(
-        """
+        f"""
         SELECT project,
         period,
         specified_capacity_mw,
@@ -159,7 +161,7 @@ def spec_get_inputs_from_database(conn, subscenarios, capacity_type):
         CROSS JOIN
         (SELECT period
         FROM inputs_temporal_periods
-        WHERE temporal_scenario_id = {temporal_scenario_id}) as relevant_periods
+        WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}) as relevant_periods
         INNER JOIN
         (SELECT project, period,
         specified_capacity_mw,
@@ -172,7 +174,7 @@ def spec_get_inputs_from_database(conn, subscenarios, capacity_type):
         fuel_release_capacity_fuelunitperhour,
         fuel_storage_capacity_fuelunit
         FROM inputs_project_specified_capacity
-        WHERE project_specified_capacity_scenario_id = {project_specified_capacity_scenario_id}) as capacity
+        WHERE project_specified_capacity_scenario_id = {subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID}) as capacity
         USING (project, period)
         INNER JOIN
         (SELECT project, period,
@@ -185,17 +187,17 @@ def spec_get_inputs_from_database(conn, subscenarios, capacity_type):
         fuel_production_capacity_fixed_cost_per_fuelunitperhour_yr,
         fuel_storage_capacity_fixed_cost_per_fuelunit_yr
         FROM inputs_project_specified_fixed_cost
-        WHERE project_specified_fixed_cost_scenario_id = {project_specified_fixed_cost_scenario_id}) as fixed_om
+        WHERE project_specified_fixed_cost_scenario_id = {subscenarios.PROJECT_SPECIFIED_FIXED_COST_SCENARIO_ID}) as fixed_om
         USING (project, period)
-        WHERE project_portfolio_scenario_id = {project_portfolio_scenario_id}
+        WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
         AND capacity_type = '{capacity_type}'
-        ;""".format(
-            temporal_scenario_id=subscenarios.TEMPORAL_SCENARIO_ID,
-            project_specified_capacity_scenario_id=subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID,
-            project_specified_fixed_cost_scenario_id=subscenarios.PROJECT_SPECIFIED_FIXED_COST_SCENARIO_ID,
-            project_portfolio_scenario_id=subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-            capacity_type=capacity_type,
-        )
+        AND period in (
+                  SELECT DISTINCT period
+                  FROM inputs_temporal
+                  WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+                  AND subproblem_id = {db_subproblem}
+               )
+        ;"""
     )
 
     return spec_project_params
