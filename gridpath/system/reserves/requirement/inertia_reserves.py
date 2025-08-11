@@ -14,7 +14,14 @@
 
 import csv
 import os.path
-from pyomo.environ import Param, Set, NonNegativeReals, PercentFraction, Expression
+from pyomo.environ import (
+    Param,
+    Set,
+    NonNegativeReals,
+    PercentFraction,
+    Reals,
+    Expression,
+)
 
 from gridpath.auxiliary.db_interface import directories_to_db_values
 
@@ -70,11 +77,11 @@ def add_model_components(
     )
 
     m.iner_prj_pwr_contribution = Param(
-        m.INER_BA_PRJ_CONTRIBUTION, within=PercentFraction, default=0
+        m.INER_BA_PRJ_CONTRIBUTION, within=Reals, default=0
     )
 
     m.iner_prj_cap_contribution = Param(
-        m.INER_BA_PRJ_CONTRIBUTION, within=PercentFraction, default=0
+        m.INER_BA_PRJ_CONTRIBUTION, within=Reals, default=0
     )
 
     def reserve_requirement_rule(mod, reserve_zone, tmp):
