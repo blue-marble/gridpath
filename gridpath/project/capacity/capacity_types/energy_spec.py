@@ -1,4 +1,4 @@
-# Copyright 2016-2024 Blue Marble Analytics LLC.
+# Copyright 2016-2025 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -77,9 +77,14 @@ def add_model_components(
     | The project's specified power capacity (in MW) in each operational      |
     | period. Defaults to infinity in if not specified.                       |
     +-------------------------------------------------------------------------+
+
+    +-------------------------------------------------------------------------+
+    | Optional Input Params                                                   |
+    +=========================================================================+
     | | :code:`gen_energy_fixed_cost_per_mw_yr`                               |
     | | *Defined over*: :code:`GEN_ENERGY_SPEC_OPR_PRDS`                      |
     | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`0`.                                                 |
     |                                                                         |
     | The project's fixed cost for the power components (in $ per             |
     | MW-yr.) in each operational period. This cost will be added to the      |
@@ -88,6 +93,7 @@ def add_model_components(
     | | :code:`gen_energy_fixed_cost_per_stor_mwh_yr`                              |
     | | *Defined over*: :code:`GEN_ENERGY_SPEC_OPR_PRDS`                      |
     | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`0`.                                                 |
     |                                                                         |
     | The project's fixed cost for the energy components (in $ per            |
     | MWh-yr.) in each operational period. This cost will be added to the     |
@@ -116,7 +122,7 @@ def add_model_components(
 
     # Any fixed costs associated with the energy purchased
     m.energy_spec_fixed_cost_per_energy_mwh_yr = Param(
-        m.GEN_ENERGY_SPEC_OPR_PRDS, within=NonNegativeReals
+        m.GEN_ENERGY_SPEC_OPR_PRDS, within=NonNegativeReals, default=0
     )
 
     m.fixed_cost_per_shaping_mw_yr = Param(
@@ -190,13 +196,6 @@ def load_model_data(
         "fixed_cost_per_energy_mwh_yr"
     ]
 
-    # TODO: it's ugly to handle the default 0 here; figure out how to pass
-    #  "no value" and default to the 0 per the model formulation
-    for k in spec_params_dict["shaping_capacity_mw"].keys():
-        if math.isnan(spec_params_dict["shaping_capacity_mw"][k]):
-            spec_params_dict["shaping_capacity_mw"][k] = 0
-        if math.isnan(spec_params_dict["fixed_cost_per_shaping_mw_yr"][k]):
-            spec_params_dict["fixed_cost_per_shaping_mw_yr"][k] = 0
     data_portal.data()["shaping_capacity_mw"] = spec_params_dict["shaping_capacity_mw"]
     data_portal.data()["fixed_cost_per_shaping_mw_yr"] = spec_params_dict[
         "fixed_cost_per_shaping_mw_yr"
