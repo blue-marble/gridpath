@@ -97,7 +97,7 @@ project_local_capacity_zone_scenario_id,NULL
 project_local_capacity_chars_scenario_id,NULL
 load_zone_market_scenario_id,NULL
 project_specified_capacity_scenario_id,2
-project_specified_fixed_cost_scenario_id,1
+project_specified_fixed_cost_scenario_id,NULL
 fuel_price_scenario_id,1
 project_new_cost_scenario_id,1
 project_new_potential_scenario_id,NULL

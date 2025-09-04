@@ -1,4 +1,4 @@
-# Copyright 2016-2023 Blue Marble Analytics LLC.
+# Copyright 2016-2025 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -99,9 +99,14 @@ def add_model_components(
     | The specified energy capacity (in MWh) of the project's storage         |
     | component in each operational period.                                   |
     +-------------------------------------------------------------------------+
+
+    +-------------------------------------------------------------------------+
+    | Optional Input Params                                                   |
+    +=========================================================================+
     | | :code:`gen_stor_hyb_spec_fixed_cost_per_mw_yr`                        |
     | | *Defined over*: :code:`GEN_STOR_HYB_SPEC_OPR_PRDS`                    |
     | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`0`.                                                 |
     |                                                                         |
     | The project's fixed cost (in $ per MW-yr.) in each operational period.  |
     | This cost will be added to the objective function but will not affect   |
@@ -111,6 +116,7 @@ def add_model_components(
     | | :code:`gen_stor_hyb_spec_hyb_gen_fixed_cost_per_mw_yr`                |
     | | *Defined over*: :code:`GEN_STOR_HYB_SPEC_OPR_PRDS`                    |
     | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`0`.                                                 |
     |                                                                         |
     | The project's fixed cost for its generator component (in $ per MW-yr.)  |
     | in each operational period.                                             |
@@ -120,6 +126,7 @@ def add_model_components(
     | | :code:`gen_stor_hyb_spec_hyb_stor_fixed_cost_per_mw_yr`               |
     | | *Defined over*: :code:`GEN_STOR_HYB_SPEC_OPR_PRDS`                    |
     | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`0`.                                                 |
     |                                                                         |
     | The project's fixed cost for its storage power component (in $ per      |
     | MW-yr.) in each operational period.                                     |
@@ -129,6 +136,7 @@ def add_model_components(
     | | :code:`gen_stor_hyb_spec_fixed_cost_per_stor_mwh_yr`                  |
     | | *Defined over*: :code:`GEN_STOR_HYB_SPEC_OPR_PRDS`                    |
     | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`0`.                                                 |
     |                                                                         |
     | The project's fixed cost for its storage energy component (in $ per     |
     | MWh-yr.) in each operational period.                                    |
@@ -165,19 +173,19 @@ def add_model_components(
 
     # Fixed cost
     m.gen_stor_hyb_spec_fixed_cost_per_mw_yr = Param(
-        m.GEN_STOR_HYB_SPEC_OPR_PRDS, within=NonNegativeReals
+        m.GEN_STOR_HYB_SPEC_OPR_PRDS, within=NonNegativeReals, default=0
     )
 
     m.gen_stor_hyb_spec_hyb_gen_fixed_cost_per_mw_yr = Param(
-        m.GEN_STOR_HYB_SPEC_OPR_PRDS, within=NonNegativeReals
+        m.GEN_STOR_HYB_SPEC_OPR_PRDS, within=NonNegativeReals, default=0
     )
 
     m.gen_stor_hyb_spec_hyb_stor_fixed_cost_per_mw_yr = Param(
-        m.GEN_STOR_HYB_SPEC_OPR_PRDS, within=NonNegativeReals
+        m.GEN_STOR_HYB_SPEC_OPR_PRDS, within=NonNegativeReals, default=0
     )
 
     m.gen_stor_hyb_spec_fixed_cost_per_stor_mwh_yr = Param(
-        m.GEN_STOR_HYB_SPEC_OPR_PRDS, within=NonNegativeReals
+        m.GEN_STOR_HYB_SPEC_OPR_PRDS, within=NonNegativeReals, default=0
     )
 
     # Dynamic Components
@@ -470,8 +478,8 @@ def validate_inputs(
         errors=validate_values(df, valid_numeric_columns, min=0),
     )
 
-    # Ensure project capacity & fixed cost is specified in at least 1 period
-    msg = "Expected specified capacity & fixed costs for at least one period."
+    # Ensure project capacity is specified in at least 1 period
+    msg = "Expected specified capacity for at least one period."
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
@@ -481,8 +489,7 @@ def validate_inputs(
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
-        db_table="inputs_project_specified_capacity, "
-        "inputs_project_specified_fixed_cost",
+        db_table="inputs_project_specified_capacity",
         severity="High",
         errors=validate_idxs(
             actual_idxs=spec_projects, req_idxs=projects, idx_label="project", msg=msg
@@ -490,7 +497,7 @@ def validate_inputs(
     )
 
     # Check for missing values (vs. missing row entries above)
-    cols = ["specified_capacity_mw", "fixed_cost_per_mw_yr"]
+    cols = ["specified_capacity_mw"]
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
@@ -500,8 +507,7 @@ def validate_inputs(
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
-        db_table="inputs_project_specified_capacity, "
-        "inputs_project_specified_fixed_cost",
+        db_table="inputs_project_specified_capacity",
         severity="High",
         errors=validate_missing_inputs(df, cols),
     )

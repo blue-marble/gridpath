@@ -1,34 +1,34 @@
 project	period	specified_capacity_mw	specified_energy_mwh	shaping_capacity_mw	hyb_gen_specified_capacity_mw	hyb_stor_specified_capacity_mw	specified_stor_capacity_mwh	fuel_production_capacity_fuelunitperhour	fuel_release_capacity_fuelunitperhour	fuel_storage_capacity_fuelunit	fixed_cost_per_mw_yr	fixed_cost_per_energy_mwh_yr	fixed_cost_per_shaping_mw_yr	hyb_gen_fixed_cost_per_mw_yr	hyb_stor_fixed_cost_per_mw_yr	fixed_cost_per_stor_mwh_yr	fuel_production_capacity_fixed_cost_per_fuelunitperhour_yr	fuel_release_capacity_fixed_cost_per_fuelunitperhour_yr	fuel_storage_capacity_fixed_cost_per_fuelunit_yr
-Nuclear	2020	6									0								
-Gas_CCGT	2020	6									0								
-Coal	2020	6									0								
-Gas_CT	2020	6									0								
-Wind	2020	2									0								
-Nuclear	2030	6									0								
-Gas_CCGT	2030	6									0								
-Coal	2030	6									0								
-Gas_CT	2030	6									0								
-Wind	2030	2									0								
-Nuclear_z2	2020	6									0								
-Gas_CCGT_z2	2020	6									0								
-Coal_z2	2020	6									0								
-Gas_CT_z2	2020	6									0								
-Wind_z2	2020	2									0								
-Nuclear_z2	2030	6									0								
-Gas_CCGT_z2	2030	6									0								
-Coal_z2	2030	6									0								
-Gas_CT_z2	2030	6									0								
-Wind_z2	2030	2									0								
-Hydro	2020	6									0								
-Hydro	2030	6									0								
-Hydro_NonCurtailable	2020	6									0								
-Hydro_NonCurtailable	2030	6									0								
-Disp_Binary_Commit	2020	6									0								
-Disp_Binary_Commit	2030	6									0								
-Disp_Cont_Commit	2020	6									0								
-Disp_Cont_Commit	2030	6									0								
-Disp_No_Commit	2020	6									0								
-Disp_No_Commit	2030	6									0								
+Nuclear	2020	6																	
+Gas_CCGT	2020	6																	
+Coal	2020	6																	
+Gas_CT	2020	6																	
+Wind	2020	2																	
+Nuclear	2030	6																	
+Gas_CCGT	2030	6																	
+Coal	2030	6																	
+Gas_CT	2030	6																	
+Wind	2030	2																	
+Nuclear_z2	2020	6																	
+Gas_CCGT_z2	2020	6																	
+Coal_z2	2020	6																	
+Gas_CT_z2	2020	6																	
+Wind_z2	2020	2																	
+Nuclear_z2	2030	6																	
+Gas_CCGT_z2	2030	6																	
+Coal_z2	2030	6																	
+Gas_CT_z2	2030	6																	
+Wind_z2	2030	2																	
+Hydro	2020	6																	
+Hydro	2030	6																	
+Hydro_NonCurtailable	2020	6																	
+Hydro_NonCurtailable	2030	6																	
+Disp_Binary_Commit	2020	6																	
+Disp_Binary_Commit	2030	6																	
+Disp_Cont_Commit	2020	6																	
+Disp_Cont_Commit	2030	6																	
+Disp_No_Commit	2020	6																	
+Disp_No_Commit	2030	6																	
 Clunky_Old_Gen	2020	10									1000								
 Clunky_Old_Gen	2030	10									1000								
 Clunky_Old_Gen2	2020	10									1000								
@@ -42,19 +42,19 @@ Wind_Battery_Hybrid	2030	6			5	1	4				1			0.5	0.3	0.2
 Fuel_Prod	2030							100	1000	10000							10	100	1000
 DAC	2020	1000									10								
 DAC	2030	1000									10								
-Flex_Load	2020	10									0								
-Flex_Load	2030	20									0								
-Hydro_System_Gen1	2020	100									0								
-Hydro_System_Gen1	2030	100									0								
-Energy_Spec	2020		1000	0								0							
-Energy_Spec	2030		1000	0								0							
-Energy_Hrz_Shaping	2020		1000	0								0							
-Energy_Hrz_Shaping	2030		1000	0								0							
-Energy_LF	2020		1000	0								0							
-Energy_LF	2030		1000	0								0							
-DSM_Load_Component_Modifier	2020	1									0								
-DSM_Load_Component_Modifier	2030	1									0								
-DSM_Load_Component_Shift	2020	1									0								
-DSM_Load_Component_Shift	2030	1									0								
-Gen_Simple_No_Load_Balance_Power	2020	100									0								
-Gen_Simple_No_Load_Balance_Power	2030	100									0								
+Flex_Load	2020	10																	
+Flex_Load	2030	20																	
+Hydro_System_Gen1	2020	100																	
+Hydro_System_Gen1	2030	100																	
+Energy_Spec	2020		1000	0															
+Energy_Spec	2030		1000									0							
+Energy_Hrz_Shaping	2020		1000									0							
+Energy_Hrz_Shaping	2030		1000	0															
+Energy_LF	2020		1000									0							
+Energy_LF	2030		1000	0															
+DSM_Load_Component_Modifier	2020	1																	
+DSM_Load_Component_Modifier	2030	1																	
+DSM_Load_Component_Shift	2020	1																	
+DSM_Load_Component_Shift	2030	1																	
+Gen_Simple_No_Load_Balance_Power	2020	100																	
+Gen_Simple_No_Load_Balance_Power	2030	100																	
