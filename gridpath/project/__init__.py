@@ -667,25 +667,6 @@ def validate_inputs(
         errors=validate_columns(df, "operational_type", valids=valid_op_types),
     )
 
-    # Check that all portfolio projects are present in the availability inputs
-    msg = (
-        "All projects in the portfolio should have an availability type "
-        "specified in the inputs_project_availability table."
-    )
-    write_validation_to_database(
-        conn=conn,
-        scenario_id=scenario_id,
-        weather_iteration=weather_iteration,
-        hydro_iteration=hydro_iteration,
-        availability_iteration=availability_iteration,
-        subproblem_id=subproblem,
-        stage_id=stage,
-        gridpath_module=__name__,
-        db_table="inputs_project_availability",
-        severity="High",
-        errors=validate_missing_inputs(df, "availability_type", msg=msg),
-    )
-
     # Check that all portfolio projects are present in the opchar inputs
     msg = (
         "All projects in the portfolio should have an operational type "

@@ -2,6 +2,6 @@ project	capacity_type	availability_type	operational_type	balancing_type_project	
 Batteries	stor_spec	exogenous	stor	week	0	0.0	Batteries	Zone1	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	0.92	0.92	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	RSG1	.	.
 Gas	gen_spec	exogenous	gen_simple	week	0	0.0	Gas	Zone1	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	RSG1	.	.
 Hybrid	gen_stor_hyb_spec	exogenous	gen_var_stor_hyb	week	0	0.0	Hybrid_Solar	Zone1	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	0.92	0.92	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.
-Hydro	gen_spec	exogenous	gen_hydro_must_take	week	0	0.0	Hydro	Zone1	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	RSG1	.	.
-Solar	gen_spec	exogenous	gen_var_must_take	week	0	0.0	Solar	Zone1	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.
-Wind	gen_spec	exogenous	gen_var_must_take	week	0	0.0	Wind	Zone1	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.
+Hydro	gen_spec	.	gen_hydro_must_take	week	0	0.0	Hydro	Zone1	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	RSG1	.	.
+Solar	gen_spec	.	gen_var_must_take	week	0	0.0	Solar	Zone1	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.
+Wind	gen_spec	.	gen_var_must_take	week	0	0.0	Wind	Zone1	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.

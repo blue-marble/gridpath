@@ -56,6 +56,11 @@ def add_model_components(
             + [DEFAULT_AVAILABILITY_TYPE]
         )
     )
+    # Remove "." (i.e. projects with no availability type specified,
+    # which will default to the default availability type, "exogenous")
+    required_availability_modules = [
+        r for r in required_availability_modules if r != "."
+    ]
 
     imported_availability_modules = load_availability_type_modules(
         required_availability_modules
@@ -201,6 +206,12 @@ def load_model_data(
             + [DEFAULT_AVAILABILITY_TYPE]
         )
     )
+    # Remove "." (i.e. projects with no availability type specified,
+    # which will default to the default availability type, "exogenous")
+    required_availability_modules = [
+        r for r in required_availability_modules if r != "."
+    ]
+
     imported_availability_modules = load_availability_type_modules(
         required_availability_modules
     )
@@ -278,6 +289,12 @@ def export_results(
             + [DEFAULT_AVAILABILITY_TYPE]
         )
     )
+    # Remove "." (i.e. projects with no availability type specified,
+    # which will default to the default availability type, "exogenous")
+    required_availability_modules = [
+        r for r in required_availability_modules if r != "."
+    ]
+
     imported_availability_modules = load_availability_type_modules(
         required_availability_modules
     )
@@ -394,11 +411,12 @@ def get_required_availability_type_modules(scenario_id, conn):
         )
     ).fetchone()[0]
 
-    required_availability_type_modules = set(
-        [
-            p[0]
-            for p in c.execute(
-                """SELECT DISTINCT availability_type 
+    required_availability_type_modules = list(
+        set(
+            [
+                p[0]
+                for p in c.execute(
+                    """SELECT DISTINCT availability_type 
             FROM 
             (SELECT project FROM inputs_project_portfolios
             WHERE project_portfolio_scenario_id = {}) as prj_tbl
@@ -407,11 +425,18 @@ def get_required_availability_type_modules(scenario_id, conn):
             FROM inputs_project_availability
             WHERE project_availability_scenario_id = {}) as av_type_tbl
             USING (project)""".format(
-                    project_portfolio_scenario_id, project_availability_scenario_id
-                )
-            ).fetchall()
-        ]
-        + [DEFAULT_AVAILABILITY_TYPE]
+                        project_portfolio_scenario_id, project_availability_scenario_id
+                    )
+                ).fetchall()
+            ]
+            + [DEFAULT_AVAILABILITY_TYPE]
+        )
     )
+
+    # Remove None (i.e. projects with no availability type specified,
+    # which will default to the default availability type, "exogenous")
+    required_availability_type_modules = [
+        r for r in required_availability_type_modules if r is not None
+    ]
 
     return required_availability_type_modules
