@@ -411,27 +411,33 @@ def get_required_availability_type_modules(scenario_id, conn):
         )
     ).fetchone()[0]
 
-    required_availability_type_modules = list(
-        set(
-            [
-                p[0]
-                for p in c.execute(
-                    """SELECT DISTINCT availability_type 
-            FROM 
-            (SELECT project FROM inputs_project_portfolios
-            WHERE project_portfolio_scenario_id = {}) as prj_tbl
-            LEFT OUTER JOIN
-            (SELECT project, availability_type
-            FROM inputs_project_availability
-            WHERE project_availability_scenario_id = {}) as av_type_tbl
-            USING (project)""".format(
-                        project_portfolio_scenario_id, project_availability_scenario_id
-                    )
-                ).fetchall()
-            ]
-            + [DEFAULT_AVAILABILITY_TYPE]
+    if project_availability_scenario_id is not None:
+        required_availability_type_modules = list(
+            set(
+                [
+                    p[0]
+                    for p in c.execute(
+                        """SELECT DISTINCT availability_type 
+                FROM 
+                (SELECT project FROM inputs_project_portfolios
+                WHERE project_portfolio_scenario_id = {}) as prj_tbl
+                LEFT OUTER JOIN
+                (SELECT project, availability_type
+                FROM inputs_project_availability
+                WHERE project_availability_scenario_id = {}) as av_type_tbl
+                USING (project)""".format(
+                            project_portfolio_scenario_id,
+                            project_availability_scenario_id,
+                        )
+                    ).fetchall()
+                ]
+                + [DEFAULT_AVAILABILITY_TYPE]
+            )
         )
-    )
+    else:
+        # If no project availability scenario is specified, then we only use
+        # the default availability type module
+        required_availability_type_modules = [DEFAULT_AVAILABILITY_TYPE]
 
     # Remove None (i.e. projects with no availability type specified,
     # which will default to the default availability type, "exogenous")
