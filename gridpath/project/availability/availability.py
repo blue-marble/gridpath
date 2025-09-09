@@ -19,7 +19,7 @@ from gridpath.auxiliary.auxiliary import (
     load_subtype_modules,
 )
 from gridpath.common_functions import create_results_df
-from gridpath.project import PROJECT_TIMEPOINT_DF
+from gridpath.project import PROJECT_TIMEPOINT_DF, DEFAULT_AVAILABILITY_TYPE
 
 
 def add_model_components(
@@ -39,15 +39,29 @@ def add_model_components(
     :return:
     """
     # Import needed availability type modules
-    required_availability_modules = get_required_subtype_modules(
-        scenario_directory=scenario_directory,
-        weather_iteration=weather_iteration,
-        hydro_iteration=hydro_iteration,
-        availability_iteration=availability_iteration,
-        subproblem=subproblem,
-        stage=stage,
-        which_type="availability_type",
+
+    required_availability_modules = list(
+        set(
+            list(
+                get_required_subtype_modules(
+                    scenario_directory=scenario_directory,
+                    weather_iteration=weather_iteration,
+                    hydro_iteration=hydro_iteration,
+                    availability_iteration=availability_iteration,
+                    subproblem=subproblem,
+                    stage=stage,
+                    which_type="availability_type",
+                )
+            )
+            + [DEFAULT_AVAILABILITY_TYPE]
+        )
     )
+    # Remove "." (i.e. projects with no availability type specified,
+    # which will default to the default availability type, "exogenous")
+    required_availability_modules = [
+        r for r in required_availability_modules if r != "."
+    ]
+
     imported_availability_modules = load_availability_type_modules(
         required_availability_modules
     )
@@ -131,11 +145,8 @@ def write_model_inputs(
 
     Get inputs from database and write out the model input .tab files
     """
-    c = conn.cursor()
-    # Load in the required capacity type modules
-
     required_availability_type_modules = get_required_availability_type_modules(
-        scenario_id, c
+        scenario_id, conn
     )
 
     imported_availability_type_modules = load_availability_type_modules(
@@ -179,15 +190,28 @@ def load_model_data(
     :param stage:
     :return:
     """
-    required_availability_modules = get_required_subtype_modules(
-        scenario_directory=scenario_directory,
-        weather_iteration=weather_iteration,
-        hydro_iteration=hydro_iteration,
-        availability_iteration=availability_iteration,
-        subproblem=subproblem,
-        stage=stage,
-        which_type="availability_type",
+    required_availability_modules = list(
+        set(
+            list(
+                get_required_subtype_modules(
+                    scenario_directory=scenario_directory,
+                    weather_iteration=weather_iteration,
+                    hydro_iteration=hydro_iteration,
+                    availability_iteration=availability_iteration,
+                    subproblem=subproblem,
+                    stage=stage,
+                    which_type="availability_type",
+                )
+            )
+            + [DEFAULT_AVAILABILITY_TYPE]
+        )
     )
+    # Remove "." (i.e. projects with no availability type specified,
+    # which will default to the default availability type, "exogenous")
+    required_availability_modules = [
+        r for r in required_availability_modules if r != "."
+    ]
+
     imported_availability_modules = load_availability_type_modules(
         required_availability_modules
     )
@@ -249,15 +273,28 @@ def export_results(
     getattr(d, PROJECT_TIMEPOINT_DF).update(results_df)
 
     # Module-specific availability results
-    required_availability_modules = get_required_subtype_modules(
-        scenario_directory=scenario_directory,
-        weather_iteration=weather_iteration,
-        hydro_iteration=hydro_iteration,
-        availability_iteration=availability_iteration,
-        subproblem=subproblem,
-        stage=stage,
-        which_type="availability_type",
+    required_availability_modules = list(
+        set(
+            list(
+                get_required_subtype_modules(
+                    scenario_directory=scenario_directory,
+                    weather_iteration=weather_iteration,
+                    hydro_iteration=hydro_iteration,
+                    availability_iteration=availability_iteration,
+                    subproblem=subproblem,
+                    stage=stage,
+                    which_type="availability_type",
+                )
+            )
+            + [DEFAULT_AVAILABILITY_TYPE]
+        )
     )
+    # Remove "." (i.e. projects with no availability type specified,
+    # which will default to the default availability type, "exogenous")
+    required_availability_modules = [
+        r for r in required_availability_modules if r != "."
+    ]
+
     imported_availability_modules = load_availability_type_modules(
         required_availability_modules
     )
@@ -300,16 +337,16 @@ def validate_inputs(
     :return:
     """
     # Load in the required operational modules
-    c = conn.cursor()
-
-    required_opchar_modules = get_required_availability_type_modules(scenario_id, c)
+    required_availability_modules = get_required_availability_type_modules(
+        scenario_id, conn
+    )
 
     imported_operational_modules = load_availability_type_modules(
-        required_opchar_modules
+        required_availability_modules
     )
 
     # Validate module-specific inputs
-    for op_m in required_opchar_modules:
+    for op_m in required_availability_modules:
         if hasattr(imported_operational_modules[op_m], "validate_inputs"):
             imported_operational_modules[op_m].validate_inputs(
                 scenario_id,
@@ -338,7 +375,7 @@ def load_availability_type_modules(required_availability_types):
     )
 
 
-def get_required_availability_type_modules(scenario_id, c):
+def get_required_availability_type_modules(scenario_id, conn):
     """
     :param scenario_id: user-specified scenario ID
     :param c: database cursor
@@ -350,12 +387,13 @@ def get_required_availability_type_modules(scenario_id, c):
     based on the project_availability_scenario_id of the scenario_id.
 
     This list will be used to know for which availability type submodules we
-    should validate inputs, get inputs from database , or save results to
+    should validate inputs, get inputs from database, or save results to
     database.
 
     Note: once we have determined the dynamic components, this information
     will also be stored in the DynamicComponents class object.
     """
+    c = conn.cursor()
 
     project_portfolio_scenario_id = c.execute(
         """SELECT project_portfolio_scenario_id 
@@ -373,21 +411,38 @@ def get_required_availability_type_modules(scenario_id, c):
         )
     ).fetchone()[0]
 
-    required_availability_type_modules = [
-        p[0]
-        for p in c.execute(
-            """SELECT DISTINCT availability_type 
-            FROM 
-            (SELECT project FROM inputs_project_portfolios
-            WHERE project_portfolio_scenario_id = {}) as prj_tbl
-            INNER JOIN 
-            (SELECT project, availability_type
-            FROM inputs_project_availability
-            WHERE project_availability_scenario_id = {}) as av_type_tbl
-            USING (project)""".format(
-                project_portfolio_scenario_id, project_availability_scenario_id
+    if project_availability_scenario_id is not None:
+        required_availability_type_modules = list(
+            set(
+                [
+                    p[0]
+                    for p in c.execute(
+                        """SELECT DISTINCT availability_type 
+                FROM 
+                (SELECT project FROM inputs_project_portfolios
+                WHERE project_portfolio_scenario_id = {}) as prj_tbl
+                LEFT OUTER JOIN
+                (SELECT project, availability_type
+                FROM inputs_project_availability
+                WHERE project_availability_scenario_id = {}) as av_type_tbl
+                USING (project)""".format(
+                            project_portfolio_scenario_id,
+                            project_availability_scenario_id,
+                        )
+                    ).fetchall()
+                ]
+                + [DEFAULT_AVAILABILITY_TYPE]
             )
-        ).fetchall()
+        )
+    else:
+        # If no project availability scenario is specified, then we only use
+        # the default availability type module
+        required_availability_type_modules = [DEFAULT_AVAILABILITY_TYPE]
+
+    # Remove None (i.e. projects with no availability type specified,
+    # which will default to the default availability type, "exogenous")
+    required_availability_type_modules = [
+        r for r in required_availability_type_modules if r is not None
     ]
 
     return required_availability_type_modules

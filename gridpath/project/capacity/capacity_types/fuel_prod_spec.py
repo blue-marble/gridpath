@@ -1,4 +1,4 @@
-# Copyright 2016-2023 Blue Marble Analytics LLC.
+# Copyright 2016-2025 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -91,9 +91,14 @@ def add_model_components(
     | The project's specified fuel storage capacity (in fuel units, e.g.      |
     | MMBtu) in each operational period.                                      |
     +-------------------------------------------------------------------------+
+
+    +-------------------------------------------------------------------------+
+    | Optional Input Params                                                   |
+    +=========================================================================+
     | | :code:`fuel_production_capacity_fixed_cost_per_fuelunitperhour_yr`    |
     | | *Defined over*: :code:`FUEL_SPEC_OPR_PRDS`                            |
     | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`0`.                                                 |
     |                                                                         |
     | The project's fixed cost for the fuel production components (in $ per   |
     | FuelUnitPerHour-yr.) in each operational period. This cost will be      |
@@ -103,6 +108,7 @@ def add_model_components(
     | | :code:`fuel_release_capacity_fixed_cost_per_fuelunitperhour_yr`       |
     | | *Defined over*: :code:`FUEL_SPEC_OPR_PRDS`                            |
     | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`0`.                                                 |
     |                                                                         |
     | The project's fixed cost for the fuel release components (in $ per      |
     | FuelUnitPerHour-yr.) in each operational period. This cost will be      |
@@ -112,6 +118,7 @@ def add_model_components(
     | | :code:`fuel_storage_capacity_fixed_cost_per_fuelunit_yr`              |
     | | *Defined over*: :code:`FUEL_SPEC_OPR_PRDS`                            |
     | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`0`.                                                 |
     |                                                                         |
     | The project's fixed cost for the energy components (in $ per            |
     | FuelUnit-yr.) in each operational period. This cost will be added to    |
@@ -136,15 +143,15 @@ def add_model_components(
     )
 
     m.fuel_production_capacity_fixed_cost_per_fuelunitperhour_yr = Param(
-        m.FUEL_SPEC_OPR_PRDS, within=NonNegativeReals
+        m.FUEL_SPEC_OPR_PRDS, within=NonNegativeReals, default=0
     )
 
     m.fuel_release_capacity_fixed_cost_per_fuelunitperhour_yr = Param(
-        m.FUEL_SPEC_OPR_PRDS, within=NonNegativeReals
+        m.FUEL_SPEC_OPR_PRDS, within=NonNegativeReals, default=0
     )
 
     m.fuel_storage_capacity_fixed_cost_per_fuelunit_yr = Param(
-        m.FUEL_SPEC_OPR_PRDS, within=NonNegativeReals
+        m.FUEL_SPEC_OPR_PRDS, within=NonNegativeReals, default=0
     )
 
     # Dynamic Components
@@ -274,7 +281,10 @@ def get_model_inputs_from_database(
     :return:
     """
     spec_params = spec_get_inputs_from_database(
-        conn=conn, subscenarios=subscenarios, capacity_type="fuel_prod_spec"
+        conn=conn,
+        subscenarios=subscenarios,
+        subproblem=subproblem,
+        capacity_type="fuel_prod_spec",
     )
 
     return spec_params
@@ -412,7 +422,7 @@ def validate_inputs(
     )
 
     # Ensure project capacity & fixed cost is specified in at least 1 period
-    msg = "Expected specified capacity & fixed costs for at least one period."
+    msg = "Expected specified capacity for at least one period."
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
@@ -422,8 +432,7 @@ def validate_inputs(
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
-        db_table="inputs_project_specified_capacity, "
-        "inputs_project_specified_fixed_cost",
+        db_table="inputs_project_specified_capacity",
         severity="High",
         errors=validate_idxs(
             actual_idxs=spec_projects, req_idxs=projects, idx_label="project", msg=msg
@@ -445,8 +454,7 @@ def validate_inputs(
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
-        db_table="inputs_project_specified_capacity, "
-        "inputs_project_specified_fixed_cost",
+        db_table="inputs_project_specified_capacity",
         severity="High",
         errors=validate_missing_inputs(df, cols),
     )

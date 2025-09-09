@@ -249,6 +249,15 @@ def load_model_data(
     :return:
     """
     # Figure out which projects have this availability type
+    # Check the 'exogenous' is the default availability type
+    from gridpath.project import DEFAULT_AVAILABILITY_TYPE
+
+    if DEFAULT_AVAILABILITY_TYPE != "exogenous":
+        raise Exception(
+            "The exogenous availability type must be the default."
+            "The 'exogenous' availabilty type assumes this in determing inputs."
+        )
+
     project_subset = determine_project_subset(
         scenario_directory=scenario_directory,
         weather_iteration=weather_iteration,
@@ -258,6 +267,17 @@ def load_model_data(
         stage=stage,
         column="availability_type",
         type="exogenous",
+        prj_or_tx="project",
+    ) + determine_project_subset(
+        scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        column="availability_type",
+        type=".",  # Projects without availabilty type specified default to
+        # exogenous
         prj_or_tx="project",
     )
 

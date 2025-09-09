@@ -157,39 +157,45 @@ def add_model_components(
     # Constraints on total transactions across all markets (e.g., a total
     # import limit or total sales limit in a timepoint)
     def total_purchases_in_prd_constraint_rule(mod, prd):
-        return (
-            sum(
-                mod.Total_Net_Market_Purchased_Power[market, tmp]
-                * mod.hrs_in_tmp[tmp]
-                * mod.tmp_weight[tmp]
-                for market in mod.MARKETS
-                for tmp in mod.TMPS_IN_PRD[prd]
+        if mod.max_total_net_market_purchases_in_prd[prd] == Infinity:
+            return Constraint.Skip
+        else:
+            return (
+                sum(
+                    mod.Total_Net_Market_Purchased_Power[market, tmp]
+                    * mod.hrs_in_tmp[tmp]
+                    * mod.tmp_weight[tmp]
+                    for market in mod.MARKETS
+                    for tmp in mod.TMPS_IN_PRD[prd]
+                )
+                <= mod.max_total_net_market_purchases_in_prd[prd]
             )
-            <= mod.max_total_net_market_purchases_in_prd[prd]
-        )
 
     m.Total_Purchases_in_Prd_Constraint = Constraint(
         m.PERIODS, rule=total_purchases_in_prd_constraint_rule
     )
 
     def total_sales_in_prd_constraint_rule(mod, prd):
-        return sum(
-            mod.Total_Net_Market_Purchased_Power[market, tmp]
-            * mod.hrs_in_tmp[tmp]
-            * mod.tmp_weight[tmp]
-            for market in mod.MARKETS
-            for tmp in mod.TMPS_IN_PRD[prd]
-        ) >= -mod.max_total_net_market_sales_in_prd[
-            prd
-        ] + mod.max_total_net_market_sales_in_prd_include_storage_losses[
-            prd
-        ] * sum(
-            (mod.Stor_Charge_MW[prj, tmp] - mod.Stor_Discharge_MW[prj, tmp])
-            * mod.hrs_in_tmp[tmp]
-            * mod.tmp_weight[tmp]
-            for (prj, tmp) in mod.PRJ_OPR_TMPS
-            if mod.operational_type[prj] == "stor" and tmp in mod.TMPS_IN_PRD[prd]
-        )
+        if mod.max_total_net_market_sales_in_prd[prd] == Infinity:
+            return Constraint.Skip
+        else:
+            return sum(
+                mod.Total_Net_Market_Purchased_Power[market, tmp]
+                * mod.hrs_in_tmp[tmp]
+                * mod.tmp_weight[tmp]
+                for market in mod.MARKETS
+                for tmp in mod.TMPS_IN_PRD[prd]
+            ) >= -mod.max_total_net_market_sales_in_prd[
+                prd
+            ] + mod.max_total_net_market_sales_in_prd_include_storage_losses[
+                prd
+            ] * sum(
+                (mod.Stor_Charge_MW[prj, tmp] - mod.Stor_Discharge_MW[prj, tmp])
+                * mod.hrs_in_tmp[tmp]
+                * mod.tmp_weight[tmp]
+                for (prj, tmp) in mod.PRJ_OPR_TMPS
+                if mod.operational_type[prj] == "stor" and tmp in mod.TMPS_IN_PRD[prd]
+            )
 
     m.Aggregate_Sales_in_Prd_Constraint = Constraint(
         m.PERIODS, rule=total_sales_in_prd_constraint_rule
@@ -368,6 +374,7 @@ def get_inputs_from_database(
             SELECT timepoint
             FROM inputs_temporal
             WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+            AND subproblem_id = {subproblem}
         )
         ;
     """
@@ -384,7 +391,7 @@ def get_inputs_from_database(
         AND period in (
             SELECT period
             FROM inputs_temporal_periods
-            WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID} 
+            WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
         )
         ;
     """

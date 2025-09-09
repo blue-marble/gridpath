@@ -179,6 +179,26 @@ Feature modules include:
 .. automodule:: gridpath.system.reserves.balance.spinning_reserves
     :members:
 .. automodule:: gridpath.objective.system.reserve_violation_penalties.spinning_reserves
+
+
+Inertia Reserves
+^^^^^^^^^^^^^^^^^
+Whether or not to model spinning reserves.
+
+Feature modules include:
+.. automodule:: gridpath.geography.inertia_reserves_balancing_areas
+    :members:
+.. automodule:: gridpath.system.reserves.requirement.inertia_reserves
+    :members:
+.. automodule:: gridpath.project.operations.reserves.inertia_reserves
+    :members:
+.. automodule:: gridpath.project.operations.reserves.op_type_dependent.inertia_reserves
+    :members:
+.. automodule:: gridpath.system.reserves.aggregation.inertia_reserves
+    :members:
+.. automodule:: gridpath.system.reserves.balance.inertia_reserves
+    :members:
+.. automodule:: gridpath.objective.system.reserve_violation_penalties.inertia_reserves
     :members:
 
 

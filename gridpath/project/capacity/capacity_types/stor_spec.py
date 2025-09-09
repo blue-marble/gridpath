@@ -1,4 +1,4 @@
-# Copyright 2016-2023 Blue Marble Analytics LLC.
+# Copyright 2016-2025 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -100,9 +100,14 @@ def add_model_components(
     | The storage project's specified energy capacity (in MWh) in each        |
     | operational period.                                                     |
     +-------------------------------------------------------------------------+
+
+    +-------------------------------------------------------------------------+
+    | Optional Input Params                                                   |
+    +=========================================================================+
     | | :code:`stor_spec_fixed_cost_per_mw_yr`                                |
     | | *Defined over*: :code:`STOR_SPEC_OPR_PRDS`                            |
     | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`0`.                                                 |
     |                                                                         |
     | The storage project's fixed cost for the power components (in $ per     |
     | MW-yr.) in each operational period. This cost will be added to the      |
@@ -111,6 +116,7 @@ def add_model_components(
     | | :code:`stor_spec_fixed_cost_per_stor_mwh_yr`                          |
     | | *Defined over*: :code:`STOR_SPEC_OPR_PRDS`                            |
     | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`0`.                                                 |
     |                                                                         |
     | The storage project's fixed cost for the energy components (in $ per    |
     | MWh-yr.) in each operational period. This cost will be added to the     |
@@ -134,11 +140,11 @@ def add_model_components(
     )
 
     m.stor_spec_fixed_cost_per_mw_yr = Param(
-        m.STOR_SPEC_OPR_PRDS, within=NonNegativeReals
+        m.STOR_SPEC_OPR_PRDS, within=NonNegativeReals, default=0
     )
 
     m.stor_spec_fixed_cost_per_stor_mwh_yr = Param(
-        m.STOR_SPEC_OPR_PRDS, within=NonNegativeReals
+        m.STOR_SPEC_OPR_PRDS, within=NonNegativeReals, default=0
     )
 
     # Dynamic Components
@@ -251,7 +257,10 @@ def get_model_inputs_from_database(
     :return:
     """
     spec_params = spec_get_inputs_from_database(
-        conn=conn, subscenarios=subscenarios, capacity_type="stor_spec"
+        conn=conn,
+        subscenarios=subscenarios,
+        subproblem=subproblem,
+        capacity_type="stor_spec",
     )
     return spec_params
 
@@ -387,8 +396,8 @@ def validate_inputs(
         errors=validate_values(df, valid_numeric_columns, min=0),
     )
 
-    # Ensure project capacity & fixed cost is specified in at least 1 period
-    msg = "Expected specified capacity & fixed costs for at least one period."
+    # Ensure project capacity is specified in at least 1 period
+    msg = "Expected specified capacity for at least one period."
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
@@ -398,8 +407,7 @@ def validate_inputs(
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
-        db_table="inputs_project_specified_capacity, "
-        "inputs_project_specified_fixed_cost",
+        db_table="inputs_project_specified_capacity",
         severity="High",
         errors=validate_idxs(
             actual_idxs=spec_projects, req_idxs=projects, idx_label="project", msg=msg
@@ -409,8 +417,6 @@ def validate_inputs(
     # Check for missing values (vs. missing row entries above)
     cols = [
         "specified_capacity_mw",
-        "fixed_cost_per_mw_yr",
-        "fixed_cost_per_stor_mwh_yr",
     ]
     write_validation_to_database(
         conn=conn,
@@ -421,8 +427,7 @@ def validate_inputs(
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
-        db_table="inputs_project_specified_capacity, "
-        "inputs_project_specified_fixed_cost",
+        db_table="inputs_project_specified_capacity",
         severity="High",
         errors=validate_missing_inputs(df, cols),
     )

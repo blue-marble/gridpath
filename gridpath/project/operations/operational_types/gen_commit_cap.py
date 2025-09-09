@@ -1403,6 +1403,14 @@ def power_delta_rule(mod, g, tmp):
         )
 
 
+def capacity_providing_inertia_rule(mod, g, tmp):
+    """
+    Capacity providing inertia for GEN_VAR project is equal to the online
+    capacity
+    """
+    return mod.Commit_Capacity_MW[g, tmp]
+
+
 def fix_commitment(mod, g, tmp):
     """
     Fix committed capacity based on number of committed units and unit size

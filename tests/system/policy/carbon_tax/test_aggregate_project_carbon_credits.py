@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
+from collections import OrderedDict
 from importlib import import_module
 import os.path
 import sys
@@ -143,6 +143,53 @@ class TestCarbonTaxPurchaseCredits(unittest.TestCase):
             ]
         )
         self.assertListEqual(expected_zone_mapping, actual_zone_mapping)
+        # Param: purchase_credit_min_fraction
+        expected_credit_min = OrderedDict(
+            sorted(
+                {
+                    ("Carbon_Tax_Zone1", 2020): float("inf"),
+                    ("Carbon_Tax_Zone1", 2030): float("inf"),
+                    ("Carbon_Tax_Zone2", 2020): float("inf"),
+                    ("Carbon_Tax_Zone2", 2030): float("inf"),
+                }.items()
+            )
+        )
+        actual_credit_min = OrderedDict(
+            sorted(
+                {
+                    (tax_z, prd): instance.purchase_credit_min_fraction[tax_z, prd]
+                    for (
+                        tax_z,
+                        prd,
+                    ) in instance.CARBON_TAX_ZONE_PERIODS_WITH_CARBON_TAX
+                }.items()
+            )
+        )
+        self.assertDictEqual(expected_credit_min, actual_credit_min)
+
+        # Param: purchase_credit_max_fraction
+        expected_credit_max = OrderedDict(
+            sorted(
+                {
+                    ("Carbon_Tax_Zone1", 2020): 0.5,
+                    ("Carbon_Tax_Zone1", 2030): 0.5,
+                    ("Carbon_Tax_Zone2", 2020): 0.5,
+                    ("Carbon_Tax_Zone2", 2030): 0.5,
+                }.items()
+            )
+        )
+        actual_credit_max = OrderedDict(
+            sorted(
+                {
+                    (tax_z, prd): instance.purchase_credit_max_fraction[tax_z, prd]
+                    for (
+                        tax_z,
+                        prd,
+                    ) in instance.CARBON_TAX_ZONE_PERIODS_WITH_CARBON_TAX
+                }.items()
+            )
+        )
+        self.assertDictEqual(expected_credit_max, actual_credit_max)
 
 
 if __name__ == "__main__":

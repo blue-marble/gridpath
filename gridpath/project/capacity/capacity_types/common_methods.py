@@ -1,4 +1,4 @@
-# Copyright 2016-2023 Blue Marble Analytics LLC.
+# Copyright 2016-2025 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import csv
+import numpy as np
 import os.path
 import pandas as pd
 
@@ -127,14 +128,16 @@ def project_vintages_relevant_in_period(
 
 
 # Specified projects common functions
-def spec_get_inputs_from_database(conn, subscenarios, capacity_type):
+def spec_get_inputs_from_database(conn, subscenarios, subproblem, capacity_type):
     """
     Get the various capacity and fixed cost parameters for projects with
     "specified" capacity types.
     """
+    db_subproblem = subproblem if subproblem != "" else 1
+
     c = conn.cursor()
     spec_project_params = c.execute(
-        """
+        f"""
         SELECT project,
         period,
         specified_capacity_mw,
@@ -159,7 +162,7 @@ def spec_get_inputs_from_database(conn, subscenarios, capacity_type):
         CROSS JOIN
         (SELECT period
         FROM inputs_temporal_periods
-        WHERE temporal_scenario_id = {temporal_scenario_id}) as relevant_periods
+        WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}) as relevant_periods
         INNER JOIN
         (SELECT project, period,
         specified_capacity_mw,
@@ -172,9 +175,9 @@ def spec_get_inputs_from_database(conn, subscenarios, capacity_type):
         fuel_release_capacity_fuelunitperhour,
         fuel_storage_capacity_fuelunit
         FROM inputs_project_specified_capacity
-        WHERE project_specified_capacity_scenario_id = {project_specified_capacity_scenario_id}) as capacity
+        WHERE project_specified_capacity_scenario_id = {subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID}) as capacity
         USING (project, period)
-        INNER JOIN
+        LEFT JOIN -- operational periods are based on capacity; fixed costs are optional
         (SELECT project, period,
         fixed_cost_per_mw_yr, fixed_cost_per_energy_mwh_yr, 
         fixed_cost_per_shaping_mw_yr,
@@ -185,17 +188,17 @@ def spec_get_inputs_from_database(conn, subscenarios, capacity_type):
         fuel_production_capacity_fixed_cost_per_fuelunitperhour_yr,
         fuel_storage_capacity_fixed_cost_per_fuelunit_yr
         FROM inputs_project_specified_fixed_cost
-        WHERE project_specified_fixed_cost_scenario_id = {project_specified_fixed_cost_scenario_id}) as fixed_om
+        WHERE project_specified_fixed_cost_scenario_id = {subscenarios.PROJECT_SPECIFIED_FIXED_COST_SCENARIO_ID}) as fixed_om
         USING (project, period)
-        WHERE project_portfolio_scenario_id = {project_portfolio_scenario_id}
+        WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
         AND capacity_type = '{capacity_type}'
-        ;""".format(
-            temporal_scenario_id=subscenarios.TEMPORAL_SCENARIO_ID,
-            project_specified_capacity_scenario_id=subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID,
-            project_specified_fixed_cost_scenario_id=subscenarios.PROJECT_SPECIFIED_FIXED_COST_SCENARIO_ID,
-            project_portfolio_scenario_id=subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-            capacity_type=capacity_type,
-        )
+        AND period in (
+                  SELECT DISTINCT period
+                  FROM inputs_temporal
+                  WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+                  AND subproblem_id = {db_subproblem}
+               )
+        ;"""
     )
 
     return spec_project_params
@@ -405,24 +408,24 @@ def spec_determine_inputs(
     ):
         if row[0] in project_list:
             project_period_list.append((row[0], row[1]))
-            spec_capacity_mw_dict[(row[0], row[1])] = float(row[2])
-            specified_energy_mwh_dict[(row[0], row[1])] = float(row[3])
-            shaping_capacity_mw_dict[(row[0], row[1])] = float(row[4])
-            hyb_gen_spec_capacity_mw_dict[(row[0], row[1])] = float(row[5])
-            hyb_stor_spec_capacity_mw_dict[(row[0], row[1])] = float(row[6])
-            spec_capacity_mwh_dict[(row[0], row[1])] = float(row[7])
-            spec_fuel_prod_cap_dict[(row[0], row[1])] = float(row[8])
-            spec_fuel_rel_cap_dict[(row[0], row[1])] = float(row[9])
-            spec_fuel_stor_cap_dict[(row[0], row[1])] = float(row[10])
-            spec_fixed_cost_per_mw_yr_dict[(row[0], row[1])] = float(row[11])
-            fixed_cost_per_energy_mwh_yr_dict[(row[0], row[1])] = float(row[12])
-            fixed_cost_per_shaping_mw_yr_dict[(row[0], row[1])] = float(row[13])
-            hyb_gen_spec_fixed_cost_per_mw_yr_dict[(row[0], row[1])] = float(row[14])
-            hyb_stor_spec_fixed_cost_per_mw_yr_dict[(row[0], row[1])] = float(row[15])
-            spec_fixed_cost_per_stor_mwh_yr_dict[(row[0], row[1])] = float(row[16])
-            spec_fuel_prod_fixed_cost_dict[(row[0], row[1])] = float(row[17])
-            spec_fuel_rel_fixed_cost_dict[(row[0], row[1])] = float(row[18])
-            spec_fuel_stor_fixed_cost_dict[(row[0], row[1])] = float(row[19])
+            spec_capacity_mw_dict[(row[0], row[1])] = row[2]
+            specified_energy_mwh_dict[(row[0], row[1])] = row[3]
+            shaping_capacity_mw_dict[(row[0], row[1])] = row[4]
+            hyb_gen_spec_capacity_mw_dict[(row[0], row[1])] = row[5]
+            hyb_stor_spec_capacity_mw_dict[(row[0], row[1])] = row[6]
+            spec_capacity_mwh_dict[(row[0], row[1])] = row[7]
+            spec_fuel_prod_cap_dict[(row[0], row[1])] = row[8]
+            spec_fuel_rel_cap_dict[(row[0], row[1])] = row[9]
+            spec_fuel_stor_cap_dict[(row[0], row[1])] = row[10]
+            spec_fixed_cost_per_mw_yr_dict[(row[0], row[1])] = row[11]
+            fixed_cost_per_energy_mwh_yr_dict[(row[0], row[1])] = row[12]
+            fixed_cost_per_shaping_mw_yr_dict[(row[0], row[1])] = row[13]
+            hyb_gen_spec_fixed_cost_per_mw_yr_dict[(row[0], row[1])] = row[14]
+            hyb_stor_spec_fixed_cost_per_mw_yr_dict[(row[0], row[1])] = row[15]
+            spec_fixed_cost_per_stor_mwh_yr_dict[(row[0], row[1])] = row[16]
+            spec_fuel_prod_fixed_cost_dict[(row[0], row[1])] = row[17]
+            spec_fuel_rel_fixed_cost_dict[(row[0], row[1])] = row[18]
+            spec_fuel_stor_fixed_cost_dict[(row[0], row[1])] = row[19]
 
     # Quick check that all relevant projects from projects.tab have capacity
     # params specified
@@ -431,34 +434,55 @@ def spec_determine_inputs(
 
     if diff:
         raise ValueError(
-            "Missing capacity/fixed cost inputs for the "
-            "following projects: {}".format(diff)
+            "Missing capacity inputs for the following projects: {}".format(diff)
         )
+
+    # For fixed costs, remove the NAs (set to "."); these default to zero in
+    # the model formulation
+    def remove_nan_values_from_dict(d):
+        return {k: v for k, v in d.items() if not np.isnan(v)}
 
     main_dict = dict()
     main_dict["specified_capacity_mw"] = spec_capacity_mw_dict
     main_dict["specified_energy_mwh"] = specified_energy_mwh_dict
-    main_dict["shaping_capacity_mw"] = shaping_capacity_mw_dict
+    main_dict["shaping_capacity_mw"] = remove_nan_values_from_dict(
+        shaping_capacity_mw_dict
+    )
     main_dict["hyb_gen_specified_capacity_mw"] = hyb_gen_spec_capacity_mw_dict
     main_dict["hyb_stor_specified_capacity_mw"] = hyb_stor_spec_capacity_mw_dict
     main_dict["specified_stor_capacity_mwh"] = spec_capacity_mwh_dict
     main_dict["fuel_production_capacity_fuelunitperhour"] = spec_fuel_prod_cap_dict
     main_dict["fuel_release_capacity_fuelunitperhour"] = spec_fuel_rel_cap_dict
     main_dict["fuel_storage_capacity_fuelunit"] = spec_fuel_stor_cap_dict
-    main_dict["fixed_cost_per_mw_yr"] = spec_fixed_cost_per_mw_yr_dict
-    main_dict["fixed_cost_per_energy_mwh_yr"] = fixed_cost_per_energy_mwh_yr_dict
-    main_dict["fixed_cost_per_shaping_mw_yr"] = fixed_cost_per_shaping_mw_yr_dict
-    main_dict["hyb_gen_fixed_cost_per_mw_yr"] = hyb_gen_spec_fixed_cost_per_mw_yr_dict
-    main_dict["hyb_stor_fixed_cost_per_mw_yr"] = hyb_stor_spec_fixed_cost_per_mw_yr_dict
-    main_dict["fixed_cost_per_stor_mwh_yr"] = spec_fixed_cost_per_stor_mwh_yr_dict
+
+    main_dict["fixed_cost_per_mw_yr"] = remove_nan_values_from_dict(
+        spec_fixed_cost_per_mw_yr_dict
+    )
+    main_dict["fixed_cost_per_energy_mwh_yr"] = remove_nan_values_from_dict(
+        fixed_cost_per_energy_mwh_yr_dict
+    )
+    main_dict["fixed_cost_per_shaping_mw_yr"] = remove_nan_values_from_dict(
+        fixed_cost_per_shaping_mw_yr_dict
+    )
+    main_dict["hyb_gen_fixed_cost_per_mw_yr"] = remove_nan_values_from_dict(
+        hyb_gen_spec_fixed_cost_per_mw_yr_dict
+    )
+    main_dict["hyb_stor_fixed_cost_per_mw_yr"] = remove_nan_values_from_dict(
+        hyb_stor_spec_fixed_cost_per_mw_yr_dict
+    )
+    main_dict["fixed_cost_per_stor_mwh_yr"] = remove_nan_values_from_dict(
+        spec_fixed_cost_per_stor_mwh_yr_dict
+    )
     main_dict["fuel_production_capacity_fixed_cost_per_fuelunitperhour_yr"] = (
-        spec_fuel_prod_fixed_cost_dict
+        remove_nan_values_from_dict(spec_fuel_prod_fixed_cost_dict)
     )
+
     main_dict["fuel_release_capacity_fixed_cost_per_fuelunitperhour_yr"] = (
-        spec_fuel_rel_fixed_cost_dict
+        remove_nan_values_from_dict(spec_fuel_rel_fixed_cost_dict)
     )
+
     main_dict["fuel_storage_capacity_fixed_cost_per_fuelunit_yr"] = (
-        spec_fuel_stor_fixed_cost_dict
+        remove_nan_values_from_dict(spec_fuel_stor_fixed_cost_dict)
     )
 
     return project_period_list, main_dict

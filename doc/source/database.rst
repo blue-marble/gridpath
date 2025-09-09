@@ -294,6 +294,31 @@ Requirement
 
 .. automodule:: db.csvs_test_examples.reserves.spinning_reserves.req.doc
 
+
+Spinning Reserves
+*****************
+
+===============
+Balancing Areas
+===============
+
+.. automodule:: db.csvs_test_examples.reserves.spinning_reserves.geography_inertia_reserves_bas.doc
+
+
+=====================
+Contributing Projects
+=====================
+
+.. automodule:: db.csvs_test_examples.reserves.spinning_reserves.project_inertia_reserves_bas.doc
+
+
+===========
+Requirement
+===========
+
+.. automodule:: db.csvs_test_examples.reserves.inertia_reserves.req.doc
+
+
 Load-Following Reserves Up
 **************************
 

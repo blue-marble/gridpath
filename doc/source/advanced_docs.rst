@@ -402,7 +402,7 @@ Operating Reserves
 GridPath can model operating reserve requirements and provision. Reserves
 currently modeled (none, any, or all can be selected, as they are additive
 in the model) include regulation up and down, spinning reserves,
-load-following up and down, and frequency response.
+load-following up and down, frequency response, and inertia reserves.
 
 The treatment of operating reserves is standardized. It requires defining
 the reserve balancing areas with their associated parameters and setting

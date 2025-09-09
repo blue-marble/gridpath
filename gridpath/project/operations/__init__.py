@@ -1007,7 +1007,7 @@ def get_inputs_from_database(
         partial_availability_threshold,
         nonfuel_carbon_emissions_per_mwh,
         powerhouse, generator_efficiency, linked_load_component,
-        efficiency_factor
+        efficiency_factor,energy_requirement_factor
         -- Get only the subset of projects in the portfolio with their 
         -- capacity types based on the project_portfolio_scenario_id 
         FROM
@@ -1263,11 +1263,18 @@ def get_inputs_from_database(
         -- Get only the subset of projects in the portfolio based on the 
         -- project_portfolio_scenario_id 
         WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
-        AND (
+        AND ((
             period in (
             SELECT DISTINCT period
             FROM inputs_temporal_periods
             WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+            )
+            AND period in (
+                  SELECT DISTINCT period
+                  FROM inputs_temporal
+                  WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+                  AND subproblem_id = {subproblem}
+               )
             )
             OR period = 0 -- for all periods
             )
@@ -1392,6 +1399,7 @@ def write_model_inputs(
         "generator_efficiency",
         "linked_load_component",
         "efficiency_factor",
+        "energy_requirement_factor",
     ]
 
     append_to_input_file(
@@ -1810,6 +1818,7 @@ def validate_inputs(
         "generator_efficiency",
         "linked_load_component",
         "efficiency_factor",
+        "energy_requirement_factor",
     ]
 
     sql = """SELECT {}
