@@ -12,7 +12,7 @@ extras_doc = [
     "df2img",
 ]
 extras_ui = [
-    "eventlet==0.33.3",  # Async mode for SocketIO
+    "eventlet==0.40.3",  # Async mode for SocketIO
     "Flask==2.0.1",  # Local API server for UI
     "Flask-RESTful==0.3.9",  # Flask extension for building REST APIs
     "Flask-SocketIO==4.3.2",  # Flask client-server communication; see #772
