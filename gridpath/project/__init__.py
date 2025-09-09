@@ -33,7 +33,11 @@ from gridpath.auxiliary.validations import (
     validate_columns,
     validate_missing_inputs,
 )
+from gridpath.project.operations.operational_types.common_functions import (
+    write_tab_file_model_inputs,
+)
 
+DEFAULT_AVAILABILITY_TYPE = "exogenous"
 PROJECT_PERIOD_DF = "project_period_df"
 PROJECT_TIMEPOINT_DF = "project_timepoint_df"
 
@@ -96,6 +100,7 @@ def add_model_components(
     | | :code:`availability_type`                                             |
     | | *Defined over*: :code:`PROJECTS`                                      |
     | | *Within*: :code:`["binary", "continuous", "exogenous"]`               |
+    | | *Default*: :code:`"exogenous"`                                        |
     |                                                                         |
     | This param describes each project's availability type, which determines |
     | how the project availability is determined (exogenously or              |
@@ -178,7 +183,9 @@ def add_model_components(
         ],
     )
     m.availability_type = Param(
-        m.PROJECTS, within=["binary", "continuous", "exogenous"]
+        m.PROJECTS,
+        within=["binary", "continuous", "exogenous"],
+        default=DEFAULT_AVAILABILITY_TYPE,
     )
     m.balancing_type_project = Param(m.PROJECTS, within=m.BLN_TYPES)
     m.technology = Param(m.PROJECTS, within=Any, default="unspecified")
@@ -497,47 +504,17 @@ def write_model_inputs(
         conn,
     )
 
-    # TODO: make get_inputs_from_database return dataframe and simplify writing
-    #   of the tab files. If going this route, would need to make sure database
-    #   columns and tab file column names are the same everywhere
-    #   projects.fillna(".", inplace=True)
-    #   filename = os.path.join(scenario_directory, hydro_iteration, availability_iteration, subproblem, stage, "inputs", "projects.tab")
-    #   projects.to_csv(filename, sep="\t", mode="w", newline="")
-
-    with open(
-        os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "inputs",
-            "projects.tab",
-        ),
-        "w",
-        newline="",
-    ) as projects_tab_file:
-        writer = csv.writer(projects_tab_file, delimiter="\t", lineterminator="\n")
-
-        # Write header
-        writer.writerow(
-            [
-                "project",
-                "capacity_type",
-                "availability_type",
-                "operational_type",
-                "balancing_type_project",
-                "load_modifier_flag",
-                "distribution_loss_adjustment_factor",
-                "technology",
-                "load_zone",
-            ]
-        )
-
-        for row in projects:
-            replace_nulls = ["." if i is None else i for i in row]
-            writer.writerow(replace_nulls)
+    write_tab_file_model_inputs(
+        scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        fname="projects.tab",
+        data=projects,
+        replace_nulls=True,
+    )
 
 
 # Validation
@@ -688,25 +665,6 @@ def validate_inputs(
         db_table="inputs_project_portfolios",
         severity="High",
         errors=validate_columns(df, "operational_type", valids=valid_op_types),
-    )
-
-    # Check that all portfolio projects are present in the availability inputs
-    msg = (
-        "All projects in the portfolio should have an availability type "
-        "specified in the inputs_project_availability table."
-    )
-    write_validation_to_database(
-        conn=conn,
-        scenario_id=scenario_id,
-        weather_iteration=weather_iteration,
-        hydro_iteration=hydro_iteration,
-        availability_iteration=availability_iteration,
-        subproblem_id=subproblem,
-        stage_id=stage,
-        gridpath_module=__name__,
-        db_table="inputs_project_availability",
-        severity="High",
-        errors=validate_missing_inputs(df, "availability_type", msg=msg),
     )
 
     # Check that all portfolio projects are present in the opchar inputs
