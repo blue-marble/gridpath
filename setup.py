@@ -49,7 +49,9 @@ setup(
         "pandas==2.3.2",  # Data-processing
         "bokeh==3.8.0",  # Visualization library
         "pscript==0.8.0",  # Python to JavaScript compiler (for viz)
-        "networkx==3.5.0",  # network package for DC OPF
+        "networkx==3.4.2; python_version < '3.11'", # network package for DC
+        "networkx==3.5.0; python_version >= '3.11'",  # network package for DC
+        # OPF
         "PyUtilib==6.0.0",  # used for solver temp file management
         "dill==0.3.8",  # pickling
         "duckdb==1.4.0",  # data-handling
