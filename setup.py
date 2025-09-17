@@ -11,6 +11,8 @@ extras_doc = [
     "sphinx-argparse==0.4.0",
     "df2img",
 ]
+
+# Deprecated, not added to "all" installation
 extras_ui = [
     "eventlet==0.33.3",  # Async mode for SocketIO
     "Flask==2.0.1",  # Local API server for UI
@@ -30,7 +32,7 @@ extras_coverage = [
 
 extras_gurobi = ["gurobipy"]  # Gurobi Python interface
 
-extras_all = extras_ui + extras_doc + extras_black + extras_coverage + extras_gurobi
+extras_all = extras_doc + extras_black + extras_coverage + extras_gurobi
 
 setup(
     name="GridPath",
@@ -53,7 +55,7 @@ setup(
     keywords=["energy", "electricity", "power", "renewables", "planning", "operations"],
     packages=find_packages(),
     install_requires=[
-        "Pyomo==6.8.0",  # Optimization modeling language
+        "Pyomo==6.9.4",  # Optimization modeling language
         "pandas==2.2.1",  # Data-processing
         "bokeh==2.2.3",  # Visualization library (required - see #779)
         "pscript==0.7.5",  # Python to JavaScript compiler (for viz)
