@@ -246,7 +246,7 @@ class TestExamples(unittest.TestCase):
             PYTHON_VERSION < "3.12"
             and scenario_name == "test_new_solar_carbon_credits_w_sell"
         ):
-            objective = ast.literal_eval("{('', '', '', 1): {1: " "978964234435709.2}}")
+            objective = ast.literal_eval("{('', '', '', 1): {1: 978964234435709.4}}")
 
         if not skip_validation:
             self.check_validation(scenario_name)
