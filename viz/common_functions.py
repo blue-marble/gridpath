@@ -403,8 +403,8 @@ def create_stacked_bar_plot(
 
     # Set up the figure
     plot = figure(
-        plot_width=800,
-        plot_height=500,
+        min_width=800,
+        min_height=500,
         tools=["pan", "reset", "zoom_in", "zoom_out", "save", "help"],
         title=title,
         x_range=FactorRange(*source.data[x_col]) if grouped_x else source.data[x_col],
@@ -443,7 +443,8 @@ def create_stacked_bar_plot(
     if y_label is not None:
         plot.yaxis.axis_label = y_label
     plot.yaxis.formatter = NumeralTickFormatter(format="0,0")
-    plot.y_range.end = ylimit  # will be ignored if ylimit is None
+    if ylimit is not None:
+        plot.y_range.end = ylimit  # will be ignored if ylimit is None
 
     # Add HoverTools for stacked bars/areas
     for r in area_renderers:
@@ -457,7 +458,7 @@ def create_stacked_bar_plot(
                 tooltips.append(("%s" % y_label, "@%s{$0,0}" % category))
             else:
                 tooltips.append(("%s" % y_label, "@%s{0,0}" % category))
-        hover = HoverTool(tooltips=tooltips, renderers=[r], toggleable=False)
+        hover = HoverTool(tooltips=tooltips, renderers=[r], visible=False)
         plot.add_tools(hover)
 
     return plot

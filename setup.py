@@ -12,17 +12,6 @@ extras_doc = [
     "df2img",
 ]
 
-# Deprecated, not added to "all" installation
-extras_ui = [
-    "eventlet==0.33.3",  # Async mode for SocketIO
-    "Flask==2.0.1",  # Local API server for UI
-    "Flask-RESTful==0.3.9",  # Flask extension for building REST APIs
-    "Flask-SocketIO==4.3.2",  # Flask client-server communication; see #772
-    "psutil==5.9.6",  # Process management
-    "python-socketio[client]<5,>=4.3.0",  # SocketIO Python client; see #772
-    "Werkzeug==2.0.2",  # See #903
-    "dnspython==2.4.2",  # Avoids potential eventlet version mismatch
-]
 extras_black = ["black"]
 
 extras_coverage = [
@@ -31,8 +20,9 @@ extras_coverage = [
 ]
 
 extras_gurobi = ["gurobipy"]  # Gurobi Python interface
+extras_highs = ["highspy"]  # HiGHS Python interface
 
-extras_all = extras_doc + extras_black + extras_coverage + extras_gurobi
+extras_all = extras_doc + extras_black + extras_coverage + extras_gurobi + extras_highs
 
 setup(
     name="GridPath",
@@ -56,21 +46,20 @@ setup(
     packages=find_packages(),
     install_requires=[
         "Pyomo==6.9.4",  # Optimization modeling language
-        "pandas==2.2.1",  # Data-processing
-        "bokeh==2.2.3",  # Visualization library (required - see #779)
-        "pscript==0.7.5",  # Python to JavaScript compiler (for viz)
-        "networkx==3.1",  # network package for DC OPF
+        "pandas==2.3.2",  # Data-processing
+        "bokeh==3.8.0",  # Visualization library
+        "pscript==0.8.0",  # Python to JavaScript compiler (for viz)
+        "networkx==3.5",  # network package for DC OPF
         "PyUtilib==6.0.0",  # used for solver temp file management
-        "Jinja2==3.0.3",  # bokeh dependency; see #904
-        "dill==0.3.7",  # pickling
-        "duckdb==1.0.0",  # data-handling
-    ]
-    + extras_ui,
+        "dill==0.3.8",  # pickling
+        "duckdb==1.4.0",  # data-handling
+    ],
     extras_require={
         "doc": extras_doc,
         "all": extras_all,
         "coverage": extras_coverage,
         "gurobi": extras_gurobi,
+        "highs": extras_highs,
     },
     include_package_data=True,
     entry_points={

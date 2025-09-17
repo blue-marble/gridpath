@@ -172,8 +172,8 @@ def create_plot(df, title, carbon_unit, cost_unit, ylimit=None):
 
     # Set up the figure
     plot = figure(
-        plot_width=800,
-        plot_height=500,
+        min_width=800,
+        min_height=500,
         tools=["pan", "reset", "zoom_in", "zoom_out", "save", "help"],
         title=title,
         x_range=df[x_col],
@@ -190,7 +190,7 @@ def create_plot(df, title, carbon_unit, cost_unit, ylimit=None):
     )
 
     # Add Carbon Cap target line chart to plot
-    target_renderer = plot.circle(
+    target_renderer = plot.scatter(
         x=x_col,
         y=line_col,
         source=source,
@@ -221,7 +221,8 @@ def create_plot(df, title, carbon_unit, cost_unit, ylimit=None):
     plot.xaxis.axis_label = "Period"
     plot.yaxis.axis_label = "Emissions ({})".format(carbon_unit)
     plot.yaxis.formatter = NumeralTickFormatter(format="0,0")
-    plot.y_range.end = ylimit  # will be ignored if ylimit is None
+    if ylimit is not None:
+        plot.y_range.end = ylimit  # will be ignored if ylimit is None
 
     # Add delivered RPS HoverTool
     r_delivered = bar_renderers[0]  # renderer for delivered RPS
@@ -235,7 +236,7 @@ def create_plot(df, title, carbon_unit, cost_unit, ylimit=None):
             ),
         ],
         renderers=[r_delivered],
-        toggleable=False,
+        visible=False,
     )
     plot.add_tools(hover)
 
@@ -251,7 +252,7 @@ def create_plot(df, title, carbon_unit, cost_unit, ylimit=None):
             ),
         ],
         renderers=[r_curtailed],
-        toggleable=False,
+        visible=False,
     )
     plot.add_tools(hover)
 
@@ -267,7 +268,7 @@ def create_plot(df, title, carbon_unit, cost_unit, ylimit=None):
             ),
         ],
         renderers=[target_renderer],
-        toggleable=False,
+        visible=False,
     )
     plot.add_tools(hover)
 
