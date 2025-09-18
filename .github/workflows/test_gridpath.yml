@@ -39,7 +39,7 @@ jobs:
         python -m pip install .[coverage] --upgrade pip
     - name: Test GridPath with coverage
       run: |
-        coverage run -m unittest discover tests
+        coverage run -m unittest discover tests --verbose
     - name: Send coverage results to Coveralls
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

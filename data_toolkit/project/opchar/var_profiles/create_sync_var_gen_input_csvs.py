@@ -196,6 +196,8 @@ def main(args=None):
     pool.map(create_variable_profile_csvs_pool, pool_data)
     pool.close()
 
+    conn.close()
+
 
 if __name__ == "__main__":
     main()

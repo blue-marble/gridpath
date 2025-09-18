@@ -37,6 +37,7 @@ def connect_to_database(db_path="../db/io.db", timeout=5, detect_types=0):
         )
 
     conn = sqlite3.connect(db_path, timeout=timeout, detect_types=detect_types)
+    # print("Connected to {}".format(db_path))
 
     # Enforce foreign keys (default = not enforced)
     conn.execute("PRAGMA foreign_keys=ON;")

@@ -154,6 +154,8 @@ def get_eia_generator_data_from_pudl_sqlite(
             index=False,
         )
 
+        pudl_conn.close()
+
 
 def get_eiaaeo_fuel_data_from_pudl_datasette(
     raw_data_directory, pudl_download_directory, eiaaeo_electricity_market_region
@@ -182,6 +184,8 @@ def get_eiaaeo_fuel_data_from_pudl_datasette(
             filepath,
             index=False,
         )
+
+    pudl_conn.close()
 
 
 # TODO: confirm hour-ending vs hour-starting with Catalyst

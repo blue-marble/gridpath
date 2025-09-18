@@ -98,10 +98,9 @@ class TestExamples(unittest.TestCase):
             )
         )
         actual_validations = validations.fetchall()
+        conn.close()
 
         self.assertListEqual(expected_validations, actual_validations)
-
-        conn.close()
 
     def run_and_check_objective(
         self, test, expected_objective, solver=None, parallel=1

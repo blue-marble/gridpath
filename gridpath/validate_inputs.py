@@ -336,6 +336,8 @@ def update_validation_status(conn, scenario_id):
         conn=conn, cursor=c, sql=sql, data=(status, scenario_id), many=False
     )
 
+    conn.close()
+
 
 def parse_arguments(args):
     """

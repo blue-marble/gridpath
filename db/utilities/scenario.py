@@ -433,6 +433,8 @@ def main(args=None):
                         conn=db_conn, scenarios_df=csv_to_df, scenario_name=scenario
                     )
 
+    db_conn.close()
+
 
 if __name__ == "__main__":
     main()

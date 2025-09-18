@@ -493,6 +493,8 @@ def main(args=None):
     # ####### Based on the weather draws, create timeseries profiles ###########
     make_timeseries_draw_profiles(conn=conn, parsed_args=parsed_args)
 
+    conn.close()
+
 
 if __name__ == "__main__":
     main()

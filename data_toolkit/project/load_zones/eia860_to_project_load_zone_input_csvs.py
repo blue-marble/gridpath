@@ -163,6 +163,8 @@ def main(args=None):
         subscenario_name=parsed_args.project_load_zone_scenario_name,
     )
 
+    conn.close()
+
 
 if __name__ == "__main__":
     main()

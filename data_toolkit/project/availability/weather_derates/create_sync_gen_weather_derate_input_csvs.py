@@ -181,6 +181,8 @@ def main(args=None):
     pool.map(create_weather_availability_profile_csvs_pool, pool_data)
     pool.close()
 
+    conn.close()
+
 
 if __name__ == "__main__":
     main()
