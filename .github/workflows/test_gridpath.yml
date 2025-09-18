@@ -37,11 +37,15 @@ jobs:
         sudo apt-get install coinor-cbc
         sudo apt-get install -y apt-show-versions
         apt-show-versions coinor-cbc
-    - name: Install Cbc and check version (MacOS)
+    - name: Install Cbc (MacOS)
       if: startsWith(runner.os, 'macOS')
       run: |
         brew tap coin-or-tools/coinor
         brew install coin-or-tools/coinor/cbc
+    - name: Install Cbc (Windows)
+      if: startsWith(runner.os, 'Windows')
+      run: |
+        bash ./.github/workflows/get_cbc_on_windows.sh
     - name: Install Python dependencies
       run: |
         python -m pip install .[coverage] --upgrade pip
