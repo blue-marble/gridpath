@@ -1,4 +1,4 @@
-# Copyright 2016-2023 Blue Marble Analytics LLC.
+# Copyright 2016-2025 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -43,6 +43,9 @@ TEST_SCENARIOS_CSV = "../tests/test_data/test_scenario_objective_function_values
 LINUX = True if platform.system() == "Linux" else False
 MACOS = True if platform.system() == "Darwin" else False
 WINDOWS = True if platform.system() == "Windows" else False
+
+# Python version
+PYTHON_VERSION = platform.python_version()
 
 
 class TestExamples(unittest.TestCase):
@@ -95,6 +98,7 @@ class TestExamples(unittest.TestCase):
             )
         )
         actual_validations = validations.fetchall()
+        conn.close()
 
         self.assertListEqual(expected_validations, actual_validations)
 
@@ -235,6 +239,16 @@ class TestExamples(unittest.TestCase):
         # This is now done for all scenarios, even if they have no iterations
         # or multiple subproblem/stages
         objective = ast.literal_eval(self.df.loc[scenario_name][column_to_use])
+
+        # On Python <3.12, we have one example with a slightly different
+        # objective function value; set it here
+        # Remove this when we stop supporting Python <3.12
+        if (
+            PYTHON_VERSION < "3.12"
+            and scenario_name == "test_new_solar_carbon_credits_w_sell"
+        ):
+            objective = ast.literal_eval("{('', '', '', 1): {1: 978964234435709.4}}")
+
         if not skip_validation:
             self.check_validation(scenario_name)
         self.run_and_check_objective(

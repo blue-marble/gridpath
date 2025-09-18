@@ -87,3 +87,5 @@ def create_profile_csvs(
         header=True if mode == "w" or write_header else False,
         index=False,
     )
+
+    conn.close()

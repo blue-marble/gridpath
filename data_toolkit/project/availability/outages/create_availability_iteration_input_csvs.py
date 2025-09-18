@@ -475,6 +475,8 @@ def main(args=None):
                 ascending=[True, True, True],
             )
 
+    db.close()
+
 
 if __name__ == "__main__":
     main()

@@ -297,8 +297,8 @@ def create_plot(df, title, power_unit, ylimit=None):
 
     # Set up the figure
     plot = figure(
-        plot_width=800,
-        plot_height=500,
+        min_width=800,
+        min_height=500,
         tools=["pan", "reset", "zoom_in", "zoom_out", "save", "help"],
         title=title,
     )
@@ -363,7 +363,8 @@ def create_plot(df, title, power_unit, ylimit=None):
     plot.xaxis.axis_label = "Hour"
     plot.yaxis.axis_label = power_unit
     plot.yaxis.formatter = NumeralTickFormatter(format="0,0")
-    plot.y_range.end = ylimit  # will be ignored if ylimit is None
+    if ylimit is not None:
+        plot.y_range.end = ylimit  # will be ignored if ylimit is None
 
     # Add HoverTools
     # Note: stepped lines or varea charts not yet supported (lines/bars OK)
@@ -381,7 +382,7 @@ def create_plot(df, title, power_unit, ylimit=None):
             tooltips.append(
                 ("% of Committed", "@min_stable_level_pct_of_committed{0%}")
             )
-        hover = HoverTool(tooltips=tooltips, renderers=[r], toggleable=False)
+        hover = HoverTool(tooltips=tooltips, renderers=[r], visible=False)
         plot.add_tools(hover)
 
     return plot
@@ -458,6 +459,8 @@ def main(args=None):
     # Return plot in json format if requested
     if parsed_args.return_json:
         return json_item(plot, "plotHTMLTarget")
+
+    conn.close()
 
 
 if __name__ == "__main__":

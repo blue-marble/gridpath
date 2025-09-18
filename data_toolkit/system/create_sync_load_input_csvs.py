@@ -300,6 +300,8 @@ def main(args=None):
             overwrite=parsed_args.load_levels_overwrite,
         )
 
+    conn.close()
+
 
 if __name__ == "__main__":
     main()

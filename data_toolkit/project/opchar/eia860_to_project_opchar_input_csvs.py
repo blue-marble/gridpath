@@ -446,6 +446,8 @@ def main(args=None):
         hy_id=parsed_args.hydro_operational_chars_scenario_id,
     )
 
+    conn.close()
+
 
 if __name__ == "__main__":
     main()
