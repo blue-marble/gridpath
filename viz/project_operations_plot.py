@@ -457,7 +457,7 @@ def main(args=None):
         )
 
     conn.close()
-  
+
     # Return plot in json format if requested
     if parsed_args.return_json:
         return json_item(plot, "plotHTMLTarget")
