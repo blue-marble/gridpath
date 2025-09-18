@@ -15,7 +15,7 @@ on:
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [windows-latest, macos-latest, ubuntu-latest]
@@ -23,7 +23,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - name: Install sqlite3 3.45.0
+    - name: Install sqlite3 3.45.0 on Linux
+      if: startsWith(runner.os, 'Linux')
       run: |
         bash ./.github/workflows/upgrade_sqlite_on_linux.sh
     - name: Set up Python
@@ -31,6 +32,7 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install Cbc and check version
+      if: startsWith(runner.os, 'Linux') || startsWith(runner.os, 'macOS')
       run: |
         sudo apt-get install coinor-cbc
         sudo apt-get install -y apt-show-versions
@@ -40,7 +42,7 @@ jobs:
         python -m pip install .[coverage] --upgrade pip
     - name: Test GridPath with coverage
       run: |
-        coverage run -m unittest discover tests --verbose
+        coverage run -m unittest discover tests
     - name: Send coverage results to Coveralls
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
