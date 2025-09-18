@@ -834,6 +834,8 @@ def main(args=None):
         availability_iteration=parsed_args.availability_iteration,
     )
 
+    conn.close()
+
     plot = create_plot(
         df=df,
         title=plot_title,
@@ -855,8 +857,6 @@ def main(args=None):
     # Return plot in json format if requested
     if parsed_args.return_json:
         return json_item(plot, "plotHTMLTarget")
-
-    conn.close()
 
 
 if __name__ == "__main__":
