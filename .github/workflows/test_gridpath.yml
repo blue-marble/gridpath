@@ -31,12 +31,17 @@ jobs:
       uses: actions/setup-python@v3
       with:
         python-version: ${{ matrix.python-version }}
-    - name: Install Cbc and check version
-      if: startsWith(runner.os, 'Linux') || startsWith(runner.os, 'macOS')
+    - name: Install Cbc and check version (Linux)
+      if: startsWith(runner.os, 'Linux')
       run: |
         sudo apt-get install coinor-cbc
         sudo apt-get install -y apt-show-versions
         apt-show-versions coinor-cbc
+    - name: Install Cbc and check version (MacOS)
+      if: startsWith(runner.os, 'macOS')
+      run: |
+        sudo brew tap coin-or-tools/coinor
+        sudo brew install coin-or-tools/coinor/cbc
     - name: Install Python dependencies
       run: |
         python -m pip install .[coverage] --upgrade pip
