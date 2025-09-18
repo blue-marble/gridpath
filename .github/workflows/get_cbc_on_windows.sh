@@ -6,5 +6,6 @@ mkdir cbc
 unzip Cbc-releases.2.10.12-w64-msvc17-md.zip -d ./cbc
 
 # Check if we got it for now
-cd cbc
+cd cbc/bin
 dir
+cd
