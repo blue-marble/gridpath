@@ -65,7 +65,7 @@ def add_model_components(
     )
 
     # Requirement as percentage of load
-    m.iner_per_req = Param(m.INERTIA_RESERVES_ZONES, within=PercentFraction, default=0)
+    m.iner_per_req = Param(m.INERTIA_RESERVES_ZONES, within=Reals, default=0)
 
     # Load zones included in the reserve percentage requirement
     m.INER_BA_LZ = Set(dimen=2, within=m.INERTIA_RESERVES_ZONES * m.LOAD_ZONES)
@@ -110,7 +110,7 @@ def add_model_components(
             # Project contributions to requirement based on (available) capacity
             # We are not holding the extra reserves when projects are unavailable
             prj_cap_contribution = sum(
-                m.iner_prj_cap_contribution[reserve_zone, prj]
+                mod.iner_prj_cap_contribution[reserve_zone, prj]
                 * mod.Capacity_MW[prj, mod.period[tmp]]
                 * mod.Availability_Derate[prj, tmp]
                 for (_reserve_zone, prj) in mod.INER_BA_PRJ_CONTRIBUTION
