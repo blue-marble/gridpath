@@ -221,3 +221,5 @@ capacity_select.on_change("value", update_plots)
 # Set up curdoc
 curdoc().add_root(tabs)
 curdoc().title = "Dashboard"
+
+conn.close()

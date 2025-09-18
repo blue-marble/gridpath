@@ -68,7 +68,10 @@ def main(args=None):
             if not parsed_args.quiet:
                 print(f"... {f}...")
             f_path = os.path.join(parsed_args.csv_location, f)
-            df = pd.read_csv(f_path, delimiter=",")
+
+            # Set low_memory to False to avoid dtype warning
+            # TODO: actually specify dtypes instead
+            df = pd.read_csv(f_path, delimiter=",", low_memory=False)
 
             spin_on_database_lock_generic(
                 command=df.to_sql(
