@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
+r"""
 This operational type describes transmission lines whose flows are simulated
 using DC optimal power flow (OPF) equations. DC power flow is a linearized
 approach to the AC Optimal Power Flow problem, which is a non-linear,
