@@ -46,7 +46,7 @@ jobs:
       if: startsWith(runner.os, 'Windows')
       run: |
         bash ./.github/workflows/get_cbc_on_windows.sh
-        echo "cbc=./cbc/bin/cbc.exe" | Out-File -FilePath $env:GITHUB_ENV -Append
+        echo "cbc=./cbc/bin" | Out-File -FilePath $env:GITHUB_ENV -Append
     - name: Install Python dependencies
       run: |
         python -m pip install .[coverage] --upgrade pip
