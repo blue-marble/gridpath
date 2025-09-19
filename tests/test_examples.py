@@ -246,14 +246,9 @@ class TestExamples(unittest.TestCase):
         # or multiple subproblem/stages
         objective = ast.literal_eval(self.df.loc[scenario_name][column_to_use])
 
-        # On Python <3.12, we have one example with a slightly different
-        # objective function value; set it here
-        # Remove this when we stop supporting Python <3.12
-        if (
-            PYTHON_VERSION < "3.12"
-            and scenario_name == "test_new_solar_carbon_credits_w_sell"
-        ):
-            objective = ast.literal_eval("{('', '', '', 1): {1: 978964234435709.4}}")
+        objective = objective_function_overwrite(
+            scenario_name=scenario_name, starting_objective=objective
+        )
 
         if not skip_validation:
             self.check_validation(scenario_name)
@@ -1040,7 +1035,7 @@ class TestExamples(unittest.TestCase):
 
         Note that the same version of Cbc (v2.10.12) produces a slightly
         different objective function for this problem on Windows/Linux than on
-        Mac.
+        Mac as of Python v3.12.
         :return:
         """
         scenario_name = "test_new_solar_carbon_cap_dac"
@@ -1737,6 +1732,38 @@ class TestExamples(unittest.TestCase):
             temp_file = "{}{}".format(DB_PATH, temp_file_ext)
             if os.path.exists(temp_file):
                 os.remove(temp_file)
+
+
+def objective_function_overwrite(scenario_name, starting_objective):
+
+    objective = starting_objective
+    # On Python <3.12, we have one example with a slightly different
+    # objective function value; set it here
+    # TODO: remove this when we stop supporting Python <3.12
+    if (
+        PYTHON_VERSION < "3.12"
+        and scenario_name == "test_new_solar_carbon_credits_w_sell"
+    ):
+        print(
+            f"GridPath: overriding objective function for "
+            f"test_new_solar_carbon_credits_w_sell on Python v{PYTHON_VERSION}."
+        )
+        objective = ast.literal_eval("{('', '', '', 1): {1: 978964234435709.4}}")
+
+    # if (
+    #     PYTHON_VERSION <= "3.11"
+    #     and MACOS
+    #     and scenario_name == "test_example_test_new_solar_carbon_cap_dac"
+    # ):
+    #     # TODO: remove this when we stop supporting Python 3.11
+    #     print(
+    #         f"GridPath: overriding objective function for "
+    #         f"test_example_test_new_solar_carbon_cap_dac on MacOS, Python "
+    #         f"v{PYTHON_VERSION}."
+    #     )
+    #     objective = ast.literal_eval("{('', '', '', 1): {1: -3504434601713.4844}}")
+
+    return objective
 
 
 if __name__ == "__main__":
