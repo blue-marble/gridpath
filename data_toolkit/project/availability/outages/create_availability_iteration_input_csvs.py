@@ -361,7 +361,7 @@ def simulate_project_availability_pool(pool_datum):
 
 
 def sort_csv_file(filepath, columns_to_sort_by, ascending):
-    df = pd.read_csv(filepath, delimiter=",")
+    df = pd.read_csv(filepath, delimiter=",", low_memory=False, on_bad_lines="warn")
     df.sort_values(by=columns_to_sort_by, ascending=ascending, inplace=True)
 
     df.to_csv(
