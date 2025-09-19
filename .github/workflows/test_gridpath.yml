@@ -42,6 +42,7 @@ jobs:
       run: |
         brew tap coin-or-tools/coinor
         brew install coin-or-tools/coinor/cbc
+        echo "/opt/homebrew/opt/cbc/bin" >> $GITHUB_PATH
     - name: Install Cbc (Windows)
       if: startsWith(runner.os, 'Windows')
       run: |
