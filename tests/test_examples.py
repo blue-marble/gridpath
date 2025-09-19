@@ -224,6 +224,8 @@ class TestExamples(unittest.TestCase):
         self, scenario_name, solver=None, skip_validation=False
     ):
         # Use the expected objective column by default
+        # Since most development happens on MacOS, the generic expected
+        # objective column is set to the MacOS value
         column_to_use = "expected_objective"
         if MACOS and not pd.isnull(
             self.df.loc[scenario_name]["expected_objective_darwin"]
@@ -233,6 +235,10 @@ class TestExamples(unittest.TestCase):
             self.df.loc[scenario_name]["expected_objective_windows"]
         ):
             column_to_use = "expected_objective_windows"
+        if LINUX and not pd.isnull(
+            self.df.loc[scenario_name]["expected_objective_linux"]
+        ):
+            column_to_use = "expected_objective_linux"
 
         # Evaluate the objective function as a literal (as it is in
         # dictionary format stored as string in the CSV)
@@ -1032,8 +1038,9 @@ class TestExamples(unittest.TestCase):
         Check validation and objective function value of
         "test_new_solar_carbon_cap_dac" example.
 
-        Note that the same version of Cbc (v2.10.5) produces a slightly different
-        objective function for this problem on Windows than on Mac.
+        Note that the same version of Cbc (v2.10.12) produces a slightly
+        different objective function for this problem on Windows/Linux than on
+        Mac.
         :return:
         """
         scenario_name = "test_new_solar_carbon_cap_dac"

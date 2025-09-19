@@ -1,6 +1,7 @@
 # This the main GridPath CI workflow
 # It installs Cbc and Python dependencies, runs the GridPath test suite with coverage,
 # and sends coverage results to coveralls
+# We run this on Linux, MacOS, and Windows with Python 3.11, 3.12, and 3.13
 
 name: test-suite
 
