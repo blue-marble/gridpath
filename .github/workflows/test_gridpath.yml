@@ -47,11 +47,6 @@ jobs:
       run: |
         bash ./.github/workflows/get_cbc_on_windows.sh
       shell: powershell
-    - name: Try something else
-      if: startsWith(runner.os, 'Windows')
-      run: |
-        D:/a/gridpath/gridpath/cbc/bin/cbc.exe
-      shell: powershell
     - name: Verify PATH update
       if: startsWith(runner.os, 'Windows')
       run: Get-Command cbc.exe

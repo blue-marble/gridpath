@@ -67,11 +67,13 @@ def main(args=None):
         if import_bool:
             if not parsed_args.quiet:
                 print(f"... {f}...")
-            f_path = os.path.join(parsed_args.csv_location, f)
+            f_path = str(os.path.join(parsed_args.csv_location, f))
 
             # Set low_memory to False to avoid dtype warning
             # TODO: actually specify dtypes instead
-            df = pd.read_csv(f_path, delimiter=",", low_memory=False)
+            df = pd.read_csv(
+                f_path, delimiter=",", low_memory=False, on_bad_lines="warn"
+            )
 
             spin_on_database_lock_generic(
                 command=df.to_sql(
