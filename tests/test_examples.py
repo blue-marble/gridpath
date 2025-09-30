@@ -1,4 +1,4 @@
-# Copyright 2016-2023 Blue Marble Analytics LLC.
+# Copyright 2016-2025 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -43,6 +43,9 @@ TEST_SCENARIOS_CSV = "../tests/test_data/test_scenario_objective_function_values
 LINUX = True if platform.system() == "Linux" else False
 MACOS = True if platform.system() == "Darwin" else False
 WINDOWS = True if platform.system() == "Windows" else False
+
+# Python version
+PYTHON_VERSION = platform.python_version()
 
 
 class TestExamples(unittest.TestCase):
@@ -95,25 +98,27 @@ class TestExamples(unittest.TestCase):
             )
         )
         actual_validations = validations.fetchall()
+        conn.close()
 
         self.assertListEqual(expected_validations, actual_validations)
 
     def run_and_check_objective(
-        self, test, expected_objective, solver=None, parallel=1
+        self, scenario_name, expected_objective, solver=None, parallel=1
     ):
         """
 
-        :param test: str, name of the test example
+        :param scenario_name: str, name of the test example
         :param expected_objective: float or dict, expected objective
         :param parallel: int, set to a number > 1 to test
             parallelization functionality
         :return:
         """
+
         args_to_pass = [
             "--database",
             DB_PATH,
             "--scenario",
-            test,
+            scenario_name,
             "--scenario_location",
             EXAMPLES_DIRECTORY,
             # "--log",
@@ -133,6 +138,10 @@ class TestExamples(unittest.TestCase):
             args_to_pass.append(solver)
 
         actual_objective = run_end_to_end.main(args_to_pass)
+
+        expected_objective = objective_function_overwrite(
+            scenario_name=scenario_name, starting_objective=expected_objective
+        )
 
         # Check if we have a multiprocessing manager
         # If so, convert the manager proxy dictionary to a simple dictionary
@@ -161,15 +170,18 @@ class TestExamples(unittest.TestCase):
         # Set dtype to 'object' so that we can have floats and dictionaries
         # in the column
         df["actual_objective"] = df["actual_objective"].astype("object")
-        df.at[test, "actual_objective"] = actual_objective
+        df.at[scenario_name, "actual_objective"] = actual_objective
         df.to_csv(TEST_SCENARIOS_CSV, index=True)
 
-        # Multi-subproblem and/or multi-stage scenarios return dict
-        if isinstance(expected_objective, dict):
-            self.assertDictAlmostEqual(expected_objective, actual_objective, places=1)
-        # Otherwise, objective is a single value
+        if scenario_name == "test_new_solar_carbon_cap_dac":
+            # This test is particularly sensitive to platform and
+            # Python version, so we relax the precision of the test a bit
+            # more
+            places = -1
         else:
-            self.assertAlmostEqual(expected_objective, actual_objective, places=1)
+            places = 1
+
+        self.assertDictAlmostEqual(expected_objective, actual_objective, places=places)
 
     @classmethod
     def setUpClass(cls):
@@ -220,6 +232,8 @@ class TestExamples(unittest.TestCase):
         self, scenario_name, solver=None, skip_validation=False
     ):
         # Use the expected objective column by default
+        # Since most development happens on MacOS, the generic expected
+        # objective column is set to the MacOS value
         column_to_use = "expected_objective"
         if MACOS and not pd.isnull(
             self.df.loc[scenario_name]["expected_objective_darwin"]
@@ -229,16 +243,21 @@ class TestExamples(unittest.TestCase):
             self.df.loc[scenario_name]["expected_objective_windows"]
         ):
             column_to_use = "expected_objective_windows"
+        if LINUX and not pd.isnull(
+            self.df.loc[scenario_name]["expected_objective_linux"]
+        ):
+            column_to_use = "expected_objective_linux"
 
         # Evaluate the objective function as a literal (as it is in
         # dictionary format stored as string in the CSV)
         # This is now done for all scenarios, even if they have no iterations
         # or multiple subproblem/stages
         objective = ast.literal_eval(self.df.loc[scenario_name][column_to_use])
+
         if not skip_validation:
             self.check_validation(scenario_name)
         self.run_and_check_objective(
-            test=scenario_name, solver=solver, expected_objective=objective
+            scenario_name=scenario_name, solver=solver, expected_objective=objective
         )
 
     def test_example_test(self):
@@ -1018,8 +1037,9 @@ class TestExamples(unittest.TestCase):
         Check validation and objective function value of
         "test_new_solar_carbon_cap_dac" example.
 
-        Note that the same version of Cbc (v2.10.5) produces a slightly different
-        objective function for this problem on Windows than on Mac.
+        Note that the same version of Cbc (v2.10.12) produces a slightly
+        different objective function for this problem on Windows/Linux than on
+        Mac as of Python v3.12.
         :return:
         """
         scenario_name = "test_new_solar_carbon_cap_dac"
@@ -1716,6 +1736,25 @@ class TestExamples(unittest.TestCase):
             temp_file = "{}{}".format(DB_PATH, temp_file_ext)
             if os.path.exists(temp_file):
                 os.remove(temp_file)
+
+
+def objective_function_overwrite(scenario_name, starting_objective):
+
+    objective = starting_objective
+    # On Python <3.12, we have one example with a slightly different
+    # objective function value; set it here
+    # TODO: remove this when we stop supporting Python <3.12
+    if (
+        PYTHON_VERSION < "3.12"
+        and scenario_name == "test_new_solar_carbon_credits_w_sell"
+    ):
+        print(
+            f"GridPath: overriding objective function for "
+            f"test_new_solar_carbon_credits_w_sell on Python v{PYTHON_VERSION}."
+        )
+        objective = ast.literal_eval("{('', '', '', 1): {1: 978964234435709.4}}")
+
+    return objective
 
 
 if __name__ == "__main__":

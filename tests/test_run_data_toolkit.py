@@ -20,7 +20,7 @@ from data_toolkit import run_data_toolkit
 
 RA_SETTINGS_CSV = "../tests/test_data/data_toolkit_ra_settings.csv"
 RA_SETTINGS_STEPS_CSV = "../tests/test_data/data_toolkit_ra_settings_steps.csv"
-OPEN_DATA_SETTINGS_CSV = "../tests/test_data/data_toolkit_open_data_settings" ".csv"
+OPEN_DATA_SETTINGS_CSV = "../tests/test_data/data_toolkit_open_data_settings.csv"
 
 
 class TestDataToolkit(unittest.TestCase):

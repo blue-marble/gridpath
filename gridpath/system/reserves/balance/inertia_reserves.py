@@ -64,7 +64,7 @@ def add_model_components(
         return (
             mod.Total_Inertia_Reserves_Provision_MWs[ba, tmp]
             + mod.Inertia_Reserves_Violation_MWs_Expression[ba, tmp]
-            == mod.Iner_Requirement_MWs[ba, tmp]
+            >= mod.Iner_Requirement_MWs[ba, tmp]
         )
 
     m.Meet_Inertia_Reserves_Constraint = Constraint(

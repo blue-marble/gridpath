@@ -68,7 +68,7 @@ def add_model_components(
     subproblem,
     stage,
 ):
-    """
+    r"""
     :param m: the Pyomo abstract model object we are adding components to
     :param d: the DynamicComponents class object we will get components from
 

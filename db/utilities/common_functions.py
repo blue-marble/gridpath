@@ -121,7 +121,7 @@ def get_subscenario_data(csv_file, cols_to_exclude_str, **kwargs):
         kwd_tuple += (kwargs[kwd],)
 
     # Read the CSV
-    df = pd.read_csv(csv_file, delimiter=",")
+    df = pd.read_csv(csv_file, delimiter=",", low_memory=False, on_bad_lines="warn")
     csv_columns = df.columns.tolist()
 
     # Exclude some columns if directed to do so

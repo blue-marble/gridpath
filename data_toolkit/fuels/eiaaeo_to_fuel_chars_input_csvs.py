@@ -145,6 +145,8 @@ def main(args=None):
         model_case=parsed_args.model_case,
     )
 
+    conn.close()
+
 
 if __name__ == "__main__":
     main()

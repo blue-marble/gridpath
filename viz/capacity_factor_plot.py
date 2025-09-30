@@ -170,8 +170,8 @@ def create_plot(df, title, tech_colors={}):
 
     # Set up the figure
     plot = figure(
-        plot_width=800,
-        plot_height=500,
+        min_width=800,
+        min_height=500,
         tools=["pan", "reset", "zoom_in", "zoom_out", "save", "help"],
         title=title,
         # sizing_mode="scale_both"
@@ -185,7 +185,7 @@ def create_plot(df, title, tech_colors={}):
         sub_df = df[df["technology"] == tech]
         source = ColumnDataSource(data=sub_df)
 
-        r = plot.circle(
+        r = plot.scatter(
             x="period",
             y="cap_factor",
             # legend=tech,
@@ -225,7 +225,7 @@ def create_plot(df, title, tech_colors={}):
                 ("Capacity Factor", "@cap_factor{0%}"),
             ],
             renderers=[r],
-            toggleable=False,
+            visible=False,
         )
         plot.add_tools(hover)
 
@@ -238,7 +238,7 @@ def create_plot(df, title, tech_colors={}):
     #     factors=df["technology"].unique()
     # )
     #
-    # r = plot.circle(
+    # r = plot.scatter(
     #     x="period",
     #     y="cap_factor",
     #     legend="technology",
@@ -258,7 +258,7 @@ def create_plot(df, title, tech_colors={}):
     #         ("Capacity Factor", "@cap_factor{0%}")
     #     ],
     #     renderers=[r],
-    #     toggleable=False)
+    #     visible=False)
     # plot.add_tools(hover)
 
     return plot
@@ -310,6 +310,8 @@ def main(args=None):
             plot_write_directory=parsed_args.plot_write_directory,
             scenario=scenario,
         )
+
+    conn.close()
 
     # Return plot in json format if requested
     if parsed_args.return_json:

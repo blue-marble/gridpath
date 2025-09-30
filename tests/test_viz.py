@@ -49,7 +49,7 @@ CSV_PATH = "../db//csvs_test_examples"
 SCENARIOS_CSV = os.path.join(CSV_PATH, "scenarios.csv")
 
 
-class TestExamples(unittest.TestCase):
+class TestViz(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """

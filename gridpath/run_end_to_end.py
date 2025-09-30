@@ -135,6 +135,8 @@ def update_run_status(db_path, scenario, status_id):
         conn=conn, cursor=c, sql=sql, data=(status_id, scenario), many=False
     )
 
+    conn.close()
+
 
 def record_process_id_and_start_time(db_path, scenario, process_id, start_time):
     """

@@ -630,8 +630,8 @@ def create_plot(
 
     # Set up the figure
     plot = figure(
-        plot_width=800,
-        plot_height=500,
+        min_width=800,
+        min_height=500,
         tools=["pan", "reset", "zoom_in", "zoom_out", "save", "help"],
         title=title,
         # sizing_mode="scale_both"
@@ -751,7 +751,8 @@ def create_plot(
     plot.xaxis.axis_label = "Hour Ending"
     plot.yaxis.axis_label = "Dispatch ({})".format(power_unit)
     plot.yaxis.formatter = NumeralTickFormatter(format="0,0")
-    plot.y_range.end = ylimit  # will be ignored if ylimit is None
+    if ylimit is not None:
+        plot.y_range.end = ylimit  # will be ignored if ylimit is None
 
     # Add HoverTools for stacked bars/areas
     for r in area_renderers:
@@ -763,7 +764,7 @@ def create_plot(
                 ("Dispatch", "@%s{0,0} %s" % (power_source, power_unit)),
             ],
             renderers=[r],
-            toggleable=False,
+            visible=False,
         )
         plot.add_tools(hover)
 
@@ -776,7 +777,7 @@ def create_plot(
                 (load_type, "@y{0,0} %s" % power_unit),
             ],
             renderers=[r],
-            toggleable=False,
+            visible=False,
         )
         plot.add_tools(hover)
 
@@ -832,6 +833,8 @@ def main(args=None):
         hydro_iteration=parsed_args.hydro_iteration,
         availability_iteration=parsed_args.availability_iteration,
     )
+
+    conn.close()
 
     plot = create_plot(
         df=df,

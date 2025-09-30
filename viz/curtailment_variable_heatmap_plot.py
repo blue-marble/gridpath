@@ -191,8 +191,8 @@ def create_plot(df, title, energy_unit, ylimit=None):
 
     # Set up the figure
     plot = figure(
-        plot_width=800,
-        plot_height=500,
+        min_width=800,
+        min_height=500,
         tools=["pan", "reset", "zoom_in", "zoom_out", "save", "help"],
         toolbar_location="below",
         x_axis_location="above",
@@ -240,7 +240,7 @@ def create_plot(df, title, energy_unit, ylimit=None):
             ("Curtailment", "@scheduled_curtailment_mwh{0,0} %s" % energy_unit),
         ],
         renderers=[hm],
-        toggleable=True,
+        visible=True,
     )
     plot.add_tools(hover)
 
@@ -299,6 +299,8 @@ def main(args=None):
             plot_write_directory=parsed_args.plot_write_directory,
             scenario=scenario,
         )
+
+    conn.close()
 
     # Return plot in json format if requested
     if parsed_args.return_json:

@@ -233,6 +233,8 @@ def main(args=None):
         tech_dur_dict=tech_dur_dict,
     )
 
+    conn.close()
+
 
 if __name__ == "__main__":
     main()

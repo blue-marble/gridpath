@@ -110,6 +110,8 @@ def create_variable_profile_csvs(
     pool.map(create_project_csv_pool, pool_data)
     pool.close()
 
+    conn.close()
+
 
 def create_project_csv(
     db_path,
@@ -220,6 +222,8 @@ def create_project_csv(
             varies_by_hydro=0,
             overwrite=True,
         )
+
+    conn.close()
 
 
 def create_project_csv_pool(pool_datum):

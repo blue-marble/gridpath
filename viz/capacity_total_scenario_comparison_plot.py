@@ -153,6 +153,8 @@ def main(args=None):
             plot_write_directory=parsed_args.plot_write_directory,
         )
 
+    conn.close()
+
     # Return plot in json format if requested
     if parsed_args.return_json:
         return json_item(plot, "plotHTMLTarget")
