@@ -1,7 +1,0 @@
-transmission_line,period,min_mw,max_mw,fixed_cost_per_mw_yr
-Tx1,2020,-10,10,
-Tx1,2030,-10,10,
-Tx2,2020,-10,10,
-Tx2,2030,-10,10,
-Tx3,2020,-10,10,
-Tx3,2030,-10,10,
