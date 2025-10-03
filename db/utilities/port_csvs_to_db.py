@@ -54,6 +54,15 @@ lines and reservoirs. To tell GridPath what the column name is for these
 types of inputs, include it in the sub_input_column field (e.g., project,
 transmission_line, or reservoir).
 
+The user can specify that a subscenario ID is based on another "default"
+subscenario ID. This is done by ending the CSV filename for the subscenario
+ID with a dash followed by the default subscenario ID. For example,
+*3_base_with_change-1.csv* indicates that the subscenario ID 3 should use
+values from the default subscenario ID 1 except for the values specified in the
+3_base_with_change-1.csv.
+.. warning:: This functionality is new and hasn't been extensively used and
+tested yet, so please proceed with caution.
+
 A few subscenarios consist of multiple tables data for which is located
 inside CSVs in the same directory. For these subscenarios, the directory
 name should begin with the subscenario ID followed by an underscore and then

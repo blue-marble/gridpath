@@ -87,6 +87,11 @@ def get_subscenario_info(dir_subsc, inputs_dir, csv_file, sub_input_flag):
 
         subscenario_id = int(basename.split("_", 1)[0])
         subscenario_name = basename.split("_", 1)[1].split(".csv")[0]
+        default_subscenario_id = (
+            None
+            if len(subscenario_name.split("-")) < 2
+            else int(subscenario_name.split("-", 1)[1])
+        )
 
         subsc_tuples = [(subscenario_id, subscenario_name, subscenario_description)]
     else:
@@ -98,7 +103,10 @@ def get_subscenario_info(dir_subsc, inputs_dir, csv_file, sub_input_flag):
             (project, subscenario_id, subscenario_name, subscenario_description)
         ]
 
-    return subsc_tuples
+        # Defaults not implemented for sub-inputs for now
+        default_subscenario_id = None
+
+    return subsc_tuples, default_subscenario_id
 
 
 def get_subscenario_data(csv_file, cols_to_exclude_str, **kwargs):
@@ -158,7 +166,9 @@ def csv_to_subscenario_for_insertion(
     """
 
     # Get the subscenario info
-    subsc_tuples = get_subscenario_info(dir_subsc, inputs_dir, csv_file, sub_input_flag)
+    subsc_tuples, default_subscenario_id = get_subscenario_info(
+        dir_subsc, inputs_dir, csv_file, sub_input_flag
+    )
 
     # Get the data from the CSV if a CSV file name is passed (if not,
     # we're expecting the object to not be a string and to be 'nan')
@@ -178,6 +188,7 @@ def csv_to_subscenario_for_insertion(
                 cols_to_exclude_str=cols_to_exclude_str,
                 subscenario_id=subscenario_id,
             )
+
         else:
             # We need the project and subscenario ID as keyword arguments to
             # get_subscenario_data()
@@ -193,7 +204,7 @@ def csv_to_subscenario_for_insertion(
                 subscenario_id=subscenario_id,
             )
 
-    return subsc_tuples, csv_headers, data_tuples
+    return subsc_tuples, csv_headers, data_tuples, default_subscenario_id
 
 
 def get_subscenario_description(input_dir, csv_filename):
@@ -254,12 +265,14 @@ def get_subscenario_data_and_insert_into_db(
     if not quiet:
         print("   ...importing data from {}".format(csv_file))
 
-    subscenario_tuples, csv_headers, inputs_tuples = csv_to_subscenario_for_insertion(
-        dir_subsc=dir_subsc,
-        inputs_dir=inputs_dir,
-        csv_file=csv_file,
-        sub_input_flag=use_project_method,
-        cols_to_exclude_str=cols_to_exclude_str,
+    subscenario_tuples, csv_headers, inputs_tuples, default_subscenario_id = (
+        csv_to_subscenario_for_insertion(
+            dir_subsc=dir_subsc,
+            inputs_dir=inputs_dir,
+            csv_file=csv_file,
+            sub_input_flag=use_project_method,
+            cols_to_exclude_str=cols_to_exclude_str,
+        )
     )
 
     generic_insert_subscenario(
@@ -274,6 +287,17 @@ def get_subscenario_data_and_insert_into_db(
         skip_subscenario_info=skip_subscenario_info,
         skip_subscenario_data=skip_subscenario_data,
     )
+
+    # Update the subscenario with the data from the default subscenario ID
+    if default_subscenario_id is not None:
+        update_subscenario_id_with_defaults(
+            conn=conn,
+            table=table,
+            subscenario=subscenario,
+            subscenario_id=subscenario_tuples[0][0],
+            default_subscenario_id=default_subscenario_id,
+            quiet=quiet,
+        )
 
     # If a custom method is requsted, run it here to finalize the subscenario
     if custom_method != "nan":
@@ -312,8 +336,18 @@ def read_all_csv_subscenarios_from_dir_and_insert_into_db(
     Read data from all subscenario CSVs in a directory and insert them into
     the database.
     """
+
     # List all files in directory and look for CSVs
-    csv_files = [f for f in os.listdir(inputs_dir) if f.endswith(".csv")]
+    def get_starting_integer(filename):
+        return int(filename.split("_")[0])
+
+    if not use_project_method:
+        csv_files = sorted(
+            [f for f in os.listdir(inputs_dir) if f.endswith(".csv")],
+            key=get_starting_integer,
+        )
+    else:
+        csv_files = sorted([f for f in os.listdir(inputs_dir) if f.endswith(".csv")])
 
     # Check that the subscenario IDs based on the file names are unique
     check_ids_are_unique(
@@ -1276,3 +1310,82 @@ def verify_sub_input_flag_project_alignment(project, sub_input_flag, subscenario
             "Please specify which project you'd like to import data for "
             "in addition to the {}.".format(subscenario)
         )
+
+
+def update_subscenario_id_with_defaults(
+    conn, table, subscenario, subscenario_id, default_subscenario_id, quiet
+):
+    """
+    :param subscenario: str
+    :param default_subscenario_id: int
+    :param subscenario_id: int
+
+    Add the data from the default subscenario ID to the data for the subscenario ID
+    """
+    if not quiet:
+        print(
+            "...updating subscenario {} with data from default subscenario ID {}".format(
+                subscenario_id, default_subscenario_id
+            )
+        )
+
+    c = conn.cursor()
+
+    # Get primary key columns excluding the subscenario column
+    primary_key_column_list_wo_subscenario_column = [
+        i[0]
+        for i in c.execute(
+            f"""
+    SELECT name FROM pragma_table_info('inputs_{table}') WHERE pk != 0;
+    """
+        ).fetchall()
+    ]
+    primary_key_column_list_wo_subscenario_column.remove(subscenario)
+
+    primary_key_columns_wo_subscenario_str = ", ".join(
+        primary_key_column_list_wo_subscenario_column
+    )
+
+    # Get the non-primary-key columns
+    data_columns = [
+        i[0]
+        for i in c.execute(
+            f"""
+    SELECT name FROM pragma_table_info('inputs_{table}') WHERE pk = 0;
+    """
+        ).fetchall()
+    ]
+
+    data_columns_str = ", ".join(data_columns)
+
+    # Insert default values from the default subscenario ID for all primary
+    # key values that do not existin int he subscenario ID
+    insert_sql = f"""
+    INSERT INTO inputs_{table}
+    ({subscenario}, {primary_key_columns_wo_subscenario_str}, {data_columns_str})
+    SELECT {subscenario_id}, {primary_key_columns_wo_subscenario_str}, {data_columns_str}
+    FROM inputs_{table}
+     WHERE {subscenario} = {default_subscenario_id}
+        AND {primary_key_columns_wo_subscenario_str} NOT IN (
+            SELECT {primary_key_columns_wo_subscenario_str}
+            FROM inputs_{table}
+            WHERE {subscenario} = {subscenario_id}
+        );"""
+
+    spin_on_database_lock(conn=conn, cursor=c, sql=insert_sql, data=[], many=False)
+
+    # all_default_values = [
+    #     i
+    #     for i in c.execute(
+    #         f"""
+    #     SELECT * FROM inputs_{table}
+    #     WHERE {subscenario} = {default_subscenario_id}
+    #     AND {primary_key_columns_wo_subscenario_str} NOT IN (
+    #         SELECT {primary_key_columns_wo_subscenario_str}
+    #         FROM inputs_{table}
+    #         WHERE {subscenario} = {subscenario_id}
+    #     );"""
+    #     ).fetchall()
+    # ]
+
+    # print(all_default_values)
