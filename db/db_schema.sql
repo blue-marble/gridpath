@@ -434,8 +434,8 @@ CREATE TABLE inputs_temporal_horizon_timepoints
 ---------------------
 
 -- Load zones
--- This is the unit at which load is met in the model: it could be one zone
--- or many zones
+-- This is the unit at which load is met in the model
+-- This table defines the load zone "portfolio"
 DROP TABLE IF EXISTS subscenarios_geography_load_zones;
 CREATE TABLE subscenarios_geography_load_zones
 (
@@ -447,7 +447,28 @@ CREATE TABLE subscenarios_geography_load_zones
 DROP TABLE IF EXISTS inputs_geography_load_zones;
 CREATE TABLE inputs_geography_load_zones
 (
-    load_zone_scenario_id              INTEGER,
+    load_zone_scenario_id INTEGER,
+    load_zone             VARCHAR(32),
+    PRIMARY KEY (load_zone_scenario_id, load_zone),
+    FOREIGN KEY (load_zone_scenario_id) REFERENCES
+        subscenarios_geography_load_zones (load_zone_scenario_id)
+);
+
+-- Load balance
+-- This table defines various load balance parameters for each load zone (e.g.,
+-- if unserved energy is allowed, at what cost, etc.)
+DROP TABLE IF EXISTS subscenarios_geography_load_balance;
+CREATE TABLE subscenarios_geography_load_balance
+(
+    load_balance_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name                     VARCHAR(32),
+    description              VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_geography_load_balance;
+CREATE TABLE inputs_geography_load_balance
+(
+    load_balance_scenario_id           INTEGER,
     load_zone                          VARCHAR(32),
     allow_overgeneration               INTEGER,
     overgeneration_penalty_per_mw      FLOAT,
@@ -458,9 +479,9 @@ CREATE TABLE inputs_geography_load_zones
     max_unserved_load_limit_mw         FLOAT, -- limit on the max unserved load
     export_penalty_cost_per_mwh        FLOAT,
     unserved_energy_stats_threshold_mw FLOAT, -- defaults to 0
-    PRIMARY KEY (load_zone_scenario_id, load_zone),
-    FOREIGN KEY (load_zone_scenario_id) REFERENCES
-        subscenarios_geography_load_zones (load_zone_scenario_id)
+    PRIMARY KEY (load_balance_scenario_id, load_zone),
+    FOREIGN KEY (load_balance_scenario_id) REFERENCES
+        subscenarios_geography_load_balance (load_balance_scenario_id)
 );
 
 
@@ -598,8 +619,8 @@ DROP TABLE IF EXISTS subscenarios_geography_inertia_reserves_bas;
 CREATE TABLE subscenarios_geography_inertia_reserves_bas
 (
     inertia_reserves_ba_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name                             VARCHAR(32),
-    description                      VARCHAR(128)
+    name                            VARCHAR(32),
+    description                     VARCHAR(128)
 );
 
 DROP TABLE IF EXISTS inputs_geography_inertia_reserves_bas;
@@ -1108,10 +1129,10 @@ CREATE TABLE subscenarios_market_volume_totals_in_prd
 DROP TABLE IF EXISTS inputs_market_volume_totals_in_prd;
 CREATE TABLE inputs_market_volume_totals_in_prd
 (
-    market_volume_total_in_prd_scenario_id INTEGER,
-    period                                 FLOAT,
-    max_total_net_market_purchases_in_prd  FLOAT,
-    max_total_net_market_sales_in_prd      FLOAT,
+    market_volume_total_in_prd_scenario_id                   INTEGER,
+    period                                                   FLOAT,
+    max_total_net_market_purchases_in_prd                    FLOAT,
+    max_total_net_market_sales_in_prd                        FLOAT,
     max_total_net_market_sales_in_prd_include_storage_losses INTEGER, -- Based on 'stor' operational type
     PRIMARY KEY (market_volume_total_in_prd_scenario_id, period),
     FOREIGN KEY (market_volume_total_in_prd_scenario_id) REFERENCES
@@ -3314,15 +3335,15 @@ DROP TABLE IF EXISTS subscenarios_project_inertia_reserves_bas;
 CREATE TABLE subscenarios_project_inertia_reserves_bas
 (
     project_inertia_reserves_ba_scenario_id INTEGER PRIMARY KEY,
-    name                                     VARCHAR(32),
-    description                              VARCHAR(128)
+    name                                    VARCHAR(32),
+    description                             VARCHAR(128)
 );
 
 DROP TABLE IF EXISTS inputs_project_inertia_reserves_bas;
 CREATE TABLE inputs_project_inertia_reserves_bas
 (
     project_inertia_reserves_ba_scenario_id INTEGER,
-    project                                  VARCHAR(64),
+    project                                 VARCHAR(64),
     inertia_reserves_ba                     VARCHAR(32),
     PRIMARY KEY (project_inertia_reserves_ba_scenario_id, project),
     FOREIGN KEY (project_inertia_reserves_ba_scenario_id)
@@ -3762,8 +3783,8 @@ CREATE TABLE inputs_project_elcc_chars
     min_duration_for_full_capacity_credit_hours FLOAT,
     project_elcc_simple_scenario_id             INTEGER,
     project_deliverability_scenario_id          INTEGER CHECK (
-            project_deliverability_scenario_id IS NULL OR
-            prm_type = 'energy_only_allowed'
+        project_deliverability_scenario_id IS NULL OR
+        prm_type = 'energy_only_allowed'
         ),                                                   -- can be NULL; otherwise ensure projects with group are energy_only_allowed
     PRIMARY KEY (project_elcc_chars_scenario_id, project),
     FOREIGN KEY (prm_type) REFERENCES mod_prm_types (prm_type),
@@ -3925,7 +3946,7 @@ CREATE TABLE inputs_project_prm_deliverability_existing
     deliverability_group                    VARCHAR(64),
     period                                  FLOAT,
     constraint_type                         VARCHAR(16) CHECK (
-                constraint_type = 'total'
+        constraint_type = 'total'
             OR constraint_type = 'deliverable'
             OR constraint_type = 'energy_only'
         ),
@@ -3975,7 +3996,7 @@ CREATE TABLE inputs_project_prm_deliverability_multipliers
     project_prm_deliverability_multipliers_scenario_id INTEGER,
     project                                            VARCHAR(64),
     constraint_type                                    VARCHAR(16) CHECK (
-                constraint_type = 'total'
+        constraint_type = 'total'
             OR constraint_type = 'deliverable'
             OR constraint_type = 'energy_only'
         ),
@@ -4159,21 +4180,22 @@ CREATE TABLE inputs_transmission_carbon_cap_zones
 DROP TABLE IF EXISTS subscenarios_transmission_carbon_cap_timepoint_emissions;
 CREATE TABLE subscenarios_transmission_carbon_cap_timepoint_emissions
 (
-    transmission_line                               VARCHAR(64),
-    tmp_import_emissions_scenario_id                INTEGER, 
-    name                                            VARCHAR(32),
-    description                                     VARCHAR(128),
+    transmission_line                VARCHAR(64),
+    tmp_import_emissions_scenario_id INTEGER,
+    name                             VARCHAR(32),
+    description                      VARCHAR(128),
     PRIMARY KEY (transmission_line, tmp_import_emissions_scenario_id)
 );
 
 DROP TABLE IF EXISTS inputs_transmission_carbon_cap_timepoint_emissions;
 CREATE TABLE inputs_transmission_carbon_cap_timepoint_emissions
 (
-    transmission_line                               VARCHAR(64),
-    tmp_import_emissions_scenario_id                INTEGER,
-    timepoint                                       INTEGER,
-    tx_co2_intensity_tons_per_mwh_hourly                   FLOAT,
-    PRIMARY KEY (transmission_line, tmp_import_emissions_scenario_id, timepoint),
+    transmission_line                    VARCHAR(64),
+    tmp_import_emissions_scenario_id     INTEGER,
+    timepoint                            INTEGER,
+    tx_co2_intensity_tons_per_mwh_hourly FLOAT,
+    PRIMARY KEY (transmission_line, tmp_import_emissions_scenario_id,
+                 timepoint),
     FOREIGN KEY (transmission_line, tmp_import_emissions_scenario_id) REFERENCES
         subscenarios_transmission_carbon_cap_timepoint_emissions
             (transmission_line, tmp_import_emissions_scenario_id)
@@ -4298,11 +4320,11 @@ CREATE TABLE inputs_transmission_availability_exogenous
     exogenous_availability_scenario_id INTEGER,
     stage_id                           INTEGER,
     timepoint                          INTEGER CHECK (
-            (timepoint = 0 AND month > 0)
+        (timepoint = 0 AND month > 0)
             or (timepoint > 0 AND month = 0)
         ), -- use 0 for monthly availability
     month                              INTEGER CHECK (
-            (timepoint = 0 AND month > 0)
+        (timepoint = 0 AND month > 0)
             or (timepoint > 0 AND month = 0)
         ), -- use 0 for timepoint-level availability
     availability_derate                FLOAT,
@@ -5011,8 +5033,8 @@ DROP TABLE IF EXISTS subscenarios_system_inertia_reserves;
 CREATE TABLE subscenarios_system_inertia_reserves
 (
     inertia_reserves_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name                          VARCHAR(32),
-    description                   VARCHAR(128)
+    name                         VARCHAR(32),
+    description                  VARCHAR(128)
 );
 
 -- Can include timepoints and zones other than the ones in a scenario, as
@@ -5041,8 +5063,8 @@ CREATE TABLE inputs_system_inertia_reserves_percent
 (
     inertia_reserves_scenario_id INTEGER,
     inertia_reserves_ba          VARCHAR(32),
-    stage_id                      INTEGER,
-    percent_load_req              FLOAT,
+    stage_id                     INTEGER,
+    percent_load_req             FLOAT,
     PRIMARY KEY (inertia_reserves_scenario_id, inertia_reserves_ba, stage_id)
 );
 
@@ -5051,7 +5073,7 @@ CREATE TABLE inputs_system_inertia_reserves_percent_lz_map
 (
     inertia_reserves_scenario_id INTEGER,
     inertia_reserves_ba          VARCHAR(32),
-    load_zone                     VARCHAR(32),
+    load_zone                    VARCHAR(32),
     PRIMARY KEY (inertia_reserves_scenario_id, inertia_reserves_ba, load_zone)
 );
 
@@ -5063,10 +5085,10 @@ CREATE TABLE inputs_system_inertia_reserves_project
 (
     inertia_reserves_scenario_id INTEGER,
     inertia_reserves_ba          VARCHAR(32),
-    stage_id                      INTEGER,
-    project                       VARCHAR(64),
-    percent_power_req             FLOAT,
-    percent_capacity_req          FLOAT,
+    stage_id                     INTEGER,
+    project                      VARCHAR(64),
+    percent_power_req            FLOAT,
+    percent_capacity_req         FLOAT,
     PRIMARY KEY (inertia_reserves_scenario_id, inertia_reserves_ba, stage_id,
                  project)
 );
@@ -5615,6 +5637,7 @@ CREATE TABLE scenarios
     of_policy                                                   INTEGER,
     temporal_scenario_id                                        INTEGER,
     load_zone_scenario_id                                       INTEGER,
+    load_balance_scenario_id                                    INTEGER,
     lf_reserves_up_ba_scenario_id                               INTEGER,
     lf_reserves_down_ba_scenario_id                             INTEGER,
     regulation_up_ba_scenario_id                                INTEGER,
@@ -5740,6 +5763,8 @@ CREATE TABLE scenarios
         subscenarios_temporal (temporal_scenario_id),
     FOREIGN KEY (load_zone_scenario_id) REFERENCES
         subscenarios_geography_load_zones (load_zone_scenario_id),
+    FOREIGN KEY (load_balance_scenario_id) REFERENCES
+        subscenarios_geography_load_balance (load_balance_scenario_id),
     FOREIGN KEY (lf_reserves_up_ba_scenario_id) REFERENCES
         subscenarios_geography_lf_reserves_up_bas (lf_reserves_up_ba_scenario_id),
     FOREIGN KEY (lf_reserves_down_ba_scenario_id) REFERENCES
@@ -7261,7 +7286,7 @@ DROP TABLE IF EXISTS results_system_inertia_reserves;
 CREATE TABLE results_system_inertia_reserves
 (
     scenario_id                  INTEGER,
-    inertia_reserves_ba         VARCHAR(32),
+    inertia_reserves_ba          VARCHAR(32),
     period                       INTEGER,
     weather_iteration            INTEGER,
     hydro_iteration              INTEGER,
@@ -8169,7 +8194,7 @@ FROM (
                 project,
                 period
          FROM inputs_project_specified_capacity
-              -- Add operational periods of new projects
+         -- Add operational periods of new projects
          UNION ALL
          SELECT NULL AS project_specified_capacity_scenario_id,
                 project_new_cost_scenario_id,
@@ -8201,7 +8226,7 @@ FROM (
                 transmission_line,
                 period
          FROM inputs_transmission_specified_capacity
-              -- Add operational periods of new projects
+         -- Add operational periods of new projects
          UNION ALL
          SELECT NULL AS transmission_specified_capacity_scenario_id,
                 transmission_new_cost_scenario_id,

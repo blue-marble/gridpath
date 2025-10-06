@@ -33,6 +33,7 @@ of_tuning,
 of_policy,
 temporal_scenario_id,1
 load_zone_scenario_id,1
+load_balance_scenario_id,1
 lf_reserves_up_ba_scenario_id,1
 lf_reserves_down_ba_scenario_id,1
 regulation_up_ba_scenario_id,1
