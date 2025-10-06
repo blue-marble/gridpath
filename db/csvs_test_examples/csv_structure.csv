@@ -13,6 +13,7 @@ system_load/system_load/load_components,core,load_components_scenario_id,system_
 system_load/system_load/load_levels,core,load_levels_scenario_id,system_load_levels,simple,,0,,,,,
 system_load/system_load,core,load_scenario_id,system_load,simple,,0,,,,,
 system_load/load_zones,core,load_zone_scenario_id,geography_load_zones,simple,,0,,,,,
+system_load/load_balance,core,load_balance_scenario_id,geography_load_balance,simple,,0,,,,,
 project/load_zones,core,project_load_zone_scenario_id,project_load_zones,simple,,0,,,,,
 project/capacity/specified_capacity,data_dependent,project_specified_capacity_scenario_id,project_specified_capacity,simple,,0,,,,,
 project/capacity/specified_fixed_cost,data_dependent,project_specified_fixed_cost_scenario_id,project_specified_fixed_cost,simple,,0,,,,,
