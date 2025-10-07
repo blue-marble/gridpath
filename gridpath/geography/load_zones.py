@@ -55,13 +55,17 @@ def add_model_components(
         m.LOAD_ZONES, within=NonNegativeReals, default=float("inf")
     )
 
-    m.max_unserved_load_penalty_per_mw = Param(m.LOAD_ZONES, within=NonNegativeReals)
+    m.max_unserved_load_penalty_per_mw = Param(
+        m.LOAD_ZONES, within=NonNegativeReals, default=0
+    )
     m.max_unserved_load_limit_mw = Param(
         m.LOAD_ZONES, within=NonNegativeReals, default=float("inf")
     )
 
     # Can only be applied if transmission is included
-    m.export_penalty_cost_per_mwh = Param(m.LOAD_ZONES, within=NonNegativeReals)
+    m.export_penalty_cost_per_mwh = Param(
+        m.LOAD_ZONES, within=NonNegativeReals, default=0
+    )
 
     # Unserved energy threshold used in results processing (size of unserved
     # load events that counts for the loss of load statistics)

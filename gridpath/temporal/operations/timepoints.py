@@ -148,10 +148,10 @@ def add_model_components(
     +-------------------------------------------------------------------------+
     | | :code:`month`                                                         |
     | | *Defined over*: :code:`TMPS`                                          |
-    | | *Within*: :code:`MONTHS`                                              |
+    | | *Within*: :code:`MONTHS | {"undefined"}`                              |
     |                                                                         |
-    | The month that each timepoint belongs to. This is used to determine     |
-    | fuel costs during that timepoint, among others.                         |
+    | The month that each timepoint belongs to. Can be undefined, but is      |
+    | needed if you have any parameters that are indexed by month.            |
     +-------------------------------------------------------------------------+
 
     .. TODO:: varying timepoint durations haven't been extensiveliy tested
@@ -178,7 +178,7 @@ def add_model_components(
 
     m.prev_stage_tmp_map = Param(m.TMPS, within=NonNegativeIntegers)
 
-    m.month = Param(m.TMPS, within=m.MONTHS)
+    m.month = Param(m.TMPS, within=m.MONTHS | {"undefined"}, default="undefined")
 
     m.day_of_month = Param(m.TMPS, within=NonNegativeIntegers, default=0)
 
