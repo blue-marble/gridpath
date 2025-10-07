@@ -35,6 +35,7 @@ from gridpath.auxiliary.validations import (
     validate_values,
     validate_missing_inputs,
 )
+from gridpath.project import write_tab_file_model_inputs
 from gridpath.project.common_functions import determine_project_subset
 
 
@@ -107,9 +108,9 @@ def add_model_components(
 ###############################################################################
 
 
-def availability_derate_rule(mod, g, tmp):
+def availability_derate_rule(mod, tx, tmp):
     """ """
-    return mod.tx_avl_exog_derate[g, tmp]
+    return mod.tx_avl_exog_derate[tx, tmp]
 
 
 # Input-Output
@@ -135,7 +136,16 @@ def load_model_data(
     :param stage:
     :return:
     """
-    # Figure out which lines have this availability type
+    # Figure out which projects have this availability type
+    # Check the 'exogenous' is the default availability type
+    from gridpath.transmission import DEFAULT_TX_AVAILABILITY_TYPE
+
+    if DEFAULT_TX_AVAILABILITY_TYPE != "exogenous":
+        raise Exception(
+            "The exogenous tx availability type must be the default."
+            "The 'exogenous' tx availabilty type assumes this in determing "
+            "inputs."
+        )
     # TODO: move determine_project_subset and rename, as we're using for tx too
     tx_subset = determine_project_subset(
         scenario_directory=scenario_directory,
@@ -146,6 +156,17 @@ def load_model_data(
         stage=stage,
         column="tx_availability_type",
         type="exogenous",
+        prj_or_tx="transmission_line",
+    ) + determine_project_subset(
+        scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        column="tx_availability_type",
+        type=".",  # Lines without availabilty type specified default to
+        # exogenous
         prj_or_tx="transmission_line",
     )
 
@@ -281,32 +302,19 @@ def write_model_inputs(
         db_subproblem,
         db_stage,
         conn,
-    ).fetchall()
+    )
 
-    if availabilities:
-        with open(
-            os.path.join(
-                scenario_directory,
-                weather_iteration,
-                hydro_iteration,
-                availability_iteration,
-                subproblem,
-                stage,
-                "inputs",
-                "transmission_availability_exogenous.tab",
-            ),
-            "w",
-            newline="",
-        ) as availability_tab_file:
-            writer = csv.writer(
-                availability_tab_file, delimiter="\t", lineterminator="\n"
-            )
-
-            writer.writerow(["transmission_line", "timepoint", "availability_derate"])
-
-            for row in availabilities:
-                row = ["." if i is None else i for i in row]
-                writer.writerow(row)
+    write_tab_file_model_inputs(
+        scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        fname="transmission_availability_exogenous.tab",
+        data=availabilities,
+        replace_nulls=True,
+    )
 
 
 # Validation
