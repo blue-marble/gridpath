@@ -250,7 +250,6 @@ def all_modules_list():
         "objective.transmission.aggregate_capacity_costs",
         "objective.transmission.aggregate_hurdle_costs",
         "objective.transmission.aggregate_tx_tuning_costs",
-        "objective.transmission.carbon_imports_tuning_costs",
         "objective.system.aggregate_load_balance_penalties",
         "objective.system.reserve_violation_penalties.lf_reserves_up",
         "objective.system.reserve_violation_penalties.lf_reserves_down",
@@ -272,7 +271,6 @@ def all_modules_list():
         "objective.system.policy.aggregate_subsidies",
         "objective.system.policy.aggregate_carbon_credit_sales_and_purchases",
         "objective.system.reliability.prm.aggregate_capacity_transfer_costs",
-        "objective.system.reliability.prm.dynamic_elcc_tuning_penalties",
         "objective.system.reliability.prm.aggregate_prm_violation_penalties",
         "objective.system.reliability.local_capacity"
         ".aggregate_local_capacity_violation_penalties",
@@ -517,10 +515,6 @@ def optional_modules_list():
             "objective.system.water.aggregate_reservoir_violation_penalty_costs",
             "objective.system.water.aggregate_flow_violation_penalty_costs",
         ],
-        "tuning": [
-            "project.operations.tuning_costs",
-            "objective.project.aggregate_operational_tuning_costs",
-        ],
     }
     return optional_modules
 
@@ -545,9 +539,6 @@ def cross_feature_modules_list():
             "system.policy.carbon_cap" ".aggregate_transmission_carbon_emissions",
             "transmission.operations.carbon_emissions",
         ],
-        ("transmission", "carbon_cap", "track_carbon_imports", "tuning"): [
-            "objective.transmission.carbon_imports_tuning_costs"
-        ],
         ("transmission", "simultaneous_flow_limits"): [
             "transmission.operations.simultaneous_flow_limits"
         ],
@@ -563,9 +554,6 @@ def cross_feature_modules_list():
         ("prm", "deliverability"): [
             "project.reliability.prm.group_costs",
             "objective.project.aggregate_prm_group_costs",
-        ],
-        ("prm", "elcc_surface", "tuning"): [
-            "objective.system.reliability.prm.dynamic_elcc_tuning_penalties"
         ],
         ("carbon_cap", "carbon_credits"): [
             "system.policy.carbon_cap.aggregate_project_carbon_credits",

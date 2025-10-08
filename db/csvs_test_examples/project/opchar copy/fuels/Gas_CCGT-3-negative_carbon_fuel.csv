@@ -1,0 +1,3 @@
+fuel,min_fraction_in_fuel_blend,max_fraction_in_fuel_blend
+Gas,0,1
+Negative_Carbon_Fuel,0,1

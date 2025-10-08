@@ -297,6 +297,12 @@ def add_model_components(
     | The project's cost for violating its ramp down constraint per unit      |
     | energy.                                                                 |
     +-------------------------------------------------------------------------+
+    | | :code:`ramp_tuning_cost_per_mw`                                       |
+    | | *Defined over*: :code:`PRJS`.                                         |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's cost on ramping (usually used for tuning dispatch).       |
+    +-------------------------------------------------------------------------+
     | | :code:`min_up_time_violation_penalty`                                 |
     | | *Defined over*: :code:`MIN_UP_TIME_VIOL_PRJS`                         |
     | | *Within*: :code:`NonNegativeReals`                                    |
@@ -523,6 +529,8 @@ def add_model_components(
         m.RAMP_DOWN_VIOL_PRJS, within=NonNegativeReals
     )
 
+    m.ramp_tuning_cost_per_mw = Param(m.PROJECTS, within=NonNegativeReals, default=0)
+
     m.min_up_time_violation_penalty = Param(
         m.MIN_UP_TIME_VIOL_PRJS, within=NonNegativeReals
     )
@@ -655,6 +663,7 @@ def load_model_data(
             "shutdown_cost_per_mw",
             "ramp_up_violation_penalty",
             "ramp_down_violation_penalty",
+            "ramp_tuning_cost_per_mw",
             "min_up_time_violation_penalty",
             "min_down_time_violation_penalty",
             "soc_penalty_cost_per_energyunit",
@@ -668,6 +677,7 @@ def load_model_data(
             m.shutdown_cost_per_mw,
             m.ramp_up_violation_penalty,
             m.ramp_down_violation_penalty,
+            m.ramp_tuning_cost_per_mw,
             m.min_up_time_violation_penalty,
             m.min_down_time_violation_penalty,
             m.soc_penalty_cost_per_energyunit,
@@ -993,6 +1003,7 @@ def get_inputs_from_database(
         ramp_down_when_on_rate,
         ramp_up_violation_penalty,
         ramp_down_violation_penalty,
+        ramp_tuning_cost_per_mw,
         min_up_time_hours, min_up_time_violation_penalty,
         min_down_time_hours, min_down_time_violation_penalty,
         allow_startup_shutdown_power,
@@ -1374,6 +1385,7 @@ def write_model_inputs(
         "ramp_down_when_on_rate",
         "ramp_up_violation_penalty",
         "ramp_down_violation_penalty",
+        "ramp_tuning_cost_per_mw",
         "min_up_time_hours",
         "min_up_time_violation_penalty",
         "min_down_time_hours",

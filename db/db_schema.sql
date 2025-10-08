@@ -1991,6 +1991,7 @@ CREATE TABLE inputs_project_operational_chars
     bt_hrz_ramp_down_rate_limit_scenario_id               INTEGER,
     total_ramp_up_limit_scenario_id                       INTEGER,
     total_ramp_down_limit_scenario_id                     INTEGER,
+    ramp_tuning_cost_per_mw                               FLOAT,
     min_up_time_hours                                     INTEGER,
     min_up_time_violation_penalty                         FLOAT,   -- leave NULL for hard constraint
     min_down_time_hours                                   INTEGER,
@@ -7828,6 +7829,7 @@ CREATE TABLE results_system_costs
     Total_Max_Water_Storage_Violation_Penalty_Cost          FLOAT,
     Total_Hrz_Min_Flow_Violation_Penalty_Cost               FLOAT,
     Total_Hrz_Max_Flow_Violation_Penalty_Cost               FLOAT,
+    Total_Ramp_Tuning_Cost                                  FLOAT,
     PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
                  availability_iteration, subproblem_id, stage_id)
 );
