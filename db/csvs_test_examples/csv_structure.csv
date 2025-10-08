@@ -191,7 +191,6 @@ reliability/local_capacity/geography_local_capacity_zones,local_capacity,local_c
 reliability/local_capacity/project_local_capacity_zones,local_capacity,project_local_capacity_zone_scenario_id,project_local_capacity_zones,simple,,0,,,,,
 reliability/local_capacity/project_local_capacity_chars,local_capacity,project_local_capacity_chars_scenario_id,project_local_capacity_chars,simple,,0,,,,,
 reliability/local_capacity/system_local_capacity_requirement,local_capacity,local_capacity_requirement_scenario_id,system_local_capacity_requirement,simple,,0,,,,,
-,tuning,tuning_scenario_id,tuning,simple,,0,,,,,
 markets/geography_markets,markets,market_scenario_id,geography_markets,simple,,0,,,,,
 markets/load_zone_markets,markets,load_zone_market_scenario_id,load_zone_markets,simple,,0,,,,,
 markets/prices,markets,market_price_scenario_id,market_prices,simple,,0,,,,,

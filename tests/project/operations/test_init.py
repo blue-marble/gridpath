@@ -877,6 +877,36 @@ class TestOperationsInit(unittest.TestCase):
             expected_ramp_down_viol_by_prj, actual_ramp_down_viol_by_prj
         )
 
+        # Param: ramp_tuning_cost_per_mw
+        ramp_tuning_cost_df = projects_df
+        # Change ramp_tuning_cost_per_mw to 0 where ramp_tuning_cost_per_mw
+        # is ".
+        ramp_tuning_cost_df.loc[
+            ramp_tuning_cost_df["ramp_tuning_cost_per_mw"] == ".",
+            "ramp_tuning_cost_per_mw",
+        ] = 0
+
+        expected_ramp_tuning_cost_by_prj = OrderedDict(
+            sorted(
+                dict(
+                    zip(
+                        ramp_tuning_cost_df["project"],
+                        pd.to_numeric(ramp_tuning_cost_df["ramp_tuning_cost_per_mw"]),
+                    )
+                ).items()
+            )
+        )
+        actual_ramp_tuning_cost_by_prj = OrderedDict(
+            sorted(
+                {
+                    p: instance.ramp_tuning_cost_per_mw[p] for p in instance.PROJECTS
+                }.items()
+            )
+        )
+        self.assertDictEqual(
+            expected_ramp_tuning_cost_by_prj, actual_ramp_tuning_cost_by_prj
+        )
+
         # Param: min_up_time_violation_penalty
         min_up_time_viol_df = projects_df[
             projects_df["min_up_time_violation_penalty"] != "."

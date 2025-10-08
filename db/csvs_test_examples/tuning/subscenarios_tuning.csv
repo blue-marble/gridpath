@@ -1,5 +1,0 @@
-project_portfolio_scenario_id,name,description,filename
-1,project_portfolio_1zone_nonew,project portfolio 1 zone no new projects,project_portfolios_1zone_nonew
-2,project_portfolio_1zone_new,project portfolio 1 zone allow new projects,project_portfolios_1zone_new
-3,project_portfolio_2zones_nonew,project portfolio 2 zones no new projects,project_portfolios_2zones_nonew
-4,project_portfolio_2zones_new,project portfolio 2 zones allow new projects,project_portfolios_2zones_new
