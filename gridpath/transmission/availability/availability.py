@@ -18,6 +18,7 @@ from gridpath.auxiliary.auxiliary import (
     get_required_subtype_modules,
     load_subtype_modules,
 )
+from gridpath.transmission import DEFAULT_TX_AVAILABILITY_TYPE
 
 
 def add_model_components(
@@ -37,16 +38,30 @@ def add_model_components(
     :return:
     """
     # Import needed availability type modules
-    required_availability_modules = get_required_subtype_modules(
-        scenario_directory=scenario_directory,
-        weather_iteration=weather_iteration,
-        hydro_iteration=hydro_iteration,
-        availability_iteration=availability_iteration,
-        subproblem=subproblem,
-        stage=stage,
-        filename="transmission_lines",
-        which_type="tx_availability_type",
+    required_availability_modules = list(
+        set(
+            list(
+                get_required_subtype_modules(
+                    scenario_directory=scenario_directory,
+                    weather_iteration=weather_iteration,
+                    hydro_iteration=hydro_iteration,
+                    availability_iteration=availability_iteration,
+                    subproblem=subproblem,
+                    stage=stage,
+                    filename="transmission_lines",
+                    which_type="tx_availability_type",
+                )
+            )
+            + [DEFAULT_TX_AVAILABILITY_TYPE]
+        )
     )
+
+    # Remove "." (i.e. transmission_lines with no availability type specified,
+    # which will default to the default availability type, "exogenous")
+    required_availability_modules = [
+        r for r in required_availability_modules if r != "."
+    ]
+
     imported_availability_modules = load_availability_type_modules(
         required_availability_modules
     )
@@ -107,16 +122,30 @@ def load_model_data(
     :param stage:
     :return:
     """
-    required_availability_modules = get_required_subtype_modules(
-        scenario_directory=scenario_directory,
-        weather_iteration=weather_iteration,
-        hydro_iteration=hydro_iteration,
-        availability_iteration=availability_iteration,
-        subproblem=subproblem,
-        stage=stage,
-        filename="transmission_lines",
-        which_type="tx_availability_type",
+    required_availability_modules = list(
+        set(
+            list(
+                get_required_subtype_modules(
+                    scenario_directory=scenario_directory,
+                    weather_iteration=weather_iteration,
+                    hydro_iteration=hydro_iteration,
+                    availability_iteration=availability_iteration,
+                    subproblem=subproblem,
+                    stage=stage,
+                    filename="transmission_lines",
+                    which_type="tx_availability_type",
+                )
+            )
+            + [DEFAULT_TX_AVAILABILITY_TYPE]
+        )
     )
+
+    # Remove "." (i.e. projects with no availability type specified,
+    # which will default to the default availability type, "exogenous")
+    required_availability_modules = [
+        r for r in required_availability_modules if r != "."
+    ]
+
     imported_availability_modules = load_availability_type_modules(
         required_availability_modules
     )
@@ -157,16 +186,30 @@ def export_results(
     """
 
     # Module-specific capacity results
-    required_availability_modules = get_required_subtype_modules(
-        scenario_directory=scenario_directory,
-        weather_iteration=weather_iteration,
-        hydro_iteration=hydro_iteration,
-        availability_iteration=availability_iteration,
-        subproblem=subproblem,
-        stage=stage,
-        which_type="tx_availability_type",
-        filename="transmission_lines",
+    required_availability_modules = list(
+        set(
+            list(
+                get_required_subtype_modules(
+                    scenario_directory=scenario_directory,
+                    weather_iteration=weather_iteration,
+                    hydro_iteration=hydro_iteration,
+                    availability_iteration=availability_iteration,
+                    subproblem=subproblem,
+                    stage=stage,
+                    which_type="tx_availability_type",
+                    filename="transmission_lines",
+                )
+            )
+            + [DEFAULT_TX_AVAILABILITY_TYPE]
+        )
     )
+
+    # Remove "." (i.e. projects with no availability type specified,
+    # which will default to the default availability type, "exogenous")
+    required_availability_modules = [
+        r for r in required_availability_modules if r != "."
+    ]
+
     imported_availability_modules = load_availability_type_modules(
         required_availability_modules
     )
@@ -313,22 +356,36 @@ def get_required_availability_type_modules(scenario_id, c):
         )
     ).fetchone()[0]
 
-    required_availability_type_modules = [
-        p[0]
-        for p in c.execute(
-            """SELECT DISTINCT availability_type 
-            FROM 
-            (SELECT transmission_line FROM inputs_transmission_portfolios
-            WHERE transmission_portfolio_scenario_id = {}) as prj_tbl
-            INNER JOIN 
-            (SELECT transmission_line, availability_type
-            FROM inputs_transmission_availability
-            WHERE transmission_availability_scenario_id = {}) as av_type_tbl
-            USING (transmission_line)""".format(
-                transmission_portfolio_scenario_id,
-                transmission_availability_scenario_id,
+    if transmission_availability_scenario_id is not None:
+        required_availability_type_modules = list(
+            set(
+                [
+                    p[0]
+                    for p in c.execute(
+                        f"""
+                        SELECT DISTINCT availability_type 
+                        FROM 
+                        (SELECT transmission_line FROM inputs_transmission_portfolios
+                        WHERE transmission_portfolio_scenario_id = {transmission_portfolio_scenario_id}) as prj_tbl
+                        LEFT OUTER JOIN
+                        (SELECT transmission_line, availability_type
+                        FROM inputs_transmission_availability
+                        WHERE transmission_availability_scenario_id = {transmission_availability_scenario_id}) as av_type_tbl
+                        USING (transmission_line)"""
+                    ).fetchall()
+                ]
+                + [DEFAULT_TX_AVAILABILITY_TYPE]
             )
-        ).fetchall()
+        )
+    else:
+        # If no transmission_line availability scenario is specified, then we only use
+        # the default availability type module
+        required_availability_type_modules = [DEFAULT_TX_AVAILABILITY_TYPE]
+
+    # Remove None (i.e. transmission_lines with no availability type specified,
+    # which will default to the default availability type, "exogenous")
+    required_availability_type_modules = [
+        r for r in required_availability_type_modules if r is not None
     ]
 
     return required_availability_type_modules
