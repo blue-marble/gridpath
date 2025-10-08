@@ -156,7 +156,7 @@ def create_plot(df, title, carbon_unit, cost_unit, ylimit=None):
     """
 
     if df.empty:
-        return figure()
+        return figure(), None
 
     # Set up data source
     source = ColumnDataSource(data=df)
@@ -272,7 +272,7 @@ def create_plot(df, title, carbon_unit, cost_unit, ylimit=None):
     )
     plot.add_tools(hover)
 
-    return plot
+    return plot, source
 
 
 def main(args=None):
@@ -316,7 +316,7 @@ def main(args=None):
         stage=parsed_args.stage,
     )
 
-    plot = create_plot(
+    plot, source = create_plot(
         df=df,
         title=plot_title,
         carbon_unit=carbon_unit,
@@ -331,6 +331,7 @@ def main(args=None):
             plot_name=plot_name,
             plot_write_directory=parsed_args.plot_write_directory,
             scenario=scenario,
+            source=source,
         )
 
     conn.close()

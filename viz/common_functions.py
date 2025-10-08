@@ -19,12 +19,15 @@ from argparse import ArgumentParser
 
 from bokeh import events
 from bokeh.plotting import figure, output_file, show
+from bokeh.layouts import column
 from bokeh.models import (
+    Button,
     CustomJS,
     ColumnDataSource,
     Legend,
     FactorRange,
     NumeralTickFormatter,
+    InlineStyleSheet,
 )
 from bokeh.models.tools import HoverTool
 from bokeh.palettes import cividis
@@ -48,7 +51,7 @@ def show_hide_legend(plot):
     )
 
 
-def show_plot(plot, plot_name, plot_write_directory, scenario=None):
+def show_plot(plot, plot_name, plot_write_directory, source, scenario=None):
     """
     Show plot in HTML browser file if requested.
 
@@ -78,7 +81,9 @@ def show_plot(plot, plot_name, plot_write_directory, scenario=None):
     file_path = os.path.join(plot_write_subdir, plot_name + ".html")
 
     output_file(file_path)
-    show(plot)
+
+    layout = add_download_button(plot, source)
+    show(layout)
 
 
 def get_parent_parser():
@@ -462,3 +467,40 @@ def create_stacked_bar_plot(
         plot.add_tools(hover)
 
     return plot
+
+
+def add_download_button(plot, source):
+    stylesheet = InlineStyleSheet(
+        css=".bk-btn { background-color: lightblue; color: white; }"
+    )
+    button = Button(
+        label="Download Data", button_type="success", stylesheets=[stylesheet]
+    )
+    button.js_on_click(
+        CustomJS(
+            args=dict(source=source),
+            code="""
+        const data = source.data;
+        const cols = Object.keys(data);
+        const nrows = data[cols[0]].length;
+        let csv = cols.join(",") + "\\n";
+        for (let i = 0; i < nrows; i++) {
+            let row = [];
+            for (let j = 0; j < cols.length; j++) {
+                row.push(data[cols[j]][i]);
+            }
+            csv += row.join(",") + "\\n";
+        }
+        const blob = new Blob([csv], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "plot_data.csv";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    """,
+        )
+    )
+    return column(plot, button)

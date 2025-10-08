@@ -605,13 +605,14 @@ def create_plot(
     # Order of stacked_cols will define order of stacked areas in chart
     all_cols = list(df.columns)
     x_col = "x"
-    # TODO: remove hard-coding?
+    # We'll need to remove the following from the stacked columns (will be
+    # treated as lines instead)
+    # Note: the order of this list determines the order of the 'Load + ...'
+    # lines
+    items_treated_as_load_plus_lines = ["Storage_Charging", "Exports", "Market_Sales"]
     line_cols_storage_sum_track = [
         "Load",
-        "Exports",
-        "Storage_Charging",
-        "Market_Sales",
-    ]
+    ] + items_treated_as_load_plus_lines
     stacked_cols = [
         c for c in all_cols if c not in line_cols_storage_sum_track + [x_col]
     ]
@@ -661,81 +662,36 @@ def create_plot(
     load_renderers = [load_renderer]
 
     # Add 'Load + ...' lines
-    if "Exports" not in df.columns:
-        inactive_exports = True
-    else:
-        inactive_exports = (df["Exports"] == 0).all()
+    active_items = []
+    for i in ["Storage_Charging", "Exports", "Market_Sales"]:
+        if i not in df.columns:
+            inactive = True
+        else:
+            inactive = (df[i] == 0).all()
+        if not inactive:
+            active_items.append(i)
 
-    if "Market_Sales" not in df.columns:
-        inactive_markets = True
-    else:
-        inactive_markets = (df["Market_Sales"] == 0).all()
-
-    inactive_storage = (df["Storage_Charging"] == 0).all()
-
-    if inactive_exports and inactive_markets:
-        line_cols_storage_sum_track = ["Load", "Storage_Charging"]
-    if not inactive_exports and inactive_markets:
-        line_cols_storage_sum_track = ["Load", "Exports", "Storage_Charging"]
+    previously_processed_items = []
+    for active_item in active_items:
+        line_cols_storage_sum_track = (
+            ["Load"] + previously_processed_items + [active_item]
+        )
         # Add export line to plot
-        label = "Load + Exports"
+        label = " + ".join(str(x) for x in line_cols_storage_sum_track)
         exports_renderer = plot.line(
-            x=df[x_col],
-            y=df[["Load", "Exports"]].sum(axis=1),
-            line_color="black",
-            line_width=2,
-            line_dash="dashed",
-            name=label,
-        )
-        legend_items.append((label, [exports_renderer]))
-        load_renderers.append(exports_renderer)
-    if not inactive_exports and not inactive_markets:
-        line_cols_storage_sum_track = [
-            "Load",
-            "Exports",
-            "Market_Sales",
-            "Storage_Charging",
-        ]
-        # Add export and market lines to plot
-        label = "Load + Exports + Market Sales"
-        exports_renderer = plot.line(
-            x=df[x_col],
-            y=df[["Load", "Exports", "Market_Sales"]].sum(axis=1),
-            line_color="black",
-            line_width=3,
-            line_dash="dashed",
-            name=label,
-        )
-        legend_items.append((label, [exports_renderer]))
-        load_renderers.append(exports_renderer)
-    if inactive_exports and not inactive_markets:
-        line_cols_storage_sum_track = ["Load", "Storage_Charging", "Market_Sales"]
-        # Add export line to plot
-        label = "Load + Market Sales"
-        exports_renderer = plot.line(
-            x=df[x_col],
-            y=df[["Load", "Market_Sales"]].sum(axis=1),
-            line_color="black",
-            line_width=2,
-            line_dash="dashed",
-            name=label,
-        )
-        legend_items.append((label, [exports_renderer]))
-        load_renderers.append(exports_renderer)
-
-    if not inactive_storage:
-        # Add storage line to plot
-        label = legend_items[-1][0] + " + Storage Charging"
-        stor_renderer = plot.line(
             x=df[x_col],
             y=df[line_cols_storage_sum_track].sum(axis=1),
             line_color="black",
-            line_width=2,
-            line_dash="dotted",
+            line_width=len(line_cols_storage_sum_track),
+            line_dash=(
+                "dashed" if (len(line_cols_storage_sum_track) % 2) == 0 else "dotted"
+            ),
             name=label,
         )
-        legend_items.append((label, [stor_renderer]))
-        load_renderers.append(stor_renderer)
+        legend_items.append((label, [exports_renderer]))
+        load_renderers.append(exports_renderer)
+
+        previously_processed_items += [active_item]
 
     # Add Legend
     legend = Legend(items=legend_items)
@@ -781,7 +737,7 @@ def create_plot(
         )
         plot.add_tools(hover)
 
-    return plot
+    return plot, source
 
 
 def main(args=None):
@@ -836,7 +792,7 @@ def main(args=None):
 
     conn.close()
 
-    plot = create_plot(
+    plot, source = create_plot(
         df=df,
         title=plot_title,
         power_unit=power_unit,
@@ -852,6 +808,7 @@ def main(args=None):
             plot_name=plot_name,
             plot_write_directory=parsed_args.plot_write_directory,
             scenario=scenario,
+            source=source,
         )
 
     # Return plot in json format if requested
