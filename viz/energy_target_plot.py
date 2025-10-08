@@ -148,7 +148,7 @@ def create_plot(df, title, energy_unit, cost_unit, ylimit=None):
     """
 
     if df.empty:
-        return figure()
+        return figure(), None
 
     # Set up data source
     source = ColumnDataSource(data=df)
@@ -266,7 +266,7 @@ def create_plot(df, title, energy_unit, cost_unit, ylimit=None):
     )
     plot.add_tools(hover)
 
-    return plot
+    return plot, source
 
 
 def main(args=None):
@@ -312,7 +312,7 @@ def main(args=None):
 
     conn.close()
 
-    plot = create_plot(
+    plot, source = create_plot(
         df=df,
         title=plot_title,
         energy_unit=energy_unit,
@@ -327,6 +327,7 @@ def main(args=None):
             plot_name=plot_name,
             plot_write_directory=parsed_args.plot_write_directory,
             scenario=scenario,
+            source=source,
         )
 
     # Return plot in json format if requested

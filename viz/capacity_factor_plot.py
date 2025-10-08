@@ -261,7 +261,7 @@ def create_plot(df, title, tech_colors={}):
     #     visible=False)
     # plot.add_tools(hover)
 
-    return plot
+    return plot, source
 
 
 def main(args=None):
@@ -300,7 +300,7 @@ def main(args=None):
         stage=parsed_args.stage,
     )
 
-    plot = create_plot(df=df, title=plot_title, tech_colors=tech_colors)
+    plot, source = create_plot(df=df, title=plot_title, tech_colors=tech_colors)
 
     # Show plot in HTML browser file if requested
     if parsed_args.show:
@@ -309,6 +309,7 @@ def main(args=None):
             plot_name=plot_name,
             plot_write_directory=parsed_args.plot_write_directory,
             scenario=scenario,
+            source=source,
         )
 
     conn.close()

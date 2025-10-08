@@ -27,7 +27,13 @@ Create plot of scheduled curtailment heatmap (by month and hour)
 
 
 from argparse import ArgumentParser
-from bokeh.models import NumeralTickFormatter, LinearColorMapper, ColorBar, BasicTicker
+from bokeh.models import (
+    NumeralTickFormatter,
+    LinearColorMapper,
+    ColorBar,
+    BasicTicker,
+    ColumnDataSource,
+)
 from bokeh.plotting import figure
 from bokeh.models.tools import HoverTool
 from bokeh.embed import json_item
@@ -169,7 +175,7 @@ def create_plot(df, title, energy_unit, ylimit=None):
     """
 
     if df.empty:
-        return figure()
+        return figure(), None
 
     # Round hours and convert to string (required for x-axis)
     # TODO: figure out a way to handle subhourly data properly!
@@ -244,7 +250,10 @@ def create_plot(df, title, energy_unit, ylimit=None):
     )
     plot.add_tools(hover)
 
-    return plot
+    # Set up data source
+    source = ColumnDataSource(data=df)
+
+    return plot, source
 
 
 def main(args=None):
@@ -287,7 +296,7 @@ def main(args=None):
         stage=parsed_args.stage,
     )
 
-    plot = create_plot(
+    plot, source = create_plot(
         df=df, title=plot_title, energy_unit=energy_unit, ylimit=parsed_args.ylimit
     )
 
@@ -298,6 +307,7 @@ def main(args=None):
             plot_name=plot_name,
             plot_write_directory=parsed_args.plot_write_directory,
             scenario=scenario,
+            source=source,
         )
 
     conn.close()

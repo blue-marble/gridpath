@@ -126,7 +126,7 @@ def main(args=None):
     source, x_col_reordered = process_stacked_plot_data(
         df=df,
         y_col="capacity_mw",
-        x_col=["period", "scenario_id"],
+        x_col=["period", "scenario"],
         category_col="technology",
     )
 
@@ -151,6 +151,7 @@ def main(args=None):
             plot=plot,
             plot_name=plot_name,
             plot_write_directory=parsed_args.plot_write_directory,
+            source=source,
         )
 
     conn.close()
