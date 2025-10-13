@@ -11,7 +11,7 @@ This chapter describes the following:
 * :ref:`database-testing-section-ref` : instructions on how to validate the
 database inputs
 
-.. _database-section-ref:
+.. _database-structure-section-ref:
 Database Structure
 ##################
 
@@ -79,7 +79,7 @@ import all projects that may be part of a scenario in the
 Project Geography
 *****************
 
-.. automodule:: db.csvs_test_examples.project.project_load_zones.doc
+.. automodule:: db.csvs_test_examples.project.load_zones.doc
 
 
 .. _project-portfolio-section-ref:
@@ -87,7 +87,7 @@ Project Geography
 Project Portfolio
 *****************
 
-.. automodule:: db.csvs_test_examples.project.project_portfolios.doc
+.. automodule:: db.csvs_test_examples.project.portfolios.doc
 
 
 Specified Projects
@@ -100,7 +100,7 @@ Specified Projects
 Capacity
 ========
 
-.. automodule:: db.csvs_test_examples.project.project_specified_capacity.doc
+.. automodule:: db.csvs_test_examples.project.capacity.specified_capacity.doc
 
 .. _specified-project-fixed-cost-section-ref:
 
@@ -108,7 +108,7 @@ Capacity
 Fixed Costs
 ===========
 
-.. automodule:: db.csvs_test_examples.project.project_specified_fixed_cost.doc
+.. automodule:: db.csvs_test_examples.project.capacity.specified_fixed_cost.doc
 
 New Projects
 ************
@@ -117,7 +117,7 @@ New Projects
 Capital Costs
 =============
 
-.. automodule:: db.csvs_test_examples.project.project_new_cost.doc
+.. automodule:: db.csvs_test_examples.project.capacity.new_cost.doc
 
 .. _new-project-potential-section-ref:
 
@@ -125,49 +125,50 @@ Capital Costs
 Potential
 =========
 
-.. automodule:: db.csvs_test_examples.project.project_new_potential.doc
+.. automodule:: db.csvs_test_examples.project.capacity.new_potential.doc
 
 
 Project Availability
 ********************
 
-.. automodule:: db.csvs_test_examples.project.project_availability.project_availability_types.doc
+.. automodule:: db.csvs_test_examples.project.availability.doc
 
 =========
 Exogenous
 =========
 
-.. automodule:: db.csvs_test_examples.project.project_availability.project_availability_exogenous.doc
+.. automodule:: db.csvs_test_examples.project.availability.exogenous_independent.doc
 
 ==========
 Endogenous
 ==========
 
-.. automodule:: db.csvs_test_examples.project.project_availability.project_availability_endogenous.doc
+.. automodule:: db.csvs_test_examples.project.availability.endogenous.doc
 
 
 Project Operational Characteristics
 ***********************************
 
-.. automodule:: db.csvs_test_examples.project.project_operational_chars.doc
+.. automodule:: db.csvs_test_examples.project.opchar.doc
 
 =====================
 Heat Rates (OPTIONAL)
 =====================
 
-.. automodule:: db.csvs_test_examples.project.project_heat_rate_curves.doc
+.. automodule:: db.csvs_test_examples.project.opchar.heat_rate_curves.doc
 
 ======================================
 Variable Generator Profiles (OPTIONAL)
 ======================================
 
-.. automodule:: db.csvs_test_examples.project.project_variable_generator_profiles.doc
+.. automodule:: db.csvs_test_examples.project.opchar.variable_generator_profiles
+.doc
 
 ============================================
 Hydro Operational Characteristics (OPTIONAL)
 ============================================
 
-.. automodule:: db.csvs_test_examples.project.project_hydro_operational_chars.doc
+.. automodule:: db.csvs_test_examples.project.opchar.hydro_operational_chars.doc
 
 ******************************
 Transmission Inputs (OPTIONAL)
@@ -178,12 +179,12 @@ Optional inputs needed if transmission feature is enabled for a scenario.
 Transmission Portfolio
 **********************
 
-.. automodule:: db.csvs_test_examples.transmission.transmission_portfolios.doc
+.. automodule:: db.csvs_test_examples.transmission.portfolios.doc
 
 Transmission Topography
 ***********************
 
-.. automodule:: db.csvs_test_examples.transmission.transmission_load_zones.doc
+.. automodule:: db.csvs_test_examples.transmission.load_zones.doc
 
 Specified Transmission
 **********************
@@ -192,7 +193,7 @@ Specified Transmission
 Capacity
 ========
 
-.. automodule:: db.csvs_test_examples.transmission.transmission_specified_capacity.doc
+.. automodule:: db.csvs_test_examples.transmission.capacity.specified_capacity.doc
 
 New Transmission
 ****************
@@ -201,12 +202,12 @@ New Transmission
 Capital Costs
 =============
 
-.. automodule:: db.csvs_test_examples.transmission.transmission_new_cost.doc
+.. automodule:: db.csvs_test_examples.transmission.capacity.new_cost.doc
 
 Transmission Operational Characteristics
 ****************************************
 
-.. automodule:: db.csvs_test_examples.transmission.transmission_operational_chars.doc
+.. automodule:: db.csvs_test_examples.transmission.opchar.doc
 
 
 **********************
