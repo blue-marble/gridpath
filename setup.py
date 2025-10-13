@@ -85,7 +85,21 @@ setup(
             "data_toolkit.raw_data.get_pcm_demo_user_defined_inputs:main",
             "gridpath_get_ra_toolkit_data_raw = "
             "data_toolkit.raw_data.ra_toolkit.get_ra_toolkit_data:main",
-            "gridpath_run_data_toolkit = " "data_toolkit.run_data_toolkit:main",
+            "gridpath_run_data_toolkit = data_toolkit.run_data_toolkit:main",
+            "gridpath_viz_capacity_factor_plot = viz.capacity_factor_plot:main",
+            "gridpath_viz_capacity_new_plot = viz.capacity_new_plot:main",
+            "gridpath_viz_capacity_retired_plot = viz.capacity_retired_plot:main",
+            "gridpath_viz_capacity_total_loadzone_comparison_plot = viz.capacity_total_loadzone_comparison_plot:main",
+            "gridpath_viz_capacity_total_plot = viz.capacity_total_plot:main",
+            "gridpath_viz_capacity_total_scenario_comparison_plot = viz.capacity_total_scenario_comparison_plot:main",
+            "gridpath_viz_carbon_plot = viz.carbon_plot:main",
+            "gridpath_viz_cost_plot = viz.cost_plot:main",
+            "gridpath_viz_curtailment_hydro_heatmap_plot = viz.curtailment_hydro_heatmap_plot:main",
+            "gridpath_viz_curtailment_variable_heatmap_plot = viz.curtailment_variable_heatmap_plot:main",
+            "gridpath_viz_dispatch_plot = viz.dispatch_plot:main",
+            "gridpath_viz_energy_plot = viz.energy_plot:main",
+            "gridpath_viz_energy_target_plot = viz.energy_target_plot:main",
+            "gridpath_viz_project_operations_plot = viz.project_operations_plot:main",
         ]
     },
 )

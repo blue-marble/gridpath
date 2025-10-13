@@ -169,6 +169,7 @@ def main(args=None):
             plot_name=plot_name,
             plot_write_directory=parsed_args.plot_write_directory,
             scenario=scenario,
+            source=source,
         )
 
     conn.close()

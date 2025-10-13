@@ -1,0 +1,6 @@
+transmission_line,load_zone_from,load_zone_to
+Tx1,Zone1,Zone2
+Tx_new,Zone1,Zone2
+Tx2,Zone2,Zone3
+Tx3,Zone1,Zone3
+Tx2_new,Zone1,Zone2

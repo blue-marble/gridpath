@@ -134,20 +134,6 @@ def add_model_components(
     +-------------------------------------------------------------------------+
     | Required Input Params                                                   |
     +=========================================================================+
-    | | :code:`stor_new_lin_min_duration_hrs`                                 |
-    | | *Defined over*: :code:`STOR_NEW_LIN`                                  |
-    | | *Within*: :code:`NonNegativeReals`                                    |
-    |                                                                         |
-    | The project's minimum duration, i.e. ratio of MWh of energy capacity    |
-    | by MW of power capacity, in hours.                                      |
-    +-------------------------------------------------------------------------+
-    | | :code:`stor_new_lin_max_duration_hrs`                                 |
-    | | *Defined over*: :code:`STOR_NEW_LIN`                                  |
-    | | *Within*: :code:`NonNegativeReals`                                    |
-    |                                                                         |
-    | The project's maximum duration, i.e. ratio of MWh of energy capacity    |
-    | by MW of power capacity, in hours.                                      |
-    +-------------------------------------------------------------------------+
     | | :code:`stor_new_lin_operational_lifetime_yrs`                         |
     | | *Defined over*: :code:`STOR_NEW_LIN_VNTS`                             |
     | | *Within*: :code:`NonNegativeReals`                                    |
@@ -199,6 +185,29 @@ def add_model_components(
         with one another and with the period length (projects are operational
         and incur capital costs only if the operational and financial lifetimes last
         through the end of a period respectively.
+
+        For example, if a project has a financial lifetime of 20 years and is built    | | :code:`stor_new_lin_min_duration_hrs`                                 |
+
+    +-------------------------------------------------------------------------+
+    | Optional Input Params                                                   |
+    +=========================================================================+
+    | | *Defined over*: :code:`STOR_NEW_LIN`                                  |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | The project's minimum duration, i.e. ratio of MWh of energy capacity    |
+    | by MW of power capacity, in hours. Note this is not adjusted for        |
+    | discharging efficiency.                                                 |
+    +-------------------------------------------------------------------------+
+    | | :code:`stor_new_lin_max_duration_hrs`                                 |
+    | | *Defined over*: :code:`STOR_NEW_LIN`                                  |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`float("inf")`                                       |
+    |                                                                         |
+    | The project's maximum duration, i.e. ratio of MWh of energy capacity    |
+    | by MW of power capacity, in hours. Note this is not adjusted for        |
+    | discharging efficiency.                                                 |
+    +-------------------------------------------------------------------------+
 
     |
 
@@ -305,9 +314,13 @@ def add_model_components(
     # Required Params
     ###########################################################################
 
-    m.stor_new_lin_min_duration_hrs = Param(m.STOR_NEW_LIN, within=NonNegativeReals)
+    m.stor_new_lin_min_duration_hrs = Param(
+        m.STOR_NEW_LIN, within=NonNegativeReals, default=0
+    )
 
-    m.stor_new_lin_max_duration_hrs = Param(m.STOR_NEW_LIN, within=NonNegativeReals)
+    m.stor_new_lin_max_duration_hrs = Param(
+        m.STOR_NEW_LIN, within=NonNegativeReals, default=float("inf")
+    )
 
     m.stor_new_lin_operational_lifetime_yrs = Param(
         m.STOR_NEW_LIN_VNTS, within=NonNegativeReals
@@ -519,10 +532,14 @@ def min_duration_rule(mod, g, p):
     Storage duration must be above a pre-specified requirement in each
     operational period.
     """
-    return (
-        mod.StorNewLin_Energy_Storage_Capacity_MWh[g, p]
-        >= mod.StorNewLin_Power_Capacity_MW[g, p] * mod.stor_new_lin_min_duration_hrs[g]
-    )
+    if mod.stor_new_lin_min_duration_hrs[g] == 0:
+        return Constraint.Skip
+    else:
+        return (
+            mod.StorNewLin_Energy_Storage_Capacity_MWh[g, p]
+            >= mod.StorNewLin_Power_Capacity_MW[g, p]
+            * mod.stor_new_lin_min_duration_hrs[g]
+        )
 
 
 def max_duration_rule(mod, g, p):
@@ -533,10 +550,14 @@ def max_duration_rule(mod, g, p):
     Storage duration must be below a pre-specified requirement in each
     operational period.
     """
-    return (
-        mod.StorNewLin_Energy_Storage_Capacity_MWh[g, p]
-        <= mod.StorNewLin_Power_Capacity_MW[g, p] * mod.stor_new_lin_max_duration_hrs[g]
-    )
+    if mod.stor_new_lin_max_duration_hrs[g] == float("inf"):
+        return Constraint.Skip
+    else:
+        return (
+            mod.StorNewLin_Energy_Storage_Capacity_MWh[g, p]
+            <= mod.StorNewLin_Power_Capacity_MW[g, p]
+            * mod.stor_new_lin_max_duration_hrs[g]
+        )
 
 
 # Capacity Type Methods
@@ -671,8 +692,8 @@ def load_model_data(
         ):
             if r[1] == "stor_new_lin":
                 stor_new_lin_projects.append(r[0])
-                stor_min_duration[r[0]] = float(r[2])
-                stor_max_duration[r[0]] = float(r[3])
+                stor_min_duration[r[0]] = float(r[2]) if r[2] != "." else None
+                stor_max_duration[r[0]] = float(r[3]) if r[3] != "." else None
 
         return stor_new_lin_projects, stor_min_duration, stor_max_duration
 
@@ -682,8 +703,13 @@ def load_model_data(
         stor_new_lin_max_duration_hrs,
     ) = get_data()
     data_portal.data()["STOR_NEW_LIN"] = {None: stor_new_lin_set}
-    data_portal.data()["stor_new_lin_min_duration_hrs"] = stor_new_lin_min_duration_hrs
-    data_portal.data()["stor_new_lin_max_duration_hrs"] = stor_new_lin_max_duration_hrs
+
+    data_portal.data()["stor_new_lin_min_duration_hrs"] = {
+        prj: v for prj, v in stor_new_lin_min_duration_hrs.items() if v is not None
+    }
+    data_portal.data()["stor_new_lin_max_duration_hrs"] = {
+        prj: v for prj, v in stor_new_lin_max_duration_hrs.items() if v is not None
+    }
 
     data_portal.load(
         filename=os.path.join(

@@ -40,9 +40,12 @@ database tables have been populated:
 Settings
 =========
     * database
-    * output_directory
+    * lz_output_directory
     * load_zone_scenario_id
     * load_zone_scenario_name
+    * lb_output_directory
+    * load_balance_scenario_id
+    * load_balance_scenario_name
     * allow_overgeneration
     * overgeneration_penalty_per_mw
     * allow_unserved_energy
@@ -73,6 +76,19 @@ def parse_arguments(args):
 
     parser.add_argument("-db", "--database", default="../../../db/open_data.db")
     parser.add_argument("-r", "--region", default="WECC")
+
+    # Load zones
+    parser.add_argument("-lz_id", "--load_zone_scenario_id", default=1)
+    parser.add_argument(
+        "-lz_name", "--load_zone_scenario_name", default="eia_wecc_baas"
+    )
+    parser.add_argument(
+        "-lz_o",
+        "--lz_output_directory",
+        default="../../csvs_open_data/system_load/load_zones",
+    )
+
+    # Load balance
     parser.add_argument("--allow_overgeneration", default=0)
     parser.add_argument("--overgeneration_penalty_per_mw", default=0)
     parser.add_argument("--allow_unserved_energy", default=1)
@@ -83,13 +99,13 @@ def parse_arguments(args):
     parser.add_argument("--export_penalty_cost_per_mwh", default=0)
     parser.add_argument("--unserved_energy_stats_threshold_mw", default=None)
     parser.add_argument(
-        "-o",
-        "--output_directory",
-        default="../../csvs_open_data/system_load/load_zones",
+        "-lb_o",
+        "--lb_output_directory",
+        default="../../csvs_open_data/system_load/load_balance",
     )
-    parser.add_argument("-lz_id", "--load_zone_scenario_id", default=1)
+    parser.add_argument("-lb_id", "--load_balance_scenario_id", default=1)
     parser.add_argument(
-        "-lz_name", "--load_zone_scenario_name", default="eia_wecc_baas"
+        "-lb_name", "--load_balance_scenario_name", default="eia_wecc_baas"
     )
 
     parser.add_argument("-q", "--quiet", default=False, action="store_true")
@@ -119,6 +135,25 @@ def get_all_lzs_sql(region):
 
 
 def make_load_zones_csv(
+    all_lzs,
+    output_directory,
+    subscenario_id,
+    subscenario_name,
+):
+    """ """
+    lz_dict = {
+        "load_zone": all_lzs,
+    }
+
+    df = pd.DataFrame(lz_dict)
+
+    df.to_csv(
+        os.path.join(output_directory, f"{subscenario_id}_{subscenario_name}.csv"),
+        index=False,
+    )
+
+
+def make_load_balance_csv(
     all_lzs,
     allow_overgeneration,
     overgeneration_penalty_per_mw,
@@ -172,7 +207,7 @@ def main(args=None):
     if not parsed_args.quiet:
         print("Creating load zone inputs")
 
-    os.makedirs(parsed_args.output_directory, exist_ok=True)
+    os.makedirs(parsed_args.lb_output_directory, exist_ok=True)
 
     conn = connect_to_database(db_path=parsed_args.database)
 
@@ -184,6 +219,13 @@ def main(args=None):
 
     make_load_zones_csv(
         all_lzs=all_lzs,
+        output_directory=parsed_args.lz_output_directory,
+        subscenario_id=parsed_args.load_zone_scenario_id,
+        subscenario_name=parsed_args.load_zone_scenario_name,
+    )
+
+    make_load_balance_csv(
+        all_lzs=all_lzs,
         allow_overgeneration=parsed_args.allow_overgeneration,
         overgeneration_penalty_per_mw=parsed_args.overgeneration_penalty_per_mw,
         allow_unserved_energy=parsed_args.allow_unserved_energy,
@@ -193,9 +235,9 @@ def main(args=None):
         max_unserved_load_limit_mw=parsed_args.max_unserved_load_limit_mw,
         export_penalty_cost_per_mwh=parsed_args.export_penalty_cost_per_mwh,
         unserved_energy_stats_threshold_mw=parsed_args.unserved_energy_stats_threshold_mw,
-        output_directory=parsed_args.output_directory,
-        subscenario_id=parsed_args.load_zone_scenario_id,
-        subscenario_name=parsed_args.load_zone_scenario_name,
+        output_directory=parsed_args.lb_output_directory,
+        subscenario_id=parsed_args.load_balance_scenario_id,
+        subscenario_name=parsed_args.load_balance_scenario_name,
     )
 
     conn.close()

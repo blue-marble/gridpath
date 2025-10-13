@@ -418,7 +418,7 @@ def get_inputs_from_database(
     c = conn.cursor()
 
     projects = c.execute(
-        """SELECT project, capacity_type, availability_type, operational_type, 
+        f"""SELECT project, capacity_type, availability_type, operational_type, 
         balancing_type_project, load_modifier_flag, distribution_loss_adjustment_factor, 
         technology, load_zone
         FROM
@@ -426,20 +426,20 @@ def get_inputs_from_database(
         -- capacity types based on the project_portfolio_scenario_id 
         (SELECT project, capacity_type
         FROM inputs_project_portfolios
-        WHERE project_portfolio_scenario_id = {}) as portfolio_tbl
+        WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}) as portfolio_tbl
         -- Get the load_zones for these projects depending on the
         -- project_load_zone_scenario_id
         LEFT OUTER JOIN
         (SELECT project, load_zone
         FROM inputs_project_load_zones
-        WHERE project_load_zone_scenario_id = {}) as prj_load_zones
+        WHERE project_load_zone_scenario_id = {subscenarios.PROJECT_LOAD_ZONE_SCENARIO_ID}) as prj_load_zones
         USING (project)
         LEFT OUTER JOIN
         -- Get the availability types for these projects depending on the
         -- project_availability_scenario_id
         (SELECT project, availability_type
         FROM inputs_project_availability
-        WHERE project_availability_scenario_id = {}) as prj_av_types
+        WHERE project_availability_scenario_id = {subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID}) as prj_av_types
         USING (project)
         LEFT OUTER JOIN
         -- Get the operational type, balancing_type, technology, 
@@ -448,14 +448,9 @@ def get_inputs_from_database(
         (SELECT project, operational_type, balancing_type_project, 
         load_modifier_flag, distribution_loss_adjustment_factor, technology
         FROM inputs_project_operational_chars
-        WHERE project_operational_chars_scenario_id = {}) as prj_chars
+        WHERE project_operational_chars_scenario_id = {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}) as prj_chars
         USING (project)
-        ;""".format(
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-            subscenarios.PROJECT_LOAD_ZONE_SCENARIO_ID,
-            subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID,
-            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
-        )
+        ;"""
     )
 
     return projects

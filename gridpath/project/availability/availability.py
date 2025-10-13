@@ -417,18 +417,16 @@ def get_required_availability_type_modules(scenario_id, conn):
                 [
                     p[0]
                     for p in c.execute(
-                        """SELECT DISTINCT availability_type 
-                FROM 
-                (SELECT project FROM inputs_project_portfolios
-                WHERE project_portfolio_scenario_id = {}) as prj_tbl
-                LEFT OUTER JOIN
-                (SELECT project, availability_type
-                FROM inputs_project_availability
-                WHERE project_availability_scenario_id = {}) as av_type_tbl
-                USING (project)""".format(
-                            project_portfolio_scenario_id,
-                            project_availability_scenario_id,
-                        )
+                        f"""
+                        SELECT DISTINCT availability_type 
+                        FROM 
+                        (SELECT project FROM inputs_project_portfolios
+                        WHERE project_portfolio_scenario_id = {project_portfolio_scenario_id}) as prj_tbl
+                        LEFT OUTER JOIN
+                        (SELECT project, availability_type
+                        FROM inputs_project_availability
+                        WHERE project_availability_scenario_id = {project_availability_scenario_id}) as av_type_tbl
+                        USING (project)"""
                     ).fetchall()
                 ]
                 + [DEFAULT_AVAILABILITY_TYPE]

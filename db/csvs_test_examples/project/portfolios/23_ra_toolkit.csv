@@ -1,0 +1,7 @@
+project,specified,new_build,capacity_type
+Batteries,,,stor_spec
+Gas,,,gen_spec
+Hybrid,,,gen_stor_hyb_spec
+Hydro,,,gen_spec
+Solar,,,gen_spec
+Wind,,,gen_spec

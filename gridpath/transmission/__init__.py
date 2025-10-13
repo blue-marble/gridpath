@@ -33,7 +33,11 @@ from gridpath.auxiliary.validations import (
     validate_values,
     validate_missing_inputs,
 )
+from gridpath.project.operations.operational_types.common_functions import (
+    write_tab_file_model_inputs,
+)
 
+DEFAULT_TX_AVAILABILITY_TYPE = "exogenous"
 TX_PERIOD_DF = "transmission_period_df"
 TX_TIMEPOINT_DF = "transmission_timepoint_df"
 
@@ -72,6 +76,14 @@ def add_model_components(
     | capacity of the line is modeled, e.g. as a specified number or as a     |
     | decision variable in the optimization.                                  |
     +-------------------------------------------------------------------------+
+    | | :code:`tx_availability_type`                                          |
+    | | *Defined over*: :code:`TX_LINES`                                      |
+    | | *Within*: :code:`["exogenous", "exogenous_monthly"]`                  |
+    | | *Default*: :code:`"exogenous"`                                        |
+    |                                                                         |
+    | The transmission line's availability type.                              |
+    +-------------------------------------------------------------------------+
+    +-------------------------------------------------------------------------+
     | | :code:`tx_operational_type`                                           |
     | | *Defined over*: :code:`TX_LINES`                                      |
     | | *Within*: :code:`["tx_dcopf", "tx_simple"]`                           |
@@ -108,7 +120,9 @@ def add_model_components(
 
     m.tx_capacity_type = Param(m.TX_LINES, within=["tx_new_lin", "tx_spec"])
     m.tx_availability_type = Param(
-        m.TX_LINES, within=["exogenous", "exogenous_monthly"]
+        m.TX_LINES,
+        within=["exogenous", "exogenous_monthly"],
+        default=DEFAULT_TX_AVAILABILITY_TYPE,
     )
     m.tx_operational_type = Param(
         m.TX_LINES, within=["tx_dcopf", "tx_simple", "tx_simple_binary"]
@@ -292,38 +306,42 @@ def get_inputs_from_database(
     #  tx_operational_type rather than here (see also comment in project/init)
     c = conn.cursor()
     transmission_lines = c.execute(
-        """SELECT transmission_line, capacity_type, 
-        availability_type, operational_type,
+        f"""
+        SELECT transmission_line, capacity_type AS tx_capacity_type, 
+        availability_type AS tx_availability_type, operational_type AS 
+        tx_operational_type,
         load_zone_from, load_zone_to, tx_simple_loss_factor, 
         losses_tuning_cost_per_mw, reactance_ohms
+        FROM
+        -- Get only the subset of projects in the portfolio with their 
+        -- capacity types based on the project_portfolio_scenario_id 
+        (SELECT transmission_line, capacity_type
         FROM inputs_transmission_portfolios
-        
+        WHERE transmission_portfolio_scenario_id = {subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID}) as portfolio_tbl
+        -- Get the load_zones for these transmission_lines depending on the
+        -- transmission_load_zone_scenario_id
         LEFT OUTER JOIN
-            (SELECT transmission_line, load_zone_from, load_zone_to
-            FROM inputs_transmission_load_zones
-            WHERE transmission_load_zone_scenario_id = {lz}) as tx_load_zones
+        (SELECT transmission_line, load_zone_from, load_zone_to
+        FROM inputs_transmission_load_zones
+        WHERE transmission_load_zone_scenario_id = {subscenarios.TRANSMISSION_LOAD_ZONE_SCENARIO_ID}) as prj_load_zones
         USING (transmission_line)
-        
         LEFT OUTER JOIN
-            (SELECT transmission_line, availability_type
-            FROM inputs_transmission_availability
-            WHERE transmission_availability_scenario_id = {avl}) as 
-            tx_availability
+        -- Get the availability types for these transmission_lines depending on the
+        -- transmission_availability_scenario_id
+        (SELECT transmission_line, availability_type
+        FROM inputs_transmission_availability
+        WHERE transmission_availability_scenario_id = {subscenarios.TRANSMISSION_AVAILABILITY_SCENARIO_ID}) as prj_av_types
         USING (transmission_line)
-        
         LEFT OUTER JOIN
-            (SELECT transmission_line, operational_type, 
+        -- Get the operational type, balancing_type, technology, 
+        -- and variable cost for these transmission_lines depending on the 
+        -- transmission_operational_chars_scenario_id
+        (SELECT transmission_line, operational_type, 
             tx_simple_loss_factor, losses_tuning_cost_per_mw, reactance_ohms
             FROM inputs_transmission_operational_chars
-            WHERE transmission_operational_chars_scenario_id = {opchar})
+            WHERE transmission_operational_chars_scenario_id = {subscenarios.TRANSMISSION_OPERATIONAL_CHARS_SCENARIO_ID}) as prj_chars
         USING (transmission_line)
-        
-        WHERE transmission_portfolio_scenario_id = {portfolio};""".format(
-            lz=subscenarios.TRANSMISSION_LOAD_ZONE_SCENARIO_ID,
-            avl=subscenarios.TRANSMISSION_AVAILABILITY_SCENARIO_ID,
-            opchar=subscenarios.TRANSMISSION_OPERATIONAL_CHARS_SCENARIO_ID,
-            portfolio=subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID,
-        )
+        ;"""
     )
 
     # TODO: allow Tx lines with no load zones from and to specified, that are only
@@ -378,42 +396,17 @@ def write_model_inputs(
         conn,
     )
 
-    with open(
-        os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "inputs",
-            "transmission_lines.tab",
-        ),
-        "w",
-        newline="",
-    ) as transmission_lines_tab_file:
-        writer = csv.writer(
-            transmission_lines_tab_file, delimiter="\t", lineterminator="\n"
-        )
-
-        # Write header
-        writer.writerow(
-            [
-                "transmission_line",
-                "tx_capacity_type",
-                "tx_availability_type",
-                "tx_operational_type",
-                "load_zone_from",
-                "load_zone_to",
-                "tx_simple_loss_factor",
-                "losses_tuning_cost_per_mw",
-                "reactance_ohms",
-            ]
-        )
-
-        for row in transmission_lines:
-            replace_nulls = ["." if i is None else i for i in row]
-            writer.writerow(replace_nulls)
+    write_tab_file_model_inputs(
+        scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        fname="transmission_lines.tab",
+        data=transmission_lines,
+        replace_nulls=True,
+    )
 
 
 # Validation
@@ -454,7 +447,14 @@ def validate_inputs(
     )
 
     # Convert input data into pandas DataFrame
-    df = cursor_to_df(transmission_lines)
+    df_before_rename = cursor_to_df(transmission_lines)
+    df = df_before_rename.rename(
+        columns={
+            "tx_capacity_type": "capacity_type",
+            "tx_availability_type": "availability_type",
+            "tx_operational_type": "operational_type",
+        }
+    )
 
     # Check data types:
     expected_dtypes = get_expected_dtypes(

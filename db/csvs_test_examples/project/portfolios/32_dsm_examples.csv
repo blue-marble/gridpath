@@ -1,0 +1,10 @@
+project,specified,new_build,capacity_type
+Gen_Simple_LowCost,,,gen_spec
+Gen_Simple_HighCost,,,gen_spec
+DSM_Flat_Load_Reduction,,,gen_new_lin
+DSM_EE,,,gen_new_lin
+DSM_EV,,,gen_new_lin
+DSM_Load_Shed,,,gen_new_lin
+DSM_Load_Component_Modifier,,,gen_new_lin
+DSM_Dispatchable_Load,,,gen_spec
+DSM_Load_Component_Shift,,,gen_new_lin

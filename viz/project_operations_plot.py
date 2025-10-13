@@ -385,7 +385,7 @@ def create_plot(df, title, power_unit, ylimit=None):
         hover = HoverTool(tooltips=tooltips, renderers=[r], visible=False)
         plot.add_tools(hover)
 
-    return plot
+    return plot, source
 
 
 def main(args=None):
@@ -443,7 +443,7 @@ def main(args=None):
         horizon_end=parsed_args.horizon_end,
     )
 
-    plot = create_plot(
+    plot, source = create_plot(
         df=df, title=plot_title, power_unit=power_unit, ylimit=parsed_args.ylimit
     )
 
@@ -454,6 +454,7 @@ def main(args=None):
             plot_name=plot_name,
             plot_write_directory=parsed_args.plot_write_directory,
             scenario=scenario,
+            source=source,
         )
 
     conn.close()
