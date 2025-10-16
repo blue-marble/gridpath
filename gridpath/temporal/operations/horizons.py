@@ -58,6 +58,7 @@ from gridpath.auxiliary.validations import (
     validate_single_input,
     validate_missing_inputs,
 )
+from gridpath.project import write_tab_file_model_inputs
 
 
 def add_model_components(
@@ -515,48 +516,51 @@ def load_model_data(
     stage,
 ):
     """ """
-    data_portal.load(
-        filename=os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "inputs",
-            "horizons.tab",
-        ),
-        select=("balancing_type_horizon", "horizon", "boundary"),
-        index=m.BLN_TYPE_HRZS_USER_DEFINED,
-        param=m.boundary_user_defined,
+    hrz_filename = os.path.join(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+        "horizons_user_defined.tab",
     )
 
-    with open(
-        os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "inputs",
-            "horizon_timepoints.tab",
+    # Load user-defined horizons if any (i.e., the file exists)
+    if os.path.exists(hrz_filename):
+        data_portal.load(
+            filename=hrz_filename,
+            select=("balancing_type_horizon", "horizon", "boundary"),
+            index=m.BLN_TYPE_HRZS_USER_DEFINED,
+            param=m.boundary_user_defined,
         )
-    ) as f:
-        reader = csv.reader(f, delimiter="\t", lineterminator="\n")
-        next(reader)
-        tmps_on_horizon = dict()
-        for row in reader:
-            if (row[1], int(row[0])) not in tmps_on_horizon.keys():
-                tmps_on_horizon[row[1], int(row[0])] = [int(row[2])]
-            else:
-                tmps_on_horizon[row[1], int(row[0])].append(int(row[2]))
 
-    data_portal.data()["TMPS_BY_BLN_TYPE_HRZ_USER_DEFINED"] = tmps_on_horizon
+    hrz_tmp_filename = os.path.join(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+        "horizon_user_defined_timepoints.tab",
+    )
+    if os.path.exists(hrz_tmp_filename):
+        with open(hrz_tmp_filename) as f:
+            reader = csv.reader(f, delimiter="\t", lineterminator="\n")
+            next(reader)
+            tmps_on_horizon = dict()
+            for row in reader:
+                if (row[1], int(row[0])) not in tmps_on_horizon.keys():
+                    tmps_on_horizon[row[1], int(row[0])] = [int(row[2])]
+                else:
+                    tmps_on_horizon[row[1], int(row[0])].append(int(row[2]))
 
+        data_portal.data()["TMPS_BY_BLN_TYPE_HRZ_USER_DEFINED"] = tmps_on_horizon
 
-# Database
-###############################################################################
+    # Database
+    ###############################################################################
 
 
 def get_inputs_from_database(
@@ -619,7 +623,7 @@ def write_model_inputs(
 ):
     """
     Get inputs from database and write out the model input
-    horizons.tab file.
+    horizons_user_defined.tab file.
     :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -649,51 +653,29 @@ def write_model_inputs(
         conn,
     )
 
-    with open(
-        os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "inputs",
-            "horizons.tab",
-        ),
-        "w",
-        newline="",
-    ) as horizons_tab_file:
-        hwriter = csv.writer(horizons_tab_file, delimiter="\t", lineterminator="\n")
+    write_tab_file_model_inputs(
+        scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        fname="horizons_user_defined.tab",
+        data=horizons,
+        replace_nulls=False,
+    )
 
-        # Write header
-        hwriter.writerow(["horizon", "balancing_type_horizon", "boundary"])
-
-        for row in horizons:
-            hwriter.writerow(row)
-
-    with open(
-        os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "inputs",
-            "horizon_timepoints.tab",
-        ),
-        "w",
-        newline="",
-    ) as horizon_timepoints_tab_file:
-        htwriter = csv.writer(
-            horizon_timepoints_tab_file, delimiter="\t", lineterminator="\n"
-        )
-
-        # Write header
-        htwriter.writerow(["horizon", "balancing_type_horizon", "timepoint"])
-
-        for row in horizon_timepoints:
-            htwriter.writerow(row)
+    write_tab_file_model_inputs(
+        scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        fname="horizon_user_defined_timepoints.tab",
+        data=horizon_timepoints,
+        replace_nulls=False,
+    )
 
 
 # Validation

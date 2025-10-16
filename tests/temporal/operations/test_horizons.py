@@ -100,11 +100,14 @@ class TestHorizons(unittest.TestCase):
 
         # Load test data
         balancing_type_horizon_horizons_df = pd.read_csv(
-            os.path.join(TEST_DATA_DIRECTORY, "inputs", "horizons.tab"), sep="\t"
+            os.path.join(TEST_DATA_DIRECTORY, "inputs", "horizons_user_defined.tab"),
+            sep="\t",
         )
 
         timepoints_on_balancing_type_horizon_df = pd.read_csv(
-            os.path.join(TEST_DATA_DIRECTORY, "inputs", "horizon_timepoints.tab"),
+            os.path.join(
+                TEST_DATA_DIRECTORY, "inputs", "horizon_user_defined_timepoints.tab"
+            ),
             sep="\t",
         )
 
