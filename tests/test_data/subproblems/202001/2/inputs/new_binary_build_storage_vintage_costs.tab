@@ -1,3 +1,2 @@
 project	vintage	operational_lifetime_yrs	fixed_cost_per_mw_yr	fixed_cost_per_stor_mwh_yr	financial_lifetime_yrs	annualized_real_cost_per_mw_yr	annualized_real_cost_per_stor_mwh_yr
 Battery_Binary	2020	10	0	0	10	1	1
-Battery_Binary	2030	10	0	0	10	1	1

@@ -1,4 +1,4 @@
-# Copyright 2016-2023 Blue Marble Analytics LLC.
+# Copyright 2016-2025 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -110,14 +110,26 @@ class TestHorizons(unittest.TestCase):
 
         # Check data are as expected
         # BLN_TYPE_HRZS set
-        expected_horizons = [
-            (b, h)
-            for (b, h) in zip(
-                balancing_type_horizon_horizons_df.balancing_type_horizon,
-                balancing_type_horizon_horizons_df.horizon,
-            )
-        ]
-        actual_horizons = [(b, h) for (b, h) in instance.BLN_TYPE_HRZS]
+        horizon_balancing_types_builtin = (
+            [("subproblem_circular", 1)]
+            + [("subproblem_period_circular", period) for period in [2020, 2030]]
+            + [("subproblem_linear", 1)]
+            + [("subproblem_period_linear", period) for period in [2020, 2030]]
+            + [("subproblem_linked", 1)]
+            + [("subproblem_period_linked", period) for period in [2020, 2030]]
+        )
+        expected_horizons = sorted(
+            [
+                (b, h)
+                for (b, h) in zip(
+                    balancing_type_horizon_horizons_df.balancing_type_horizon,
+                    balancing_type_horizon_horizons_df.horizon,
+                )
+            ]
+            + horizon_balancing_types_builtin
+        )
+
+        actual_horizons = sorted([(b, h) for (b, h) in instance.BLN_TYPE_HRZS])
         self.assertListEqual(
             expected_horizons,
             actual_horizons,
@@ -125,12 +137,22 @@ class TestHorizons(unittest.TestCase):
         )
 
         # Params: boundary
-        expected_boundary_param = balancing_type_horizon_horizons_df.set_index(
-            ["balancing_type_horizon", "horizon"]
-        ).to_dict()["boundary"]
+        user_defined_boundary_param = (
+            balancing_type_horizon_horizons_df.set_index(
+                ["balancing_type_horizon", "horizon"]
+            ).to_dict()
+        )["boundary"]
+
+        builtin_boundary_param = {
+            (b, h): b.split("_")[-1] for (b, h) in horizon_balancing_types_builtin
+        }
+
         actual_boundary_param = {
             (b, h): instance.boundary[b, h] for (b, h) in instance.BLN_TYPE_HRZS
         }
+
+        expected_boundary_param = user_defined_boundary_param | builtin_boundary_param
+
         self.assertDictEqual(
             expected_boundary_param,
             actual_boundary_param,
@@ -140,48 +162,72 @@ class TestHorizons(unittest.TestCase):
         # BLN_TYPES set
         expected_balancing_type_horizons = list(
             balancing_type_horizon_horizons_df.balancing_type_horizon.unique()
-        )
-        actual_balancing_type_horizons = list(instance.BLN_TYPES)
+        ) + list(set([b for (b, h) in horizon_balancing_types_builtin]))
+        expected_balancing_type_horizons = sorted(expected_balancing_type_horizons)
+        actual_balancing_type_horizons = sorted(list(instance.BLN_TYPES))
+
         self.assertListEqual(
             expected_balancing_type_horizons, actual_balancing_type_horizons
         )
 
         # HRZS_BY_BLN_TYPE set
+        horizon_balancing_types_builtin_by_bt = {}
+        timepoints_df = pd.read_csv(
+            os.path.join(TEST_DATA_DIRECTORY, "inputs", "timepoints.tab"),
+            sep="\t",
+            usecols=["timepoint", "period", "month"],
+        )
+
+        def get_hrz_by_bt_for_builtin():
+            builtin_hrzs_by_bt = {}
+            for b, h in horizon_balancing_types_builtin:
+                if b in [
+                    "subproblem_circular",
+                    "subproblem_linear",
+                    "subproblem_linked",
+                ]:
+                    builtin_hrzs_by_bt[b] = [1]
+                elif b in [
+                    "subproblem_period_circular",
+                    "subproblem_period_linear",
+                    "subproblem_period_linked",
+                ]:
+                    builtin_hrzs_by_bt[b] = [2020, 2030]
+
+            return builtin_hrzs_by_bt
+
+        horizon_balancing_types_builtin_by_bt = get_hrz_by_bt_for_builtin()
         expected_horizon_by_balancing_type_horizon = {
-            balancing_type_horizon: horizons["horizon"].tolist()
+            balancing_type_horizon: sorted(horizons["horizon"].tolist())
             for balancing_type_horizon, horizons in balancing_type_horizon_horizons_df.groupby(
                 "balancing_type_horizon"
             )
-        }
-        actual_horizon_by_balancing_type_horizon = {
-            balancing_type_horizon: [
-                horizon
-                for horizon in list(instance.HRZS_BY_BLN_TYPE[balancing_type_horizon])
-            ]
-            for balancing_type_horizon in instance.HRZS_BY_BLN_TYPE.keys()
-        }
+        } | horizon_balancing_types_builtin_by_bt
+        expected_horizon_by_balancing_type_horizon = dict(
+            sorted(expected_horizon_by_balancing_type_horizon.items())
+        )
+        actual_horizon_by_balancing_type_horizon = dict(
+            sorted(
+                {
+                    balancing_type_horizon: [
+                        horizon
+                        for horizon in sorted(
+                            list(instance.HRZS_BY_BLN_TYPE[balancing_type_horizon])
+                        )
+                    ]
+                    for balancing_type_horizon in instance.HRZS_BY_BLN_TYPE.keys()
+                }.items()
+            )
+        )
+
         self.assertDictEqual(
             expected_horizon_by_balancing_type_horizon,
             actual_horizon_by_balancing_type_horizon,
         )
 
-        # TMPS_BLN_TYPES
-        expected_tmps_bln_types = sorted(
-            timepoints_on_balancing_type_horizon_df[
-                ["timepoint", "balancing_type_horizon"]
-            ]
-            .drop_duplicates()
-            .to_records(index=False)
-            .tolist()
-        )
-        actual_tmps_bln_types = sorted(
-            (tmp, bt) for (tmp, bt) in instance.TMPS_BLN_TYPES
-        )
-        self.assertListEqual(expected_tmps_bln_types, actual_tmps_bln_types)
-
         # Set TMPS_BY_BLN_TYPE_HRZ
-        expected_tmps_on_horizon = {
-            (balancing_type, horizon): timepoints["timepoint"].tolist()
+        expected_tmps_on_horizon_user_defined = {
+            (balancing_type, horizon): sorted(timepoints["timepoint"].tolist())
             for (
                 (balancing_type, horizon),
                 timepoints,
@@ -190,31 +236,91 @@ class TestHorizons(unittest.TestCase):
             )
         }
 
+        def get_tmps_for_builtin():
+            builtin_tmps_by_bt = {}
+            for b, h in horizon_balancing_types_builtin:
+                if b in [
+                    "subproblem_circular",
+                    "subproblem_linear",
+                    "subproblem_linked",
+                ]:
+                    builtin_tmps_by_bt[b, 1] = timepoints_df["timepoint"].tolist()
+                elif b in [
+                    "subproblem_period_circular",
+                    "subproblem_period_linear",
+                    "subproblem_period_linked",
+                ]:
+                    if (b, h) not in builtin_tmps_by_bt.keys():
+                        builtin_tmps_by_bt[b, h] = timepoints_df.loc[
+                            timepoints_df["period"] == h, "timepoint"
+                        ].tolist()
+            return builtin_tmps_by_bt
+
+        expected_tmps_on_horizon_builtin = get_tmps_for_builtin()
+
+        expected_tmps_on_horizon = (
+            expected_tmps_on_horizon_user_defined | expected_tmps_on_horizon_builtin
+        )
+
         actual_tmps_on_horizon = {
-            (b, h): [tmp for tmp in instance.TMPS_BY_BLN_TYPE_HRZ[b, h]]
+            (b, h): sorted([tmp for tmp in instance.TMPS_BY_BLN_TYPE_HRZ[b, h]])
             for (b, h) in list(instance.TMPS_BY_BLN_TYPE_HRZ.keys())
         }
 
         self.assertDictEqual(
             expected_tmps_on_horizon,
             actual_tmps_on_horizon,
-            msg="TMPS_BY_BLN_TYPE_HRZ data do not match " "expected.",
+            msg="TMPS_BY_BLN_TYPE_HRZ data do not match expected.",
         )
 
-        # Param: horizon
-        expected_horizon_by_tmp_type = {
-            (tmp, balancing_type_horizon): horizon
-            for tmp, balancing_type_horizon, horizon in zip(
-                timepoints_on_balancing_type_horizon_df.timepoint,
-                timepoints_on_balancing_type_horizon_df.balancing_type_horizon,
-                timepoints_on_balancing_type_horizon_df.horizon,
+        # TMPS_BLN_TYPES
+        expected_tmps_bln_types_user_defined = sorted(
+            timepoints_on_balancing_type_horizon_df[
+                ["timepoint", "balancing_type_horizon"]
+            ]
+            .drop_duplicates()
+            .to_records(index=False)
+            .tolist()
+        )
+        expected_tmps_bln_types_builtin = sorted(
+            list(
+                set(
+                    [
+                        (tmp, bt)
+                        for (bt, h) in horizon_balancing_types_builtin
+                        for tmp in expected_tmps_on_horizon_builtin[bt, h]
+                    ]
+                ),
             )
-        }
+        )
+
+        expected_tmps_bln_types = sorted(
+            expected_tmps_bln_types_user_defined + expected_tmps_bln_types_builtin
+        )
+        actual_tmps_bln_types = sorted(
+            (tmp, bt) for (tmp, bt) in instance.TMPS_BLN_TYPES
+        )
+        self.assertListEqual(expected_tmps_bln_types, actual_tmps_bln_types)
+
+        # Param: horizon
+        def expected_horizon_by_tmp_init():
+            expected_horizon_by_tmp = {}
+            for tmp in timepoints_df["timepoint"].tolist():
+                for bt in expected_balancing_type_horizons:
+                    for h in expected_horizon_by_balancing_type_horizon[bt]:
+                        if tmp in expected_tmps_on_horizon[bt, h]:
+                            expected_horizon_by_tmp[tmp, bt] = h
+
+            return expected_horizon_by_tmp
+
+        expected_horizon_by_tmp_type = expected_horizon_by_tmp_init()
+
         actual_horizon_by_tmp_type = {
             (tmp, _type): instance.horizon[tmp, _type]
             for tmp in instance.TMPS
             for _type in instance.BLN_TYPES
         }
+
         self.assertDictEqual(expected_horizon_by_tmp_type, actual_horizon_by_tmp_type)
 
         # Param: first_hrz_tmp
@@ -227,7 +333,7 @@ class TestHorizons(unittest.TestCase):
         self.assertDictEqual(
             expected_first_hrz_tmp,
             actual_first_hrz_tmp,
-            msg="Data for param " "first_hrz_tmp do " "not match expected.",
+            msg="Data for param first_hrz_tmp do not match expected.",
         )
 
         # Param: last_hrz_tmp
@@ -249,15 +355,22 @@ class TestHorizons(unittest.TestCase):
         #  somewhere as opposed to figuring it out here
         expected_prev_tmp = dict()
         prev_tmp = None
-        for horizon, balancing_type, tmp in [
-            tuple(row) for row in timepoints_on_balancing_type_horizon_df.values
-        ]:
+
+        h_bt_tmp_tuples_list = [
+            (h, bt, tmp)
+            for (bt, h) in expected_tmps_on_horizon.keys()
+            for tmp in expected_tmps_on_horizon[bt, h]
+        ]
+        for horizon, balancing_type, tmp in h_bt_tmp_tuples_list:
             if tmp == expected_first_hrz_tmp[balancing_type, horizon]:
                 if expected_boundary_param[balancing_type, horizon] == "circular":
                     expected_prev_tmp[tmp, balancing_type] = expected_last_hrz_tmp[
                         balancing_type, horizon
                     ]
-                elif expected_boundary_param[balancing_type, horizon] == "linear":
+                elif expected_boundary_param[balancing_type, horizon] in [
+                    "linear",
+                    "linked",
+                ]:
                     expected_prev_tmp[tmp, balancing_type] = "."
                 else:
                     raise (
@@ -287,15 +400,16 @@ class TestHorizons(unittest.TestCase):
         # Testing for both horizons that 'circular' and 'linear'
         expected_next_tmp = dict()
         prev_tmp = None
-        for horizon, balancing_type, tmp in [
-            tuple(row) for row in timepoints_on_balancing_type_horizon_df.values
-        ]:
+        for horizon, balancing_type, tmp in h_bt_tmp_tuples_list:
             if prev_tmp is None:
                 if expected_boundary_param[balancing_type, horizon] == "circular":
                     expected_next_tmp[
                         expected_last_hrz_tmp[balancing_type, horizon], balancing_type
                     ] = expected_first_hrz_tmp[balancing_type, horizon]
-                elif expected_boundary_param[balancing_type, horizon] == "linear":
+                elif expected_boundary_param[balancing_type, horizon] in [
+                    "linear",
+                    "linked",
+                ]:
                     expected_next_tmp[
                         expected_last_hrz_tmp[balancing_type, horizon], balancing_type
                     ] = "."
