@@ -58,6 +58,7 @@ from gridpath.auxiliary.validations import (
     validate_single_input,
     validate_missing_inputs,
 )
+from gridpath.project import write_tab_file_model_inputs
 
 
 def add_model_components(
@@ -176,9 +177,100 @@ def add_model_components(
     # Sets
     ###########################################################################
 
-    m.BLN_TYPE_HRZS = Set(dimen=2, ordered=True)
+    m.BLN_TYPE_HRZS_USER_DEFINED = Set(dimen=2)
 
-    m.TMPS_BY_BLN_TYPE_HRZ = Set(m.BLN_TYPE_HRZS, within=PositiveIntegers, ordered=True)
+    def builtin_bln_type_hrz_init(mod):
+        """
+        Built in balancing types:
+        * subproblem: all timepoints in the subproblem belong to a single
+          horizon of the balancing type 'subproblem.'
+        * subproblem_period: all timepoints in a given period in the subproblem
+        * subproblem_period_month: all timepoints in a given month in the
+        subproblem and period
+
+        These can be linear or circular
+        """
+        return set(
+            [("subproblem_circular", 1)]
+            + [("subproblem_period_circular", period) for period in mod.PERIODS]
+            + [("subproblem_linear", 1)]
+            + [("subproblem_period_linear", period) for period in mod.PERIODS]
+            + [("subproblem_linked", 1)]
+            + [("subproblem_period_linked", period) for period in mod.PERIODS]
+            # + [
+            #     ("subproblem_period_month_linear", period * 100 + month)
+            #     for period in mod.PERIODS
+            #     for month in range(1, 13)
+            # ]
+            # + [
+            #     ("subproblem_period_month_circular", period * 100 + month)
+            #     for period in mod.PERIODS
+            #     for month in range(1, 13)
+            # ]
+        )
+
+    m.BLN_TYPE_HRZS_BUILTIN = Set(dimen=2, initialize=builtin_bln_type_hrz_init)
+
+    m.BLN_TYPE_HRZS = Set(
+        dimen=2,
+        initialize=lambda mod: mod.BLN_TYPE_HRZS_USER_DEFINED.union(
+            mod.BLN_TYPE_HRZS_BUILTIN
+        ),
+    )
+
+    # Timepoints by balancing type and horizon
+    m.TMPS_BY_BLN_TYPE_HRZ_USER_DEFINED = Set(
+        m.BLN_TYPE_HRZS_USER_DEFINED, within=PositiveIntegers
+    )
+
+    # TODO: add linked
+    def tmps_by_bln_type_hrz_builtin_init(mod, b, h):
+        """ """
+        if b in ["subproblem_circular", "subproblem_linear", "subproblem_linked"]:
+            return [tmp for tmp in mod.TMPS]
+        elif b in [
+            "subproblem_period_circular",
+            "subproblem_period_linear",
+            "subproblem_period_linked",
+        ]:
+            return [tmp for tmp in mod.TMPS_IN_PRD[h]]
+        # elif b in [
+        #     "subproblem_period_month_circular",
+        #     "subproblem_period_month_linear",
+        # ]:
+        #     return [
+        #         tmp for tmp in mod.TMPS if mod.month[tmp] + 100 * mod.period[tmp] == h
+        #     ]
+        else:
+            raise ValueError(
+                f"Unrecognized built-in balancing type '{b}' " f"with horizon '{h}'."
+            )
+
+    m.TMPS_BY_BLN_TYPE_HRZ_BUILTIN = Set(
+        m.BLN_TYPE_HRZS_BUILTIN,
+        within=PositiveIntegers,
+        initialize=tmps_by_bln_type_hrz_builtin_init,
+    )
+
+    def tmps_by_bln_type_hrz_join_init(mod):
+        joined_indexed_sets = {}
+        for bt, hrz in mod.BLN_TYPE_HRZS_USER_DEFINED:
+            joined_indexed_sets[bt, hrz] = list(
+                mod.TMPS_BY_BLN_TYPE_HRZ_USER_DEFINED[bt, hrz]
+            )
+
+        for bt, hrz in mod.BLN_TYPE_HRZS_BUILTIN:
+            joined_indexed_sets[bt, hrz] = list(
+                mod.TMPS_BY_BLN_TYPE_HRZ_BUILTIN[bt, hrz]
+            )
+
+        return joined_indexed_sets
+
+    m.TMPS_BY_BLN_TYPE_HRZ = Set(
+        m.BLN_TYPE_HRZS,
+        within=PositiveIntegers,
+        initialize=tmps_by_bln_type_hrz_join_init,
+    )
 
     # Derived Sets
     ###########################################################################
@@ -208,25 +300,67 @@ def add_model_components(
     # Required Params
     ###########################################################################
 
-    # TODO: can create here instead of upstream in data (i.e. we can get the
-    #  balancing type index from the horizon of the timepoint)
-    m.horizon = Param(m.TMPS, m.BLN_TYPES)
+    def horizon_init(mod, tmp, bt):
+        for h in mod.HRZS_BY_BLN_TYPE[bt]:
+            if tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, h]:
+                return h
 
-    m.boundary = Param(m.BLN_TYPE_HRZS, within=["circular", "linear", "linked"])
+    m.horizon = Param(
+        m.TMPS,
+        m.BLN_TYPES,
+        within=PositiveIntegers | {None},
+        initialize=horizon_init,
+    )
+
+    m.boundary_user_defined = Param(
+        m.BLN_TYPE_HRZS_USER_DEFINED, within=["circular", "linear", "linked"]
+    )
+
+    def boundary_builtin_init(mod, b, h):
+        return b.split("_")[-1]
+
+    m.boundary_builtin = Param(
+        m.BLN_TYPE_HRZS_BUILTIN,
+        within=["circular", "linear", "linked"],
+        initialize=boundary_builtin_init,
+    )
+
+    def boundary_join_init(mod, b, h):
+        if (b, h) in mod.BLN_TYPE_HRZS_USER_DEFINED:
+            return mod.boundary_user_defined[b, h]
+        elif (b, h) in mod.BLN_TYPE_HRZS_BUILTIN:
+            return mod.boundary_builtin[b, h]
+        else:
+            raise ValueError(
+                f"Balancing type - horizon pair {b} {h} not found in either "
+                f"user-defined or builtin sets."
+            )
+
+    m.boundary = Param(
+        m.BLN_TYPE_HRZS,
+        within=["circular", "linear", "linked"],
+        initialize=boundary_join_init,
+    )
 
     # Derived Params
     ###########################################################################
 
+    def first_hrz_tmp_init(mod, b, h):
+        return list(mod.TMPS_BY_BLN_TYPE_HRZ[b, h])[0]
+
     m.first_hrz_tmp = Param(
         m.BLN_TYPE_HRZS,
         within=PositiveIntegers,
-        initialize=lambda mod, b, h: list(mod.TMPS_BY_BLN_TYPE_HRZ[b, h])[0],
+        initialize=first_hrz_tmp_init,
     )
+
+    def last_hrz_tmp_init(mod, b, h):
+        return list(mod.TMPS_BY_BLN_TYPE_HRZ[b, h])[-1]
 
     m.last_hrz_tmp = Param(
         m.BLN_TYPE_HRZS,
         within=PositiveIntegers,
-        initialize=lambda mod, b, h: list(mod.TMPS_BY_BLN_TYPE_HRZ[b, h])[-1],
+        initialize=last_hrz_tmp_init,
     )
 
     def hrz_period_init(mod, bt, hrz):
@@ -382,52 +516,51 @@ def load_model_data(
     stage,
 ):
     """ """
-    data_portal.load(
-        filename=os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "inputs",
-            "horizons.tab",
-        ),
-        select=("balancing_type_horizon", "horizon", "boundary"),
-        index=m.BLN_TYPE_HRZS,
-        param=m.boundary,
+    hrz_filename = os.path.join(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+        "horizons_user_defined.tab",
     )
 
-    with open(
-        os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "inputs",
-            "horizon_timepoints.tab",
+    # Load user-defined horizons if any (i.e., the file exists)
+    if os.path.exists(hrz_filename):
+        data_portal.load(
+            filename=hrz_filename,
+            select=("balancing_type_horizon", "horizon", "boundary"),
+            index=m.BLN_TYPE_HRZS_USER_DEFINED,
+            param=m.boundary_user_defined,
         )
-    ) as f:
-        reader = csv.reader(f, delimiter="\t", lineterminator="\n")
-        next(reader)
-        tmps_on_horizon = dict()
-        horizon_by_tmp = dict()
-        for row in reader:
-            if (row[1], int(row[0])) not in tmps_on_horizon.keys():
-                tmps_on_horizon[row[1], int(row[0])] = [int(row[2])]
-            else:
-                tmps_on_horizon[row[1], int(row[0])].append(int(row[2]))
 
-            horizon_by_tmp[int(row[2]), row[1]] = int(row[0])
+    hrz_tmp_filename = os.path.join(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+        "horizon_user_defined_timepoints.tab",
+    )
+    if os.path.exists(hrz_tmp_filename):
+        with open(hrz_tmp_filename) as f:
+            reader = csv.reader(f, delimiter="\t", lineterminator="\n")
+            next(reader)
+            tmps_on_horizon = dict()
+            for row in reader:
+                if (row[1], int(row[0])) not in tmps_on_horizon.keys():
+                    tmps_on_horizon[row[1], int(row[0])] = [int(row[2])]
+                else:
+                    tmps_on_horizon[row[1], int(row[0])].append(int(row[2]))
 
-    data_portal.data()["TMPS_BY_BLN_TYPE_HRZ"] = tmps_on_horizon
-    data_portal.data()["horizon"] = horizon_by_tmp
+        data_portal.data()["TMPS_BY_BLN_TYPE_HRZ_USER_DEFINED"] = tmps_on_horizon
 
-
-# Database
-###############################################################################
+    # Database
+    ###############################################################################
 
 
 def get_inputs_from_database(
@@ -490,7 +623,7 @@ def write_model_inputs(
 ):
     """
     Get inputs from database and write out the model input
-    horizons.tab file.
+    horizons_user_defined.tab file.
     :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -520,51 +653,29 @@ def write_model_inputs(
         conn,
     )
 
-    with open(
-        os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "inputs",
-            "horizons.tab",
-        ),
-        "w",
-        newline="",
-    ) as horizons_tab_file:
-        hwriter = csv.writer(horizons_tab_file, delimiter="\t", lineterminator="\n")
+    write_tab_file_model_inputs(
+        scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        fname="horizons_user_defined.tab",
+        data=horizons,
+        replace_nulls=False,
+    )
 
-        # Write header
-        hwriter.writerow(["horizon", "balancing_type_horizon", "boundary"])
-
-        for row in horizons:
-            hwriter.writerow(row)
-
-    with open(
-        os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "inputs",
-            "horizon_timepoints.tab",
-        ),
-        "w",
-        newline="",
-    ) as horizon_timepoints_tab_file:
-        htwriter = csv.writer(
-            horizon_timepoints_tab_file, delimiter="\t", lineterminator="\n"
-        )
-
-        # Write header
-        htwriter.writerow(["horizon", "balancing_type_horizon", "timepoint"])
-
-        for row in horizon_timepoints:
-            htwriter.writerow(row)
+    write_tab_file_model_inputs(
+        scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        fname="horizon_user_defined_timepoints.tab",
+        data=horizon_timepoints,
+        replace_nulls=False,
+    )
 
 
 # Validation

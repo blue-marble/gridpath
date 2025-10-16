@@ -1,3 +1,2 @@
 project	vintage	operational_lifetime_yrs	fixed_cost_per_mw_yr	fixed_cost_per_stor_mwh_yr	financial_lifetime_yrs	annualized_real_cost_per_mw_yr	annualized_real_cost_per_stor_mwh_yr	min_cumulative_new_build_mw	min_cumulative_new_build_mwh	max_cumulative_new_build_mw	max_cumulative_new_build_mwh
 Battery	2020	10	0	0	10	1	1	.	.	6	7
-Battery	2030	10	0	0	10	1	1	7	10	.	.
