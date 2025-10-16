@@ -1729,7 +1729,6 @@ class TestExamples(unittest.TestCase):
         scenario_name = "test_w_no_prj_av_sid_specified"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
-
     def test_example_test_subproblem_builtin_horizons(self):
         """
         Check validation and objective function value of "test_subproblem_builtin_horizons" example
