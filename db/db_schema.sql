@@ -2977,11 +2977,12 @@ CREATE TABLE inputs_project_ramp_up_when_on_rate_monthly_adjustments
 (
     project                                             VARCHAR(64),
     ramp_up_when_on_rate_monthly_adjustment_scenario_id INTEGER,
+    period                                              INTEGER,
     month                                               INTEGER,
     monthly_adjustment                                  FLOAT,
     PRIMARY KEY (project,
                  ramp_up_when_on_rate_monthly_adjustment_scenario_id,
-                 month),
+                 period, month),
     FOREIGN KEY (project,
                  ramp_up_when_on_rate_monthly_adjustment_scenario_id) REFERENCES
         subscenarios_project_ramp_up_when_on_rate_monthly_adjustments
@@ -3005,11 +3006,12 @@ CREATE TABLE inputs_project_ramp_down_when_on_rate_monthly_adjustments
 (
     project                                               VARCHAR(64),
     ramp_down_when_on_rate_monthly_adjustment_scenario_id INTEGER,
+    period                                                INTEGER,
     month                                                 INTEGER,
     monthly_adjustment                                    FLOAT,
     PRIMARY KEY (project,
                  ramp_down_when_on_rate_monthly_adjustment_scenario_id,
-                 month),
+                 period, month),
     FOREIGN KEY (project,
                  ramp_down_when_on_rate_monthly_adjustment_scenario_id) REFERENCES
         subscenarios_project_ramp_down_when_on_rate_monthly_adjustments

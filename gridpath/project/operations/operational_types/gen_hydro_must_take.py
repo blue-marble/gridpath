@@ -277,6 +277,16 @@ def add_model_components(
         ),
     )
 
+    m.GEN_HYDRO_MUST_TAKE_OPR_PRDS = Set(
+        within=m.PRJ_OPR_PRDS,
+        initialize=lambda mod: subset_init_by_set_membership(
+            mod=mod,
+            superset="PRJ_OPR_PRDS",
+            index=0,
+            membership_set=mod.GEN_HYDRO_MUST_TAKE,
+        ),
+    )
+
     m.GEN_HYDRO_MUST_TAKE_LINKED_TMPS = Set(dimen=2)
 
     # Required Params
@@ -306,11 +316,11 @@ def add_model_components(
     )
 
     m.gen_hydro_must_take_ramp_up_when_on_rate_monthly_adjustment = Param(
-        m.GEN_HYDRO_MUST_TAKE, m.MONTHS, within=NonNegativeReals, default=1
+        m.GEN_HYDRO_MUST_TAKE_OPR_PRDS, m.MONTHS, within=NonNegativeReals, default=1
     )
 
     m.gen_hydro_must_take_ramp_down_when_on_rate_monthly_adjustment = Param(
-        m.GEN_HYDRO_MUST_TAKE, m.MONTHS, within=NonNegativeReals, default=1
+        m.GEN_HYDRO_MUST_TAKE_OPR_PRDS, m.MONTHS, within=NonNegativeReals, default=1
     )
 
     m.gen_hydro_must_take_aux_consumption_frac_capacity = Param(
@@ -554,7 +564,7 @@ def ramp_up_rule(mod, g, tmp):
             ) <= mod.gen_hydro_must_take_ramp_up_when_on_rate[
                 g
             ] * mod.gen_hydro_must_take_ramp_up_when_on_rate_monthly_adjustment[
-                g, mod.month[tmp]
+                g, mod.period[tmp], mod.month[tmp]
             ] * 60 * prev_tmp_hrs_in_tmp * mod.Capacity_MW[
                 g, mod.period[tmp]
             ] * mod.Availability_Derate[
@@ -617,7 +627,7 @@ def ramp_down_rule(mod, g, tmp):
             ) >= -mod.gen_hydro_must_take_ramp_down_when_on_rate[
                 g
             ] * mod.gen_hydro_must_take_ramp_down_when_on_rate_monthly_adjustment[
-                g, mod.month[tmp]
+                g, mod.period[tmp], mod.month[tmp]
             ] * 60 * prev_tmp_hrs_in_tmp * mod.Capacity_MW[
                 g, mod.period[tmp]
             ] * mod.Availability_Derate[
@@ -945,7 +955,7 @@ def get_model_inputs_from_database(
     )
 
     ramp_up_monthly_adjustments_sql = f"""
-        SELECT project, month, monthly_adjustment
+        SELECT project, period, month, monthly_adjustment
             FROM inputs_project_ramp_up_when_on_rate_monthly_adjustments
             WHERE 1=1
             AND project IN (
@@ -954,6 +964,13 @@ def get_model_inputs_from_database(
                 WHERE project_portfolio_scenario_id = 
                 {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
             )
+            AND period in (
+                 SELECT DISTINCT period
+                 FROM inputs_temporal
+                 WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+                 AND subproblem_id = {db_subproblem}
+                 AND stage_id = {db_stage}
+             )
             AND (project, ramp_up_when_on_rate_monthly_adjustment_scenario_id) in (
                 SELECT project, ramp_up_when_on_rate_monthly_adjustment_scenario_id
                 FROM inputs_project_operational_chars
@@ -969,7 +986,7 @@ def get_model_inputs_from_database(
     )
 
     ramp_down_monthly_adjustments_sql = f"""
-        SELECT project, month, monthly_adjustment
+        SELECT project, period, month, monthly_adjustment
             FROM inputs_project_ramp_down_when_on_rate_monthly_adjustments
             WHERE 1=1
             AND project IN (
@@ -978,6 +995,13 @@ def get_model_inputs_from_database(
                 WHERE project_portfolio_scenario_id = 
                 {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
             )
+            AND period in (
+                 SELECT DISTINCT period
+                 FROM inputs_temporal
+                 WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+                 AND subproblem_id = {db_subproblem}
+                 AND stage_id = {db_stage}
+             )
             AND (project, ramp_down_when_on_rate_monthly_adjustment_scenario_id) in (
                 SELECT project, ramp_down_when_on_rate_monthly_adjustment_scenario_id
                 FROM inputs_project_operational_chars
