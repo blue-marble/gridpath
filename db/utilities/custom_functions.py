@@ -53,6 +53,128 @@ def temporal(conn, subscenario_id):
         conn=conn, cursor=c, sql=stages_sql, data=(subscenario_id,), many=False
     )
 
+    # ### Built-in horizons ### #
+    boundaries = ["circular", "linear", "linked"]
+    periods = [
+        p[0]
+        for p in c.execute(
+            f"""SELECT DISTINCT period
+        FROM inputs_temporal
+        WHERE temporal_scenario_id = {subscenario_id}"""
+        ).fetchall()
+    ]
+    subproblem_stages = [
+        subproblem_stage
+        for subproblem_stage in c.execute(
+            f"""SELECT DISTINCT subproblem_id, stage_id
+        FROM inputs_temporal
+        WHERE temporal_scenario_id = {subscenario_id}"""
+        ).fetchall()
+    ]
+    subproblem_stage_periods = [
+        subproblem_stage_period
+        for subproblem_stage_period in c.execute(
+            f"""SELECT DISTINCT subproblem_id, stage_id, period
+        FROM inputs_temporal
+        WHERE temporal_scenario_id = {subscenario_id}"""
+        ).fetchall()
+    ]
+
+    # Insert into inputs_temporal_horizons
+    for boundary in boundaries:
+        # ### Insert into inputs_temporal_horizons ### #
+        # Subproblem balancing type
+        subproblem_balancing_type_sql = f"""
+            INSERT INTO inputs_temporal_horizons
+            (temporal_scenario_id, balancing_type_horizon, horizon, boundary)
+            VALUES ({subscenario_id}, "subproblem_{boundary}", 1, '{boundary}')
+            ;
+            """
+        c.execute(subproblem_balancing_type_sql, ())
+
+        # Subproblem-period balancing type
+        for period in periods:
+            subproblem_period_balancing_type_sql = f"""
+                INSERT INTO inputs_temporal_horizons
+                (temporal_scenario_id, balancing_type_horizon, horizon, boundary)
+                VALUES ({subscenario_id}, "subproblem_period_{boundary}", 
+                {period}, '{boundary}')
+                ;
+                """
+            c.execute(subproblem_period_balancing_type_sql, ())
+
+        # ### Insert into inputs_temporal_horizon_timepoints_start_end ### #
+        # Subproblem balancing type
+        for subproblem_stage in subproblem_stages:
+            (subproblem, stage) = subproblem_stage
+            subproblem_tmp_start_end_sql = f"""
+                INSERT INTO inputs_temporal_horizon_timepoints_start_end
+                (temporal_scenario_id, stage_id, balancing_type_horizon, 
+                horizon, tmp_start, tmp_start_spinup_or_lookahead, 
+                tmp_end, tmp_end_spinup_or_lookahead)
+                VALUES ({subscenario_id}, {stage}, 
+                "subproblem_{boundary}", 1,
+                (SELECT MIN(timepoint) FROM inputs_temporal
+                WHERE temporal_scenario_id = {subscenario_id}
+                AND subproblem_id = {subproblem}
+                AND stage_id = {stage}),
+                (SELECT spinup_or_lookahead FROM inputs_temporal
+                WHERE temporal_scenario_id = {subscenario_id}
+                AND subproblem_id = {subproblem}
+                AND stage_id = {stage}
+                ORDER BY timepoint ASC LIMIT 1),
+                (SELECT MAX(timepoint) FROM inputs_temporal
+                WHERE temporal_scenario_id = {subscenario_id}
+                AND subproblem_id = {subproblem}
+                AND stage_id = {stage}),
+                (SELECT spinup_or_lookahead FROM inputs_temporal
+                WHERE temporal_scenario_id = {subscenario_id}
+                AND subproblem_id = {subproblem}
+                AND stage_id = {stage}
+                ORDER BY timepoint DESC LIMIT 1)
+                )
+                ;
+                """
+
+            c.execute(subproblem_tmp_start_end_sql, ())
+
+        # Subproblem-period balancing type
+        for subproblem, stage, period in subproblem_stage_periods:
+            subproblem_period_tmp_start_end_sql = f"""
+                INSERT INTO inputs_temporal_horizon_timepoints_start_end
+                (temporal_scenario_id, stage_id, balancing_type_horizon, 
+                horizon, tmp_start, tmp_start_spinup_or_lookahead, 
+                tmp_end, tmp_end_spinup_or_lookahead)
+                VALUES ({subscenario_id}, {stage}, 
+                "subproblem_period_{boundary}", {period},
+                (SELECT MIN(timepoint) FROM inputs_temporal
+                WHERE temporal_scenario_id = {subscenario_id}
+                AND subproblem_id = {subproblem}
+                AND stage_id = {stage}
+                AND period = {period}),
+                (SELECT spinup_or_lookahead FROM inputs_temporal
+                WHERE temporal_scenario_id = {subscenario_id}
+                AND subproblem_id = {subproblem}
+                AND stage_id = {stage}
+                AND period = {period}
+                ORDER BY timepoint ASC LIMIT 1),
+                (SELECT MAX(timepoint) FROM inputs_temporal
+                WHERE temporal_scenario_id = {subscenario_id}
+                AND subproblem_id = {subproblem}
+                AND stage_id = {stage}
+                AND period = {period}),
+                (SELECT spinup_or_lookahead FROM inputs_temporal
+                WHERE temporal_scenario_id = {subscenario_id}
+                AND subproblem_id = {subproblem}
+                AND stage_id = {stage}
+                AND period = {period}
+                ORDER BY timepoint DESC LIMIT 1)
+                )
+                ;
+                """
+
+            c.execute(subproblem_period_tmp_start_end_sql, ())
+
     # TIMEPOINT HORIZONS
     subproblem_stages = c.execute(
         f"""

@@ -61,6 +61,16 @@ from gridpath.auxiliary.validations import (
 from gridpath.project import write_tab_file_model_inputs
 
 
+BUILTIN_HORIZON_TYPES = [
+    "subproblem_circular",
+    "subproblem_period_circular",
+    "subproblem_linear",
+    "subproblem_period_linear",
+    "subproblem_linked",
+    "subproblem_period_linked",
+]
+
+
 def add_model_components(
     m,
     d,
@@ -580,7 +590,7 @@ def get_inputs_from_database(
     :param conn: database connection
     :return:
     """
-
+    builtin_hrz_types_list = ", ".join(f"'{h}'" for h in BUILTIN_HORIZON_TYPES)
     c1 = conn.cursor()
     horizons = c1.execute(
         f"""SELECT horizon, balancing_type_horizon, boundary
@@ -593,6 +603,8 @@ def get_inputs_from_database(
             AND subproblem_id = {subproblem}
             AND stage_id = {stage}
         )
+        -- Don't get the built-ins
+        AND balancing_type_horizon NOT IN ({builtin_hrz_types_list})
         ORDER BY balancing_type_horizon, horizon;
         """
     )
@@ -604,6 +616,8 @@ def get_inputs_from_database(
         WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
        AND subproblem_id = {subproblem}
        AND stage_id = {stage}
+       -- Don't get the built-ins
+       AND balancing_type_horizon NOT IN ({builtin_hrz_types_list})
        ORDER BY balancing_type_horizon, timepoint;"""
     )
 
@@ -713,15 +727,17 @@ def validate_inputs(
     )
 
     c = conn.cursor()
+
+    builtin_hrz_types_list = ", ".join(f"'{h}'" for h in BUILTIN_HORIZON_TYPES)
+
     periods_horizons = c.execute(
-        """
+        f"""
         SELECT balancing_type_horizon, period, horizon
         FROM periods_horizons
-        WHERE temporal_scenario_id = {}
-        and stage_id = {}
-        """.format(
-            subscenarios.TEMPORAL_SCENARIO_ID, subproblem, stage
-        )
+        WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+        AND stage_id = {stage}
+        AND balancing_type_horizon NOT IN ({builtin_hrz_types_list})
+        """
     )
 
     df_hrzs = cursor_to_df(hrzs)
