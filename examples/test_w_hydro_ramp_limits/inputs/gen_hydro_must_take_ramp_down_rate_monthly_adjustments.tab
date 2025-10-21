@@ -1,13 +1,13 @@
-project	month	monthly_adjustment
-Hydro	1	0.9
-Hydro	2	1.1
-Hydro	3	0.9
-Hydro	4	1.1
-Hydro	5	0.9
-Hydro	6	1.1
-Hydro	7	0.9
-Hydro	8	1.1
-Hydro	9	0.9
-Hydro	10	1.1
-Hydro	11	0.9
-Hydro	12	1.1
+project	period	month	monthly_adjustment
+Hydro	2020	1	0.9
+Hydro	2020	2	1.1
+Hydro	2020	3	0.9
+Hydro	2020	4	1.1
+Hydro	2020	5	0.9
+Hydro	2020	6	1.1
+Hydro	2020	7	0.9
+Hydro	2020	8	1.1
+Hydro	2020	9	0.9
+Hydro	2020	10	1.1
+Hydro	2020	11	0.9
+Hydro	2020	12	1.1
