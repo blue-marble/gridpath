@@ -6286,6 +6286,9 @@ CREATE TABLE results_project_timepoint
     unavailability_decision                         FLOAT,
     start_unavailability                            FLOAT,
     stop_unavailability                             FLOAT,
+    month                                           INTEGER,
+    day_of_month                                    INTEGER,
+    hour_of_day                                     INTEGER,
     PRIMARY KEY (scenario_id, project, weather_iteration, hydro_iteration,
                  availability_iteration, subproblem_id, stage_id, timepoint)
 );
@@ -6308,6 +6311,9 @@ CREATE TABLE results_project_policy_zone_timepoint
     subproblem_id          INTEGER,
     stage_id               INTEGER,
     policy_contribution    FLOAT,
+    month                  INTEGER,
+    day_of_month           INTEGER,
+    hour_of_day            INTEGER,
     PRIMARY KEY (scenario_id, project, weather_iteration, hydro_iteration,
                  availability_iteration, subproblem_id, stage_id,
                  policy_name, policy_zone, timepoint)
@@ -6807,6 +6813,9 @@ CREATE TABLE results_transmission_timepoint
     transmission_target_energy_negative_direction_mw FLOAT,
     carbon_emission_imports_tons                     FLOAT,
     carbon_emission_imports_tons_degen               FLOAT,
+    month                                            INTEGER,
+    day_of_month                                     INTEGER,
+    hour_of_day                                      INTEGER,
     PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
                  availability_iteration, subproblem_id, stage_id,
                  transmission_line, timepoint)
@@ -6915,6 +6924,9 @@ CREATE TABLE results_system_load_zone_timepoint
     unserved_energy_mw                FLOAT,
     load_balance_dual                 FLOAT,
     load_balance_marginal_cost_per_mw FLOAT,
+    month                             INTEGER,
+    day_of_month                      INTEGER,
+    hour_of_day                       INTEGER,
     PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
                  availability_iteration, subproblem_id, stage_id, load_zone,
                  timepoint)
@@ -7713,6 +7725,9 @@ CREATE TABLE results_system_water_link_timepoint
     water_flow_vol_per_sec               FLOAT,
     water_flow_min_violation_vol_per_sec FLOAT,
     water_flow_max_violation_vol_per_sec FLOAT,
+    month                                INTEGER,
+    day_of_month                         INTEGER,
+    hour_of_day                          INTEGER,
     PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
                  availability_iteration, subproblem_id, stage_id, water_link,
                  departure_timepoint)
@@ -7740,6 +7755,9 @@ CREATE TABLE results_system_water_node_timepoint
     spill_water_rate_vol_per_sec                   FLOAT,
     evap_losses_NOT_IMPLEMENTED                    FLOAT,
     gross_water_outflow_rate_vol_per_sec           FLOAT,
+    month                                         INTEGER,
+    day_of_month                                  INTEGER,
+    hour_of_day                                   INTEGER,
     PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
                  availability_iteration, subproblem_id, stage_id, water_node,
                  timepoint)
@@ -7760,6 +7778,9 @@ CREATE TABLE results_system_water_powerhouse_timepoint
     gross_head                                     FLOAT,
     net_head                                       FLOAT,
     water_discharge_to_powerhouse_rate_vol_per_sec FLOAT,
+    month                                         INTEGER,
+    day_of_month                                  INTEGER,
+    hour_of_day                                   INTEGER,
     PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
                  availability_iteration, subproblem_id, stage_id, powerhouse,
                  timepoint)

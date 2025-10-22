@@ -83,6 +83,8 @@ class TestTimepoints(unittest.TestCase):
                 "timepoint_weight",
                 "previous_stage_timepoint_map",
                 "month",
+                "day_of_month",
+                "hour_of_day",
             ],
         )
 
@@ -158,6 +160,24 @@ class TestTimepoints(unittest.TestCase):
             expected_month,
             actual_month,
             msg="Data for param month not loaded correctly",
+        )
+
+        # Params: day_of_month
+        expected_day_of_month = timepoints_df.set_index("timepoint").to_dict()["day_of_month"]
+        actual_day_of_month = {tmp: instance.day_of_month[tmp] for tmp in instance.TMPS}
+        self.assertDictEqual(
+            expected_day_of_month,
+            actual_day_of_month,
+            msg="Data for param day_of_month not loaded correctly",
+        )
+
+        # Params: hour_of_day
+        expected_hour_of_day = timepoints_df.set_index("timepoint").to_dict()["hour_of_day"]
+        actual_hour_of_day = {tmp: instance.hour_of_day[tmp] for tmp in instance.TMPS}
+        self.assertDictEqual(
+            expected_hour_of_day,
+            actual_hour_of_day,
+            msg="Data for param hour_of_day not loaded correctly",
         )
 
         # There's shouldn't be any linked timepoints in this instance

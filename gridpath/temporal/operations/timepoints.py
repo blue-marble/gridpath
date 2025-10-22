@@ -449,6 +449,61 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
 
             spin_on_database_lock(conn=db, cursor=c, sql=sql, data=(), many=False)
 
+    # Add temporal information (month, day_of_month, hour_of_day) to timepoint-level results tables
+    if not quiet:
+        print("add temporal information (month, day_of_month, hour_of_day)")
+
+    # Update tables with temporal information
+    tables_to_update = determine_table_subset_by_start_and_column(
+        conn=db, tbl_start="results_", cols=["timepoint", "month", "day_of_month", "hour_of_day"]
+    )
+
+    for tbl in tables_to_update:
+        if not quiet:
+            print("... {}".format(tbl))
+        sql = f"""
+            UPDATE {tbl}
+            SET month = (
+                SELECT month
+                FROM inputs_temporal
+                WHERE temporal_scenario_id = (
+                    SELECT temporal_scenario_id 
+                    FROM scenarios 
+                    WHERE scenario_id = {scenario_id}
+                    )
+                AND {tbl}.subproblem_id = inputs_temporal.subproblem_id
+                AND {tbl}.stage_id = inputs_temporal.stage_id
+                AND {tbl}.timepoint = inputs_temporal.timepoint
+                ),
+            day_of_month = (
+                SELECT day_of_month
+                FROM inputs_temporal
+                WHERE temporal_scenario_id = (
+                    SELECT temporal_scenario_id 
+                    FROM scenarios 
+                    WHERE scenario_id = {scenario_id}
+                    )
+                AND {tbl}.subproblem_id = inputs_temporal.subproblem_id
+                AND {tbl}.stage_id = inputs_temporal.stage_id
+                AND {tbl}.timepoint = inputs_temporal.timepoint
+                ),
+            hour_of_day = (
+                SELECT hour_of_day
+                FROM inputs_temporal
+                WHERE temporal_scenario_id = (
+                    SELECT temporal_scenario_id 
+                    FROM scenarios 
+                    WHERE scenario_id = {scenario_id}
+                    )
+                AND {tbl}.subproblem_id = inputs_temporal.subproblem_id
+                AND {tbl}.stage_id = inputs_temporal.stage_id
+                AND {tbl}.timepoint = inputs_temporal.timepoint
+                )
+            WHERE scenario_id = {scenario_id};
+            """
+
+        spin_on_database_lock(conn=db, cursor=c, sql=sql, data=(), many=False)
+
 
 # Validation
 ###############################################################################
