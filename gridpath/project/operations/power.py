@@ -212,6 +212,7 @@ def summarize_results(
     availability_iteration,
     subproblem,
     stage,
+    skip_quick_summary,
 ):
     """
     :param scenario_directory:
@@ -222,29 +223,8 @@ def summarize_results(
     Summarize operational results
     """
 
-    summary_results_file = os.path.join(
-        scenario_directory,
-        weather_iteration,
-        hydro_iteration,
-        availability_iteration,
-        subproblem,
-        stage,
-        "results",
-        "summary_results.txt",
-    )
-
-    # Open in 'append' mode, so that results already written by other
-    # modules are not overridden
-    with open(summary_results_file, "a") as outfile:
-        outfile.write("\n### OPERATIONAL RESULTS ###\n")
-
-    # Next, our goal is to get a summary table of power production by load
-    # zone, technology, and period
-    # Note: this includes power from spinup_or_lookahead timepoints as well!
-
-    # Get the results CSV as dataframe
-    operational_results_df = pd.read_csv(
-        os.path.join(
+    if not skip_quick_summary:
+        summary_results_file = os.path.join(
             scenario_directory,
             weather_iteration,
             hydro_iteration,
@@ -252,73 +232,103 @@ def summarize_results(
             subproblem,
             stage,
             "results",
-            "project_timepoint.csv",
+            "summary_results.txt",
         )
-    )[["project", "load_zone", "period", "technology", "power_mw", "timepoint_weight"]]
 
-    operational_results_df["weighted_power_mwh"] = (
-        operational_results_df["power_mw"] * operational_results_df["timepoint_weight"]
-    )
+        # Open in 'append' mode, so that results already written by other
+        # modules are not overridden
+        with open(summary_results_file, "a") as outfile:
+            outfile.write("\n### OPERATIONAL RESULTS ###\n")
 
-    # Aggregate total power results by load_zone, technology, and period
-    operational_results_agg_df = pd.DataFrame(
-        operational_results_df.groupby(
-            ["load_zone", "period", "technology"],
-            as_index=True,
-        ).sum(numeric_only=True)["weighted_power_mwh"]
-    )
+        # Next, our goal is to get a summary table of power production by load
+        # zone, technology, and period
+        # Note: this includes power from spinup_or_lookahead timepoints as well!
 
-    operational_results_agg_df.columns = ["weighted_power_mwh"]
-
-    # Aggregate total power by load_zone and period -- we'll need this
-    # to find the percentage of total power by technology (for each load
-    # zone and period)
-    lz_period_power_df = pd.DataFrame(
-        operational_results_df.groupby(
-            by=["load_zone", "period"],
-            as_index=True,
-        ).sum(
-            numeric_only=True
-        )["weighted_power_mwh"]
-    )
-
-    # Name the power column
-    operational_results_agg_df.columns = ["weighted_power_mwh"]
-    # Add a column with the percentage of total power by load zone and tech
-    operational_results_agg_df["percent_total_power"] = pd.Series(
-        index=operational_results_agg_df.index, dtype="float64"
-    )
-
-    # Calculate the percent of total power for each tech (by load zone
-    # and period)
-    for indx, row in operational_results_agg_df.iterrows():
-        if lz_period_power_df.weighted_power_mwh[indx[0], indx[1]] == 0:
-            pct = 0
-        else:
-            pct = (
-                operational_results_agg_df.weighted_power_mwh[indx]
-                / lz_period_power_df.weighted_power_mwh[indx[0], indx[1]]
-                * 100.0
+        # Get the results CSV as dataframe
+        operational_results_df = pd.read_csv(
+            os.path.join(
+                scenario_directory,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
+                "results",
+                "project_timepoint.csv",
             )
-        operational_results_agg_df.loc[indx, "percent_total_power"] = pct
+        )[
+            [
+                "project",
+                "load_zone",
+                "period",
+                "technology",
+                "power_mw",
+                "timepoint_weight",
+            ]
+        ]
 
-    # Get the energy units from the units.csv file
-    units_df = pd.read_csv(
-        os.path.join(scenario_directory, "units.csv"), index_col="metric"
-    )
-    energy_unit = units_df.loc["energy", "unit"]
-    # units_dict = dict(zip(units_df["metric"], units_df["unit"]))
+        operational_results_df["weighted_power_mwh"] = (
+            operational_results_df["power_mw"]
+            * operational_results_df["timepoint_weight"]
+        )
 
-    # Rename the columns for the final table
-    operational_results_agg_df.columns = [
-        "Annual Energy ({})".format(energy_unit),
-        "% Total Power",
-    ]
+        # Aggregate total power results by load_zone, technology, and period
+        operational_results_agg_df = pd.DataFrame(
+            operational_results_df.groupby(
+                ["load_zone", "period", "technology"],
+                as_index=True,
+            ).sum(numeric_only=True)["weighted_power_mwh"]
+        )
 
-    with open(summary_results_file, "a") as outfile:
-        outfile.write("\n--> Energy Production <--\n")
-        operational_results_agg_df.to_string(outfile, float_format="{:,.2f}".format)
-        outfile.write("\n")
+        operational_results_agg_df.columns = ["weighted_power_mwh"]
+
+        # Aggregate total power by load_zone and period -- we'll need this
+        # to find the percentage of total power by technology (for each load
+        # zone and period)
+        lz_period_power_df = pd.DataFrame(
+            operational_results_df.groupby(
+                by=["load_zone", "period"],
+                as_index=True,
+            ).sum(numeric_only=True)["weighted_power_mwh"]
+        )
+
+        # Name the power column
+        operational_results_agg_df.columns = ["weighted_power_mwh"]
+        # Add a column with the percentage of total power by load zone and tech
+        operational_results_agg_df["percent_total_power"] = pd.Series(
+            index=operational_results_agg_df.index, dtype="float64"
+        )
+
+        # Calculate the percent of total power for each tech (by load zone
+        # and period)
+        for indx, row in operational_results_agg_df.iterrows():
+            if lz_period_power_df.weighted_power_mwh[indx[0], indx[1]] == 0:
+                pct = 0
+            else:
+                pct = (
+                    operational_results_agg_df.weighted_power_mwh[indx]
+                    / lz_period_power_df.weighted_power_mwh[indx[0], indx[1]]
+                    * 100.0
+                )
+            operational_results_agg_df.loc[indx, "percent_total_power"] = pct
+
+        # Get the energy units from the units.csv file
+        units_df = pd.read_csv(
+            os.path.join(scenario_directory, "units.csv"), index_col="metric"
+        )
+        energy_unit = units_df.loc["energy", "unit"]
+        # units_dict = dict(zip(units_df["metric"], units_df["unit"]))
+
+        # Rename the columns for the final table
+        operational_results_agg_df.columns = [
+            "Annual Energy ({})".format(energy_unit),
+            "% Total Power",
+        ]
+
+        with open(summary_results_file, "a") as outfile:
+            outfile.write("\n--> Energy Production <--\n")
+            operational_results_agg_df.to_string(outfile, float_format="{:,.2f}".format)
+            outfile.write("\n")
 
 
 # Database
