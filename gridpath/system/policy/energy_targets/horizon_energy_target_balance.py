@@ -202,6 +202,7 @@ def summarize_results(
     availability_iteration,
     subproblem,
     stage,
+    skip_quick_summary,
 ):
     """
     :param scenario_directory:
@@ -212,78 +213,83 @@ def summarize_results(
     Summarize energy-target policy results
     """
 
-    summary_results_file = os.path.join(
-        scenario_directory,
-        weather_iteration,
-        hydro_iteration,
-        availability_iteration,
-        subproblem,
-        stage,
-        "results",
-        "summary_results.txt",
-    )
-
-    # Open in 'append' mode, so that results already written by other
-    # modules are not overridden
-    with open(summary_results_file, "a") as outfile:
-        outfile.write("\n### HORIZON ENERGY TARGET RESULTS ###\n")
-
-    # All these files are small, so won't be setting indices
-
-    # Get the main energy-target results file
-    results_df = pd.read_csv(
-        os.path.join(
+    if not skip_quick_summary:
+        summary_results_file = os.path.join(
             scenario_directory,
+            weather_iteration,
             hydro_iteration,
             availability_iteration,
             subproblem,
             stage,
             "results",
-            "system_horizon_energy_target.csv",
+            "summary_results.txt",
         )
-    )
 
-    results_df.set_index(
-        ["energy_target_zone", "balancing_type", "horizon"],
-        inplace=True,
-        verify_integrity=True,
-    )
+        # Open in 'append' mode, so that results already written by other
+        # modules are not overridden
+        with open(summary_results_file, "a") as outfile:
+            outfile.write("\n### HORIZON ENERGY TARGET RESULTS ###\n")
 
-    # Calculate:
-    # 1) the percent of energy-target energy that was curtailed
-    # 2) the marginal energy-target cost per MWh based on the energy-target constraint duals --
-    # to convert back to 'real' dollars, we need to divide by the discount
-    # factor and the number of years a period represents
-    results_df["percent_curtailed"] = pd.Series(index=results_df.index, dtype="float64")
+        # All these files are small, so won't be setting indices
 
-    pd.options.mode.chained_assignment = None  # default='warn'
-    for indx, row in results_df.iterrows():
-        if (
-            results_df.delivered_energy_target_energy_mwh[indx]
-            + results_df.curtailed_energy_target_energy_mwh[indx]
-        ) == 0:
-            pct = 0
-        else:
-            pct = (
-                results_df.curtailed_energy_target_energy_mwh[indx]
-                / (
-                    results_df.delivered_energy_target_energy_mwh[indx]
-                    + results_df.curtailed_energy_target_energy_mwh[indx]
-                )
-                * 100
+        # Get the main energy-target results file
+        results_df = pd.read_csv(
+            os.path.join(
+                scenario_directory,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
+                "results",
+                "system_horizon_energy_target.csv",
             )
-        results_df.loc[indx, "percent_curtailed"] = pct
+        )
 
-    # Drop unnecessary columns before exporting
-    results_df.drop("total_energy_target_energy_mwh", axis=1, inplace=True)
-    results_df.drop("fraction_of_energy_target_met", axis=1, inplace=True)
-    results_df.drop("fraction_of_energy_target_energy_curtailed", axis=1, inplace=True)
-    results_df.drop("energy_target_shortage_mwh", axis=1, inplace=True)
+        results_df.set_index(
+            ["energy_target_zone", "balancing_type", "horizon"],
+            inplace=True,
+            verify_integrity=True,
+        )
 
-    # Rearrange the columns
-    cols = results_df.columns.tolist()
-    results_df = results_df[cols]
-    results_df.sort_index(inplace=True)
-    with open(summary_results_file, "a") as outfile:
-        results_df.to_string(outfile, float_format="{:,.2f}".format)
-        outfile.write("\n")
+        # Calculate:
+        # 1) the percent of energy-target energy that was curtailed
+        # 2) the marginal energy-target cost per MWh based on the energy-target constraint duals --
+        # to convert back to 'real' dollars, we need to divide by the discount
+        # factor and the number of years a period represents
+        results_df["percent_curtailed"] = pd.Series(
+            index=results_df.index, dtype="float64"
+        )
+
+        pd.options.mode.chained_assignment = None  # default='warn'
+        for indx, row in results_df.iterrows():
+            if (
+                results_df.delivered_energy_target_energy_mwh[indx]
+                + results_df.curtailed_energy_target_energy_mwh[indx]
+            ) == 0:
+                pct = 0
+            else:
+                pct = (
+                    results_df.curtailed_energy_target_energy_mwh[indx]
+                    / (
+                        results_df.delivered_energy_target_energy_mwh[indx]
+                        + results_df.curtailed_energy_target_energy_mwh[indx]
+                    )
+                    * 100
+                )
+            results_df.loc[indx, "percent_curtailed"] = pct
+
+        # Drop unnecessary columns before exporting
+        results_df.drop("total_energy_target_energy_mwh", axis=1, inplace=True)
+        results_df.drop("fraction_of_energy_target_met", axis=1, inplace=True)
+        results_df.drop(
+            "fraction_of_energy_target_energy_curtailed", axis=1, inplace=True
+        )
+        results_df.drop("energy_target_shortage_mwh", axis=1, inplace=True)
+
+        # Rearrange the columns
+        cols = results_df.columns.tolist()
+        results_df = results_df[cols]
+        results_df.sort_index(inplace=True)
+        with open(summary_results_file, "a") as outfile:
+            results_df.to_string(outfile, float_format="{:,.2f}".format)
+            outfile.write("\n")

@@ -289,6 +289,13 @@ def get_run_scenario_parser():
         "summary results.",
     )
 
+    parser.add_argument(
+        "--skip_quick_summary",
+        default=False,
+        action="store_true",
+        help="Skip quick summary text file",
+    )
+
     return parser
 
 
