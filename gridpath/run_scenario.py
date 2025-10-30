@@ -292,8 +292,12 @@ def run_optimization_for_subproblem_stage(
                 hydro_iteration_directory,
                 availability_iteration_directory,
                 subproblem_directory,
+                stage_directory,
             )
-            print(f"--- subproblem {current_suproblem}")
+            if current_suproblem.endswith("/"):
+                current_suproblem = current_suproblem[:-1]
+
+            print(f"--- subproblem: {current_suproblem}")
 
         # We're expecting subproblem and stage to be strings downstream from here
         subproblem_directory = str(subproblem_directory)
