@@ -451,6 +451,7 @@ def summarize_results(
     availability_iteration,
     subproblem,
     stage,
+    skip_quick_summary,
 ):
     """
     :param scenario_directory:
@@ -476,22 +477,9 @@ def summarize_results(
 
     # Open in 'append' mode, so that results already written by other
     # modules are not overridden
-    with open(summary_results_file, "a") as outfile:
-        outfile.write("\n### CAPACITY RESULTS ###\n")
-
-    # Get the results CSV as dataframe
-    capacity_results_df = pd.read_csv(
-        os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "results",
-            "project_period.csv",
-        )
-    )
+    if not skip_quick_summary:
+        with open(summary_results_file, "a") as outfile:
+            outfile.write("\n### CAPACITY RESULTS ###\n")
 
     required_capacity_modules = get_required_subtype_modules(
         scenario_directory=scenario_directory,
@@ -516,5 +504,6 @@ def summarize_results(
                 availability_iteration,
                 subproblem,
                 stage,
+                skip_quick_summary,
                 summary_results_file,
             )

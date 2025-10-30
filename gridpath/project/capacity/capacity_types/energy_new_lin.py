@@ -516,6 +516,7 @@ def summarize_results(
     availability_iteration,
     subproblem,
     stage,
+    skip_quick_summary,
     summary_results_file,
 ):
     """
@@ -527,37 +528,38 @@ def summarize_results(
     :return:
     """
 
-    # Get the results CSV as dataframe
-    energy_results_agg_df = read_results_file_generic(
-        scenario_directory=scenario_directory,
-        weather_iteration=weather_iteration,
-        hydro_iteration=hydro_iteration,
-        availability_iteration=availability_iteration,
-        subproblem=subproblem,
-        stage=stage,
-        capacity_type=Path(__file__).stem,
-    )
+    if not skip_quick_summary:
+        # Get the results CSV as dataframe
+        energy_results_agg_df = read_results_file_generic(
+            scenario_directory=scenario_directory,
+            weather_iteration=weather_iteration,
+            hydro_iteration=hydro_iteration,
+            availability_iteration=availability_iteration,
+            subproblem=subproblem,
+            stage=stage,
+            capacity_type=Path(__file__).stem,
+        )
 
-    # Get all technologies with the new build energy
-    new_build_df = pd.DataFrame(
-        energy_results_agg_df[energy_results_agg_df["new_build_energy_mwh"] > 0][
-            "new_build_energy_mwh"
-        ]
-    )
+        # Get all technologies with the new build energy
+        new_build_df = pd.DataFrame(
+            energy_results_agg_df[energy_results_agg_df["new_build_energy_mwh"] > 0][
+                "new_build_energy_mwh"
+            ]
+        )
 
-    # Get the units from the units.csv file
-    power_unit, energy_unit, fuel_unit = get_units(scenario_directory)
+        # Get the units from the units.csv file
+        power_unit, energy_unit, fuel_unit = get_units(scenario_directory)
 
-    # Rename column header
-    columns = ["New Energy ({})".format(power_unit)]
+        # Rename column header
+        columns = ["New Energy ({})".format(power_unit)]
 
-    write_summary_results_generic(
-        results_df=new_build_df,
-        columns=columns,
-        summary_results_file=summary_results_file,
-        title="New Energy Procurement",
-        empty_title="No new energy_new_lin generation was procured.",
-    )
+        write_summary_results_generic(
+            results_df=new_build_df,
+            columns=columns,
+            summary_results_file=summary_results_file,
+            title="New Energy Procurement",
+            empty_title="No new energy_new_lin generation was procured.",
+        )
 
 
 # Database

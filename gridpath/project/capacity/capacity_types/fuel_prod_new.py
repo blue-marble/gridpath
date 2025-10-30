@@ -681,6 +681,7 @@ def summarize_results(
     availability_iteration,
     subproblem,
     stage,
+    skip_quick_summary,
     summary_results_file,
 ):
     """
@@ -691,58 +692,60 @@ def summarize_results(
     :param summary_results_file:
     :return:
     """
+    if not skip_quick_summary:
+        # Get the results CSV as dataframe
+        capacity_results_agg_df = read_results_file_generic(
+            scenario_directory=scenario_directory,
+            weather_iteration=weather_iteration,
+            hydro_iteration=hydro_iteration,
+            availability_iteration=availability_iteration,
+            subproblem=subproblem,
+            stage=stage,
+            capacity_type=Path(__file__).stem,
+        )
 
-    # Get the results CSV as dataframe
-    capacity_results_agg_df = read_results_file_generic(
-        scenario_directory=scenario_directory,
-        weather_iteration=weather_iteration,
-        hydro_iteration=hydro_iteration,
-        availability_iteration=availability_iteration,
-        subproblem=subproblem,
-        stage=stage,
-        capacity_type=Path(__file__).stem,
-    )
-
-    # Get all technologies with new build production OR release OR energy capacity
-    new_build_df = pd.DataFrame(
-        capacity_results_agg_df[
-            (capacity_results_agg_df["new_fuel_prod_capacity_fuelunitperhour"] > 0)
-            | (capacity_results_agg_df["new_fuel_rel_capacity_fuelunitperhour"] > 0)
-            | (capacity_results_agg_df["new_fuel_stor_capacity_fuelunit"] > 0)
-        ][
-            [
-                "new_fuel_prod_capacity_fuelunitperhour",
-                "new_fuel_rel_capacity_fuelunitperhour",
-                "new_fuel_stor_capacity_fuelunit",
+        # Get all technologies with new build production OR release OR energy capacity
+        new_build_df = pd.DataFrame(
+            capacity_results_agg_df[
+                (capacity_results_agg_df["new_fuel_prod_capacity_fuelunitperhour"] > 0)
+                | (capacity_results_agg_df["new_fuel_rel_capacity_fuelunitperhour"] > 0)
+                | (capacity_results_agg_df["new_fuel_stor_capacity_fuelunit"] > 0)
+            ][
+                [
+                    "new_fuel_prod_capacity_fuelunitperhour",
+                    "new_fuel_rel_capacity_fuelunitperhour",
+                    "new_fuel_stor_capacity_fuelunit",
+                ]
             ]
+        )
+
+        # Get the units from the units.csv file
+        power_unit, energy_unit, fuel_unit = get_units(scenario_directory)
+
+        # Rename column header
+        columns = [
+            "New Fuel Production Capacity ({} per hour)".format(fuel_unit),
+            "New Fuel Release Capacity ({} per hour)".format(fuel_unit),
+            "New Fuel Storage Capacity ({})".format(fuel_unit),
         ]
-    )
 
-    # Get the units from the units.csv file
-    power_unit, energy_unit, fuel_unit = get_units(scenario_directory)
+        write_summary_results_generic(
+            results_df=new_build_df,
+            columns=columns,
+            summary_results_file=summary_results_file,
+            title="New Fuel Production, Release, and Storage Capacity",
+            empty_title="No new fuel production was built.",
+        )
 
-    # Rename column header
-    columns = [
-        "New Fuel Production Capacity ({} per hour)".format(fuel_unit),
-        "New Fuel Release Capacity ({} per hour)".format(fuel_unit),
-        "New Fuel Storage Capacity ({})".format(fuel_unit),
-    ]
-
-    write_summary_results_generic(
-        results_df=new_build_df,
-        columns=columns,
-        summary_results_file=summary_results_file,
-        title="New Fuel Production, Release, and Storage Capacity",
-        empty_title="No new fuel production was built.",
-    )
-
-    with open(summary_results_file, "a") as outfile:
-        outfile.write("\n--> New Fuel Production, Release, and Storage Capacity <--\n")
-        if new_build_df.empty:
-            outfile.write("No new fuel production was built.\n")
-        else:
-            new_build_df.to_string(outfile, float_format="{:,.2f}".format)
-            outfile.write("\n")
+        with open(summary_results_file, "a") as outfile:
+            outfile.write(
+                "\n--> New Fuel Production, Release, and Storage Capacity <--\n"
+            )
+            if new_build_df.empty:
+                outfile.write("No new fuel production was built.\n")
+            else:
+                new_build_df.to_string(outfile, float_format="{:,.2f}".format)
+                outfile.write("\n")
 
 
 # Database

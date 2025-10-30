@@ -292,8 +292,12 @@ def run_optimization_for_subproblem_stage(
                 hydro_iteration_directory,
                 availability_iteration_directory,
                 subproblem_directory,
+                stage_directory,
             )
-            print(f"--- subproblem {current_suproblem}")
+            if current_suproblem.endswith("/"):
+                current_suproblem = current_suproblem[:-1]
+
+            print(f"--- subproblem: {current_suproblem}")
 
         # We're expecting subproblem and stage to be strings downstream from here
         subproblem_directory = str(subproblem_directory)
@@ -1514,26 +1518,27 @@ def summarize_results(
                 scenario_directory=scenario_directory, multi_stage=multi_stage
             )
 
-            # Make the summary results file
-            summary_results_file = os.path.join(
-                scenario_directory,
-                weather_iteration,
-                hydro_iteration,
-                availability_iteration,
-                subproblem,
-                stage,
-                "results",
-                "summary_results.txt",
-            )
-
-            # TODO: how to handle results from previous runs
-            # Overwrite prior results
-            with open(summary_results_file, "w", newline="") as outfile:
-                outfile.write(
-                    "##### SUMMARY RESULTS FOR SCENARIO *{}* #####\n".format(
-                        parsed_arguments.scenario
-                    )
+            # Make the summary results file unless instructed to skip
+            if not parsed_arguments.skip_quick_summary:
+                summary_results_file = os.path.join(
+                    scenario_directory,
+                    weather_iteration,
+                    hydro_iteration,
+                    availability_iteration,
+                    subproblem,
+                    stage,
+                    "results",
+                    "summary_results.txt",
                 )
+
+                # TODO: how to handle results from previous runs
+                # Overwrite prior results
+                with open(summary_results_file, "w", newline="") as outfile:
+                    outfile.write(
+                        "##### SUMMARY RESULTS FOR SCENARIO *{}* #####\n".format(
+                            parsed_arguments.scenario
+                        )
+                    )
 
             # Go through the modules and get the appropriate results
             n = 0
@@ -1548,6 +1553,7 @@ def summarize_results(
                         availability_iteration,
                         subproblem,
                         stage,
+                        parsed_arguments.skip_quick_summary,
                     )
                 n += 1
 
