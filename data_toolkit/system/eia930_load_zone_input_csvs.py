@@ -207,6 +207,7 @@ def main(args=None):
     if not parsed_args.quiet:
         print("Creating load zone inputs")
 
+    os.makedirs(parsed_args.lz_output_directory, exist_ok=True)
     os.makedirs(parsed_args.lb_output_directory, exist_ok=True)
 
     conn = connect_to_database(db_path=parsed_args.database)

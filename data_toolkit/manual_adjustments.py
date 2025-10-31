@@ -112,18 +112,19 @@ def make_copy_files(
     copy_project_scenario_name,
 ):
 
-    file_to_copy = os.path.join(
-        file_to_copy_directory,
-        f"{copy_project}-{copy_project_scenario_id}-{copy_project_scenario_name}.csv",
-    )
+    for iter_or_not in ["", "iterations"]:
+        file_to_copy = os.path.join(
+            os.path.join(file_to_copy_directory, iter_or_not),
+            f"{copy_project}-{copy_project_scenario_id}-{copy_project_scenario_name}.csv",
+        )
 
-    new_file = os.path.join(
-        new_file_directory,
-        f"{new_project}-{new_project_scenario_id}-{new_project_scenario_name}_MANUAL_copy_from"
-        f"_{copy_project}_{copy_project_scenario_id}.csv",
-    )
+        new_file = os.path.join(
+            os.path.join(new_file_directory, iter_or_not),
+            f"{new_project}-{new_project_scenario_id}-{new_project_scenario_name}_MANUAL_copy_from"
+            f"_{copy_project}_{copy_project_scenario_id}.csv",
+        )
 
-    shutil.copyfile(file_to_copy, new_file)
+        shutil.copyfile(file_to_copy, new_file)
 
 
 def add_battery_durations(

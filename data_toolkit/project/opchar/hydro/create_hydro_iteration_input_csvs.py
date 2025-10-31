@@ -50,6 +50,7 @@ import os.path
 import pandas as pd
 import sys
 
+from data_toolkit.project.common_methods import create_iterations_csv
 from db.common_functions import connect_to_database
 
 
@@ -262,6 +263,18 @@ def calculate_from_project_year_month_data_pool(pool_datum):
         output_directory=output_directory,
         overwrite=overwrite,
         stage_id=stage_id,
+    )
+
+    iterations_directory = os.path.join(output_directory, "iterations")
+    os.makedirs(iterations_directory, exist_ok=True)
+    create_iterations_csv(
+        iterations_directory=iterations_directory,
+        project=prj,
+        profile_id=hydro_operational_chars_scenario_id,
+        profile_name=hydro_operational_chars_scenario_name,
+        varies_by_weather=0,
+        varies_by_hydro=1,
+        overwrite=True,
     )
 
 
