@@ -101,6 +101,7 @@ examples/*/*/*/results/*.csv
 examples/*/*/*/*/results/*.csv
 examples/*/*/*/*/*/results/*.csv
 
+
 # Don't track pass-through inputs directory in multi-stage runs
 examples/*/*/pass_through_inputs/
 
@@ -118,3 +119,6 @@ __MACOSX
 **/*.db
 **/*.db-shm
 **/*.db-wal
+
+# Ignore GridPath Data Toolkit demo directory
+data_toolkit/gridpath_open_data_demo/
