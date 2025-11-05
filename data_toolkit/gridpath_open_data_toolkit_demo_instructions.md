@@ -86,7 +86,7 @@ gridpath_get_ra_toolkit_data_raw
 This currently assumes we are running from the data_toolkit directory.
 
 ```bash
-gridpath_run_data_toolkit --settings_csv ./raw_data/open_data_toolkit_settings_sample.csv
+gridpath_run_data_toolkit --settings_csv ../open_data_toolkit_settings_sample.csv
 ```
 
 ## Load processed input data into GridPath IO database as usual
@@ -116,7 +116,7 @@ gridpath_load_scenarios --database ./gridpath_data_toolkit_demo.db --csv_path ./
 
 ## Run the demo WECC 2026 PCM case
 ```bash
-gridpath_run_e2e --database ./gridpath_data_toolkit_demo.db --log --n_parallel_get_inputs 48 --n_parallel_solve 48 --scenario_location ./scenarios --scenario test_w_tx_days
+gridpath_run_e2e --database ./gridpath_data_toolkit_demo.db --log --n_parallel_get_inputs 48 --n_parallel_solve 48 --scenario_location ./scenarios --scenario test_w_tx
 ```
 
 ## View some results
