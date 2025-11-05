@@ -95,7 +95,6 @@ def write_validation_to_database(
     VALUES (?, ?, ?, ?, ?, ?, ?, ?);
     """
     spin_on_database_lock(conn, c, sql, rows)
-    conn.close()
 
     return True
 
