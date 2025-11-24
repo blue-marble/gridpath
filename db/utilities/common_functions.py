@@ -1359,14 +1359,14 @@ def update_subscenario_id_with_defaults(
     data_columns_str = ", ".join(data_columns)
 
     # Insert default values from the default subscenario ID for all primary
-    # key values that do not existin int he subscenario ID
+    # key values that do not exist in the subscenario ID
     insert_sql = f"""
     INSERT INTO inputs_{table}
     ({subscenario}, {primary_key_columns_wo_subscenario_str}, {data_columns_str})
     SELECT {subscenario_id}, {primary_key_columns_wo_subscenario_str}, {data_columns_str}
     FROM inputs_{table}
      WHERE {subscenario} = {default_subscenario_id}
-        AND {primary_key_columns_wo_subscenario_str} NOT IN (
+        AND ({primary_key_columns_wo_subscenario_str}) NOT IN (
             SELECT {primary_key_columns_wo_subscenario_str}
             FROM inputs_{table}
             WHERE {subscenario} = {subscenario_id}

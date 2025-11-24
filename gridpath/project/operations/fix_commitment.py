@@ -22,6 +22,7 @@ from csv import writer
 import os.path
 from pandas import read_csv
 from pyomo.environ import Set, Param, NonNegativeReals, Expression
+import warnings
 
 
 from gridpath.auxiliary.auxiliary import (
@@ -373,13 +374,23 @@ def export_pass_through_inputs(
             fixed_commitment_file, delimiter="\t", lineterminator="\n"
         )
         for g, tmp in m.FNL_COMMIT_PRJ_OPR_TMPS:
+            commitment_value = m.Commitment[g, tmp].expr.value
+            if commitment_value < 0:
+                warnings.warn(
+                    f"Commitment for ({g}, {tmp}) is "
+                    f"{commitment_value}; changing to 0 in "
+                    f"pass-through inputs to avoid data type error "
+                    f"when loading into next stage. This is "
+                    f"expected due to solver optimality tolerances."
+                )
+                commitment_value = 0
             fixed_commitment_writer.writerow(
                 [
                     g,
                     tmp,
                     stage,
                     final_commitment_stage_dict[g],
-                    m.Commitment[g, tmp].expr.value,
+                    commitment_value,
                 ]
             )
 

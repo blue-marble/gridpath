@@ -134,19 +134,17 @@ def import_scenario_results_into_database(
                             "results",
                         )
                         if not quiet:
-                            if weather_iteration_str != "":
-                                print(f"--- weather iteration " f"{weather_iteration}")
-                            if hydro_iteration_str != "":
-                                print(f"--- hydro iteration " f"{hydro_iteration}")
-                            if availability_iteration_str != "":
-                                print(
-                                    f"--- availability iteration "
-                                    f"{availability_iteration}"
-                                )
-                            if subproblem_str != "":
-                                print(f"--- subproblem {subproblem_str}")
-                            if stage_str != "":
-                                print(f"--- stage {stage_str}")
+                            current_suproblem = os.path.join(
+                                weather_iteration_str,
+                                hydro_iteration_str,
+                                availability_iteration_str,
+                                subproblem_str,
+                                stage_str,
+                            )
+                            if current_suproblem.endswith("/"):
+                                current_suproblem = current_suproblem[:-1]
+
+                            print(f"--- subproblem: {current_suproblem}")
 
                         # Import termination condition data
                         c = db.cursor()
