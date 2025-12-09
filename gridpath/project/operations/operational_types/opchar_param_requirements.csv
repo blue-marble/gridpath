@@ -1,4 +1,4 @@
-char,type,dr,gen_always_on,gen_commit_bin,gen_commit_cap,gen_commit_lin,gen_hydro,gen_hydro_must_take,gen_must_run,gen_simple,gen_var,gen_var_must_take,stor,gen_var_stor_hyb,fuel_prod,dispatchable_load,flex_load,gen_hydro_water,energy_profile,energy_hrz_shaping,energy_load_following,energy_slice_hrz_shaping,load_component_modifier,load_component_shift,gen_simple_no_load_balance_power
+char,type,dr,gen_always_on,gen_commit_bin,gen_commit_cap,gen_commit_lin,gen_hydro,gen_hydro_must_take,gen_must_run,gen_simple,gen_var,gen_var_must_take,stor,gen_var_stor_hyb,fuel_prod,dispatchable_load,flex_load,gen_hydro_water,load_component_modifier,load_component_shift,gen_simple_no_load_balance_power,energy_profile,energy_hrz_shaping,energy_load_following,energy_slice_hrz_shaping
 min_stable_level_fraction,float,,required,required,required,required,,,,,,,,,,,,,,,,,,,
 unit_size_mw,float,,required,,required,,,,,,,,,,,,,,,,,,,,
 startup_plus_ramp_up_rate,float,,,,optional,,,,,,,,,,,,,,,,,,,,
@@ -20,6 +20,6 @@ powerunithour_per_fuelunit,float,,,,,,,,,,,,,,required,,,,,,,,,,
 partial_availability_threshold,float,,,optional,,optional,,,,,,,,,,,,,,,,,,,
 powerhouse,str,,,,,,,,,,,,,,,,,required,,,,,,,
 generator_efficiency,float,,,,,,,,,,,,,,,,,required,,,,,,,
-linked_load_component,str,,,,,,,,,,,,,,,,,,,,,,required,required,
-efficiency_factor,float,,,,,,,,,,,,,,,,,,,,,,,optional,
+linked_load_component,str,,,,,,,,,,,,,,,,,,required,required,,,,,
+efficiency_factor,float,,,,,,,,,,,,,,,,,,,optional,,,,,
 energy_requirement_factor,float,,,,,,,,,,,,,,,optional,,,,,,,,,
