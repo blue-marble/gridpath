@@ -18,6 +18,9 @@ and the path to the directory where the scenario CSV is located using the
 
 >>> gridpath_load_scenarios --database PATH/DO/DB --csv_path PATH/TO/SCENARIO/CSV
 
+If you are using the csvs_test_examples directory included with GridPath, /PATH/TO/SCENARIO/CSV
+can be set to ../csvs_test_examples/scenarios.csv.
+
 To load a single scenario by name, use the *--scenario* flag. To delete a scenario from
 the database, specify the scenario name with the *--scenario* flag and use the
 *--delete* flag.

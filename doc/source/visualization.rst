@@ -1,3 +1,5 @@
+.. _visualization-section-ref:
+
 #############
 Visualization
 #############
@@ -15,13 +17,30 @@ database, so users need a functioning database to use this package.
 The plotting package consists of a set of plotting scripts that can be called
 either from the command line or through the GridPath User Interface. For
 instance, to obtain a plot that shows the total installed capacity across
-modeling periods for a certain scenario you would navigate to the :code:`./viz`
-folder and run the following::
+modeling periods for a certain scenario, you can run the following command::
 
-    python capacity_total_plot.py --scenario test --load_zone CAISO --show
+    gridpath_viz_capacity_total_plot --scenario test --load_zone CAISO --show
 
-The next section provides a brief description of each plotting script and
-its arguments. As GridPath evolves we expect the list of visualizations to grow.
+
+The available plotting scripts currently include:
+    * gridpath_viz_capacity_factor_plot
+    * gridpath_viz_capacity_new_plot
+    * gridpath_viz_capacity_retired_plot
+    * gridpath_viz_capacity_total_loadzone_comparison_plot
+    * gridpath_viz_capacity_total_plot
+    * gridpath_viz_capacity_total_scenario_comparison_plot
+    * gridpath_viz_carbon_plot
+    * gridpath_viz_cost_plot
+    * gridpath_viz_curtailment_hydro_heatmap_plot
+    * gridpath_viz_curtailment_variable_heatmap_plot
+    * gridpath_viz_dispatch_plot
+    * gridpath_viz_energy_plot
+    * gridpath_viz_energy_target_plot
+    * gridpath_viz_project_operations_plot
+
+See the --help menu for usage details. The next section provides a brief
+description of each plotting script and its arguments. As GridPath evolves we
+expect the list of built-in visualizations to grow.
 
 ****************
 Plotting scripts
