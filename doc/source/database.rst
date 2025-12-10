@@ -4,18 +4,12 @@ Database
 
 This chapter describes the following:
 
-* :ref:`database-structure-section-ref` : the structure of the database and its
-  associated tables
-* :ref:`building-the-database-section-ref` : instructions on how to build the
+* :ref:`building-the-database-section-ref`: instructions on how to build the
   database
-* :ref:`database-testing-section-ref` : instructions on how to validate the
-database inputs
-
-.. _database-structure-section-ref:
-Database Structure
-##################
-
-.. automodule:: db
+* :ref:`db-structure-section-ref`: the structure of the database and its
+  associated tables
+* :ref:`gridpath-input-data-section-ref`: details on the various types of input data that can be loaded into the database
+* :ref:`database-testing-section-ref`: instructions on how to validate the database inputs
 
 
 .. _building-the-database-section-ref:
@@ -32,6 +26,20 @@ Creating the Database
 Populating the Database
 ***********************
 
+Example Input Data
+******************
+For the purposes of this section, you may use the example CSV files provided
+in the :code:`gridpath/db/csvs_test_examples` folder. Please ensure that you
+download the CSV files from the same version of GridPath that you are using,
+as the database structure may change between versions. Find your version of
+GridPath `here <https://github.com/blue-marble/gridpath/releases>`_, download the
+source code for your version, and copy the contents of the
+:code:`gridpath/db/csvs_test_examples` folder to your local machine. You can
+then point the GridPath database-building tools to this directory
+(PATH/DO/DB). See the :ref:`db-structure-section-ref` and
+:ref:`gridpath-input-data-section-ref` for an explanation of the database
+structure and its tables.
+
 Loading Input Data
 ******************
 
@@ -42,8 +50,27 @@ Creating Scenarios
 
 .. automodule:: db.utilities.scenario
 
+.. _db-structure-section-ref:
+Database Structure
+##################
+
+The database consists of a set of tables that store input data for GridPath
+scenarios. Each table has a specific structure and set of required and
+optional fields. The database also contains tables that store metadata about the
+scenarios, such as the list of subscenarios that make up a scenario and the
+features that are enabled for a scenario.
+
+.. automodule:: db.doc
+
+.. _gridpath-input-data-section-ref:
 GridPath Input Data
 ###################
+
+A minimal set of inputs for a GridPath scenario would generally includes
+temporal inputs, load zone inputs, system load inputs, a project portfolio 
+and load zones, and project operating characteristics. You can look for the 
+inputs labeled as
+*core* in the csv_structure.csv file in *db/csvs_test_examples*.
 
 ***************
 Temporal Inputs
@@ -151,28 +178,27 @@ Project Operational Characteristics
 
 .. automodule:: db.csvs_test_examples.project.opchar.doc
 
-=====================
-Heat Rates (OPTIONAL)
-=====================
+==========
+Heat Rates 
+===========
 
 .. automodule:: db.csvs_test_examples.project.opchar.heat_rate_curves.doc
 
-======================================
-Variable Generator Profiles (OPTIONAL)
-======================================
+===========================
+Variable Generator Profiles 
+===========================
 
-.. automodule:: db.csvs_test_examples.project.opchar.variable_generator_profiles
-.doc
+.. automodule:: db.csvs_test_examples.project.opchar.variable_generator_profiles.doc
 
-============================================
-Hydro Operational Characteristics (OPTIONAL)
-============================================
+=================================
+Hydro Operational Characteristics 
+=================================
 
 .. automodule:: db.csvs_test_examples.project.opchar.hydro_operational_chars.doc
 
-******************************
-Transmission Inputs (OPTIONAL)
-******************************
+*******************
+Transmission Inputs 
+*******************
 
 Optional inputs needed if transmission feature is enabled for a scenario.
 
@@ -210,9 +236,9 @@ Transmission Operational Characteristics
 .. automodule:: db.csvs_test_examples.transmission.opchar.doc
 
 
-**********************
-Fuel Inputs (OPTIONAL)
-**********************
+***********
+Fuel Inputs
+***********
 
 Fuel Characteristics
 ********************
@@ -225,9 +251,9 @@ Fuel Prices
 
 .. automodule:: db.csvs_test_examples.fuels.fuel_prices.doc
 
-*******************
-Reserves (OPTIONAL)
-*******************
+********
+Reserves
+********
 
 Regulation Up
 *************
@@ -388,8 +414,8 @@ Requirement
 
 
 
-Policy (OPTIONAL)
-*****************
+Policy 
+******
 
 ========================================================
 Energy Targets, e.g. Renewables Portfolio Standard (RPS)
@@ -431,9 +457,8 @@ Target
 
 .. _database-testing-section-ref:
 
-*************************
 Database Input Validation
-*************************
+#########################
 
 Once you have built the database with a set of scenarios and associated inputs,
 you can test the inputs for a given scenario by running the inputs validation
@@ -470,12 +495,14 @@ columns:
  - :code:`timestamp`: lists the exact time when the validation error
    encountered.
 
-Note that the input validation suite is not exhaustive and does not catch
-every possible input error. As we continue to develop and use GridPath, we
-expect that the set of validation tests will expand and cover more and more
-of the common input errors.
-
 To run the validation suite from the command line, navigate to the
 :code:`gridpath/gridpath` folder and type::
 
     validate_inputs.py --scenario SCENARIO_NAME --database PATH/TO/DATABASE
+
+
+
+Note that the input validation suite is not exhaustive and does not catch
+every possible input error. As we continue to develop and use GridPath, we
+expect that the set of validation tests will expand and cover more and more
+of the common input errors.

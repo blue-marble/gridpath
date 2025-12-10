@@ -28,8 +28,8 @@ GridPath Documentation
    introduction
    installation
    usage
-   functionality
    database
+   functionality
    data_toolkit
    visualization
    ui
