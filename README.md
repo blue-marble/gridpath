@@ -50,35 +50,3 @@ pip install .[all]
 ```
 
 **NOTE:** If you plan to edit the GridPath code, you should install with the `-e` flag.
-
-## Solver
-You will need a solver to use this platform. GridPath assumes you will be using Cbc (Coin-or branch and cut) by default, but you can specify a 
-different solver.
-
-
-# Usage
-
-## The gridpath_run and gridpath_run_e2e commands
-If you install GridPath via the setup script following the instructions above, 
-you can use the command `gridpath_run` to run a scenario from any directory 
--- as long as your GridPath Python environment is enabled -- as follows:
-```bash
-gridpath_run --scenario SCENARIO_NAME --scenario_location 
-/PATH/TO/SCENARIO 
-```
-
-If you are using the database, you can use the command `gridpath_run_e2e` to 
-run GridPath end-to-end, i.e. get inputs for the scenario from the database, 
-solve the scenario problem, import the results into the database, and 
-process them. Refer to the documentation for how to build the database.
-
-```bash
-gridpath_run_e2e --scenario SCENARIO_NAME --scenario_location 
-/PATH/TO/SCENARIO 
-```
-
-To see usage and other optional arguments, e.g. how to specify a 
-solver, check the help menu, e.g.:
-```bash
-gridpath_run --help
-```
