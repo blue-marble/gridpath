@@ -299,7 +299,7 @@ def get_subscenario_data_and_insert_into_db(
             quiet=quiet,
         )
 
-    # If a custom method is requsted, run it here to finalize the subscenario
+    # If a custom method is requested, run it here to finalize the subscenario
     if custom_method != "nan":
         getattr(custom, custom_method)(
             conn=conn, subscenario_id=subscenario_tuples[0][0]
@@ -1330,6 +1330,19 @@ def update_subscenario_id_with_defaults(
         )
 
     c = conn.cursor()
+
+    # Check that the default subscenario ID exists
+    default_subscenario_check = c.execute(
+        f"""
+        SELECT COUNT(*) FROM inputs_{table} WHERE {subscenario} = {default_subscenario_id};
+        """
+    ).fetchone()[0]
+    if default_subscenario_check == 0:
+        raise ValueError(
+            f"Default subscenario ID {default_subscenario_id} does not exist "
+            f"in inputs_{table} table. Please ensure the default subscenario "
+            f"ID is loaded before loading other subscenario IDs."
+        )
 
     # Get primary key columns excluding the subscenario column
     primary_key_column_list_wo_subscenario_column = [
