@@ -1932,7 +1932,10 @@ def add_model_components(
         if (
             (
                 mod.capacity_type[g] in ["gen_spec", "gen_ret_bin", "gen_ret_lin"]
-                and getattr(mod, mod.capacity_type[g] + "_capacity_mw") == 0
+                and getattr(mod, mod.capacity_type[g] + "_capacity_mw")[
+                    g, mod.period[tmp]
+                ]
+                == 0
             )
             or (
                 mod.availability_type[g] == "exogenous"
