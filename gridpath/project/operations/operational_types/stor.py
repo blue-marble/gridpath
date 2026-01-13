@@ -135,12 +135,14 @@ def add_model_components(
     | The storage project's storage efficiency (1 = 100% efficient).          |
     +-------------------------------------------------------------------------+
     | | :code:`stor_losses_factor_in_energy_target`                           |
+    | | *Defined over*: :code:`STOR`                                          |
     | | *Within*: :code:`PercentFraction`                                     |
     | | *Default*: :code:`1`                                                  |
     |                                                                         |
     | The fraction of storage losses that count against the energy target.    |
     +-------------------------------------------------------------------------+
     | | :code:`stor_losses_factor_curtailment`                                |
+    | | *Defined over*: :code:`STOR`                                          |
     | | *Within*: :code:`PercentFraction`                                     |
     | | *Default*: :code:`1`                                                  |
     |                                                                         |
@@ -339,9 +341,11 @@ def add_model_components(
 
     m.stor_storage_efficiency = Param(m.STOR, within=PercentFraction, default=1)
 
-    m.stor_losses_factor_in_energy_target = Param(default=1)
+    m.stor_losses_factor_in_energy_target = Param(m.STOR, default=1)
 
-    m.stor_losses_factor_curtailment = Param(default=1)
+    m.stor_losses_factor_curtailment = Param(m.STOR, default=1)
+
+    m.stor_upward_reserves_to_soc_depletion = Param(m.STOR, default=0)
 
     m.stor_charging_capacity_multiplier = Param(
         m.STOR, within=NonNegativeReals, default=1.0
@@ -486,7 +490,7 @@ def max_charge_rule(mod, s, tmp):
     )
 
 
-# TODO: adjust storage energy for reserves provided
+# TODO: also adjust storage energy for downward reserves provided
 def energy_tracking_rule(mod, s, tmp):
     """
     **Constraint Name**: Stor_Energy_Tracking_Constraint
@@ -566,13 +570,20 @@ def energy_tracking_rule(mod, s, tmp):
                 prev_tmp_charge = mod.Stor_Charge_MW[
                     s, mod.prev_tmp[tmp, mod.balancing_type_project[s]]
                 ]
+                prev_tmp_upward_reserves = mod.Stor_Upward_Reserves_MW[
+                    s, mod.prev_tmp[tmp, mod.balancing_type_project[s]]
+                ]
 
                 starting_soc = (
                     prev_tmp_starting_energy_in_storage * mod.stor_storage_efficiency[s]
                     + prev_tmp_charge
                     * prev_tmp_hrs_in_tmp
                     * mod.stor_charging_efficiency[s]
-                    - prev_tmp_discharge
+                    - (
+                        prev_tmp_discharge
+                        + prev_tmp_upward_reserves
+                        * mod.stor_upward_reserves_to_soc_depletion[s]
+                    )
                     * prev_tmp_hrs_in_tmp
                     / mod.stor_discharging_efficiency[s]
                 )
@@ -748,7 +759,7 @@ def rec_provision_rule(mod, g, tmp):
     """
     return (
         mod.Stor_Discharge_MW[g, tmp] - mod.Stor_Charge_MW[g, tmp]
-    ) * mod.stor_losses_factor_in_energy_target
+    ) * mod.stor_losses_factor_in_energy_target[g]
 
 
 def variable_om_cost_rule(mod, g, tmp):
@@ -798,7 +809,7 @@ def curtailment_cost_rule(mod, g, tmp):
             if (g, mod.period[tmp]) in mod.CURTAILMENT_COST_PRJ_PRDS
             else 0
         )
-        * mod.stor_losses_factor_curtailment
+        * mod.stor_losses_factor_curtailment[g]
     )
 
 

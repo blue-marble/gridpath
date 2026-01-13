@@ -2047,6 +2047,9 @@ CREATE TABLE inputs_project_operational_chars
     load_component_shift_bounds_scenario_id               INTEGER,
     efficiency_factor                                     FLOAT,
     energy_requirement_factor                             FLOAT,
+    losses_factor_in_energy_target                        FLOAT,
+    losses_factor_curtailment                             FLOAT,
+    upward_reserves_to_soc_depletion                      FLOAT,
     PRIMARY KEY (project_operational_chars_scenario_id, project),
     FOREIGN KEY (project_operational_chars_scenario_id) REFERENCES
         subscenarios_project_operational_chars (project_operational_chars_scenario_id),
