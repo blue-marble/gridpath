@@ -311,6 +311,9 @@ def make_opchar_sql_str(
     load_component_shift_bounds_scenario_id="NULL",
     efficiency_factor="NULL",
     energy_requirement_factor="NULL",
+    losses_factor_in_energy_target="NULL",
+    losses_factor_curtailment="NULL",
+    upward_reserves_to_soc_depletion="NULL",
 ):
     """ """
 
@@ -408,7 +411,10 @@ def make_opchar_sql_str(
      {load_component_shift_bounds_scenario_id} AS 
      load_component_shift_bounds_scenario_id,
      {efficiency_factor} AS efficiency_factor,
-     {energy_requirement_factor} AS energy_requirement_factor
+     {energy_requirement_factor} AS energy_requirement_factor,
+     {losses_factor_in_energy_target} AS losses_factor_in_energy_target,
+     {losses_factor_curtailment} AS losses_factor_curtailment,
+     {upward_reserves_to_soc_depletion} AS upward_reserves_to_soc_depletion
     """
 
     return opchar_sql_str
