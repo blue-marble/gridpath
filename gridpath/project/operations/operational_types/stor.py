@@ -635,7 +635,7 @@ def max_headroom_power_rule(mod, s, tmp):
     **Enforced Over**: STOR_OPR_TMPS
 
     The project's upward reserves cannot exceed the available headroom.
-    Going from charging to non-charging also counts as headroom, doubling the
+    Going from charging to non-charging also counts as headroom, doubling
     the maximum amount of potential headroom.
     """
     return (
