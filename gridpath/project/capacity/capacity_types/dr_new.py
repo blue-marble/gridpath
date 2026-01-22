@@ -617,9 +617,7 @@ def get_model_inputs_from_database(
         """SELECT project, supply_curve_point, supply_curve_slope, 
         supply_curve_intercept
         FROM inputs_project_shiftable_load_supply_curve
-        WHERE supply_curve_scenario_id = {}""".format(
-            supply_curve_id
-        )
+        WHERE supply_curve_scenario_id = {}""".format(supply_curve_id)
     )
 
     return min_max_builds, supply_curve_count, supply_curve_id, supply_curve

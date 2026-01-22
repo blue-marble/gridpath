@@ -86,17 +86,13 @@ class TestExamples(unittest.TestCase):
             db_path=DB_PATH, detect_types=sqlite3.PARSE_DECLTYPES
         )
         c = conn.cursor()
-        validations = c.execute(
-            """
+        validations = c.execute("""
             SELECT scenario_name FROM status_validation
             INNER JOIN
             (SELECT scenario_id, scenario_name FROM scenarios)
             USING (scenario_id)
             WHERE scenario_name = '{}'
-            """.format(
-                test
-            )
-        )
+            """.format(test))
         actual_validations = validations.fetchall()
         conn.close()
 

@@ -98,13 +98,11 @@ def get_inputs_from_database(
     # TODO: add list of policies subscenario and filter by that here
 
     c = conn.cursor()
-    policies_zones = c.execute(
-        f"""SELECT policy_name, policy_zone, allow_violation, 
+    policies_zones = c.execute(f"""SELECT policy_name, policy_zone, allow_violation, 
         violation_penalty_per_unit
         FROM inputs_geography_policy_zones
         WHERE policy_zone_scenario_id = {subscenarios.POLICY_ZONE_SCENARIO_ID};
-        """
-    )
+        """)
 
     return policies_zones
 

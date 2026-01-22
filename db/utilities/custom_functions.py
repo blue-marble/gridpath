@@ -55,21 +55,14 @@ def temporal(conn, subscenario_id):
 
     # ### Built-in horizons ### #
     boundaries = ["circular", "linear", "linked"]
-    periods = [
-        p[0]
-        for p in c.execute(
-            f"""SELECT DISTINCT period
+    periods = [p[0] for p in c.execute(f"""SELECT DISTINCT period
         FROM inputs_temporal
-        WHERE temporal_scenario_id = {subscenario_id}"""
-        ).fetchall()
-    ]
+        WHERE temporal_scenario_id = {subscenario_id}""").fetchall()]
     subproblem_stages = [
         subproblem_stage
-        for subproblem_stage in c.execute(
-            f"""SELECT DISTINCT subproblem_id, stage_id
+        for subproblem_stage in c.execute(f"""SELECT DISTINCT subproblem_id, stage_id
         FROM inputs_temporal
-        WHERE temporal_scenario_id = {subscenario_id}"""
-        ).fetchall()
+        WHERE temporal_scenario_id = {subscenario_id}""").fetchall()
     ]
     subproblem_stage_periods = [
         subproblem_stage_period
@@ -106,7 +99,7 @@ def temporal(conn, subscenario_id):
         # ### Insert into inputs_temporal_horizon_timepoints_start_end ### #
         # Subproblem balancing type
         for subproblem_stage in subproblem_stages:
-            (subproblem, stage) = subproblem_stage
+            subproblem, stage = subproblem_stage
             subproblem_tmp_start_end_sql = f"""
                 INSERT INTO inputs_temporal_horizon_timepoints_start_end
                 (temporal_scenario_id, stage_id, balancing_type_horizon, 
@@ -176,13 +169,11 @@ def temporal(conn, subscenario_id):
             c.execute(subproblem_period_tmp_start_end_sql, ())
 
     # TIMEPOINT HORIZONS
-    subproblem_stages = c.execute(
-        f"""
+    subproblem_stages = c.execute(f"""
         SELECT subproblem_id, stage_id
         FROM inputs_temporal_subproblems_stages
         WHERE temporal_scenario_id = {subscenario_id}
-        """
-    ).fetchall()
+        """).fetchall()
 
     # For each subproblem-stage, figure out how the timepoints are organized
     # into horizons
@@ -215,10 +206,7 @@ def temporal(conn, subscenario_id):
         hor_tmps_tuples_list = list()
 
         for bt, hr, tmp_start, tmp_end in bt_hr:
-            sid_tmps = [
-                tmp[0]
-                for tmp in c.execute(
-                    f"""
+            sid_tmps = [tmp[0] for tmp in c.execute(f"""
                 SELECT timepoint
                 FROM inputs_temporal
                 WHERE temporal_scenario_id = {subscenario_id}
@@ -227,9 +215,7 @@ def temporal(conn, subscenario_id):
                 AND timepoint >= {tmp_start}
                 AND timepoint <= {tmp_end}
                 ;
-                """
-                ).fetchall()
-            ]
+                """).fetchall()]
 
             for tmp in sid_tmps:
                 hor_tmps_tuples_list.append(

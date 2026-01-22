@@ -20,7 +20,6 @@ import unittest
 
 from tests.common_functions import create_abstract_model
 
-
 TEST_DATA_DIRECTORY = os.path.join(os.path.dirname(__file__), "..", "..", "test_data")
 
 # Import prerequisite modules

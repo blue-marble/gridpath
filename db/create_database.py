@@ -30,7 +30,6 @@ To create a database for GridPath raw data, point to the schema in
 
 """
 
-
 from argparse import ArgumentParser
 import csv
 import os.path
@@ -156,32 +155,24 @@ def set_custom_units(conn, custom_units):
     c = conn.cursor()
     if custom_units:
         # Retrieve settings from user
-        power = input(
-            """
+        power = input("""
             Specify the unit of power, e.g. kW, MW, GW, etc.
             Note: the unit of energy will be derived from the unit of power by 
             multiplying by 1 hour, e.g. MW -> MWh.
             Use `default` to keep the defaults (MW). 
-            """
-        )
-        fuel_energy = input(
-            """
+            """)
+        fuel_energy = input("""
             Specify the unit of fuel energy content, e.g. MMBtu, J, MJ, etc.
             Use 'default' to keep defaults (MMBtu). 
-            """
-        )
-        cost = input(
-            """
+            """)
+        cost = input("""
             Specify the unit of cost, e.g. USD, EUR, INR, etc.
             Use 'default' to keep defaults (USD).
-            """
-        )
-        carbon_emissions = input(
-            """
+            """)
+        carbon_emissions = input("""
             Specify the unit of carbon emissions, e.g. tCO2, MtCO2, etc. 
             Use 'default' to keep defaults (tCO2; metric tonne)
-            """
-        )
+            """)
 
         # Update table with user settings
         if power != "default":

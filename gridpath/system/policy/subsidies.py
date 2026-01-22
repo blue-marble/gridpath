@@ -15,6 +15,7 @@
 """
 Subsidy programs (e.g. investment tax credits).
 """
+
 import csv
 import os.path
 from pyomo.environ import (
@@ -429,8 +430,7 @@ def get_inputs_from_database(
     )
 
     c2 = conn.cursor()
-    project_subsidies = c2.execute(
-        f"""
+    project_subsidies = c2.execute(f"""
         SELECT program, project_or_tx, vintage, is_tx, 
         annual_payment_subsidy
         FROM inputs_system_subsidies_projects
@@ -449,8 +449,7 @@ def get_inputs_from_database(
         AND vintage in (
         SELECT period FROM inputs_temporal_periods
         WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID})
-        """
-    )
+        """)
 
     return program_budgets, project_subsidies
 

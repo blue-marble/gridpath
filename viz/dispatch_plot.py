@@ -132,9 +132,7 @@ def get_timepoints(conn, scenario_id, starting_tmp=None, ending_tmp=None, stage_
         WHERE stage_id = {}
         {}
         {}
-        ;""".format(
-        scenario_id, stage_id, start_query, end_query
-    )
+        ;""".format(scenario_id, stage_id, start_query, end_query)
 
     tmps = [i[0] for i in conn.execute(query).fetchall()]
 

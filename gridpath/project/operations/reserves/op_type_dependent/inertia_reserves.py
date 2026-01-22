@@ -17,7 +17,6 @@ Add project-level components for spinning reserves that also
 depend on operational type
 """
 
-
 import csv
 import os.path
 import pandas as pd

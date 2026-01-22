@@ -98,15 +98,11 @@ def get_inputs_from_database(
     """
 
     c = conn.cursor()
-    carbon_cap_zone = c.execute(
-        """SELECT carbon_cap_zone, allow_violation, 
+    carbon_cap_zone = c.execute("""SELECT carbon_cap_zone, allow_violation, 
         violation_penalty_per_emission
         FROM inputs_geography_carbon_cap_zones
         WHERE carbon_cap_zone_scenario_id = {};
-        """.format(
-            subscenarios.CARBON_CAP_ZONE_SCENARIO_ID
-        )
-    )
+        """.format(subscenarios.CARBON_CAP_ZONE_SCENARIO_ID))
 
     return carbon_cap_zone
 

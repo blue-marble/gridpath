@@ -133,8 +133,7 @@ def create_project_csv(
     c = conn.cursor()
 
     # Get all the draws
-    draws = c.execute(
-        f"""
+    draws = c.execute(f"""
                 SELECT weather_iteration, draw_number,
                 {timeseries_name}_year, {timeseries_name}_month,
                 {timeseries_name}_day_of_month
@@ -143,8 +142,7 @@ def create_project_csv(
                 AND weather_draws_id = {weather_draws_id}
                 ORDER BY weather_iteration, draw_number
                 ;
-                """
-    ).fetchall()
+                """).fetchall()
 
     for weather_iteration, draw_number, year, month, day_of_month in draws:
         # For each project, get the weighted cap factor for each of its

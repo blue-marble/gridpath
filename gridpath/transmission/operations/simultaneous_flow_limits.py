@@ -23,7 +23,6 @@ TODO: what is the meaning of simultaneous flow limit if we have losses on
     power received in determining flow on the line.
 """
 
-
 import csv
 import os.path
 from pyomo.environ import (

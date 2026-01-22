@@ -30,13 +30,9 @@ def get_required_capacity_types_from_database(conn, scenario_id):
     """
     c = conn.cursor()
 
-    project_portfolio_scenario_id = c.execute(
-        """SELECT project_portfolio_scenario_id 
+    project_portfolio_scenario_id = c.execute("""SELECT project_portfolio_scenario_id 
         FROM scenarios 
-        WHERE scenario_id = {}""".format(
-            scenario_id
-        )
-    ).fetchone()[0]
+        WHERE scenario_id = {}""".format(scenario_id)).fetchone()[0]
 
     required_capacity_type_modules = [
         p[0]
@@ -69,19 +65,13 @@ def get_scenario_id_and_name(scenario_id_arg, scenario_name_arg, c, script):
     if scenario_id_arg is None and scenario_name_arg is None:
         raise TypeError(
             """ERROR: Either scenario_id or scenario_name must be specified. 
-            Run 'python """
-            + script
-            + """'.py --help' for help."""
+            Run 'python """ + script + """'.py --help' for help."""
         )
 
     elif scenario_id_arg is not None and scenario_name_arg is None:
-        result = c.execute(
-            """SELECT scenario_name
+        result = c.execute("""SELECT scenario_name
                FROM scenarios
-               WHERE scenario_id = {};""".format(
-                scenario_id_arg
-            )
-        ).fetchone()
+               WHERE scenario_id = {};""".format(scenario_id_arg)).fetchone()
         if result is None:
             raise ValueError(
                 """ERROR: No matching scenario found for scenario_id '{}'""".format(
@@ -92,13 +82,9 @@ def get_scenario_id_and_name(scenario_id_arg, scenario_name_arg, c, script):
             return scenario_id_arg, result[0]
 
     elif scenario_id_arg is None and scenario_name_arg is not None:
-        result = c.execute(
-            """SELECT scenario_id
+        result = c.execute("""SELECT scenario_id
                FROM scenarios
-               WHERE scenario_name = '{}';""".format(
-                scenario_name_arg
-            )
-        ).fetchone()
+               WHERE scenario_name = '{}';""".format(scenario_name_arg)).fetchone()
         if result is None:
             raise ValueError(
                 """ERROR: No matching scenario found for scenario_name '{}'""".format(
@@ -110,13 +96,9 @@ def get_scenario_id_and_name(scenario_id_arg, scenario_name_arg, c, script):
 
     else:
         # If both scenario_id and scenario_name are specified
-        result = c.execute(
-            """SELECT scenario_name
+        result = c.execute("""SELECT scenario_name
                FROM scenarios
-               WHERE scenario_id = {};""".format(
-                scenario_id_arg
-            )
-        ).fetchone()
+               WHERE scenario_id = {};""".format(scenario_id_arg)).fetchone()
         if result is None:
             raise ValueError(
                 """ERROR: No matching scenario found for scenario_id '{}'""".format(
@@ -124,10 +106,8 @@ def get_scenario_id_and_name(scenario_id_arg, scenario_name_arg, c, script):
                 )
             )
         elif result[0] != scenario_name_arg:
-            raise ValueError(
-                """ERROR: scenario_id and scenario_name don't match in 
-                database."""
-            )
+            raise ValueError("""ERROR: scenario_id and scenario_name don't match in 
+                database.""")
         else:
             return scenario_id_arg, scenario_name_arg
 
@@ -164,9 +144,7 @@ def setup_results_import(
         AND availability_iteration = ?
         AND subproblem_id = ?
         AND stage_id = ?;
-        """.format(
-        table
-    )
+        """.format(table)
     spin_on_database_lock(
         conn=conn,
         cursor=cursor,
@@ -185,24 +163,18 @@ def setup_results_import(
     # Create temporary table, which we'll use to sort the results before
     # inserting them into our persistent table
     drop_tbl_sql = """DROP TABLE IF EXISTS temp_{}{};
-        """.format(
-        table, scenario_id
-    )
+        """.format(table, scenario_id)
     spin_on_database_lock(
         conn=conn, cursor=cursor, sql=drop_tbl_sql, data=(), many=False
     )
 
     # Get the CREATE statemnt for the persistent table
-    tbl_sql = cursor.execute(
-        """
+    tbl_sql = cursor.execute("""
         SELECT sql 
         FROM sqlite_master
         WHERE type='table'
         AND name='{}'
-        """.format(
-            table
-        )
-    ).fetchone()[0]
+        """.format(table)).fetchone()[0]
 
     # Create a temporary table with the same structure as the persistent table
     temp_tbl_sql = tbl_sql.replace(
@@ -318,9 +290,7 @@ def update_prj_zone_column(
         SET {} = ?
         WHERE scenario_id = ?
         AND project = ?;
-        """.format(
-        prj_tbl, col
-    )
+        """.format(prj_tbl, col)
     spin_on_database_lock(conn=conn, cursor=c, sql=sql, data=updates)
 
 

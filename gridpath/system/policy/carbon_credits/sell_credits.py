@@ -126,8 +126,7 @@ def get_inputs_from_database(
     """
 
     c = conn.cursor()
-    zones = c.execute(
-        f"""SELECT carbon_credits_zone, period, carbon_credit_price
+    zones = c.execute(f"""SELECT carbon_credits_zone, period, carbon_credit_price
         FROM inputs_system_carbon_credits_prices
         WHERE carbon_credits_price_scenario_id = 
         {subscenarios.CARBON_CREDITS_PRICE_SCENARIO_ID}
@@ -136,8 +135,7 @@ def get_inputs_from_database(
             FROM inputs_temporal_periods
             WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
         );
-        """
-    )
+        """)
 
     return zones
 

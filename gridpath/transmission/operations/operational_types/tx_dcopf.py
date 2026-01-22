@@ -48,7 +48,6 @@ Linear Optimal Power Flow Using Cycle Flows".
 
 """
 
-
 import networkx as nx
 import os
 import pandas as pd

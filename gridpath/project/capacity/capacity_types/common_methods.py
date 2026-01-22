@@ -136,8 +136,7 @@ def spec_get_inputs_from_database(conn, subscenarios, subproblem, capacity_type)
     db_subproblem = subproblem if subproblem != "" else 1
 
     c = conn.cursor()
-    spec_project_params = c.execute(
-        f"""
+    spec_project_params = c.execute(f"""
         SELECT project,
         period,
         specified_capacity_mw,
@@ -198,8 +197,7 @@ def spec_get_inputs_from_database(conn, subscenarios, subproblem, capacity_type)
                   WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
                   AND subproblem_id = {db_subproblem}
                )
-        ;"""
-    )
+        ;""")
 
     return spec_project_params
 

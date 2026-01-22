@@ -17,7 +17,6 @@ Aggregate carbon emissions from the transmission-line-timepoint level to
 the carbon cap zone - period level.
 """
 
-
 import csv
 import os.path
 from pyomo.environ import (

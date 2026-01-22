@@ -454,27 +454,23 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
         conn=db, cursor=c, sql=del_sql, data=(scenario_id,), many=False
     )
 
-    iter_combos = c.execute(
-        f"""
+    iter_combos = c.execute(f"""
         SELECT count(*)
         FROM inputs_temporal_iterations
         WHERE temporal_scenario_id = (
             SELECT temporal_scenario_id
             FROM scenarios WHERE scenario_id = {scenario_id}
         )
-        """
-    ).fetchone()[0]
+        """).fetchone()[0]
 
-    hrs_per_combo = c.execute(
-        f"""
+    hrs_per_combo = c.execute(f"""
         SELECT SUM(number_of_hours_in_timepoint)
         FROM inputs_temporal
         WHERE temporal_scenario_id = (
             SELECT temporal_scenario_id
             FROM scenarios WHERE scenario_id = {scenario_id}
         )
-        """
-    ).fetchone()[0]
+        """).fetchone()[0]
 
     hrs_per_year = 8760
 
@@ -482,14 +478,12 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
 
     # Only calculate stats if we have iterations
     if n_years != 0:
-        (total_loss_of_load_hours, total_use) = c.execute(
-            f"""
+        total_loss_of_load_hours, total_use = c.execute(f"""
             SELECT sum(number_of_hours_in_timepoint), sum(unserved_energy_mw * 
             number_of_hours_in_timepoint)
             FROM results_system_timepoint_loss_of_load_summary
             WHERE scenario_id = {scenario_id}
-            """
-        ).fetchone()
+            """).fetchone()
 
         total_loss_of_load_hours = (
             0 if total_loss_of_load_hours is None else total_loss_of_load_hours
@@ -499,13 +493,11 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
         LOLH = total_loss_of_load_hours / n_years
         EUE = total_use / n_years
 
-        total_loss_of_load_days = c.execute(
-            f"""
+        total_loss_of_load_days = c.execute(f"""
             SELECT count(*)
             FROM results_system_days_loss_of_load_summary
             WHERE scenario_id = {scenario_id}
-            """
-        ).fetchone()[0]
+            """).fetchone()[0]
 
         total_loss_of_load_days = (
             0 if total_loss_of_load_days is None else total_loss_of_load_days
@@ -513,8 +505,7 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
 
         LOLE = total_loss_of_load_days / n_years
 
-        years_with_lost_load = c.execute(
-            f"""
+        years_with_lost_load = c.execute(f"""
             SELECT count(*)
             FROM (
                 SELECT DISTINCT weather_iteration, hydro_iteration, 
@@ -522,8 +513,7 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
                 FROM results_system_days_loss_of_load_summary
                 WHERE scenario_id = {scenario_id}
             );
-            """
-        ).fetchone()[0]
+            """).fetchone()[0]
 
         years_with_lost_load = (
             0 if years_with_lost_load is None else years_with_lost_load
@@ -572,10 +562,7 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
             conn=db, cursor=c, sql=del_sql, data=(scenario_id,), many=False
         )
 
-        iteration_combos = [
-            combo
-            for combo in c.execute(
-                f"""
+        iteration_combos = [combo for combo in c.execute(f"""
             SELECT weather_iteration, hydro_iteration, availability_iteration
             FROM inputs_temporal_iterations
             WHERE temporal_scenario_id = (
@@ -583,9 +570,7 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
                 FROM scenarios
                 WHERE scenario_id = {scenario_id}
             )
-            """
-            ).fetchall()
-        ]
+            """).fetchall()]
 
         n = 1
         current_loss_of_load_hours = 0
@@ -593,11 +578,10 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
         current_loss_of_load_days = 0
         current_years_with_lost_load = 0
         for iter_combo in iteration_combos:
-            (weather_iteration, hydro_iteration, availability_iteration) = iter_combo
+            weather_iteration, hydro_iteration, availability_iteration = iter_combo
             current_n_years = n * hrs_per_combo / hrs_per_year
 
-            (iter_loss_of_load_hours, iter_use) = c.execute(
-                f"""
+            iter_loss_of_load_hours, iter_use = c.execute(f"""
                     SELECT sum(number_of_hours_in_timepoint), sum(unserved_energy_mw * 
                     number_of_hours_in_timepoint)
                     FROM results_system_timepoint_loss_of_load_summary
@@ -606,8 +590,7 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
                     AND hydro_iteration = {hydro_iteration}
                     AND availability_iteration = {availability_iteration}
                     ;
-                    """
-            ).fetchone()
+                    """).fetchone()
 
             current_loss_of_load_hours += (
                 iter_loss_of_load_hours if iter_loss_of_load_hours is not None else 0
@@ -617,24 +600,21 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
             current_LOLH = current_loss_of_load_hours / current_n_years
             current_EUE = current_use / current_n_years
 
-            iter_loss_of_load_days = c.execute(
-                f"""
+            iter_loss_of_load_days = c.execute(f"""
                     SELECT count(*)
                     FROM results_system_days_loss_of_load_summary
                     WHERE scenario_id = {scenario_id}
                     AND weather_iteration = {weather_iteration}
                     AND hydro_iteration = {hydro_iteration}
                     AND availability_iteration = {availability_iteration}
-                    """
-            ).fetchone()[0]
+                    """).fetchone()[0]
 
             current_loss_of_load_days += (
                 iter_loss_of_load_days if iter_loss_of_load_days is not None else 0
             )
             current_LOLE = current_loss_of_load_days / current_n_years
 
-            iter_years_with_lost_load = c.execute(
-                f"""
+            iter_years_with_lost_load = c.execute(f"""
                     SELECT count(*)
                     FROM (
                         SELECT DISTINCT weather_iteration, hydro_iteration, 
@@ -645,8 +625,7 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
                         AND hydro_iteration = {hydro_iteration}
                         AND availability_iteration = {availability_iteration}
                     );
-                    """
-            ).fetchone()[0]
+                    """).fetchone()[0]
 
             current_years_with_lost_load += (
                 iter_years_with_lost_load

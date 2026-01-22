@@ -130,14 +130,12 @@ def get_project_heat_rates(
         min_load_fraction,
     ) in c.execute(sql).fetchall():
         c2 = conn.cursor()
-        min_load_heat_rate_coefficient = c2.execute(
-            f"""
+        min_load_heat_rate_coefficient = c2.execute(f"""
             SELECT average_heat_rate_coefficient
             FROM user_defined_heat_rate_curve
             WHERE load_point_fraction = {min_load_fraction}
             ;
-            """
-        ).fetchone()[0]
+            """).fetchone()[0]
         with open(
             os.path.join(
                 csv_location,

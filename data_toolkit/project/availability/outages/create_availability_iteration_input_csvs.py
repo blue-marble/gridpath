@@ -384,14 +384,9 @@ def main(args=None):
 
     db = connect_to_database(parsed_args.database)
 
-    projects = [
-        i[0]
-        for i in db.execute(
-            """
+    projects = [i[0] for i in db.execute("""
         SELECT DISTINCT project FROM raw_data_unit_availability_params;
-        """
-        ).fetchall()
-    ]
+        """).fetchall()]
 
     all_files = []
     pool_data = []

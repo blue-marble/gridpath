@@ -142,13 +142,11 @@ def get_tech_colors(c):
     :param c:
     :return:
     """
-    colors = c.execute(
-        """
+    colors = c.execute("""
         SELECT technology, color
         FROM viz_technologies
         WHERE color is not NULL
-        """
-    ).fetchall()
+        """).fetchall()
 
     return dict(colors)
 
@@ -162,13 +160,11 @@ def get_tech_plotting_order(c):
     :return:
     """
 
-    order = c.execute(
-        """
+    order = c.execute("""
         SELECT technology, plotting_order
         FROM viz_technologies
         WHERE plotting_order is not NULL
-        """
-    ).fetchall()
+        """).fetchall()
 
     return dict(order)
 
@@ -185,14 +181,10 @@ def get_unit(c, metric):
     unit = c.execute("SELECT unit FROM mod_units WHERE metric=?", (metric,))
 
     if unit.rowcount == 0:
-        raise ValueError(
-            """
+        raise ValueError("""
             Error! The metric '{}' does not exists in the mod_units table.
             Please specify an existing metric. 
-            """.format(
-                metric
-            )
-        )
+            """.format(metric))
     else:
         return unit.fetchone()[0]
 
@@ -225,9 +217,7 @@ def get_capacity_data(
         (SELECT scenario_name, scenario_id FROM scenarios) as scen_table
         USING (scenario_id)
         WHERE subproblem_id = ?
-        AND stage_id = ?""".format(
-        capacity_col
-    )
+        AND stage_id = ?""".format(capacity_col)
     if period is not None:
         period = period if isinstance(period, list) else [period]
         sql += " AND period in ({})".format(",".join("?" * len(period)))

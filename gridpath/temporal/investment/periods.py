@@ -343,8 +343,7 @@ def get_inputs_from_database(
     # number of hours in a period (within a stage and excluding
     # spinup/lookahead) across all subproblems in the temporal_scenario_id:
 
-    periods = c.execute(
-        f"""SELECT period, discount_factor, 
+    periods = c.execute(f"""SELECT period, discount_factor, 
            period_start_year, period_end_year, hours_in_period_timepoints
            FROM (
            SELECT period, discount_factor,
@@ -366,8 +365,7 @@ def get_inputs_from_database(
            AND spinup_or_lookahead = 0
            AND stage_id = {stage}
            GROUP BY period) as hours_in_period_timepoints_tbl
-           USING (period);"""
-    )
+           USING (period);""")
 
     return periods
 

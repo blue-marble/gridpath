@@ -210,11 +210,8 @@ def get_objective_metrics(conn):
 
 def get_scenario_options(conn):
     scenario_options = [
-        sc[0]
-        for sc in conn.execute(
-            """SELECT scenario_name FROM scenarios
-        WHERE run_status_id = 2  --scenarios that have finished;"""
-        ).fetchall()
+        sc[0] for sc in conn.execute("""SELECT scenario_name FROM scenarios
+        WHERE run_status_id = 2  --scenarios that have finished;""").fetchall()
     ]
     return scenario_options
 
@@ -230,9 +227,7 @@ def get_zone_options(conn, scenarios):
             SELECT load_zone_scenario_id
             FROM scenarios
             WHERE scenario_name in ({})
-        );""".format(
-                ",".join("?" * len(scenarios))
-            ),
+        );""".format(",".join("?" * len(scenarios))),
             scenarios,
         ).fetchall()
     ]
@@ -251,9 +246,7 @@ def get_period_options(conn, scenarios):
             SELECT temporal_scenario_id
             FROM scenarios
             WHERE scenario_name in ({})
-        );""".format(
-                ",".join("?" * len(scenarios))
-            ),
+        );""".format(",".join("?" * len(scenarios))),
             scenarios,
         ).fetchall()
     ]
@@ -272,9 +265,7 @@ def get_stage_options(conn, scenarios):
             SELECT temporal_scenario_id
             FROM scenarios
             WHERE scenario_name in ({})
-        );""".format(
-                ",".join("?" * len(scenarios))
-            ),
+        );""".format(",".join("?" * len(scenarios))),
             scenarios,
         ).fetchall()
     ]
@@ -301,9 +292,7 @@ def get_all_cost_data(conn, scenarios):
         USING (scenario_id)
         WHERE spinup_or_lookahead = 0
         GROUP BY scenario, stage_id, period, load_zone
-        ;""".format(
-        ",".join(["?"] * len(scenarios))
-    )
+        ;""".format(",".join(["?"] * len(scenarios)))
     df = pd.read_sql(sql, conn, params=scenarios).fillna(0)
     df["period"] = df["period"].astype(str)  # for categorical axis in Bokeh
     return df
@@ -333,9 +322,7 @@ def get_all_capacity_data(conn, scenarios):
         USING (scenario_id)
         
         GROUP BY scenario, stage_id, period, load_zone, technology;
-        """.format(
-        ",".join(["?"] * len(scenarios))
-    )
+        """.format(",".join(["?"] * len(scenarios)))
     df = pd.read_sql(sql, conn, params=scenarios).fillna(0)
 
     df["cumulative_new_build_capacity"] = df.groupby(
@@ -383,9 +370,7 @@ def get_all_energy_data(conn, scenarios):
         USING (scenario_id)
         WHERE spinup_or_lookahead = 0
         GROUP BY scenario, stage_id, period, load_zone, technology;
-        """.format(
-        ",".join(["?"] * len(scenarios))
-    )
+        """.format(",".join(["?"] * len(scenarios)))
     df = pd.read_sql(sql, conn, params=scenarios).fillna(0)
     # Pivot technologies to wide format (for stack chart)
     # Note: df.pivot does not work with multi-index as of pandas 1.0.5
@@ -419,9 +404,7 @@ def get_objective_cost_data(conn, scenarios):
         USING (scenario_id)
 
         GROUP BY scenario, stage_id
-        ;""".format(
-        ",".join(["?"] * len(scenarios))
-    )
+        ;""".format(",".join(["?"] * len(scenarios)))
     sql = sql1 + sql2 + sql3
 
     df = pd.read_sql(sql, conn, params=scenarios).fillna(0)
@@ -483,9 +466,7 @@ def get_all_summary_data(conn, scenarios):
     (SELECT scenario_name, scenario_id FROM scenarios
     WHERE scenario_name in ({}) ) AS scen_table
     USING (scenario_id)
-    ;""".format(
-        ",".join(["?"] * len(scenarios))
-    )
+    ;""".format(",".join(["?"] * len(scenarios)))
 
     df = pd.read_sql(sql, conn, params=scenarios).fillna(0)
     df["period"] = df["period"].astype(str)  # Bokeh CDS needs string columns

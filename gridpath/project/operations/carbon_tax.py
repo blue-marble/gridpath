@@ -337,14 +337,10 @@ def load_model_data(
             elif periods.issubset(slice_periods):
                 p_iterable = periods
             else:
-                raise ValueError(
-                    """{} for project '{}' isn't specified for all 
+                raise ValueError("""{} for project '{}' isn't specified for all 
                     modelled periods. Set period to 0 if inputs are the 
                     same for each period or make sure all modelled periods 
-                    are included.""".format(
-                        input_col, project
-                    )
-                )
+                    are included.""".format(input_col, project))
 
             for period in p_iterable:
                 df_slice_p = df_slice[df_slice["period"] == period]
@@ -764,13 +760,9 @@ def validate_inputs(
     # TODO: make this into a function similar to get_projects()?
     #  could eventually centralize all these db query functions in one place
     c = conn.cursor()
-    zones = c.execute(
-        """SELECT carbon_tax_zone FROM inputs_geography_carbon_tax_zones
+    zones = c.execute("""SELECT carbon_tax_zone FROM inputs_geography_carbon_tax_zones
         WHERE carbon_tax_zone_scenario_id = {}
-        """.format(
-            subscenarios.CARBON_TAX_ZONE_SCENARIO_ID
-        )
-    )
+        """.format(subscenarios.CARBON_TAX_ZONE_SCENARIO_ID))
     zones = [z[0] for z in zones]  # convert to list
 
     # Check that each carbon tax zone has at least one project assigned to it

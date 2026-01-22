@@ -212,13 +212,9 @@ def validate_inputs(
     # TODO: make this into a function similar to get_projects()?
     #  could eventually centralize all these db query functions in one place
     c = conn.cursor()
-    zones = c.execute(
-        """SELECT prm_zone FROM inputs_geography_prm_zones
+    zones = c.execute("""SELECT prm_zone FROM inputs_geography_prm_zones
         WHERE prm_zone_scenario_id = {}
-        """.format(
-            subscenarios.PRM_ZONE_SCENARIO_ID
-        )
-    )
+        """.format(subscenarios.PRM_ZONE_SCENARIO_ID))
     zones = [z[0] for z in zones]  # convert to list
 
     # Check that each PRM zone has at least one project assigned to it

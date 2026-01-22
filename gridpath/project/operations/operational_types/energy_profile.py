@@ -49,7 +49,6 @@ from gridpath.project.operations.operational_types.common_functions import (
     load_optype_model_data,
 )
 
-
 # TODO: possibly add shaping capacity to this module
 
 
@@ -225,17 +224,13 @@ def add_model_components(
         Upward reserves should be zero in every operational timepoint.
         """
         if getattr(d, headroom_variables)[g]:
-            warnings.warn(
-                """project {} is of the 'energy_profile' operational 
+            warnings.warn("""project {} is of the 'energy_profile' operational 
                 type and should not be assigned any upward reserve BAs since it 
                 cannot provide  upward reserves. Please replace the upward 
                 reserve BA for project {} with '.' (no value) in projects.tab. 
                 Model will add  constraint to ensure project {} cannot provide 
                 upward reserves
-                """.format(
-                    g, g, g
-                )
-            )
+                """.format(g, g, g))
             return (
                 sum(getattr(mod, c)[g, tmp] for c in getattr(d, headroom_variables)[g])
                 == 0
@@ -257,17 +252,13 @@ def add_model_components(
         Downward reserves should be zero in every operational timepoint.
         """
         if getattr(d, footroom_variables)[g]:
-            warnings.warn(
-                """project {} is of the 'energy_profile' operational 
+            warnings.warn("""project {} is of the 'energy_profile' operational 
                 type and should not be assigned any downward reserve BAs since 
                 it cannot provide downward reserves. Please replace the
                 downward reserve BA for project {} with '.' (no value) in 
                 projects.tab. Model will add constraint to ensure project {} 
                 cannot provide downward reserves.
-                """.format(
-                    g, g, g
-                )
-            )
+                """.format(g, g, g))
             return (
                 sum(getattr(mod, c)[g, tmp] for c in getattr(d, footroom_variables)[g])
                 == 0
@@ -533,12 +524,10 @@ def validate_inputs(
         "energy_profile",
     )
     if energy_fraction_validation_error:
-        warnings.warn(
-            """
+        warnings.warn("""
             Found energy_profile cap factors that are <0 or >1. This is 
             allowed but this warning is here to make sure it is intended.
-            """
-        )
+            """)
 
     # Other module specific validations
 

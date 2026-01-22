@@ -579,9 +579,7 @@ def validate_inputs(
     zones = c.execute(
         """SELECT energy_target_zone FROM inputs_geography_energy_target_zones
         WHERE energy_target_zone_scenario_id = {}
-        """.format(
-            subscenarios.ENERGY_TARGET_ZONE_SCENARIO_ID
-        )
+        """.format(subscenarios.ENERGY_TARGET_ZONE_SCENARIO_ID)
     )
     zones = [z[0] for z in zones]  # convert to list
 

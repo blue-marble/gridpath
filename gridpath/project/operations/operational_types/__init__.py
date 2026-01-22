@@ -262,20 +262,14 @@ def get_required_opchar_modules(scenario_id, c):
     :return: List of the required operational type submodules
     """
 
-    project_portfolio_scenario_id = c.execute(
-        """SELECT project_portfolio_scenario_id 
+    project_portfolio_scenario_id = c.execute("""SELECT project_portfolio_scenario_id 
         FROM scenarios 
-        WHERE scenario_id = {}""".format(
-            scenario_id
-        )
-    ).fetchone()[0]
+        WHERE scenario_id = {}""".format(scenario_id)).fetchone()[0]
 
     project_opchars_scenario_id = c.execute(
         """SELECT project_operational_chars_scenario_id 
         FROM scenarios 
-        WHERE scenario_id = {}""".format(
-            scenario_id
-        )
+        WHERE scenario_id = {}""".format(scenario_id)
     ).fetchone()[0]
 
     required_opchar_modules = [

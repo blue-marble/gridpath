@@ -305,8 +305,7 @@ def get_inputs_from_database(
     # TODO: we might want to get the reactance in the tx_dcopf
     #  tx_operational_type rather than here (see also comment in project/init)
     c = conn.cursor()
-    transmission_lines = c.execute(
-        f"""
+    transmission_lines = c.execute(f"""
         SELECT transmission_line, capacity_type AS tx_capacity_type, 
         availability_type AS tx_availability_type, operational_type AS 
         tx_operational_type,
@@ -341,8 +340,7 @@ def get_inputs_from_database(
             FROM inputs_transmission_operational_chars
             WHERE transmission_operational_chars_scenario_id = {subscenarios.TRANSMISSION_OPERATIONAL_CHARS_SCENARIO_ID}) as prj_chars
         USING (transmission_line)
-        ;"""
-    )
+        ;""")
 
     # TODO: allow Tx lines with no load zones from and to specified, that are only
     #  used for say, reliability capacity exchanges; they would need a different
@@ -504,13 +502,9 @@ def validate_inputs(
 
     # Ensure we're not combining incompatible capacity and operational types
     cols = ["capacity_type", "operational_type"]
-    invalid_combos = c.execute(
-        """
+    invalid_combos = c.execute("""
         SELECT {} FROM mod_tx_capacity_and_tx_operational_type_invalid_combos
-        """.format(
-            ",".join(cols)
-        )
-    ).fetchall()
+        """.format(",".join(cols))).fetchall()
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,

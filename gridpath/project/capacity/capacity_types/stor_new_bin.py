@@ -32,7 +32,6 @@ of years the period represents) for the duration of the project's financial life
     have a duration of 1 MWh / (1 MW/0.95) or 0.95 hours rather than 1 hour.
 """
 
-
 import csv
 import os.path
 from pathlib import Path

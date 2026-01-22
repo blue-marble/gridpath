@@ -170,12 +170,10 @@ def add_model_components(
                 max_vals.append(mod.load_component_shift_max_load_mw[_prj, bt, hrz])
 
         if len(min_vals) > 1 or len(max_vals) > 1:
-            raise ValueError(
-                f"""More than one value per timepoints specified
+            raise ValueError(f"""More than one value per timepoints specified
                  for bounds for load_component_shift project {prj}, 
                  timepoint {tmp}. Please ensure you don't have 
-                 overlapping horizons."""
-            )
+                 overlapping horizons.""")
 
         # Assuming single value in lists after errors caught above
         # Check if the list contains a value; if not, set the min and max to
@@ -303,17 +301,13 @@ def add_model_components(
         Upward reserves should be zero in every operational timepoint.
         """
         if getattr(d, headroom_variables)[g]:
-            warnings.warn(
-                """project {} is of the 'load_component_shift' operational 
+            warnings.warn("""project {} is of the 'load_component_shift' operational 
                 type and should not be assigned any upward reserve BAs since it 
                 cannot provide  upward reserves. Please replace the upward 
                 reserve BA for project {} with '.' (no value) in projects.tab. 
                 Model will add  constraint to ensure project {} cannot provide 
                 upward reserves
-                """.format(
-                    g, g, g
-                )
-            )
+                """.format(g, g, g))
             return (
                 sum(getattr(mod, c)[g, tmp] for c in getattr(d, headroom_variables)[g])
                 == 0
@@ -335,17 +329,13 @@ def add_model_components(
         Downward reserves should be zero in every operational timepoint.
         """
         if getattr(d, footroom_variables)[g]:
-            warnings.warn(
-                """project {} is of the 'load_component_shift' operational 
+            warnings.warn("""project {} is of the 'load_component_shift' operational 
                 type and should not be assigned any downward reserve BAs since 
                 it cannot provide downward reserves. Please replace the
                 downward reserve BA for project {} with '.' (no value) in 
                 projects.tab. Model will add constraint to ensure project {} 
                 cannot provide downward reserves.
-                """.format(
-                    g, g, g
-                )
-            )
+                """.format(g, g, g))
             return (
                 sum(getattr(mod, c)[g, tmp] for c in getattr(d, footroom_variables)[g])
                 == 0

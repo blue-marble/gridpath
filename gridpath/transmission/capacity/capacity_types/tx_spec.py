@@ -217,8 +217,7 @@ def get_model_inputs_from_database(
     """
     db_subproblem = subproblem if subproblem != "" else 1
     c = conn.cursor()
-    tx_capacities = c.execute(
-        f"""SELECT transmission_line, period, min_mw, max_mw, 
+    tx_capacities = c.execute(f"""SELECT transmission_line, period, min_mw, max_mw, 
         fixed_cost_per_mw_yr
         FROM inputs_transmission_portfolios
         CROSS JOIN
@@ -237,8 +236,7 @@ def get_model_inputs_from_database(
                   WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
                   AND subproblem_id = {db_subproblem}
                )
-        ;"""
-    )
+        ;""")
 
     return tx_capacities
 

@@ -44,7 +44,6 @@ Morales-Espana et al. (2013).
 
 """
 
-
 import csv
 import os.path
 from pyomo.environ import (
@@ -1007,13 +1006,9 @@ def add_model_components(
         Bin_or_Lin = "Lin"
         Pyomo_Binary_or_PercentFraction = PercentFraction
     else:
-        raise ValueError(
-            """GridPath ERROR:
+        raise ValueError("""GridPath ERROR:
         Allowed types are 'gen_commit_unit_bin' or 'gen_commit_unit_lin'. 
-        You used {}.""".format(
-                bin_or_lin_optype
-            )
-        )
+        You used {}.""".format(bin_or_lin_optype))
 
     # Sets
     ###########################################################################
@@ -1932,7 +1927,10 @@ def add_model_components(
         if (
             (
                 mod.capacity_type[g] in ["gen_spec", "gen_ret_bin", "gen_ret_lin"]
-                and getattr(mod, mod.capacity_type[g] + "_capacity_mw") == 0
+                and getattr(mod, mod.capacity_type[g] + "_capacity_mw")[
+                    g, mod.period[tmp]
+                ]
+                == 0
             )
             or (
                 mod.availability_type[g] == "exogenous"

@@ -19,7 +19,6 @@ also simultaneous contribute a simple fraction of their capacity (the fraction
 defaults to 0 if not specified).
 """
 
-
 import csv
 import os.path
 from pyomo.environ import Param, Reals, Expression, value

@@ -16,7 +16,6 @@
 Local capacity projects and the zone they contribute to
 """
 
-
 import csv
 import os.path
 from pyomo.environ import Param, Set
@@ -190,9 +189,7 @@ def validate_inputs(
     zones = c.execute(
         """SELECT local_capacity_zone FROM inputs_geography_local_capacity_zones
         WHERE local_capacity_zone_scenario_id = {}
-        """.format(
-            subscenarios.LOCAL_CAPACITY_ZONE_SCENARIO_ID
-        )
+        """.format(subscenarios.LOCAL_CAPACITY_ZONE_SCENARIO_ID)
     )
     zones = [z[0] for z in zones]  # convert to list
 

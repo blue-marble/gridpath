@@ -61,6 +61,9 @@ from gridpath.auxiliary.dynamic_components import (
     headroom_variables,
     reserve_variable_derate_params,
 )
+from gridpath.project.operations.operational_types.stor import (
+    check_for_soc_infeasibilities,
+)
 from gridpath.project.operations.reserves.subhourly_energy_adjustment import (
     footroom_subhourly_energy_adjustment_rule,
     headroom_subhourly_energy_adjustment_rule,
@@ -176,7 +179,7 @@ def add_model_components(
     +-------------------------------------------------------------------------+
     | Expressions                                                             |
     +=========================================================================+
-    | | :code:`GenVarStorHyb_Available_Power_MW`                              |
+    | | :code:`GenVarStorHyb_Available_Gen_Power_MW`                              |
     | | *Defined over*: :code:`GEN_VAR_STOR_HYB_OPR_TMPS`                     |
     |                                                                         |
     | The available power from the variable resource.                         |
@@ -256,14 +259,9 @@ def add_model_components(
     | The amount of energy stored in each operational timepoint cannot exceed |
     | the available energy capacity.                                          |
     +-------------------------------------------------------------------------+
-    | | :code:`GenVarStorHyb_Max_Headroom_Energy_Constraint`                  |
+    | | :code:`GenVarStorHyb_Max_Stor_Headroom_Power_Constraint`              |
     | | *Defined over*: :code:`GEN_VAR_STOR_HYB_OPR_TMPS`                     |
     |                                                                         |
-    | The project cannot provide more upward reserves (reserve provision      |
-    | times sustained duration required) than the available energy (from      |
-    | resource and from storage) after accounting for power provision. Said   |
-    | differently, we must have enough energy available to remain at the new  |
-    | set point (for the full duration of the timepoint).                     |
     +-------------------------------------------------------------------------+
 
     """
@@ -303,6 +301,13 @@ def add_model_components(
         m.GEN_VAR_STOR_HYB, within=PercentFraction
     )
 
+    # Optional Params
+    ###########################################################################
+
+    m.gen_var_stor_hyb_upward_reserves_to_soc_depletion = Param(
+        m.GEN_VAR_STOR_HYB, default=0
+    )
+
     # Variables
     ###########################################################################
 
@@ -322,6 +327,14 @@ def add_model_components(
         m.GEN_VAR_STOR_HYB_OPR_TMPS, within=NonNegativeReals
     )
 
+    m.GenVarStorHyb_Upward_Reserves_from_Gen_MW = Var(
+        m.GEN_VAR_STOR_HYB_OPR_TMPS, within=NonNegativeReals
+    )
+
+    m.GenVarStorHyb_Upward_Reserves_from_Stor_MW = Var(
+        m.GEN_VAR_STOR_HYB_OPR_TMPS, within=NonNegativeReals
+    )
+
     # Expressions
     ###########################################################################
 
@@ -336,7 +349,7 @@ def add_model_components(
             * mod.gen_var_stor_hyb_cap_factor[prj, tmp]
         )
 
-    m.GenVarStorHyb_Available_Power_MW = Expression(
+    m.GenVarStorHyb_Available_Gen_Power_MW = Expression(
         m.GEN_VAR_STOR_HYB_OPR_TMPS, rule=available_power_rule
     )
 
@@ -429,8 +442,20 @@ def add_model_components(
         m.GEN_VAR_STOR_HYB_OPR_TMPS, rule=max_energy_in_storage_rule
     )
 
-    m.GenVarStorHyb_Max_Headroom_Energy_Constraint = Constraint(
-        m.GEN_VAR_STOR_HYB_OPR_TMPS, rule=max_headroom_energy_rule
+    m.GenVarStorHyb_Max_Stor_Headroom_Power_Constraint = Constraint(
+        m.GEN_VAR_STOR_HYB_OPR_TMPS, rule=max_stor_headroom_power_rule
+    )
+
+    m.GenVarStorHyb_Max_Stor_Headroom_Energy_Constraint = Constraint(
+        m.GEN_VAR_STOR_HYB_OPR_TMPS, rule=max_stor_headroom_energy_rule
+    )
+
+    m.GenVarStorHyb_Total_Upward_Reserves_Constraint = Constraint(
+        m.GEN_VAR_STOR_HYB_OPR_TMPS, rule=total_upward_reserves_rule
+    )
+
+    m.GenVarStorHyb_Max_Upward_Reserves_from_Gen_Constraint = Constraint(
+        m.GEN_VAR_STOR_HYB_OPR_TMPS, rule=max_upward_reserves_from_gen_rule
     )
 
 
@@ -447,7 +472,7 @@ def scheduled_curtailment_expression_rule(mod, prj, tmp):
     power from storage) minus what was actually provided to the grid.
     """
     return (
-        mod.GenVarStorHyb_Available_Power_MW[prj, tmp]
+        mod.GenVarStorHyb_Available_Gen_Power_MW[prj, tmp]
         + mod.GenVarStorHyb_Discharge_MW[prj, tmp]
         - mod.GenVarStorHyb_Charge_MW[prj, tmp]
         - mod.GenVarStorHyb_Provide_Power_MW[prj, tmp]
@@ -459,7 +484,9 @@ def total_curtailment_expression_rule(mod, prj, tmp):
     **Expression Name**: GenVarStorHyb_Total_Curtailment_MW
     **Defined Over**: GEN_VAR_STOR_HYB_OPR_TMPS
 
-    Available energy that was not delivered
+    Available energy that was not delivered includes the scheduled
+    curtailment plus an adjustment for subtimepoint reserve provision.
+
     There's an adjustment for subtimepoint reserve provision:
     1) if downward reserves are provided, they will be called upon
     occasionally, so power provision will have to decrease and additional
@@ -475,9 +502,7 @@ def total_curtailment_expression_rule(mod, prj, tmp):
     """
 
     return (
-        mod.Hyb_Gen_Capacity_MW[prj, mod.period[tmp]]
-        * mod.gen_var_stor_hyb_cap_factor[prj, tmp]
-        - mod.GenVarStorHyb_Provide_Power_MW[prj, tmp]
+        scheduled_curtailment_expression_rule(mod, prj, tmp)
         + mod.GenVarStorHyb_Subtimepoint_Curtailment_MW[prj, tmp]
         - mod.GenVarStorHyb_Subtimepoint_Energy_Delivered_MW[prj, tmp]
     )
@@ -493,7 +518,7 @@ def max_power_rule(mod, prj, tmp):
     **Enforced Over**: GEN_VAR_STOR_HYB_OPR_TMPS
 
     The project's power and upward reserves cannot exceed the available
-    capacity.
+    capacity (Tx limit).
     """
     return (
         mod.GenVarStorHyb_Provide_Power_MW[prj, tmp]
@@ -507,14 +532,14 @@ def max_available_power_rule(mod, prj, tmp):
     **Constraint Name**: GenVarStorHyb_Max_Available_Power_Constraint
     **Enforced Over**: GEN_VAR_STOR_HYB_OPR_TMPS
 
-    Power provision plus upward services cannot exceed available power, which
-    is equal to the available capacity multiplied by the capacity factor
-    plus the net power from storage.
+    Power provision plus upward services (from the whole project) cannot exceed
+    available power, which is equal to the available capacity multiplied by
+    the capacity factor plus the net power from storage.
     """
     return (
         mod.GenVarStorHyb_Provide_Power_MW[prj, tmp]
         + mod.GenVarStorHyb_Upward_Reserves_MW[prj, tmp]
-        <= mod.GenVarStorHyb_Available_Power_MW[prj, tmp]
+        <= mod.GenVarStorHyb_Available_Gen_Power_MW[prj, tmp]
         + mod.GenVarStorHyb_Discharge_MW[prj, tmp]
         - mod.GenVarStorHyb_Charge_MW[prj, tmp]
     )
@@ -527,7 +552,7 @@ def min_power_rule(mod, prj, tmp):
 
     Power provision minus downward services cannot be less than 0. Here,
     we are assuming that the hybrid storage cannot charge from the grid (so
-    power provision cannot go negative).
+    power provision from the grid's standpoint cannot go negative).
     """
     return (
         mod.GenVarStorHyb_Provide_Power_MW[prj, tmp]
@@ -604,6 +629,28 @@ def energy_tracking_rule(mod, s, tmp):
             )
             prev_tmp_discharge = mod.gen_var_stor_hyb_linked_discharge[s, 0]
             prev_tmp_charge = mod.gen_var_stor_hyb_linked_charge[s, 0]
+
+            calculated_starting_energy_in_storage = (
+                prev_tmp_starting_energy_in_storage
+                + prev_tmp_charge
+                * prev_tmp_hrs_in_tmp
+                * mod.gen_var_stor_hyb_charging_efficiency[s]
+                - prev_tmp_discharge
+                * prev_tmp_hrs_in_tmp
+                / mod.gen_var_stor_hyb_discharging_efficiency[s]
+            )
+
+            # Deal with possible precision-related infeasibilities, e.g. if
+            # the calculated energy in storage is just below or just above
+            # its boundaries of 0 and the energy capacity x availability
+            # If no infeasibilities found, just return the calculated value
+            starting_soc = check_for_soc_infeasibilities(
+                mod=mod,
+                s=s,
+                tmp=tmp,
+                starting_soc=calculated_starting_energy_in_storage,
+            )
+
         else:
             prev_tmp_hrs_in_tmp = mod.hrs_in_tmp[
                 mod.prev_tmp[tmp, mod.balancing_type_project[s]]
@@ -619,17 +666,25 @@ def energy_tracking_rule(mod, s, tmp):
             prev_tmp_charge = mod.GenVarStorHyb_Charge_MW[
                 s, mod.prev_tmp[tmp, mod.balancing_type_project[s]]
             ]
+            prev_tmp_upward_reserves = (mod.GenVarStorHyb_Upward_Reserves_from_Stor_MW)[
+                s, mod.prev_tmp[tmp, mod.balancing_type_project[s]]
+            ]
 
-        return (
-            mod.GenVarStorHyb_Starting_Energy_in_Storage_MWh[s, tmp]
-            == prev_tmp_starting_energy_in_storage
-            + prev_tmp_charge
-            * prev_tmp_hrs_in_tmp
-            * mod.gen_var_stor_hyb_charging_efficiency[s]
-            - prev_tmp_discharge
-            * prev_tmp_hrs_in_tmp
-            / mod.gen_var_stor_hyb_discharging_efficiency[s]
-        )
+            starting_soc = (
+                prev_tmp_starting_energy_in_storage
+                + prev_tmp_charge
+                * prev_tmp_hrs_in_tmp
+                * mod.gen_var_stor_hyb_charging_efficiency[s]
+                - (
+                    prev_tmp_discharge
+                    + prev_tmp_upward_reserves
+                    * mod.gen_var_stor_hyb_upward_reserves_to_soc_depletion[s]
+                )
+                * prev_tmp_hrs_in_tmp
+                / mod.gen_var_stor_hyb_discharging_efficiency[s]
+            )
+
+        return mod.GenVarStorHyb_Starting_Energy_in_Storage_MWh[s, tmp] == starting_soc
 
 
 def max_energy_in_storage_rule(mod, s, tmp):
@@ -647,29 +702,60 @@ def max_energy_in_storage_rule(mod, s, tmp):
     )
 
 
-def max_headroom_energy_rule(mod, prj, tmp):
+def max_stor_headroom_power_rule(mod, s, tmp):
     """
-    **Constraint Name**: GenVarStorHyb_Max_Headroom_Energy_Constraint
+    **Constraint Name**: GenVarStorHyb_Max_Stor_Headroom_Power_Constraint
     **Enforced Over**: GEN_VAR_STOR_HYB_OPR_TMPS
 
-    Can't provide more upward reserves (reserve provision times sustained
-    duration required) than the available energy (from resource and from
-    storage) after accounting for power provision. Said differently, we must
-    have enough energy available to remain at the new set point (for the
-    full duration of the timepoint). The new setpoint is the LHS here.
+    The storage upward reserves cannot exceed the available headroom.
+    Going from charging to non-charging also counts as headroom, doubling
+    the maximum amount of potential headroom.
     """
     return (
-        mod.GenVarStorHyb_Provide_Power_MW[prj, tmp]
-        + mod.GenVarStorHyb_Upward_Reserves_MW[prj, tmp]
-    ) * mod.hrs_in_tmp[tmp] <= mod.GenVarStorHyb_Starting_Energy_in_Storage_MWh[
-        prj, tmp
-    ] * mod.gen_var_stor_hyb_discharging_efficiency[
-        prj
-    ] + mod.GenVarStorHyb_Available_Power_MW[
-        prj, tmp
-    ] * mod.hrs_in_tmp[
-        tmp
-    ]
+        mod.GenVarStorHyb_Upward_Reserves_from_Stor_MW[s, tmp]
+        <= mod.Hyb_Stor_Capacity_MW[s, mod.period[tmp]]
+        * mod.Availability_Hyb_Stor_Cap_Derate[s, tmp]
+        - mod.GenVarStorHyb_Discharge_MW[s, tmp]
+        + mod.GenVarStorHyb_Charge_MW[s, tmp]
+    )
+
+
+def max_stor_headroom_energy_rule(mod, s, tmp):
+    """
+    Can't provide more reserves (times sustained duration required) than
+    available energy in storage in that timepoint. Said differently,
+    must have enough energy available to be at the new set point (for
+    the full duration of the timepoint).
+    """
+    return (
+        mod.GenVarStorHyb_Upward_Reserves_from_Stor_MW[s, tmp]
+        * mod.hrs_in_tmp[tmp]
+        / mod.gen_var_stor_hyb_discharging_efficiency[s]
+        <= mod.GenVarStorHyb_Starting_Energy_in_Storage_MWh[s, tmp]
+        + mod.GenVarStorHyb_Charge_MW[s, tmp]
+        * mod.hrs_in_tmp[tmp]
+        * mod.gen_var_stor_hyb_charging_efficiency[s]
+        - mod.GenVarStorHyb_Discharge_MW[s, tmp]
+        * mod.hrs_in_tmp[tmp]
+        / mod.gen_var_stor_hyb_discharging_efficiency[s]
+    )
+
+
+def total_upward_reserves_rule(mod, prj, tmp):
+    return (
+        mod.GenVarStorHyb_Upward_Reserves_MW[prj, tmp]
+        == mod.GenVarStorHyb_Upward_Reserves_from_Gen_MW[prj, tmp]
+        + mod.GenVarStorHyb_Upward_Reserves_from_Stor_MW[prj, tmp]
+    )
+
+
+def max_upward_reserves_from_gen_rule(mod, g, tmp):
+    """
+    Upward reserves can't exceed curtailment
+    """
+    return mod.GenVarStorHyb_Upward_Reserves_from_Gen_MW[
+        g, tmp
+    ] <= scheduled_curtailment_expression_rule(mod, g, tmp)
 
 
 # Operational Type Methods
@@ -691,19 +777,14 @@ def variable_om_cost_rule(mod, prj, tmp):
     curtailed).
     """
     return (
-        mod.Capacity_MW[prj, mod.period[tmp]]
-        * mod.Availability_Derate[prj, tmp]
-        * mod.gen_var_stor_hyb_cap_factor[prj, tmp]
-        * mod.variable_om_cost_per_mwh[prj]
+        mod.GenVarStorHyb_Provide_Power_MW[prj, tmp] * mod.variable_om_cost_per_mwh[prj]
     )
 
 
 def variable_om_by_period_cost_rule(mod, prj, tmp):
     """ """
     return (
-        mod.Capacity_MW[prj, mod.period[tmp]]
-        * mod.Availability_Derate[prj, tmp]
-        * mod.gen_var_stor_hyb_cap_factor[prj, tmp]
+        mod.GenVarStorHyb_Provide_Power_MW[prj, tmp]
         * mod.variable_om_cost_per_mwh_by_period[prj, mod.period[tmp]]
     )
 
@@ -711,9 +792,7 @@ def variable_om_by_period_cost_rule(mod, prj, tmp):
 def variable_om_by_timepoint_cost_rule(mod, prj, tmp):
     """ """
     return (
-        mod.Capacity_MW[prj, mod.period[tmp]]
-        * mod.Availability_Derate[prj, tmp]
-        * mod.gen_var_stor_hyb_cap_factor[prj, tmp]
+        mod.GenVarStorHyb_Provide_Power_MW[prj, tmp]
         * mod.variable_om_cost_per_mwh_by_timepoint[prj, tmp]
     )
 
@@ -785,17 +864,8 @@ def power_delta_rule(mod, prj, tmp):
         pass
     else:
         return (
-            mod.Capacity_MW[prj, mod.period[tmp]]
-            * mod.Availability_Derate[prj, tmp]
-            * mod.gen_var_stor_hyb_cap_factor[prj, tmp]
-        ) - (
-            mod.Capacity_MW[
-                prj, mod.period[mod.prev_tmp[tmp, mod.balancing_type_project[prj]]]
-            ]
-            * mod.Availability_Derate[
-                prj, mod.prev_tmp[tmp, mod.balancing_type_project[prj]]
-            ]
-            * mod.gen_var_stor_hyb_cap_factor[
+            mod.GenVarStorHyb_Provide_Power_MW[prj, tmp]
+            - mod.GenVarStorHyb_Provide_Power_MW[
                 prj, mod.prev_tmp[tmp, mod.balancing_type_project[prj]]
             ]
         )

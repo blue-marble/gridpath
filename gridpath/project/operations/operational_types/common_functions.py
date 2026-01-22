@@ -548,11 +548,9 @@ def load_var_profile_inputs(
     # TODO: move this to validation instead?
     invalid_prjs = cf_df[~cf_df["project"].isin(var_prjs)]["project"].unique()
     for prj in invalid_prjs:
-        warnings.warn(
-            f"""WARNING: Profiles are specified for '{prj}' in 
+        warnings.warn(f"""WARNING: Profiles are specified for '{prj}' in 
             {tab_filename}, but '{prj}' is not in 
-            projects.tab."""
-        )
+            projects.tab.""")
 
     # Load data
     data_portal.data()[f"{op_type}_{param_name}"] = param_value
@@ -778,15 +776,13 @@ def make_iteration_subset_project_list_query(
     opr_index_dict,
 ):
     c = conn.cursor()
-    projects_list = c.execute(
-        f"""
+    projects_list = c.execute(f"""
         SELECT project, {subscenario_id_column}
         FROM {table}_iterations
         WHERE varies_by_weather_iteration = {varies_by_weather_iteration}
         AND varies_by_hydro_iteration = {varies_by_hydro_iteration}
         ;
-        """
-    ).fetchall()
+        """).fetchall()
     if projects_list:
         project_str = make_project_str(projects_list=projects_list)
         sql = get_prj_indx_inputs_with_iterations_sql(
@@ -1217,6 +1213,9 @@ def get_optype_inputs_from_db(scenario_id, subscenarios, conn, op_type):
         "linked_load_component",
         "efficiency_factor",
         "energy_requirement_factor",
+        "losses_factor_in_energy_target",
+        "losses_factor_curtailment",
+        "upward_reserves_to_soc_depletion",
     ]
 
     sql = """SELECT {}

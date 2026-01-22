@@ -25,7 +25,6 @@ from data_toolkit.project.project_data_filters_common import (
     DISAGG_PROJECT_NAME_STR,
 )
 
-
 # Storage durations
 STORAGE_DURATION_DEFAULTS = {"BA": 1, "PS": 12}
 SPEC_CAP_ID_DEFAULT = 1
@@ -162,8 +161,7 @@ def add_battery_durations(
         relevant_projects_df = pd.read_sql(sql, conn)
 
         if not relevant_projects_df.empty:
-            spec_cap_updated_df = duckdb_conn.sql(
-                f"""
+            spec_cap_updated_df = duckdb_conn.sql(f"""
                 CREATE TABLE {tech}_relevant_projects_table
                 AS SELECT * FROM relevant_projects_df
                 ;
@@ -173,15 +171,12 @@ def add_battery_durations(
                 WHERE (project, period) IN (SELECT (project, period) FROM {tech}_relevant_projects_table)
                 AND specified_stor_capacity_mwh IS NULL
                 ;
-                """
-            )
+                """)
 
-    spec_cap_updated_df = duckdb_conn.sql(
-        """
+    spec_cap_updated_df = duckdb_conn.sql("""
         SELECT * FROM spec_cap_table
         ;
-        """
-    ).df()
+        """).df()
 
     spec_cap_updated_df.to_csv(
         os.path.join(csv_location, f"{subscenario_id}_" f"{subscenario_name}.csv"),

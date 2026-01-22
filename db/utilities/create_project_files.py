@@ -86,12 +86,10 @@ def create_individual_csvs_from_aggregate_csv(
     # and subscenario_name, so check this first
     header_agg = [col for col in agg_csv_df.columns]
     if header_agg[0:3] != ["project", "subscenario_id", "subscenario_name"]:
-        raise ValueError(
-            """
+        raise ValueError("""
             The first three columns of the aggregate file must be:
             "project", "subscenario_id", and "subscenario_name" in that order.
-            """
-        )
+            """)
 
     # Get the data column names
     header_ind = header_agg[3:]
@@ -106,12 +104,10 @@ def create_individual_csvs_from_aggregate_csv(
 
     # Check that we don't have extra names specified
     if len(unique_prj_id_name) != len(unique_prj_id):
-        raise ValueError(
-            """
+        raise ValueError("""
             You have more than subscenario_name specified for the same 
             project-subscenario_id combination.
-            """
-        )
+            """)
 
     # Iterate over project-subscenario_id-subscenario_name combinations to
     # create the individual files

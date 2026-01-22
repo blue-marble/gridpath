@@ -31,16 +31,12 @@ class TestValidations(unittest.TestCase):
 
         # Setup
         conn = sqlite3.connect(":memory:")
-        conn.execute(
-            """CREATE TABLE table1 (
+        conn.execute("""CREATE TABLE table1 (
             col1 INTEGER, col2 FLOAT, col3 DOUBLE, col4 TEXT, col5 VARCHAR(32)
-            );"""
-        )
-        conn.execute(
-            """CREATE TABLE table2 (
+            );""")
+        conn.execute("""CREATE TABLE table2 (
             col1 TEXT, col6 VARCHAR(64), col7 VARCHAR(128)
-            );"""
-        )
+            );""")
         conn.commit()
 
         # Test dict gets created properly for one table

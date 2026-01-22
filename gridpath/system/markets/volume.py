@@ -293,8 +293,7 @@ def get_inputs_from_database(
     """
 
     c = conn.cursor()
-    market_list = c.execute(
-        f"""
+    market_list = c.execute(f"""
         SELECT market, 
         market_volume_profile_scenario_id,
         varies_by_weather_iteration, 
@@ -307,8 +306,7 @@ def get_inputs_from_database(
             FROM inputs_geography_markets
             WHERE market_scenario_id = {subscenarios.MARKET_SCENARIO_ID}
         )
-        """
-    ).fetchall()
+        """).fetchall()
 
     # Loop over the markets for the final query since volume don't all vary
     # by the same iteration types

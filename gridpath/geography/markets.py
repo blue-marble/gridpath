@@ -98,14 +98,10 @@ def get_inputs_from_database(
     :return:
     """
     c = conn.cursor()
-    markets = c.execute(
-        """SELECT market
+    markets = c.execute("""SELECT market
         FROM inputs_geography_markets
         WHERE market_scenario_id = {};
-        """.format(
-            subscenarios.MARKET_SCENARIO_ID
-        )
-    )
+        """.format(subscenarios.MARKET_SCENARIO_ID))
 
     return markets
 

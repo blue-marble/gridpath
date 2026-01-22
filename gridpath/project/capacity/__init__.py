@@ -20,7 +20,6 @@ infrastructure 'projects' in the optimization problem.
 
 from gridpath.auxiliary.db_interface import import_csv
 
-
 # Database
 ###############################################################################
 

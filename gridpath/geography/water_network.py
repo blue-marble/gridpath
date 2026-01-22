@@ -155,13 +155,11 @@ def get_inputs_from_database(
     """
 
     c = conn.cursor()
-    water_links = c.execute(
-        f"""SELECT water_link, water_node_from, water_node_to,
+    water_links = c.execute(f"""SELECT water_link, water_node_from, water_node_to,
         water_link_flow_transport_time_hours
         FROM inputs_geography_water_network
         WHERE water_network_scenario_id = {subscenarios.WATER_NETWORK_SCENARIO_ID};
-        """
-    )
+        """)
 
     return water_links
 

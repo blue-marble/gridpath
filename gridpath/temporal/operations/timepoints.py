@@ -443,9 +443,7 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
                 AND {tbl}.timepoint = inputs_temporal.timepoint
                 )
                 WHERE scenario_id = {scenario_id};
-                """.format(
-                tbl, tbl, tbl, tbl
-            )
+                """.format(tbl, tbl, tbl, tbl)
 
             spin_on_database_lock(conn=db, cursor=c, sql=sql, data=(), many=False)
 
@@ -489,9 +487,7 @@ def validate_inputs(
            WHERE temporal_scenario_id = {}
            AND spinup_or_lookahead = 0
            AND stage_id = {}
-           GROUP BY period;""".format(
-            subscenarios.TEMPORAL_SCENARIO_ID, stage
-        )
+           GROUP BY period;""".format(subscenarios.TEMPORAL_SCENARIO_ID, stage)
     ).fetchall()
 
     for row in validation_data:
@@ -507,9 +503,7 @@ def validate_inputs(
             and lookahead timepoints should be the number of hours in a year 
             (8760, 8766, or 8784). This is to ensure consistent weighting of 
             timepoint-level and period-level costs. 
-            """.format(
-                str(period), str(hours_in_period_timepoints)
-            )
+            """.format(str(period), str(hours_in_period_timepoints))
 
             # Check values of hours_in_period_timepoints
             write_validation_to_database(

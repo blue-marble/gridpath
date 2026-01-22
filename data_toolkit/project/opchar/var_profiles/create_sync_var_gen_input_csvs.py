@@ -44,7 +44,6 @@ Settings
 
 """
 
-
 from argparse import ArgumentParser
 from multiprocessing import get_context
 import os.path
