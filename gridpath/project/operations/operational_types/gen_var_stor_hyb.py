@@ -777,19 +777,14 @@ def variable_om_cost_rule(mod, prj, tmp):
     curtailed).
     """
     return (
-        mod.Capacity_MW[prj, mod.period[tmp]]
-        * mod.Availability_Derate[prj, tmp]
-        * mod.gen_var_stor_hyb_cap_factor[prj, tmp]
-        * mod.variable_om_cost_per_mwh[prj]
+        mod.GenVarStorHyb_Provide_Power_MW[prj, tmp] * mod.variable_om_cost_per_mwh[prj]
     )
 
 
 def variable_om_by_period_cost_rule(mod, prj, tmp):
     """ """
     return (
-        mod.Capacity_MW[prj, mod.period[tmp]]
-        * mod.Availability_Derate[prj, tmp]
-        * mod.gen_var_stor_hyb_cap_factor[prj, tmp]
+        mod.GenVarStorHyb_Provide_Power_MW[prj, tmp]
         * mod.variable_om_cost_per_mwh_by_period[prj, mod.period[tmp]]
     )
 
@@ -797,9 +792,7 @@ def variable_om_by_period_cost_rule(mod, prj, tmp):
 def variable_om_by_timepoint_cost_rule(mod, prj, tmp):
     """ """
     return (
-        mod.Capacity_MW[prj, mod.period[tmp]]
-        * mod.Availability_Derate[prj, tmp]
-        * mod.gen_var_stor_hyb_cap_factor[prj, tmp]
+        mod.GenVarStorHyb_Provide_Power_MW[prj, tmp]
         * mod.variable_om_cost_per_mwh_by_timepoint[prj, tmp]
     )
 
@@ -871,17 +864,8 @@ def power_delta_rule(mod, prj, tmp):
         pass
     else:
         return (
-            mod.Capacity_MW[prj, mod.period[tmp]]
-            * mod.Availability_Derate[prj, tmp]
-            * mod.gen_var_stor_hyb_cap_factor[prj, tmp]
-        ) - (
-            mod.Capacity_MW[
-                prj, mod.period[mod.prev_tmp[tmp, mod.balancing_type_project[prj]]]
-            ]
-            * mod.Availability_Derate[
-                prj, mod.prev_tmp[tmp, mod.balancing_type_project[prj]]
-            ]
-            * mod.gen_var_stor_hyb_cap_factor[
+            mod.GenVarStorHyb_Provide_Power_MW[prj, tmp]
+            - mod.GenVarStorHyb_Provide_Power_MW[
                 prj, mod.prev_tmp[tmp, mod.balancing_type_project[prj]]
             ]
         )
