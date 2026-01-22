@@ -598,13 +598,9 @@ def validate_inputs(
 
     # Check that we're not combining incompatible cap-types and op-types
     cols = ["capacity_type", "operational_type"]
-    invalid_combos = c.execute(
-        """
+    invalid_combos = c.execute("""
         SELECT {} FROM mod_capacity_and_operational_type_invalid_combos
-        """.format(
-            ",".join(cols)
-        )
-    ).fetchall()
+        """.format(",".join(cols))).fetchall()
 
     write_validation_to_database(
         conn=conn,

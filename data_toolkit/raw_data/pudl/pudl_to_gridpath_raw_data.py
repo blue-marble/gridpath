@@ -45,7 +45,6 @@ import sys
 from db.common_functions import connect_to_database
 from db.utilities.common_functions import confirm
 
-
 DOWNLOAD_DIRECTORY_DEFAULT = "./pudl_download"
 RAW_DATA_DIRECTORY_DEFAULT = "./raw_data"
 EIA860_DEFAULT_REPORT_DATE = "2024-01-01"

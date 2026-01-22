@@ -16,7 +16,6 @@
 Add the carbon tax cost components.
 """
 
-
 from pyomo.environ import value, NonNegativeReals, Var, Constraint
 
 from gridpath.auxiliary.dynamic_components import carbon_tax_cost_components

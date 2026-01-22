@@ -23,7 +23,6 @@ from gridpath.auxiliary.auxiliary import (
     check_for_starting_string_subdirectories,
 )
 
-
 # TODO: conslidate use 0s and 1s to indicate no subdirectories?
 
 
@@ -343,16 +342,11 @@ def get_scenario_structure_from_db(conn, scenario_id):
 
     # Weather iterations
     weather_iterations = [
-        row[0]
-        for row in cursor.execute(
-            """SELECT DISTINCT weather_iteration
+        row[0] for row in cursor.execute("""SELECT DISTINCT weather_iteration
                FROM inputs_temporal_iterations
                INNER JOIN scenarios
                USING (temporal_scenario_id)
-               WHERE scenario_id = {};""".format(
-                scenario_id
-            )
-        ).fetchall()
+               WHERE scenario_id = {};""".format(scenario_id)).fetchall()
     ]
 
     # Store weather iterations and hydro iterations in dict
@@ -366,15 +360,13 @@ def get_scenario_structure_from_db(conn, scenario_id):
         iteration_structure_dict = {}
         for weather_iteration in weather_iterations:
             # Get the hydro iterations for this weather iteration
-            hydro_iterations = cursor.execute(
-                f"""SELECT hydro_iteration
+            hydro_iterations = cursor.execute(f"""SELECT hydro_iteration
                    FROM inputs_temporal_iterations
                    INNER JOIN scenarios
                    USING (temporal_scenario_id)
                    WHERE scenario_id = {scenario_id}
                    AND weather_iteration = {weather_iteration}
-                   ;"""
-            ).fetchall()
+                   ;""").fetchall()
             hydro_iterations_dict = {
                 hydro_iteration[0]: [] for hydro_iteration in hydro_iterations
             }  # to list
@@ -406,30 +398,23 @@ def get_scenario_structure_from_db(conn, scenario_id):
     # TODO: probably don't need a separate table for subproblems, but can get
     #  the subproblems from the subproblems_stages table
     all_subproblems = [
-        subproblem[0]
-        for subproblem in cursor.execute(
-            """SELECT subproblem_id
+        subproblem[0] for subproblem in cursor.execute("""SELECT subproblem_id
                FROM inputs_temporal_subproblems
                INNER JOIN scenarios
                USING (temporal_scenario_id)
-               WHERE scenario_id = {};""".format(
-                scenario_id
-            )
-        ).fetchall()
+               WHERE scenario_id = {};""".format(scenario_id)).fetchall()
     ]
 
     # Store subproblems and stages in dict {subproblem: [stages]}
     stages_by_subproblem = {}
     for subproblem in all_subproblems:
-        stages = cursor.execute(
-            f"""SELECT stage_id
+        stages = cursor.execute(f"""SELECT stage_id
                FROM inputs_temporal_subproblems_stages
                INNER JOIN scenarios
                USING (temporal_scenario_id)
                WHERE scenario_id = {scenario_id}
                AND subproblem_id = {subproblem}
-               ;"""
-        ).fetchall()
+               ;""").fetchall()
         stages = [stage[0] for stage in stages]  # convert to simple list
         stages_by_subproblem[subproblem] = stages
 
@@ -639,15 +624,11 @@ class SolverOptions(object):
         """
         cursor = conn.cursor()
 
-        self.SOLVER_OPTIONS_ID = cursor.execute(
-            """
+        self.SOLVER_OPTIONS_ID = cursor.execute("""
             SELECT solver_options_id 
             FROM scenarios 
             WHERE scenario_id = {}
-            """.format(
-                scenario_id
-            )
-        ).fetchone()[0]
+            """.format(scenario_id)).fetchone()[0]
 
         if self.SOLVER_OPTIONS_ID is None:
             self.SOLVER_NAME = None
@@ -655,20 +636,14 @@ class SolverOptions(object):
             distinct_solvers = cursor.execute(
                 """SELECT DISTINCT solver_name 
                 FROM inputs_options_solver 
-                WHERE solver_options_id = {}""".format(
-                    self.SOLVER_OPTIONS_ID
-                )
+                WHERE solver_options_id = {}""".format(self.SOLVER_OPTIONS_ID)
             ).fetchall()
             if len(distinct_solvers) > 1:
-                raise ValueError(
-                    """
+                raise ValueError("""
                 ERROR: Solver options include more than one solver name! Only a 
                 single solver name must be specified for solver_options_id in the 
                 inputs_options_solver table. See solver_options_id {}. 
-                """.format(
-                        self.SOLVER_OPTIONS_ID
-                    )
-                )
+                """.format(self.SOLVER_OPTIONS_ID))
             else:
                 self.SOLVER_NAME = distinct_solvers[0][0]
 
@@ -677,15 +652,11 @@ class SolverOptions(object):
             if self.SOLVER_OPTIONS_ID is None
             else {
                 row[0]: row[1]
-                for row in cursor.execute(
-                    """
+                for row in cursor.execute("""
                     SELECT solver_option_name, solver_option_value
                     FROM inputs_options_solver
                     WHERE solver_options_id = {};
-                    """.format(
-                        self.SOLVER_OPTIONS_ID
-                    )
-                ).fetchall()
+                    """.format(self.SOLVER_OPTIONS_ID)).fetchall()
                 if row[0] is not None and row[0] != ""
             }
         )
@@ -697,9 +668,7 @@ def db_column_to_self(column, conn, scenario_id):
     query = c.execute(
         """SELECT {}
            FROM scenarios
-           WHERE scenario_id = ?;""".format(
-            column
-        ),
+           WHERE scenario_id = ?;""".format(column),
         (scenario_id,),
     ).fetchone()[0]
 
@@ -711,11 +680,9 @@ def db_column_to_self(column, conn, scenario_id):
 def get_scenario_table_columns(conn):
     c = conn.cursor()
 
-    scenario_query = c.execute(
-        """
+    scenario_query = c.execute("""
         SELECT * FROM scenarios;
-        """
-    )
+        """)
     column_names = [description[0] for description in scenario_query.description]
 
     return column_names

@@ -18,7 +18,6 @@ module that adds to the formulation components that describe the amount of
 power that a project is providing in each study timepoint.
 """
 
-
 import os.path
 import pandas as pd
 from pyomo.environ import Expression, value, Constraint

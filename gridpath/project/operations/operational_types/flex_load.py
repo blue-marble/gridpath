@@ -17,6 +17,7 @@ This operational type describes a battery-based model for a flexible load
 resource. Please use gen_spec as the 'capacity type' for flexible loads.
 
 """
+
 import csv
 import os.path
 from pyomo.environ import (

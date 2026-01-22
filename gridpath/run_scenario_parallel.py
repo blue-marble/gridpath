@@ -17,6 +17,7 @@ Parallel gridpath_run. Note that parallel gridpath_run_e2e is not yet
 supported. You can get the scenario inputs, solve the scenarios in parallel
 with gridpath_run_parallel, the import the results to the database in sequence.
 """
+
 from argparse import ArgumentParser
 import csv
 from multiprocessing import get_context

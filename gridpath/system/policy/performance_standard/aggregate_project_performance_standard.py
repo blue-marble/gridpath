@@ -17,7 +17,6 @@ Aggregate carbon emissions and energy from the project-timepoint level to
 the performance zone - period level.
 """
 
-
 from pyomo.environ import Expression, value
 
 from gridpath.auxiliary.dynamic_components import (

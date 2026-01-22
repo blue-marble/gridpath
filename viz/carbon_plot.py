@@ -16,7 +16,6 @@
 Create plot of carbon emissions by period for a given zone/subproblem/stage.
 """
 
-
 from argparse import ArgumentParser
 from bokeh.models import ColumnDataSource, Legend, NumeralTickFormatter
 from bokeh.plotting import figure

@@ -37,7 +37,6 @@ Costs for this operational type include variable O&M costs.
 
 """
 
-
 import csv
 import os.path
 from pyomo.environ import (

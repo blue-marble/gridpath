@@ -737,8 +737,7 @@ def get_inputs_from_database(
     """
 
     c1 = conn.cursor()
-    cap_grp_reqs = c1.execute(
-        """
+    cap_grp_reqs = c1.execute("""
         SELECT capacity_group, period,
         capacity_group_new_capacity_min, capacity_group_new_capacity_max,
         capacity_group_total_capacity_min, capacity_group_total_capacity_max,
@@ -746,10 +745,7 @@ def get_inputs_from_database(
         energy_group_total_energy_min, energy_group_total_energy_max
         FROM inputs_project_capacity_group_requirements
         WHERE project_capacity_group_requirement_scenario_id = {}
-        """.format(
-            subscenarios.PROJECT_CAPACITY_GROUP_REQUIREMENT_SCENARIO_ID
-        )
-    )
+        """.format(subscenarios.PROJECT_CAPACITY_GROUP_REQUIREMENT_SCENARIO_ID))
 
     c2 = conn.cursor()
     cap_grp_prj = c2.execute(

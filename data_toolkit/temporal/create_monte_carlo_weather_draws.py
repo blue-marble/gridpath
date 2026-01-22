@@ -269,14 +269,12 @@ def create_weather_draws(
 
 def get_weather_draws(conn, weather_bins_id, weather_draws_id):
     c = conn.cursor()
-    draws = c.execute(
-        f"""
+    draws = c.execute(f"""
         SELECT weather_iteration, draw_number, month, day_type, weather_day_bin
         FROM aux_weather_iterations
         WHERE weather_bins_id = {weather_bins_id}
         AND weather_draws_id = {weather_draws_id}
-    """
-    ).fetchall()
+    """).fetchall()
 
     return draws
 

@@ -100,8 +100,7 @@ def get_inputs_from_database(
     """
 
     c = conn.cursor()
-    mapping = c.execute(
-        f"""SELECT performance_standard_zone, carbon_credits_zone
+    mapping = c.execute(f"""SELECT performance_standard_zone, carbon_credits_zone
         FROM inputs_system_performance_standard_zones_carbon_credits_zones
         WHERE performance_standard_zones_carbon_credits_zones_scenario_id = 
         {subscenarios.PERFORMANCE_STANDARD_ZONES_CARBON_CREDITS_ZONES_SCENARIO_ID}
@@ -116,8 +115,7 @@ def get_inputs_from_database(
             WHERE carbon_credits_zone_scenario_id = {subscenarios.CARBON_CREDITS_ZONE_SCENARIO_ID}
         )
         ;
-        """
-    )
+        """)
 
     return mapping
 

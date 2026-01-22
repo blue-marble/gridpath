@@ -16,7 +16,6 @@
 from importlib import import_module
 import unittest
 
-
 NAME_OF_MODULE_BEING_TESTED = "project.capacity.capacity_types.gen_new_lin"
 # Import the module we'll test
 try:

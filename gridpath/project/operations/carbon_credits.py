@@ -477,8 +477,7 @@ def get_inputs_from_database(
     """
 
     c1 = conn.cursor()
-    project_generation_zones = c1.execute(
-        f"""SELECT project, carbon_credits_zone
+    project_generation_zones = c1.execute(f"""SELECT project, carbon_credits_zone
         FROM
         -- Get projects from portfolio only
         (SELECT project
@@ -499,12 +498,10 @@ def get_inputs_from_database(
                     FROM inputs_geography_carbon_credits_zones
                     WHERE carbon_credits_zone_scenario_id = {subscenarios.CARBON_CREDITS_ZONE_SCENARIO_ID}
         );
-        """
-    )
+        """)
 
     c2 = conn.cursor()
-    project_carbon_credits = c2.execute(
-        f"""SELECT project, period,
+    project_carbon_credits = c2.execute(f"""SELECT project, period,
         intensity_threshold_emissions_toCO2_per_MWh,
         absolute_threshold_emissions_toCO2
         FROM
@@ -531,12 +528,10 @@ def get_inputs_from_database(
                     FROM inputs_project_carbon_credits_generation_zones
                     WHERE project_carbon_credits_generation_zone_scenario_id = {subscenarios.PROJECT_CARBON_CREDITS_GENERATION_ZONE_SCENARIO_ID}
         );
-        """
-    )
+        """)
 
     c3 = conn.cursor()
-    project_purchase_zones = c3.execute(
-        f"""SELECT project, carbon_credits_zone
+    project_purchase_zones = c3.execute(f"""SELECT project, carbon_credits_zone
             FROM
             -- Get projects from portfolio only
             (SELECT project
@@ -557,8 +552,7 @@ def get_inputs_from_database(
                         FROM inputs_geography_carbon_credits_zones
                         WHERE carbon_credits_zone_scenario_id = {subscenarios.CARBON_CREDITS_ZONE_SCENARIO_ID}
             );
-            """
-    )
+            """)
 
     return project_generation_zones, project_carbon_credits, project_purchase_zones
 

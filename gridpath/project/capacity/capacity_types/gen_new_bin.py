@@ -26,7 +26,6 @@ of years the period represents) for the duration of the project's financial
 lifetime.
 """
 
-
 import csv
 import os.path
 from pathlib import Path

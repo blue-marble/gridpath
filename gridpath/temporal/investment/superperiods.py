@@ -126,8 +126,7 @@ def get_inputs_from_database(
 
     c = conn.cursor()
 
-    superperiod_periods = c.execute(
-        f"""
+    superperiod_periods = c.execute(f"""
         SELECT superperiod, period
         FROM inputs_temporal_superperiods 
         WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
@@ -135,8 +134,7 @@ def get_inputs_from_database(
             SELECT period
             FROM inputs_temporal_periods
             WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
-        );"""
-    )
+        );""")
 
     return superperiod_periods
 

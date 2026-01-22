@@ -16,7 +16,6 @@
 Simplest implementation with a MWh target by period.
 """
 
-
 import csv
 import os.path
 import pandas as pd

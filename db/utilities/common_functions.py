@@ -25,7 +25,6 @@ import warnings
 from db.common_functions import spin_on_database_lock
 import db.utilities.custom_functions as custom
 
-
 # ### Functions for converting CSVs to lists of tuples for DB insertion ### #
 
 
@@ -671,9 +670,7 @@ def confirm_and_temp_update_affected_tables(
         # Check if this project-subscenario ID exists in the base table
         base_subscenario_ids_sql = """
             SELECT {} FROM {} WHERE {} = ? and {} = ?
-            """.format(
-            base_subscenario, base_table, sub_input_column, subscenario
-        )
+            """.format(base_subscenario, base_table, sub_input_column, subscenario)
         base_subscenario_ids_tuples = c.execute(
             base_subscenario_ids_sql, (project, subscenario_id)
         ).fetchall()
@@ -702,9 +699,7 @@ def confirm_and_temp_update_affected_tables(
                 SELECT scenario_id, {}
                 FROM scenarios
                 WHERE {} in ({})
-            """.format(
-                base_subscenario, base_subscenario, base_subscenario_ids_str
-            )
+            """.format(base_subscenario, base_subscenario, base_subscenario_ids_str)
 
             scenario_reupdate_tuples = c.execute(
                 scenarios_sql, base_subscenario_ids_data
@@ -724,9 +719,7 @@ def confirm_and_temp_update_affected_tables(
             SELECT scenario_id, {}
             FROM scenarios
             WHERE {} = ?
-        """.format(
-            subscenario, subscenario
-        )
+        """.format(subscenario, subscenario)
 
         scenario_reupdate_tuples = c.execute(
             scenarios_sql, (subscenario_id,)
@@ -740,9 +733,7 @@ def confirm_and_temp_update_affected_tables(
             prompt="""You have scenarios that use {} {}. Deleting prior inputs 
             and reimporting may result in a mismatch between the inputs 
             specified for these scenarios and their results. Are you 
-            sure you want to proceed?""".format(
-                subscenario, subscenario_id
-            )
+            sure you want to proceed?""".format(subscenario, subscenario_id)
         )
     # If there aren't any affected scenarios, we'll just proceed
     else:
@@ -758,9 +749,7 @@ def confirm_and_temp_update_affected_tables(
         scenarios_tuples = [(s[0],) for s in scenario_reupdate_tuples]
         scenario_update_sql = """
             UPDATE scenarios SET {} = NULL WHERE scenario_id = ?
-        """.format(
-            base_subscenario if sub_input_flag else subscenario
-        )
+        """.format(base_subscenario if sub_input_flag else subscenario)
         spin_on_database_lock(
             conn=conn, cursor=c, sql=scenario_update_sql, data=scenarios_tuples
         )
@@ -773,9 +762,7 @@ def confirm_and_temp_update_affected_tables(
             ]
             base_table_update_sql = """
                 UPDATE {} SET {} = NULL WHERE {} = ? and {} = ?
-            """.format(
-                base_table, subscenario, base_subscenario, sub_input_flag
-            )
+            """.format(base_table, subscenario, base_subscenario, sub_input_flag)
 
             spin_on_database_lock(
                 conn=conn,
@@ -857,9 +844,7 @@ def repopulate_tables(
     if scenario_reupdate_tuples:
         scenario_reupdate_sql = """
             UPDATE scenarios SET {} = ? WHERE scenario_id = ?
-        """.format(
-            base_subscenario if sub_input_flag else subscenario
-        )
+        """.format(base_subscenario if sub_input_flag else subscenario)
 
         spin_on_database_lock(
             conn=conn,
@@ -901,26 +886,20 @@ def generic_delete_subscenario(
     # Create the SQL delete statements for the subscenario info and input
     # tables
     if not sub_input_flag:
-        del_inputs_sql_list = [
-            f"""
+        del_inputs_sql_list = [f"""
             DELETE FROM {table}
             WHERE {subscenario} = {subscenario_id};
-            """
-            for table in input_tables
-        ]
+            """ for table in input_tables]
         del_subscenario_sql = f"""
             DELETE FROM {subscenario_table}
             WHERE {subscenario} = {subscenario_id};
             """
     else:
-        del_inputs_sql_list = [
-            f"""
+        del_inputs_sql_list = [f"""
             DELETE FROM {table}
             WHERE {sub_input_column} = '{project}'
             AND {subscenario} = {subscenario_id};
-            """
-            for table in input_tables
-        ]
+            """ for table in input_tables]
         del_subscenario_sql = f"""
                     DELETE FROM {subscenario_table}
                     WHERE {sub_input_column} = '{project}'
@@ -962,9 +941,7 @@ def generic_insert_subscenario_info(
             INSERT INTO subscenarios_{}
             ({}, name, description)
             VALUES (?, ?, ?);
-            """.format(
-            table, subscenario
-        )
+            """.format(table, subscenario)
     else:
         subs_sql = """
             INSERT INTO subscenarios_{table}
@@ -1023,8 +1000,7 @@ def generic_insert_subscenario_data(
         if headers_for_validation != column_names:
             diff_headers = list(set(headers_for_validation) - set(column_names))
             diff_columns = list(set(column_names) - set(headers_for_validation))
-            raise AssertionError(
-                f"""
+            raise AssertionError(f"""
                 Headers and table column names don't match.
                 Column names are {column_names}.
                 Header names are {headers_for_validation}.
@@ -1032,8 +1008,7 @@ def generic_insert_subscenario_data(
                 database column names.
                 Columns that are in the headers but not in the table: {diff_headers}.
                 Columns that are in the table but not in the headers: {diff_columns}.
-                """
-            )
+                """)
 
     # Create the appropriate strings needed for the insert query
     column_string = ", ".join(column_names)
@@ -1041,9 +1016,7 @@ def generic_insert_subscenario_data(
 
     inputs_sql = """
         INSERT INTO inputs_{} ({}) VALUES ({});
-        """.format(
-        table, column_string, values_string
-    )
+        """.format(table, column_string, values_string)
 
     spin_on_database_lock(conn=conn, cursor=c, sql=inputs_sql, data=inputs_data)
 
@@ -1332,11 +1305,9 @@ def update_subscenario_id_with_defaults(
     c = conn.cursor()
 
     # Check that the default subscenario ID exists
-    default_subscenario_check = c.execute(
-        f"""
+    default_subscenario_check = c.execute(f"""
         SELECT COUNT(*) FROM inputs_{table} WHERE {subscenario} = {default_subscenario_id};
-        """
-    ).fetchone()[0]
+        """).fetchone()[0]
     if default_subscenario_check == 0:
         raise ValueError(
             f"Default subscenario ID {default_subscenario_id} does not exist "
@@ -1345,14 +1316,9 @@ def update_subscenario_id_with_defaults(
         )
 
     # Get primary key columns excluding the subscenario column
-    primary_key_column_list_wo_subscenario_column = [
-        i[0]
-        for i in c.execute(
-            f"""
+    primary_key_column_list_wo_subscenario_column = [i[0] for i in c.execute(f"""
     SELECT name FROM pragma_table_info('inputs_{table}') WHERE pk != 0;
-    """
-        ).fetchall()
-    ]
+    """).fetchall()]
     primary_key_column_list_wo_subscenario_column.remove(subscenario)
 
     primary_key_columns_wo_subscenario_str = ", ".join(
@@ -1360,14 +1326,9 @@ def update_subscenario_id_with_defaults(
     )
 
     # Get the non-primary-key columns
-    data_columns = [
-        i[0]
-        for i in c.execute(
-            f"""
+    data_columns = [i[0] for i in c.execute(f"""
     SELECT name FROM pragma_table_info('inputs_{table}') WHERE pk = 0;
-    """
-        ).fetchall()
-    ]
+    """).fetchall()]
 
     data_columns_str = ", ".join(data_columns)
 

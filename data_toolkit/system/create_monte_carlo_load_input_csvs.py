@@ -238,8 +238,7 @@ def create_load_levels_csv(
                 (row["load_zone_unit"], row["unit_weight"])
             )
 
-    draws = c.execute(
-        f"""
+    draws = c.execute(f"""
                 SELECT weather_iteration, draw_number,
                 load_year, load_month,
                 load_day_of_month
@@ -247,16 +246,14 @@ def create_load_levels_csv(
                 WHERE weather_bins_id = {weather_bins_id}
                 AND weather_draws_id = {weather_draws_id}
                 ;
-                """
-    ).fetchall()
+                """).fetchall()
 
     draw_n = 0
     for d in draws:
-        (weather_iteration, draw_number, year, month, day_of_month) = d
+        weather_iteration, draw_number, year, month, day_of_month = d
 
         for load_zone in load_zone_unit_dict.keys():
-            unit_queries = [
-                f"""
+            unit_queries = [f"""
                 SELECT year, month, day_of_month, hour_of_day, load_zone_unit, 
                 load_mw * {weight} as weighted_load
                 FROM raw_data_system_load
@@ -264,9 +261,7 @@ def create_load_levels_csv(
                 AND month = {month}
                 AND day_of_month = {day_of_month}
                 AND load_zone_unit = '{unit}'
-                """
-                for (unit, weight) in load_zone_unit_dict[load_zone]
-            ]
+                """ for (unit, weight) in load_zone_unit_dict[load_zone]]
 
             union_query = " UNION ".join(unit_queries)
 

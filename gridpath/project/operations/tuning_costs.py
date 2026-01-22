@@ -19,7 +19,6 @@ and gen_hydro_must_take operational types) and to storage up-ramps (
 stor operational type) in order to force smoother dispatch.
 """
 
-
 import csv
 import os.path
 from pyomo.environ import Param, Var, Expression, Constraint, NonNegativeReals

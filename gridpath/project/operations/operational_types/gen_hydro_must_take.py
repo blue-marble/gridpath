@@ -1147,9 +1147,7 @@ def validate_inputs(
     )
 
     if hydro_opchar_fraction_error:
-        warnings.warn(
-            """
+        warnings.warn("""
             Found hydro min, max, or average that are <0 or >1. This is 
             allowed but this warning is here to make sure it is intended.
-            """
-        )
+            """)

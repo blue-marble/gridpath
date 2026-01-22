@@ -18,7 +18,6 @@ Aggregate carbon emissions from the project-timepoint level to
 the carbon tax zone - period level.
 """
 
-
 from pyomo.environ import Expression, value
 
 from gridpath.auxiliary.dynamic_components import carbon_tax_cost_components

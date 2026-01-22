@@ -216,15 +216,13 @@ def import_scenario_results_into_database(
                             )
                         else:
                             if not quiet:
-                                print(
-                                    f"""
+                                print(f"""
                                 Solver status for weather iteration {weather_iteration_str}, 
                                 hydro_iteration {hydro_iteration_str}, subproblem {subproblem_str}, 
                                 stage {stage_str} was '{solver_status}', 
                                 not 'ok', so there are no results to import. 
                                 Termination condition was '{termination_condition}'.
-                                """
-                                )
+                                """)
 
 
 def import_objective_function_value(

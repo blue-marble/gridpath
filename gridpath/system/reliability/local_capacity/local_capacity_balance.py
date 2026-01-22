@@ -17,7 +17,6 @@ Constraint total local capacity contribution to be more than or equal to the
 requirement.
 """
 
-
 import csv
 import os.path
 

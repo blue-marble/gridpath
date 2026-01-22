@@ -20,6 +20,7 @@ mappings and inputs.
 For options, including download location, see the ``--help`` menu.
 
 """
+
 from argparse import ArgumentParser
 import os.path
 import sys

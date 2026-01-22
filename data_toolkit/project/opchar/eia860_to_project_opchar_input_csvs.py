@@ -71,7 +71,6 @@ from data_toolkit.project.project_data_filters_common import (
     AGG_PROJECT_NAME_STR,
 )
 
-
 # TODO: add var costs, startup and shutdown costs, and startup fuel use
 
 

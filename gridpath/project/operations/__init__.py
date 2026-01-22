@@ -734,7 +734,7 @@ def load_model_data(
             var_om_by_idx_dict = {}
 
             for idx, val in var_om_df.iterrows():
-                (prj, prd_or_tmp) = idx
+                prj, prd_or_tmp = idx
                 if prd_or_tmp == 0:
                     if prd_or_tmp_str == "period":
                         set_to_use = prd_set
@@ -828,7 +828,7 @@ def load_model_data(
         curtailment_by_idx_dict = {}
 
         for idx, val in curtailment_df.iterrows():
-            (prj, prd) = idx
+            prj, prd = idx
             if prd == 0:
                 for _prd in sorted(list(prd_set)):
                     curtailment_prj_idx_list.append((prj, _prd))
@@ -1041,8 +1041,7 @@ def get_inputs_from_database(
     )
 
     var_om_by_prd_c = conn.cursor()
-    var_om_by_prd = var_om_by_prd_c.execute(
-        f"""
+    var_om_by_prd = var_om_by_prd_c.execute(f"""
         SELECT project, period, variable_om_cost_by_period
         FROM inputs_project_portfolios
         -- select the correct operational characteristics subscenario
@@ -1067,8 +1066,7 @@ def get_inputs_from_database(
             )
             OR period = 0 -- for all periods
             )
-        """
-    )
+        """)
 
     var_om_by_tmp = get_prj_temporal_index_opr_inputs_from_db(
         subscenarios=subscenarios,
@@ -1258,8 +1256,7 @@ def get_inputs_from_database(
     )
 
     curtailment_c = conn.cursor()
-    curtailment_cost = curtailment_c.execute(
-        f"""
+    curtailment_cost = curtailment_c.execute(f"""
         SELECT project, period, curtailment_cost_per_powerunithour
         FROM inputs_project_portfolios
         -- select the correct operational characteristics subscenario
@@ -1291,8 +1288,7 @@ def get_inputs_from_database(
             )
             OR period = 0 -- for all periods
             )
-        """
-    )
+        """)
 
     return (
         proj_opchar,
@@ -1915,14 +1911,10 @@ def get_slopes_intercept_by_project_period_segment(df, input_col, projects, peri
         elif periods.issubset(slice_periods):
             p_iterable = periods
         else:
-            raise ValueError(
-                """{} for project '{}' isn't specified for all 
+            raise ValueError("""{} for project '{}' isn't specified for all 
                 modeled periods. Set period to 0 if inputs are the 
                 same for each period or make sure all modelled periods 
-                are included.""".format(
-                    input_col, project
-                )
-            )
+                are included.""".format(input_col, project))
 
         for period in p_iterable:
             df_slice_p = df_slice[df_slice["period"] == period]
@@ -1990,24 +1982,16 @@ def calculate_slope_intercept(project, load_points, heat_rates):
     # Data checks
     assert len(load_points) == len(heat_rates)
     if np.any(load_points <= 0) or np.any(heat_rates <= 0):
-        raise ValueError(
-            """
+        raise ValueError("""
             Load points and average heat rates should be positive
             numbers. Check heat rate curve inputs for project '{}'.
-            """.format(
-                project
-            )
-        )
+            """.format(project))
     if n_points == 0:
-        raise ValueError(
-            """
+        raise ValueError("""
             Model requires at least one load point and one average
             heat rate input for each fuel project. It seems like
             there are no heat rate inputs for project '{}'.
-            """.format(
-                project
-            )
-        )
+            """.format(project))
 
     # if just one point, assume constant heat rate (no intercept)
     if n_points == 1:
@@ -2022,36 +2006,24 @@ def calculate_slope_intercept(project, load_points, heat_rates):
 
         # Data Checks
         if np.any(incr_loads <= 0):
-            raise ValueError(
-                """
+            raise ValueError("""
                 Load points in curve should be strictly
                 increasing. Check curve inputs for project '{}'.
-                """.format(
-                    project
-                )
-            )
+                """.format(project))
         if np.any(incr_fuel_burn <= 0):
-            raise ValueError(
-                """
+            raise ValueError("""
                 Total fuel burn or variable O&M cost should be strictly 
                 increasing between load points. Check heat rate curve inputs
                 for project '{}'.
-                """.format(
-                    project
-                )
-            )
+                """.format(project))
         if np.any(np.diff(slopes) <= 0):
-            raise ValueError(
-                """
+            raise ValueError("""
                 The fuel burn or variable O&M cost as a function of power 
                 output should be a convex function, i.e. the incremental 
                 heat rate or variable O&M rate should
                 be positive and strictly increasing. Check curve inputs for 
                 project '{}'.
-                """.format(
-                    project
-                )
-            )
+                """.format(project))
 
     return slopes, intercepts
 
