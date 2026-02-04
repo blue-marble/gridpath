@@ -58,9 +58,7 @@ from pyomo.environ import (
     Expression,
     value,
 )
-import warnings
 
-from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import (
     subset_init_by_param_value,
     subset_init_by_set_membership,
@@ -76,7 +74,6 @@ from gridpath.project.operations.operational_types.common_functions import (
 from gridpath.project.common_functions import (
     check_if_boundary_type_and_first_timepoint,
     check_if_first_timepoint,
-    check_if_last_timepoint,
     check_boundary_type,
 )
 
@@ -322,6 +319,18 @@ def add_model_components(
     | ensure you approximate partial availability but avoid the issue where   |
     | the optimization can set the sync variables to 1 even when the project  |
     | is unavailable, thus avoiding startup costs.                            |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_commit_bin_max_n_starts_per_hrz`                           |
+    | | *Defined over*: :code:`GEN_COMMIT_BIN_N_STARTUP_BT_HRZS'              |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`inf`                                                |
+    |                                                                         |
+    | | :code:`gen_commit_lin_max_n_starts_per_hrz`                           |
+    | | *Defined over*: :code:`GEN_COMMIT_LIN_N_STARTUP_BT_HRZS'              |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`inf`                                                |
+    |                                                                         |
+    | The maximum number of starts allowed in a given horizon.                |
     +-------------------------------------------------------------------------+
 
     |
@@ -1131,6 +1140,15 @@ def add_model_components(
         ),
     )
 
+    setattr(
+        m,
+        f"GEN_COMMIT_{BIN_OR_LIN}_N_STARTUP_BT_HRZS",
+        Set(
+            dimen=3,
+            within=getattr(m, f"GEN_COMMIT_{BIN_OR_LIN}") * getattr(m, "BLN_TYPE_HRZS"),
+        ),
+    )
+
     # Required Params
     ###########################################################################
     setattr(
@@ -1248,6 +1266,16 @@ def add_model_components(
             getattr(m, "GEN_COMMIT_{}".format(BIN_OR_LIN)),
             within=PercentFraction,
             default=0.01,
+        ),
+    )
+
+    setattr(
+        m,
+        f"gen_commit_{bin_or_lin}_max_n_starts_per_hrz",
+        Param(
+            getattr(m, f"GEN_COMMIT_{BIN_OR_LIN}_N_STARTUP_BT_HRZS"),
+            within=NonNegativeReals,
+            default=float("inf"),
         ),
     )
 
@@ -3137,6 +3165,38 @@ def add_model_components(
         ),
     )
 
+    def max_n_starts_per_hrz_rule(mod, prj, bt, hrz):
+        """
+        **Constraint Name**: GenCommitBin_Max_N_Starts_Per_Hrz_Constraint
+        **Enforced Over**: GEN_COMMIT_BIN_OPR_PRJS_BAL_TYPES_HRZS
+
+        Limit the number of startups over a horizon.
+        """
+
+        if getattr(mod, f"gen_commit_{bin_or_lin}_max_n_starts_per_hrz")[
+            prj, bt, hrz
+        ] == float("inf"):
+            return Constraint.Skip
+        else:
+            return (
+                sum(
+                    getattr(mod, "GenCommit{}_Startup".format(Bin_or_Lin))[prj, tmp]
+                    for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
+                )
+                <= getattr(
+                    mod, "gen_commit_{}_max_n_starts_per_hrz".format(bin_or_lin)
+                )[prj, bt, hrz]
+            )
+
+    setattr(
+        m,
+        f"GenCommit{Bin_or_Lin}_Max_N_Starts_Per_Hrz_Constraint",
+        Constraint(
+            getattr(m, f"GEN_COMMIT_{BIN_OR_LIN}_N_STARTUP_BT_HRZS"),
+            rule=max_n_starts_per_hrz_rule,
+        ),
+    )
+
 
 # Operational Type Methods
 ###############################################################################
@@ -3473,6 +3533,30 @@ def load_model_data(
         op_type=bin_or_lin_optype,
         projects=projects,
     )
+
+    # Number of starts allowed per horizon
+    n_starts_file = os.path.join(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+        "startup_limits.tab",
+    )
+
+    if os.path.exists(n_starts_file):
+        data_portal.load(
+            filename=n_starts_file,
+            index=getattr(mod, f"GEN_COMMIT_{BIN_OR_LIN}_N_STARTUP_BT_HRZS"),
+            param=(
+                getattr(
+                    mod,
+                    f"gen_commit_{bin_or_lin}_max_n_starts_per_hrz",
+                ),
+            ),
+        )
 
     # Linked timepoint params
     linked_inputs_filename = os.path.join(

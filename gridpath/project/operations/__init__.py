@@ -55,6 +55,7 @@ from gridpath.auxiliary.validations import (
 from gridpath.project.common_functions import append_to_input_file
 from gridpath.project.operations.operational_types.common_functions import (
     get_prj_temporal_index_opr_inputs_from_db,
+    write_tab_file_model_inputs,
 )
 
 
@@ -1290,6 +1291,35 @@ def get_inputs_from_database(
             )
         """)
 
+    n_startup_c = conn.cursor()
+    n_startup_limits = n_startup_c.execute(f"""
+        SELECT project, balancing_type_horizon, horizon, max_n_startups
+        FROM inputs_project_portfolios
+        INNER JOIN
+        (SELECT project, n_startup_limit_scenario_id
+        FROM inputs_project_operational_chars
+        WHERE project_operational_chars_scenario_id = {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
+        ) AS op_char
+        USING (project)
+        INNER JOIN
+        inputs_project_n_startup_limits
+        USING (project, n_startup_limit_scenario_id)
+        JOIN
+        (SELECT balancing_type_horizon, horizon
+        FROM inputs_temporal_horizons
+        WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+        AND (balancing_type_horizon, horizon) in (
+            SELECT DISTINCT balancing_type_horizon, horizon
+            FROM inputs_temporal_horizon_timepoints
+            WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+            AND subproblem_id = {subproblem}
+            AND stage_id = {stage}
+        )) as relevant_horizons
+        USING (balancing_type_horizon, horizon)
+        WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
+        AND n_startup_limit_scenario_id IS NOT NULL
+        """)
+
     return (
         proj_opchar,
         var_om_by_prd,
@@ -1302,6 +1332,7 @@ def get_inputs_from_database(
         cap_factor_limits,
         supplemental_firing,
         curtailment_cost,
+        n_startup_limits,
     )
 
 
@@ -1348,6 +1379,7 @@ def write_model_inputs(
         cap_factor_limits,
         supplemental_firing,
         curtailment_cost,
+        n_startup_limits,
     ) = get_inputs_from_database(
         scenario_id,
         subscenarios,
@@ -1501,6 +1533,14 @@ def write_model_inputs(
         filename="project_curtailment_cost.tab",
     )
 
+    # Startup limits
+    startup_limits_df = cursor_to_df(n_startup_limits)
+    write_additional_opchar_file(
+        opchar_df=startup_limits_df,
+        inputs_directory=inputs_directory,
+        filename="startup_limits.tab",
+    )
+
 
 def import_results_into_database(
     scenario_id,
@@ -1574,6 +1614,7 @@ def validate_inputs(
         cap_factor_limits,
         supplemental_firing,
         curtailment_cost,
+        n_startup_limits,
     ) = get_inputs_from_database(
         scenario_id,
         subscenarios,
