@@ -14,7 +14,14 @@
 
 import csv
 import os.path
-from pyomo.environ import Param, Set, Reals, NonNegativeReals, PercentFraction, Expression
+from pyomo.environ import (
+    Param,
+    Set,
+    Reals,
+    NonNegativeReals,
+    PercentFraction,
+    Expression,
+)
 
 from gridpath.auxiliary.db_interface import directories_to_db_values
 
