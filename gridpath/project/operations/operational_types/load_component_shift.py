@@ -29,7 +29,7 @@ from pyomo.environ import (
     Var,
     Any,
     NonNegativeReals,
-    Expression
+    Expression,
 )
 import warnings
 
