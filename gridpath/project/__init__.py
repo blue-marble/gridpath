@@ -370,7 +370,11 @@ def export_results(
                 prj,
                 tmp,
                 m.period[tmp],
-                m.horizon[tmp, m.balancing_type_project[prj]],
+                (
+                    m.horizon[tmp, m.balancing_type_project[prj]]
+                    if (tmp, m.balancing_type_project[prj]) in m.TMPS_BLN_TYPES
+                    else None
+                ),
                 m.capacity_type[prj],
                 m.availability_type[prj],
                 m.operational_type[prj],
