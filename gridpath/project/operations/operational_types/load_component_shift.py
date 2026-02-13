@@ -21,7 +21,16 @@ constraint that is determined as follows:
 """
 
 import os.path
-from pyomo.environ import Param, Set, Reals, Constraint, Var, Any, NonNegativeReals, Expression
+from pyomo.environ import (
+    Param,
+    Set,
+    Reals,
+    Constraint,
+    Var,
+    Any,
+    NonNegativeReals,
+    Expression
+)
 import warnings
 
 from gridpath.auxiliary.auxiliary import (
@@ -189,12 +198,10 @@ def add_model_components(
                 min_vals.append(mod.load_component_shift_min_load_mw[_prj, bt, hrz])
 
         if len(min_vals) > 1:
-            raise ValueError(
-                f"""More than one value per timepoints specified
+            raise ValueError(f"""More than one value per timepoints specified
                  for bounds for load_component_shift project {prj}, 
                  timepoint {tmp}. Please ensure you don't have 
-                 overlapping horizons."""
-            )
+                 overlapping horizons.""")
 
         # Assuming single value in lists after errors caught above
         # Check if the list contains a value; if not, set the min to
@@ -202,11 +209,14 @@ def add_model_components(
         if min_vals:
             tmp_val_min = min_vals[0]
         else:
-            tmp_val_min = mod.component_static_load_mw[
-                              mod.load_zone[prj],
-                              tmp,
-                              mod.load_component_shift_linked_load_component[prj],
-                          ] * mod.Load_Component_Shift_Fraction_Invested[prj, mod.period[tmp]]
+            tmp_val_min = (
+                mod.component_static_load_mw[
+                    mod.load_zone[prj],
+                    tmp,
+                    mod.load_component_shift_linked_load_component[prj],
+                ]
+                * mod.Load_Component_Shift_Fraction_Invested[prj, mod.period[tmp]]
+            )
 
         return tmp_val_min
 
@@ -226,12 +236,10 @@ def add_model_components(
                     max_vals.append(mod.Capacity_MW[prj, mod.period[tmp]])
 
         if len(max_vals) > 1:
-            raise ValueError(
-                f"""More than one value per timepoints specified
+            raise ValueError(f"""More than one value per timepoints specified
                  for bounds for load_component_shift project {prj}, 
                  timepoint {tmp}. Please ensure you don't have 
-                 overlapping horizons."""
-            )
+                 overlapping horizons.""")
 
         # Assuming single value in lists after errors caught above
         # Check if the list contains a value; if not, set the to
@@ -239,11 +247,14 @@ def add_model_components(
         if max_vals:
             tmp_val_max = max_vals[0]
         else:
-            tmp_val_max = mod.component_static_load_mw[
-                              mod.load_zone[prj],
-                              tmp,
-                              mod.load_component_shift_linked_load_component[prj],
-                          ] * mod.Load_Component_Shift_Fraction_Invested[prj, mod.period[tmp]]
+            tmp_val_max = (
+                mod.component_static_load_mw[
+                    mod.load_zone[prj],
+                    tmp,
+                    mod.load_component_shift_linked_load_component[prj],
+                ]
+                * mod.Load_Component_Shift_Fraction_Invested[prj, mod.period[tmp]]
+            )
 
         return tmp_val_max
 
@@ -342,17 +353,13 @@ def add_model_components(
         Upward reserves should be zero in every operational timepoint.
         """
         if getattr(d, headroom_variables)[g]:
-            warnings.warn(
-                """project {} is of the 'load_component_shift' operational 
+            warnings.warn("""project {} is of the 'load_component_shift' operational 
                 type and should not be assigned any upward reserve BAs since it 
                 cannot provide  upward reserves. Please replace the upward 
                 reserve BA for project {} with '.' (no value) in projects.tab. 
                 Model will add  constraint to ensure project {} cannot provide 
                 upward reserves
-                """.format(
-                    g, g, g
-                )
-            )
+                """.format(g, g, g))
             return (
                 sum(getattr(mod, c)[g, tmp] for c in getattr(d, headroom_variables)[g])
                 == 0
@@ -374,17 +381,13 @@ def add_model_components(
         Downward reserves should be zero in every operational timepoint.
         """
         if getattr(d, footroom_variables)[g]:
-            warnings.warn(
-                """project {} is of the 'load_component_shift' operational 
+            warnings.warn("""project {} is of the 'load_component_shift' operational 
                 type and should not be assigned any downward reserve BAs since 
                 it cannot provide downward reserves. Please replace the
                 downward reserve BA for project {} with '.' (no value) in 
                 projects.tab. Model will add constraint to ensure project {} 
                 cannot provide downward reserves.
-                """.format(
-                    g, g, g
-                )
-            )
+                """.format(g, g, g))
             return (
                 sum(getattr(mod, c)[g, tmp] for c in getattr(d, footroom_variables)[g])
                 == 0
@@ -407,16 +410,13 @@ def power_provision_rule(mod, prj, tmp):
     shifted load (add to load).
     """
 
-    return (
-        -mod.Load_Component_Shift_Add_Load_MW[prj, tmp]
-        + (
-            mod.component_static_load_mw[
-                mod.load_zone[prj],
-                tmp,
-                mod.load_component_shift_linked_load_component[prj],
-            ]
-            * mod.Load_Component_Shift_Fraction_Invested[prj, mod.period[tmp]]
-        )
+    return -mod.Load_Component_Shift_Add_Load_MW[prj, tmp] + (
+        mod.component_static_load_mw[
+            mod.load_zone[prj],
+            tmp,
+            mod.load_component_shift_linked_load_component[prj],
+        ]
+        * mod.Load_Component_Shift_Fraction_Invested[prj, mod.period[tmp]]
     )
 
 
