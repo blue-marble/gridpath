@@ -964,8 +964,8 @@ def get_model_inputs_from_database(
                 WHERE project_portfolio_scenario_id = 
                 {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
             )
-            AND period in (
-                 SELECT DISTINCT period
+            AND (period, month) in (
+                 SELECT DISTINCT period, month
                  FROM inputs_temporal
                  WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
                  AND subproblem_id = {db_subproblem}
@@ -995,8 +995,8 @@ def get_model_inputs_from_database(
                 WHERE project_portfolio_scenario_id = 
                 {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
             )
-            AND period in (
-                 SELECT DISTINCT period
+            AND (period, month) in (
+                 SELECT DISTINCT period, month
                  FROM inputs_temporal
                  WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
                  AND subproblem_id = {db_subproblem}

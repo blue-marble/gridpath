@@ -58,7 +58,7 @@ def add_model_components(
         m.POLICIES_ZONE_BLN_TYPE_HRZS_WITH_REQ, within=NonNegativeReals, default=0
     )
 
-    # Target specified as function of load
+    # Target specified as a function of load
     m.policy_requirement_f_load_coeff = Param(
         m.POLICIES_ZONE_BLN_TYPE_HRZS_WITH_REQ,
         within=NonNegativeReals,

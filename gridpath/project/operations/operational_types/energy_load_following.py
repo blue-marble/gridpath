@@ -525,10 +525,12 @@ def get_model_inputs_from_database(
                 FROM inputs_project_portfolios
                 WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
             )
-            AND period IN (
-                SELECT period
-                FROM inputs_temporal_periods
+            AND (period, month) IN (
+                SELECT DISTINCT period, month
+                FROM inputs_temporal
                 WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+                AND subproblem_id = {db_subproblem}
+                AND stage_id = {db_stage}
             )
             AND (project, peak_deviation_demand_charge_scenario_id) IN (
                 SELECT project, peak_deviation_demand_charge_scenario_id

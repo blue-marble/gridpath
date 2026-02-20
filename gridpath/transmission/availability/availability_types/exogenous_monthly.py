@@ -214,6 +214,13 @@ def get_inputs_from_database(
         USING (exogenous_availability_scenario_id, transmission_line)
         WHERE stage_id = {stage}
         AND month != 0  -- exclude month=0 (timepoint availability)
+        AND month in (
+            SELECT DISTINCT month
+            FROM inputs_temporal
+            WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+            AND subproblem_id = {subproblem}
+            AND stage_id = {stage}
+            )
         ;
     """
 

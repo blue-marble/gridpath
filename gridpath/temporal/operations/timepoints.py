@@ -163,8 +163,6 @@ def add_model_components(
 
     m.TMPS = Set(within=PositiveIntegers, ordered=True)
 
-    m.MONTHS = Set(within=PositiveIntegers, initialize=list(range(1, 12 + 1)))
-
     # These are the timepoints from the previous subproblem for which we'll
     # have parameters to constrain the current subproblem
     m.LINKED_TMPS = Set(within=NonPositiveIntegers, ordered=True)
@@ -178,7 +176,9 @@ def add_model_components(
 
     m.prev_stage_tmp_map = Param(m.TMPS, within=NonNegativeIntegers)
 
-    m.month = Param(m.TMPS, within=m.MONTHS | {"undefined"}, default="undefined")
+    m.month = Param(
+        m.TMPS, within=set(list(range(1, 12 + 1))) | {"undefined"}, default="undefined"
+    )
 
     m.day_of_month = Param(m.TMPS, within=NonNegativeIntegers, default=0)
 
@@ -190,6 +190,13 @@ def add_model_components(
     m.hrs_in_linked_tmp = Param(m.LINKED_TMPS, within=NonNegativeReals)
 
     m.furthest_linked_tmp = Param(within=NonPositiveIntegers)
+
+    # Derived sets
+    ###########################################################################
+    m.MONTHS = Set(
+        within=set(list(range(1, 12 + 1))),
+        initialize=lambda mod: list(set(list(mod.month[tmp] for tmp in mod.TMPS))),
+    )
 
 
 # Input-Output

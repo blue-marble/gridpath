@@ -169,7 +169,7 @@ def add_model_components(
     |                                                                         |
     | Derived parameter describing the previous timepoint for each timepoint  |
     | in each balancing type; depends on whether horizon is circular or       |
-    | linear and relies on having ordered :code:`TIMEPOINTS`.                 |
+    | linear and relies on having ordered :code:`TMPS`.                       |
     +-------------------------------------------------------------------------+
     | | :code:`next_tmp`                                                      |
     | | *Defined over*: :code:`TMPS x BLN_TYPES`                              |
@@ -177,7 +177,7 @@ def add_model_components(
     |                                                                         |
     | Derived parameter describing the next timepoint for each timepoint in   |
     | each balancing type; depends on whether horizon is circular or linear   |
-    | and relies on having ordered :code:`TIMEPOINTS`.                        |
+    | and relies on having ordered :code:`TMPS`.                              |
     +-------------------------------------------------------------------------+
 
 
@@ -187,6 +187,15 @@ def add_model_components(
     ###########################################################################
 
     m.BLN_TYPE_HRZS_USER_DEFINED = Set(dimen=2)
+
+    def get_valid_period_months_by_tmp(mod):
+        prd_months = list(set([(mod.period[tmp], mod.month[tmp]) for tmp in mod.TMPS]))
+
+        return prd_months
+
+    m.VALID_PERIOD_MONTHS = Set(
+        within=m.PERIODS * m.MONTHS, initialize=get_valid_period_months_by_tmp
+    )
 
     def builtin_bln_type_hrz_init(mod):
         """
@@ -206,16 +215,14 @@ def add_model_components(
             + [("subproblem_period_linear", period) for period in mod.PERIODS]
             + [("subproblem_linked", 1)]
             + [("subproblem_period_linked", period) for period in mod.PERIODS]
-            # + [
-            #     ("subproblem_period_month_linear", period * 100 + month)
-            #     for period in mod.PERIODS
-            #     for month in range(1, 13)
-            # ]
-            # + [
-            #     ("subproblem_period_month_circular", period * 100 + month)
-            #     for period in mod.PERIODS
-            #     for month in range(1, 13)
-            # ]
+            + [
+                ("subproblem_period_month_linear", period * 100 + month)
+                for (period, month) in mod.VALID_PERIOD_MONTHS
+            ]
+            + [
+                ("subproblem_period_month_circular", period * 100 + month)
+                for (period, month) in mod.VALID_PERIOD_MONTHS
+            ]
         )
 
     m.BLN_TYPE_HRZS_BUILTIN = Set(dimen=2, initialize=builtin_bln_type_hrz_init)
@@ -243,13 +250,13 @@ def add_model_components(
             "subproblem_period_linked",
         ]:
             return [tmp for tmp in mod.TMPS_IN_PRD[h]]
-        # elif b in [
-        #     "subproblem_period_month_circular",
-        #     "subproblem_period_month_linear",
-        # ]:
-        #     return [
-        #         tmp for tmp in mod.TMPS if mod.month[tmp] + 100 * mod.period[tmp] == h
-        #     ]
+        elif b in [
+            "subproblem_period_month_circular",
+            "subproblem_period_month_linear",
+        ]:
+            return [
+                tmp for tmp in mod.TMPS if (mod.month[tmp] + 100 * mod.period[tmp]) == h
+            ]
         else:
             raise ValueError(
                 f"Unrecognized built-in balancing type '{b}' " f"with horizon '{h}'."
