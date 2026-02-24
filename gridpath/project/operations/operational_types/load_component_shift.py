@@ -426,8 +426,8 @@ def variable_om_cost_rule(mod, prj, tmp):
     for this operational type is negative downstream.
     """
     return (
-            mod.Load_Component_Shift_Add_Load_MW[prj, tmp]
-            * mod.variable_om_cost_per_mwh[prj]
+        mod.Load_Component_Shift_Add_Load_MW[prj, tmp]
+        * mod.variable_om_cost_per_mwh[prj]
     )
 
 
@@ -437,8 +437,8 @@ def variable_om_by_period_cost_rule(mod, prj, tmp):
     for this operational type is negative downstream.
     """
     return (
-            mod.Load_Component_Shift_Add_Load_MW[prj, tmp]
-            * mod.variable_om_cost_per_mwh_by_period[prj, mod.period[tmp]]
+        mod.Load_Component_Shift_Add_Load_MW[prj, tmp]
+        * mod.variable_om_cost_per_mwh_by_period[prj, mod.period[tmp]]
     )
 
 
