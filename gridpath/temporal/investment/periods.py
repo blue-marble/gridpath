@@ -1,4 +1,5 @@
-# Copyright 2016-2023 Blue Marble Analytics LLC.
+# Copyright 2016-2025 Blue Marble Analytics LLC.
+# Copyright 2026 Sylvan Energy Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -40,7 +41,13 @@ depending on when (in which period) they are incurred.
 import csv
 import os.path
 
-from pyomo.environ import Set, Param, PositiveIntegers, NonNegativeReals
+from pyomo.environ import (
+    Set,
+    Param,
+    PositiveIntegers,
+    NonNegativeIntegers,
+    NonNegativeReals,
+)
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.db_interface import directories_to_db_values
@@ -198,7 +205,12 @@ def add_model_components(
     # Sets
     ###########################################################################
 
+    # TODO: consider not relying on order
     m.PERIODS = Set(within=PositiveIntegers, ordered=True)
+
+    m.NOT_FIRST_PRDS = Set(
+        within=m.PERIODS, initialize=lambda mod: list(mod.PERIODS)[1:]
+    )
 
     # Required Input Params
     ###########################################################################
@@ -211,9 +223,15 @@ def add_model_components(
 
     m.period_end_year = Param(m.PERIODS, within=NonNegativeReals)
 
+    m.prev_period = Param(
+        m.NOT_FIRST_PRDS,
+        within=NonNegativeIntegers,
+        default=lambda mod, p: list(mod.PERIODS)[list(mod.PERIODS).index(p) - 1],
+    )
+
     m.period = Param(m.TMPS, within=m.PERIODS)
 
-    # Derived Sets
+    # Derived Sets and Input Params
     ###########################################################################
 
     m.TMPS_IN_PRD = Set(
@@ -223,27 +241,10 @@ def add_model_components(
         ),
     )
 
-    m.NOT_FIRST_PRDS = Set(
-        within=m.PERIODS, initialize=lambda mod: list(mod.PERIODS)[1:]
-    )
-
-    # Derived Input Params
-    ###########################################################################
-
     m.number_years_represented = Param(
         m.PERIODS,
         within=NonNegativeReals,
         initialize=lambda mod, p: mod.period_end_year[p] - mod.period_start_year[p],
-    )
-
-    m.first_period = Param(
-        within=m.PERIODS, initialize=lambda mod: list(mod.PERIODS)[0]
-    )
-
-    m.prev_period = Param(
-        m.NOT_FIRST_PRDS,
-        within=m.PERIODS,
-        initialize=lambda mod, p: list(mod.PERIODS)[list(mod.PERIODS).index(p) - 1],
     )
 
     m.hours_in_subproblem_period = Param(
@@ -253,6 +254,30 @@ def add_model_components(
             mod.hrs_in_tmp[tmp] * mod.tmp_weight[tmp] for tmp in mod.TMPS_IN_PRD[p]
         ),
     )
+
+    # Period pathways
+    m.first_period = Param(
+        within=m.PERIODS, initialize=lambda mod: list(mod.PERIODS)[0]
+    )
+
+    m.PERIOD_PATHWAY = Set(
+        m.PERIODS,
+        initialize=lambda mod, prd: recursively_find_list_of_previous_periods(
+            mod, prd=prd, periods_pathway_list=[prd]
+        ),
+    )
+
+    def recursively_find_list_of_previous_periods(mod, prd, periods_pathway_list):
+        if prd == mod.first_period:
+            pass
+        else:
+            prev_period = mod.prev_period[prd]
+            periods_pathway_list.append(prev_period)
+            recursively_find_list_of_previous_periods(
+                mod, prev_period, periods_pathway_list
+            )
+
+        return periods_pathway_list
 
 
 # Input-Output
@@ -288,6 +313,7 @@ def load_model_data(
             "hours_in_period_timepoints",
             "period_start_year",
             "period_end_year",
+            "prev_period",
         ),
         index=m.PERIODS,
         param=(
@@ -295,6 +321,7 @@ def load_model_data(
             m.hours_in_period_timepoints,
             m.period_start_year,
             m.period_end_year,
+            m.prev_period,
         ),
     )
 
@@ -344,10 +371,10 @@ def get_inputs_from_database(
     # spinup/lookahead) across all subproblems in the temporal_scenario_id:
 
     periods = c.execute(f"""SELECT period, discount_factor, 
-           period_start_year, period_end_year, hours_in_period_timepoints
+           period_start_year, period_end_year, hours_in_period_timepoints, prev_period
            FROM (
            SELECT period, discount_factor,
-           period_start_year, period_end_year
+           period_start_year, period_end_year, prev_period
            FROM inputs_temporal_periods
            WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
            AND period in (
@@ -437,11 +464,13 @@ def write_model_inputs(
                 "period_start_year",
                 "period_end_year",
                 "hours_in_period_timepoints",
+                "prev_period",
             ]
         )
 
         for row in periods:
-            writer.writerow(row)
+            replace_nulls = ["." if i is None else i for i in row]
+            writer.writerow(replace_nulls)
 
 
 # Validation

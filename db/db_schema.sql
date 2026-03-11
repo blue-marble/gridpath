@@ -279,6 +279,7 @@ CREATE TABLE inputs_temporal_periods
     discount_factor      FLOAT,
     period_start_year    FLOAT,
     period_end_year      FLOAT, -- exclusive, i.e. if 2030, last day is 2029-12-31
+    prev_period          INTEGER,
     PRIMARY KEY (temporal_scenario_id, period),
     FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
         (temporal_scenario_id)
