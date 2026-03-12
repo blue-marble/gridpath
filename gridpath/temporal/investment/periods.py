@@ -260,35 +260,37 @@ def add_model_components(
         within=m.PERIODS, initialize=lambda mod: list(mod.PERIODS)[0]
     )
 
-    m.PREV_PERIOD_PATHWAY = Set(
+    m.PREV_PERIOD_FUTURE_TRAJECTORY = Set(
         m.PERIODS,
         initialize=lambda mod, prd: recursively_find_list_of_previous_periods(
-            mod, prd=prd, periods_pathway_list=[prd]
+            mod, prd=prd, periods_future_trajectory_list=[prd]
         ),
     )
 
-    def recursively_find_list_of_previous_periods(mod, prd, periods_pathway_list):
+    def recursively_find_list_of_previous_periods(
+        mod, prd, periods_future_trajectory_list
+    ):
         if prd == mod.first_period:
             pass
         else:
             prev_period = mod.prev_period[prd]
-            periods_pathway_list.append(prev_period)
+            periods_future_trajectory_list.append(prev_period)
             recursively_find_list_of_previous_periods(
-                mod, prev_period, periods_pathway_list
+                mod, prev_period, periods_future_trajectory_list
             )
 
-        return periods_pathway_list
+        return periods_future_trajectory_list
 
     def future_period_pathway(mod, period):
         list_of_periods_on_period_pathway = list()
 
         for prd in mod.PERIODS:
-            if period in mod.PREV_PERIOD_PATHWAY[prd]:
+            if period in mod.PREV_PERIOD_FUTURE_TRAJECTORY[prd]:
                 list_of_periods_on_period_pathway.append(prd)
 
         return sorted(list(set(list_of_periods_on_period_pathway)))
 
-    m.PERIOD_PATHWAY = Set(
+    m.PERIOD_FUTURE_TRAJECTORY = Set(
         m.PERIODS, initialize=lambda mod, prd: future_period_pathway(mod, prd)
     )
 

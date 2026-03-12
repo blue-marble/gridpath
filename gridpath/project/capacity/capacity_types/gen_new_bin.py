@@ -282,7 +282,7 @@ def add_model_components(
 
 def operational_periods_by_generator_vintage(mod, prj, v):
     return relevant_periods_by_project_vintage(
-        pathway_periods=getattr(mod, "PERIOD_PATHWAY")[v],
+        future_trajectory_periods=getattr(mod, "PERIOD_FUTURE_TRAJECTORY")[v],
         period_start_year=getattr(mod, "period_start_year"),
         period_end_year=getattr(mod, "period_end_year"),
         vintage=v,
@@ -307,7 +307,7 @@ def gen_new_bin_vintages_operational_in_period(mod, p):
 
 def financial_periods_by_generator_vintage(mod, prj, v):
     return relevant_periods_by_project_vintage(
-        pathway_periods=getattr(mod, "PERIOD_PATHWAY")[v],
+        future_trajectory_periods=getattr(mod, "PERIOD_FUTURE_TRAJECTORY")[v],
         period_start_year=getattr(mod, "period_start_year"),
         period_end_year=getattr(mod, "period_end_year"),
         vintage=v,

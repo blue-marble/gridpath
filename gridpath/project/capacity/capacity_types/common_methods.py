@@ -25,7 +25,7 @@ from gridpath.project.common_functions import get_column_row_value
 
 
 def relevant_periods_by_project_vintage(
-    pathway_periods,
+    future_trajectory_periods,
     period_start_year,
     period_end_year,
     vintage,
@@ -33,7 +33,7 @@ def relevant_periods_by_project_vintage(
     quiet=False,
 ):
     """
-    :param pathway_periods: the study periods in a list
+    :param future_trajectory_periods: the study periods in a list
     :param period_start_year: dictionary of the start year of a period
         by period
     :param period_end_year: dictionary of the end year of a period
@@ -44,12 +44,17 @@ def relevant_periods_by_project_vintage(
     :return: the operational or financial periods given the study periods and
         the project vintage and lifetime
 
-    Given the list of study periods and the project's vintage and lifetime (either
-    the operational lifetime or the financial lifetime), this function returns the
-    list of periods in which a project with this vintage and lifetime will be
-    operational (based on the operational lifetime) or incurring an annualized capital
-    cost (based on the financial lifetime) respectively. When a project is
-    operational, it incurs annual fixed O&M costs.
+    Note that this function relies on the correct future_trajectory_periods being
+    passed to it. We need to pass all the periods that are "connected to"
+    (on the same future trajectory) as the project vintage.
+
+    Given the list of periods on the same pathway as the project's vintage
+    and the project's lifetime (either the operational lifetime or the
+    financial lifetime), this function returns the list of periods in which a
+    project with this vintage and lifetime will be operational (based on the
+    operational lifetime) or incurring an annualized capital cost (based on
+    the financial lifetime) respectively. When a project is operational,
+    it incurs annual fixed O&M costs.
 
     Two conditions must be met for a period to be operational / incurring costs for a
     project of a certain vintage:
@@ -73,16 +78,16 @@ def relevant_periods_by_project_vintage(
     # pathway periods;
     # this shouldn't happen.
     relevant_periods = list()
-    if vintage not in pathway_periods:
+    if vintage not in future_trajectory_periods:
         if not quiet:
             warnings.warn(
-                f"Vintage {vintage} is not in the future " f"pathway " f"periods."
+                f"Vintage {vintage} is not in the future pathway periods. "
+                f"This shouldn't happen."
             )
     else:
         first_lifetime_year = period_start_year[vintage]
         last_lifetime_year = period_start_year[vintage] + lifetime_yrs
-        for p in pathway_periods:
-            # Figure out if we're in the right future
+        for p in future_trajectory_periods:
             if (
                 first_lifetime_year <= period_start_year[p]
                 and last_lifetime_year >= period_end_year[p]
