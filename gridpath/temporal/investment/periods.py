@@ -57,6 +57,7 @@ from gridpath.auxiliary.validations import (
     validate_dtypes,
     validate_values,
 )
+from gridpath.temporal.operations.horizons import prev_tmp_init
 
 
 def add_model_components(
@@ -182,7 +183,11 @@ def add_model_components(
     | | *Within*: :code:`PERIODS`                                             |
     |                                                                         |
     | Determines the previous period for each period other than the first     |
-    | period, which doesn't have a previous period.                           |
+    | period, which doesn't have a previous period. This parameter is         |
+    | optional and will default to the period with index i-1 in the ordered   |
+    | set PERIODS if not specified. The parameter shoud be specified when     |
+    | using GridPath to create stochastic problems to define future tree      |
+    | trajectories.                                                           |
     +-------------------------------------------------------------------------+
     | | :code:`hours_in_subproblem_period`                                    |
     | | *Defined over*: :code:`PERIODS`                                       |
@@ -260,38 +265,67 @@ def add_model_components(
         within=m.PERIODS, initialize=lambda mod: list(mod.PERIODS)[0]
     )
 
-    m.PREV_PERIOD_FUTURE_TRAJECTORY = Set(
+    # This includes previous periods and the current period
+    m.FUTURE_TRAJECTORY_PREV_PERIODS_BY_PERIOD = Set(
         m.PERIODS,
         initialize=lambda mod, prd: recursively_find_list_of_previous_periods(
-            mod, prd=prd, periods_future_trajectory_list=[prd]
+            mod, prd=prd, prev_periods_future_trajectory_list=[prd]
         ),
     )
 
     def recursively_find_list_of_previous_periods(
-        mod, prd, periods_future_trajectory_list
+        mod, prd, prev_periods_future_trajectory_list
     ):
+        """
+        Recursive function to find the list of previous periods for a given
+        period. We'll use these lists to determine the future
+        trajectories of periods that each period belongs to.
+        """
+        # If we have reached the first period, there are no more periods to add
         if prd == mod.first_period:
             pass
+        # Otherwise, check the prevoius period and add it to the list,
+        # then recursively call this function
         else:
             prev_period = mod.prev_period[prd]
-            periods_future_trajectory_list.append(prev_period)
+            prev_periods_future_trajectory_list.append(prev_period)
             recursively_find_list_of_previous_periods(
-                mod, prev_period, periods_future_trajectory_list
+                mod, prev_period, prev_periods_future_trajectory_list
             )
 
-        return periods_future_trajectory_list
+        return prev_periods_future_trajectory_list
 
-    def future_period_pathway(mod, period):
-        list_of_periods_on_period_pathway = list()
+    def find_all_periods_on_future_trajectory_of_period(mod, period):
+        """
+        Find all periods that are a future trajectory of the given period.
+        This will include previous periods as well as future periods.
+        This list will be used as the relevant study periods when determining
+        operational vintages. In other words, a vintage can only be
+        operaitonal in a period if that period is on the vintage's
+        (period of interest's) future trajectory.
+        """
+        list_of_periods_on_period_future_trajectory = list()
 
+        # Iterate over all study periods (prd)
         for prd in mod.PERIODS:
-            if period in mod.PREV_PERIOD_FUTURE_TRAJECTORY[prd]:
-                list_of_periods_on_period_pathway.append(prd)
+            # For each study period, check if the period of interest is on its
+            # list of past periods
+            # If yes, add this study period to the list of periods belonging to
+            # a future trajectory that the period of interest is on
+            if period in mod.FUTURE_TRAJECTORY_PREV_PERIODS_BY_PERIOD[prd]:
+                list_of_periods_on_period_future_trajectory.append(prd)
 
-        return sorted(list(set(list_of_periods_on_period_pathway)))
+        # Return a sorted list of periods on trajectories that the period of
+        # interest is on; we take the set() to remove duplicates, as we may
+        # have added periods more than once by iterating over all study
+        # periods above
+        return sorted(list(set(list_of_periods_on_period_future_trajectory)))
 
     m.PERIOD_FUTURE_TRAJECTORY = Set(
-        m.PERIODS, initialize=lambda mod, prd: future_period_pathway(mod, prd)
+        m.PERIODS,
+        initialize=lambda mod, prd: find_all_periods_on_future_trajectory_of_period(
+            mod, prd
+        ),
     )
 
 
