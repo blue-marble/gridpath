@@ -260,7 +260,7 @@ def add_model_components(
         within=m.PERIODS, initialize=lambda mod: list(mod.PERIODS)[0]
     )
 
-    m.PERIOD_PATHWAY = Set(
+    m.PREV_PERIOD_PATHWAY = Set(
         m.PERIODS,
         initialize=lambda mod, prd: recursively_find_list_of_previous_periods(
             mod, prd=prd, periods_pathway_list=[prd]
@@ -278,6 +278,19 @@ def add_model_components(
             )
 
         return periods_pathway_list
+
+    def future_period_pathway(mod, period):
+        list_of_periods_on_period_pathway = list()
+
+        for prd in mod.PERIODS:
+            if period in mod.PREV_PERIOD_PATHWAY[prd]:
+                list_of_periods_on_period_pathway.append(prd)
+
+        return sorted(list(set(list_of_periods_on_period_pathway)))
+
+    m.PERIOD_PATHWAY = Set(
+        m.PERIODS, initialize=lambda mod, prd: future_period_pathway(mod, prd)
+    )
 
 
 # Input-Output

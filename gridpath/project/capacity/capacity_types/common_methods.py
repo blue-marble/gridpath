@@ -1,4 +1,5 @@
 # Copyright 2016-2025 Blue Marble Analytics LLC.
+# Copyright 2026 Sylvan Energy Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,6 +14,8 @@
 # limitations under the License.
 
 import csv
+import warnings
+
 import numpy as np
 import os.path
 import pandas as pd
@@ -22,16 +25,22 @@ from gridpath.project.common_functions import get_column_row_value
 
 
 def relevant_periods_by_project_vintage(
-    periods, period_start_year, period_end_year, vintage, lifetime_yrs
+    pathway_periods,
+    period_start_year,
+    period_end_year,
+    vintage,
+    lifetime_yrs,
+    quiet=False,
 ):
     """
-    :param periods: the study periods in a list
+    :param pathway_periods: the study periods in a list
     :param period_start_year: dictionary of the start year of a period
         by period
     :param period_end_year: dictionary of the end year of a period
         by period
     :param vintage: the project vintage
     :param lifetime_yrs: the project-vintage lifetime
+    :param quiet: silence warnings if set to True
     :return: the operational or financial periods given the study periods and
         the project vintage and lifetime
 
@@ -60,15 +69,20 @@ def relevant_periods_by_project_vintage(
     the period is assumed to not be operational / incurring capital costs for the
     project.
     """
-    # No relevant periods if vintage does not belong to the project set;
-    # this shouldn't happen as we (should) enforce VINTAGES within PERIODS.
-    if vintage not in periods:
-        return []
+    # No relevant periods if vintage does not belong to the vintage's future
+    # pathway periods;
+    # this shouldn't happen.
+    relevant_periods = list()
+    if vintage not in pathway_periods:
+        if not quiet:
+            warnings.warn(
+                f"Vintage {vintage} is not in the future " f"pathway " f"periods."
+            )
     else:
         first_lifetime_year = period_start_year[vintage]
         last_lifetime_year = period_start_year[vintage] + lifetime_yrs
-        relevant_periods = list()
-        for p in periods:
+        for p in pathway_periods:
+            # Figure out if we're in the right future
             if (
                 first_lifetime_year <= period_start_year[p]
                 and last_lifetime_year >= period_end_year[p]

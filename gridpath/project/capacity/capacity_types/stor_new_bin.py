@@ -327,7 +327,7 @@ def add_model_components(
 
 def operational_periods_by_storage_vintage(mod, prj, v):
     return relevant_periods_by_project_vintage(
-        periods=getattr(mod, "PERIODS"),
+        pathway_periods=getattr(mod, "PERIOD_PATHWAY")[v],
         period_start_year=getattr(mod, "period_start_year"),
         period_end_year=getattr(mod, "period_end_year"),
         vintage=v,
@@ -352,7 +352,7 @@ def stor_new_bin_vintages_operational_in_period(mod, p):
 
 def financial_periods_by_storage_vintage(mod, prj, v):
     return relevant_periods_by_project_vintage(
-        periods=getattr(mod, "PERIODS"),
+        pathway_periods=getattr(mod, "PERIOD_PATHWAY")[v],
         period_start_year=getattr(mod, "period_start_year"),
         period_end_year=getattr(mod, "period_end_year"),
         vintage=v,
