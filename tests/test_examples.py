@@ -1750,6 +1750,15 @@ class TestExamples(unittest.TestCase):
         scenario_name = "single_stage_prod_cost_w_startup_limit"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
+    def test_example_2periods_new_build_2zones_new_build_transmission_stochastic(self):
+        """
+        Check validation and objective function values of
+        "single_stage_prod_cost_w_startup_limit" example
+        :return:
+        """
+        scenario_name = "2periods_new_build_2zones_new_build_transmission_stochastic"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
     @classmethod
     def tearDownClass(cls):
         os.remove(DB_PATH)

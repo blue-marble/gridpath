@@ -90,7 +90,7 @@ class TestCapacityTypeCommonMethods(unittest.TestCase):
             expected_operational_periods = expected_operational_periods_dict[test_case]
             actual_operational_periods = (
                 MODULE_BEING_TESTED.relevant_periods_by_project_vintage(
-                    pathway_periods=test_case_params[test_case][0],
+                    future_trajectory_periods=test_case_params[test_case][0],
                     period_start_year=test_case_params[test_case][1],
                     period_end_year=test_case_params[test_case][2],
                     vintage=test_case_params[test_case][3],
