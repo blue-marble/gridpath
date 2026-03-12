@@ -1,0 +1,40 @@
+##### SUMMARY RESULTS FOR SCENARIO *2periods_new_build_2zones_new_build_transmission_stochastic* #####
+
+### CAPACITY RESULTS ###
+
+--> New Generation Capacity <--
+                             New Capacity (MW)
+load_zone technology period                   
+Zone1     Gas        2020                17.00
+                     20301                4.00
+                     20302               45.00
+
+### OPERATIONAL RESULTS ###
+
+--> Energy Production <--
+                             Annual Energy (MWh)  % Total Power
+load_zone period technology                                    
+Zone1     2020   Coal                       0.00           0.00
+                 Gas                   63,072.00          49.32
+                 Nuclear               52,560.00          41.10
+                 Wind                  12,264.00           9.59
+          20301  Coal                       0.00           0.00
+                 Gas                   63,072.00          49.32
+                 Nuclear               52,560.00          41.10
+                 Wind                  12,264.00           9.59
+          20302  Coal                       0.00           0.00
+                 Gas                  579,912.00          89.95
+                 Nuclear               52,560.00           8.15
+                 Wind                  12,264.00           1.90
+Zone2     2020   Coal                       0.00           0.00
+                 Gas                   26,280.00          28.85
+                 Nuclear               52,560.00          57.69
+                 Wind                  12,264.00          13.46
+          20301  Coal                       0.00           0.00
+                 Gas                   26,280.00          28.85
+                 Nuclear               52,560.00          57.69
+                 Wind                  12,264.00          13.46
+          20302  Coal                       0.00           0.00
+                 Gas                   78,840.00          54.88
+                 Nuclear               52,560.00          36.59
+                 Wind                  12,264.00           8.54
