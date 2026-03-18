@@ -48,8 +48,8 @@ def relevant_periods_by_project_vintage(
     passed to it. We need to pass all the periods that are "connected to"
     (on the same future trajectory) as the project vintage.
 
-    Given the list of periods on the same pathway as the project's vintage
-    and the project's lifetime (either the operational lifetime or the
+    Given the list of periods on the same future trajectory as the project's
+    vintage and the project's lifetime (either the operational lifetime or the
     financial lifetime), this function returns the list of periods in which a
     project with this vintage and lifetime will be operational (based on the
     operational lifetime) or incurring an annualized capital cost (based on
@@ -75,13 +75,13 @@ def relevant_periods_by_project_vintage(
     project.
     """
     # No relevant periods if vintage does not belong to the vintage's future
-    # pathway periods;
+    # trajectory periods;
     # this shouldn't happen.
     relevant_periods = list()
     if vintage not in future_trajectory_periods:
         if not quiet:
             warnings.warn(
-                f"Vintage {vintage} is not in the future pathway periods. "
+                f"Vintage {vintage} is not in the future trajectory periods. "
                 f"This shouldn't happen."
             )
     else:

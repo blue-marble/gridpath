@@ -58,6 +58,9 @@ from gridpath.auxiliary.validations import (
     validate_values,
 )
 from gridpath.temporal.operations.horizons import prev_tmp_init
+from gridpath.project.operations.operational_types.common_functions import (
+    write_tab_file_model_inputs,
+)
 
 
 def add_model_components(
@@ -210,7 +213,6 @@ def add_model_components(
     # Sets
     ###########################################################################
 
-    # TODO: consider not relying on order
     m.PERIODS = Set(within=PositiveIntegers, ordered=True)
 
     m.NOT_FIRST_PRDS = Set(
@@ -228,6 +230,8 @@ def add_model_components(
 
     m.period_end_year = Param(m.PERIODS, within=NonNegativeReals)
 
+    # If we haven't specifically specified the preceding period, we'll rely
+    # on order (for non-stochastic problems)
     m.prev_period = Param(
         m.NOT_FIRST_PRDS,
         within=NonNegativeIntegers,
@@ -260,7 +264,7 @@ def add_model_components(
         ),
     )
 
-    # Period pathways
+    # Period future trajectories
     m.first_period = Param(
         within=m.PERIODS, initialize=lambda mod: list(mod.PERIODS)[0]
     )
@@ -297,11 +301,11 @@ def add_model_components(
 
     def find_all_periods_on_future_trajectory_of_period(mod, period):
         """
-        Find all periods that are a future trajectory of the given period.
+        Find all periods that are on the future trajectory of the given period.
         This will include previous periods as well as future periods.
         This list will be used as the relevant study periods when determining
         operational vintages. In other words, a vintage can only be
-        operaitonal in a period if that period is on the vintage's
+        operational in a period if that period is on the vintage's
         (period of interest's) future trajectory.
         """
         list_of_periods_on_period_future_trajectory = list()
@@ -489,37 +493,17 @@ def write_model_inputs(
         conn,
     )
 
-    with open(
-        os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "inputs",
-            "periods.tab",
-        ),
-        "w",
-        newline="",
-    ) as periods_tab_file:
-        writer = csv.writer(periods_tab_file, delimiter="\t", lineterminator="\n")
-
-        # Write header
-        writer.writerow(
-            [
-                "period",
-                "discount_factor",
-                "period_start_year",
-                "period_end_year",
-                "hours_in_period_timepoints",
-                "prev_period",
-            ]
-        )
-
-        for row in periods:
-            replace_nulls = ["." if i is None else i for i in row]
-            writer.writerow(replace_nulls)
+    write_tab_file_model_inputs(
+        scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        fname="periods.tab",
+        data=periods,
+        replace_nulls=True,
+    )
 
 
 # Validation
