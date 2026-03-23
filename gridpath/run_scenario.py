@@ -206,8 +206,6 @@ def run_optimization_for_subproblem_stage(
 
     Save results. See *save_results()* method.
 
-    Summarize results. See *summarize_results()* method.
-
     Return the objective function (Total_Cost) value; only used in testing mode
 
     """
@@ -388,18 +386,6 @@ def run_optimization_for_subproblem_stage(
             solved_instance,
             results,
             dynamic_components,
-            parsed_arguments,
-        )
-
-        # Summarize results
-        summarize_results(
-            scenario_directory,
-            weather_iteration_directory,
-            hydro_iteration_directory,
-            availability_iteration_directory,
-            subproblem_directory,
-            stage_directory,
-            multi_stage,
             parsed_arguments,
         )
 
@@ -1448,114 +1434,6 @@ def save_duals(
                 dynamic_components,
             )
         n += 1
-
-
-def summarize_results(
-    scenario_directory,
-    weather_iteration,
-    hydro_iteration,
-    availability_iteration,
-    subproblem,
-    stage,
-    multi_stage,
-    parsed_arguments,
-):
-    """
-    :param scenario_directory:
-    :param subproblem:
-    :param stage:
-    :param parsed_arguments:
-    :return:
-
-    Summarize results (after results export)
-    """
-    if parsed_arguments.results_export_rule is None:
-        summarize_rule = _summarize_rule(
-            scenario_directory=scenario_directory,
-            weather_iteration=weather_iteration,
-            hydro_iteration=hydro_iteration,
-            availability_iteration=availability_iteration,
-            subproblem=subproblem,
-            stage=stage,
-            quiet=parsed_arguments.quiet,
-        )
-    else:
-        summarize_rule = import_export_rules[parsed_arguments.results_export_rule][
-            "summarize"
-        ](
-            scenario_directory=scenario_directory,
-            weather_iteration=weather_iteration,
-            hydro_iteration=hydro_iteration,
-            availability_iteration=availability_iteration,
-            subproblem=subproblem,
-            stage=stage,
-            quiet=parsed_arguments.quiet,
-        )
-
-    if summarize_rule:
-        # Only summarize results if solver status was "optimal"
-        with open(
-            os.path.join(
-                scenario_directory,
-                weather_iteration,
-                hydro_iteration,
-                availability_iteration,
-                subproblem,
-                stage,
-                "results",
-                "solver_status.txt",
-            ),
-            "r",
-        ) as f:
-            solver_status = f.read()
-
-        if solver_status == "ok":
-            if not parsed_arguments.quiet:
-                print("Summarizing results...")
-
-            # Determine/load modules and dynamic components
-            modules_to_use, loaded_modules = set_up_gridpath_modules(
-                scenario_directory=scenario_directory, multi_stage=multi_stage
-            )
-
-            # Make the summary results file unless instructed to skip
-            if not parsed_arguments.skip_quick_summary:
-                summary_results_file = os.path.join(
-                    scenario_directory,
-                    weather_iteration,
-                    hydro_iteration,
-                    availability_iteration,
-                    subproblem,
-                    stage,
-                    "results",
-                    "summary_results.txt",
-                )
-
-                # TODO: how to handle results from previous runs
-                # Overwrite prior results
-                with open(summary_results_file, "w", newline="") as outfile:
-                    outfile.write(
-                        "##### SUMMARY RESULTS FOR SCENARIO *{}* #####\n".format(
-                            parsed_arguments.scenario
-                        )
-                    )
-
-            # Go through the modules and get the appropriate results
-            n = 0
-            for m in loaded_modules:
-                if hasattr(m, "summarize_results"):
-                    if parsed_arguments.verbose:
-                        print(f"... {modules_to_use[n]}")
-                    m.summarize_results(
-                        scenario_directory,
-                        weather_iteration,
-                        hydro_iteration,
-                        availability_iteration,
-                        subproblem,
-                        stage,
-                        parsed_arguments.skip_quick_summary,
-                    )
-                n += 1
 
 
 def set_up_gridpath_modules(scenario_directory, multi_stage):
