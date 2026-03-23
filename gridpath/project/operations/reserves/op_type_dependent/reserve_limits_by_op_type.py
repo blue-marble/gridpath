@@ -1,4 +1,5 @@
-# Copyright 2016-2023 Blue Marble Analytics LLC.
+# Copyright 2016-2025 Blue Marble Analytics LLC.
+# Copyright 2026 Sylvan Energy Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,9 +15,11 @@
 
 """ """
 
+# TODO: move this functionality to the optype modules
+
 import os.path
 import pandas as pd
-from pyomo.environ import Param, PercentFraction, Constraint
+from pyomo.environ import Param, NonNegativeReals, Constraint
 
 from gridpath.auxiliary.auxiliary import get_required_subtype_modules
 from gridpath.project.operations.common_functions import load_operational_type_modules
@@ -58,12 +61,17 @@ def generic_add_model_components(
     # therefore limited by its ramp rate, e.g. if it can ramp up 60 MW an hour,
     # then it will only be able to provide 10 MW of upward reserve for a
     # reserve product with a 10-minute response requirement \
-    # Here, this derate param is specified as a fraction of generator capacity
-    # Defaults to 1 if not specified
+    # Here, this derate param is specified as a function of "online" generator
+    # capacity
+    # Defaults to infinity if not specified
     setattr(
         m,
         reserve_provision_ramp_rate_limit_param,
-        Param(getattr(m, reserve_projects_set), within=PercentFraction, default=1),
+        Param(
+            getattr(m, reserve_projects_set),
+            within=NonNegativeReals,
+            default=float("inf"),
+        ),
     )
 
     # Import needed operational modules
@@ -97,11 +105,14 @@ def generic_add_model_components(
             else op_type.online_capacity_rule(mod, g, tmp)
         )
 
-        return (
-            getattr(mod, reserve_provision_variable_name)[g, tmp]
-            <= getattr(mod, reserve_provision_ramp_rate_limit_param)[g]
-            * online_capacity
-        )
+        if getattr(mod, reserve_provision_ramp_rate_limit_param)[g] == float("inf"):
+            return Constraint.Skip
+        else:
+            return (
+                getattr(mod, reserve_provision_variable_name)[g, tmp]
+                <= getattr(mod, reserve_provision_ramp_rate_limit_param)[g]
+                * online_capacity
+            )
 
     setattr(
         m,
@@ -159,7 +170,7 @@ def generic_load_model_data(
 
     # Import reserve provision ramp rate limit parameter only if
     # column is present
-    # Otherwise, the ramp rate limit param goes to its default of 1
+    # Otherwise, the ramp rate limit param goes to its default of infinity
     if ramp_rate_limit_column_name in projects_file_header:
         columns_to_import += (ramp_rate_limit_column_name,)
         params_to_import += (getattr(m, reserve_provision_ramp_rate_limit_param),)
