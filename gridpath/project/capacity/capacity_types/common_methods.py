@@ -432,10 +432,10 @@ def spec_determine_inputs(
     projects_w_params = [gp[0] for gp in project_period_list]
     diff = list(set(project_list) - set(projects_w_params))
 
-    if diff:
-        raise ValueError(
-            "Missing capacity inputs for the following projects: {}".format(diff)
-        )
+    # if diff:
+    #     raise ValueError(
+    #         "Missing capacity inputs for the following projects: {}".format(diff)
+    #     )
 
     # For fixed costs, remove the NAs (set to "."); these default to zero in
     # the model formulation

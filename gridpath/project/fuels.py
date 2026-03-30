@@ -241,6 +241,13 @@ def get_inputs_from_database(
         SELECT period
         FROM inputs_temporal_periods
         WHERE temporal_scenario_id = {temporal_scenario_id}
+        AND period in (
+                 SELECT DISTINCT period
+                 FROM inputs_temporal
+                 WHERE temporal_scenario_id = {temporal_scenario_id}
+                 AND subproblem_id = {subproblem}
+                 AND stage_id = {stage}
+                 )
         ) as periods_tbl
         USING (period)
         -- Filter out the NULLs (from projects with no fuels)
@@ -251,6 +258,8 @@ def get_inputs_from_database(
             portfolio_scenario_id=subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
             fuel_price_scenario_id=subscenarios.FUEL_PRICE_SCENARIO_ID,
             temporal_scenario_id=subscenarios.TEMPORAL_SCENARIO_ID,
+            subproblem=subproblem,
+            stage=stage
         )
     )
 
