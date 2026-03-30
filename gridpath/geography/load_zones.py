@@ -139,8 +139,7 @@ def get_inputs_from_database(
     """
 
     c = conn.cursor()
-    load_zones = c.execute(
-        f"""
+    load_zones = c.execute(f"""
         SELECT load_zone, allow_overgeneration, overgeneration_penalty_per_mw, 
         allow_unserved_energy, unserved_energy_penalty_per_mwh, 
         unserved_energy_limit_mwh, max_unserved_load_penalty_per_mw, 
@@ -151,8 +150,7 @@ def get_inputs_from_database(
             SELECT load_zone
             FROM inputs_geography_load_zones        
             WHERE load_zone_scenario_id = {subscenarios.LOAD_ZONE_SCENARIO_ID}
-        );"""
-    )
+        );""")
 
     return load_zones
 

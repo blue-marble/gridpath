@@ -207,7 +207,5 @@ def import_results_into_database(
         INSERT INTO results_system_costs
         ({})
         VALUES ({});
-        """.format(
-        ", ".join(df.columns), ", ".join(["?"] * (len(df.columns)))
-    )
+        """.format(", ".join(df.columns), ", ".join(["?"] * (len(df.columns))))
     spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=results)

@@ -122,7 +122,7 @@ class TestRegulationDownProvision(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Param: regulation_down_ramp_rate_limit (defaults to 1 if not
+        # Param: regulation_down_ramp_rate_limit (defaults to infinity if not
         # specified)
         expected_rr_limit = OrderedDict(
             sorted(

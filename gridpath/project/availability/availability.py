@@ -395,29 +395,18 @@ def get_required_availability_type_modules(scenario_id, conn):
     """
     c = conn.cursor()
 
-    project_portfolio_scenario_id = c.execute(
-        """SELECT project_portfolio_scenario_id 
+    project_portfolio_scenario_id = c.execute("""SELECT project_portfolio_scenario_id 
         FROM scenarios 
-        WHERE scenario_id = {}""".format(
-            scenario_id
-        )
-    ).fetchone()[0]
+        WHERE scenario_id = {}""".format(scenario_id)).fetchone()[0]
 
     project_availability_scenario_id = c.execute(
         """SELECT project_availability_scenario_id 
         FROM scenarios 
-        WHERE scenario_id = {}""".format(
-            scenario_id
-        )
+        WHERE scenario_id = {}""".format(scenario_id)
     ).fetchone()[0]
 
     if project_availability_scenario_id is not None:
-        required_availability_type_modules = list(
-            set(
-                [
-                    p[0]
-                    for p in c.execute(
-                        f"""
+        required_availability_type_modules = list(set([p[0] for p in c.execute(f"""
                         SELECT DISTINCT availability_type 
                         FROM 
                         (SELECT project FROM inputs_project_portfolios
@@ -426,12 +415,7 @@ def get_required_availability_type_modules(scenario_id, conn):
                         (SELECT project, availability_type
                         FROM inputs_project_availability
                         WHERE project_availability_scenario_id = {project_availability_scenario_id}) as av_type_tbl
-                        USING (project)"""
-                    ).fetchall()
-                ]
-                + [DEFAULT_AVAILABILITY_TYPE]
-            )
-        )
+                        USING (project)""").fetchall()] + [DEFAULT_AVAILABILITY_TYPE]))
     else:
         # If no project availability scenario is specified, then we only use
         # the default availability type module

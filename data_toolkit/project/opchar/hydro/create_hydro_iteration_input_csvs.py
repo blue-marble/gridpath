@@ -52,7 +52,6 @@ import sys
 
 from db.common_functions import connect_to_database
 
-
 # TODO: leap years
 # TODO: hydro bins -- pick bin at random, pick year from bin at random; match
 #  month
@@ -120,24 +119,14 @@ def calculate_from_project_year_month_data(
     conn = connect_to_database(db_path=db_path)
     c = conn.cursor()
 
-    hydro_years = [
-        y[0]
-        for y in c.execute(
-            """
+    hydro_years = [y[0] for y in c.execute("""
             SELECT DISTINCT year FROM raw_data_hydro_years;
-    """
-        ).fetchall()
-    ]
+    """).fetchall()]
 
-    bt_horizons = [
-        bt_h
-        for bt_h in c.execute(
-            """
+    bt_horizons = [bt_h for bt_h in c.execute("""
             SELECT DISTINCT balancing_type, horizon 
             FROM user_defined_balancing_type_horizons;
-            """
-        ).fetchall()
-    ]
+            """).fetchall()]
 
     if overwrite:
         filename = get_filename(
@@ -154,15 +143,13 @@ def calculate_from_project_year_month_data(
     # Create hydro inputs for each year and balancing type
     for yr in hydro_years:
         for bt, h in bt_horizons:
-            hr_start, hr_end = c.execute(
-                f"""
+            hr_start, hr_end = c.execute(f"""
                     SELECT hour_ending_of_year_start, hour_ending_of_year_end
                     FROM user_defined_balancing_type_horizons
                     WHERE balancing_type = '{bt}'
                     AND horizon = {h}
                     ;
-                """
-            ).fetchone()
+                """).fetchone()
 
             month_weights = {}
             total = 0
@@ -193,8 +180,7 @@ def calculate_from_project_year_month_data(
             weighted_avg, weighted_min, weighted_max = 0, 0, 0
             for month in month_weights.keys():
                 weight = month_weights[month]
-                avg, min, max = c.execute(
-                    f"""
+                avg, min, max = c.execute(f"""
                     SELECT average_power_fraction, min_power_fraction, 
                     max_power_fraction
                     FROM raw_data_project_hydro_opchars_by_year_month
@@ -202,8 +188,7 @@ def calculate_from_project_year_month_data(
                     AND hydro_year = {yr}
                     AND month = {month}
                     ;
-                """
-                ).fetchone()
+                """).fetchone()
 
                 weighted_avg += weight * avg
                 weighted_min += weight * min
@@ -291,15 +276,10 @@ def main(args=None):
     db = connect_to_database(parsed_args.database)
 
     c = db.cursor()
-    projects = [
-        prj[0]
-        for prj in c.execute(
-            """
+    projects = [prj[0] for prj in c.execute("""
                 SELECT DISTINCT project
                 FROM raw_data_project_hydro_opchars_by_year_month;
-            """
-        ).fetchall()
-    ]
+            """).fetchall()]
     pool_data = tuple(
         [
             [

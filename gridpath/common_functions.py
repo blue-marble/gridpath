@@ -443,13 +443,11 @@ def duals_wrapper(m, component, verbose=False):
         return m.dual[component]
     except KeyError:
         if verbose:
-            warnings.warn(
-                f"""
+            warnings.warn(f"""
                 KeyError caught when saving duals for {component}. Duals were 
                 not exported. This is expected if solving a MIP with CPLEX (and 
                 possibly other solvers), not otherwise.
-                """
-            )
+                """)
         return None
 
 

@@ -98,8 +98,7 @@ def get_inputs_from_database(
     """
 
     c = conn.cursor()
-    mapping = c.execute(
-        f"""SELECT carbon_cap_zone, carbon_credits_zone
+    mapping = c.execute(f"""SELECT carbon_cap_zone, carbon_credits_zone
         FROM inputs_system_carbon_cap_zones_carbon_credits_zones
         WHERE carbon_cap_zones_carbon_credits_zones_scenario_id = 
         {subscenarios.CARBON_CAP_ZONES_CARBON_CREDITS_ZONES_SCENARIO_ID}
@@ -114,8 +113,7 @@ def get_inputs_from_database(
             WHERE carbon_credits_zone_scenario_id = {subscenarios.CARBON_CREDITS_ZONE_SCENARIO_ID}
         )
         ;
-        """
-    )
+        """)
 
     return mapping
 

@@ -60,7 +60,6 @@ from gridpath.auxiliary.validations import (
 )
 from gridpath.project import write_tab_file_model_inputs
 
-
 BUILTIN_HORIZON_TYPES = [
     "subproblem_circular",
     "subproblem_period_circular",
@@ -170,7 +169,7 @@ def add_model_components(
     |                                                                         |
     | Derived parameter describing the previous timepoint for each timepoint  |
     | in each balancing type; depends on whether horizon is circular or       |
-    | linear and relies on having ordered :code:`TIMEPOINTS`.                 |
+    | linear and relies on having ordered :code:`TMPS`.                       |
     +-------------------------------------------------------------------------+
     | | :code:`next_tmp`                                                      |
     | | *Defined over*: :code:`TMPS x BLN_TYPES`                              |
@@ -178,7 +177,7 @@ def add_model_components(
     |                                                                         |
     | Derived parameter describing the next timepoint for each timepoint in   |
     | each balancing type; depends on whether horizon is circular or linear   |
-    | and relies on having ordered :code:`TIMEPOINTS`.                        |
+    | and relies on having ordered :code:`TMPS`.                              |
     +-------------------------------------------------------------------------+
 
 
@@ -188,6 +187,15 @@ def add_model_components(
     ###########################################################################
 
     m.BLN_TYPE_HRZS_USER_DEFINED = Set(dimen=2)
+
+    def get_valid_period_months_by_tmp(mod):
+        prd_months = list(set([(mod.period[tmp], mod.month[tmp]) for tmp in mod.TMPS]))
+
+        return prd_months
+
+    m.VALID_PERIOD_MONTHS = Set(
+        within=m.PERIODS * m.MONTHS, initialize=get_valid_period_months_by_tmp
+    )
 
     def builtin_bln_type_hrz_init(mod):
         """
@@ -207,16 +215,14 @@ def add_model_components(
             + [("subproblem_period_linear", period) for period in mod.PERIODS]
             + [("subproblem_linked", 1)]
             + [("subproblem_period_linked", period) for period in mod.PERIODS]
-            # + [
-            #     ("subproblem_period_month_linear", period * 100 + month)
-            #     for period in mod.PERIODS
-            #     for month in range(1, 13)
-            # ]
-            # + [
-            #     ("subproblem_period_month_circular", period * 100 + month)
-            #     for period in mod.PERIODS
-            #     for month in range(1, 13)
-            # ]
+            + [
+                ("subproblem_period_month_linear", period * 100 + month)
+                for (period, month) in mod.VALID_PERIOD_MONTHS
+            ]
+            + [
+                ("subproblem_period_month_circular", period * 100 + month)
+                for (period, month) in mod.VALID_PERIOD_MONTHS
+            ]
         )
 
     m.BLN_TYPE_HRZS_BUILTIN = Set(dimen=2, initialize=builtin_bln_type_hrz_init)
@@ -244,13 +250,13 @@ def add_model_components(
             "subproblem_period_linked",
         ]:
             return [tmp for tmp in mod.TMPS_IN_PRD[h]]
-        # elif b in [
-        #     "subproblem_period_month_circular",
-        #     "subproblem_period_month_linear",
-        # ]:
-        #     return [
-        #         tmp for tmp in mod.TMPS if mod.month[tmp] + 100 * mod.period[tmp] == h
-        #     ]
+        elif b in [
+            "subproblem_period_month_circular",
+            "subproblem_period_month_linear",
+        ]:
+            return [
+                tmp for tmp in mod.TMPS if (mod.month[tmp] + 100 * mod.period[tmp]) == h
+            ]
         else:
             raise ValueError(
                 f"Unrecognized built-in balancing type '{b}' " f"with horizon '{h}'."
@@ -380,12 +386,10 @@ def add_model_components(
         ):
             return mod.period[mod.first_hrz_tmp[bt, hrz]]
         else:
-            warnings.warn(
-                f"""Horizon found that spans periods. Is this intended? Check 
+            warnings.warn(f"""Horizon found that spans periods. Is this intended? Check 
                 timepoints for balancing type {bt}, horizon {hrz}. Some 
                 functionality sets the horizon period to the period of the 
-                first timepoint of the horizon."""
-            )
+                first timepoint of the horizon.""")
 
     m.hrz_period = Param(m.BLN_TYPE_HRZS, within=m.PERIODS, initialize=hrz_period_init)
 
@@ -592,8 +596,7 @@ def get_inputs_from_database(
     """
     builtin_hrz_types_list = ", ".join(f"'{h}'" for h in BUILTIN_HORIZON_TYPES)
     c1 = conn.cursor()
-    horizons = c1.execute(
-        f"""SELECT horizon, balancing_type_horizon, boundary
+    horizons = c1.execute(f"""SELECT horizon, balancing_type_horizon, boundary
         FROM inputs_temporal_horizons
         WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
         AND (balancing_type_horizon, horizon) in (
@@ -606,8 +609,7 @@ def get_inputs_from_database(
         -- Don't get the built-ins
         AND balancing_type_horizon NOT IN ({builtin_hrz_types_list})
         ORDER BY balancing_type_horizon, horizon;
-        """
-    )
+        """)
 
     c2 = conn.cursor()
     horizon_timepoints = c2.execute(
@@ -730,15 +732,13 @@ def validate_inputs(
 
     builtin_hrz_types_list = ", ".join(f"'{h}'" for h in BUILTIN_HORIZON_TYPES)
 
-    periods_horizons = c.execute(
-        f"""
+    periods_horizons = c.execute(f"""
         SELECT balancing_type_horizon, period, horizon
         FROM periods_horizons
         WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
         AND stage_id = {stage}
         AND balancing_type_horizon NOT IN ({builtin_hrz_types_list})
-        """
-    )
+        """)
 
     df_hrzs = cursor_to_df(hrzs)
     df_hrz_tmps = cursor_to_df(hrz_tmps)

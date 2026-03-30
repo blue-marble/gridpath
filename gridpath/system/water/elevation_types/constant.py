@@ -107,8 +107,7 @@ def get_inputs_from_database(
     :return:
     """
     c = conn.cursor()
-    constant_elevations = c.execute(
-        f"""SELECT water_node, constant_elevation
+    constant_elevations = c.execute(f"""SELECT water_node, constant_elevation
         FROM inputs_system_water_node_reservoirs
         WHERE water_node_reservoir_scenario_id = 
         {subscenarios.WATER_NODE_RESERVOIR_SCENARIO_ID}
@@ -125,8 +124,7 @@ def get_inputs_from_database(
                     {subscenarios.WATER_NETWORK_SCENARIO_ID}
                 )
         ;
-        """
-    )
+        """)
 
     return constant_elevations
 

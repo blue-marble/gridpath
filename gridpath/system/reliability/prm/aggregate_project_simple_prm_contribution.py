@@ -17,7 +17,6 @@ Aggregate simple PRM contribution from the project level to the PRM zone level
 for each period.
 """
 
-
 import csv
 import os.path
 from pyomo.environ import Expression, value

@@ -707,8 +707,7 @@ def get_inputs_from_database(
     :return:
     """
     c0 = conn.cursor()
-    water_flow_params = c0.execute(
-        f"""SELECT water_link,
+    water_flow_params = c0.execute(f"""SELECT water_link,
         default_min_flow_vol_per_sec,
         allow_water_link_min_flow_violation,
         min_flow_violation_penalty_cost,
@@ -727,8 +726,7 @@ def get_inputs_from_database(
                 {subscenarios.WATER_NETWORK_SCENARIO_ID}
             )
         ;
-        """
-    )
+        """)
 
     c1 = conn.cursor()
     tmp_sql = f"""SELECT water_link, timepoint, 

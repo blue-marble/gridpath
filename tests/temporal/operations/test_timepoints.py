@@ -1,4 +1,5 @@
-# Copyright 2016-2023 Blue Marble Analytics LLC.
+# Copyright 2016-2025 Blue Marble Analytics LLC.
+# Copyright 2026 Sylvan Energy Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -147,9 +148,7 @@ class TestTimepoints(unittest.TestCase):
         )
 
         # Set: MONTHS
-        self.assertListEqual(
-            [m for m in instance.MONTHS], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-        )
+        self.assertListEqual(sorted([m for m in instance.MONTHS]), [4, 5, 7, 9])
 
         # Params: month
         expected_month = timepoints_df.set_index("timepoint").to_dict()["month"]

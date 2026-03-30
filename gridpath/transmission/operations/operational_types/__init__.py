@@ -18,13 +18,13 @@ modules to describe the various ways in which transmission-line operations are
 constrained in optimization problem, e.g. as a simple transport model, or DC
 OPF.
 """
+
 import os.path
 import pandas as pd
 
 from gridpath.transmission.operations.common_functions import (
     load_tx_operational_type_modules,
 )
-
 
 # TODO: missing test for this module
 
@@ -168,17 +168,13 @@ def get_required_tx_opchar_modules(scenario_id, c):
     transmission_portfolio_scenario_id = c.execute(
         """SELECT transmission_portfolio_scenario_id 
         FROM scenarios 
-        WHERE scenario_id = {}""".format(
-            scenario_id
-        )
+        WHERE scenario_id = {}""".format(scenario_id)
     ).fetchone()[0]
 
     transmission_opchars_scenario_id = c.execute(
         """SELECT transmission_operational_chars_scenario_id 
         FROM scenarios 
-        WHERE scenario_id = {}""".format(
-            scenario_id
-        )
+        WHERE scenario_id = {}""".format(scenario_id)
     ).fetchone()[0]
 
     required_tx_opchar_modules = [

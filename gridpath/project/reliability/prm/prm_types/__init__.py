@@ -357,9 +357,7 @@ def import_results_into_database(
         project_elcc_chars_scenario_id
         FROM scenarios
         WHERE scenario_id = {}
-        """.format(
-            scenario_id
-        )
+        """.format(scenario_id)
     ).fetchone()
 
     # Required modules are the unique set of generator PRM types in

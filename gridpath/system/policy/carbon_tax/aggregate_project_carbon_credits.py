@@ -187,8 +187,7 @@ def get_inputs_from_database(
     """
 
     c = conn.cursor()
-    mapping = c.execute(
-        f"""SELECT carbon_tax_zone, carbon_credits_zone
+    mapping = c.execute(f"""SELECT carbon_tax_zone, carbon_credits_zone
         FROM inputs_system_carbon_tax_zones_carbon_credits_zones
         WHERE carbon_tax_zones_carbon_credits_zones_scenario_id = 
         {subscenarios.CARBON_TAX_ZONES_CARBON_CREDITS_ZONES_SCENARIO_ID}
@@ -204,8 +203,7 @@ def get_inputs_from_database(
             {subscenarios.CARBON_CREDITS_ZONE_SCENARIO_ID}
         )
         ;
-        """
-    )
+        """)
 
     c2 = conn.cursor()
     credit_limits = c2.execute(
@@ -268,7 +266,7 @@ def write_model_inputs(
         weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
     )
 
-    (mapping, credit_limits) = get_inputs_from_database(
+    mapping, credit_limits = get_inputs_from_database(
         scenario_id,
         subscenarios,
         db_weather_iteration,

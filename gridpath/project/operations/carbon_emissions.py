@@ -16,7 +16,6 @@
 Carbon emissions from each carbonaceous project.
 """
 
-
 import csv
 import os.path
 from pyomo.environ import Expression, value

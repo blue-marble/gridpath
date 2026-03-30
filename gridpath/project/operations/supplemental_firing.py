@@ -109,13 +109,9 @@ def add_model_components(
         elif bin_or_lin_optype == "gen_commit_lin":
             g_optype = "Lin"
         else:
-            raise ValueError(
-                """GridPath ERROR:
+            raise ValueError("""GridPath ERROR:
             Allowed types are 'gen_commit_bin' or 'gen_commit_lin'.
-            You used {}.""".format(
-                    bin_or_lin_optype
-                )
-            )
+            You used {}.""".format(bin_or_lin_optype))
 
         # Find the optype for g_supplemental_firing (this may be different from g's
         # optype)

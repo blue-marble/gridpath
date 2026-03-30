@@ -22,7 +22,6 @@ This module contains:
 5) the method for loading modules.
 """
 
-
 from importlib import import_module
 import os.path
 import pandas as pd
@@ -651,11 +650,9 @@ def determine_modules(
     """
     requested_features = []
     if (scenario_directory is None) and (features is None):
-        raise IOError(
-            """Need to specify either 'scenario_directory', the
+        raise IOError("""Need to specify either 'scenario_directory', the
                       directory where 'features.csv' is saved, or 'features',
-                      the list of requested features"""
-        )
+                      the list of requested features""")
     elif features is not None:
         requested_features = features
     elif scenario_directory is not None:

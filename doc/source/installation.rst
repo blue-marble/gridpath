@@ -63,21 +63,6 @@ On Linux-based systems including MacOS, use::
     source PATH/TO/PYTHON/ENV/bin/activate
 
 
-Solver
-------
-You will need a solver to get optimization results. GridPath assumes you
-will be using `Cbc (Coin-or branch and cut) <https://projects.coin-or
-.org/Cbc>`_ by default, but you can specify a different solver as long as it
-is `supported by Pyomo <https://pyomo.readthedocs
-.io/en/latest/solving_pyomo_models.html#supported-solvers>`_,
-e.g. GLPK, CPLEX, Gurobi, etc.
-
-You can find the latest instructions for installing Cbc `here
-<https://github.com/coin-or/Cbc#download>`__. GridPath allows you to specify
-the location of the solver executable; to get it to be recognized,
-automatically, you can also add it to your PATH system variables (see
-instructions for Windows `here <https://www.java.com/en/download/help/path
-.xml>`__).
 
 Installing GridPath
 ===================
@@ -98,8 +83,8 @@ To get a specific version, e.g., v0.16.0, use::
 
 Note that GridPath versions before 0.16.0 are not available on PyPi.
 
-Installation from Source
-------------------------
+Installation from Source (Developers and Advanced Users)
+--------------------------------------------------------
 
 GridPath's source code is stored in a GitHub repository. You can find the latest
 GridPath release `here <https://github.com/blue-marble/gridpath/releases/latest>`__.
@@ -132,33 +117,27 @@ If you would like to edit the user-interface code, you will also need Node.js in
 addition to Python and will be required to install various node packages.
 See the User Interface section for more info.
 
-^^^^^^^^^^^^^^^^^^^^^^^^^
-Testing Your Installation
-^^^^^^^^^^^^^^^^^^^^^^^^^
+Solver
+======
+You will need a solver to get optimization results. GridPath assumes you
+will be using `Cbc (Coin-or branch and cut) <https://projects.coin-or
+.org/Cbc>`_ by default, but you can specify a different solver as long as it
+is `supported by Pyomo <https://pyomo.readthedocs
+.io/en/latest/solving_pyomo_models.html#supported-solvers>`_,
+e.g. GLPK, CPLEX, Gurobi, etc.
 
-To test the GridPath codebase, use the unittest module as follows from the
-:code:`PATH/TO/GRIDPATH` directory::
-
-    python -m unittest discover tests
-
-This command will use the python `unittest  <https://docs.python.org/3/library/
-unittest.html>`_ module to test all functions in the :code:`./tests` folder.
-Testing includes both simple unittests as well as integration tests that run
-small example problems (for which you will need a solver).
-
+You can find the latest instructions for installing Cbc `here
+<https://github.com/coin-or/Cbc#download>`__. GridPath allows you to specify
+the location of the solver executable; to get it to be recognized,
+automatically, you can also add it to your PATH system variables (see
+instructions for Windows `here <https://www.java.com/en/download/help/path
+.xml>`__).
 
 Database
 ========
-While not strictly required -- you can generate TAB-delimited scenario input
-files any way you like -- GridPath includes support for input and output
-data management via an SQLite database. We recommend that you store data in
-the database and use GridPath's built-in tools for loading input data into the
-database, creating scenarios and generating scenario input files, and
-importing scenario results into the database. Using the GridPath user
-interface requires that data be stored in a database.
-
-We recommend `SQLite Studio <https://sqlitestudio.pl/index.rvt>`_ as an SQLite
-database GUI.
+GridPath includes support for input and output data management via an SQLite
+database. We also recommend `SQLite Studio <https://sqlitestudio.pl/index
+.rvt>`_ as an SQLite database GUI.
 
 We have implemented various tools to help you build your database. See the
 :ref:`building-the-database-section-ref` section of the documentation

@@ -1,4 +1,5 @@
-# Copyright 2016-2023 Blue Marble Analytics LLC.
+# Copyright 2016-2025 Blue Marble Analytics LLC.
+# Copyright 2026 Sylvan Energy Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -40,7 +41,13 @@ depending on when (in which period) they are incurred.
 import csv
 import os.path
 
-from pyomo.environ import Set, Param, PositiveIntegers, NonNegativeReals
+from pyomo.environ import (
+    Set,
+    Param,
+    PositiveIntegers,
+    NonNegativeIntegers,
+    NonNegativeReals,
+)
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.db_interface import directories_to_db_values
@@ -49,6 +56,10 @@ from gridpath.auxiliary.validations import (
     get_expected_dtypes,
     validate_dtypes,
     validate_values,
+)
+from gridpath.temporal.operations.horizons import prev_tmp_init
+from gridpath.project.operations.operational_types.common_functions import (
+    write_tab_file_model_inputs,
 )
 
 
@@ -175,7 +186,11 @@ def add_model_components(
     | | *Within*: :code:`PERIODS`                                             |
     |                                                                         |
     | Determines the previous period for each period other than the first     |
-    | period, which doesn't have a previous period.                           |
+    | period, which doesn't have a previous period. This parameter is         |
+    | optional and will default to the period with index i-1 in the ordered   |
+    | set PERIODS if not specified. The parameter shoud be specified when     |
+    | using GridPath to create stochastic problems to define future tree      |
+    | trajectories.                                                           |
     +-------------------------------------------------------------------------+
     | | :code:`hours_in_subproblem_period`                                    |
     | | *Defined over*: :code:`PERIODS`                                       |
@@ -200,6 +215,10 @@ def add_model_components(
 
     m.PERIODS = Set(within=PositiveIntegers, ordered=True)
 
+    m.NOT_FIRST_PRDS = Set(
+        within=m.PERIODS, initialize=lambda mod: list(mod.PERIODS)[1:]
+    )
+
     # Required Input Params
     ###########################################################################
 
@@ -211,9 +230,17 @@ def add_model_components(
 
     m.period_end_year = Param(m.PERIODS, within=NonNegativeReals)
 
+    # If we haven't specifically specified the preceding period, we'll rely
+    # on order (for non-stochastic problems)
+    m.prev_period = Param(
+        m.NOT_FIRST_PRDS,
+        within=NonNegativeIntegers,
+        default=lambda mod, p: list(mod.PERIODS)[list(mod.PERIODS).index(p) - 1],
+    )
+
     m.period = Param(m.TMPS, within=m.PERIODS)
 
-    # Derived Sets
+    # Derived Sets and Input Params
     ###########################################################################
 
     m.TMPS_IN_PRD = Set(
@@ -223,27 +250,10 @@ def add_model_components(
         ),
     )
 
-    m.NOT_FIRST_PRDS = Set(
-        within=m.PERIODS, initialize=lambda mod: list(mod.PERIODS)[1:]
-    )
-
-    # Derived Input Params
-    ###########################################################################
-
     m.number_years_represented = Param(
         m.PERIODS,
         within=NonNegativeReals,
         initialize=lambda mod, p: mod.period_end_year[p] - mod.period_start_year[p],
-    )
-
-    m.first_period = Param(
-        within=m.PERIODS, initialize=lambda mod: list(mod.PERIODS)[0]
-    )
-
-    m.prev_period = Param(
-        m.NOT_FIRST_PRDS,
-        within=m.PERIODS,
-        initialize=lambda mod, p: list(mod.PERIODS)[list(mod.PERIODS).index(p) - 1],
     )
 
     m.hours_in_subproblem_period = Param(
@@ -251,6 +261,74 @@ def add_model_components(
         within=NonNegativeReals,
         initialize=lambda mod, p: sum(
             mod.hrs_in_tmp[tmp] * mod.tmp_weight[tmp] for tmp in mod.TMPS_IN_PRD[p]
+        ),
+    )
+
+    # Period future trajectories
+    m.first_period = Param(
+        within=m.PERIODS, initialize=lambda mod: list(mod.PERIODS)[0]
+    )
+
+    # This includes previous periods and the current period
+    m.FUTURE_TRAJECTORY_PREV_PERIODS_BY_PERIOD = Set(
+        m.PERIODS,
+        initialize=lambda mod, prd: recursively_find_list_of_previous_periods(
+            mod, prd=prd, prev_periods_future_trajectory_list=[prd]
+        ),
+    )
+
+    def recursively_find_list_of_previous_periods(
+        mod, prd, prev_periods_future_trajectory_list
+    ):
+        """
+        Recursive function to find the list of previous periods for a given
+        period. We'll use these lists to determine the future
+        trajectories of periods that each period belongs to.
+        """
+        # If we have reached the first period, there are no more periods to add
+        if prd == mod.first_period:
+            pass
+        # Otherwise, check the prevoius period and add it to the list,
+        # then recursively call this function
+        else:
+            prev_period = mod.prev_period[prd]
+            prev_periods_future_trajectory_list.append(prev_period)
+            recursively_find_list_of_previous_periods(
+                mod, prev_period, prev_periods_future_trajectory_list
+            )
+
+        return prev_periods_future_trajectory_list
+
+    def find_all_periods_on_future_trajectory_of_period(mod, period):
+        """
+        Find all periods that are on the future trajectory of the given period.
+        This will include previous periods as well as future periods.
+        This list will be used as the relevant study periods when determining
+        operational vintages. In other words, a vintage can only be
+        operational in a period if that period is on the vintage's
+        (period of interest's) future trajectory.
+        """
+        list_of_periods_on_period_future_trajectory = list()
+
+        # Iterate over all study periods (prd)
+        for prd in mod.PERIODS:
+            # For each study period, check if the period of interest is on its
+            # list of past periods
+            # If yes, add this study period to the list of periods belonging to
+            # a future trajectory that the period of interest is on
+            if period in mod.FUTURE_TRAJECTORY_PREV_PERIODS_BY_PERIOD[prd]:
+                list_of_periods_on_period_future_trajectory.append(prd)
+
+        # Return a sorted list of periods on trajectories that the period of
+        # interest is on; we take the set() to remove duplicates, as we may
+        # have added periods more than once by iterating over all study
+        # periods above
+        return sorted(list(set(list_of_periods_on_period_future_trajectory)))
+
+    m.PERIOD_FUTURE_TRAJECTORY = Set(
+        m.PERIODS,
+        initialize=lambda mod, prd: find_all_periods_on_future_trajectory_of_period(
+            mod, prd
         ),
     )
 
@@ -288,6 +366,7 @@ def load_model_data(
             "hours_in_period_timepoints",
             "period_start_year",
             "period_end_year",
+            "prev_period",
         ),
         index=m.PERIODS,
         param=(
@@ -295,6 +374,7 @@ def load_model_data(
             m.hours_in_period_timepoints,
             m.period_start_year,
             m.period_end_year,
+            m.prev_period,
         ),
     )
 
@@ -343,12 +423,11 @@ def get_inputs_from_database(
     # number of hours in a period (within a stage and excluding
     # spinup/lookahead) across all subproblems in the temporal_scenario_id:
 
-    periods = c.execute(
-        f"""SELECT period, discount_factor, 
-           period_start_year, period_end_year, hours_in_period_timepoints
+    periods = c.execute(f"""SELECT period, discount_factor, 
+           period_start_year, period_end_year, hours_in_period_timepoints, prev_period
            FROM (
            SELECT period, discount_factor,
-           period_start_year, period_end_year
+           period_start_year, period_end_year, prev_period
            FROM inputs_temporal_periods
            WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
            AND period in (
@@ -366,8 +445,7 @@ def get_inputs_from_database(
            AND spinup_or_lookahead = 0
            AND stage_id = {stage}
            GROUP BY period) as hours_in_period_timepoints_tbl
-           USING (period);"""
-    )
+           USING (period);""")
 
     return periods
 
@@ -415,35 +493,17 @@ def write_model_inputs(
         conn,
     )
 
-    with open(
-        os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "inputs",
-            "periods.tab",
-        ),
-        "w",
-        newline="",
-    ) as periods_tab_file:
-        writer = csv.writer(periods_tab_file, delimiter="\t", lineterminator="\n")
-
-        # Write header
-        writer.writerow(
-            [
-                "period",
-                "discount_factor",
-                "period_start_year",
-                "period_end_year",
-                "hours_in_period_timepoints",
-            ]
-        )
-
-        for row in periods:
-            writer.writerow(row)
+    write_tab_file_model_inputs(
+        scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        fname="periods.tab",
+        data=periods,
+        replace_nulls=True,
+    )
 
 
 # Validation

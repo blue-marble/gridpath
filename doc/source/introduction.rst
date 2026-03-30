@@ -12,43 +12,23 @@ requirements and can speed up insight-generation in the planning process.
 
 .. image:: ../graphics/approaches.png
 
-Motivation
-==========
-
-Traditional power-system models are often not designed to address the many
-new questions arising from the shift to low-carbon resources, storage
-deployment, widespread electric vehicle and building electrification, load
-participation in system operations, etc. This was the main motivation for
-GridPath's development.  Transitioning to a low-carbon electricity system
-poses numerous new challenges to system planners and operators. Variable
-renewable energy technologies such as wind and solar introduce variability
-and uncertainty to system operations, requiring thoughtful integration
-through resource diversity and interconnection as well as the deployment of
-balancing technologies such as energy storage and demand response. Technology
-characteristics and costs as well as the policy landscape are also evolving
-rapidly. Improperly accounting for the uncertainty and risk can result in
-financial losses, jeopardize grid reliability, and/or create environmental
-damage. In that context, robust planning becomes increasingly important and
-advanced software tools specifically designed understand deeply-decarbonized
-grids can help to rapidly and continuously evaluate and plan the evolving
-electricity system.
 
 Architecture
 ============
 
-Unlike other power system tools that can be cumbersome to adapt and extend,
-GridPath is built for today’s and tomorrow’s world: it has a highly
+GridPath is built for today’s and tomorrow’s world, and can be easily adapted
+and extended:
+it has a highly
 flexible, modular architecture that facilitates its application to different
 systems and regions as well as the incorporation of emergent technologies
 and resources with non-standard characteristics (renewables, storage, demand
 response, and so on). This makes the GridPath platform well-equipped to
 quickly and seamlessly add critical functionality around new technologies,
-policies, or practices, and tackle emergent questions about the pathways to
-and dynamics of deeply decarbonized electricity systems.
+policies, or practices, in addition to full-featured traditional power system
+modeling.
 
 Our goal is to create a transparent and user-friendly platform that
-facilitates quick model development and rapid adaptation. GridPath includes a
-user interface, database-building tools, a results-visualization suite, and
+facilitates quick model development and rapid adaptation. GridPath includes database-building tools, a results-visualization suite, and
 extensive validation and testing suites.
 
 Functionality

@@ -163,8 +163,6 @@ def add_model_components(
 
     m.TMPS = Set(within=PositiveIntegers, ordered=True)
 
-    m.MONTHS = Set(within=PositiveIntegers, initialize=list(range(1, 12 + 1)))
-
     # These are the timepoints from the previous subproblem for which we'll
     # have parameters to constrain the current subproblem
     m.LINKED_TMPS = Set(within=NonPositiveIntegers, ordered=True)
@@ -178,7 +176,9 @@ def add_model_components(
 
     m.prev_stage_tmp_map = Param(m.TMPS, within=NonNegativeIntegers)
 
-    m.month = Param(m.TMPS, within=m.MONTHS | {"undefined"}, default="undefined")
+    m.month = Param(
+        m.TMPS, within=set(list(range(1, 12 + 1))) | {"undefined"}, default="undefined"
+    )
 
     m.day_of_month = Param(m.TMPS, within=NonNegativeIntegers, default=0)
 
@@ -190,6 +190,13 @@ def add_model_components(
     m.hrs_in_linked_tmp = Param(m.LINKED_TMPS, within=NonNegativeReals)
 
     m.furthest_linked_tmp = Param(within=NonPositiveIntegers)
+
+    # Derived sets
+    ###########################################################################
+    m.MONTHS = Set(
+        within=set(list(range(1, 12 + 1))),
+        initialize=lambda mod: list(set(list(mod.month[tmp] for tmp in mod.TMPS))),
+    )
 
 
 # Input-Output
@@ -443,9 +450,7 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
                 AND {tbl}.timepoint = inputs_temporal.timepoint
                 )
                 WHERE scenario_id = {scenario_id};
-                """.format(
-                tbl, tbl, tbl, tbl
-            )
+                """.format(tbl, tbl, tbl, tbl)
 
             spin_on_database_lock(conn=db, cursor=c, sql=sql, data=(), many=False)
 
@@ -489,9 +494,7 @@ def validate_inputs(
            WHERE temporal_scenario_id = {}
            AND spinup_or_lookahead = 0
            AND stage_id = {}
-           GROUP BY period;""".format(
-            subscenarios.TEMPORAL_SCENARIO_ID, stage
-        )
+           GROUP BY period;""".format(subscenarios.TEMPORAL_SCENARIO_ID, stage)
     ).fetchall()
 
     for row in validation_data:
@@ -507,9 +510,7 @@ def validate_inputs(
             and lookahead timepoints should be the number of hours in a year 
             (8760, 8766, or 8784). This is to ensure consistent weighting of 
             timepoint-level and period-level costs. 
-            """.format(
-                str(period), str(hours_in_period_timepoints)
-            )
+            """.format(str(period), str(hours_in_period_timepoints))
 
             # Check values of hours_in_period_timepoints
             write_validation_to_database(

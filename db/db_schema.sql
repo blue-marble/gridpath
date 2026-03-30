@@ -279,6 +279,7 @@ CREATE TABLE inputs_temporal_periods
     discount_factor      FLOAT,
     period_start_year    FLOAT,
     period_end_year      FLOAT, -- exclusive, i.e. if 2030, last day is 2029-12-31
+    prev_period          INTEGER,
     PRIMARY KEY (temporal_scenario_id, period),
     FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
         (temporal_scenario_id)
@@ -2013,6 +2014,7 @@ CREATE TABLE inputs_project_operational_chars
     aux_consumption_frac_capacity                         FLOAT,
     aux_consumption_frac_power                            FLOAT,
     last_commitment_stage                                 INTEGER,
+    n_startup_limit_scenario_id                           INTEGER,
     variable_generator_profile_scenario_id                INTEGER, -- determines var profiles
     curtailment_cost_scenario_id                          INTEGER,
     hydro_operational_chars_scenario_id                   INTEGER, -- determines hydro MWa, min, max
@@ -2047,6 +2049,9 @@ CREATE TABLE inputs_project_operational_chars
     load_component_shift_bounds_scenario_id               INTEGER,
     efficiency_factor                                     FLOAT,
     energy_requirement_factor                             FLOAT,
+    losses_factor_in_energy_target                        FLOAT,
+    losses_factor_curtailment                             FLOAT,
+    upward_reserves_to_soc_depletion                      FLOAT,
     PRIMARY KEY (project_operational_chars_scenario_id, project),
     FOREIGN KEY (project_operational_chars_scenario_id) REFERENCES
         subscenarios_project_operational_chars (project_operational_chars_scenario_id),
@@ -2072,6 +2077,9 @@ CREATE TABLE inputs_project_operational_chars
     FOREIGN KEY (project, supplemental_firing_scenario_id) REFERENCES
         subscenarios_project_supplemental_firing
             (project, supplemental_firing_scenario_id),
+    FOREIGN KEY (project, n_startup_limit_scenario_id) REFERENCES
+        subscenarios_project_n_startup_limits
+            (project, n_startup_limit_scenario_id),
     FOREIGN KEY (project, flex_load_static_profile_scenario_id) REFERENCES
         subscenarios_project_flex_load_static_profiles
             (project, flex_load_static_profile_scenario_id),
@@ -2337,6 +2345,29 @@ CREATE TABLE inputs_project_supplemental_firing
                  supplemental_firing_project),
     FOREIGN KEY (project, supplemental_firing_scenario_id) REFERENCES
         subscenarios_project_supplemental_firing (project, supplemental_firing_scenario_id)
+);
+
+DROP TABLE IF EXISTS subscenarios_project_n_startup_limits;
+CREATE TABLE subscenarios_project_n_startup_limits
+(
+    project                     VARCHAR(32),
+    n_startup_limit_scenario_id INTEGER,
+    name                        VARCHAR(32),
+    description                 VARCHAR(128),
+    PRIMARY KEY (project, n_startup_limit_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_n_startup_limits;
+CREATE TABLE inputs_project_n_startup_limits
+(
+    project                     VARCHAR(64),
+    n_startup_limit_scenario_id INTEGER,
+    balancing_type_horizon      VARCHAR(32),
+    horizon                     INTEGER,
+    max_n_startups              FLOAT,
+    PRIMARY KEY (project, n_startup_limit_scenario_id, balancing_type_horizon, horizon),
+    FOREIGN KEY (project, n_startup_limit_scenario_id) REFERENCES
+        subscenarios_project_startup_chars (project, startup_chars_scenario_id)
 );
 
 -- Flex load static profiles

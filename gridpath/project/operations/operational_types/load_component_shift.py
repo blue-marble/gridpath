@@ -21,7 +21,16 @@ constraint that is determined as follows:
 """
 
 import os.path
-from pyomo.environ import Param, Set, Reals, Constraint, Var, Any, NonNegativeReals
+from pyomo.environ import (
+    Param,
+    Set,
+    Reals,
+    Constraint,
+    Var,
+    Any,
+    NonNegativeReals,
+    Expression,
+)
 import warnings
 
 from gridpath.auxiliary.auxiliary import (
@@ -48,6 +57,8 @@ from gridpath.project.operations.operational_types.common_functions import (
     load_optype_model_data,
     BT_HRZ_INDEX_QUERY_PARAMS,
 )
+
+Infinity = float("inf")
 
 
 def add_model_components(
@@ -138,11 +149,11 @@ def add_model_components(
     )
 
     m.load_component_shift_min_load_mw = Param(
-        m.LOAD_COMPONENT_SHIFT_PRJS_BT_HRZS, within=NonNegativeReals
+        m.LOAD_COMPONENT_SHIFT_PRJS_BT_HRZS, within=NonNegativeReals, default=0
     )
 
     m.load_component_shift_max_load_mw = Param(
-        m.LOAD_COMPONENT_SHIFT_PRJS_BT_HRZS, within=NonNegativeReals
+        m.LOAD_COMPONENT_SHIFT_PRJS_BT_HRZS, within=NonNegativeReals, default=Infinity
     )
 
     # Derived params
@@ -160,55 +171,6 @@ def add_model_components(
         ),
     )
 
-    def load_bounds_by_tmp_init(mod, prj, tmp):
-        min_vals = []
-        max_vals = []
-
-        for _prj, bt, hrz in mod.LOAD_COMPONENT_SHIFT_PRJS_BT_HRZS:
-            if _prj == prj and tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]:
-                min_vals.append(mod.load_component_shift_min_load_mw[_prj, bt, hrz])
-                max_vals.append(mod.load_component_shift_max_load_mw[_prj, bt, hrz])
-
-        if len(min_vals) > 1 or len(max_vals) > 1:
-            raise ValueError(
-                f"""More than one value per timepoints specified
-                 for bounds for load_component_shift project {prj}, 
-                 timepoint {tmp}. Please ensure you don't have 
-                 overlapping horizons."""
-            )
-
-        # Assuming single value in lists after errors caught above
-        # Check if the list contains a value; if not, set the min and max to
-        # the static load (no shifting)
-        if min_vals:
-            tmp_val_min = min_vals[0]
-        else:
-            tmp_val_min = mod.component_static_load_mw[
-                mod.load_zone[prj],
-                tmp,
-                mod.load_component_shift_linked_load_component[prj],
-            ]
-        if max_vals:
-            tmp_val_max = max_vals[0]
-        else:
-            tmp_val_max = mod.component_static_load_mw[
-                mod.load_zone[prj],
-                tmp,
-                mod.load_component_shift_linked_load_component[prj],
-            ]
-
-        return tmp_val_min, tmp_val_max
-
-    m.load_component_shift_min_load_mw_by_tmp = Param(
-        m.LOAD_COMPONENT_SHIFT_PRJS_OPR_TMPS,
-        initialize=lambda mod, prj, tmp: load_bounds_by_tmp_init(mod, prj, tmp)[0],
-    )
-
-    m.load_component_shift_max_load_mw_by_tmp = Param(
-        m.LOAD_COMPONENT_SHIFT_PRJS_OPR_TMPS,
-        initialize=lambda mod, prj, tmp: load_bounds_by_tmp_init(mod, prj, tmp)[1],
-    )
-
     # Optional params
     ###########################################################################
     m.load_component_shift_efficiency_factor = Param(
@@ -223,6 +185,82 @@ def add_model_components(
 
     m.Load_Component_Shift_Add_Load_MW = Var(
         m.LOAD_COMPONENT_SHIFT_PRJS_OPR_TMPS, within=NonNegativeReals
+    )
+
+    # Expression
+    ###########################################################################
+
+    def load_component_shift_min_load_rule(mod, prj, tmp):
+        min_vals = []
+
+        for _prj, bt, hrz in mod.LOAD_COMPONENT_SHIFT_PRJS_BT_HRZS:
+            if _prj == prj and tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]:
+                min_vals.append(mod.load_component_shift_min_load_mw[_prj, bt, hrz])
+
+        if len(min_vals) > 1:
+            raise ValueError(f"""More than one value per timepoints specified
+                 for bounds for load_component_shift project {prj}, 
+                 timepoint {tmp}. Please ensure you don't have 
+                 overlapping horizons.""")
+
+        # Assuming single value in lists after errors caught above
+        # Check if the list contains a value; if not, set the min to
+        # the static load (no shifting)
+        if min_vals:
+            tmp_val_min = min_vals[0]
+        else:
+            tmp_val_min = (
+                mod.component_static_load_mw[
+                    mod.load_zone[prj],
+                    tmp,
+                    mod.load_component_shift_linked_load_component[prj],
+                ]
+                * mod.Load_Component_Shift_Fraction_Invested[prj, mod.period[tmp]]
+            )
+
+        return tmp_val_min
+
+    m.load_component_shift_min_load_mw_by_tmp = Expression(
+        m.LOAD_COMPONENT_SHIFT_PRJS_OPR_TMPS,
+        rule=load_component_shift_min_load_rule,
+    )
+
+    def load_component_shift_max_load_rule(mod, prj, tmp):
+        max_vals = []
+
+        for _prj, bt, hrz in mod.LOAD_COMPONENT_SHIFT_PRJS_BT_HRZS:
+            if _prj == prj and tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]:
+                if mod.load_component_shift_max_load_mw[_prj, bt, hrz] != Infinity:
+                    max_vals.append(mod.load_component_shift_max_load_mw[_prj, bt, hrz])
+                else:
+                    max_vals.append(mod.Capacity_MW[prj, mod.period[tmp]])
+
+        if len(max_vals) > 1:
+            raise ValueError(f"""More than one value per timepoints specified
+                 for bounds for load_component_shift project {prj}, 
+                 timepoint {tmp}. Please ensure you don't have 
+                 overlapping horizons.""")
+
+        # Assuming single value in lists after errors caught above
+        # Check if the list contains a value; if not, set the to
+        # the static load (no shifting)
+        if max_vals:
+            tmp_val_max = max_vals[0]
+        else:
+            tmp_val_max = (
+                mod.component_static_load_mw[
+                    mod.load_zone[prj],
+                    tmp,
+                    mod.load_component_shift_linked_load_component[prj],
+                ]
+                * mod.Load_Component_Shift_Fraction_Invested[prj, mod.period[tmp]]
+            )
+
+        return tmp_val_max
+
+    m.load_component_shift_max_load_mw_by_tmp = Expression(
+        m.LOAD_COMPONENT_SHIFT_PRJS_OPR_TMPS,
+        rule=load_component_shift_max_load_rule,
     )
 
     # Constraints
@@ -250,11 +288,13 @@ def add_model_components(
         """
         return (
             sum(
+                # The load that can be shifted is proportional to the investment
                 mod.component_static_load_mw[
                     mod.load_zone[prj],
                     tmp,
                     mod.load_component_shift_linked_load_component[prj],
                 ]
+                * mod.Load_Component_Shift_Fraction_Invested[prj, mod.period[tmp]]
                 * mod.hrs_in_tmp[tmp]
                 * mod.tmp_weight[tmp]
                 for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
@@ -292,6 +332,16 @@ def add_model_components(
         m.LOAD_COMPONENT_SHIFT_PRJS_OPR_TMPS, rule=max_demand_rule
     )
 
+    def max_power_rule(mod, prj, tmp):
+        return (
+            mod.Load_Component_Shift_Add_Load_MW[prj, tmp]
+            <= mod.Capacity_MW[prj, mod.period[tmp]]
+        )
+
+    m.Load_Component_Shift_Max_Power_Constraint = Constraint(
+        m.LOAD_COMPONENT_SHIFT_PRJS_OPR_TMPS, rule=max_power_rule
+    )
+
     # TODO: remove this constraint once input validation is in place that
     #  does not allow specifying a reserve_zone for 'load_component_shift'
     #  type
@@ -303,17 +353,13 @@ def add_model_components(
         Upward reserves should be zero in every operational timepoint.
         """
         if getattr(d, headroom_variables)[g]:
-            warnings.warn(
-                """project {} is of the 'load_component_shift' operational 
+            warnings.warn("""project {} is of the 'load_component_shift' operational 
                 type and should not be assigned any upward reserve BAs since it 
                 cannot provide  upward reserves. Please replace the upward 
                 reserve BA for project {} with '.' (no value) in projects.tab. 
                 Model will add  constraint to ensure project {} cannot provide 
                 upward reserves
-                """.format(
-                    g, g, g
-                )
-            )
+                """.format(g, g, g))
             return (
                 sum(getattr(mod, c)[g, tmp] for c in getattr(d, headroom_variables)[g])
                 == 0
@@ -335,17 +381,13 @@ def add_model_components(
         Downward reserves should be zero in every operational timepoint.
         """
         if getattr(d, footroom_variables)[g]:
-            warnings.warn(
-                """project {} is of the 'load_component_shift' operational 
+            warnings.warn("""project {} is of the 'load_component_shift' operational 
                 type and should not be assigned any downward reserve BAs since 
                 it cannot provide downward reserves. Please replace the
                 downward reserve BA for project {} with '.' (no value) in 
                 projects.tab. Model will add constraint to ensure project {} 
                 cannot provide downward reserves.
-                """.format(
-                    g, g, g
-                )
-            )
+                """.format(g, g, g))
             return (
                 sum(getattr(mod, c)[g, tmp] for c in getattr(d, footroom_variables)[g])
                 == 0
@@ -368,13 +410,13 @@ def power_provision_rule(mod, prj, tmp):
     shifted load (add to load).
     """
 
-    return (
-        -mod.Load_Component_Shift_Add_Load_MW[prj, tmp]
-        + mod.component_static_load_mw[
+    return -mod.Load_Component_Shift_Add_Load_MW[prj, tmp] + (
+        mod.component_static_load_mw[
             mod.load_zone[prj],
             tmp,
             mod.load_component_shift_linked_load_component[prj],
         ]
+        * mod.Load_Component_Shift_Fraction_Invested[prj, mod.period[tmp]]
     )
 
 
@@ -588,6 +630,7 @@ def write_model_inputs(
         stage,
         fname,
         data,
+        replace_nulls=True,
     )
 
 

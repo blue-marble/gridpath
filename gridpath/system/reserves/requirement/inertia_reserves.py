@@ -310,9 +310,10 @@ def get_inputs_from_database(
         FROM inputs_geography_inertia_reserves_bas
         WHERE inertia_reserves_ba_scenario_id = {reserve_type_ba_subscenario_id}) as relevant_bas
         USING (inertia_reserves_ba)
-        WHERE inertia_reserves_scenario_id = {reserve_type_ba_subscenario_id}
+        WHERE inertia_reserves_scenario_id = {reserve_type_req_subscenario_id}
         """.format(
-            reserve_type_ba_subscenario_id=subscenarios.INERTIA_RESERVES_BA_SCENARIO_ID
+            reserve_type_ba_subscenario_id=subscenarios.INERTIA_RESERVES_BA_SCENARIO_ID,
+            reserve_type_req_subscenario_id=subscenarios.INERTIA_RESERVES_SCENARIO_ID,
         )
     )
 
@@ -360,9 +361,10 @@ def get_inputs_from_database(
         FROM inputs_geography_inertia_reserves_bas
         WHERE inertia_reserves_ba_scenario_id = {reserve_type_ba_subscenario_id}) as relevant_bas
         USING (inertia_reserves_ba)
-        WHERE inertia_reserves_scenario_id = {reserve_type_ba_subscenario_id}
+        WHERE inertia_reserves_scenario_id = {reserve_type_req_subscenario_id}
         """.format(
-            reserve_type_ba_subscenario_id=subscenarios.INERTIA_RESERVES_BA_SCENARIO_ID
+            reserve_type_ba_subscenario_id=subscenarios.INERTIA_RESERVES_BA_SCENARIO_ID,
+            reserve_type_req_subscenario_id=subscenarios.INERTIA_RESERVES_SCENARIO_ID,
         )
     )
 

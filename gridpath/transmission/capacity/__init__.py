@@ -16,7 +16,6 @@
 
 from gridpath.auxiliary.db_interface import import_csv
 
-
 # Database
 ###############################################################################
 

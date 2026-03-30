@@ -348,16 +348,12 @@ def get_inputs_from_database(
     """
 
     c1 = conn.cursor()
-    cap_grp_reqs = c1.execute(
-        """
+    cap_grp_reqs = c1.execute("""
         SELECT transmission_capacity_group, period,
         transmission_capacity_group_new_capacity_min, transmission_capacity_group_new_capacity_max
         FROM inputs_transmission_capacity_group_requirements
         WHERE transmission_capacity_group_requirement_scenario_id = {}
-        """.format(
-            subscenarios.TRANSMISSION_CAPACITY_GROUP_REQUIREMENT_SCENARIO_ID
-        )
-    )
+        """.format(subscenarios.TRANSMISSION_CAPACITY_GROUP_REQUIREMENT_SCENARIO_ID))
 
     c2 = conn.cursor()
     cap_grp_tx = c2.execute(

@@ -3,11 +3,8 @@ GridPath User Interface
 #######################
 
 The GridPath user interface (UI) makes it possible to interact with the
-platform without relying on the command line. We will be distributing compiled
-versions of the UI for Windows and Mac. You can also build the UI from
-source (instructions are in the :code:`README.md` file in GridPath's
-:code:`ui` package). Here we provide instructions for how to *use* the UI.
-
+platform without relying on the command line. A new version of th the UI is
+under development and will be released in 2026.
 
 **********
 Navigation

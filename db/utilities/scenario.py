@@ -18,6 +18,9 @@ and the path to the directory where the scenario CSV is located using the
 
 >>> gridpath_load_scenarios --database PATH/DO/DB --csv_path PATH/TO/SCENARIO/CSV
 
+If you are using the csvs_test_examples directory included with GridPath, /PATH/TO/SCENARIO/CSV
+can be set to ../csvs_test_examples/scenarios.csv.
+
 To load a single scenario by name, use the *--scenario* flag. To delete a scenario from
 the database, specify the scenario name with the *--scenario* flag and use the
 *--delete* flag.
@@ -134,9 +137,7 @@ def create_scenario(io, c, column_values_dict):
 
     sql = """
         INSERT INTO scenarios ({}) VALUES ({});
-        """.format(
-        column_names_sql_string, column_values_sql_string
-    )
+        """.format(column_names_sql_string, column_values_sql_string)
 
     spin_on_database_lock(
         conn=io, cursor=c, sql=sql, data=column_values_data, many=False
@@ -177,9 +178,7 @@ def update_scenario_single_column(io, c, scenario_name, column_name, column_valu
         UPDATE scenarios
         SET {} = ?
         WHERE scenario_name = ?;
-        """.format(
-        column_name
-    )
+        """.format(column_name)
 
     spin_on_database_lock(
         conn=io,
@@ -229,9 +228,7 @@ def delete_scenario_results_and_status(conn, scenario_id):
     for tbl in results_tables + status_tables:
         sql = """
             DELETE FROM {} WHERE scenario_id = ?;
-            """.format(
-            tbl
-        )
+            """.format(tbl)
         spin_on_database_lock(
             conn=conn, cursor=c, sql=sql, data=(scenario_id,), many=False
         )
@@ -269,9 +266,7 @@ def delete_scenario_results(conn, scenario_id):
     for tbl in results_tables:
         sql = """
             DELETE FROM {} WHERE scenario_id = ?;
-            """.format(
-            tbl
-        )
+            """.format(tbl)
         spin_on_database_lock(
             conn=conn, cursor=c, sql=sql, data=(scenario_id,), many=False
         )

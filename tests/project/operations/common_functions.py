@@ -16,7 +16,6 @@ from collections import OrderedDict
 import os.path
 import pandas as pd
 
-
 TEST_DATA_DIRECTORY = os.path.join(os.path.dirname(__file__), "..", "..", "test_data")
 
 

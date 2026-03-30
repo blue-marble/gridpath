@@ -1,4 +1,5 @@
 # Copyright 2016-2025 Blue Marble Analytics LLC.
+# Copyright 2026 Sylvan Energy Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,6 +14,8 @@
 # limitations under the License.
 
 import csv
+import warnings
+
 import numpy as np
 import os.path
 import pandas as pd
@@ -22,25 +25,36 @@ from gridpath.project.common_functions import get_column_row_value
 
 
 def relevant_periods_by_project_vintage(
-    periods, period_start_year, period_end_year, vintage, lifetime_yrs
+    future_trajectory_periods,
+    period_start_year,
+    period_end_year,
+    vintage,
+    lifetime_yrs,
+    quiet=False,
 ):
     """
-    :param periods: the study periods in a list
+    :param future_trajectory_periods: the study periods in a list
     :param period_start_year: dictionary of the start year of a period
         by period
     :param period_end_year: dictionary of the end year of a period
         by period
     :param vintage: the project vintage
     :param lifetime_yrs: the project-vintage lifetime
+    :param quiet: silence warnings if set to True
     :return: the operational or financial periods given the study periods and
         the project vintage and lifetime
 
-    Given the list of study periods and the project's vintage and lifetime (either
-    the operational lifetime or the financial lifetime), this function returns the
-    list of periods in which a project with this vintage and lifetime will be
-    operational (based on the operational lifetime) or incurring an annualized capital
-    cost (based on the financial lifetime) respectively. When a project is
-    operational, it incurs annual fixed O&M costs.
+    Note that this function relies on the correct future_trajectory_periods being
+    passed to it. We need to pass all the periods that are "connected to"
+    (on the same future trajectory) as the project vintage.
+
+    Given the list of periods on the same future trajectory as the project's
+    vintage and the project's lifetime (either the operational lifetime or the
+    financial lifetime), this function returns the list of periods in which a
+    project with this vintage and lifetime will be operational (based on the
+    operational lifetime) or incurring an annualized capital cost (based on
+    the financial lifetime) respectively. When a project is operational,
+    it incurs annual fixed O&M costs.
 
     Two conditions must be met for a period to be operational / incurring costs for a
     project of a certain vintage:
@@ -60,15 +74,20 @@ def relevant_periods_by_project_vintage(
     the period is assumed to not be operational / incurring capital costs for the
     project.
     """
-    # No relevant periods if vintage does not belong to the project set;
-    # this shouldn't happen as we (should) enforce VINTAGES within PERIODS.
-    if vintage not in periods:
-        return []
+    # No relevant periods if vintage does not belong to the vintage's future
+    # trajectory periods;
+    # this shouldn't happen.
+    relevant_periods = list()
+    if vintage not in future_trajectory_periods:
+        if not quiet:
+            warnings.warn(
+                f"Vintage {vintage} is not in the future trajectory periods. "
+                f"This shouldn't happen."
+            )
     else:
         first_lifetime_year = period_start_year[vintage]
         last_lifetime_year = period_start_year[vintage] + lifetime_yrs
-        relevant_periods = list()
-        for p in periods:
+        for p in future_trajectory_periods:
             if (
                 first_lifetime_year <= period_start_year[p]
                 and last_lifetime_year >= period_end_year[p]
@@ -136,8 +155,7 @@ def spec_get_inputs_from_database(conn, subscenarios, subproblem, capacity_type)
     db_subproblem = subproblem if subproblem != "" else 1
 
     c = conn.cursor()
-    spec_project_params = c.execute(
-        f"""
+    spec_project_params = c.execute(f"""
         SELECT project,
         period,
         specified_capacity_mw,
@@ -198,8 +216,7 @@ def spec_get_inputs_from_database(conn, subscenarios, subproblem, capacity_type)
                   WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
                   AND subproblem_id = {db_subproblem}
                )
-        ;"""
-    )
+        ;""")
 
     return spec_project_params
 

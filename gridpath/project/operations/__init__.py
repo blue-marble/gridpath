@@ -55,6 +55,7 @@ from gridpath.auxiliary.validations import (
 from gridpath.project.common_functions import append_to_input_file
 from gridpath.project.operations.operational_types.common_functions import (
     get_prj_temporal_index_opr_inputs_from_db,
+    write_tab_file_model_inputs,
 )
 
 
@@ -734,7 +735,7 @@ def load_model_data(
             var_om_by_idx_dict = {}
 
             for idx, val in var_om_df.iterrows():
-                (prj, prd_or_tmp) = idx
+                prj, prd_or_tmp = idx
                 if prd_or_tmp == 0:
                     if prd_or_tmp_str == "period":
                         set_to_use = prd_set
@@ -828,7 +829,7 @@ def load_model_data(
         curtailment_by_idx_dict = {}
 
         for idx, val in curtailment_df.iterrows():
-            (prj, prd) = idx
+            prj, prd = idx
             if prd == 0:
                 for _prd in sorted(list(prd_set)):
                     curtailment_prj_idx_list.append((prj, _prd))
@@ -1018,7 +1019,9 @@ def get_inputs_from_database(
         partial_availability_threshold,
         nonfuel_carbon_emissions_per_mwh,
         powerhouse, generator_efficiency, linked_load_component,
-        efficiency_factor,energy_requirement_factor
+        efficiency_factor, energy_requirement_factor, 
+        losses_factor_in_energy_target, losses_factor_curtailment, 	
+        upward_reserves_to_soc_depletion
         -- Get only the subset of projects in the portfolio with their 
         -- capacity types based on the project_portfolio_scenario_id 
         FROM
@@ -1039,8 +1042,7 @@ def get_inputs_from_database(
     )
 
     var_om_by_prd_c = conn.cursor()
-    var_om_by_prd = var_om_by_prd_c.execute(
-        f"""
+    var_om_by_prd = var_om_by_prd_c.execute(f"""
         SELECT project, period, variable_om_cost_by_period
         FROM inputs_project_portfolios
         -- select the correct operational characteristics subscenario
@@ -1065,8 +1067,7 @@ def get_inputs_from_database(
             )
             OR period = 0 -- for all periods
             )
-        """
-    )
+        """)
 
     var_om_by_tmp = get_prj_temporal_index_opr_inputs_from_db(
         subscenarios=subscenarios,
@@ -1256,8 +1257,7 @@ def get_inputs_from_database(
     )
 
     curtailment_c = conn.cursor()
-    curtailment_cost = curtailment_c.execute(
-        f"""
+    curtailment_cost = curtailment_c.execute(f"""
         SELECT project, period, curtailment_cost_per_powerunithour
         FROM inputs_project_portfolios
         -- select the correct operational characteristics subscenario
@@ -1289,8 +1289,36 @@ def get_inputs_from_database(
             )
             OR period = 0 -- for all periods
             )
-        """
-    )
+        """)
+
+    n_startup_c = conn.cursor()
+    n_startup_limits = n_startup_c.execute(f"""
+        SELECT project, balancing_type_horizon, horizon, max_n_startups
+        FROM inputs_project_portfolios
+        INNER JOIN
+        (SELECT project, n_startup_limit_scenario_id
+        FROM inputs_project_operational_chars
+        WHERE project_operational_chars_scenario_id = {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
+        ) AS op_char
+        USING (project)
+        INNER JOIN
+        inputs_project_n_startup_limits
+        USING (project, n_startup_limit_scenario_id)
+        JOIN
+        (SELECT balancing_type_horizon, horizon
+        FROM inputs_temporal_horizons
+        WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+        AND (balancing_type_horizon, horizon) in (
+            SELECT DISTINCT balancing_type_horizon, horizon
+            FROM inputs_temporal_horizon_timepoints
+            WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+            AND subproblem_id = {subproblem}
+            AND stage_id = {stage}
+        )) as relevant_horizons
+        USING (balancing_type_horizon, horizon)
+        WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
+        AND n_startup_limit_scenario_id IS NOT NULL
+        """)
 
     return (
         proj_opchar,
@@ -1304,6 +1332,7 @@ def get_inputs_from_database(
         cap_factor_limits,
         supplemental_firing,
         curtailment_cost,
+        n_startup_limits,
     )
 
 
@@ -1350,6 +1379,7 @@ def write_model_inputs(
         cap_factor_limits,
         supplemental_firing,
         curtailment_cost,
+        n_startup_limits,
     ) = get_inputs_from_database(
         scenario_id,
         subscenarios,
@@ -1412,6 +1442,9 @@ def write_model_inputs(
         "linked_load_component",
         "efficiency_factor",
         "energy_requirement_factor",
+        "losses_factor_in_energy_target",
+        "losses_factor_curtailment",
+        "upward_reserves_to_soc_depletion",
     ]
 
     append_to_input_file(
@@ -1500,6 +1533,14 @@ def write_model_inputs(
         filename="project_curtailment_cost.tab",
     )
 
+    # Startup limits
+    startup_limits_df = cursor_to_df(n_startup_limits)
+    write_additional_opchar_file(
+        opchar_df=startup_limits_df,
+        inputs_directory=inputs_directory,
+        filename="startup_limits.tab",
+    )
+
 
 def import_results_into_database(
     scenario_id,
@@ -1573,6 +1614,7 @@ def validate_inputs(
         cap_factor_limits,
         supplemental_firing,
         curtailment_cost,
+        n_startup_limits,
     ) = get_inputs_from_database(
         scenario_id,
         subscenarios,
@@ -1831,6 +1873,9 @@ def validate_inputs(
         "linked_load_component",
         "efficiency_factor",
         "energy_requirement_factor",
+        "losses_factor_in_energy_target",
+        "losses_factor_curtailment",
+        "upward_reserves_to_soc_depletion",
     ]
 
     sql = """SELECT {}
@@ -1907,14 +1952,10 @@ def get_slopes_intercept_by_project_period_segment(df, input_col, projects, peri
         elif periods.issubset(slice_periods):
             p_iterable = periods
         else:
-            raise ValueError(
-                """{} for project '{}' isn't specified for all 
+            raise ValueError("""{} for project '{}' isn't specified for all 
                 modeled periods. Set period to 0 if inputs are the 
                 same for each period or make sure all modelled periods 
-                are included.""".format(
-                    input_col, project
-                )
-            )
+                are included.""".format(input_col, project))
 
         for period in p_iterable:
             df_slice_p = df_slice[df_slice["period"] == period]
@@ -1982,24 +2023,16 @@ def calculate_slope_intercept(project, load_points, heat_rates):
     # Data checks
     assert len(load_points) == len(heat_rates)
     if np.any(load_points <= 0) or np.any(heat_rates <= 0):
-        raise ValueError(
-            """
+        raise ValueError("""
             Load points and average heat rates should be positive
             numbers. Check heat rate curve inputs for project '{}'.
-            """.format(
-                project
-            )
-        )
+            """.format(project))
     if n_points == 0:
-        raise ValueError(
-            """
+        raise ValueError("""
             Model requires at least one load point and one average
             heat rate input for each fuel project. It seems like
             there are no heat rate inputs for project '{}'.
-            """.format(
-                project
-            )
-        )
+            """.format(project))
 
     # if just one point, assume constant heat rate (no intercept)
     if n_points == 1:
@@ -2014,36 +2047,24 @@ def calculate_slope_intercept(project, load_points, heat_rates):
 
         # Data Checks
         if np.any(incr_loads <= 0):
-            raise ValueError(
-                """
+            raise ValueError("""
                 Load points in curve should be strictly
                 increasing. Check curve inputs for project '{}'.
-                """.format(
-                    project
-                )
-            )
+                """.format(project))
         if np.any(incr_fuel_burn <= 0):
-            raise ValueError(
-                """
+            raise ValueError("""
                 Total fuel burn or variable O&M cost should be strictly 
                 increasing between load points. Check heat rate curve inputs
                 for project '{}'.
-                """.format(
-                    project
-                )
-            )
+                """.format(project))
         if np.any(np.diff(slopes) <= 0):
-            raise ValueError(
-                """
+            raise ValueError("""
                 The fuel burn or variable O&M cost as a function of power 
                 output should be a convex function, i.e. the incremental 
                 heat rate or variable O&M rate should
                 be positive and strictly increasing. Check curve inputs for 
                 project '{}'.
-                """.format(
-                    project
-                )
-            )
+                """.format(project))
 
     return slopes, intercepts
 

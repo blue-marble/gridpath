@@ -18,6 +18,7 @@
 
 import os
 import sys
+import sphinx_rtd_theme
 
 sys.path.insert(0, os.path.abspath("../../"))
 
@@ -36,6 +37,7 @@ extensions = [
     "sphinx.ext.todo",
     "sphinx.ext.viewcode",
     "sphinxarg.ext",
+    "sphinx_rtd_theme",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -52,7 +54,7 @@ master_doc = "index"
 
 # General information about the project.
 project = "GridPath"
-copyright = "2016-2022, Blue Marble Analytics LLC"
+copyright = "2016-2025, Blue Marble Analytics LLC"
 author = "Blue Marble Analytics LLC"
 
 # The version info for the project you're documenting, acts as replacement for
@@ -95,7 +97,7 @@ todo_include_todos = False
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 # http://www.sphinx-doc.org/en/stable/theming.html
-html_theme = "nature"
+html_theme = "sphinx_rtd_theme"
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the

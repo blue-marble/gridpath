@@ -19,7 +19,6 @@ rate costs. Hurdle rate costs are currently applied on power sent across the
 transmission line.
 """
 
-
 import csv
 import os.path
 from pyomo.environ import Param, Var, Constraint, NonNegativeReals, Expression, value

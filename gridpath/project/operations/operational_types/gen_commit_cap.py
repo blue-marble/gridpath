@@ -45,7 +45,6 @@ startup and shutdown costs.
 
 """
 
-
 import csv
 import os.path
 import pandas as pd

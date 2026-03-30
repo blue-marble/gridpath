@@ -286,7 +286,7 @@ def add_model_components(
 
 def operational_periods_by_generator_vintage(mod, prj, v):
     return relevant_periods_by_project_vintage(
-        periods=getattr(mod, "PERIODS"),
+        future_trajectory_periods=getattr(mod, "PERIOD_FUTURE_TRAJECTORY")[v],
         period_start_year=getattr(mod, "period_start_year"),
         period_end_year=getattr(mod, "period_end_year"),
         vintage=v,
@@ -311,7 +311,7 @@ def energy_new_lin_vintages_operational_in_period(mod, p):
 
 def financial_periods_by_generator_vintage(mod, prj, v):
     return relevant_periods_by_project_vintage(
-        periods=getattr(mod, "PERIODS"),
+        future_trajectory_periods=getattr(mod, "PERIOD_FUTURE_TRAJECTORY")[v],
         period_start_year=getattr(mod, "period_start_year"),
         period_end_year=getattr(mod, "period_end_year"),
         vintage=v,
@@ -507,59 +507,6 @@ def add_to_project_period_results(
     )
 
     return results_columns, captype_df
-
-
-def summarize_results(
-    scenario_directory,
-    weather_iteration,
-    hydro_iteration,
-    availability_iteration,
-    subproblem,
-    stage,
-    skip_quick_summary,
-    summary_results_file,
-):
-    """
-    Summarize new build generation energy results.
-    :param scenario_directory:
-    :param subproblem:
-    :param stage:
-    :param summary_results_file:
-    :return:
-    """
-
-    if not skip_quick_summary:
-        # Get the results CSV as dataframe
-        energy_results_agg_df = read_results_file_generic(
-            scenario_directory=scenario_directory,
-            weather_iteration=weather_iteration,
-            hydro_iteration=hydro_iteration,
-            availability_iteration=availability_iteration,
-            subproblem=subproblem,
-            stage=stage,
-            capacity_type=Path(__file__).stem,
-        )
-
-        # Get all technologies with the new build energy
-        new_build_df = pd.DataFrame(
-            energy_results_agg_df[energy_results_agg_df["new_build_energy_mwh"] > 0][
-                "new_build_energy_mwh"
-            ]
-        )
-
-        # Get the units from the units.csv file
-        power_unit, energy_unit, fuel_unit = get_units(scenario_directory)
-
-        # Rename column header
-        columns = ["New Energy ({})".format(power_unit)]
-
-        write_summary_results_generic(
-            results_df=new_build_df,
-            columns=columns,
-            summary_results_file=summary_results_file,
-            title="New Energy Procurement",
-            empty_title="No new energy_new_lin generation was procured.",
-        )
 
 
 # Database

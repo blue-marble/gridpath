@@ -718,8 +718,7 @@ def get_inputs_from_database(
     """
 
     c = conn.cursor()
-    reservoirs = c.execute(
-        f"""SELECT water_node,
+    reservoirs = c.execute(f"""SELECT water_node,
             max_powerhouse_release_vol_unit_per_sec,
             max_spill_vol_unit_per_sec,
             max_total_outflow_vol_unit_per_sec,
@@ -748,8 +747,7 @@ def get_inputs_from_database(
                     {subscenarios.WATER_NETWORK_SCENARIO_ID}
                 )
         ;
-        """
-    )
+        """)
 
     c4 = conn.cursor()
     hrz_max_volumes = c4.execute(

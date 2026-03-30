@@ -30,7 +30,6 @@ from gridpath.project.operations.reserves.reserve_provision import (
     generic_validate_project_bas,
 )
 
-
 # Reserve-module variables
 MODULE_NAME = "lf_reserves_up"
 # Dynamic components

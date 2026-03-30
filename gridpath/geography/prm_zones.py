@@ -105,14 +105,10 @@ def get_inputs_from_database(
     """
 
     c = conn.cursor()
-    prm_zones = c.execute(
-        """SELECT prm_zone, allow_violation, violation_penalty_per_mw
+    prm_zones = c.execute("""SELECT prm_zone, allow_violation, violation_penalty_per_mw
         FROM inputs_geography_prm_zones
         WHERE prm_zone_scenario_id = {};
-        """.format(
-            subscenarios.PRM_ZONE_SCENARIO_ID
-        )
-    )
+        """.format(subscenarios.PRM_ZONE_SCENARIO_ID))
 
     return prm_zones
 
