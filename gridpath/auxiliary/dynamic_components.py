@@ -63,6 +63,8 @@ local_capacity_balance_provision_components = (
     "local_capacity_balance_provision_components"
 )
 
+slice_of_day_balance_provision_components = "slice_of_day_balance_provision_components"
+
 fuel_burn_balance_components = "fuel_burn_balance_components"
 
 cost_components = "cost_components"
@@ -153,6 +155,10 @@ class DynamicComponents(object):
         # Local capacity constraint
         # Modules will add component names to this list
         setattr(self, local_capacity_balance_provision_components, list())
+
+        # Slice-of-day constraint
+        # Modules will add component names to this list
+        setattr(self, slice_of_day_balance_provision_components, list())
 
         # Fuel burn limit constraint
         # Modules will add component names to this list

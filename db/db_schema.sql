@@ -659,6 +659,28 @@ CREATE TABLE inputs_geography_energy_target_zones
         subscenarios_geography_energy_target_zones (energy_target_zone_scenario_id)
 );
 
+-- Slice of day
+-- This is the unit at which slice-of-day requirements are met in the model
+DROP TABLE IF EXISTS subscenarios_geography_slice_of_day_zones;
+CREATE TABLE subscenarios_geography_slice_of_day_zones
+(
+    slice_of_day_zone_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name                          VARCHAR(32),
+    description                   VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_geography_slice_of_day_zones;
+CREATE TABLE inputs_geography_slice_of_day_zones
+(
+    slice_of_day_zone_scenario_id INTEGER,
+    slice_of_day_zone             VARCHAR(32),
+    allow_violation               INTEGER DEFAULT 0, -- constraint is hard by default
+    violation_penalty_per_mw      FLOAT   DEFAULT 0,
+    PRIMARY KEY (slice_of_day_zone_scenario_id, slice_of_day_zone),
+    FOREIGN KEY (slice_of_day_zone_scenario_id) REFERENCES
+        subscenarios_geography_slice_of_day_zones (slice_of_day_zone_scenario_id)
+);
+
 -- Instantaneous penetration
 
 DROP TABLE IF EXISTS subscenarios_geography_instantaneous_penetration_zones;
@@ -3409,6 +3431,33 @@ CREATE TABLE inputs_project_energy_target_zones
         subscenarios_project_energy_target_zones (project_energy_target_zone_scenario_id)
 );
 
+-- Project slice-of-day contributions
+-- Exogenous capacity factor for each project contributing to a slice-of-day zone
+-- Only rows where the project has a non-zero contribution need be present
+DROP TABLE IF EXISTS subscenarios_project_slice_of_day_contributions;
+CREATE TABLE subscenarios_project_slice_of_day_contributions
+(
+    project_slice_of_day_scenario_id INTEGER PRIMARY KEY,
+    name                             VARCHAR(32),
+    description                      VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_project_slice_of_day_contributions;
+CREATE TABLE inputs_project_slice_of_day_contributions
+(
+    project_slice_of_day_scenario_id INTEGER,
+    project                          TEXT,
+    slice_of_day_zone                VARCHAR(32),
+    period                           INTEGER,
+    month                            INTEGER,
+    hour                             INTEGER,
+    cap_fac                          FLOAT,
+    PRIMARY KEY (project_slice_of_day_scenario_id, project,
+                 slice_of_day_zone, period, month, hour),
+    FOREIGN KEY (project_slice_of_day_scenario_id) REFERENCES
+        subscenarios_project_slice_of_day_contributions (project_slice_of_day_scenario_id)
+);
+
 -- Project instantaneous penetration zones
 -- Which projects are constrained by the instantaneous penetration rules
 -- This table can include all project with NULLs for projects not
@@ -5167,6 +5216,35 @@ CREATE TABLE inputs_system_period_energy_targets
                  subproblem_id, stage_id, period)
 );
 
+-- Slice-of-day targets
+DROP TABLE IF EXISTS subscenarios_system_slice_of_day_targets;
+CREATE TABLE subscenarios_system_slice_of_day_targets
+(
+    slice_of_day_target_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name                            VARCHAR(32),
+    description                     VARCHAR(128)
+);
+
+-- Can include periods and zones other than the ones in a scenario, as correct
+-- periods and zones will be pulled depending on temporal_scenario_id and
+-- slice_of_day_zone_scenario_id
+DROP TABLE IF EXISTS inputs_system_slice_of_day_targets;
+CREATE TABLE inputs_system_slice_of_day_targets
+(
+    slice_of_day_target_scenario_id INTEGER,
+    slice_of_day_zone               VARCHAR(32),
+    subproblem_id                   INTEGER,
+    stage_id                        INTEGER,
+    period                          INTEGER,
+    month                           INTEGER,
+    hour                            INTEGER,
+    slice_of_day_target_mw          FLOAT,
+    PRIMARY KEY (slice_of_day_target_scenario_id, slice_of_day_zone,
+                 subproblem_id, stage_id, period, month, hour),
+    FOREIGN KEY (slice_of_day_target_scenario_id) REFERENCES
+        subscenarios_system_slice_of_day_targets (slice_of_day_target_scenario_id)
+);
+
 -- If the energy target is specified as percentage of load, we need to also
 -- specify which load, i.e. specify a mapping between the energy target zone
 -- and the load zones whose load should be part of the target calculation
@@ -5660,6 +5738,7 @@ CREATE TABLE scenarios
     of_carbon_credits                                           INTEGER,
     of_fuel_burn_limit                                          INTEGER,
     of_subsidies                                                INTEGER,
+    of_slice_of_day                                             INTEGER,
     of_prm                                                      INTEGER,
     of_capacity_transfers                                       INTEGER,
     of_deliverability                                           INTEGER,
@@ -5777,6 +5856,9 @@ CREATE TABLE scenarios
     fuel_burn_limit_scenario_id                                 INTEGER,
     subsidy_scenario_id                                         INTEGER,
     policy_requirement_scenario_id                              INTEGER,
+    slice_of_day_zone_scenario_id                               INTEGER,
+    slice_of_day_target_scenario_id                             INTEGER,
+    project_slice_of_day_scenario_id                            INTEGER,
     prm_requirement_scenario_id                                 INTEGER,
     local_capacity_requirement_scenario_id                      INTEGER,
     elcc_surface_scenario_id                                    INTEGER,
@@ -6713,6 +6795,28 @@ CREATE TABLE results_project_carbon_emissions_by_technology_period
                  technology, spinup_or_lookahead)
 );
 
+DROP TABLE IF EXISTS results_project_slice_of_day_contributions;
+CREATE TABLE results_project_slice_of_day_contributions
+(
+    scenario_id                    INTEGER,
+    project                        VARCHAR(64),
+    weather_iteration              INTEGER,
+    hydro_iteration                INTEGER,
+    availability_iteration         INTEGER,
+    subproblem_id                  INTEGER,
+    stage_id                       INTEGER,
+    slice_of_day_zone              VARCHAR(32),
+    period                         INTEGER,
+    month                          INTEGER,
+    hour                           INTEGER,
+    cap_fac                        FLOAT,
+    capacity_mw                    FLOAT,
+    slice_of_day_contribution_mw   FLOAT,
+    PRIMARY KEY (scenario_id, project, weather_iteration, hydro_iteration,
+                 availability_iteration, subproblem_id, stage_id,
+                 slice_of_day_zone, period, month, hour)
+);
+
 
 DROP TABLE IF EXISTS results_project_summary;
 CREATE TABLE results_project_summary
@@ -7569,6 +7673,30 @@ CREATE TABLE results_system_transmission_targets
     PRIMARY KEY (scenario_id, transmission_target_zone,
                  weather_iteration, hydro_iteration, availability_iteration,
                  subproblem_id, stage_id, balancing_type, horizon)
+);
+
+-- Slice-of-day balance
+DROP TABLE IF EXISTS results_system_slice_of_day;
+CREATE TABLE results_system_slice_of_day
+(
+    scenario_id                           INTEGER,
+    weather_iteration                     INTEGER,
+    hydro_iteration                       INTEGER,
+    availability_iteration                INTEGER,
+    subproblem_id                         INTEGER,
+    stage_id                              INTEGER,
+    slice_of_day_zone                     VARCHAR(64),
+    period                                INTEGER,
+    month                                 INTEGER,
+    hour                                  INTEGER,
+    total_slice_of_day_contribution_mw    FLOAT,
+    slice_of_day_target_mw                FLOAT,
+    slice_of_day_shortage_mw              FLOAT,
+    dual                                  FLOAT,
+    slice_of_day_marginal_cost_per_mw     FLOAT,
+    PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
+                 availability_iteration, subproblem_id, stage_id,
+                 slice_of_day_zone, period, month, hour)
 );
 
 -- Fuel burn limits

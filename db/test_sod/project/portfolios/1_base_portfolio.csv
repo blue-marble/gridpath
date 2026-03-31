@@ -1,0 +1,4 @@
+project,specified,new_build,capacity_type
+Solar,,,gen_new_lin
+Wind,,,gen_new_lin
+Flat_Block,,,gen_new_lin
