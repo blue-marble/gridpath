@@ -6715,26 +6715,34 @@ CREATE TABLE results_project_carbon_emissions_by_technology_period
 );
 
 
-DROP TABLE IF EXISTS results_project_summary;
-CREATE TABLE results_project_summary
+DROP TABLE IF EXISTS results_project_period_summary;
+CREATE TABLE results_project_period_summary
 (
-    scenario_id            INTEGER,
-    project                VARCHAR(64),
-    weather_iteration      INTEGER,
-    hydro_iteration        INTEGER,
-    availability_iteration INTEGER,
-    subproblem_id          INTEGER,
-    stage_id               INTEGER,
-    capacity_type          VARCHAR(64),
-    availability_type      VARCHAR(64),
-    operational_type       VARCHAR(64),
-    technology             VARCHAR(32),
-    load_zone              VARCHAR(32),
-    total_delivered_power  FLOAT,
-    PRIMARY KEY (scenario_id, project, weather_iteration, hydro_iteration,
-                 availability_iteration, subproblem_id, stage_id)
+    scenario_id                        INTEGER,
+    project                            VARCHAR(64),
+    period                             INTEGER,
+    weather_iteration                  INTEGER,
+    hydro_iteration                    INTEGER,
+    availability_iteration             INTEGER,
+    subproblem_id                      INTEGER,
+    stage_id                           INTEGER,
+    capacity_type                      VARCHAR(64),
+    operational_type                   VARCHAR(64),
+    technology                         VARCHAR(32),
+    load_zone                          VARCHAR(32),
+    total_bulk_power_mwh               FLOAT,
+    capacity_mw                        FLOAT,
+    energy_mwh                         FLOAT,
+    hyb_gen_capacity_mw                FLOAT,
+    hyb_stor_capacity_mw               FLOAT,
+    stor_energy_capacity_mwh           FLOAT,
+    fuel_prod_capacity_fuelunitperhour FLOAT,
+    fuel_rel_capacity_fuelunitperhour  FLOAT,
+    fuel_stor_capacity_fuelunit        FLOAT,
+    PRIMARY KEY (scenario_id, project, period, weather_iteration,
+                 hydro_iteration, availability_iteration, subproblem_id,
+                 stage_id)
 );
-
 
 DROP TABLE IF EXISTS results_transmission_period;
 CREATE TABLE results_transmission_period
