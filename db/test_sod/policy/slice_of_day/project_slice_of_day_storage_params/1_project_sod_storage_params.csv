@@ -1,4 +1,4 @@
-project,slice_of_day_zone,period,month,duration_hours,efficiency
+project,slice_of_day_zone,period,sod_month,duration_hours,efficiency
 Battery,cpuc_sod,20301,1,4,0.85
 Battery,cpuc_sod,20302,2,4,0.85
 Battery_8hr,cpuc_sod,20301,1,8,0.7

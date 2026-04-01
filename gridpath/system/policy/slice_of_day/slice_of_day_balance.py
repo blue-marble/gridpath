@@ -143,7 +143,7 @@ def export_results(
         for (z, p, mn, hr) in m.SLICE_OF_DAY_ZONE_PRD_MONTH_HOURS
     ]
     results_df = create_results_df(
-        index_columns=["slice_of_day_zone", "period", "month", "hour"],
+        index_columns=["slice_of_day_zone", "period", "sod_month", "sod_hour"],
         results_columns=results_columns,
         data=data,
     )
@@ -166,7 +166,7 @@ def save_duals(
     instance.constraint_indices["Slice_of_Day_Constraint"] = [
         "slice_of_day_zone",
         "period",
-        "month",
-        "hour",
+        "sod_month",
+        "sod_hour",
         "dual",
     ]

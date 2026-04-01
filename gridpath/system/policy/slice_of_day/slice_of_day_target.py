@@ -86,8 +86,8 @@ def load_model_data(
         select=(
             "slice_of_day_zone",
             "period",
-            "month",
-            "hour",
+            "sod_month",
+            "sod_hour",
             "slice_of_day_target_mw",
         ),
     )
@@ -113,7 +113,7 @@ def get_inputs_from_database(
 
     c = conn.cursor()
     slice_of_day_targets = c.execute(
-        """SELECT slice_of_day_zone, period, month, hour, slice_of_day_target_mw
+        """SELECT slice_of_day_zone, period, sod_month, sod_hour, slice_of_day_target_mw
         FROM inputs_system_slice_of_day_targets
         JOIN
         (SELECT period
@@ -226,8 +226,8 @@ def write_model_inputs(
             [
                 "slice_of_day_zone",
                 "period",
-                "month",
-                "hour",
+                "sod_month",
+                "sod_hour",
                 "slice_of_day_target_mw",
             ]
         )
@@ -270,7 +270,7 @@ def export_results(
         for (z, p, mn, hr) in m.SLICE_OF_DAY_ZONE_PRD_MONTH_HOURS
     ]
     results_df = create_results_df(
-        index_columns=["slice_of_day_zone", "period", "month", "hour"],
+        index_columns=["slice_of_day_zone", "period", "sod_month", "sod_hour"],
         results_columns=results_columns,
         data=data,
     )

@@ -38,8 +38,8 @@ def export_results(
         columns=[
             "slice_of_day_zone",
             "period",
-            "month",
-            "hour",
+            "sod_month",
+            "sod_hour",
         ],
         data=[
             [
@@ -50,7 +50,7 @@ def export_results(
             ]
             for (z, p, mn, hr) in m.SLICE_OF_DAY_ZONE_PRD_MONTH_HOURS
         ],
-    ).set_index(["slice_of_day_zone", "period", "month", "hour"])
+    ).set_index(["slice_of_day_zone", "period", "sod_month", "sod_hour"])
 
     z_prd_mn_hr_df.sort_index(inplace=True)
 

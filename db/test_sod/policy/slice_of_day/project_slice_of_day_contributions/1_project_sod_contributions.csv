@@ -1,4 +1,4 @@
-project,slice_of_day_zone,period,month,hour,cap_fac
+project,slice_of_day_zone,period,sod_month,sod_hour,cap_fac
 Solar,cpuc_sod,20301,1,1,0
 Solar,cpuc_sod,20301,1,2,0
 Solar,cpuc_sod,20301,1,3,0

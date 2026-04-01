@@ -265,7 +265,7 @@ def load_model_data(
                 "project",
                 "slice_of_day_zone",
                 "period",
-                "month",
+                "sod_month",
                 "duration_hours",
                 "efficiency",
             ),
@@ -292,7 +292,7 @@ def get_inputs_from_database(
     c = conn.cursor()
 
     params_rows = c.execute(
-        """SELECT project, slice_of_day_zone, period, month, duration_hours, efficiency
+        """SELECT project, slice_of_day_zone, period, sod_month, duration_hours, efficiency
         FROM inputs_project_slice_of_day_storage_params
         JOIN
         (SELECT period
@@ -380,7 +380,7 @@ def write_model_inputs(
     ) as f:
         writer = csv.writer(f, delimiter="\t", lineterminator="\n")
         writer.writerow(
-            ["project", "slice_of_day_zone", "period", "month", "duration_hours", "efficiency"]
+            ["project", "slice_of_day_zone", "period", "sod_month", "duration_hours", "efficiency"]
         )
         for row in params_rows:
             writer.writerow(row)
@@ -418,7 +418,7 @@ def export_results(
         for (z, p, mn, hr) in m.SLICE_OF_DAY_ZONE_PRD_MONTH_HOURS
     ]
     results_df = create_results_df(
-        index_columns=["slice_of_day_zone", "period", "month", "hour"],
+        index_columns=["slice_of_day_zone", "period", "sod_month", "sod_hour"],
         results_columns=results_columns,
         data=data,
     )
@@ -449,8 +449,8 @@ def export_results(
                 "project",
                 "slice_of_day_zone",
                 "period",
-                "month",
-                "hour",
+                "sod_month",
+                "sod_hour",
                 "capacity_mw",
                 "discharge_mw",
                 "charge_mw",

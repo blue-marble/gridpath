@@ -1,4 +1,4 @@
-slice_of_day_zone,subproblem_id,stage_id,period,month,hour,slice_of_day_target_mw
+slice_of_day_zone,subproblem_id,stage_id,period,sod_month,sod_hour,slice_of_day_target_mw
 cpuc_sod,1,1,20301,1,1,110
 cpuc_sod,1,1,20301,1,2,110
 cpuc_sod,1,1,20301,1,3,110

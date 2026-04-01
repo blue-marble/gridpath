@@ -3449,11 +3449,11 @@ CREATE TABLE inputs_project_slice_of_day_contributions
     project                          TEXT,
     slice_of_day_zone                VARCHAR(32),
     period                           INTEGER,
-    month                            INTEGER,
-    hour                             INTEGER,
+    sod_month                        INTEGER,
+    sod_hour                         INTEGER,
     cap_fac                          FLOAT,
     PRIMARY KEY (project_slice_of_day_scenario_id, project,
-                 slice_of_day_zone, period, month, hour),
+                 slice_of_day_zone, period, sod_month, sod_hour),
     FOREIGN KEY (project_slice_of_day_scenario_id) REFERENCES
         subscenarios_project_slice_of_day_contributions (project_slice_of_day_scenario_id)
 );
@@ -3475,11 +3475,11 @@ CREATE TABLE inputs_project_slice_of_day_storage_params
     project                                         TEXT,
     slice_of_day_zone                               VARCHAR(32),
     period                                          INTEGER,
-    month                                           INTEGER,
+    sod_month                                       INTEGER,
     duration_hours                                  FLOAT,
     efficiency                                      FLOAT,
     PRIMARY KEY (project_slice_of_day_storage_params_scenario_id, project,
-                 slice_of_day_zone, period, month),
+                 slice_of_day_zone, period, sod_month),
     FOREIGN KEY (project_slice_of_day_storage_params_scenario_id) REFERENCES
         subscenarios_project_slice_of_day_storage_params (project_slice_of_day_storage_params_scenario_id)
 );
@@ -5262,11 +5262,11 @@ CREATE TABLE inputs_system_slice_of_day_targets
     subproblem_id                   INTEGER,
     stage_id                        INTEGER,
     period                          INTEGER,
-    month                           INTEGER,
-    hour                            INTEGER,
+    sod_month                       INTEGER,
+    sod_hour                        INTEGER,
     slice_of_day_target_mw          FLOAT,
     PRIMARY KEY (slice_of_day_target_scenario_id, slice_of_day_zone,
-                 subproblem_id, stage_id, period, month, hour),
+                 subproblem_id, stage_id, period, sod_month, sod_hour),
     FOREIGN KEY (slice_of_day_target_scenario_id) REFERENCES
         subscenarios_system_slice_of_day_targets (slice_of_day_target_scenario_id)
 );
@@ -6834,14 +6834,14 @@ CREATE TABLE results_project_slice_of_day_contributions
     stage_id                       INTEGER,
     slice_of_day_zone              VARCHAR(32),
     period                         INTEGER,
-    month                          INTEGER,
-    hour                           INTEGER,
+    sod_month                      INTEGER,
+    sod_hour                       INTEGER,
     cap_fac                        FLOAT,
     capacity_mw                    FLOAT,
     slice_of_day_contribution_mw   FLOAT,
     PRIMARY KEY (scenario_id, project, weather_iteration, hydro_iteration,
                  availability_iteration, subproblem_id, stage_id,
-                 slice_of_day_zone, period, month, hour)
+                 slice_of_day_zone, period, sod_month, sod_hour)
 );
 
 
@@ -6857,15 +6857,15 @@ CREATE TABLE results_project_slice_of_day_storage_contributions
     stage_id                       INTEGER,
     slice_of_day_zone              VARCHAR(32),
     period                         INTEGER,
-    month                          INTEGER,
-    hour                           INTEGER,
+    sod_month                      INTEGER,
+    sod_hour                       INTEGER,
     capacity_mw                    FLOAT,
     discharge_mw                   FLOAT,
     charge_mw                      FLOAT,
     net_contribution_mw            FLOAT,
     PRIMARY KEY (scenario_id, project, weather_iteration, hydro_iteration,
                  availability_iteration, subproblem_id, stage_id,
-                 slice_of_day_zone, period, month, hour)
+                 slice_of_day_zone, period, sod_month, sod_hour)
 );
 
 
@@ -7738,8 +7738,8 @@ CREATE TABLE results_system_slice_of_day
     stage_id                              INTEGER,
     slice_of_day_zone                     VARCHAR(64),
     period                                INTEGER,
-    month                                 INTEGER,
-    hour                                  INTEGER,
+    sod_month                             INTEGER,
+    sod_hour                              INTEGER,
     total_slice_of_day_contribution_mw    FLOAT,
     total_storage_sod_contribution_mw     FLOAT,
     slice_of_day_target_mw                FLOAT,
@@ -7748,7 +7748,7 @@ CREATE TABLE results_system_slice_of_day
     slice_of_day_marginal_cost_per_mw     FLOAT,
     PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
                  availability_iteration, subproblem_id, stage_id,
-                 slice_of_day_zone, period, month, hour)
+                 slice_of_day_zone, period, sod_month, sod_hour)
 );
 
 -- Fuel burn limits

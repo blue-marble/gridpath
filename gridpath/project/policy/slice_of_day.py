@@ -104,8 +104,8 @@ def load_model_data(
             "project",
             "slice_of_day_zone",
             "period",
-            "month",
-            "hour",
+            "sod_month",
+            "sod_hour",
             "cap_fac",
         ),
     )
@@ -131,7 +131,7 @@ def get_inputs_from_database(
 
     c = conn.cursor()
     contributions = c.execute(
-        """SELECT project, slice_of_day_zone, period, month, hour, cap_fac
+        """SELECT project, slice_of_day_zone, period, sod_month, sod_hour, cap_fac
         FROM inputs_project_slice_of_day_contributions
         JOIN
         (SELECT period
@@ -241,7 +241,7 @@ def write_model_inputs(
 
         # Write header
         writer.writerow(
-            ["project", "slice_of_day_zone", "period", "month", "hour", "cap_fac"]
+            ["project", "slice_of_day_zone", "period", "sod_month", "sod_hour", "cap_fac"]
         )
 
         for row in contributions:
@@ -287,8 +287,8 @@ def export_results(
                 "project",
                 "slice_of_day_zone",
                 "period",
-                "month",
-                "hour",
+                "sod_month",
+                "sod_hour",
                 "cap_fac",
                 "capacity_mw",
                 "slice_of_day_contribution_mw",
