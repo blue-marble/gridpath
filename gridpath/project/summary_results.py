@@ -41,7 +41,8 @@ def export_summary_results(
             "operational_type",
             "technology",
             "load_zone",
-            "total_bulk_power_mwh",
+            "total_delivered_bulk_power_mwh",
+            "cap_factor_equivalent",
             "capacity_mw",
             "energy_mwh",
             "hyb_gen_capacity_mw",
@@ -65,6 +66,24 @@ def export_summary_results(
                     * m.tmp_weight[tmp]
                     for (_prj, tmp) in m.PRJ_OPR_TMPS
                     if _prj == prj and m.period[tmp] == prd
+                ),
+                (
+                    sum(
+                        (
+                            value(m.Bulk_Power_Provision_MW[_prj, tmp])
+                            / value(m.Capacity_MW[prj, prd])
+                        )
+                        * m.hrs_in_tmp[tmp]
+                        * m.tmp_weight[tmp]
+                        for (_prj, tmp) in m.PRJ_OPR_TMPS
+                        if _prj == prj and m.period[tmp] == prd
+                    )
+                    / sum(
+                        m.hrs_in_tmp[tmp] * m.tmp_weight[tmp]
+                        for tmp in m.TMPS_IN_PRD[prd]
+                    )
+                    if value(m.Capacity_MW[prj, prd]) > 0
+                    else None
                 ),
                 value(m.Capacity_MW[prj, prd]),
                 value(m.Energy_MWh[prj, prd]),
