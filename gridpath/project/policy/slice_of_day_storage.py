@@ -27,12 +27,12 @@ determined endogenously, subject to the following constraints per
 
 Input:
   - project_slice_of_day_storage_params.tab : duration_hours and efficiency
-    per (project, slice_of_day_zone, period, month)
+    per (project, slice_of_day_zone)
 
 The (project, zone, period, month, hour) set is derived automatically by
-crossing the params (project, zone, period, month) entries against the hours
-already defined in SLICE_OF_DAY_ZONE_PRD_MONTH_HOURS. No separate hourly
-membership file is needed.
+crossing the params (project, zone) entries against the hours already defined
+in SLICE_OF_DAY_ZONE_PRD_MONTH_HOURS. No separate hourly membership file is
+needed.
 
 If the params file is absent the sets are empty and no constraints are added.
 """
@@ -79,8 +79,20 @@ def add_model_components(
     # Sets
     # -------------------------------------------------------------------------
 
-    # (project, zone, period, month) loaded from the params file
-    m.STOR_PRJ_SOD_ZONE_PRD_MONTHS = Set(dimen=4)
+    # (project, zone) loaded from the params file
+    m.STOR_PRJ_SOD_ZONES = Set(dimen=2)
+
+    # (project, zone, period, month) derived by crossing the params set with
+    # SLICE_OF_DAY_ZONE_PRD_MONTH_HOURS and keeping only operational periods
+    m.STOR_PRJ_SOD_ZONE_PRD_MONTHS = Set(
+        dimen=4,
+        initialize=lambda mod: [
+            (g, z, p, mn)
+            for (g, z) in mod.STOR_PRJ_SOD_ZONES
+            for (zz, p, mn, hr) in mod.SLICE_OF_DAY_ZONE_PRD_MONTH_HOURS
+            if zz == z and (g, p) in mod.PRJ_OPR_PRDS
+        ],
+    )
 
     # (project, zone, period, month, hour) derived by crossing the params set
     # with the hours defined in SLICE_OF_DAY_ZONE_PRD_MONTH_HOURS
@@ -108,7 +120,7 @@ def add_model_components(
     m.STOR_SOD_PRJS_BY_ZONE = Set(
         m.SLICE_OF_DAY_ZONES,
         initialize=lambda mod, z: list(
-            set(g for (g, zone, p, mn) in mod.STOR_PRJ_SOD_ZONE_PRD_MONTHS if zone == z)
+            set(g for (g, zone) in mod.STOR_PRJ_SOD_ZONES if zone == z)
         ),
     )
 
@@ -118,12 +130,12 @@ def add_model_components(
 
     # Hours of storage duration (energy capacity / power capacity)
     m.stor_sod_duration_hours = Param(
-        m.STOR_PRJ_SOD_ZONE_PRD_MONTHS, within=NonNegativeReals
+        m.STOR_PRJ_SOD_ZONES, within=NonNegativeReals
     )
 
     # Round-trip efficiency (fraction, e.g. 0.85)
     m.stor_sod_efficiency = Param(
-        m.STOR_PRJ_SOD_ZONE_PRD_MONTHS, within=NonNegativeReals
+        m.STOR_PRJ_SOD_ZONES, within=NonNegativeReals
     )
 
     # -------------------------------------------------------------------------
@@ -165,8 +177,8 @@ def add_model_components(
             for hr in mod.STOR_SOD_HOURS_BY_PRJ_ZONE_PRD_MONTH[g, z, p, mn]
         ) <= (
             mod.Capacity_MW[g, p]
-            * mod.stor_sod_duration_hours[g, z, p, mn]
-            * mod.stor_sod_efficiency[g, z, p, mn]
+            * mod.stor_sod_duration_hours[g, z]
+            * mod.stor_sod_efficiency[g, z]
         )
 
     m.Storage_SOD_Energy_Limit_Constraint = Constraint(
@@ -181,9 +193,7 @@ def add_model_components(
         ) >= sum(
             mod.Storage_SOD_Discharge_MW[g, z, p, mn, hr]
             for hr in mod.STOR_SOD_HOURS_BY_PRJ_ZONE_PRD_MONTH[g, z, p, mn]
-        ) / mod.stor_sod_efficiency[
-            g, z, p, mn
-        ]
+        ) / mod.stor_sod_efficiency[g, z]
 
     m.Storage_SOD_Charge_Balance_Constraint = Constraint(
         m.STOR_PRJ_SOD_ZONE_PRD_MONTHS, rule=charge_balance_rule
@@ -259,13 +269,11 @@ def load_model_data(
     if os.path.exists(params_file):
         data_portal.load(
             filename=params_file,
-            index=m.STOR_PRJ_SOD_ZONE_PRD_MONTHS,
+            index=m.STOR_PRJ_SOD_ZONES,
             param=(m.stor_sod_duration_hours, m.stor_sod_efficiency),
             select=(
                 "project",
                 "slice_of_day_zone",
-                "period",
-                "sod_month",
                 "duration_hours",
                 "efficiency",
             ),
@@ -292,13 +300,8 @@ def get_inputs_from_database(
     c = conn.cursor()
 
     params_rows = c.execute(
-        """SELECT project, slice_of_day_zone, period, sod_month, duration_hours, efficiency
+        """SELECT project, slice_of_day_zone, duration_hours, efficiency
         FROM inputs_project_slice_of_day_storage_params
-        JOIN
-        (SELECT period
-        FROM inputs_temporal_periods
-        WHERE temporal_scenario_id = {temporal}) as relevant_periods
-        USING (period)
         JOIN
         (SELECT slice_of_day_zone
         FROM inputs_geography_slice_of_day_zones
@@ -306,7 +309,6 @@ def get_inputs_from_database(
         USING (slice_of_day_zone)
         WHERE project_slice_of_day_storage_params_scenario_id = {sod_stor_params_scenario};
         """.format(
-            temporal=subscenarios.TEMPORAL_SCENARIO_ID,
             sod_zone=subscenarios.SLICE_OF_DAY_ZONE_SCENARIO_ID,
             sod_stor_params_scenario=subscenarios.PROJECT_SLICE_OF_DAY_STORAGE_PARAMS_SCENARIO_ID,
         )
@@ -379,9 +381,7 @@ def write_model_inputs(
         newline="",
     ) as f:
         writer = csv.writer(f, delimiter="\t", lineterminator="\n")
-        writer.writerow(
-            ["project", "slice_of_day_zone", "period", "sod_month", "duration_hours", "efficiency"]
-        )
+        writer.writerow(["project", "slice_of_day_zone", "duration_hours", "efficiency"])
         for row in params_rows:
             writer.writerow(row)
 
@@ -426,7 +426,7 @@ def export_results(
         getattr(d, SLICE_OF_DAY_ZONE_PRD_MONTH_HOUR_DF)[c] = None
     getattr(d, SLICE_OF_DAY_ZONE_PRD_MONTH_HOUR_DF).update(results_df)
 
-    if not m.STOR_PRJ_SOD_ZONE_PRD_MONTHS:
+    if not m.STOR_PRJ_SOD_ZONES:
         return
 
     with open(

@@ -3474,12 +3474,10 @@ CREATE TABLE inputs_project_slice_of_day_storage_params
     project_slice_of_day_storage_params_scenario_id INTEGER,
     project                                         TEXT,
     slice_of_day_zone                               VARCHAR(32),
-    period                                          INTEGER,
-    sod_month                                       INTEGER,
     duration_hours                                  FLOAT,
     efficiency                                      FLOAT,
     PRIMARY KEY (project_slice_of_day_storage_params_scenario_id, project,
-                 slice_of_day_zone, period, sod_month),
+                 slice_of_day_zone),
     FOREIGN KEY (project_slice_of_day_storage_params_scenario_id) REFERENCES
         subscenarios_project_slice_of_day_storage_params (project_slice_of_day_storage_params_scenario_id)
 );
