@@ -426,9 +426,6 @@ def export_results(
         getattr(d, SLICE_OF_DAY_ZONE_PRD_MONTH_HOUR_DF)[c] = None
     getattr(d, SLICE_OF_DAY_ZONE_PRD_MONTH_HOUR_DF).update(results_df)
 
-    if not m.STOR_PRJ_SOD_ZONES:
-        return
-
     with open(
         os.path.join(
             scenario_directory,
@@ -438,7 +435,7 @@ def export_results(
             subproblem,
             stage,
             "results",
-            "project_slice_of_day_storage_contributions.csv",
+            "project_slice_of_day_contributions.csv",
         ),
         "w",
         newline="",
@@ -452,20 +449,29 @@ def export_results(
                 "sod_month",
                 "sod_hour",
                 "capacity_mw",
+                "cap_fac",
                 "discharge_mw",
                 "charge_mw",
-                "net_contribution_mw",
+                "slice_of_day_contribution_mw",
             ]
         )
+        for (g, z, p, mn, hr) in sorted(m.PRJ_SLICE_OF_DAY_ZONE_PRD_MONTH_HOURS):
+            writer.writerow(
+                [
+                    g, z, p, mn, hr,
+                    value(m.Capacity_MW[g, p]),
+                    value(m.slice_of_day_cap_fac[g, z, p, mn, hr]),
+                    None,
+                    None,
+                    value(m.Slice_of_Day_Contribution_MW[g, z, p, mn, hr]),
+                ]
+            )
         for (g, z, p, mn, hr) in sorted(m.STOR_PRJ_SOD_ZONE_PRD_MONTH_HOURS):
             writer.writerow(
                 [
-                    g,
-                    z,
-                    p,
-                    mn,
-                    hr,
+                    g, z, p, mn, hr,
                     value(m.Capacity_MW[g, p]),
+                    None,
                     value(m.Storage_SOD_Discharge_MW[g, z, p, mn, hr]),
                     value(m.Storage_SOD_Charge_MW[g, z, p, mn, hr]),
                     value(m.Storage_SOD_Contribution_MW[g, z, p, mn, hr]),
@@ -485,14 +491,6 @@ def import_results_into_database(
     results_directory,
     quiet,
 ):
-    """
-    :param scenario_id:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
     import_csv(
         conn=db,
         cursor=c,
@@ -504,5 +502,5 @@ def import_results_into_database(
         stage=stage,
         quiet=quiet,
         results_directory=results_directory,
-        which_results="project_slice_of_day_storage_contributions",
+        which_results="project_slice_of_day_contributions",
     )

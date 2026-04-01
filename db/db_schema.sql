@@ -6834,8 +6834,10 @@ CREATE TABLE results_project_slice_of_day_contributions
     period                         INTEGER,
     sod_month                      INTEGER,
     sod_hour                       INTEGER,
-    cap_fac                        FLOAT,
     capacity_mw                    FLOAT,
+    cap_fac                        FLOAT,
+    discharge_mw                   FLOAT,
+    charge_mw                      FLOAT,
     slice_of_day_contribution_mw   FLOAT,
     PRIMARY KEY (scenario_id, project, weather_iteration, hydro_iteration,
                  availability_iteration, subproblem_id, stage_id,
@@ -6844,27 +6846,6 @@ CREATE TABLE results_project_slice_of_day_contributions
 
 
 DROP TABLE IF EXISTS results_project_slice_of_day_storage_contributions;
-CREATE TABLE results_project_slice_of_day_storage_contributions
-(
-    scenario_id                    INTEGER,
-    project                        VARCHAR(64),
-    weather_iteration              INTEGER,
-    hydro_iteration                INTEGER,
-    availability_iteration         INTEGER,
-    subproblem_id                  INTEGER,
-    stage_id                       INTEGER,
-    slice_of_day_zone              VARCHAR(32),
-    period                         INTEGER,
-    sod_month                      INTEGER,
-    sod_hour                       INTEGER,
-    capacity_mw                    FLOAT,
-    discharge_mw                   FLOAT,
-    charge_mw                      FLOAT,
-    net_contribution_mw            FLOAT,
-    PRIMARY KEY (scenario_id, project, weather_iteration, hydro_iteration,
-                 availability_iteration, subproblem_id, stage_id,
-                 slice_of_day_zone, period, sod_month, sod_hour)
-);
 
 
 DROP TABLE IF EXISTS results_project_summary;

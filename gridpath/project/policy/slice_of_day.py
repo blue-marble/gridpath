@@ -19,9 +19,9 @@ hour. The contribution is cap_fac[g, z, p, mn, hr] * Capacity_MW[g, p].
 
 import csv
 import os.path
-from pyomo.environ import Set, Param, Expression, NonNegativeReals, value
+from pyomo.environ import Set, Param, Expression, NonNegativeReals
 
-from gridpath.auxiliary.db_interface import import_csv, directories_to_db_values
+from gridpath.auxiliary.db_interface import directories_to_db_values
 
 
 def add_model_components(
@@ -246,100 +246,3 @@ def write_model_inputs(
 
         for row in contributions:
             writer.writerow(row)
-
-
-def export_results(
-    scenario_directory,
-    weather_iteration,
-    hydro_iteration,
-    availability_iteration,
-    subproblem,
-    stage,
-    m,
-    d,
-):
-    """
-
-    :param scenario_directory:
-    :param subproblem:
-    :param stage:
-    :param m:
-    :param d:
-    :return:
-    """
-    with open(
-        os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "results",
-            "project_slice_of_day_contributions.csv",
-        ),
-        "w",
-        newline="",
-    ) as results_file:
-        writer = csv.writer(results_file)
-        writer.writerow(
-            [
-                "project",
-                "slice_of_day_zone",
-                "period",
-                "sod_month",
-                "sod_hour",
-                "cap_fac",
-                "capacity_mw",
-                "slice_of_day_contribution_mw",
-            ]
-        )
-        for (g, z, p, mn, hr) in sorted(m.PRJ_SLICE_OF_DAY_ZONE_PRD_MONTH_HOURS):
-            writer.writerow(
-                [
-                    g,
-                    z,
-                    p,
-                    mn,
-                    hr,
-                    value(m.slice_of_day_cap_fac[g, z, p, mn, hr]),
-                    value(m.Capacity_MW[g, p]),
-                    value(m.Slice_of_Day_Contribution_MW[g, z, p, mn, hr]),
-                ]
-            )
-
-
-def import_results_into_database(
-    scenario_id,
-    weather_iteration,
-    hydro_iteration,
-    availability_iteration,
-    subproblem,
-    stage,
-    c,
-    db,
-    results_directory,
-    quiet,
-):
-    """
-
-    :param scenario_id:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-    import_csv(
-        conn=db,
-        cursor=c,
-        scenario_id=scenario_id,
-        weather_iteration=weather_iteration,
-        hydro_iteration=hydro_iteration,
-        availability_iteration=availability_iteration,
-        subproblem=subproblem,
-        stage=stage,
-        quiet=quiet,
-        results_directory=results_directory,
-        which_results="project_slice_of_day_contributions",
-    )
