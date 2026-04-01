@@ -3458,6 +3458,32 @@ CREATE TABLE inputs_project_slice_of_day_contributions
         subscenarios_project_slice_of_day_contributions (project_slice_of_day_scenario_id)
 );
 
+-- Project slice-of-day storage params
+-- Duration and efficiency per (project, zone, period, month)
+DROP TABLE IF EXISTS subscenarios_project_slice_of_day_storage_params;
+CREATE TABLE subscenarios_project_slice_of_day_storage_params
+(
+    project_slice_of_day_storage_params_scenario_id INTEGER PRIMARY KEY,
+    name                                            VARCHAR(32),
+    description                                     VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_project_slice_of_day_storage_params;
+CREATE TABLE inputs_project_slice_of_day_storage_params
+(
+    project_slice_of_day_storage_params_scenario_id INTEGER,
+    project                                         TEXT,
+    slice_of_day_zone                               VARCHAR(32),
+    period                                          INTEGER,
+    month                                           INTEGER,
+    duration_hours                                  FLOAT,
+    efficiency                                      FLOAT,
+    PRIMARY KEY (project_slice_of_day_storage_params_scenario_id, project,
+                 slice_of_day_zone, period, month),
+    FOREIGN KEY (project_slice_of_day_storage_params_scenario_id) REFERENCES
+        subscenarios_project_slice_of_day_storage_params (project_slice_of_day_storage_params_scenario_id)
+);
+
 -- Project instantaneous penetration zones
 -- Which projects are constrained by the instantaneous penetration rules
 -- This table can include all project with NULLs for projects not
@@ -5859,6 +5885,7 @@ CREATE TABLE scenarios
     slice_of_day_zone_scenario_id                               INTEGER,
     slice_of_day_target_scenario_id                             INTEGER,
     project_slice_of_day_scenario_id                            INTEGER,
+    project_slice_of_day_storage_params_scenario_id             INTEGER,
     prm_requirement_scenario_id                                 INTEGER,
     local_capacity_requirement_scenario_id                      INTEGER,
     elcc_surface_scenario_id                                    INTEGER,
@@ -6818,6 +6845,30 @@ CREATE TABLE results_project_slice_of_day_contributions
 );
 
 
+DROP TABLE IF EXISTS results_project_slice_of_day_storage_contributions;
+CREATE TABLE results_project_slice_of_day_storage_contributions
+(
+    scenario_id                    INTEGER,
+    project                        VARCHAR(64),
+    weather_iteration              INTEGER,
+    hydro_iteration                INTEGER,
+    availability_iteration         INTEGER,
+    subproblem_id                  INTEGER,
+    stage_id                       INTEGER,
+    slice_of_day_zone              VARCHAR(32),
+    period                         INTEGER,
+    month                          INTEGER,
+    hour                           INTEGER,
+    capacity_mw                    FLOAT,
+    discharge_mw                   FLOAT,
+    charge_mw                      FLOAT,
+    net_contribution_mw            FLOAT,
+    PRIMARY KEY (scenario_id, project, weather_iteration, hydro_iteration,
+                 availability_iteration, subproblem_id, stage_id,
+                 slice_of_day_zone, period, month, hour)
+);
+
+
 DROP TABLE IF EXISTS results_project_summary;
 CREATE TABLE results_project_summary
 (
@@ -7690,6 +7741,7 @@ CREATE TABLE results_system_slice_of_day
     month                                 INTEGER,
     hour                                  INTEGER,
     total_slice_of_day_contribution_mw    FLOAT,
+    total_storage_sod_contribution_mw     FLOAT,
     slice_of_day_target_mw                FLOAT,
     slice_of_day_shortage_mw              FLOAT,
     dual                                  FLOAT,

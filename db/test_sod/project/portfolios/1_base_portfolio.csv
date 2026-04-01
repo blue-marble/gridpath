@@ -2,3 +2,5 @@ project,specified,new_build,capacity_type
 Solar,,,gen_new_lin
 Wind,,,gen_new_lin
 Flat_Block,,,gen_new_lin
+Battery,,,stor_new_lin
+Battery_8hr,,,stor_new_lin

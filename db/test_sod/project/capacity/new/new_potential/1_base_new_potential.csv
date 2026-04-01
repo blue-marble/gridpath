@@ -1,5 +1,7 @@
 project,period,min_new_build_power,max_new_build_power,min_capacity_power,max_capacity_power,min_new_build_stor_energy,max_new_build_stor_energy,min_capacity_stor_energy,max_capacity_stor_energy,min_new_procured_energy,max_new_procured_energy,min_total_procured_energy,max_total_procured_energy
 Solar,20301,0,10000,,,,,,,,,,
 Wind,20301,0,10000,,,,,,,,,,
+Battery,20301,0,50,,,,,,,,,,
+Battery_8hr,20301,0,10,,,,,,,,,,
 Flat_Block,20301,0,10000,,,,,,,,,,
 Flat_Block,20302,0,10000,,,,,,,,,,

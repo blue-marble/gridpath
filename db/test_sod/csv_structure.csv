@@ -212,3 +212,4 @@ markets/volume/volume_profiles,markets,market_volume_profile_scenario_id,market_
 policy/slice_of_day/geography_slice_of_day_zones,slice_of_day,slice_of_day_zone_scenario_id,geography_slice_of_day_zones,simple,,0,,,,,
 policy/slice_of_day/project_slice_of_day_contributions,slice_of_day,project_slice_of_day_scenario_id,project_slice_of_day_contributions,simple,,0,,,,,
 policy/slice_of_day/system_slice_of_day_targets,slice_of_day,slice_of_day_target_scenario_id,system_slice_of_day_targets,simple,,0,,,,,
+policy/slice_of_day/project_slice_of_day_storage_params,slice_of_day,project_slice_of_day_storage_params_scenario_id,project_slice_of_day_storage_params,simple,,0,,,,,

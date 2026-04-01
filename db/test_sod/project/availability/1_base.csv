@@ -2,3 +2,5 @@ project,availability_type,exogenous_availability_independent_scenario_id,exogeno
 Solar,exogenous,,,,,
 Wind,exogenous,,,,,
 Flat_Block,exogenous,,,,,
+Battery,exogenous,,,,,
+Battery_8hr,exogenous,,,,,
