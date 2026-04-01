@@ -161,8 +161,10 @@ def import_scenario_results_into_database(
                                 termination_condition = f.read()
                         except FileNotFoundError:
                             if ignore_incomplete:
-                                warnings.warn("GridPath Warning: termination "
-                                              "condition file not found.")
+                                warnings.warn(
+                                    "GridPath Warning: termination "
+                                    "condition file not found."
+                                )
                                 termination_condition = (
                                     "termination condition file not found"
                                 )
@@ -170,8 +172,7 @@ def import_scenario_results_into_database(
                                 tc_fname = os.path.join(
                                     results_directory, "termination_condition.txt"
                                 )
-                                raise FileNotFoundError(f"{tc_fname} not "
-                                                        f"found.")
+                                raise FileNotFoundError(f"{tc_fname} not " f"found.")
 
                         termination_condition_sql = """
                             INSERT INTO results_scenario
@@ -205,18 +206,15 @@ def import_scenario_results_into_database(
                                 solver_status = status_f.read()
                         except FileNotFoundError:
                             if ignore_incomplete:
-                                warnings.warn("GridPath Warning: solver status "
-                                              "file not found.")
-                                termination_condition = (
-                                    "solver status file not found"
+                                warnings.warn(
+                                    "GridPath Warning: solver status " "file not found."
                                 )
+                                termination_condition = "solver status file not found"
                             else:
                                 ss_fname = os.path.join(
-                                    results_directory,
-                                    "solver_status.txt"
+                                    results_directory, "solver_status.txt"
                                 )
                                 raise FileNotFoundError(f"{ss_fname} not found.")
-
 
                         # Only import other results if solver status was "ok"
                         # When the problem is infeasible, the solver status is "warning"
