@@ -36,8 +36,7 @@ https://gridlab.org/wp-content/uploads/2022/10/GridLab_RA-Toolkit-Report-10-12-2
 Usage
 =====
 
->>> gridpath_run_data_toolkit --single_step create_monte_carlo_weather_draws
---settings_csv PATH/TO/SETTINGS/CSV
+>>> gridpath_run_data_toolkit --single_step create_monte_carlo_weather_draws --settings_csv PATH/TO/SETTINGS/CSV
 
 ===================
 Input prerequisites
@@ -45,8 +44,6 @@ Input prerequisites
 
 This module assumes the following raw input database tables have been populated:
     * user_defined_weather_bins
-    * user_defined_data_availability
-    * user_defined_monte_carlo_timeseries
 
 =========
 Settings
@@ -71,6 +68,7 @@ import numpy as np
 import pandas as pd
 
 from db.common_functions import spin_on_database_lock_generic, connect_to_database
+from data_toolkit.load_raw_data import read_and_import_csv
 
 
 def parse_arguments(args):
@@ -84,6 +82,15 @@ def parse_arguments(args):
     parser = ArgumentParser(add_help=True)
 
     parser.add_argument("-db", "--database")
+    parser.add_argument(
+        "-csv",
+        "--input_csv",
+        default=None,
+        help="""This is the path to the CSV file containing the 
+                        weather bins. If not specified, the weather bins will be 
+                        assumed to have been already loaded into the 
+                        database.""",
+    ),
     parser.add_argument(
         "-bins_id", "--weather_bins_id", default=1, help="Defaults to 1."
     )
@@ -103,14 +110,6 @@ def parse_arguments(args):
     )
     parser.add_argument("-n_iter", "--n_iterations")
     parser.add_argument("-yr", "--study_year")
-    parser.add_argument(
-        "-it_seed",
-        "--timeseries_iteration_draw_initial_seed",
-        default=None,
-        help="Defaults to None (no seeding). WARNING: Proceed with caution if "
-        "you set a seed and make sure you understand what this script "
-        "does with it.",
-    )
     parser.add_argument("-q", "--quiet", default=False, action="store_true")
 
     parsed_arguments = parser.parse_known_args(args=args)[0]
@@ -118,8 +117,6 @@ def parse_arguments(args):
     return parsed_arguments
 
 
-# Load in weather bin info
-# Create synthetic weather years for the study year
 def create_weather_draws(
     conn,
     weather_bins_id,
@@ -129,6 +126,10 @@ def create_weather_draws(
     study_year,
     quiet,
 ):
+    """
+    Load in weather bin info
+    Create synthetic weather years for the study year
+    """
     if not quiet:
         print("...drawing weather...")
     # Get the weather bins
@@ -278,6 +279,12 @@ def main(args=None):
         print("Creating Monte Carlo weather draws...")
 
     conn = connect_to_database(db_path=parsed_args.database)
+
+    # ### Load data from CSV
+    if parsed_args.input_csv is not None:
+        read_and_import_csv(
+            conn=conn, f_path=parsed_args.input_csv, table="user_defined_weather_bins"
+        )
 
     # ###################### Create the weather draws # ########################
     create_weather_draws(
