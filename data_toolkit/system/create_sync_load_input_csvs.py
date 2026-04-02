@@ -29,7 +29,7 @@ Input prerequisites
 ===================
 
 This module assumes the following raw input database tables have been populated:
-    * raw_data_system_load
+    * raw_data_profiles
     * user_defined_load_zone_units
 
 =========
@@ -207,7 +207,8 @@ def create_load_levels_csv(
         '{load_component_name}' AS load_component, sum(weighted_load_mw) as 
         load_mw
         FROM (
-        SELECT year, month, day_of_month, hour_of_day, load_zone_unit, load_zone, unit_weight, load_mw, unit_weight * load_mw as weighted_load_mw,
+        SELECT year, month, day_of_month, hour_of_day, unit, load_zone, 
+        unit_weight, value, unit_weight * value as weighted_load_mw,
             (CAST(
                 strftime('%j',
                     year || '-' || 
@@ -220,9 +221,9 @@ def create_load_levels_csv(
                     ELSE '0' || day_of_month END
                     ) AS DECIMAL
                 ) - 1) * 24 + hour_of_day AS hour_of_year
-        FROM raw_data_system_load
+        FROM raw_data_profiles
         JOIN user_defined_load_zone_units
-        USING (load_zone_unit)
+        USING (unit)
         )
     GROUP BY load_zone, year, hour_of_year
     """

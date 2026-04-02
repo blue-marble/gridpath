@@ -44,7 +44,8 @@ def create_profile_csvs(
         hour_of_year as timepoint, sum(weighted_{param_name}) as {param_name}
             FROM (
             SELECT year, month, day_of_month, hour_of_day, unit, 
-            project, unit_weight, {param_name}, unit_weight * {param_name} as weighted_{param_name},
+            project, unit_weight, value, unit_weight * value as 
+            weighted_{param_name},
                 (CAST(
                     strftime('%j',
                         year || '-' || 

@@ -151,7 +151,7 @@ def create_project_csv(
         unit_queries = [
             f"""
             SELECT year, month, day_of_month, hour_of_day, unit, 
-            {param_name} * {weight} as weighted_{param_name}
+            value * {weight} as weighted_{param_name}
             FROM {raw_data_table}
             WHERE year = {year}
             AND month = {month}

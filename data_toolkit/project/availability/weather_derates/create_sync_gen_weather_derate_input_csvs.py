@@ -30,7 +30,7 @@ Input prerequisites
 ===================
 
 This module assumes the following raw input database tables have been populated:
-    * raw_data_unit_availability_weather_derates
+    * raw_data_profiles
     * raw_data_unit_availability_params
 
 =========
@@ -51,6 +51,7 @@ import os.path
 import sys
 
 from db.common_functions import connect_to_database
+from data_toolkit.load_raw_data import read_and_import_csv
 from data_toolkit.project.create_sync_gen_input_csvs_common import (
     create_profile_csvs,
 )
@@ -71,6 +72,14 @@ def parse_arguments(args):
     parser = ArgumentParser(add_help=True)
 
     parser.add_argument("-db", "--database")
+    parser.add_argument(
+        "-csv",
+        "--input_csv",
+        default=None,
+        help="""Path to the CSV file to load into the database.
+            If not specified, data will be assumed to have been
+            already loaded into the database.""",
+    )
     parser.add_argument("-out_dir", "--output_directory")
     parser.add_argument(
         "-id",
@@ -134,7 +143,7 @@ def create_weather_availability_profile_csvs_pool(pool_datum):
         output_directory=output_directory,
         overwrite=overwrite,
         param_name="availability_derate_weather",
-        raw_data_table_name="raw_data_unit_availability_weather_derates",
+        raw_data_table_name="raw_data_profiles",
         raw_data_units_table_name="raw_data_unit_availability_params",
         no_hydro_iteration=True,
     )
@@ -151,6 +160,10 @@ def main(args=None):
     os.makedirs(parsed_args.output_directory, exist_ok=True)
 
     conn = connect_to_database(db_path=parsed_args.database)
+
+    # ### Load data from CSV
+    if parsed_args.input_csv is not None:
+        read_and_import_csv(conn=conn, f_path=parsed_args.input_csv, table="TABLE_TBD")
 
     c = conn.cursor()
     projects = [

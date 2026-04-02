@@ -31,7 +31,7 @@ Input prerequisites
 ===================
 
 This module assumes the following raw input database tables have been populated:
-    * raw_data_system_load
+    * raw_data_profiles
     * user_defined_load_zone_units
     * aux_weather_iterations (see the ``create_monte_carlo_draws`` step for how to create synthetic weather years and populate this table)
 
@@ -230,12 +230,10 @@ def create_load_levels_csv(
 
     for index, row in df.iterrows():
         if row["load_zone"] not in load_zone_unit_dict.keys():
-            load_zone_unit_dict[row["load_zone"]] = [
-                (row["load_zone_unit"], row["unit_weight"])
-            ]
+            load_zone_unit_dict[row["load_zone"]] = [(row["unit"], row["unit_weight"])]
         else:
             load_zone_unit_dict[row["project"]].append(
-                (row["load_zone_unit"], row["unit_weight"])
+                (row["unit"], row["unit_weight"])
             )
 
     draws = c.execute(f"""
@@ -251,16 +249,15 @@ def create_load_levels_csv(
     draw_n = 0
     for d in draws:
         weather_iteration, draw_number, year, month, day_of_month = d
-
         for load_zone in load_zone_unit_dict.keys():
             unit_queries = [f"""
-                SELECT year, month, day_of_month, hour_of_day, load_zone_unit, 
-                load_mw * {weight} as weighted_load
-                FROM raw_data_system_load
+                SELECT year, month, day_of_month, hour_of_day, unit, 
+                value * {weight} as weighted_load
+                FROM raw_data_profiles
                 WHERE year = {year}
                 AND month = {month}
                 AND day_of_month = {day_of_month}
-                AND load_zone_unit = '{unit}'
+                AND unit = '{unit}'
                 """ for (unit, weight) in load_zone_unit_dict[load_zone]]
 
             union_query = " UNION ".join(unit_queries)

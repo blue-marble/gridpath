@@ -18,29 +18,18 @@
 -------- RAW DATA --------
 --------------------------------------------------------------------------------
 -- TODO: add timestamps?
-DROP TABLE IF EXISTS raw_data_system_load;
-CREATE TABLE raw_data_system_load
-(
-    year           INTEGER,
-    month          INTEGER,
-    day_of_month   INTEGER,
-    day_type       INTEGER,
-    hour_of_day    INTEGER,
-    load_zone_unit VARCHAR(64),
-    load_mw        FLOAT,
-    PRIMARY KEY (year, month, day_of_month, hour_of_day, load_zone_unit)
-);
 
-DROP TABLE IF EXISTS raw_data_project_variable_profiles;
-CREATE TABLE raw_data_project_variable_profiles
+DROP TABLE IF EXISTS raw_data_profiles;
+CREATE TABLE raw_data_profiles
 (
-    year         INTEGER,
-    month        INTEGER,
-    day_of_month INTEGER,
-    day_type     INTEGER,
-    hour_of_day  INTEGER,
-    unit         VARCHAR(64),
-    cap_factor   FLOAT,
+    year            INTEGER,
+    month           INTEGER,
+    day_of_month    INTEGER,
+    day_type        INTEGER,
+    hour_of_day     INTEGER,
+    unit            VARCHAR(64),
+    value           FLOAT,
+    timeseries_name VARCHAR(32),
     PRIMARY KEY (year, month, day_of_month, hour_of_day, unit)
 );
 
@@ -99,18 +88,6 @@ CREATE TABLE raw_data_unit_availability_params
     hybrid_stor     INTEGER
 );
 
-DROP TABLE IF EXISTS raw_data_unit_availability_weather_derates;
-CREATE TABLE raw_data_unit_availability_weather_derates
-(
-    year                        INTEGER,
-    month                       INTEGER,
-    day_of_month                INTEGER,
-    day_type                    INTEGER,
-    hour_of_day                 INTEGER,
-    unit                        VARCHAR(64),
-    availability_derate_weather FLOAT,
-    PRIMARY KEY (year, month, day_of_month, hour_of_day, unit)
-);
 
 DROP TABLE IF EXISTS raw_data_eiaaeo_fuel_prices;
 CREATE TABLE raw_data_eiaaeo_fuel_prices
@@ -173,10 +150,10 @@ CREATE TABLE raw_data_eia930_hourly_interchange
 DROP TABLE IF EXISTS user_defined_load_zone_units;
 CREATE TABLE user_defined_load_zone_units
 (
-    load_zone_unit TEXT,
+    unit           TEXT,
     load_zone      TEXT,
     unit_weight    DECIMAL,
-    PRIMARY KEY (load_zone_unit, load_zone)
+    PRIMARY KEY (unit, load_zone)
 );
 
 DROP TABLE IF EXISTS user_defined_eiaaeo_region_key;

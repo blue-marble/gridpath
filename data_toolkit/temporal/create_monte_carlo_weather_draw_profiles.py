@@ -27,7 +27,6 @@ Input prerequisites
 
 This module assumes that the **create_monte_carlo_weather_draws** step has
 been run and the following raw input database tables have been populated:
-    * user_defined_weather_bins
     * user_defined_data_availability
     * user_defined_monte_carlo_timeseries
 
@@ -143,6 +142,24 @@ def make_timeseries_draw_profiles(
         if not quiet:
             print(f"...processing timeseries: {timeseries_name}")
 
+        # Base availability on the data in the raw_data_profiles table
+        # rather than exogenously defined by user
+        # TODO: add option to exogenously define
+        # WHERE
+        # year in (
+        #     SELECT year
+        # FROM user_defined_data_availability
+        # WHERE timeseries_name = '{timeseries_name}'
+        # )
+
+        data_av_c = conn.cursor()
+        data_availability_list = [str(i[0]) for i in data_av_c.execute(f"""
+                    SELECT DISTINCT year
+                    FROM raw_data_profiles
+                    WHERE timeseries_name = '{timeseries_name}'""")]
+        data_availability_string = ", ".join(data_availability_list)
+        data_av_c.close()
+
         # Add the necessary columns
         columns_to_add = [
             f"{timeseries_name}_year",
@@ -195,9 +212,7 @@ def make_timeseries_draw_profiles(
                         AND weather_bins_id = {weather_bins_id}
                     )
                     WHERE year in (
-                        SELECT year
-                        FROM user_defined_data_availability
-                        WHERE timeseries_name = '{timeseries_name}'
+                        {data_availability_string}
                         )
                     ORDER BY year, month, day_of_month
                 ;
@@ -250,6 +265,7 @@ def draw_conditions(
     timeseries_iteration_draw_seed,
 ):
     """ """
+
     np.random.seed(seed=timeseries_iteration_draw_seed)
 
     c = conn.cursor()
@@ -294,13 +310,11 @@ def main(args=None):
     parsed_args = parse_arguments(args=args)
 
     if not parsed_args.quiet:
-        print("Creating Monte Carlo weather draws...")
+        print("Creating Monte Carlo weather draw profiles...")
 
     conn = connect_to_database(db_path=parsed_args.database)
 
     # ####### Based on the weather draws, create timeseries profiles ###########
-    if not parsed_args.quiet:
-        print("Creating Monte Carlo weather draw profiles...")
     make_timeseries_draw_profiles(
         conn=conn,
         timeseries_iteration_draw_initial_seed=parsed_args.timeseries_iteration_draw_initial_seed,

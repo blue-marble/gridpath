@@ -31,7 +31,7 @@ Input prerequisites
 ===================
 
 This module assumes the following raw input database tables have been populated:
-    * raw_data_project_variable_profiles
+    * raw_data_profiles
     * raw_data_var_project_units
     * aux_weather_iterations (see the ``create_monte_carlo_draws`` step for how to create synthetic weather years and populate this table)
 
@@ -53,6 +53,8 @@ from argparse import ArgumentParser
 import os.path
 import sys
 
+from db.common_functions import connect_to_database
+from data_toolkit.load_raw_data import read_and_import_csv
 from data_toolkit.project.create_monte_carlo_gen_input_csvs_common import (
     create_variable_profile_csvs,
 )
@@ -76,6 +78,14 @@ def parse_arguments(args):
     parser = ArgumentParser(add_help=True)
 
     parser.add_argument("-db", "--database")
+    parser.add_argument(
+        "-csv",
+        "--input_csv",
+        default=None,
+        help="""Path to the CSV file to load into the database.
+            If not specified, data will be assumed to have been
+            already loaded into the database.""",
+    )
 
     parser.add_argument(
         "-bins_id",
@@ -143,6 +153,14 @@ def main(args=None):
 
     os.makedirs(parsed_args.output_directory, exist_ok=True)
 
+    conn = connect_to_database(db_path=parsed_args.database)
+
+    # ### Load data from CSV
+    if parsed_args.input_csv is not None:
+        read_and_import_csv(conn=conn, f_path=parsed_args.input_csv, table="TABLE_TBD")
+
+    conn.close()
+
     create_variable_profile_csvs(
         db_path=parsed_args.database,
         weather_bins_id=parsed_args.weather_bins_id,
@@ -155,7 +173,7 @@ def main(args=None):
         n_parallel_projects=parsed_args.n_parallel_projects,
         units_table="raw_data_var_project_units",
         param_name="cap_factor",
-        raw_data_table="raw_data_project_variable_profiles",
+        raw_data_table="raw_data_profiles",
     )
 
 
