@@ -154,5 +154,4 @@ policy_requirement_scenario_id,
 project_policy_zone_scenario_id,
 slice_of_day_zone_scenario_id,1
 slice_of_day_target_scenario_id,1
-project_slice_of_day_scenario_id,1
-project_slice_of_day_storage_params_scenario_id,1
+project_slice_of_day_projects_scenario_id,2

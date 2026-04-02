@@ -3431,55 +3431,82 @@ CREATE TABLE inputs_project_energy_target_zones
         subscenarios_project_energy_target_zones (project_energy_target_zone_scenario_id)
 );
 
--- Project slice-of-day contributions
--- Exogenous capacity factor for each project contributing to a slice-of-day zone
--- Only rows where the project has a non-zero contribution need be present
-DROP TABLE IF EXISTS subscenarios_project_slice_of_day_contributions;
-CREATE TABLE subscenarios_project_slice_of_day_contributions
+-- Project slice-of-day projects
+-- Which projects contribute to slice-of-day zones and how (flat_block, exceedance, stor)
+DROP TABLE IF EXISTS subscenarios_project_slice_of_day_projects;
+CREATE TABLE subscenarios_project_slice_of_day_projects
 (
-    project_slice_of_day_scenario_id INTEGER PRIMARY KEY,
-    name                             VARCHAR(32),
-    description                      VARCHAR(128)
+    project_slice_of_day_projects_scenario_id INTEGER PRIMARY KEY,
+    name                                      VARCHAR(32),
+    description                               VARCHAR(128)
 );
 
-DROP TABLE IF EXISTS inputs_project_slice_of_day_contributions;
-CREATE TABLE inputs_project_slice_of_day_contributions
+DROP TABLE IF EXISTS inputs_project_slice_of_day_projects;
+CREATE TABLE inputs_project_slice_of_day_projects
 (
-    project_slice_of_day_scenario_id INTEGER,
-    project                          TEXT,
-    slice_of_day_zone                VARCHAR(32),
-    period                           INTEGER,
-    sod_month                        INTEGER,
-    sod_hour                         INTEGER,
-    cap_fac                          FLOAT,
-    PRIMARY KEY (project_slice_of_day_scenario_id, project,
-                 slice_of_day_zone, period, sod_month, sod_hour),
-    FOREIGN KEY (project_slice_of_day_scenario_id) REFERENCES
-        subscenarios_project_slice_of_day_contributions (project_slice_of_day_scenario_id)
+    project_slice_of_day_projects_scenario_id INTEGER,
+    project                                   TEXT,
+    slice_of_day_zone                         VARCHAR(32),
+    contribution_type                         VARCHAR(32),  -- flat_block, exceedance, stor
+    exceedance_values_scenario_id             INTEGER,      -- NULL for flat_block and stor
+    storage_params_scenario_id                INTEGER,      -- NULL for flat_block and exceedance
+    PRIMARY KEY (project_slice_of_day_projects_scenario_id, project),
+    FOREIGN KEY (project_slice_of_day_projects_scenario_id) REFERENCES
+        subscenarios_project_slice_of_day_projects (project_slice_of_day_projects_scenario_id)
 );
 
--- Project slice-of-day storage params
--- Duration and efficiency per (project, zone, period, month)
+-- Per-project exceedance capacity factor shapes
+-- Keyed by (project, exceedance_values_scenario_id) so different projects can
+-- reference different scenario IDs within the same projects scenario
+DROP TABLE IF EXISTS subscenarios_project_slice_of_day_exceedance_values;
+CREATE TABLE subscenarios_project_slice_of_day_exceedance_values
+(
+    project                       VARCHAR(64),
+    exceedance_values_scenario_id INTEGER,
+    name                          VARCHAR(32),
+    description                   VARCHAR(128),
+    PRIMARY KEY (project, exceedance_values_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_slice_of_day_exceedance_values;
+CREATE TABLE inputs_project_slice_of_day_exceedance_values
+(
+    project                       VARCHAR(64),
+    exceedance_values_scenario_id INTEGER,
+    period                        INTEGER,
+    sod_month                     INTEGER,
+    sod_hour                      INTEGER,
+    cap_fac                       FLOAT,
+    PRIMARY KEY (project, exceedance_values_scenario_id, period, sod_month, sod_hour),
+    FOREIGN KEY (project, exceedance_values_scenario_id) REFERENCES
+        subscenarios_project_slice_of_day_exceedance_values
+            (project, exceedance_values_scenario_id)
+);
+
+-- Per-project storage duration and efficiency
+-- Keyed by (project, storage_params_scenario_id) so different projects can
+-- reference different scenario IDs within the same projects scenario
 DROP TABLE IF EXISTS subscenarios_project_slice_of_day_storage_params;
 CREATE TABLE subscenarios_project_slice_of_day_storage_params
 (
-    project_slice_of_day_storage_params_scenario_id INTEGER PRIMARY KEY,
-    name                                            VARCHAR(32),
-    description                                     VARCHAR(128)
+    project                    VARCHAR(64),
+    storage_params_scenario_id INTEGER,
+    name                       VARCHAR(32),
+    description                VARCHAR(128),
+    PRIMARY KEY (project, storage_params_scenario_id)
 );
 
 DROP TABLE IF EXISTS inputs_project_slice_of_day_storage_params;
 CREATE TABLE inputs_project_slice_of_day_storage_params
 (
-    project_slice_of_day_storage_params_scenario_id INTEGER,
-    project                                         TEXT,
-    slice_of_day_zone                               VARCHAR(32),
-    duration_hours                                  FLOAT,
-    efficiency                                      FLOAT,
-    PRIMARY KEY (project_slice_of_day_storage_params_scenario_id, project,
-                 slice_of_day_zone),
-    FOREIGN KEY (project_slice_of_day_storage_params_scenario_id) REFERENCES
-        subscenarios_project_slice_of_day_storage_params (project_slice_of_day_storage_params_scenario_id)
+    project                    VARCHAR(64),
+    storage_params_scenario_id INTEGER,
+    duration_hours             FLOAT,
+    efficiency                 FLOAT,
+    PRIMARY KEY (project, storage_params_scenario_id),
+    FOREIGN KEY (project, storage_params_scenario_id) REFERENCES
+        subscenarios_project_slice_of_day_storage_params
+            (project, storage_params_scenario_id)
 );
 
 -- Project instantaneous penetration zones
@@ -5257,14 +5284,12 @@ CREATE TABLE inputs_system_slice_of_day_targets
 (
     slice_of_day_target_scenario_id INTEGER,
     slice_of_day_zone               VARCHAR(32),
-    subproblem_id                   INTEGER,
-    stage_id                        INTEGER,
     period                          INTEGER,
     sod_month                       INTEGER,
     sod_hour                        INTEGER,
     slice_of_day_target_mw          FLOAT,
     PRIMARY KEY (slice_of_day_target_scenario_id, slice_of_day_zone,
-                 subproblem_id, stage_id, period, sod_month, sod_hour),
+                 period, sod_month, sod_hour),
     FOREIGN KEY (slice_of_day_target_scenario_id) REFERENCES
         subscenarios_system_slice_of_day_targets (slice_of_day_target_scenario_id)
 );
@@ -5882,8 +5907,7 @@ CREATE TABLE scenarios
     policy_requirement_scenario_id                              INTEGER,
     slice_of_day_zone_scenario_id                               INTEGER,
     slice_of_day_target_scenario_id                             INTEGER,
-    project_slice_of_day_scenario_id                            INTEGER,
-    project_slice_of_day_storage_params_scenario_id             INTEGER,
+    project_slice_of_day_projects_scenario_id                   INTEGER,
     prm_requirement_scenario_id                                 INTEGER,
     local_capacity_requirement_scenario_id                      INTEGER,
     elcc_surface_scenario_id                                    INTEGER,
@@ -6147,6 +6171,10 @@ CREATE TABLE scenarios
     FOREIGN KEY (horizon_energy_target_scenario_id) REFERENCES
         subscenarios_system_horizon_energy_targets
             (horizon_energy_target_scenario_id),
+    FOREIGN KEY (slice_of_day_target_scenario_id) REFERENCES
+        subscenarios_system_slice_of_day_targets (slice_of_day_target_scenario_id),
+    FOREIGN KEY (project_slice_of_day_projects_scenario_id) REFERENCES
+        subscenarios_project_slice_of_day_projects (project_slice_of_day_projects_scenario_id),
     FOREIGN KEY (policy_requirement_scenario_id) REFERENCES
         subscenarios_system_policy_requirements
             (policy_requirement_scenario_id),
