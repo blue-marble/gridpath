@@ -20,6 +20,7 @@ import sys
 import pandas as pd
 
 from db.common_functions import connect_to_database
+from data_toolkit.load_raw_data import read_and_import_csv
 from data_toolkit.project.project_data_filters_common import (
     get_eia860_sql_filter_string,
     DISAGG_PROJECT_NAME_STR,
@@ -44,6 +45,14 @@ def parse_arguments(args):
     parser = ArgumentParser(add_help=True)
 
     parser.add_argument("-db", "--database", default="../../open_data_raw.db")
+    parser.add_argument(
+        "-csv",
+        "--input_csv",
+        default=None,
+        help="""Path to the CSV file to load into the database.
+            If not specified, data will be assumed to have been
+            already loaded into the database.""",
+    )
 
     # Missing storage durations
     parser.add_argument(
@@ -194,6 +203,10 @@ def main(args=None):
         print("Making manual adjustments")
 
     conn = connect_to_database(db_path=parsed_args.database)
+
+    # ### Load data from CSV
+    if parsed_args.input_csv is not None:
+        read_and_import_csv(conn=conn, f_path=parsed_args.input_csv, table="TABLE_TBD")
 
     # Add missing project files
     copy_files_df = pd.read_csv(parsed_args.files_to_copy_csv, index_col=False)

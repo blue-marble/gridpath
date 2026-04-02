@@ -59,6 +59,7 @@ import pandas as pd
 import sys
 
 from db.common_functions import connect_to_database
+from data_toolkit.load_raw_data import read_and_import_csv
 
 
 def parse_arguments(args):
@@ -72,6 +73,14 @@ def parse_arguments(args):
     parser = ArgumentParser(add_help=True)
 
     parser.add_argument("-db", "--database", default="../../io.db")
+    parser.add_argument(
+        "-csv",
+        "--input_csv",
+        default=None,
+        help="""Path to the CSV file to load into the database.
+            If not specified, data will be assumed to have been
+            already loaded into the database.""",
+    )
     parser.add_argument("-stage", "--stage_id", default=1, help="Defaults to 1.")
     parser.add_argument("-n_iter", "--n_iterations")
     parser.add_argument(
@@ -383,6 +392,10 @@ def main(args=None):
         print("Creating availability iteration CSVs...")
 
     db = connect_to_database(parsed_args.database)
+
+    # ### Load data from CSV
+    if parsed_args.input_csv is not None:
+        read_and_import_csv(conn=db, f_path=parsed_args.input_csv, table="TABLE_TBD")
 
     projects = [i[0] for i in db.execute("""
         SELECT DISTINCT project FROM raw_data_unit_availability_params;

@@ -51,6 +51,7 @@ import pandas as pd
 import sys
 
 from db.common_functions import connect_to_database
+from data_toolkit.load_raw_data import read_and_import_csv
 
 # TODO: leap years
 # TODO: hydro bins -- pick bin at random, pick year from bin at random; match
@@ -67,6 +68,14 @@ def parse_arguments(args):
     """
     parser = ArgumentParser(add_help=True)
     parser.add_argument("-db", "--database", default="../../io.db")
+    parser.add_argument(
+        "-csv",
+        "--input_csv",
+        default=None,
+        help="""Path to the CSV file to load into the database.
+            If not specified, data will be assumed to have been
+            already loaded into the database.""",
+    )
     parser.add_argument("-stage", "--stage_id", default=1, help="Defaults to 1.")
     parser.add_argument(
         "-id",
@@ -274,6 +283,10 @@ def main(args=None):
     os.makedirs(parsed_args.output_directory, exist_ok=True)
 
     db = connect_to_database(parsed_args.database)
+
+    # ### Load data from CSV
+    if parsed_args.input_csv is not None:
+        read_and_import_csv(conn=db, f_path=parsed_args.input_csv, table="TABLE_TBD")
 
     c = db.cursor()
     projects = [prj[0] for prj in c.execute("""
