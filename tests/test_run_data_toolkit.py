@@ -49,6 +49,7 @@ class TestDataToolkit(unittest.TestCase):
             "create_sync_load_input_csvs",
             "create_sync_var_gen_input_csvs",
             "create_monte_carlo_weather_draws",
+            "create_monte_carlo_weather_draw_profiles",
             "create_monte_carlo_load_input_csvs",
             "create_monte_carlo_var_gen_input_csvs",
             "create_hydro_iteration_input_csvs",
