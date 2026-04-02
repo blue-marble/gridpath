@@ -1897,7 +1897,10 @@ CREATE TABLE inputs_project_relative_capacity_requirements
                  period, prj_for_lim_map_id),
     FOREIGN KEY (project_relative_capacity_requirement_scenario_id) REFERENCES
         subscenarios_project_relative_capacity_requirements
-            (project_relative_capacity_requirement_scenario_id)
+            (project_relative_capacity_requirement_scenario_id),
+    FOREIGN KEY (project, prj_for_lim_map_id) REFERENCES
+        subscenarios_project_relative_capacity_requirements_map
+            (project, prj_for_lim_map_id),
 );
 
 DROP TABLE IF EXISTS subscenarios_project_relative_capacity_requirements_map;
