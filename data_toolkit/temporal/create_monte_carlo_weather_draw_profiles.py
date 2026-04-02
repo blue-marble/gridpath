@@ -46,6 +46,7 @@ from argparse import ArgumentParser
 
 import numpy as np
 
+from data_toolkit.load_raw_data import read_and_import_csv
 from db.common_functions import spin_on_database_lock_generic, connect_to_database
 
 
@@ -60,6 +61,23 @@ def parse_arguments(args):
     parser = ArgumentParser(add_help=True)
 
     parser.add_argument("-db", "--database")
+
+    parser.add_argument("-csv", "--raw_data_profile_csv_location")
+    parser.add_argument(
+        "-t",
+        "--timeseries_name",
+        default=None,
+        help="Timeseries names to draw from. If not specified, "
+        "a list of timeseries will be loaded from the "
+        "database.",
+    )
+    parser.add_argument(
+        "-d",
+        "--consider_day_types",
+        default=None,
+        help="Required boolean if timeseries_name is specified.",
+    )
+
     parser.add_argument(
         "-bins_id", "--weather_bins_id", default=1, help="Defaults to 1."
     )
@@ -87,6 +105,8 @@ def parse_arguments(args):
 
 def make_timeseries_draw_profiles(
     conn,
+    timeseries_name,
+    consider_day_types,
     timeseries_iteration_draw_initial_seed,
     weather_bins_id,
     weather_draws_id,
@@ -101,28 +121,24 @@ def make_timeseries_draw_profiles(
         print("   ...creating synthetic iterations...")
 
     # Get the timeseries
-    c = conn.cursor()
-    timeseries = [
-        (timeseries_name, consider_day_types)
-        for (timeseries_name, consider_day_types) in c.execute(
-            f"""SELECT timeseries_name, consider_day_types
-            FROM user_defined_monte_carlo_timeseries
-            ;"""
-        ).fetchall()
-    ]
-
-    # Update the timeseries-iterations initial seed; if set, the seed is
-    # incremented by one for each timeseries/iteration/draw
-    # Proceed with caution if seeding and ensure the behavior implemented is
-    # appropriate for the use case
-    it_seed_sql = f"""
-            UPDATE aux_weather_draws_info
-            SET timeseries_iteration_draw_initial_seed = 
-            {timeseries_iteration_draw_initial_seed if timeseries_iteration_draw_initial_seed is not None else 'NULL'}
-            ;
-        """
-
-    spin_on_database_lock_generic(c.execute(it_seed_sql))
+    if timeseries_name is None:
+        c = conn.cursor()
+        timeseries = [
+            (timeseries_name, consider_day_types, initial_seed)
+            for (timeseries_name, consider_day_types, initial_seed) in c.execute(
+                f"""SELECT timeseries_name, consider_day_types, initial_seed
+                FROM user_defined_monte_carlo_timeseries
+                ;"""
+            ).fetchall()
+        ]
+    else:
+        timeseries = [
+            (
+                timeseries_name,
+                consider_day_types,
+                timeseries_iteration_draw_initial_seed,
+            )
+        ]
 
     # Get the weather draws
     weather_draws = get_weather_draws(
@@ -131,16 +147,21 @@ def make_timeseries_draw_profiles(
         weather_draws_id=weather_draws_id,
     )
 
-    # Set a starting seed if requested
-    timeseries_iteration_draw_seed = (
-        int(timeseries_iteration_draw_initial_seed)
-        if timeseries_iteration_draw_initial_seed is not None
-        else None
-    )
     # Iterate over timeseries
-    for timeseries_name, consider_day_types in timeseries:
+    for (
+        timeseries_name,
+        consider_day_types,
+        timeseries_iteration_draw_initial_seed,
+    ) in timeseries:
         if not quiet:
             print(f"...processing timeseries: {timeseries_name}")
+
+        # Set a starting seed if requested
+        timeseries_iteration_draw_seed = (
+            int(timeseries_iteration_draw_initial_seed)
+            if timeseries_iteration_draw_initial_seed is not None
+            else None
+        )
 
         # Base availability on the data in the raw_data_profiles table
         # rather than exogenously defined by user
@@ -314,9 +335,18 @@ def main(args=None):
 
     conn = connect_to_database(db_path=parsed_args.database)
 
+    # ##### Load profiles if requested #####
+    # ### Load data from CSV
+    if parsed_args.raw_data_profile_csv_location is not None:
+        read_and_import_csv(
+            conn=conn, f_path=parsed_args.input_csv, table="raw_data_profiles"
+        )
+
     # ####### Based on the weather draws, create timeseries profiles ###########
     make_timeseries_draw_profiles(
         conn=conn,
+        timeseries_name=parsed_args.timeseries_name,
+        consider_day_types=parsed_args.consider_day_types,
         timeseries_iteration_draw_initial_seed=parsed_args.timeseries_iteration_draw_initial_seed,
         weather_bins_id=parsed_args.weather_bins_id,
         weather_draws_id=parsed_args.weather_draws_id,

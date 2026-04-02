@@ -240,6 +240,7 @@ CREATE TABLE user_defined_monte_carlo_timeseries
 (
     timeseries_name    VARCHAR(32),
     consider_day_types INTEGER,
+    initial_seed       INTEGER,
     PRIMARY KEY (timeseries_name)
 );
 
@@ -251,7 +252,6 @@ CREATE TABLE aux_weather_draws_info
     weather_draws_id INTEGER,
     seed             INTEGER,
     n_iterations     INTEGER,
-    timeseries_iteration_draw_initial_seed  INTEGER,
     PRIMARY KEY (weather_bins_id, weather_draws_id)
 );
 
