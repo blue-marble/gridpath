@@ -26,6 +26,9 @@ from gridpath.common_functions import create_results_df
 
 from gridpath.system.policy.generic_policy import POLICY_ZONE_PRD_DF
 
+HORIZON_REQUIREMENT_MODE = "horizon"
+MONTH_HOUR_REQUIREMENT_MODE = "month_hour"
+
 
 def add_model_components(
     m,
@@ -48,6 +51,11 @@ def add_model_components(
         within=Any,
         initialize=lambda mod: sorted(list(set([p for (p, z) in mod.POLICIES_ZONES]))),
     )
+    m.policy_requirement_mode = Param(
+        m.POLICIES_ZONES,
+        within=[HORIZON_REQUIREMENT_MODE, MONTH_HOUR_REQUIREMENT_MODE],
+        default=HORIZON_REQUIREMENT_MODE,
+    )
 
     m.POLICIES_ZONE_BLN_TYPE_HRZS_WITH_REQ = Set(
         dimen=4, within=m.POLICIES_ZONES * m.BLN_TYPE_HRZS
@@ -67,6 +75,11 @@ def add_model_components(
 
     # Load zones included in the function of load policy requirement
     m.POLICIES_ZONE_LOAD_ZONES = Set(dimen=3, within=m.POLICIES_ZONES * m.LOAD_ZONES)
+    m.POLICIES_ZONE_PRDS_MONTH_HOURS_WITH_REQ = Set(dimen=5)
+    m.policy_month_hour_requirement = Param(
+        m.POLICIES_ZONE_PRDS_MONTH_HOURS_WITH_REQ, within=NonNegativeReals, default=0
+    )
+    m.POLICIES_ZONE_LOAD_ZONES_MONTH_HOUR = Set(dimen=5)
 
     def policy_requirement_rule(mod, policy_name, policy_zone, bt, h):
         """
@@ -108,6 +121,14 @@ def add_model_components(
         rule=policy_requirement_rule,
     )
 
+    def policy_month_hour_requirement_rule(mod, policy_name, policy_zone, period, mn, hr):
+        return mod.policy_month_hour_requirement[policy_name, policy_zone, period, mn, hr]
+
+    m.Policy_Zone_Month_Hour_Requirement = Expression(
+        m.POLICIES_ZONE_PRDS_MONTH_HOURS_WITH_REQ,
+        rule=policy_month_hour_requirement_rule,
+    )
+
 
 def load_model_data(
     m,
@@ -130,24 +151,7 @@ def load_model_data(
     :param stage:
     :return:
     """
-    data_portal.load(
-        filename=os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "inputs",
-            "policy_requirements.tab",
-        ),
-        index=m.POLICIES_ZONE_BLN_TYPE_HRZS_WITH_REQ,
-        param=(m.policy_requirement, m.policy_requirement_f_load_coeff),
-    )
-
-    # If we have a policy zone to load zone map input file, load it; otherwise,
-    # initialize HORIZON_ENERGY_TARGET_ZONE_LOAD_ZONES as an empty list
-    map_filename = os.path.join(
+    input_dir = os.path.join(
         scenario_directory,
         weather_iteration,
         hydro_iteration,
@@ -155,8 +159,63 @@ def load_model_data(
         subproblem,
         stage,
         "inputs",
-        "policy_zone_load_zone_map.tab",
     )
+
+    horizon_policy_zones = set()
+    month_hour_policy_zones = set()
+
+    # Load horizon requirements if present
+    policy_requirements_file = os.path.join(input_dir, "policy_requirements.tab")
+    if os.path.exists(policy_requirements_file):
+        data_portal.load(
+            filename=policy_requirements_file,
+            index=m.POLICIES_ZONE_BLN_TYPE_HRZS_WITH_REQ,
+            param=(m.policy_requirement, m.policy_requirement_f_load_coeff),
+        )
+        with open(policy_requirements_file, "r") as f:
+            reader = csv.DictReader(f, delimiter="\t")
+            for row in reader:
+                horizon_policy_zones.add((row["policy_name"], row["policy_zone"]))
+    else:
+        data_portal.data()["POLICIES_ZONE_BLN_TYPE_HRZS_WITH_REQ"] = {None: []}
+
+    # Load month-hour requirements if present
+    mh_requirements_file = os.path.join(
+        input_dir, "policy_month_hour_requirements.tab"
+    )
+    if os.path.exists(mh_requirements_file):
+        data_portal.load(
+            filename=mh_requirements_file,
+            index=m.POLICIES_ZONE_PRDS_MONTH_HOURS_WITH_REQ,
+            param=m.policy_month_hour_requirement,
+        )
+        with open(mh_requirements_file, "r") as f:
+            reader = csv.DictReader(f, delimiter="\t")
+            for row in reader:
+                month_hour_policy_zones.add((row["policy_name"], row["policy_zone"]))
+    else:
+        data_portal.data()["POLICIES_ZONE_PRDS_MONTH_HOURS_WITH_REQ"] = {None: []}
+
+    # Validate no policy zone appears in both horizon and month-hour requirements
+    overlap = horizon_policy_zones.intersection(month_hour_policy_zones)
+    if overlap:
+        overlap_fmt = ", ".join([f"{p}:{z}" for p, z in sorted(overlap)])
+        raise ValueError(
+            "Policies can be either horizon or month-hour based, not both. "
+            f"Found overlaps for: {overlap_fmt}"
+        )
+
+    # Derive policy_requirement_mode from which sets each (policy, zone) appears in
+    policy_mode = {pz: HORIZON_REQUIREMENT_MODE for pz in horizon_policy_zones}
+    policy_mode.update(
+        {pz: MONTH_HOUR_REQUIREMENT_MODE for pz in month_hour_policy_zones}
+    )
+    data_portal.data()["policy_requirement_mode"] = policy_mode
+
+    data_portal.data()["POLICIES_ZONE_LOAD_ZONES_MONTH_HOUR"] = {None: []}
+
+    # Load zone map for horizon percent-of-load targets if present
+    map_filename = os.path.join(input_dir, "policy_zone_load_zone_map.tab")
     if os.path.exists(map_filename):
         data_portal.load(filename=map_filename, set=m.POLICIES_ZONE_LOAD_ZONES)
     else:
@@ -211,7 +270,7 @@ def get_inputs_from_database(
     # Get any policy zone to load zone mapping for the percent target
     c2 = conn.cursor()
     lz_mapping = c2.execute(
-        """SELECT policy_name, policy_zone, load_zone
+        """SELECT policy_name, policy_zone, load_zone, month, hour_of_day
         FROM inputs_system_policy_requirements_load_zone_map
         JOIN
         (SELECT policy_name, policy_zone
@@ -225,7 +284,30 @@ def get_inputs_from_database(
         )
     )
 
-    return policy_requirements, lz_mapping
+    c3 = conn.cursor()
+    month_hour_policy_requirements = c3.execute(
+        """SELECT policy_name, policy_zone, period, policy_month, policy_hour,
+        policy_requirement
+        FROM inputs_system_policy_month_hour_requirements
+        JOIN
+        (SELECT period
+        FROM inputs_temporal_periods
+        WHERE temporal_scenario_id = {}) as relevant_periods
+        USING (period)
+        JOIN
+        (SELECT policy_zone
+        FROM inputs_geography_policy_zones
+        WHERE policy_zone_scenario_id = {}) as relevant_zones
+        using (policy_zone)
+        WHERE policy_requirement_scenario_id = {};
+        """.format(
+            subscenarios.TEMPORAL_SCENARIO_ID,
+            subscenarios.POLICY_ZONE_SCENARIO_ID,
+            subscenarios.POLICY_REQUIREMENT_SCENARIO_ID,
+        )
+    )
+
+    return policy_requirements, lz_mapping, month_hour_policy_requirements
 
 
 def validate_inputs(
@@ -284,7 +366,11 @@ def write_model_inputs(
         weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
     )
 
-    policy_requirements, lz_mapping = get_inputs_from_database(
+    (
+        policy_requirements,
+        lz_mapping,
+        month_hour_policy_requirements,
+    ) = get_inputs_from_database(
         scenario_id,
         subscenarios,
         db_weather_iteration,
@@ -320,13 +406,46 @@ def write_model_inputs(
                 "horizon",
                 "policy_requirement",
                 "policy_requirement_f_load_coeff",
+                "requirement_mode",
             ]
         )
 
         for row in policy_requirements:
             # It's OK if targets are not specified; they default to 0
             replace_nulls = ["." if i is None else i for i in row]
+            replace_nulls.append(HORIZON_REQUIREMENT_MODE)
             writer.writerow(replace_nulls)
+
+    month_hour_rows = [row for row in month_hour_policy_requirements]
+    if month_hour_rows:
+        with open(
+            os.path.join(
+                scenario_directory,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
+                "inputs",
+                "policy_month_hour_requirements.tab",
+            ),
+            "w",
+            newline="",
+        ) as f:
+            writer = csv.writer(f, delimiter="\t", lineterminator="\n")
+            writer.writerow(
+                [
+                    "policy_name",
+                    "policy_zone",
+                    "period",
+                    "policy_month",
+                    "policy_hour",
+                    "policy_requirement",
+                ]
+            )
+            for row in month_hour_rows:
+                replace_nulls = ["." if i is None else i for i in row]
+                writer.writerow(replace_nulls)
 
     # Write the policy-zone to load zone map file for the policy percent
     # target if there are any mappings only
@@ -351,9 +470,11 @@ def write_model_inputs(
             )
 
             # Write header
-            writer.writerow(["policy_name", "policy_zone", "load_zone"])
+            writer.writerow(
+                ["policy_name", "policy_zone", "load_zone", "month", "hour_of_day"]
+            )
             for row in policy_zone_lz_map_list:
-                writer.writerow(row)
+                writer.writerow(["." if i is None else i for i in row])
 
 
 def export_results(
@@ -377,8 +498,8 @@ def export_results(
     """
 
     results_columns = [
+        "policy_requirement_mode",
         "policy_requirement",
-        "policy_requirement_f_load_coeff",
     ]
     data = [
         [
@@ -386,8 +507,8 @@ def export_results(
             z,
             bt,
             h,
+            m.policy_requirement_mode[p, z],
             m.policy_requirement[p, z, bt, h],
-            m.policy_requirement_f_load_coeff[p, z, bt, h],
         ]
         for (p, z, bt, h) in m.POLICIES_ZONE_BLN_TYPE_HRZS_WITH_REQ
     ]

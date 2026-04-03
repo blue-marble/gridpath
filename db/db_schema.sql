@@ -5563,6 +5563,20 @@ CREATE TABLE inputs_system_policy_requirements
                  subproblem_id, stage_id, balancing_type_horizon, horizon)
 );
 
+DROP TABLE IF EXISTS inputs_system_policy_month_hour_requirements;
+CREATE TABLE inputs_system_policy_month_hour_requirements
+(
+    policy_requirement_scenario_id  INTEGER,
+    policy_name                     TEXT,
+    policy_zone                     TEXT,
+    period                          INTEGER,
+    policy_month                    INTEGER,
+    policy_hour                     INTEGER,
+    policy_requirement              FLOAT,
+    PRIMARY KEY (policy_requirement_scenario_id, policy_name, policy_zone,
+                 period, policy_month, policy_hour)
+);
+
 -- If the policy requirement is specified as a function of load, we need to also
 -- specify which load, i.e. specify a mapping between the policy zone
 -- and the load zones whose load should be part of the requirement calculation
@@ -5574,8 +5588,10 @@ CREATE TABLE inputs_system_policy_requirements_load_zone_map
     policy_name                    TEXT,
     policy_zone                    TEXT,
     load_zone                      TEXT,
+    month                          INTEGER,
+    hour_of_day                    INTEGER,
     PRIMARY KEY (policy_requirement_scenario_id, policy_name, policy_zone,
-                 load_zone)
+                 load_zone, month, hour_of_day)
 );
 
 -- Project, policy, zones
@@ -5600,10 +5616,58 @@ CREATE TABLE inputs_project_policy_zones
     compliance_type                 TEXT,
     f_slope                         FLOAT, -- frac power in tmp
     f_intercept                     FLOAT, -- frac capacity in tmp
+    exceedance_values_scenario_id   INTEGER,
+    storage_params_scenario_id      INTEGER,
     PRIMARY KEY (project_policy_zone_scenario_id, project, policy_name,
                  policy_zone),
     FOREIGN KEY (project_policy_zone_scenario_id) REFERENCES
         subscenarios_project_policy_zones (project_policy_zone_scenario_id)
+);
+
+DROP TABLE IF EXISTS subscenarios_project_policy_exceedance_values;
+CREATE TABLE subscenarios_project_policy_exceedance_values
+(
+    project                       TEXT,
+    exceedance_values_scenario_id INTEGER,
+    name                          VARCHAR(32),
+    description                   VARCHAR(128),
+    PRIMARY KEY (project, exceedance_values_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_policy_exceedance_values;
+CREATE TABLE inputs_project_policy_exceedance_values
+(
+    project                       TEXT,
+    exceedance_values_scenario_id INTEGER,
+    period                        INTEGER,
+    policy_month                  INTEGER,
+    policy_hour                   INTEGER,
+    cap_fac                       FLOAT,
+    PRIMARY KEY (project, exceedance_values_scenario_id, period, policy_month, policy_hour),
+    FOREIGN KEY (project, exceedance_values_scenario_id) REFERENCES
+        subscenarios_project_policy_exceedance_values (project, exceedance_values_scenario_id)
+);
+
+DROP TABLE IF EXISTS subscenarios_project_policy_storage_params;
+CREATE TABLE subscenarios_project_policy_storage_params
+(
+    project                    TEXT,
+    storage_params_scenario_id INTEGER,
+    name                       VARCHAR(32),
+    description                VARCHAR(128),
+    PRIMARY KEY (project, storage_params_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_policy_storage_params;
+CREATE TABLE inputs_project_policy_storage_params
+(
+    project                    TEXT,
+    storage_params_scenario_id INTEGER,
+    duration_hours             FLOAT,
+    efficiency                 FLOAT,
+    PRIMARY KEY (project, storage_params_scenario_id),
+    FOREIGN KEY (project, storage_params_scenario_id) REFERENCES
+        subscenarios_project_policy_storage_params (project, storage_params_scenario_id)
 );
 
 
@@ -7807,7 +7871,6 @@ CREATE TABLE results_system_policy_requirements
     balancing_type_horizon                    VARCHAR(64),
     horizon                                   INTEGER,
     policy_requirement                        FLOAT,
-    policy_requirement_f_load_coeff           FLOAT,
     pre_load_modifier_load_in_hrz             FLOAT,
     post_load_modifier_load_in_hrz            FLOAT,
     policy_requirement_calculated_in_horizon  FLOAT,
@@ -7819,6 +7882,28 @@ CREATE TABLE results_system_policy_requirements
                  stage_id, balancing_type_horizon, horizon)
 );
 
+
+
+DROP TABLE IF EXISTS results_project_policy_month_hour_contributions;
+CREATE TABLE results_project_policy_month_hour_contributions
+(
+    scenario_id            INTEGER,
+    project                VARCHAR(64),
+    weather_iteration      INTEGER,
+    hydro_iteration        INTEGER,
+    availability_iteration INTEGER,
+    policy_name            TEXT,
+    policy_zone            TEXT,
+    period                 INTEGER,
+    policy_month           INTEGER,
+    policy_hour            INTEGER,
+    subproblem_id          INTEGER,
+    stage_id               INTEGER,
+    contribution_mw        FLOAT,
+    PRIMARY KEY (scenario_id, project, weather_iteration, hydro_iteration,
+                 availability_iteration, policy_name, policy_zone, period,
+                 policy_month, policy_hour, subproblem_id, stage_id)
+);
 
 -- PRM balance
 DROP TABLE IF EXISTS results_system_prm;

@@ -30,3 +30,12 @@ def contribution_in_horizon(mod, prj, policy, zone, bt, h):
     Defaults to 0
     """
     return 0
+
+
+def contribution_in_month_hour(mod, prj, policy, zone, prd, mn, hr):
+    """
+    Defaults to 0. SOD-type compliance types override this method.
+    Month-hour contributions are completely decoupled from timepoints and
+    operational dispatch.
+    """
+    return 0

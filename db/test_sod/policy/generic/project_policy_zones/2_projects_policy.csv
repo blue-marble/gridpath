@@ -1,0 +1,6 @@
+project,policy_name,policy_zone,compliance_type,f_slope,f_intercept,exceedance_values_scenario_id,storage_params_scenario_id
+Solar,CPUC_SOD_POLICY,cpuc_sod,sod_exceedance,,,1,
+Wind,CPUC_SOD_POLICY,cpuc_sod,sod_exceedance,,,1,
+Flat_Block,CPUC_SOD_POLICY,cpuc_sod,sod_flat_block,,,,
+Battery,CPUC_SOD_POLICY,cpuc_sod,sod_stor,,,,1
+Battery_8hr,CPUC_SOD_POLICY,cpuc_sod,sod_stor,,,,2
