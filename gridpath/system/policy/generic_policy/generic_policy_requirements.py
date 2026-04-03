@@ -171,6 +171,14 @@ def load_model_data(
             filename=policy_requirements_file,
             index=m.POLICIES_ZONE_BLN_TYPE_HRZS_WITH_REQ,
             param=(m.policy_requirement, m.policy_requirement_f_load_coeff),
+            select=(
+                "policy_name",
+                "policy_zone",
+                "balancing_type",
+                "horizon",
+                "policy_requirement",
+                "policy_requirement_f_load_coeff",
+            ),
         )
         with open(policy_requirements_file, "r") as f:
             reader = csv.DictReader(f, delimiter="\t")
@@ -196,12 +204,14 @@ def load_model_data(
     else:
         data_portal.data()["POLICIES_ZONE_PRDS_MONTH_HOURS_WITH_REQ"] = {None: []}
 
-    # Validate no policy zone appears in both horizon and month-hour requirements
-    overlap = horizon_policy_zones.intersection(month_hour_policy_zones)
+    # Validate no policy name appears in both horizon and month-hour requirements
+    horizon_policies = {p for (p, z) in horizon_policy_zones}
+    month_hour_policies = {p for (p, z) in month_hour_policy_zones}
+    overlap = horizon_policies.intersection(month_hour_policies)
     if overlap:
-        overlap_fmt = ", ".join([f"{p}:{z}" for p, z in sorted(overlap)])
+        overlap_fmt = ", ".join(sorted(overlap))
         raise ValueError(
-            "Policies can be either horizon or month-hour based, not both. "
+            "A policy can be either horizon or month-hour based, not both. "
             f"Found overlaps for: {overlap_fmt}"
         )
 
@@ -270,7 +280,7 @@ def get_inputs_from_database(
     # Get any policy zone to load zone mapping for the percent target
     c2 = conn.cursor()
     lz_mapping = c2.execute(
-        """SELECT policy_name, policy_zone, load_zone, month, hour_of_day
+        """SELECT policy_name, policy_zone, load_zone
         FROM inputs_system_policy_requirements_load_zone_map
         JOIN
         (SELECT policy_name, policy_zone
@@ -470,9 +480,7 @@ def write_model_inputs(
             )
 
             # Write header
-            writer.writerow(
-                ["policy_name", "policy_zone", "load_zone", "month", "hour_of_day"]
-            )
+            writer.writerow(["policy_name", "policy_zone", "load_zone"])
             for row in policy_zone_lz_map_list:
                 writer.writerow(["." if i is None else i for i in row])
 
@@ -497,32 +505,31 @@ def export_results(
     :return:
     """
 
-    results_columns = [
-        "policy_requirement_mode",
-        "policy_requirement",
-    ]
-    data = [
-        [
-            p,
-            z,
-            bt,
-            h,
-            m.policy_requirement_mode[p, z],
-            m.policy_requirement[p, z, bt, h],
+    if m.POLICIES_ZONE_BLN_TYPE_HRZS_WITH_REQ:
+        results_columns = [
+            "policy_requirement",
         ]
-        for (p, z, bt, h) in m.POLICIES_ZONE_BLN_TYPE_HRZS_WITH_REQ
-    ]
-    results_df = create_results_df(
-        index_columns=[
-            "policy_name",
-            "policy_zone",
-            "balancing_type_horizon",
-            "horizon",
-        ],
-        results_columns=results_columns,
-        data=data,
-    )
+        data = [
+            [
+                p,
+                z,
+                bt,
+                h,
+                m.policy_requirement[p, z, bt, h],
+            ]
+            for (p, z, bt, h) in m.POLICIES_ZONE_BLN_TYPE_HRZS_WITH_REQ
+        ]
+        results_df = create_results_df(
+            index_columns=[
+                "policy_name",
+                "policy_zone",
+                "balancing_type_horizon",
+                "horizon",
+            ],
+            results_columns=results_columns,
+            data=data,
+        )
 
-    for c in results_columns:
-        getattr(d, POLICY_ZONE_PRD_DF)[c] = None
-    getattr(d, POLICY_ZONE_PRD_DF).update(results_df)
+        for c in results_columns:
+            getattr(d, POLICY_ZONE_PRD_DF)[c] = None
+        getattr(d, POLICY_ZONE_PRD_DF).update(results_df)

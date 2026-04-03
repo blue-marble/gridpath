@@ -284,51 +284,52 @@ def export_results(
     :return:
     """
 
-    results_columns = [
-        "policy_contribution",
-    ]
-    data = [
-        [
-            prj,
-            p,
-            z,
-            tmp,
-            m.tmp_weight[tmp],
-            m.hrs_in_tmp[tmp],
-            m.period[tmp],
-            value(m.Policy_Contribution_in_Timepoint[prj, p, z, tmp]),
+    if m.PRJ_POLICY_ZONE_OPR_TMPS:
+        results_columns = [
+            "policy_contribution",
         ]
-        for (prj, p, z, tmp) in m.PRJ_POLICY_ZONE_OPR_TMPS
-    ]
+        data = [
+            [
+                prj,
+                p,
+                z,
+                tmp,
+                m.tmp_weight[tmp],
+                m.hrs_in_tmp[tmp],
+                m.period[tmp],
+                value(m.Policy_Contribution_in_Timepoint[prj, p, z, tmp]),
+            ]
+            for (prj, p, z, tmp) in m.PRJ_POLICY_ZONE_OPR_TMPS
+        ]
 
-    results_df = create_results_df(
-        index_columns=[
-            "project",
-            "policy_name",
-            "policy_zone",
-            "timepoint",
-            "timepoint_weight",
-            "hours_in_timepoint",
-            "period",
-        ],
-        results_columns=results_columns,
-        data=data,
-    )
+        results_df = create_results_df(
+            index_columns=[
+                "project",
+                "policy_name",
+                "policy_zone",
+                "timepoint",
+                "timepoint_weight",
+                "hours_in_timepoint",
+                "period",
+            ],
+            results_columns=results_columns,
+            data=data,
+        )
 
-    results_df.to_csv(
-        os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "results",
-            "project_policy_zone_timepoint.csv",
-        ),
-        sep=",",
-        index=True,
-    )
+        results_df.to_csv(
+            os.path.join(
+                scenario_directory,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
+                "results",
+                "project_policy_zone_timepoint.csv",
+            ),
+            sep=",",
+            index=True,
+        )
 
     # Month-hour contributions (SOD-type compliance types only)
     if m.PRJ_POLICY_ZONE_PRDS_MONTH_HOURS:

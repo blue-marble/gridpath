@@ -5588,10 +5588,8 @@ CREATE TABLE inputs_system_policy_requirements_load_zone_map
     policy_name                    TEXT,
     policy_zone                    TEXT,
     load_zone                      TEXT,
-    month                          INTEGER,
-    hour_of_day                    INTEGER,
     PRIMARY KEY (policy_requirement_scenario_id, policy_name, policy_zone,
-                 load_zone, month, hour_of_day)
+                 load_zone)
 );
 
 -- Project, policy, zones

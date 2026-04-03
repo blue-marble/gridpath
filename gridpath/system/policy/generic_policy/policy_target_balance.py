@@ -132,6 +132,9 @@ def export_results(
     :return:
     """
 
+    if not m.POLICIES_ZONE_BLN_TYPE_HRZS_WITH_REQ:
+        return
+
     results_columns = [
         "pre_load_modifier_load_in_hrz",
         "post_load_modifier_load_in_hrz",
