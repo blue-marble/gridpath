@@ -22,18 +22,18 @@ dispatch subject only to policy-specific duration and efficiency constraints:
 
   1. Hourly discharge  <= Capacity_MW[g, p]
   2. Hourly charge     <= Capacity_MW[g, p]
-  3. sum(discharge)    <= Capacity_MW[g, p] * duration_hours * efficiency
-  4. sum(charge)       >= sum(discharge) / efficiency
+  3. sum(discharge)    <= Energy_Storage_Capacity_MWh[g, p] * round_trip_efficiency
+  4. sum(charge)       >= sum(discharge) / round_trip_efficiency
 
 These constraints are per (project, policy, zone, period, month).
+The round-trip efficiency (sod_stor_rte) is specified directly in the
+project_policy_zones input alongside the compliance_type.
 """
 
 import csv
 import os.path
 
 from pyomo.environ import Set, Param, Var, Constraint, NonNegativeReals
-
-from gridpath.auxiliary.db_interface import directories_to_db_values
 
 
 def add_model_components(
@@ -50,12 +50,9 @@ def add_model_components(
     # Sets and params
     # -------------------------------------------------------------------------
 
-    # (project, policy, zone) for storage projects — loaded from params file
+    # (project, policy, zone) for storage projects — subset of PROJECT_POLICY_ZONES
     m.STOR_PROJECT_POLICY_ZONES = Set(dimen=3, within=m.PROJECT_POLICY_ZONES)
-    m.policy_stor_duration_hours = Param(
-        m.STOR_PROJECT_POLICY_ZONES, within=NonNegativeReals
-    )
-    m.policy_stor_efficiency = Param(
+    m.policy_stor_round_trip_efficiency = Param(
         m.STOR_PROJECT_POLICY_ZONES, within=NonNegativeReals
     )
 
@@ -136,9 +133,8 @@ def add_model_components(
             mod.Stor_Policy_Discharge_MW[prj, pol, zone, prd, mn, hr]
             for hr in mod.STOR_POL_HOURS_BY_PRJ_ZONE_PRD_MN[prj, pol, zone, prd, mn]
         ) <= (
-            mod.Capacity_MW[prj, prd]
-            * mod.policy_stor_duration_hours[prj, pol, zone]
-            * mod.policy_stor_efficiency[prj, pol, zone]
+            mod.Energy_Storage_Capacity_MWh[prj, prd]
+            * mod.policy_stor_round_trip_efficiency[prj, pol, zone]
         )
 
     m.Stor_Policy_Energy_Limit_Constraint = Constraint(
@@ -152,7 +148,7 @@ def add_model_components(
         ) >= sum(
             mod.Stor_Policy_Discharge_MW[prj, pol, zone, prd, mn, hr]
             for hr in mod.STOR_POL_HOURS_BY_PRJ_ZONE_PRD_MN[prj, pol, zone, prd, mn]
-        ) / mod.policy_stor_efficiency[prj, pol, zone]
+        ) / mod.policy_stor_round_trip_efficiency[prj, pol, zone]
 
     m.Stor_Policy_Charge_Balance_Constraint = Constraint(
         m.STOR_PRJ_POL_ZONE_PRD_MNS, rule=charge_balance_rule
@@ -181,7 +177,11 @@ def load_model_data(
     subproblem,
     stage,
 ):
-    params_file = os.path.join(
+    """
+    Load STOR_PROJECT_POLICY_ZONES and policy_stor_round_trip_efficiency from
+    the project_policy_zones.tab file (filtering to sod_stor compliance type).
+    """
+    ppz_file = os.path.join(
         scenario_directory,
         weather_iteration,
         hydro_iteration,
@@ -189,53 +189,24 @@ def load_model_data(
         subproblem,
         stage,
         "inputs",
-        "project_policy_storage_params.tab",
+        "project_policy_zones.tab",
     )
-    if os.path.exists(params_file):
-        data_portal.load(
-            filename=params_file,
-            index=m.STOR_PROJECT_POLICY_ZONES,
-            param=(m.policy_stor_duration_hours, m.policy_stor_efficiency),
-            select=(
-                "project",
-                "policy_name",
-                "policy_zone",
-                "duration_hours",
-                "efficiency",
-            ),
-        )
 
+    stor_ppz = []
+    rte_dict = {}
+    with open(ppz_file, "r") as f:
+        reader = csv.DictReader(f, delimiter="\t")
+        for row in reader:
+            if row["compliance_type"] == "sod_stor":
+                prj = row["project"]
+                pol = row["policy_name"]
+                zone = row["policy_zone"]
+                stor_ppz.append((prj, pol, zone))
+                rte = row["sod_stor_rte"]
+                rte_dict[(prj, pol, zone)] = float(rte)
 
-def get_inputs_from_database(
-    scenario_id,
-    subscenarios,
-    weather_iteration,
-    hydro_iteration,
-    availability_iteration,
-    subproblem,
-    stage,
-    conn,
-):
-    c = conn.cursor()
-    return c.execute(
-        """SELECT ppz.project, ppz.policy_name, ppz.policy_zone,
-        sp.duration_hours, sp.efficiency
-        FROM inputs_project_policy_zones ppz
-        JOIN inputs_project_policy_storage_params sp
-          ON sp.project = ppz.project
-         AND sp.storage_params_scenario_id = ppz.storage_params_scenario_id
-        JOIN
-        (SELECT policy_name, policy_zone
-         FROM inputs_geography_policy_zones
-         WHERE policy_zone_scenario_id = {policy_zone_scenario}) as relevant_zones
-        USING (policy_name, policy_zone)
-        WHERE ppz.project_policy_zone_scenario_id = {project_policy_zone_scenario}
-        AND ppz.compliance_type = 'sod_stor';
-        """.format(
-            policy_zone_scenario=subscenarios.POLICY_ZONE_SCENARIO_ID,
-            project_policy_zone_scenario=subscenarios.PROJECT_POLICY_ZONE_SCENARIO_ID,
-        )
-    ).fetchall()
+    data_portal.data()["STOR_PROJECT_POLICY_ZONES"] = {None: stor_ppz}
+    data_portal.data()["policy_stor_round_trip_efficiency"] = rte_dict
 
 
 def validate_inputs(
@@ -249,63 +220,3 @@ def validate_inputs(
     conn,
 ):
     pass
-
-
-def write_model_inputs(
-    scenario_directory,
-    scenario_id,
-    subscenarios,
-    weather_iteration,
-    hydro_iteration,
-    availability_iteration,
-    subproblem,
-    stage,
-    conn,
-):
-    (
-        db_weather_iteration,
-        db_hydro_iteration,
-        db_availability_iteration,
-        db_subproblem,
-        db_stage,
-    ) = directories_to_db_values(
-        weather_iteration, hydro_iteration, availability_iteration, subproblem, stage
-    )
-
-    rows = get_inputs_from_database(
-        scenario_id,
-        subscenarios,
-        db_weather_iteration,
-        db_hydro_iteration,
-        db_availability_iteration,
-        db_subproblem,
-        db_stage,
-        conn,
-    )
-    if rows:
-        with open(
-            os.path.join(
-                scenario_directory,
-                weather_iteration,
-                hydro_iteration,
-                availability_iteration,
-                subproblem,
-                stage,
-                "inputs",
-                "project_policy_storage_params.tab",
-            ),
-            "w",
-            newline="",
-        ) as f:
-            writer = csv.writer(f, delimiter="\t", lineterminator="\n")
-            writer.writerow(
-                [
-                    "project",
-                    "policy_name",
-                    "policy_zone",
-                    "duration_hours",
-                    "efficiency",
-                ]
-            )
-            for row in rows:
-                writer.writerow(row)

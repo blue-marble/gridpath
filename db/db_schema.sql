@@ -5615,7 +5615,7 @@ CREATE TABLE inputs_project_policy_zones
     f_slope                         FLOAT, -- frac power in tmp
     f_intercept                     FLOAT, -- frac capacity in tmp
     exceedance_values_scenario_id   INTEGER,
-    storage_params_scenario_id      INTEGER,
+    sod_stor_rte                    FLOAT,
     PRIMARY KEY (project_policy_zone_scenario_id, project, policy_name,
                  policy_zone),
     FOREIGN KEY (project_policy_zone_scenario_id) REFERENCES
@@ -5646,27 +5646,6 @@ CREATE TABLE inputs_project_policy_exceedance_values
         subscenarios_project_policy_exceedance_values (project, exceedance_values_scenario_id)
 );
 
-DROP TABLE IF EXISTS subscenarios_project_policy_storage_params;
-CREATE TABLE subscenarios_project_policy_storage_params
-(
-    project                    TEXT,
-    storage_params_scenario_id INTEGER,
-    name                       VARCHAR(32),
-    description                VARCHAR(128),
-    PRIMARY KEY (project, storage_params_scenario_id)
-);
-
-DROP TABLE IF EXISTS inputs_project_policy_storage_params;
-CREATE TABLE inputs_project_policy_storage_params
-(
-    project                    TEXT,
-    storage_params_scenario_id INTEGER,
-    duration_hours             FLOAT,
-    efficiency                 FLOAT,
-    PRIMARY KEY (project, storage_params_scenario_id),
-    FOREIGN KEY (project, storage_params_scenario_id) REFERENCES
-        subscenarios_project_policy_storage_params (project, storage_params_scenario_id)
-);
 
 
 -- PRM requirements

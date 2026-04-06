@@ -1,2 +1,2 @@
 policy_name,policy_zone,subproblem_id,stage_id,balancing_type_horizon,horizon,policy_requirement,policy_requirement_f_load_coeff
-RPS,cpuc_rps,1,1,year,2030,1000,
+RPS,cpuc,1,1,year,2030,1000,

@@ -400,23 +400,23 @@ def get_inputs_from_database(
     # Get the energy-target zones for project in our portfolio and with zones in our
     # Energy target zone
     project_policy_zones = c.execute(
-        f"""SELECT project, policy_name, policy_zone, compliance_type, 
-        f_slope, f_intercept, exceedance_values_scenario_id, storage_params_scenario_id
+        f"""SELECT project, policy_name, policy_zone, compliance_type,
+        f_slope, f_intercept, exceedance_values_scenario_id, sod_stor_rte
         FROM
         -- Get projects from portfolio only
         (SELECT project
             FROM inputs_project_portfolios
             WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
         ) as prj_tbl
-        LEFT OUTER JOIN 
+        LEFT OUTER JOIN
         -- Get energy_target zones for those projects
-        (SELECT project, policy_name, policy_zone, compliance_type, 
-        f_slope, f_intercept, exceedance_values_scenario_id, storage_params_scenario_id
+        (SELECT project, policy_name, policy_zone, compliance_type,
+        f_slope, f_intercept, exceedance_values_scenario_id, sod_stor_rte
             FROM inputs_project_policy_zones
             WHERE project_policy_zone_scenario_id = {subscenarios.PROJECT_POLICY_ZONE_SCENARIO_ID}
         ) as prj_energy_target_zone_tbl
         USING (project)
-        -- Filter out projects whose RPS zone is not one included in our 
+        -- Filter out projects whose RPS zone is not one included in our
         -- energy_target_zone_scenario_id
         WHERE (policy_name, policy_zone) in (
                 SELECT policy_name, policy_zone
@@ -495,7 +495,7 @@ def write_model_inputs(
                 "f_slope",
                 "f_intercept",
                 "exceedance_values_scenario_id",
-                "storage_params_scenario_id",
+                "sod_stor_rte",
             ]
         )
 
