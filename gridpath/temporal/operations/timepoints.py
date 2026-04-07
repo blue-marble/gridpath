@@ -501,15 +501,16 @@ def validate_inputs(
         period = row[0]
         hours_in_period_timepoints = row[1]
 
-        if hours_in_period_timepoints not in [8760, 8766, 8784]:
+        if hours_in_period_timepoints not in [720, 744, 8760, 8766, 8784]:
             msg = """
-            Check timepoint parameters for period {}. Your timepoint 
-            parameters currently sum up to {}. In each period,  regardless 
-            of period param values, the total number of hours in timepoints 
-            adjusted for timepoint weight and duration and excluding spinup 
-            and lookahead timepoints should be the number of hours in a year 
-            (8760, 8766, or 8784). This is to ensure consistent weighting of 
-            timepoint-level and period-level costs. 
+            Check timepoint parameters for period {}. Your timepoint
+            parameters currently sum up to {}. In each period,  regardless
+            of period param values, the total number of hours in timepoints
+            adjusted for timepoint weight and duration and excluding spinup
+            and lookahead timepoints should be the number of hours in a year
+            (8760, 8766, or 8784) or in a month (720 or 744). This is to
+            ensure consistent weighting of timepoint-level and period-level
+            costs.
             """.format(str(period), str(hours_in_period_timepoints))
 
             # Check values of hours_in_period_timepoints
@@ -525,4 +526,16 @@ def validate_inputs(
                 db_table="inputs_temporal",
                 severity="High",
                 errors=[msg],
+            )
+        elif hours_in_period_timepoints in [720, 744]:
+            print(
+                "WARNING: Period {} uses a monthly temporal structure "
+                "(hours_in_period_timepoints={}). Period-based costs must "
+                "be scaled by {}/8760 relative to annualized cost inputs. "
+                "Ensure that all costs are weighted appropriately for a "
+                "monthly period.".format(
+                    str(period),
+                    str(hours_in_period_timepoints),
+                    str(hours_in_period_timepoints),
+                )
             )

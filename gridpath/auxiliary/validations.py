@@ -546,7 +546,7 @@ def validate_single_input(df, idx_col="project", msg=""):
     invalids = n_inputs > 1
     if invalids.any():
         bad_idxs = invalids.index[invalids]
-        print_bad_idxs = ", ".join(bad_idxs)
+        print_bad_idxs = ", ".join(str(i) for i in bad_idxs)
         results.append(
             "{}(s) '{}': Too many inputs! Maximum 1 input per {}. {}".format(
                 idx_col, print_bad_idxs, idx_col, msg

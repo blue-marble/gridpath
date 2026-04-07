@@ -118,7 +118,7 @@ def add_model_components(
     +-------------------------------------------------------------------------+
     | | :code:`hours_in_period_timepoints`                                    |
     | | *Defined over*: :code:`PERIODS`                                       |
-    | | *Within*: :code:`[8760, 8766, 8784]`                                  |
+    | | *Within*: :code:`[720, 744, 8760, 8766, 8784]`                        |
     |                                                                         |
     | The number of hours in the timepoints representing a period (across     |
     | all scenario subproblems, within a stage, excluding spinup/lookahead.   |
