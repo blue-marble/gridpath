@@ -1,3 +1,4 @@
 policy_name	policy_zone	allow_violation	violation_penalty_per_unit
 RPS	RPSZone1	0	0
 Carbon	CarbonZone1	1	100
+SLICE_OF_DAY	SODZone1	0	0

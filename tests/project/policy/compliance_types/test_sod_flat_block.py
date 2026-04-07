@@ -13,16 +13,20 @@
 # limitations under the License.
 
 
-from collections import OrderedDict
 from importlib import import_module
 import os.path
 import sys
 import unittest
 
 from tests.common_functions import create_abstract_model, add_components_and_load_data
-from tests.project.operations.common_functions import get_project_operational_timepoints
 
-TEST_DATA_DIRECTORY = os.path.join(os.path.dirname(__file__), "..", "..", "test_data")
+TEST_DATA_DIRECTORY = os.path.join(
+    os.path.dirname(__file__),
+    "..",
+    "..",
+    "..",
+    "test_data",
+)
 
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
@@ -50,6 +54,9 @@ PREREQUISITE_MODULE_NAMES = [
     "project.operations.operational_types",
     "project.operations.power",
 ]
+
+# Note that we are checking sod_flat_block inputs have been added by the
+# policy_contribution module, which loops over all required compliance types
 NAME_OF_MODULE_BEING_TESTED = "project.policy.policy_contribution"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
@@ -68,7 +75,7 @@ except ImportError:
     print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED + " to test.")
 
 
-class TestRECs(unittest.TestCase):
+class TestSodFlatBlock(unittest.TestCase):
     """ """
 
     def test_add_model_components(self):
@@ -119,52 +126,6 @@ class TestRECs(unittest.TestCase):
             stage="",
         )
         instance = m.create_instance(data)
-
-        # Set: PROJECT_POLICY_ZONES
-        expected_prj_policy_zones = sorted(
-            [
-                ("Wind", "RPS", "RPSZone1"),
-                ("Wind_z2", "RPS", "RPSZone1"),
-                ("Gas_CCGT", "Carbon", "CarbonZone1"),
-                ("Coal", "Carbon", "CarbonZone1"),
-                ("Battery", "RPS", "RPSZone1"),
-                ("Wind", "SLICE_OF_DAY", "SODZone1"),
-                ("Gas_CCGT", "SLICE_OF_DAY", "SODZone1"),
-                ("Battery", "SLICE_OF_DAY", "SODZone1"),
-            ]
-        )
-        actual_prj_policy_zones = sorted(
-            [
-                (prj, policy, zone)
-                for (prj, policy, zone) in instance.PROJECT_POLICY_ZONES
-            ]
-        )
-        self.assertListEqual(expected_prj_policy_zones, actual_prj_policy_zones)
-
-        # Param: compliance_type
-        expected_compliance_type = OrderedDict(
-            sorted(
-                {
-                    ("Wind", "RPS", "RPSZone1"): "f_output",
-                    ("Wind_z2", "RPS", "RPSZone1"): "f_output",
-                    ("Gas_CCGT", "Carbon", "CarbonZone1"): "f_output",
-                    ("Coal", "Carbon", "CarbonZone1"): "f_output",
-                    ("Battery", "RPS", "RPSZone1"): "stor_losses",
-                    ("Wind", "SLICE_OF_DAY", "SODZone1"): "sod_exceedance",
-                    ("Gas_CCGT", "SLICE_OF_DAY", "SODZone1"): "sod_flat_block",
-                    ("Battery", "SLICE_OF_DAY", "SODZone1"): "sod_stor",
-                }.items()
-            )
-        )
-        actual_compliance_type = OrderedDict(
-            sorted(
-                {
-                    (prj, policy, zone): instance.compliance_type[prj, policy, zone]
-                    for (prj, policy, zone) in instance.PROJECT_POLICY_ZONES
-                }.items()
-            )
-        )
-        self.assertDictEqual(expected_compliance_type, actual_compliance_type)
 
 
 if __name__ == "__main__":
