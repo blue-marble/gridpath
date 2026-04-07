@@ -391,40 +391,42 @@ def write_model_inputs(
         conn,
     )
 
-    with open(
-        os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "inputs",
-            "policy_requirements.tab",
-        ),
-        "w",
-        newline="",
-    ) as f:
-        writer = csv.writer(f, delimiter="\t", lineterminator="\n")
+    horizon_rows = [row for row in policy_requirements]
+    if horizon_rows:
+        with open(
+            os.path.join(
+                scenario_directory,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
+                "inputs",
+                "policy_requirements.tab",
+            ),
+            "w",
+            newline="",
+        ) as f:
+            writer = csv.writer(f, delimiter="\t", lineterminator="\n")
 
-        # Write header
-        writer.writerow(
-            [
-                "policy_name",
-                "policy_zone",
-                "balancing_type",
-                "horizon",
-                "policy_requirement",
-                "policy_requirement_f_load_coeff",
-                "requirement_mode",
-            ]
-        )
+            # Write header
+            writer.writerow(
+                [
+                    "policy_name",
+                    "policy_zone",
+                    "balancing_type",
+                    "horizon",
+                    "policy_requirement",
+                    "policy_requirement_f_load_coeff",
+                    "requirement_mode",
+                ]
+            )
 
-        for row in policy_requirements:
-            # It's OK if targets are not specified; they default to 0
-            replace_nulls = ["." if i is None else i for i in row]
-            replace_nulls.append(HORIZON_REQUIREMENT_MODE)
-            writer.writerow(replace_nulls)
+            for row in horizon_rows:
+                # It's OK if targets are not specified; they default to 0
+                replace_nulls = ["." if i is None else i for i in row]
+                replace_nulls.append(HORIZON_REQUIREMENT_MODE)
+                writer.writerow(replace_nulls)
 
     month_hour_rows = [row for row in month_hour_policy_requirements]
     if month_hour_rows:
