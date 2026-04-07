@@ -77,9 +77,10 @@ def parse_arguments(args):
         "-csv",
         "--input_csv",
         default=None,
-        help="""Path to the CSV file to load into the database.
-            If not specified, data will be assumed to have been
-            already loaded into the database.""",
+        help="""Path to the unit availability  params CSV file to load into the 
+        raw_data_unit_availability_params table in the database. If not 
+        specified, data will be assumed to have been already loaded into the 
+        database.""",
     )
     parser.add_argument("-stage", "--stage_id", default=1, help="Defaults to 1.")
     parser.add_argument("-n_iter", "--n_iterations")
@@ -285,6 +286,8 @@ def simulate_unit_outages(
     if starting_outage_states is None:
         starting_outage_states = []
 
+    # TODO: probably remove derates; should be handled default availablity
+    #  values
     if outage_model == "Derate":
         availability = 1 - np.outer(for_array, np.ones(n_units))
 
@@ -395,8 +398,17 @@ def main(args=None):
 
     # ### Load data from CSV
     if parsed_args.input_csv is not None:
-        read_and_import_csv(conn=db, f_path=parsed_args.input_csv, table="TABLE_TBD")
+        read_and_import_csv(
+            conn=db,
+            f_path=parsed_args.input_csv,
+            table="raw_data_unit_availability_params",
+        )
 
+    # Make out directory if it doesn't exist
+    if not os.path.exists(parsed_args.output_directory):
+        os.makedirs(parsed_args.output_directory)
+
+    # Get projects
     projects = [i[0] for i in db.execute("""
         SELECT DISTINCT project FROM raw_data_unit_availability_params;
         """).fetchall()]

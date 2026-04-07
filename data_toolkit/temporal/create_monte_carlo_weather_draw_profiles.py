@@ -42,6 +42,7 @@ Settings
 """
 
 import sys
+import warnings
 from argparse import ArgumentParser
 
 import numpy as np
@@ -62,20 +63,27 @@ def parse_arguments(args):
 
     parser.add_argument("-db", "--database")
 
-    parser.add_argument("-csv", "--raw_data_profile_csv_location")
+    parser.add_argument(
+        "-csv",
+        "--input_csv",
+        default=None,
+        help="Path to the CSV file to load into the raw_data_profiles table "
+        "in the database. If not specified, data will be assumed to have "
+        "been loaded into the database already.",
+    )
     parser.add_argument(
         "-t",
         "--timeseries_name",
         default=None,
-        help="Timeseries names to draw from. If not specified, "
-        "a list of timeseries will be loaded from the "
-        "database.",
+        help="Timeseries names to draw from. If not specified, a list of "
+        "timeseries will be loaded from the database.",
     )
     parser.add_argument(
         "-d",
         "--consider_day_types",
         default=None,
-        help="Required boolean if timeseries_name is specified.",
+        help="Required boolean if timeseries_name is specified. Use 1 for "
+        "'yes' and 0 for 'no'.",
     )
 
     parser.add_argument(
@@ -337,10 +345,28 @@ def main(args=None):
 
     # ##### Load profiles if requested #####
     # ### Load data from CSV
-    if parsed_args.raw_data_profile_csv_location is not None:
+    if parsed_args.input_csv is not None:
         read_and_import_csv(
-            conn=conn, f_path=parsed_args.input_csv, table="raw_data_profiles"
+            conn=conn,
+            f_path=parsed_args.input_csv,
+            table="raw_data_profiles",
         )
+    # #### Check if specific timeseries is requested #### #
+    if parsed_args.timeseries_name is not None:
+        if parsed_args.consider_day_types is None:
+            raise ValueError(
+                "The consider_day_types must be specified if "
+                "timeseries_name is specified."
+            )
+        if parsed_args.timeseries_iteration_draw_initial_seed is None:
+            warnings.warn(
+                "Timeseries iteration draw initial seed is not "
+                "specified. The draws will not be reproducible."
+            )
+        else:
+            print(
+                f"Timeseries iteration draw initial seed is {parsed_args.timeseries_iteration_draw_initial_seed}."
+            )
 
     # ####### Based on the weather draws, create timeseries profiles ###########
     make_timeseries_draw_profiles(
