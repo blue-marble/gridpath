@@ -1,6 +1,0 @@
-project,slice_of_day_zone,contribution_type,exceedance_values_scenario_id,storage_params_scenario_id
-Solar,cpuc_sod,exceedance,1,
-Wind,cpuc_sod,exceedance,1,
-Flat_Block,cpuc_sod,flat_block,,
-Battery,cpuc_sod,stor,,1
-Battery_8hr,cpuc_sod,stor,,2
