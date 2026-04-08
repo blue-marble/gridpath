@@ -855,21 +855,21 @@ def save_results(
                 parsed_arguments.results_export_summary_rule
             ]["export_summary"](instance=instance, quiet=parsed_arguments.quiet)
 
-        if not parsed_arguments.quiet:
-            print("...exporting summary CSV results")
-        export_summary_results(
-            scenario_directory=scenario_directory,
-            weather_iteration=weather_iteration,
-            hydro_iteration=hydro_iteration,
-            availability_iteration=availability_iteration,
-            subproblem=subproblem,
-            stage=stage,
-            multi_stage=multi_stage,
-            instance=instance,
-            dynamic_components=dynamic_components,
-            export_summary_results_rule=export_summary_rule,
-            verbose=parsed_arguments.verbose,
-        )
+        if export_summary_rule:
+            if not parsed_arguments.quiet:
+                print("...exporting summary CSV results")
+            export_summary_results(
+                scenario_directory=scenario_directory,
+                weather_iteration=weather_iteration,
+                hydro_iteration=hydro_iteration,
+                availability_iteration=availability_iteration,
+                subproblem=subproblem,
+                stage=stage,
+                multi_stage=multi_stage,
+                instance=instance,
+                dynamic_components=dynamic_components,
+                verbose=parsed_arguments.verbose,
+            )
 
         export_pass_through_inputs(
             scenario_directory=scenario_directory,
@@ -1264,7 +1264,6 @@ def export_summary_results(
     multi_stage,
     instance,
     dynamic_components,
-    export_summary_results_rule,
     verbose,
 ):
     """
@@ -1280,29 +1279,28 @@ def export_summary_results(
 
     Export results for each loaded module (if applicable)
     """
-    if export_summary_results_rule:
-        # Determine/load modules and dynamic components
-        modules_to_use, loaded_modules = set_up_gridpath_modules(
-            scenario_directory=scenario_directory, multi_stage=multi_stage
-        )
+    # Determine/load modules and dynamic components
+    modules_to_use, loaded_modules = set_up_gridpath_modules(
+        scenario_directory=scenario_directory, multi_stage=multi_stage
+    )
 
-        n = 0
-        for m in loaded_modules:
-            if hasattr(m, "export_summary_results"):
-                if verbose:
-                    print(f"... {modules_to_use[n]}")
-                m.export_summary_results(
-                    scenario_directory,
-                    weather_iteration,
-                    hydro_iteration,
-                    availability_iteration,
-                    subproblem,
-                    stage,
-                    instance,
-                    dynamic_components,
-                )
+    n = 0
+    for m in loaded_modules:
+        if hasattr(m, "export_summary_results"):
+            if verbose:
+                print(f"... {modules_to_use[n]}")
+            m.export_summary_results(
+                scenario_directory,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
+                instance,
+                dynamic_components,
+            )
 
-            n += 1
+        n += 1
 
 
 def export_pass_through_inputs(

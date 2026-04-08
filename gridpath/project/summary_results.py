@@ -31,38 +31,72 @@ def export_summary_results(
     m,
     d,
 ):
-    """
-    Export all results from the PROJECT_CAPACITY_DF and PROJECT_OPERATIONS_DF
-    that various modules have added to
-    """
+    """ """
 
     project_summary_df = pd.DataFrame(
         columns=[
             "project",
+            "period",
             "capacity_type",
-            "availability_type",
             "operational_type",
             "technology",
             "load_zone",
-            "total_delivered_power",
+            "total_delivered_bulk_power_mwh",
+            "cap_factor_equivalent",
+            "capacity_mw",
+            "energy_mwh",
+            "hyb_gen_capacity_mw",
+            "hyb_stor_capacity_mw",
+            "stor_energy_capacity_mwh",
+            "fuel_prod_capacity_fuelunitperhour",
+            "fuel_rel_capacity_fuelunitperhour",
+            "fuel_stor_capacity_fuelunit",
         ],
         data=[
             [
                 prj,
+                prd,
                 m.capacity_type[prj],
-                m.availability_type[prj],
                 m.operational_type[prj],
                 m.technology[prj],
                 m.load_zone[prj],
                 sum(
                     value(m.Bulk_Power_Provision_MW[_prj, tmp])
+                    * m.hrs_in_tmp[tmp]
+                    * m.tmp_weight[tmp]
                     for (_prj, tmp) in m.PRJ_OPR_TMPS
-                    if _prj == prj
+                    if _prj == prj and m.period[tmp] == prd
                 ),
+                (
+                    sum(
+                        (
+                            value(m.Bulk_Power_Provision_MW[_prj, tmp])
+                            / value(m.Capacity_MW[prj, prd])
+                        )
+                        * m.hrs_in_tmp[tmp]
+                        * m.tmp_weight[tmp]
+                        for (_prj, tmp) in m.PRJ_OPR_TMPS
+                        if _prj == prj and m.period[tmp] == prd
+                    )
+                    / sum(
+                        m.hrs_in_tmp[tmp] * m.tmp_weight[tmp]
+                        for tmp in m.TMPS_IN_PRD[prd]
+                    )
+                    if value(m.Capacity_MW[prj, prd]) > 0
+                    else None
+                ),
+                value(m.Capacity_MW[prj, prd]),
+                value(m.Energy_MWh[prj, prd]),
+                value(m.Hyb_Gen_Capacity_MW[prj, prd]),
+                value(m.Hyb_Stor_Capacity_MW[prj, prd]),
+                value(m.Energy_Storage_Capacity_MWh[prj, prd]),
+                value(m.Fuel_Production_Capacity_FuelUnitPerHour[prj, prd]),
+                value(m.Fuel_Release_Capacity_FuelUnitPerHour[prj, prd]),
+                value(m.Fuel_Storage_Capacity_FuelUnit[prj, prd]),
             ]
-            for prj in m.PROJECTS
+            for (prj, prd) in m.PRJ_OPR_PRDS
         ],
-    ).set_index(["project"])
+    ).set_index(["project", "period"])
 
     project_summary_df.sort_index(inplace=True)
 
@@ -75,7 +109,7 @@ def export_summary_results(
             subproblem,
             stage,
             "results",
-            "project_summary.csv",
+            "project_period_summary.csv",
         ),
         sep=",",
         index=True,
@@ -114,5 +148,5 @@ def import_results_into_database(
         stage=stage,
         quiet=quiet,
         results_directory=results_directory,
-        which_results="project_summary",
+        which_results="project_period_summary",
     )
