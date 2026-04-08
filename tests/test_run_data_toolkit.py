@@ -58,7 +58,7 @@ class TestDataToolkit(unittest.TestCase):
             "create_monte_carlo_gen_weather_derate_input_csvs",
             "create_temporal_scenarios",
         ]:
-            print(step)
+            # print(step)
             run_data_toolkit.main(
                 [
                     "--settings_csv",
