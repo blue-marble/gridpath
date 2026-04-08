@@ -19,7 +19,9 @@ slice-of-day zone level for each period, month, and hour.
 
 from pyomo.environ import Expression, value
 
-from gridpath.auxiliary.dynamic_components import slice_of_day_balance_provision_components
+from gridpath.auxiliary.dynamic_components import (
+    slice_of_day_balance_provision_components,
+)
 from gridpath.common_functions import create_results_df
 from gridpath.system.policy.slice_of_day import SLICE_OF_DAY_ZONE_PRD_MONTH_HOUR_DF
 

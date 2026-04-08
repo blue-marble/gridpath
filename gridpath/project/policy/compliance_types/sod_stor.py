@@ -142,13 +142,17 @@ def add_model_components(
     )
 
     def charge_balance_rule(mod, prj, pol, zone, prd, mn):
-        return sum(
-            mod.Stor_Policy_Charge_MW[prj, pol, zone, prd, mn, hr]
-            for hr in mod.STOR_POL_HOURS_BY_PRJ_ZONE_PRD_MN[prj, pol, zone, prd, mn]
-        ) >= sum(
-            mod.Stor_Policy_Discharge_MW[prj, pol, zone, prd, mn, hr]
-            for hr in mod.STOR_POL_HOURS_BY_PRJ_ZONE_PRD_MN[prj, pol, zone, prd, mn]
-        ) / mod.policy_stor_round_trip_efficiency[prj, pol, zone]
+        return (
+            sum(
+                mod.Stor_Policy_Charge_MW[prj, pol, zone, prd, mn, hr]
+                for hr in mod.STOR_POL_HOURS_BY_PRJ_ZONE_PRD_MN[prj, pol, zone, prd, mn]
+            )
+            >= sum(
+                mod.Stor_Policy_Discharge_MW[prj, pol, zone, prd, mn, hr]
+                for hr in mod.STOR_POL_HOURS_BY_PRJ_ZONE_PRD_MN[prj, pol, zone, prd, mn]
+            )
+            / mod.policy_stor_round_trip_efficiency[prj, pol, zone]
+        )
 
     m.Stor_Policy_Charge_Balance_Constraint = Constraint(
         m.STOR_PRJ_POL_ZONE_PRD_MNS, rule=charge_balance_rule

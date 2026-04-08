@@ -19,7 +19,9 @@ target for each zone, period, month, and hour.
 
 from pyomo.environ import Var, Constraint, Expression, NonNegativeReals, value
 
-from gridpath.auxiliary.dynamic_components import slice_of_day_balance_provision_components
+from gridpath.auxiliary.dynamic_components import (
+    slice_of_day_balance_provision_components,
+)
 from gridpath.common_functions import (
     create_results_df,
     duals_wrapper,
@@ -121,9 +123,7 @@ def export_results(
             hr,
             value(m.Slice_of_Day_Shortage_MW_Expression[z, p, mn, hr]),
             (
-                duals_wrapper(
-                    m, getattr(m, "Slice_of_Day_Constraint")[z, p, mn, hr]
-                )
+                duals_wrapper(m, getattr(m, "Slice_of_Day_Constraint")[z, p, mn, hr])
                 if (z, p, mn, hr)
                 in [idx for idx in getattr(m, "Slice_of_Day_Constraint")]
                 else None

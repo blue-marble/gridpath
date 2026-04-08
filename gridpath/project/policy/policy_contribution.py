@@ -577,9 +577,7 @@ def import_results_into_database(
     )
 
     if os.path.exists(
-        os.path.join(
-            results_directory, "project_policy_month_hour_contributions.csv"
-        )
+        os.path.join(results_directory, "project_policy_month_hour_contributions.csv")
     ):
         import_csv(
             conn=db,

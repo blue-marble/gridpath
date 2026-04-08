@@ -54,19 +54,34 @@ def add_model_components(
 ):
     # Delegate to each contribution type
     exceedance.add_model_components(
-        m, d, scenario_directory,
-        weather_iteration, hydro_iteration, availability_iteration,
-        subproblem, stage,
+        m,
+        d,
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
     )
     flat_block.add_model_components(
-        m, d, scenario_directory,
-        weather_iteration, hydro_iteration, availability_iteration,
-        subproblem, stage,
+        m,
+        d,
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
     )
     storage.add_model_components(
-        m, d, scenario_directory,
-        weather_iteration, hydro_iteration, availability_iteration,
-        subproblem, stage,
+        m,
+        d,
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
     )
 
     # Combined non-storage set (exceedance ∪ flat_block), consumed by
@@ -113,19 +128,37 @@ def load_model_data(
     stage,
 ):
     exceedance.load_model_data(
-        m, d, data_portal, scenario_directory,
-        weather_iteration, hydro_iteration, availability_iteration,
-        subproblem, stage,
+        m,
+        d,
+        data_portal,
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
     )
     flat_block.load_model_data(
-        m, d, data_portal, scenario_directory,
-        weather_iteration, hydro_iteration, availability_iteration,
-        subproblem, stage,
+        m,
+        d,
+        data_portal,
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
     )
     storage.load_model_data(
-        m, d, data_portal, scenario_directory,
-        weather_iteration, hydro_iteration, availability_iteration,
-        subproblem, stage,
+        m,
+        d,
+        data_portal,
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
     )
 
 
@@ -169,19 +202,37 @@ def write_model_inputs(
     conn,
 ):
     exceedance.write_model_inputs(
-        scenario_directory, scenario_id, subscenarios,
-        weather_iteration, hydro_iteration, availability_iteration,
-        subproblem, stage, conn,
+        scenario_directory,
+        scenario_id,
+        subscenarios,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        conn,
     )
     flat_block.write_model_inputs(
-        scenario_directory, scenario_id, subscenarios,
-        weather_iteration, hydro_iteration, availability_iteration,
-        subproblem, stage, conn,
+        scenario_directory,
+        scenario_id,
+        subscenarios,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        conn,
     )
     storage.write_model_inputs(
-        scenario_directory, scenario_id, subscenarios,
-        weather_iteration, hydro_iteration, availability_iteration,
-        subproblem, stage, conn,
+        scenario_directory,
+        scenario_id,
+        subscenarios,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        conn,
     )
 
 
@@ -246,10 +297,14 @@ def export_results(
                 "slice_of_day_contribution_mw",
             ]
         )
-        for (g, z, p, mn, hr) in sorted(m.PRJ_EXCEEDANCE_SOD_ZONE_PRD_MONTH_HOURS):
+        for g, z, p, mn, hr in sorted(m.PRJ_EXCEEDANCE_SOD_ZONE_PRD_MONTH_HOURS):
             writer.writerow(
                 [
-                    g, z, p, mn, hr,
+                    g,
+                    z,
+                    p,
+                    mn,
+                    hr,
                     value(m.Capacity_MW[g, p]),
                     value(m.exceedance_cap_fac[g, z, p, mn, hr]),
                     None,
@@ -257,10 +312,14 @@ def export_results(
                     value(m.Exceedance_Contribution_MW[g, z, p, mn, hr]),
                 ]
             )
-        for (g, z, p, mn, hr) in sorted(m.PRJ_FLAT_BLOCK_SOD_ZONE_PRD_MONTH_HOURS):
+        for g, z, p, mn, hr in sorted(m.PRJ_FLAT_BLOCK_SOD_ZONE_PRD_MONTH_HOURS):
             writer.writerow(
                 [
-                    g, z, p, mn, hr,
+                    g,
+                    z,
+                    p,
+                    mn,
+                    hr,
                     value(m.Capacity_MW[g, p]),
                     1.0,
                     None,
@@ -268,10 +327,14 @@ def export_results(
                     value(m.Flat_Block_Contribution_MW[g, z, p, mn, hr]),
                 ]
             )
-        for (g, z, p, mn, hr) in sorted(m.STOR_PRJ_SOD_ZONE_PRD_MONTH_HOURS):
+        for g, z, p, mn, hr in sorted(m.STOR_PRJ_SOD_ZONE_PRD_MONTH_HOURS):
             writer.writerow(
                 [
-                    g, z, p, mn, hr,
+                    g,
+                    z,
+                    p,
+                    mn,
+                    hr,
                     value(m.Capacity_MW[g, p]),
                     None,
                     value(m.Storage_SOD_Discharge_MW[g, z, p, mn, hr]),

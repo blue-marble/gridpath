@@ -121,8 +121,12 @@ def add_model_components(
         rule=policy_requirement_rule,
     )
 
-    def policy_month_hour_requirement_rule(mod, policy_name, policy_zone, period, mn, hr):
-        return mod.policy_month_hour_requirement[policy_name, policy_zone, period, mn, hr]
+    def policy_month_hour_requirement_rule(
+        mod, policy_name, policy_zone, period, mn, hr
+    ):
+        return mod.policy_month_hour_requirement[
+            policy_name, policy_zone, period, mn, hr
+        ]
 
     m.Policy_Zone_Month_Hour_Requirement = Expression(
         m.POLICIES_ZONE_PRDS_MONTH_HOURS_WITH_REQ,
@@ -188,9 +192,7 @@ def load_model_data(
         data_portal.data()["POLICIES_ZONE_BLN_TYPE_HRZS_WITH_REQ"] = {None: []}
 
     # Load month-hour requirements if present
-    mh_requirements_file = os.path.join(
-        input_dir, "policy_month_hour_requirements.tab"
-    )
+    mh_requirements_file = os.path.join(input_dir, "policy_month_hour_requirements.tab")
     if os.path.exists(mh_requirements_file):
         data_portal.load(
             filename=mh_requirements_file,

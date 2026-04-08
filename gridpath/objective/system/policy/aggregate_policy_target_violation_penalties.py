@@ -51,8 +51,13 @@ def add_model_components(
             * mod.policy_zone_violation_penalty_per_unit[policy, zone]
             * mod.number_years_represented[period]
             * mod.discount_factor[period]
-            for (policy, zone, period, mn, hr)
-            in mod.POLICIES_ZONE_PRDS_MONTH_HOURS_WITH_REQ
+            for (
+                policy,
+                zone,
+                period,
+                mn,
+                hr,
+            ) in mod.POLICIES_ZONE_PRDS_MONTH_HOURS_WITH_REQ
         )
         return horizon_penalties + month_hour_penalties
 

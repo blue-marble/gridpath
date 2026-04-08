@@ -184,7 +184,14 @@ def write_model_inputs(
     ) as f:
         writer = csv.writer(f, delimiter="\t", lineterminator="\n")
         writer.writerow(
-            ["project", "slice_of_day_zone", "period", "sod_month", "sod_hour", "cap_fac"]
+            [
+                "project",
+                "slice_of_day_zone",
+                "period",
+                "sod_month",
+                "sod_hour",
+                "cap_fac",
+            ]
         )
         for row in rows:
             writer.writerow(row)

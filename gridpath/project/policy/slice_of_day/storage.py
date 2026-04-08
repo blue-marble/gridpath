@@ -110,13 +110,9 @@ def add_model_components(
     # Params
     # -------------------------------------------------------------------------
 
-    m.stor_sod_duration_hours = Param(
-        m.STOR_PRJ_SOD_ZONES, within=NonNegativeReals
-    )
+    m.stor_sod_duration_hours = Param(m.STOR_PRJ_SOD_ZONES, within=NonNegativeReals)
 
-    m.stor_sod_efficiency = Param(
-        m.STOR_PRJ_SOD_ZONES, within=NonNegativeReals
-    )
+    m.stor_sod_efficiency = Param(m.STOR_PRJ_SOD_ZONES, within=NonNegativeReals)
 
     # -------------------------------------------------------------------------
     # Variables
@@ -163,13 +159,17 @@ def add_model_components(
     )
 
     def charge_balance_rule(mod, g, z, p, mn):
-        return sum(
-            mod.Storage_SOD_Charge_MW[g, z, p, mn, hr]
-            for hr in mod.STOR_SOD_HOURS_BY_PRJ_ZONE_PRD_MONTH[g, z, p, mn]
-        ) >= sum(
-            mod.Storage_SOD_Discharge_MW[g, z, p, mn, hr]
-            for hr in mod.STOR_SOD_HOURS_BY_PRJ_ZONE_PRD_MONTH[g, z, p, mn]
-        ) / mod.stor_sod_efficiency[g, z]
+        return (
+            sum(
+                mod.Storage_SOD_Charge_MW[g, z, p, mn, hr]
+                for hr in mod.STOR_SOD_HOURS_BY_PRJ_ZONE_PRD_MONTH[g, z, p, mn]
+            )
+            >= sum(
+                mod.Storage_SOD_Discharge_MW[g, z, p, mn, hr]
+                for hr in mod.STOR_SOD_HOURS_BY_PRJ_ZONE_PRD_MONTH[g, z, p, mn]
+            )
+            / mod.stor_sod_efficiency[g, z]
+        )
 
     m.Storage_SOD_Charge_Balance_Constraint = Constraint(
         m.STOR_PRJ_SOD_ZONE_PRD_MONTHS, rule=charge_balance_rule
@@ -334,6 +334,8 @@ def write_model_inputs(
         newline="",
     ) as f:
         writer = csv.writer(f, delimiter="\t", lineterminator="\n")
-        writer.writerow(["project", "slice_of_day_zone", "duration_hours", "efficiency"])
+        writer.writerow(
+            ["project", "slice_of_day_zone", "duration_hours", "efficiency"]
+        )
         for row in rows:
             writer.writerow(row)

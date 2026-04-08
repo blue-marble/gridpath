@@ -190,7 +190,13 @@ class TestHorizonEnergyTarget(unittest.TestCase):
         actual_p_zone_prd_mh = sorted(
             [
                 (p, z, prd, mn, hr)
-                for (p, z, prd, mn, hr) in instance.POLICIES_ZONE_PRDS_MONTH_HOURS_WITH_REQ
+                for (
+                    p,
+                    z,
+                    prd,
+                    mn,
+                    hr,
+                ) in instance.POLICIES_ZONE_PRDS_MONTH_HOURS_WITH_REQ
             ]
         )
         self.assertListEqual(expected_p_zone_prd_mh, actual_p_zone_prd_mh)
@@ -212,7 +218,13 @@ class TestHorizonEnergyTarget(unittest.TestCase):
                     (p, z, prd, mn, hr): instance.policy_month_hour_requirement[
                         p, z, prd, mn, hr
                     ]
-                    for (p, z, prd, mn, hr) in instance.POLICIES_ZONE_PRDS_MONTH_HOURS_WITH_REQ
+                    for (
+                        p,
+                        z,
+                        prd,
+                        mn,
+                        hr,
+                    ) in instance.POLICIES_ZONE_PRDS_MONTH_HOURS_WITH_REQ
                 }.items()
             )
         )
