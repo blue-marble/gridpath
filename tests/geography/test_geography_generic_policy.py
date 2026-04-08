@@ -85,7 +85,11 @@ class TestGeographyGenericPolicy(unittest.TestCase):
         )
         instance = m.create_instance(data)
         expected = sorted(
-            [("RPS", "RPSZone1"), ("Carbon", "CarbonZone1"), ("SLICE_OF_DAY", "SODZone1")]
+            [
+                ("RPS", "RPSZone1"),
+                ("Carbon", "CarbonZone1"),
+                ("SLICE_OF_DAY", "SODZone1"),
+            ]
         )
         actual = sorted([(p, z) for (p, z) in instance.POLICIES_ZONES])
         self.assertListEqual(
