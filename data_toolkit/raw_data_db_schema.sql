@@ -19,17 +19,42 @@
 --------------------------------------------------------------------------------
 -- TODO: add timestamps?
 
-DROP TABLE IF EXISTS raw_data_profiles;
-CREATE TABLE raw_data_profiles
+DROP TABLE IF EXISTS raw_data_system_load;
+CREATE TABLE raw_data_system_load
 (
-    year            INTEGER,
-    month           INTEGER,
-    day_of_month    INTEGER,
-    day_type        INTEGER,
-    hour_of_day     INTEGER,
-    unit            VARCHAR(64),
-    value           FLOAT,
-    timeseries_name VARCHAR(32),
+    year         INTEGER,
+    month        INTEGER,
+    day_of_month INTEGER,
+    day_type     INTEGER,
+    hour_of_day  INTEGER,
+    unit         VARCHAR(64),
+    value        FLOAT,
+    PRIMARY KEY (year, month, day_of_month, hour_of_day, unit)
+);
+
+DROP TABLE IF EXISTS raw_data_var_profiles;
+CREATE TABLE raw_data_var_profiles
+(
+    year         INTEGER,
+    month        INTEGER,
+    day_of_month INTEGER,
+    day_type     INTEGER,
+    hour_of_day  INTEGER,
+    unit         VARCHAR(64),
+    value        FLOAT,
+    PRIMARY KEY (year, month, day_of_month, hour_of_day, unit)
+);
+
+DROP TABLE IF EXISTS raw_data_availability_profiles;
+CREATE TABLE raw_data_availability_profiles
+(
+    year         INTEGER,
+    month        INTEGER,
+    day_of_month INTEGER,
+    day_type     INTEGER,
+    hour_of_day  INTEGER,
+    unit         VARCHAR(64),
+    value        FLOAT,
     PRIMARY KEY (year, month, day_of_month, hour_of_day, unit)
 );
 
@@ -150,9 +175,10 @@ CREATE TABLE raw_data_eia930_hourly_interchange
 DROP TABLE IF EXISTS user_defined_load_zone_units;
 CREATE TABLE user_defined_load_zone_units
 (
-    unit           TEXT,
-    load_zone      TEXT,
-    unit_weight    DECIMAL,
+    unit        TEXT,
+    load_zone   TEXT,
+    unit_weight DECIMAL,
+    timeseries_name VARCHAR(32),
     PRIMARY KEY (unit, load_zone)
 );
 
@@ -240,6 +266,9 @@ CREATE TABLE user_defined_monte_carlo_timeseries
 (
     timeseries_name    VARCHAR(32),
     consider_day_types INTEGER,
+    timeseries_type    VARCHAR(32) CHECK (
+        timeseries_type IN ('load', 'var_profiles', 'availability')
+        ),
     initial_seed       INTEGER,
     PRIMARY KEY (timeseries_name)
 );

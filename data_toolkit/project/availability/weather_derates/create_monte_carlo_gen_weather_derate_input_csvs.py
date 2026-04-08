@@ -18,7 +18,7 @@ Weather Derates (Monte Carlo)
 *****************************
 
 Create GridPath Monte Carlo weather iteration availability inputs. Before
-running this module,you will need to create weather draws with the
+running this module, you will need to create weather draws with the
 ``create_monte_carlo_draws`` module (see :ref:`monte-carlo-draws-section-ref`).
 
 =====
@@ -33,7 +33,7 @@ Input prerequisites
 
 This module assumes the following raw input database tables have been populated:
     * raw_data_unit_availability_params
-    * raw_data_profiles
+    * raw_data_availability_profiles
     * aux_weather_iterations (see the ``create_monte_carlo_draws`` step for how to create synthetic weather years and populate this table)
 
 =========
@@ -80,12 +80,20 @@ def parse_arguments(args):
 
     parser.add_argument("-db", "--database")
     parser.add_argument(
-        "-csv",
-        "--input_csv",
+        "-av_csv",
+        "--availability_profile_input_csv",
         default=None,
-        help="""Path to the CSV file to load into the database.
-            If not specified, data will be assumed to have been
-            already loaded into the database.""",
+        help="""Path to the availability profiles CSV file to load into the 
+        database. If not specified, data will be assumed to have been
+        already loaded into the database.""",
+    )
+    parser.add_argument(
+        "-u_csv",
+        "--units_input_csv",
+        default=None,
+        help="""Path to the unit availability params CSV file to load into the 
+        database. If not specified, data will be assumed to have been
+        already loaded into the database.""",
     )
 
     parser.add_argument(
@@ -157,10 +165,18 @@ def main(args=None):
     conn = connect_to_database(db_path=parsed_args.database)
 
     # ### Load data from CSV
-    # TODO: need raw_data_unit_availability_params and raw_data_profiles
-    if parsed_args.input_csv is not None:
+    if parsed_args.availability_profile_input_csv is not None:
         read_and_import_csv(
-            conn=conn, f_path=parsed_args.input_csv, table="raw_data_profiles"
+            conn=conn,
+            f_path=parsed_args.input_csv,
+            table="raw_data_availability_profiles",
+        )
+
+    if parsed_args.units_input_csv is not None:
+        read_and_import_csv(
+            conn=conn,
+            f_path=parsed_args.input_csv,
+            table="raw_data_unit_availability_params",
         )
 
     conn.close()
@@ -177,7 +193,7 @@ def main(args=None):
         n_parallel_projects=parsed_args.n_parallel_projects,
         units_table="raw_data_unit_availability_params",
         param_name="availability_derate_weather",
-        raw_data_table="raw_data_profiles",
+        raw_data_table="raw_data_availability_profiles",
         no_hydro_iteration=True,
     )
 

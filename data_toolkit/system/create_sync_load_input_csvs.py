@@ -29,7 +29,7 @@ Input prerequisites
 ===================
 
 This module assumes the following raw input database tables have been populated:
-    * raw_data_profiles
+    * raw_data_system_load
     * user_defined_load_zone_units
 
 =========
@@ -221,7 +221,7 @@ def create_load_levels_csv(
                     ELSE '0' || day_of_month END
                     ) AS DECIMAL
                 ) - 1) * 24 + hour_of_day AS hour_of_year
-        FROM raw_data_profiles
+        FROM raw_data_system_load
         JOIN user_defined_load_zone_units
         USING (unit)
         )

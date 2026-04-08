@@ -29,7 +29,7 @@ Input prerequisites
 ===================
 
 This module assumes the following raw input database tables have been populated:
-    * raw_data_profiles
+    * raw_data_var_profiles
     * raw_data_var_project_units
 
 =========
@@ -145,7 +145,7 @@ def create_variable_profile_csvs_pool(pool_datum):
         output_directory=output_directory,
         overwrite=overwrite,
         param_name="cap_factor",
-        raw_data_table_name="raw_data_profiles",
+        raw_data_table_name="raw_data_var_profiles",
         raw_data_units_table_name="raw_data_var_project_units",
     )
 

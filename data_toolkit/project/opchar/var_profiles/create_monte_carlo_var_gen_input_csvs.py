@@ -31,7 +31,7 @@ Input prerequisites
 ===================
 
 This module assumes the following raw input database tables have been populated:
-    * raw_data_profiles
+    * raw_data_var_profiles
     * raw_data_var_project_units
     * aux_weather_iterations (see the ``create_monte_carlo_draws`` step for how to create synthetic weather years and populate this table)
 
@@ -174,7 +174,7 @@ def main(args=None):
         n_parallel_projects=parsed_args.n_parallel_projects,
         units_table="raw_data_var_project_units",
         param_name="cap_factor",
-        raw_data_table="raw_data_profiles",
+        raw_data_table="raw_data_var_profiles",
     )
 
 

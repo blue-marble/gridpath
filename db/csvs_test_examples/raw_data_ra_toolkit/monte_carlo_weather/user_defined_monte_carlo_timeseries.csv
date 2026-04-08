@@ -1,5 +1,5 @@
-timeseries_name,consider_day_types,initial_seed
-load,1,0
-solar,0,730
-wind,0,1460
-thermal,0,2190
+timeseries_name,consider_day_types,initial_seed,timeseries_type
+load,1,0,load
+solar,0,730,var_profiles
+wind,0,1460,var_profiles
+thermal,0,2190,availability

@@ -50,6 +50,21 @@ import numpy as np
 from data_toolkit.load_raw_data import read_and_import_csv
 from db.common_functions import spin_on_database_lock_generic, connect_to_database
 
+TIMESERIES_TYPE = {
+    "load": {
+        "profiles_table": "raw_data_system_load",
+        "units_table": "user_defined_load_zone_units",
+    },
+    "var_profiles": {
+        "profiles_table": "raw_data_var_profiles",
+        "units_table": "raw_data_var_project_units",
+    },
+    "availability": {
+        "profiles_table": "raw_data_availability_profiles",
+        "units_table": "raw_data_unit_availability_params",
+    },
+}
+
 
 def parse_arguments(args):
     """
@@ -67,7 +82,7 @@ def parse_arguments(args):
         "-csv",
         "--input_csv",
         default=None,
-        help="Path to the CSV file to load into the raw_data_profiles table "
+        help="Path to the CSV file to load into the raw_data_var_profiles table "
         "in the database. If not specified, data will be assumed to have "
         "been loaded into the database already.",
     )
@@ -82,8 +97,16 @@ def parse_arguments(args):
         "-d",
         "--consider_day_types",
         default=None,
+        choices=list(TIMESERIES_TYPE.keys()),
         help="Required boolean if timeseries_name is specified. Use 1 for "
         "'yes' and 0 for 'no'.",
+    )
+    parser.add_argument(
+        "-ts_type",
+        "--timeseries_type",
+        default=None,
+        help="Required boolean if timeseries_name is specified or to load "
+        "data intputs.",
     )
 
     parser.add_argument(
@@ -115,6 +138,7 @@ def make_timeseries_draw_profiles(
     conn,
     timeseries_name,
     consider_day_types,
+    timeseries_type,
     timeseries_iteration_draw_initial_seed,
     weather_bins_id,
     weather_draws_id,
@@ -132,9 +156,15 @@ def make_timeseries_draw_profiles(
     if timeseries_name is None:
         c = conn.cursor()
         timeseries = [
-            (timeseries_name, consider_day_types, initial_seed)
-            for (timeseries_name, consider_day_types, initial_seed) in c.execute(
-                f"""SELECT timeseries_name, consider_day_types, initial_seed
+            (timeseries_name, consider_day_types, timeseries_type, initial_seed)
+            for (
+                timeseries_name,
+                consider_day_types,
+                timeseries_type,
+                initial_seed,
+            ) in c.execute(
+                f"""SELECT timeseries_name, consider_day_types, 
+                timeseries_type, initial_seed
                 FROM user_defined_monte_carlo_timeseries
                 ;"""
             ).fetchall()
@@ -144,6 +174,7 @@ def make_timeseries_draw_profiles(
             (
                 timeseries_name,
                 consider_day_types,
+                timeseries_type,
                 timeseries_iteration_draw_initial_seed,
             )
         ]
@@ -159,8 +190,16 @@ def make_timeseries_draw_profiles(
     for (
         timeseries_name,
         consider_day_types,
+        timeseries_type,
         timeseries_iteration_draw_initial_seed,
     ) in timeseries:
+        if not timeseries_type in TIMESERIES_TYPE.keys():
+            raise ValueError(
+                f"Invalid draw profile type: {timeseries_type}. "
+                f"Valid options are:"
+                f" {list(TIMESERIES_TYPE.keys())}."
+            )
+
         if not quiet:
             print(f"...processing timeseries: {timeseries_name}")
 
@@ -171,7 +210,7 @@ def make_timeseries_draw_profiles(
             else None
         )
 
-        # Base availability on the data in the raw_data_profiles table
+        # Base availability on the data in the raw_data_var_profiles table
         # rather than exogenously defined by user
         # TODO: add option to exogenously define
         # WHERE
@@ -184,8 +223,12 @@ def make_timeseries_draw_profiles(
         data_av_c = conn.cursor()
         data_availability_list = [str(i[0]) for i in data_av_c.execute(f"""
                     SELECT DISTINCT year
-                    FROM raw_data_profiles
-                    WHERE timeseries_name = '{timeseries_name}'""")]
+                    FROM {TIMESERIES_TYPE[timeseries_type]["profiles_table"]}
+                    WHERE unit in (
+                    SELECT unit
+                    FROM {TIMESERIES_TYPE[timeseries_type]["units_table"]}
+                    WHERE timeseries_name = '{timeseries_name}'
+                    );""")]
         data_availability_string = ", ".join(data_availability_list)
         data_av_c.close()
 
@@ -344,14 +387,6 @@ def main(args=None):
 
     conn = connect_to_database(db_path=parsed_args.database)
 
-    # ##### Load profiles if requested #####
-    # ### Load data from CSV
-    if parsed_args.input_csv is not None:
-        read_and_import_csv(
-            conn=conn,
-            f_path=parsed_args.input_csv,
-            table="raw_data_profiles",
-        )
     # #### Check if specific timeseries is requested #### #
     if parsed_args.timeseries_name is not None:
         if parsed_args.consider_day_types is None:
@@ -359,6 +394,12 @@ def main(args=None):
                 "The consider_day_types must be specified if "
                 "timeseries_name is specified."
             )
+        if parsed_args.timeseries_type is None:
+            raise ValueError(
+                "The timeseries_type must be specified if "
+                "timeseries_name is specified."
+            )
+
         if parsed_args.timeseries_iteration_draw_initial_seed is None:
             warnings.warn(
                 "Timeseries iteration draw initial seed is not "
@@ -369,11 +410,26 @@ def main(args=None):
                 f"Timeseries iteration draw initial seed is {parsed_args.timeseries_iteration_draw_initial_seed}."
             )
 
+        # ##### Load raw data if requested #####
+        # ### Load data from CSV
+        if parsed_args.input_csv is not None:
+            if parsed_args.timeseries_type is None:
+                raise ValueError(
+                    "Timeseries type must be specified to load "
+                    "data into the correct table."
+                )
+            read_and_import_csv(
+                conn=conn,
+                f_path=parsed_args.input_csv,
+                table=TIMESERIES_TYPE[parsed_args.timeseries_type]["profiles_table"],
+            )
+
     # ####### Based on the weather draws, create timeseries profiles ###########
     make_timeseries_draw_profiles(
         conn=conn,
         timeseries_name=parsed_args.timeseries_name,
         consider_day_types=parsed_args.consider_day_types,
+        timeseries_type=parsed_args.timeseries_type,
         timeseries_iteration_draw_initial_seed=parsed_args.timeseries_iteration_draw_initial_seed,
         weather_bins_id=parsed_args.weather_bins_id,
         weather_draws_id=parsed_args.weather_draws_id,

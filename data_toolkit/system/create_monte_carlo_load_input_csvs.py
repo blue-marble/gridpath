@@ -31,7 +31,7 @@ Input prerequisites
 ===================
 
 This module assumes the following raw input database tables have been populated:
-    * raw_data_profiles
+    * raw_data_system_load
     * user_defined_load_zone_units
     * aux_weather_iterations (see the ``create_monte_carlo_draws`` step for how to create synthetic weather years and populate this table)
 
@@ -253,7 +253,7 @@ def create_load_levels_csv(
             unit_queries = [f"""
                 SELECT year, month, day_of_month, hour_of_day, unit, 
                 value * {weight} as weighted_load
-                FROM raw_data_profiles
+                FROM raw_data_system_load
                 WHERE year = {year}
                 AND month = {month}
                 AND day_of_month = {day_of_month}
