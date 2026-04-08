@@ -156,7 +156,9 @@ def main(args=None):
     # ### Load data from CSV
     conn = connect_to_database(db_path=parsed_args.database)
     if parsed_args.input_csv is not None:
-        read_and_import_csv(conn=conn, f_path=parsed_args.input_csv, table="raw_data_var_project_units")
+        read_and_import_csv(
+            conn=conn, f_path=parsed_args.input_csv, table="raw_data_var_project_units"
+        )
     conn.close()
 
     # Create the variable generation profile CSVs

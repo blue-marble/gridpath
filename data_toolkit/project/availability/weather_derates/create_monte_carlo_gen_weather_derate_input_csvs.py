@@ -159,7 +159,9 @@ def main(args=None):
     # ### Load data from CSV
     # TODO: need raw_data_unit_availability_params and raw_data_profiles
     if parsed_args.input_csv is not None:
-        read_and_import_csv(conn=conn, f_path=parsed_args.input_csv, table="raw_data_profiles")
+        read_and_import_csv(
+            conn=conn, f_path=parsed_args.input_csv, table="raw_data_profiles"
+        )
 
     conn.close()
 
