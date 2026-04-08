@@ -207,15 +207,11 @@ def check_if_in_queue(db_path, scenario):
     conn = connect_to_database(db_path=db_path)
     c = conn.cursor()
 
-    queue_order_id = c.execute(
-        """
+    queue_order_id = c.execute("""
         SELECT queue_order_id
         FROM scenarios
         WHERE scenario_name = '{}'
-        """.format(
-            scenario
-        )
-    ).fetchone()[0]
+        """.format(scenario)).fetchone()[0]
 
     conn.close()
 

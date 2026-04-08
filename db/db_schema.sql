@@ -279,6 +279,7 @@ CREATE TABLE inputs_temporal_periods
     discount_factor      FLOAT,
     period_start_year    FLOAT,
     period_end_year      FLOAT, -- exclusive, i.e. if 2030, last day is 2029-12-31
+    prev_period          INTEGER,
     PRIMARY KEY (temporal_scenario_id, period),
     FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
         (temporal_scenario_id)
@@ -1896,7 +1897,10 @@ CREATE TABLE inputs_project_relative_capacity_requirements
                  period, prj_for_lim_map_id),
     FOREIGN KEY (project_relative_capacity_requirement_scenario_id) REFERENCES
         subscenarios_project_relative_capacity_requirements
-            (project_relative_capacity_requirement_scenario_id)
+            (project_relative_capacity_requirement_scenario_id),
+    FOREIGN KEY (project, prj_for_lim_map_id) REFERENCES
+        subscenarios_project_relative_capacity_requirements_map
+            (project, prj_for_lim_map_id)
 );
 
 DROP TABLE IF EXISTS subscenarios_project_relative_capacity_requirements_map;
@@ -2013,6 +2017,7 @@ CREATE TABLE inputs_project_operational_chars
     aux_consumption_frac_capacity                         FLOAT,
     aux_consumption_frac_power                            FLOAT,
     last_commitment_stage                                 INTEGER,
+    n_startup_limit_scenario_id                           INTEGER,
     variable_generator_profile_scenario_id                INTEGER, -- determines var profiles
     curtailment_cost_scenario_id                          INTEGER,
     hydro_operational_chars_scenario_id                   INTEGER, -- determines hydro MWa, min, max
@@ -2047,6 +2052,9 @@ CREATE TABLE inputs_project_operational_chars
     load_component_shift_bounds_scenario_id               INTEGER,
     efficiency_factor                                     FLOAT,
     energy_requirement_factor                             FLOAT,
+    losses_factor_in_energy_target                        FLOAT,
+    losses_factor_curtailment                             FLOAT,
+    upward_reserves_to_soc_depletion                      FLOAT,
     PRIMARY KEY (project_operational_chars_scenario_id, project),
     FOREIGN KEY (project_operational_chars_scenario_id) REFERENCES
         subscenarios_project_operational_chars (project_operational_chars_scenario_id),
@@ -2072,6 +2080,9 @@ CREATE TABLE inputs_project_operational_chars
     FOREIGN KEY (project, supplemental_firing_scenario_id) REFERENCES
         subscenarios_project_supplemental_firing
             (project, supplemental_firing_scenario_id),
+    FOREIGN KEY (project, n_startup_limit_scenario_id) REFERENCES
+        subscenarios_project_n_startup_limits
+            (project, n_startup_limit_scenario_id),
     FOREIGN KEY (project, flex_load_static_profile_scenario_id) REFERENCES
         subscenarios_project_flex_load_static_profiles
             (project, flex_load_static_profile_scenario_id),
@@ -2337,6 +2348,30 @@ CREATE TABLE inputs_project_supplemental_firing
                  supplemental_firing_project),
     FOREIGN KEY (project, supplemental_firing_scenario_id) REFERENCES
         subscenarios_project_supplemental_firing (project, supplemental_firing_scenario_id)
+);
+
+DROP TABLE IF EXISTS subscenarios_project_n_startup_limits;
+CREATE TABLE subscenarios_project_n_startup_limits
+(
+    project                     VARCHAR(32),
+    n_startup_limit_scenario_id INTEGER,
+    name                        VARCHAR(32),
+    description                 VARCHAR(128),
+    PRIMARY KEY (project, n_startup_limit_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_n_startup_limits;
+CREATE TABLE inputs_project_n_startup_limits
+(
+    project                     VARCHAR(64),
+    n_startup_limit_scenario_id INTEGER,
+    balancing_type_horizon      VARCHAR(32),
+    horizon                     INTEGER,
+    max_n_startups              FLOAT,
+    PRIMARY KEY (project, n_startup_limit_scenario_id, balancing_type_horizon,
+                 horizon),
+    FOREIGN KEY (project, n_startup_limit_scenario_id) REFERENCES
+        subscenarios_project_startup_chars (project, startup_chars_scenario_id)
 );
 
 -- Flex load static profiles
@@ -6683,26 +6718,35 @@ CREATE TABLE results_project_carbon_emissions_by_technology_period
 );
 
 
-DROP TABLE IF EXISTS results_project_summary;
-CREATE TABLE results_project_summary
+DROP TABLE IF EXISTS results_project_period_summary;
+CREATE TABLE results_project_period_summary
 (
-    scenario_id            INTEGER,
-    project                VARCHAR(64),
-    weather_iteration      INTEGER,
-    hydro_iteration        INTEGER,
-    availability_iteration INTEGER,
-    subproblem_id          INTEGER,
-    stage_id               INTEGER,
-    capacity_type          VARCHAR(64),
-    availability_type      VARCHAR(64),
-    operational_type       VARCHAR(64),
-    technology             VARCHAR(32),
-    load_zone              VARCHAR(32),
-    total_delivered_power  FLOAT,
-    PRIMARY KEY (scenario_id, project, weather_iteration, hydro_iteration,
-                 availability_iteration, subproblem_id, stage_id)
+    scenario_id                        INTEGER,
+    project                            VARCHAR(64),
+    period                             INTEGER,
+    weather_iteration                  INTEGER,
+    hydro_iteration                    INTEGER,
+    availability_iteration             INTEGER,
+    subproblem_id                      INTEGER,
+    stage_id                           INTEGER,
+    capacity_type                      VARCHAR(64),
+    operational_type                   VARCHAR(64),
+    technology                         VARCHAR(32),
+    load_zone                          VARCHAR(32),
+    total_delivered_bulk_power_mwh     FLOAT,
+    cap_factor_equivalent              FLOAT,
+    capacity_mw                        FLOAT,
+    energy_mwh                         FLOAT,
+    hyb_gen_capacity_mw                FLOAT,
+    hyb_stor_capacity_mw               FLOAT,
+    stor_energy_capacity_mwh           FLOAT,
+    fuel_prod_capacity_fuelunitperhour FLOAT,
+    fuel_rel_capacity_fuelunitperhour  FLOAT,
+    fuel_stor_capacity_fuelunit        FLOAT,
+    PRIMARY KEY (scenario_id, project, period, weather_iteration,
+                 hydro_iteration, availability_iteration, subproblem_id,
+                 stage_id)
 );
-
 
 DROP TABLE IF EXISTS results_transmission_period;
 CREATE TABLE results_transmission_period
@@ -7872,241 +7916,539 @@ AS
 SELECT scenario_id,
        scenario_name,
        scenario_description,
-       mod_validation_status_types.validation_status_name                 as validation_status,
-       mod_run_status_types.run_status_name                               as run_status,
-       CASE WHEN of_transmission THEN 'yes' ELSE 'no' END                 AS feature_transmission,
+       (SELECT validation_status_name
+        FROM mod_validation_status_types
+        WHERE validation_status_id =
+              scenarios.validation_status_id)                                        as validation_status,
+       (SELECT run_status_name
+        FROM mod_run_status_types
+        WHERE run_status_id = scenarios.run_status_id)                               as run_status,
+       CASE WHEN of_transmission THEN 'yes' ELSE 'no' END                            AS feature_transmission,
        CASE WHEN of_transmission_hurdle_rates = 1 THEN 'yes' ELSE 'no' END
-                                                                          AS feature_transmission_hurdle_rates,
+                                                                                     AS feature_transmission_hurdle_rates,
        CASE
            WHEN of_transmission_hurdle_rates_by_timepoint = 1 THEN 'yes'
            ELSE 'no' END
-                                                                          AS feature_transmission_hurdle_rates_by_timepoint,
+                                                                                     AS feature_transmission_hurdle_rates_by_timepoint,
        CASE WHEN of_simultaneous_flow_limits THEN 'yes' ELSE 'no' END
-                                                                          AS feature_simultaneous_flow_limits,
+                                                                                     AS feature_simultaneous_flow_limits,
        CASE WHEN of_lf_reserves_up THEN 'yes' ELSE 'no' END
-                                                                          AS feature_load_following_up,
+                                                                                     AS feature_load_following_up,
        CASE WHEN of_lf_reserves_down THEN 'yes' ELSE 'no' END
-                                                                          AS feature_load_following_down,
+                                                                                     AS feature_load_following_down,
        CASE WHEN of_regulation_up THEN 'yes' ELSE 'no' END
-                                                                          AS feature_regulation_up,
+                                                                                     AS feature_regulation_up,
        CASE WHEN of_regulation_down THEN 'yes' ELSE 'no' END
-                                                                          AS feature_regulation_down,
+                                                                                     AS feature_regulation_down,
        CASE WHEN of_frequency_response THEN 'yes' ELSE 'no' END
-                                                                          AS feature_frequency_response,
+                                                                                     AS feature_frequency_response,
        CASE WHEN of_spinning_reserves THEN 'yes' ELSE 'no' END
-                                                                          AS feature_spinning_reserves,
+                                                                                     AS feature_spinning_reserves,
        CASE WHEN of_inertia_reserves THEN 'yes' ELSE 'no' END
-                                                                          AS feature_inertia_reserves,
-       CASE WHEN of_period_energy_target THEN 'yes' ELSE 'no' END         AS
-                                                                             feature_period_energy_target,
+                                                                                     AS feature_inertia_reserves,
+       CASE WHEN of_period_energy_target THEN 'yes' ELSE 'no' END                    AS
+                                                                                        feature_period_energy_target,
        CASE WHEN of_carbon_cap THEN 'yes' ELSE 'no' END
-                                                                          AS feature_carbon_cap,
+                                                                                     AS feature_carbon_cap,
        CASE WHEN of_track_carbon_imports THEN 'yes' ELSE 'no' END
-                                                                          AS feature_track_carbon_imports,
-       CASE WHEN of_prm THEN 'yes' ELSE 'no' END                          AS feature_prm,
+                                                                                     AS feature_track_carbon_imports,
+       CASE WHEN of_prm THEN 'yes' ELSE 'no' END                                     AS feature_prm,
        CASE WHEN of_elcc_surface THEN 'yes' ELSE 'no' END
-                                                                          AS feature_elcc_surface,
+                                                                                     AS feature_elcc_surface,
        CASE WHEN of_local_capacity THEN 'yes' ELSE 'no' END
-                                                                          AS feature_local_capacity,
+                                                                                     AS feature_local_capacity,
        CASE WHEN of_tuning THEN 'yes' ELSE 'no' END
-                                                                          AS feature_tuning,
-       subscenarios_temporal.name                                         AS temporal,
-       subscenarios_geography_load_zones.name                             AS geography_load_zones,
-       subscenarios_geography_lf_reserves_up_bas.name                     AS geography_lf_up_bas,
-       subscenarios_geography_lf_reserves_down_bas.name                   AS geography_lf_down_bas,
-       subscenarios_geography_regulation_up_bas.name                      AS geography_reg_up_bas,
-       subscenarios_geography_regulation_down_bas.name                    AS geography_reg_down_bas,
-       subscenarios_geography_spinning_reserves_bas.name                  AS geography_spin_bas,
-       subscenarios_geography_inertia_reserves_bas.name                   AS geography_iner_bas,
-       subscenarios_geography_frequency_response_bas.name                 AS geography_freq_resp_bas,
-       subscenarios_geography_energy_target_zones.name                    AS geography_energy_target_areas,
-       subscenarios_geography_carbon_cap_zones.name                       AS carbon_cap_areas,
-       subscenarios_geography_prm_zones.name                              AS prm_areas,
-       subscenarios_geography_local_capacity_zones.name                   AS local_capacity_areas,
-       subscenarios_project_portfolios.name                               AS project_portfolio,
-       subscenarios_project_operational_chars.name                        AS project_operating_chars,
-       subscenarios_project_availability.name                             AS project_availability,
-       subscenarios_fuels.name                                            AS project_fuels,
-       subscenarios_fuel_prices.name                                      AS fuel_prices,
-       subscenarios_project_load_zones.name                               AS project_load_zones,
-       subscenarios_project_lf_reserves_up_bas.name                       AS project_lf_up_bas,
-       subscenarios_project_lf_reserves_down_bas.name                     AS project_lf_down_bas,
-       subscenarios_project_regulation_up_bas.name                        AS project_reg_up_bas,
-       subscenarios_project_regulation_down_bas.name                      AS project_reg_down_bas,
-       subscenarios_project_spinning_reserves_bas.name                    AS project_spin_bas,
-       subscenarios_project_inertia_reserves_bas.name                     AS project_iner_bas,
-       subscenarios_project_frequency_response_bas.name                   AS project_freq_resp_bas,
-       subscenarios_project_energy_target_zones.name                      AS project_energy_target_areas,
-       subscenarios_project_carbon_cap_zones.name                         AS project_carbon_cap_areas,
-       subscenarios_project_prm_zones.name                                AS project_prm_areas,
-       subscenarios_project_elcc_chars.name                               AS project_elcc_chars,
-       subscenarios_project_prm_deliverability_costs.name                 AS project_prm_deliverability_costs,
-       subscenarios_project_local_capacity_zones.name                     AS project_local_capacity_areas,
-       subscenarios_project_local_capacity_chars.name                     AS project_local_capacity_chars,
-       subscenarios_project_specified_capacity.name                       AS project_specified_capacity,
-       subscenarios_project_specified_fixed_cost.name                     AS project_specified_fixed_cost,
-       subscenarios_project_new_cost.name                                 AS project_new_cost,
-       subscenarios_project_new_potential.name                            AS project_new_potential,
-       subscenarios_project_new_binary_build_size.name                    AS project_new_binary_build_size,
-       subscenarios_transmission_portfolios.name                          AS transmission_portfolio,
-       subscenarios_transmission_load_zones.name                          AS transmission_load_zones,
-       subscenarios_transmission_specified_capacity.name
-                                                                          AS transmission_specified_capacity,
-       subscenarios_transmission_new_cost.name
-                                                                          AS transmission_new_cost,
-       subscenarios_transmission_operational_chars.name
-                                                                          AS transmission_operational_chars,
-       subscenarios_transmission_hurdle_rates.name                        AS transmission_hurdle_rates,
-       subscenarios_transmission_hurdle_rates_by_timepoint.name           AS transmission_hurdle_rates_by_timepoint,
-       subscenarios_transmission_new_potential.name                       AS transmission_new_potential,
-       subscenarios_transmission_carbon_cap_zones.name
-                                                                          AS transmission_carbon_cap_zones,
-       subscenarios_transmission_simultaneous_flow_limits.name
-                                                                          AS transmission_simultaneous_flow_limits,
-       subscenarios_transmission_simultaneous_flow_limit_line_groups.name AS
-                                                                             transmission_simultaneous_flow_limit_line_groups,
-       subscenarios_system_load.name                                      AS load_profile,
-       subscenarios_system_lf_reserves_up.name                            AS load_following_reserves_up_profile,
-       subscenarios_system_lf_reserves_down.name
-                                                                          AS load_following_reserves_down_profile,
-       subscenarios_system_regulation_up.name                             AS regulation_up_profile,
-       subscenarios_system_regulation_down.name                           AS regulation_down_profile,
-       subscenarios_system_spinning_reserves.name                         AS spinning_reserves_profile,
-       subscenarios_system_inertia_reserves.name                          AS inertia_reserves_profile,
-       subscenarios_system_frequency_response.name                        AS frequency_response_profile,
-       subscenarios_system_period_energy_targets.name                     AS period_energy_target,
-       subscenarios_system_carbon_cap_targets.name                        AS carbon_cap,
-       subscenarios_system_prm_requirement.name                           AS prm_requirement,
-       subscenarios_system_prm_zone_elcc_surface.name                     AS elcc_surface,
-       subscenarios_system_local_capacity_requirement.name
-                                                                          AS local_capacity_requirement,
-       subscenarios_tuning.name                                           AS tuning,
-       subscenarios_options_solver.name                                   as solver
-FROM scenarios
-         LEFT JOIN mod_validation_status_types USING (validation_status_id)
-         LEFT JOIN mod_run_status_types USING (run_status_id)
-         LEFT JOIN subscenarios_temporal USING (temporal_scenario_id)
-         LEFT JOIN subscenarios_geography_load_zones
-                   USING (load_zone_scenario_id)
-         LEFT JOIN subscenarios_geography_lf_reserves_up_bas
-                   USING (lf_reserves_up_ba_scenario_id)
-         LEFT JOIN subscenarios_geography_lf_reserves_down_bas
-                   USING (lf_reserves_down_ba_scenario_id)
-         LEFT JOIN subscenarios_geography_regulation_up_bas
-                   USING (regulation_up_ba_scenario_id)
-         LEFT JOIN subscenarios_geography_regulation_down_bas
-                   USING (regulation_down_ba_scenario_id)
-         LEFT JOIN subscenarios_geography_spinning_reserves_bas
-                   USING (spinning_reserves_ba_scenario_id)
-         LEFT JOIN subscenarios_geography_inertia_reserves_bas
-                   USING (inertia_reserves_ba_scenario_id)
-         LEFT JOIN subscenarios_geography_frequency_response_bas
-                   USING (frequency_response_ba_scenario_id)
-         LEFT JOIN subscenarios_geography_energy_target_zones
-                   USING (energy_target_zone_scenario_id)
-         LEFT JOIN subscenarios_geography_carbon_cap_zones
-                   USING (carbon_cap_zone_scenario_id)
-         LEFT JOIN subscenarios_geography_prm_zones USING (prm_zone_scenario_id)
-         LEFT JOIN subscenarios_geography_local_capacity_zones
-                   USING (local_capacity_zone_scenario_id)
-         LEFT JOIN subscenarios_project_portfolios
-                   USING (project_portfolio_scenario_id)
-         LEFT JOIN subscenarios_project_operational_chars
-                   USING (project_operational_chars_scenario_id)
-         LEFT JOIN subscenarios_project_availability
-                   USING (project_availability_scenario_id)
-         LEFT JOIN subscenarios_fuels USING (fuel_scenario_id)
-         LEFT JOIN subscenarios_fuel_prices USING (fuel_price_scenario_id)
-         LEFT JOIN subscenarios_project_load_zones
-                   USING (project_load_zone_scenario_id)
-         LEFT JOIN subscenarios_project_lf_reserves_up_bas
-                   USING (project_lf_reserves_up_ba_scenario_id)
-         LEFT JOIN subscenarios_project_lf_reserves_down_bas
-                   USING (project_lf_reserves_down_ba_scenario_id)
-         LEFT JOIN subscenarios_project_regulation_up_bas
-                   USING (project_regulation_up_ba_scenario_id)
-         LEFT JOIN subscenarios_project_regulation_down_bas
-                   USING (project_regulation_down_ba_scenario_id)
-         LEFT JOIN subscenarios_project_spinning_reserves_bas
-                   USING (project_spinning_reserves_ba_scenario_id)
-         LEFT JOIN subscenarios_project_inertia_reserves_bas
-                   USING (project_inertia_reserves_ba_scenario_id)
-         LEFT JOIN subscenarios_project_frequency_response_bas
-                   USING (project_frequency_response_ba_scenario_id)
-         LEFT JOIN subscenarios_project_energy_target_zones
-                   USING (project_energy_target_zone_scenario_id)
-         LEFT JOIN subscenarios_project_carbon_cap_zones
-                   USING (project_carbon_cap_zone_scenario_id)
-         LEFT JOIN subscenarios_project_prm_zones
-                   USING (project_prm_zone_scenario_id)
-         LEFT JOIN subscenarios_project_elcc_chars
-                   USING (project_elcc_chars_scenario_id)
-         LEFT JOIN subscenarios_project_prm_deliverability_costs
-                   USING (prm_deliverability_cost_scenario_id)
-         LEFT JOIN subscenarios_project_local_capacity_zones
-                   USING (project_local_capacity_zone_scenario_id)
-         LEFT JOIN subscenarios_project_local_capacity_chars
-                   USING (project_local_capacity_chars_scenario_id)
-         LEFT JOIN subscenarios_project_specified_capacity
-                   USING (project_specified_capacity_scenario_id)
-         LEFT JOIN subscenarios_project_specified_fixed_cost
-                   USING (project_specified_fixed_cost_scenario_id)
-         LEFT JOIN subscenarios_project_new_cost
-                   USING (project_new_cost_scenario_id)
-         LEFT JOIN subscenarios_project_new_potential
-                   USING (project_new_potential_scenario_id)
-         LEFT JOIN subscenarios_project_new_binary_build_size
-                   USING (project_new_binary_build_size_scenario_id)
-         LEFT JOIN subscenarios_transmission_portfolios
-                   USING (transmission_portfolio_scenario_id)
-         LEFT JOIN subscenarios_transmission_load_zones
-                   USING (transmission_load_zone_scenario_id)
-         LEFT JOIN subscenarios_transmission_specified_capacity
-                   USING (transmission_specified_capacity_scenario_id)
-         LEFT JOIN subscenarios_transmission_new_cost
-                   USING (transmission_new_cost_scenario_id)
-         LEFT JOIN subscenarios_transmission_operational_chars
-                   USING (transmission_operational_chars_scenario_id)
-         LEFT JOIN subscenarios_transmission_hurdle_rates
-                   USING (transmission_hurdle_rate_scenario_id)
-         LEFT JOIN subscenarios_transmission_hurdle_rates_by_timepoint
-                   USING (transmission_hurdle_rate_by_timepoint_scenario_id)
-         LEFT JOIN subscenarios_transmission_new_potential
-                   USING (transmission_new_potential_scenario_id)
-         LEFT JOIN subscenarios_transmission_carbon_cap_zones
-                   USING (transmission_carbon_cap_zone_scenario_id)
-         LEFT JOIN subscenarios_transmission_simultaneous_flow_limits
-                   USING (transmission_simultaneous_flow_limit_scenario_id)
-         LEFT JOIN subscenarios_transmission_simultaneous_flow_limit_line_groups
-                   USING (transmission_simultaneous_flow_limit_line_group_scenario_id)
-         LEFT JOIN subscenarios_system_load USING (load_scenario_id)
-         LEFT JOIN subscenarios_system_lf_reserves_up
-                   USING (lf_reserves_up_scenario_id)
-         LEFT JOIN subscenarios_system_lf_reserves_down
-                   USING (lf_reserves_down_scenario_id)
-         LEFT JOIN subscenarios_system_regulation_up
-                   USING (regulation_up_scenario_id)
-         LEFT JOIN subscenarios_system_regulation_down
-                   USING (regulation_down_scenario_id)
-         LEFT JOIN subscenarios_system_spinning_reserves
-                   USING (spinning_reserves_scenario_id)
-         LEFT JOIN subscenarios_system_inertia_reserves
-                   USING (inertia_reserves_scenario_id)
-         LEFT JOIN subscenarios_system_frequency_response
-                   USING (frequency_response_scenario_id)
-         LEFT JOIN subscenarios_system_period_energy_targets
-                   USING (period_energy_target_scenario_id)
-         LEFT JOIN subscenarios_system_carbon_cap_targets
-                   USING (carbon_cap_target_scenario_id)
-         LEFT JOIN subscenarios_system_prm_requirement
-                   USING (prm_requirement_scenario_id)
-         LEFT JOIN subscenarios_system_prm_zone_elcc_surface
-                   USING (elcc_surface_scenario_id)
-         LEFT JOIN subscenarios_system_local_capacity_requirement
-                   USING (local_capacity_requirement_scenario_id)
-         LEFT JOIN subscenarios_tuning USING (tuning_scenario_id)
-         LEFT JOIN subscenarios_options_solver USING (solver_options_id)
-;
+                                                                                     AS feature_tuning,
+       (SELECT name
+        FROM subscenarios_temporal
+        WHERE temporal_scenario_id =
+              scenarios.temporal_scenario_id)                                        AS temporal,
+       (SELECT name
+        FROM subscenarios_geography_load_zones
+        WHERE load_zone_scenario_id =
+              scenarios.load_zone_scenario_id)                                       AS geography_load_zones,
+       (SELECT name
+        FROM subscenarios_geography_load_balance
+        WHERE load_balance_scenario_id =
+              scenarios.load_balance_scenario_id)                                    AS geography_load_balance,
+       (SELECT name
+        FROM subscenarios_geography_lf_reserves_up_bas
+        WHERE lf_reserves_up_ba_scenario_id =
+              scenarios.lf_reserves_up_ba_scenario_id)                               AS geography_lf_up_bas,
+       (SELECT name
+        FROM subscenarios_geography_lf_reserves_down_bas
+        WHERE lf_reserves_down_ba_scenario_id =
+              scenarios.lf_reserves_down_ba_scenario_id)                             AS geography_lf_down_bas,
+       (SELECT name
+        FROM subscenarios_geography_regulation_up_bas
+        WHERE regulation_up_ba_scenario_id =
+              scenarios.regulation_up_ba_scenario_id)                                AS geography_reg_up_bas,
+       (SELECT name
+        FROM subscenarios_geography_regulation_down_bas
+        WHERE regulation_down_ba_scenario_id =
+              scenarios.regulation_down_ba_scenario_id)                              AS geography_reg_down_bas,
+       (SELECT name
+        FROM subscenarios_geography_spinning_reserves_bas
+        WHERE spinning_reserves_ba_scenario_id =
+              scenarios.spinning_reserves_ba_scenario_id)                            AS geography_spin_bas,
+       (SELECT name
+        FROM subscenarios_geography_inertia_reserves_bas
+        WHERE inertia_reserves_ba_scenario_id =
+              scenarios.inertia_reserves_ba_scenario_id)                             AS geography_iner_bas,
+       (SELECT name
+        FROM subscenarios_geography_frequency_response_bas
+        WHERE frequency_response_ba_scenario_id =
+              scenarios.frequency_response_ba_scenario_id)                           AS geography_freq_resp_bas,
+       (SELECT name
+        FROM subscenarios_geography_energy_target_zones
+        WHERE energy_target_zone_scenario_id =
+              scenarios.energy_target_zone_scenario_id)                              AS geography_energy_target_areas,
+       (SELECT name
+        FROM subscenarios_geography_instantaneous_penetration_zones
+        WHERE instantaneous_penetration_zone_scenario_id =
+              scenarios.instantaneous_penetration_zone_scenario_id)                  AS geography_instantaneous_penetration_zones,
+       (SELECT name
+        FROM subscenarios_geography_transmission_target_zones
+        WHERE transmission_target_zone_scenario_id =
+              scenarios.transmission_target_zone_scenario_id)                        AS geography_transmission_target_zones,
+       (SELECT name
+        FROM subscenarios_geography_carbon_cap_zones
+        WHERE carbon_cap_zone_scenario_id =
+              scenarios.carbon_cap_zone_scenario_id)                                 AS carbon_cap_areas,
+       (SELECT name
+        FROM subscenarios_geography_carbon_tax_zones
+        WHERE carbon_tax_zone_scenario_id =
+              scenarios.carbon_tax_zone_scenario_id)                                 AS geography_carbon_tax_zones,
+       (SELECT name
+        FROM subscenarios_geography_performance_standard_zones
+        WHERE performance_standard_zone_scenario_id =
+              scenarios.performance_standard_zone_scenario_id)                       AS geography_performance_standard_zones,
+       (SELECT name
+        FROM subscenarios_geography_carbon_credits_zones
+        WHERE carbon_credits_zone_scenario_id =
+              scenarios.carbon_credits_zone_scenario_id)                             AS geography_carbon_credits_zones,
+       (SELECT name
+        FROM subscenarios_system_carbon_cap_zones_carbon_credits_zones
+        WHERE carbon_cap_zones_carbon_credits_zones_scenario_id =
+              scenarios.carbon_cap_zones_carbon_credits_zones_scenario_id)           AS carbon_cap_zones_carbon_credits_zones,
+       (SELECT name
+        FROM subscenarios_system_performance_standard_zones_carbon_credits_zones
+        WHERE performance_standard_zones_carbon_credits_zones_scenario_id =
+              scenarios.performance_standard_zones_carbon_credits_zones_scenario_id) AS performance_standard_zones_carbon_credits_zones,
+       (SELECT name
+        FROM subscenarios_system_carbon_tax_zones_carbon_credits_zones
+        WHERE carbon_tax_zones_carbon_credits_zones_scenario_id =
+              scenarios.carbon_tax_zones_carbon_credits_zones_scenario_id)           AS carbon_tax_zones_carbon_credits_zones,
+       (SELECT name
+        FROM subscenarios_system_carbon_credits_params
+        WHERE carbon_credits_params_scenario_id =
+              scenarios.carbon_credits_params_scenario_id)                           AS carbon_credits_params,
+       (SELECT name
+        FROM subscenarios_geography_fuel_burn_limit_balancing_areas
+        WHERE fuel_burn_limit_ba_scenario_id =
+              scenarios.fuel_burn_limit_ba_scenario_id)                              AS geography_fuel_burn_limit_bas,
+       (SELECT name
+        FROM subscenarios_geography_policy_zones
+        WHERE policy_zone_scenario_id =
+              scenarios.policy_zone_scenario_id)                                     AS geography_policy_zones,
+       (SELECT name
+        FROM subscenarios_geography_prm_zones
+        WHERE prm_zone_scenario_id =
+              scenarios.prm_zone_scenario_id)                                        AS prm_areas,
+       (SELECT name
+        FROM subscenarios_geography_local_capacity_zones
+        WHERE local_capacity_zone_scenario_id =
+              scenarios.local_capacity_zone_scenario_id)                             AS local_capacity_areas,
+       (SELECT name
+        FROM subscenarios_geography_markets
+        WHERE market_scenario_id =
+              scenarios.market_scenario_id)                                          AS markets,
+       (SELECT name
+        FROM subscenarios_system_water_system_params
+        WHERE water_system_params_scenario_id =
+              scenarios.water_system_params_scenario_id)                             AS water_system_params,
+       (SELECT name
+        FROM subscenarios_geography_water_network
+        WHERE water_network_scenario_id =
+              scenarios.water_network_scenario_id)                                   AS water_network,
+       (SELECT name
+        FROM subscenarios_project_portfolios
+        WHERE project_portfolio_scenario_id =
+              scenarios.project_portfolio_scenario_id)                               AS project_portfolio,
+       (SELECT name
+        FROM subscenarios_project_operational_chars
+        WHERE project_operational_chars_scenario_id =
+              scenarios.project_operational_chars_scenario_id)                       AS project_operating_chars,
+       (SELECT name
+        FROM subscenarios_project_availability
+        WHERE project_availability_scenario_id =
+              scenarios.project_availability_scenario_id)                            AS project_availability,
+       (SELECT name
+        FROM subscenarios_fuels
+        WHERE fuel_scenario_id = scenarios.fuel_scenario_id)                         AS project_fuels,
+       (SELECT name
+        FROM subscenarios_fuel_prices
+        WHERE fuel_price_scenario_id =
+              scenarios.fuel_price_scenario_id)                                      AS fuel_prices,
+       (SELECT name
+        FROM subscenarios_project_load_zones
+        WHERE project_load_zone_scenario_id =
+              scenarios.project_load_zone_scenario_id)                               AS project_load_zones,
+       (SELECT name
+        FROM subscenarios_project_lf_reserves_up_bas
+        WHERE project_lf_reserves_up_ba_scenario_id =
+              scenarios.project_lf_reserves_up_ba_scenario_id)                       AS project_lf_up_bas,
+       (SELECT name
+        FROM subscenarios_project_lf_reserves_down_bas
+        WHERE project_lf_reserves_down_ba_scenario_id =
+              scenarios.project_lf_reserves_down_ba_scenario_id)                     AS project_lf_down_bas,
+       (SELECT name
+        FROM subscenarios_project_regulation_up_bas
+        WHERE project_regulation_up_ba_scenario_id =
+              scenarios.project_regulation_up_ba_scenario_id)                        AS project_reg_up_bas,
+       (SELECT name
+        FROM subscenarios_project_regulation_down_bas
+        WHERE project_regulation_down_ba_scenario_id =
+              scenarios.project_regulation_down_ba_scenario_id)                      AS project_reg_down_bas,
+       (SELECT name
+        FROM subscenarios_project_spinning_reserves_bas
+        WHERE project_spinning_reserves_ba_scenario_id =
+              scenarios.project_spinning_reserves_ba_scenario_id)                    AS project_spin_bas,
+       (SELECT name
+        FROM subscenarios_project_inertia_reserves_bas
+        WHERE project_inertia_reserves_ba_scenario_id =
+              scenarios.project_inertia_reserves_ba_scenario_id)                     AS project_iner_bas,
+       (SELECT name
+        FROM subscenarios_project_frequency_response_bas
+        WHERE project_frequency_response_ba_scenario_id =
+              scenarios.project_frequency_response_ba_scenario_id)                   AS project_freq_resp_bas,
+       (SELECT name
+        FROM subscenarios_project_energy_target_zones
+        WHERE project_energy_target_zone_scenario_id =
+              scenarios.project_energy_target_zone_scenario_id)                      AS project_energy_target_areas,
+       (SELECT name
+        FROM subscenarios_project_instantaneous_penetration_zones
+        WHERE project_instantaneous_penetration_zone_scenario_id =
+              scenarios.project_instantaneous_penetration_zone_scenario_id)          AS project_instantaneous_penetration_zones,
+       (SELECT name
+        FROM subscenarios_tx_line_transmission_target_zones
+        WHERE tx_line_transmission_target_zone_scenario_id =
+              scenarios.tx_line_transmission_target_zone_scenario_id)                AS tx_line_transmission_target_zones,
+       (SELECT name
+        FROM subscenarios_project_carbon_cap_zones
+        WHERE project_carbon_cap_zone_scenario_id =
+              scenarios.project_carbon_cap_zone_scenario_id)                         AS project_carbon_cap_areas,
+       (SELECT name
+        FROM subscenarios_project_carbon_tax_zones
+        WHERE project_carbon_tax_zone_scenario_id =
+              scenarios.project_carbon_tax_zone_scenario_id)                         AS project_carbon_tax_zones,
+       (SELECT name
+        FROM subscenarios_project_carbon_tax_allowance
+        WHERE project_carbon_tax_allowance_scenario_id =
+              scenarios.project_carbon_tax_allowance_scenario_id)                    AS project_carbon_tax_allowance,
+       (SELECT name
+        FROM subscenarios_project_performance_standard_zones
+        WHERE project_performance_standard_zone_scenario_id =
+              scenarios.project_performance_standard_zone_scenario_id)               AS project_performance_standard_zones,
+       (SELECT name
+        FROM subscenarios_project_carbon_credits_generation_zones
+        WHERE project_carbon_credits_generation_zone_scenario_id =
+              scenarios.project_carbon_credits_generation_zone_scenario_id)          AS project_carbon_credits_generation_zones,
+       (SELECT name
+        FROM subscenarios_project_carbon_credits_purchase_zones
+        WHERE project_carbon_credits_purchase_zone_scenario_id =
+              scenarios.project_carbon_credits_purchase_zone_scenario_id)            AS project_carbon_credits_purchase_zones,
+       (SELECT name
+        FROM subscenarios_project_carbon_credits_purchase_limits
+        WHERE project_carbon_credits_purchase_limits_scenario_id =
+              scenarios.project_carbon_credits_purchase_limits_scenario_id)          AS project_carbon_credits_purchase_limits,
+       (SELECT name
+        FROM subscenarios_project_carbon_credits
+        WHERE project_carbon_credits_scenario_id =
+              scenarios.project_carbon_credits_scenario_id)                          AS project_carbon_credits,
+       (SELECT name
+        FROM subscenarios_project_fuel_burn_limit_balancing_areas
+        WHERE project_fuel_burn_limit_ba_scenario_id =
+              scenarios.project_fuel_burn_limit_ba_scenario_id)                      AS project_fuel_burn_limit_bas,
+       (SELECT name
+        FROM subscenarios_fuel_fuel_burn_limit_balancing_areas
+        WHERE fuel_fuel_burn_limit_ba_scenario_id =
+              scenarios.fuel_fuel_burn_limit_ba_scenario_id)                         AS fuel_fuel_burn_limit_bas,
+       (SELECT name
+        FROM subscenarios_project_policy_zones
+        WHERE project_policy_zone_scenario_id =
+              scenarios.project_policy_zone_scenario_id)                             AS project_policy_zones,
+       (SELECT name
+        FROM subscenarios_project_prm_zones
+        WHERE project_prm_zone_scenario_id =
+              scenarios.project_prm_zone_scenario_id)                                AS project_prm_areas,
+       (SELECT name
+        FROM subscenarios_transmission_prm_capacity_transfers
+        WHERE prm_capacity_transfer_scenario_id =
+              scenarios.prm_capacity_transfer_scenario_id)                           AS prm_capacity_transfers,
+       (SELECT name
+        FROM subscenarios_transmission_prm_capacity_transfer_params
+        WHERE prm_capacity_transfer_params_scenario_id =
+              scenarios.prm_capacity_transfer_params_scenario_id)                    AS prm_capacity_transfer_params,
+       (SELECT name
+        FROM subscenarios_transmission_prm_zones
+        WHERE transmission_prm_zone_scenario_id =
+              scenarios.transmission_prm_zone_scenario_id)                           AS transmission_prm_zones,
+       (SELECT name
+        FROM subscenarios_project_elcc_chars
+        WHERE project_elcc_chars_scenario_id =
+              scenarios.project_elcc_chars_scenario_id)                              AS project_elcc_chars,
+       (SELECT name
+        FROM subscenarios_project_prm_deliverability_costs
+        WHERE prm_deliverability_cost_scenario_id =
+              scenarios.prm_deliverability_cost_scenario_id)                         AS project_prm_deliverability_costs,
+       (SELECT name
+        FROM subscenarios_project_prm_deliverability_existing
+        WHERE prm_deliverability_existing_scenario_id =
+              scenarios.prm_deliverability_existing_scenario_id)                     AS prm_deliverability_existing,
+       (SELECT name
+        FROM subscenarios_project_prm_deliverability_potential
+        WHERE prm_deliverability_potential_scenario_id =
+              scenarios.prm_deliverability_potential_scenario_id)                    AS prm_deliverability_potential,
+       (SELECT name
+        FROM subscenarios_project_prm_deliverability_multipliers
+        WHERE project_prm_deliverability_multipliers_scenario_id =
+              scenarios.project_prm_deliverability_multipliers_scenario_id)          AS project_prm_deliverability_multipliers,
+       (SELECT name
+        FROM subscenarios_project_local_capacity_zones
+        WHERE project_local_capacity_zone_scenario_id =
+              scenarios.project_local_capacity_zone_scenario_id)                     AS project_local_capacity_areas,
+       (SELECT name
+        FROM subscenarios_project_local_capacity_chars
+        WHERE project_local_capacity_chars_scenario_id =
+              scenarios.project_local_capacity_chars_scenario_id)                    AS project_local_capacity_chars,
+       (SELECT name
+        FROM subscenarios_load_zone_markets
+        WHERE load_zone_market_scenario_id =
+              scenarios.load_zone_market_scenario_id)                                AS load_zone_markets,
+       (SELECT name
+        FROM subscenarios_project_specified_capacity
+        WHERE project_specified_capacity_scenario_id =
+              scenarios.project_specified_capacity_scenario_id)                      AS project_specified_capacity,
+       (SELECT name
+        FROM subscenarios_project_specified_fixed_cost
+        WHERE project_specified_fixed_cost_scenario_id =
+              scenarios.project_specified_fixed_cost_scenario_id)                    AS project_specified_fixed_cost,
+       (SELECT name
+        FROM subscenarios_project_new_cost
+        WHERE project_new_cost_scenario_id =
+              scenarios.project_new_cost_scenario_id)                                AS project_new_cost,
+       (SELECT name
+        FROM subscenarios_project_new_potential
+        WHERE project_new_potential_scenario_id =
+              scenarios.project_new_potential_scenario_id)                           AS project_new_potential,
+       (SELECT name
+        FROM subscenarios_project_new_binary_build_size
+        WHERE project_new_binary_build_size_scenario_id =
+              scenarios.project_new_binary_build_size_scenario_id)                   AS project_new_binary_build_size,
+       (SELECT name
+        FROM subscenarios_project_capacity_group_requirements
+        WHERE project_capacity_group_requirement_scenario_id =
+              scenarios.project_capacity_group_requirement_scenario_id)              AS project_capacity_group_requirements,
+       (SELECT name
+        FROM subscenarios_project_relative_capacity_requirements
+        WHERE project_relative_capacity_requirement_scenario_id =
+              scenarios.project_relative_capacity_requirement_scenario_id)           AS project_relative_capacity_requirements,
+       (SELECT name
+        FROM subscenarios_project_capacity_groups
+        WHERE project_capacity_group_scenario_id =
+              scenarios.project_capacity_group_scenario_id)                          AS project_capacity_groups,
+       (SELECT name
+        FROM subscenarios_transmission_portfolios
+        WHERE transmission_portfolio_scenario_id =
+              scenarios.transmission_portfolio_scenario_id)                          AS transmission_portfolio,
+       (SELECT name
+        FROM subscenarios_transmission_load_zones
+        WHERE transmission_load_zone_scenario_id =
+              scenarios.transmission_load_zone_scenario_id)                          AS transmission_load_zones,
+       (SELECT name
+        FROM subscenarios_transmission_specified_capacity
+        WHERE transmission_specified_capacity_scenario_id =
+              scenarios.transmission_specified_capacity_scenario_id)
+                                                                                     AS transmission_specified_capacity,
+       (SELECT name
+        FROM subscenarios_transmission_new_cost
+        WHERE transmission_new_cost_scenario_id =
+              scenarios.transmission_new_cost_scenario_id)
+                                                                                     AS transmission_new_cost,
+       (SELECT name
+        FROM subscenarios_transmission_operational_chars
+        WHERE transmission_operational_chars_scenario_id =
+              scenarios.transmission_operational_chars_scenario_id)
+                                                                                     AS transmission_operational_chars,
+       (SELECT name
+        FROM subscenarios_transmission_hurdle_rates
+        WHERE transmission_hurdle_rate_scenario_id =
+              scenarios.transmission_hurdle_rate_scenario_id)                        AS transmission_hurdle_rates,
+       (SELECT name
+        FROM subscenarios_transmission_hurdle_rates_by_timepoint
+        WHERE transmission_hurdle_rate_by_timepoint_scenario_id =
+              scenarios.transmission_hurdle_rate_by_timepoint_scenario_id)           AS transmission_hurdle_rates_by_timepoint,
+       (SELECT name
+        FROM subscenarios_transmission_new_potential
+        WHERE transmission_new_potential_scenario_id =
+              scenarios.transmission_new_potential_scenario_id)                      AS transmission_new_potential,
+       (SELECT name
+        FROM subscenarios_transmission_availability
+        WHERE transmission_availability_scenario_id =
+              scenarios.transmission_availability_scenario_id)                       AS transmission_availability,
+       (SELECT name
+        FROM subscenarios_transmission_flow
+        WHERE transmission_flow_scenario_id =
+              scenarios.transmission_flow_scenario_id)                               AS transmission_flow,
+       (SELECT name
+        FROM subscenarios_transmission_capacity_group_requirements
+        WHERE transmission_capacity_group_requirement_scenario_id =
+              scenarios.transmission_capacity_group_requirement_scenario_id)         AS transmission_capacity_group_requirements,
+       (SELECT name
+        FROM subscenarios_transmission_capacity_groups
+        WHERE transmission_capacity_group_scenario_id =
+              scenarios.transmission_capacity_group_scenario_id)                     AS transmission_capacity_groups,
+       (SELECT name
+        FROM subscenarios_transmission_carbon_cap_zones
+        WHERE transmission_carbon_cap_zone_scenario_id =
+              scenarios.transmission_carbon_cap_zone_scenario_id)
+                                                                                     AS transmission_carbon_cap_zones,
+       (SELECT name
+        FROM subscenarios_transmission_simultaneous_flow_limits
+        WHERE transmission_simultaneous_flow_limit_scenario_id =
+              scenarios.transmission_simultaneous_flow_limit_scenario_id)
+                                                                                     AS transmission_simultaneous_flow_limits,
+       (SELECT name
+        FROM subscenarios_transmission_simultaneous_flow_limit_line_groups
+        WHERE transmission_simultaneous_flow_limit_line_group_scenario_id =
+              scenarios.transmission_simultaneous_flow_limit_line_group_scenario_id) AS
+                                                                                        transmission_simultaneous_flow_limit_line_groups,
+       (SELECT name
+        FROM subscenarios_system_load
+        WHERE load_scenario_id = scenarios.load_scenario_id)                         AS load_profile,
+       (SELECT name
+        FROM subscenarios_system_lf_reserves_up
+        WHERE lf_reserves_up_scenario_id =
+              scenarios.lf_reserves_up_scenario_id)                                  AS load_following_reserves_up_profile,
+       (SELECT name
+        FROM subscenarios_system_lf_reserves_down
+        WHERE lf_reserves_down_scenario_id =
+              scenarios.lf_reserves_down_scenario_id)
+                                                                                     AS load_following_reserves_down_profile,
+       (SELECT name
+        FROM subscenarios_system_regulation_up
+        WHERE regulation_up_scenario_id =
+              scenarios.regulation_up_scenario_id)                                   AS regulation_up_profile,
+       (SELECT name
+        FROM subscenarios_system_regulation_down
+        WHERE regulation_down_scenario_id =
+              scenarios.regulation_down_scenario_id)                                 AS regulation_down_profile,
+       (SELECT name
+        FROM subscenarios_system_spinning_reserves
+        WHERE spinning_reserves_scenario_id =
+              scenarios.spinning_reserves_scenario_id)                               AS spinning_reserves_profile,
+       (SELECT name
+        FROM subscenarios_system_inertia_reserves
+        WHERE inertia_reserves_scenario_id =
+              scenarios.inertia_reserves_scenario_id)                                AS inertia_reserves_profile,
+       (SELECT name
+        FROM subscenarios_system_frequency_response
+        WHERE frequency_response_scenario_id =
+              scenarios.frequency_response_scenario_id)                              AS frequency_response_profile,
+       (SELECT name
+        FROM subscenarios_system_period_energy_targets
+        WHERE period_energy_target_scenario_id =
+              scenarios.period_energy_target_scenario_id)                            AS period_energy_target,
+       (SELECT name
+        FROM subscenarios_system_horizon_energy_targets
+        WHERE horizon_energy_target_scenario_id =
+              scenarios.horizon_energy_target_scenario_id)                           AS horizon_energy_target,
+       (SELECT name
+        FROM subscenarios_system_instantaneous_penetration
+        WHERE instantaneous_penetration_scenario_id =
+              scenarios.instantaneous_penetration_scenario_id)                       AS instantaneous_penetration,
+       (SELECT name
+        FROM subscenarios_system_transmission_targets
+        WHERE transmission_target_scenario_id =
+              scenarios.transmission_target_scenario_id)                             AS transmission_target,
+       (SELECT name
+        FROM subscenarios_system_carbon_cap_targets
+        WHERE carbon_cap_target_scenario_id =
+              scenarios.carbon_cap_target_scenario_id)                               AS carbon_cap,
+       (SELECT name
+        FROM subscenarios_system_carbon_tax
+        WHERE carbon_tax_scenario_id =
+              scenarios.carbon_tax_scenario_id)                                      AS carbon_tax,
+       (SELECT name
+        FROM subscenarios_system_performance_standard
+        WHERE performance_standard_scenario_id =
+              scenarios.performance_standard_scenario_id)                            AS performance_standard,
+       (SELECT name
+        FROM subscenarios_system_fuel_burn_limits
+        WHERE fuel_burn_limit_scenario_id =
+              scenarios.fuel_burn_limit_scenario_id)                                 AS fuel_burn_limits,
+       (SELECT name
+        FROM subscenarios_system_subsidies
+        WHERE subsidy_scenario_id =
+              scenarios.subsidy_scenario_id)                                         AS subsidies,
+       (SELECT name
+        FROM subscenarios_system_policy_requirements
+        WHERE policy_requirement_scenario_id =
+              scenarios.policy_requirement_scenario_id)                              AS policy_requirements,
+       (SELECT name
+        FROM subscenarios_system_prm_requirement
+        WHERE prm_requirement_scenario_id =
+              scenarios.prm_requirement_scenario_id)                                 AS prm_requirement,
+       (SELECT name
+        FROM subscenarios_system_prm_zone_elcc_surface
+        WHERE elcc_surface_scenario_id =
+              scenarios.elcc_surface_scenario_id)                                    AS elcc_surface,
+       (SELECT name
+        FROM subscenarios_system_local_capacity_requirement
+        WHERE local_capacity_requirement_scenario_id =
+              scenarios.local_capacity_requirement_scenario_id)
+                                                                                     AS local_capacity_requirement,
+       (SELECT name
+        FROM subscenarios_market_prices
+        WHERE market_price_scenario_id =
+              scenarios.market_price_scenario_id)                                    AS market_prices,
+       (SELECT name
+        FROM subscenarios_market_volume
+        WHERE market_volume_scenario_id =
+              scenarios.market_volume_scenario_id)                                   AS market_volume,
+       (SELECT name
+        FROM subscenarios_market_volume_totals_in_tmp
+        WHERE market_volume_total_in_tmp_scenario_id =
+              scenarios.market_volume_total_in_tmp_scenario_id)                      AS market_volume_totals_in_tmp,
+       (SELECT name
+        FROM subscenarios_market_volume_totals_in_prd
+        WHERE market_volume_total_in_prd_scenario_id =
+              scenarios.market_volume_total_in_prd_scenario_id)                      AS market_volume_totals_in_prd,
+       (SELECT name
+        FROM subscenarios_system_water_node_reservoirs
+        WHERE water_node_reservoir_scenario_id =
+              scenarios.water_node_reservoir_scenario_id)                            AS water_node_reservoirs,
+       (SELECT name
+        FROM subscenarios_system_water_flows
+        WHERE water_flow_scenario_id =
+              scenarios.water_flow_scenario_id)                                      AS water_flows,
+       (SELECT name
+        FROM subscenarios_system_water_inflows
+        WHERE water_inflow_scenario_id =
+              scenarios.water_inflow_scenario_id)                                    AS water_inflows,
+       (SELECT name
+        FROM subscenarios_system_water_powerhouses
+        WHERE water_powerhouse_scenario_id =
+              scenarios.water_powerhouse_scenario_id)                                AS water_powerhouses,
+       (SELECT name
+        FROM subscenarios_tuning
+        WHERE tuning_scenario_id =
+              scenarios.tuning_scenario_id)                                          AS tuning,
+       (SELECT name
+        FROM subscenarios_options_solver
+        WHERE solver_options_id = scenarios.solver_options_id)                       as solver
+FROM scenarios;
 
 
 -- This view combines the project portfolios and operational characteristics

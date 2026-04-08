@@ -36,7 +36,6 @@ from viz import (
     project_operations_plot,
 )
 
-
 # Change directory to 'gridpath' directory, as that's what run_scenario.py
 # expects; the rest of the global variables are relative paths from there
 os.chdir(os.path.join(os.path.dirname(__file__), "..", "gridpath"))

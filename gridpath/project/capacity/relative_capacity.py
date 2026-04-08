@@ -339,28 +339,24 @@ def get_inputs_from_database(
     """
 
     c1 = conn.cursor()
-    rel_cap = c1.execute(
-        f"""
+    rel_cap = c1.execute(f"""
         SELECT project, period,
         min_relative_capacity_limit_new, max_relative_capacity_limit_new,
         min_relative_capacity_limit_total, max_relative_capacity_limit_total
         FROM inputs_project_relative_capacity_requirements
         WHERE project_relative_capacity_requirement_scenario_id = 
         {subscenarios.PROJECT_RELATIVE_CAPACITY_REQUIREMENT_SCENARIO_ID}
-        """
-    )
+        """)
 
     c2 = conn.cursor()
-    map = c2.execute(
-        f"""
+    map = c2.execute(f"""
         SELECT project, period, project_for_limits
         FROM inputs_project_relative_capacity_requirements
         JOIN inputs_project_relative_capacity_requirements_map
         USING (project, prj_for_lim_map_id)
         WHERE project_relative_capacity_requirement_scenario_id = 
         {subscenarios.PROJECT_RELATIVE_CAPACITY_REQUIREMENT_SCENARIO_ID}
-        """
-    )
+        """)
 
     return rel_cap, map
 

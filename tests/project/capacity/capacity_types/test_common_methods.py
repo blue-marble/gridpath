@@ -1,4 +1,5 @@
-# Copyright 2016-2023 Blue Marble Analytics LLC.
+# Copyright 2016-2025 Blue Marble Analytics LLC.
+# Copyright 2026 Sylvan Energy Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +16,6 @@
 
 from importlib import import_module
 import unittest
-
 
 NAME_OF_MODULE_BEING_TESTED = "project.capacity.capacity_types.gen_new_lin"
 # Import the module we'll test
@@ -90,11 +90,12 @@ class TestCapacityTypeCommonMethods(unittest.TestCase):
             expected_operational_periods = expected_operational_periods_dict[test_case]
             actual_operational_periods = (
                 MODULE_BEING_TESTED.relevant_periods_by_project_vintage(
-                    periods=test_case_params[test_case][0],
+                    future_trajectory_periods=test_case_params[test_case][0],
                     period_start_year=test_case_params[test_case][1],
                     period_end_year=test_case_params[test_case][2],
                     vintage=test_case_params[test_case][3],
                     lifetime_yrs=test_case_params[test_case][4],
+                    quiet=True,
                 )
             )
             self.assertListEqual(

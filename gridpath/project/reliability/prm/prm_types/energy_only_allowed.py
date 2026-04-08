@@ -18,7 +18,6 @@ can have no PRM contribution (and therefore potentially incur a smaller cost),
 or partly or fully deliverable
 """
 
-
 import csv
 import os.path
 from pyomo.environ import (
@@ -224,13 +223,9 @@ def process_model_results(db, c, scenario_id, subscenarios, quiet):
         print("update energy-only capacities")
 
     # Figure out RPS zone for each project
-    project_period_eocap = c.execute(
-        """SELECT project, period, energy_only_capacity_mw
+    project_period_eocap = c.execute("""SELECT project, period, energy_only_capacity_mw
         FROM results_project_deliverability
-            WHERE scenario_id = {};""".format(
-            scenario_id
-        )
-    ).fetchall()
+            WHERE scenario_id = {};""".format(scenario_id)).fetchall()
 
     tables_to_update = ["results_project_elcc_simple", "results_project_elcc_surface"]
 
@@ -244,9 +239,7 @@ def process_model_results(db, c, scenario_id, subscenarios, quiet):
             SET energy_only_capacity_mw = ?
             WHERE scenario_id = ?
             AND project = ?
-            AND period = ?;""".format(
-            table
-        )
+            AND period = ?;""".format(table)
 
         spin_on_database_lock(conn=db, cursor=c, sql=sql, data=results)
 

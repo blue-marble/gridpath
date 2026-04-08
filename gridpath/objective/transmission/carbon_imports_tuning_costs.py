@@ -23,7 +23,6 @@ rate. Adding a tuning cost prevents that behavior as it pushes the emissions
 variable down to be equal.
 """
 
-
 import csv
 import os.path
 from pyomo.environ import Param, Expression
@@ -148,9 +147,7 @@ def get_inputs_from_database(
     import_carbon_tuning_cost = c.execute(
         """SELECT import_carbon_tuning_cost_per_ton
         FROM inputs_tuning
-        WHERE tuning_scenario_id = {}""".format(
-            subscenarios.TUNING_SCENARIO_ID
-        )
+        WHERE tuning_scenario_id = {}""".format(subscenarios.TUNING_SCENARIO_ID)
     ).fetchone()[0]
     # TODO: remove the fetch out of this function?
     return import_carbon_tuning_cost

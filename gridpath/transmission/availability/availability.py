@@ -343,26 +343,19 @@ def get_required_availability_type_modules(scenario_id, c):
     transmission_portfolio_scenario_id = c.execute(
         """SELECT transmission_portfolio_scenario_id 
         FROM scenarios 
-        WHERE scenario_id = {}""".format(
-            scenario_id
-        )
+        WHERE scenario_id = {}""".format(scenario_id)
     ).fetchone()[0]
 
     transmission_availability_scenario_id = c.execute(
         """SELECT transmission_availability_scenario_id 
         FROM scenarios 
-        WHERE scenario_id = {}""".format(
-            scenario_id
-        )
+        WHERE scenario_id = {}""".format(scenario_id)
     ).fetchone()[0]
 
     if transmission_availability_scenario_id is not None:
         required_availability_type_modules = list(
             set(
-                [
-                    p[0]
-                    for p in c.execute(
-                        f"""
+                [p[0] for p in c.execute(f"""
                         SELECT DISTINCT availability_type 
                         FROM 
                         (SELECT transmission_line FROM inputs_transmission_portfolios
@@ -371,9 +364,7 @@ def get_required_availability_type_modules(scenario_id, c):
                         (SELECT transmission_line, availability_type
                         FROM inputs_transmission_availability
                         WHERE transmission_availability_scenario_id = {transmission_availability_scenario_id}) as av_type_tbl
-                        USING (transmission_line)"""
-                    ).fetchall()
-                ]
+                        USING (transmission_line)""").fetchall()]
                 + [DEFAULT_TX_AVAILABILITY_TYPE]
             )
         )

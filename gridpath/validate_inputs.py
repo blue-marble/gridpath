@@ -309,13 +309,9 @@ def update_validation_status(conn, scenario_id):
     :return:
     """
     c = conn.cursor()
-    validations = c.execute(
-        """SELECT scenario_id 
+    validations = c.execute("""SELECT scenario_id 
         FROM status_validation
-        WHERE scenario_id = {}""".format(
-            str(scenario_id)
-        )
-    ).fetchall()
+        WHERE scenario_id = {}""".format(str(scenario_id))).fetchall()
 
     if validations:
         status = 2
@@ -367,10 +363,8 @@ def determine_subscenarios_by_feature(conn):
     """
     c = conn.cursor()
 
-    feature_sc = c.execute(
-        """SELECT feature, subscenario_id
-        FROM mod_feature_subscenarios"""
-    ).fetchall()
+    feature_sc = c.execute("""SELECT feature, subscenario_id
+        FROM mod_feature_subscenarios""").fetchall()
     feature_sc_dict = {}
     for f, sc in feature_sc:
         if f in feature_sc_dict:

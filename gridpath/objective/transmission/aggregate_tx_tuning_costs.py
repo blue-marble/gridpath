@@ -17,7 +17,6 @@ This module aggregates the cost of exports from a load zone in each
 timepoint and adds the total to the objective function.
 """
 
-
 from pyomo.environ import Expression
 
 from gridpath.auxiliary.dynamic_components import cost_components

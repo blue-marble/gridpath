@@ -171,13 +171,11 @@ def add_model_components(
     def set_default_and_warn_about_undefined_loads(mod, lz, tmp, cmp):
         if (lz, tmp, cmp) in mod.LOAD_ZONE_TMP_LOAD_CMPNTS_W_DEFINED_LOAD:
             if mod.load_level_default[lz, cmp] != "undefined":
-                raise ValueError(
-                    f"""
+                raise ValueError(f"""
                     You have both a default value and a by-timepoint value 
                     defined for load in load_zone {lz}, component {cmp}. 
                     Please check your inputs and select either one or the other.
-                """
-                )
+                """)
             else:
                 return mod.component_static_load_mw_w_tmp_value[lz, tmp, cmp]
         else:
@@ -214,15 +212,13 @@ def add_model_components(
                 mod.component_static_load_mw[load_zone, timepoint, component]
                 == "undefined"
             ):
-                raise ValueError(
-                    f"""
+                raise ValueError(f"""
                 Parameter component_static_load_mw at index 
                 {load_zone, timepoint, component} has no value defined. Load 
                 must either be included with the timepoint load inputs or a 
                 value must be set via the load_level_default parameter of 
                 load_zone {load_zone}.
-                """
-                )
+                """)
             else:
                 distribution_loss_adjusted_load = mod.component_static_load_mw[
                     load_zone, timepoint, component

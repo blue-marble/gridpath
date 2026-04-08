@@ -48,7 +48,6 @@ Settings
 
 """
 
-
 import csv
 from argparse import ArgumentParser
 import os.path

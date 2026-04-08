@@ -95,7 +95,6 @@ def write_validation_to_database(
     VALUES (?, ?, ?, ?, ?, ?, ?, ?);
     """
     spin_on_database_lock(conn, c, sql, rows)
-    conn.close()
 
     return True
 
@@ -269,14 +268,10 @@ def get_load_zones(conn, subscenarios):
     :return:
     """
     c = conn.cursor()
-    load_zones = c.execute(
-        """SELECT load_zone 
+    load_zones = c.execute("""SELECT load_zone 
         FROM inputs_geography_load_zones
         WHERE load_zone_scenario_id = {};    
-        """.format(
-            subscenarios.LOAD_ZONE_SCENARIO_ID
-        )
-    )
+        """.format(subscenarios.LOAD_ZONE_SCENARIO_ID))
     load_zones = [lz[0] for lz in load_zones]  # convert to list
     return load_zones
 

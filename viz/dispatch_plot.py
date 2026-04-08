@@ -132,9 +132,7 @@ def get_timepoints(conn, scenario_id, starting_tmp=None, ending_tmp=None, stage_
         WHERE stage_id = {}
         {}
         {}
-        ;""".format(
-        scenario_id, stage_id, start_query, end_query
-    )
+        ;""".format(scenario_id, stage_id, start_query, end_query)
 
     tmps = [i[0] for i in conn.execute(query).fetchall()]
 
@@ -462,11 +460,20 @@ def get_plotting_data(
 
     # Split storage into charging and discharging and aggregate storage charging
     # Assume any dispatch that is negative is storage charging
+    # TODO: this doesn't work if there are other negative dispatch values (
+    #  e.g., negative capacity factors for certain technologies)
     df["Storage_Charging"] = 0
     stor_techs = df.columns[(df < 0).any()]
+    # stor_techs = ["Battery"]
     for tech in stor_techs:
         df["Storage_Charging"] += -df[tech].clip(upper=0)
         df[tech] = df[tech].clip(lower=0)
+
+    # df["Flex_Load_Charging"] = 0
+    # flex_load_techs = ["Flexible_Load"]
+    # for tech in flex_load_techs:
+    #     df["Flex_Load_Charging"] += -df[tech].clip(upper=0)
+    #     df[tech] = df[tech].clip(lower=0)
 
     # Add variable curtailment (if any)
     curtailment_variable = get_variable_curtailment_results(
@@ -609,7 +616,12 @@ def create_plot(
     # treated as lines instead)
     # Note: the order of this list determines the order of the 'Load + ...'
     # lines
-    items_treated_as_load_plus_lines = ["Storage_Charging", "Exports", "Market_Sales"]
+    items_treated_as_load_plus_lines = [
+        # "Flex_Load_Charging",
+        "Storage_Charging",
+        "Exports",
+        "Market_Sales",
+    ]
     line_cols_storage_sum_track = [
         "Load",
     ] + items_treated_as_load_plus_lines
@@ -631,7 +643,7 @@ def create_plot(
 
     # Set up the figure
     plot = figure(
-        min_width=800,
+        min_width=1200,
         min_height=500,
         tools=["pan", "reset", "zoom_in", "zoom_out", "save", "help"],
         title=title,
@@ -663,7 +675,7 @@ def create_plot(
 
     # Add 'Load + ...' lines
     active_items = []
-    for i in ["Storage_Charging", "Exports", "Market_Sales"]:
+    for i in items_treated_as_load_plus_lines:
         if i not in df.columns:
             inactive = True
         else:

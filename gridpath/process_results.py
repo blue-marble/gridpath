@@ -21,7 +21,6 @@ The main() function of this script can also be called with the
 *gridpath_process_results* command when GridPath is installed.
 """
 
-
 from argparse import ArgumentParser
 import sys
 

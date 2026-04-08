@@ -14,7 +14,14 @@
 
 import csv
 import os.path
-from pyomo.environ import Param, Set, NonNegativeReals, PercentFraction, Expression
+from pyomo.environ import (
+    Param,
+    Set,
+    Reals,
+    NonNegativeReals,
+    PercentFraction,
+    Expression,
+)
 
 from gridpath.auxiliary.db_interface import directories_to_db_values
 
@@ -87,22 +94,22 @@ def add_model_components(
     # param
     m.inst_pen_min_ratio_power_req = Param(
         m.INST_PEN_PRJ_CONTRIBUTION,
-        within=NonNegativeReals,
+        within=Reals,
         default=0,
     )
     m.inst_pen_min_ratio_capacity_req = Param(
         m.INST_PEN_PRJ_CONTRIBUTION,
-        within=NonNegativeReals,
+        within=Reals,
         default=0,
     )
     m.inst_pen_max_ratio_power_req = Param(
         m.INST_PEN_PRJ_CONTRIBUTION,
-        within=NonNegativeReals,
+        within=Reals,
         default=0,
     )
     m.inst_pen_max_ratio_capacity_req = Param(
         m.INST_PEN_PRJ_CONTRIBUTION,
-        within=NonNegativeReals,
+        within=Reals,
         default=0,
     )
 

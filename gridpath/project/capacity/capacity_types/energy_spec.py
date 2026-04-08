@@ -17,6 +17,7 @@ Specified energy-only project. The energy will be shaped by the operational
 type.
 
 """
+
 import math
 import os.path
 import pandas as pd

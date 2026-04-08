@@ -305,6 +305,14 @@ def get_import_results_parser():
         "--results_import_rule",
         help="The name of the rule to use to decide whether to import results.",
     )
+    parser.add_argument(
+        "--ignore_incomplete",
+        default=False,
+        action="store_true",
+        help="Ignore problems with no results. Can be used to import results "
+        "for subproblems before all other subproblems have been solved. "
+        "Proceed with caution.",
+    )
 
     return parser
 
@@ -443,13 +451,11 @@ def duals_wrapper(m, component, verbose=False):
         return m.dual[component]
     except KeyError:
         if verbose:
-            warnings.warn(
-                f"""
+            warnings.warn(f"""
                 KeyError caught when saving duals for {component}. Duals were 
                 not exported. This is expected if solving a MIP with CPLEX (and 
                 possibly other solvers), not otherwise.
-                """
-            )
+                """)
         return None
 
 

@@ -210,7 +210,7 @@ def get_inputs_from_database(
 
     c2 = conn.cursor()
     fuel_prices = c2.execute(
-        """SELECT DISTINCT fuel, period, month, fuel_price_per_mmbtu
+        f"""SELECT DISTINCT fuel, period, month, fuel_price_per_mmbtu
         FROM (
        SELECT project, fuel, min_fraction_in_fuel_blend, max_fraction_in_fuel_blend
         FROM inputs_project_portfolios
@@ -218,7 +218,7 @@ def get_inputs_from_database(
         INNER JOIN
         (SELECT project, project_fuel_scenario_id
         FROM inputs_project_operational_chars
-        WHERE project_operational_chars_scenario_id = {opchar_scenario_id}
+        WHERE project_operational_chars_scenario_id = {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
         ) AS op_char
         USING(project)
         -- select only heat curves of matching projects
@@ -227,31 +227,28 @@ def get_inputs_from_database(
         USING(project, project_fuel_scenario_id)
         -- Get only the subset of projects in the portfolio based on the 
         -- project_portfolio_scenario_id 
-        WHERE project_portfolio_scenario_id = {portfolio_scenario_id}
+        WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
         ) as project_fuels_tbl
         LEFT OUTER JOIN (
         -- Get the fuel chars for the relevant fuels
         SELECT fuel, period, month, fuel_price_per_mmbtu
         FROM inputs_fuel_prices
-        WHERE fuel_price_scenario_id = {fuel_price_scenario_id}
+        WHERE fuel_price_scenario_id = {subscenarios.FUEL_PRICE_SCENARIO_ID}
         ) AS fuels_tbl
         USING (fuel)
-        -- Only get periods in the relevant temporal_scenario_id
+        -- Only get periods/months in the relevant temporal_scenario_id
         INNER JOIN (
-        SELECT period
-        FROM inputs_temporal_periods
-        WHERE temporal_scenario_id = {temporal_scenario_id}
+        SELECT DISTINCT period, month
+        FROM inputs_temporal
+        WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+        AND subproblem_id = {subproblem}
+        AND stage_id = {stage}
         ) as periods_tbl
-        USING (period)
+        USING (period, month)
         -- Filter out the NULLs (from projects with no fuels)
         WHERE fuel NOT NULL
         ;
-        """.format(
-            opchar_scenario_id=subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
-            portfolio_scenario_id=subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-            fuel_price_scenario_id=subscenarios.FUEL_PRICE_SCENARIO_ID,
-            temporal_scenario_id=subscenarios.TEMPORAL_SCENARIO_ID,
-        )
+        """
     )
 
     return fuels, fuel_prices

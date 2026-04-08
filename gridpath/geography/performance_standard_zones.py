@@ -114,9 +114,7 @@ def get_inputs_from_database(
         energy_violation_penalty_per_emission, power_allow_violation, power_violation_penalty_per_emission
         FROM inputs_geography_performance_standard_zones
         WHERE performance_standard_zone_scenario_id = {};
-        """.format(
-            subscenarios.PERFORMANCE_STANDARD_ZONE_SCENARIO_ID
-        )
+        """.format(subscenarios.PERFORMANCE_STANDARD_ZONE_SCENARIO_ID)
     )
 
     return performance_standard_zone

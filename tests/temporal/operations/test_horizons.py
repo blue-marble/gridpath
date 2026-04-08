@@ -120,6 +120,14 @@ class TestHorizons(unittest.TestCase):
             + [("subproblem_period_linear", period) for period in [2020, 2030]]
             + [("subproblem_linked", 1)]
             + [("subproblem_period_linked", period) for period in [2020, 2030]]
+            + [
+                ("subproblem_period_month_circular", period * 100 + month)
+                for (period, month) in [(2020, 5), (2020, 9), (2030, 4), (2030, 7)]
+            ]
+            + [
+                ("subproblem_period_month_linear", period * 100 + month)
+                for (period, month) in [(2020, 5), (2020, 9), (2030, 4), (2030, 7)]
+            ]
         )
         expected_horizons = sorted(
             [
@@ -133,6 +141,7 @@ class TestHorizons(unittest.TestCase):
         )
 
         actual_horizons = sorted([(b, h) for (b, h) in instance.BLN_TYPE_HRZS])
+
         self.assertListEqual(
             expected_horizons,
             actual_horizons,
@@ -196,6 +205,11 @@ class TestHorizons(unittest.TestCase):
                     "subproblem_period_linked",
                 ]:
                     builtin_hrzs_by_bt[b] = [2020, 2030]
+                elif b in [
+                    "subproblem_period_month_circular",
+                    "subproblem_period_month_linear",
+                ]:
+                    builtin_hrzs_by_bt[b] = [202005, 202009, 203004, 203007]
 
             return builtin_hrzs_by_bt
 
@@ -257,6 +271,19 @@ class TestHorizons(unittest.TestCase):
                         builtin_tmps_by_bt[b, h] = timepoints_df.loc[
                             timepoints_df["period"] == h, "timepoint"
                         ].tolist()
+                elif b in [
+                    "subproblem_period_month_circular",
+                    "subproblem_period_month_linear",
+                ]:
+                    if (b, h) not in builtin_tmps_by_bt.keys():
+                        period = h // 100  # floor division
+                        month = h % 100  # modulo division
+                        builtin_tmps_by_bt[b, h] = timepoints_df.loc[
+                            (timepoints_df["period"] == period)
+                            & (timepoints_df["month"] == month),
+                            "timepoint",
+                        ].tolist()
+
             return builtin_tmps_by_bt
 
         expected_tmps_on_horizon_builtin = get_tmps_for_builtin()

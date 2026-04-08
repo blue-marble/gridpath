@@ -17,7 +17,6 @@ Add project-level components for upward frequency response reserves that also
 depend on operational type
 """
 
-
 import csv
 import os.path
 
@@ -28,7 +27,6 @@ from gridpath.project.operations.reserves.op_type_dependent.reserve_limits_by_op
     generic_add_model_components,
     generic_load_model_data,
 )
-
 
 # Inputs
 RESERVE_PROVISION_RAMP_RATE_LIMIT_COLUMN_NAME_IN_INPUT_FILE = (

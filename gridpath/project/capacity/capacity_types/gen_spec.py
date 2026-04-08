@@ -26,7 +26,6 @@ be a fixed number in the objective function and will therefore not affect any
 of the optimization decisions.
 """
 
-
 from pyomo.environ import Set, Param, NonNegativeReals
 
 from gridpath.auxiliary.auxiliary import cursor_to_df

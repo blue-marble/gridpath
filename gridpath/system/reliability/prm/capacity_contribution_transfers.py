@@ -355,8 +355,7 @@ def get_inputs_from_database(
     """
 
     c1 = conn.cursor()
-    limits = c1.execute(
-        f"""
+    limits = c1.execute(f"""
         SELECT prm_zone, prm_capacity_transfer_zone, period, 
         min_transfer_powerunit, max_transfer_powerunit, capacity_transfer_cost_per_powerunit_yr
         FROM inputs_transmission_prm_capacity_transfer_params
@@ -373,8 +372,7 @@ def get_inputs_from_database(
         AND prm_capacity_transfer_zone IN
         (SELECT prm_zone FROM inputs_geography_prm_zones
         WHERE prm_zone_scenario_id = {subscenarios.PRM_ZONE_SCENARIO_ID});
-        """
-    )
+        """)
 
     c2 = conn.cursor()
     transmission_lines = c2.execute(

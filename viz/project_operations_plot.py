@@ -224,9 +224,7 @@ def get_plotting_data(
         USING (scenario_id, project)
         
         ORDER BY horizon, timepoint
-        ;""".format(
-        operational_type, horizon_start_slice, horizon_end_slice
-    )
+        ;""".format(operational_type, horizon_start_slice, horizon_end_slice)
 
     df = pd.read_sql(sql, con=conn, params=(scenario_id, project, period, stage))
 

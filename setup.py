@@ -54,6 +54,7 @@ setup(
         "PyUtilib==6.0.0",  # used for solver temp file management
         "dill==0.3.8",  # pickling
         "duckdb==1.4.0",  # data-handling
+        "sphinx-rtd-theme",  # documentation theme
     ],
     extras_require={
         "doc": extras_doc,

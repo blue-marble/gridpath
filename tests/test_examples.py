@@ -86,17 +86,13 @@ class TestExamples(unittest.TestCase):
             db_path=DB_PATH, detect_types=sqlite3.PARSE_DECLTYPES
         )
         c = conn.cursor()
-        validations = c.execute(
-            """
+        validations = c.execute("""
             SELECT scenario_name FROM status_validation
             INNER JOIN
             (SELECT scenario_id, scenario_name FROM scenarios)
             USING (scenario_id)
             WHERE scenario_name = '{}'
-            """.format(
-                test
-            )
-        )
+            """.format(test))
         actual_validations = validations.fetchall()
         conn.close()
 
@@ -1743,6 +1739,24 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         scenario_name = "2periods_subproblem_period_builtin_horizons"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_single_stage_prod_cost_w_startup_limit(self):
+        """
+        Check validation and objective function values of
+        "single_stage_prod_cost_w_startup_limit" example
+        :return:
+        """
+        scenario_name = "single_stage_prod_cost_w_startup_limit"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_2periods_new_build_2zones_new_build_transmission_stochastic(self):
+        """
+        Check validation and objective function values of
+        "single_stage_prod_cost_w_startup_limit" example
+        :return:
+        """
+        scenario_name = "2periods_new_build_2zones_new_build_transmission_stochastic"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     @classmethod

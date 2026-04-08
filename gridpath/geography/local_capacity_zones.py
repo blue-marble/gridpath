@@ -110,15 +110,11 @@ def get_inputs_from_database(
     """
 
     c = conn.cursor()
-    local_capacity_zones = c.execute(
-        """SELECT local_capacity_zone, allow_violation,
+    local_capacity_zones = c.execute("""SELECT local_capacity_zone, allow_violation,
         violation_penalty_per_mw
         FROM inputs_geography_local_capacity_zones
         WHERE local_capacity_zone_scenario_id = {};
-        """.format(
-            subscenarios.LOCAL_CAPACITY_ZONE_SCENARIO_ID
-        )
-    )
+        """.format(subscenarios.LOCAL_CAPACITY_ZONE_SCENARIO_ID))
 
     return local_capacity_zones
 

@@ -23,13 +23,13 @@ jobs:
         python-version: [ "3.11", "3.12", "3.13" ]
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Install sqlite3 3.45.0 on Linux
       if: startsWith(runner.os, 'Linux')
       run: |
         bash ./.github/workflows/upgrade_sqlite_on_linux.sh
     - name: Set up Python
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install Cbc and check version (Linux)

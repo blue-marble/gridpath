@@ -102,14 +102,10 @@ def get_inputs_from_database(
     """
 
     c = conn.cursor()
-    carbon_tax_zone = c.execute(
-        """SELECT carbon_tax_zone
+    carbon_tax_zone = c.execute("""SELECT carbon_tax_zone
         FROM inputs_geography_carbon_tax_zones
         WHERE carbon_tax_zone_scenario_id = {};
-        """.format(
-            subscenarios.CARBON_TAX_ZONE_SCENARIO_ID
-        )
-    )
+        """.format(subscenarios.CARBON_TAX_ZONE_SCENARIO_ID))
 
     return carbon_tax_zone
 
