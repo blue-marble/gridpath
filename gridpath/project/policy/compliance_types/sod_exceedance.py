@@ -1,4 +1,4 @@
-# Copyright 2016-2024 Blue Marble Analytics LLC.
+# Copyright 2026 Sylvan Energy Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -83,15 +83,6 @@ def load_model_data(
             filename=exceedance_file,
             index=m.PRJ_POLICY_ZONE_PRD_MONTH_HR_EXCEEDANCE,
             param=m.exceedance_cap_fac,
-            select=(
-                "project",
-                "policy_name",
-                "policy_zone",
-                "period",
-                "policy_month",
-                "policy_hour",
-                "cap_fac",
-            ),
         )
 
 
@@ -109,13 +100,20 @@ def get_inputs_from_database(
     return c.execute(
         """SELECT ppz.project, ppz.policy_name, ppz.policy_zone,
         ev.period, ev.policy_month, ev.policy_hour, ev.cap_fac
-        FROM inputs_project_policy_zones ppz
+        FROM
+        (SELECT project
+            FROM inputs_project_portfolios
+            WHERE project_portfolio_scenario_id = {portfolio}) as relevant_projects
+        JOIN inputs_project_policy_zones ppz
+          USING (project)
         JOIN inputs_project_policy_exceedance_values ev
           ON ev.project = ppz.project
          AND ev.exceedance_values_scenario_id = ppz.exceedance_values_scenario_id
         JOIN
-        (SELECT period FROM inputs_temporal_periods
-         WHERE temporal_scenario_id = {temporal}) as relevant_periods
+        (SELECT DISTINCT period FROM inputs_temporal
+         WHERE temporal_scenario_id = {temporal}
+         AND subproblem_id = {subproblem}
+         AND stage_id = {stage}) as relevant_periods
         USING (period)
         JOIN
         (SELECT policy_name, policy_zone
@@ -125,7 +123,10 @@ def get_inputs_from_database(
         WHERE ppz.project_policy_zone_scenario_id = {project_policy_zone_scenario}
         AND ppz.compliance_type = 'sod_exceedance';
         """.format(
+            portfolio=subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
             temporal=subscenarios.TEMPORAL_SCENARIO_ID,
+            subproblem=subproblem,
+            stage=stage,
             policy_zone_scenario=subscenarios.POLICY_ZONE_SCENARIO_ID,
             project_policy_zone_scenario=subscenarios.PROJECT_POLICY_ZONE_SCENARIO_ID,
         )

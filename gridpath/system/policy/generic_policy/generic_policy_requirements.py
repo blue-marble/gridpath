@@ -1,4 +1,5 @@
 # Copyright 2016-2024 Blue Marble Analytics LLC.
+# Copyright 2029 Sylvan Energy Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,10 +27,6 @@ from gridpath.common_functions import create_results_df
 
 from gridpath.system.policy.generic_policy import POLICY_ZONE_PRD_DF
 
-HORIZON_REQUIREMENT_MODE = "horizon"
-MONTH_HOUR_REQUIREMENT_MODE = "month_hour"
-
-
 def add_model_components(
     m,
     d,
@@ -51,12 +48,6 @@ def add_model_components(
         within=Any,
         initialize=lambda mod: sorted(list(set([p for (p, z) in mod.POLICIES_ZONES]))),
     )
-    m.policy_requirement_mode = Param(
-        m.POLICIES_ZONES,
-        within=[HORIZON_REQUIREMENT_MODE, MONTH_HOUR_REQUIREMENT_MODE],
-        default=HORIZON_REQUIREMENT_MODE,
-    )
-
     m.POLICIES_ZONE_BLN_TYPE_HRZS_WITH_REQ = Set(
         dimen=4, within=m.POLICIES_ZONES * m.BLN_TYPE_HRZS
     )
@@ -217,13 +208,6 @@ def load_model_data(
             f"Found overlaps for: {overlap_fmt}"
         )
 
-    # Derive policy_requirement_mode from which sets each (policy, zone) appears in
-    policy_mode = {pz: HORIZON_REQUIREMENT_MODE for pz in horizon_policy_zones}
-    policy_mode.update(
-        {pz: MONTH_HOUR_REQUIREMENT_MODE for pz in month_hour_policy_zones}
-    )
-    data_portal.data()["policy_requirement_mode"] = policy_mode
-
     data_portal.data()["POLICIES_ZONE_LOAD_ZONES_MONTH_HOUR"] = {None: []}
 
     # Load zone map for horizon percent-of-load targets if present
@@ -302,9 +286,11 @@ def get_inputs_from_database(
         policy_requirement
         FROM inputs_system_policy_month_hour_requirements
         JOIN
-        (SELECT period
-        FROM inputs_temporal_periods
-        WHERE temporal_scenario_id = {}) as relevant_periods
+        (SELECT DISTINCT period
+        FROM inputs_temporal
+        WHERE temporal_scenario_id = {}
+        AND subproblem_id = {}
+        AND stage_id = {}) as relevant_periods
         USING (period)
         JOIN
         (SELECT policy_zone
@@ -314,6 +300,8 @@ def get_inputs_from_database(
         WHERE policy_requirement_scenario_id = {};
         """.format(
             subscenarios.TEMPORAL_SCENARIO_ID,
+            subproblem,
+            stage,
             subscenarios.POLICY_ZONE_SCENARIO_ID,
             subscenarios.POLICY_REQUIREMENT_SCENARIO_ID,
         )
@@ -420,15 +408,12 @@ def write_model_inputs(
                     "horizon",
                     "policy_requirement",
                     "policy_requirement_f_load_coeff",
-                    "requirement_mode",
                 ]
             )
 
             for row in horizon_rows:
                 # It's OK if targets are not specified; they default to 0
-                replace_nulls = ["." if i is None else i for i in row]
-                replace_nulls.append(HORIZON_REQUIREMENT_MODE)
-                writer.writerow(replace_nulls)
+                writer.writerow(["." if i is None else i for i in row])
 
     month_hour_rows = [row for row in month_hour_policy_requirements]
     if month_hour_rows:
