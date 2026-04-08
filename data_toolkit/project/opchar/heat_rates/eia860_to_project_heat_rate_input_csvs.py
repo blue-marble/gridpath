@@ -59,7 +59,6 @@ import os.path
 import sys
 
 from db.common_functions import connect_to_database
-from data_toolkit.load_raw_data import read_and_import_csv
 from data_toolkit.project.project_data_filters_common import (
     get_eia860_sql_filter_string,
     HEAT_RATE_FILTER_STR,
@@ -78,14 +77,6 @@ def parse_arguments(args):
     parser = ArgumentParser(add_help=True)
 
     parser.add_argument("-db", "--database", default="../../open_data_raw.db")
-    parser.add_argument(
-        "-csv",
-        "--input_csv",
-        default=None,
-        help="""Path to the CSV file to load into the database.
-            If not specified, data will be assumed to have been
-            already loaded into the database.""",
-    )
     parser.add_argument("-y", "--study_year", default=2026)
     parser.add_argument("-r", "--region", default="WECC")
 
@@ -176,10 +167,6 @@ def main(args=None):
     os.makedirs(parsed_args.output_directory, exist_ok=True)
 
     conn = connect_to_database(db_path=parsed_args.database)
-
-    # ### Load data from CSV
-    if parsed_args.input_csv is not None:
-        read_and_import_csv(conn=conn, f_path=parsed_args.input_csv, table="TABLE_TBD")
 
     get_project_heat_rates(
         conn=conn,

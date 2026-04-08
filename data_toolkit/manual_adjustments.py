@@ -45,14 +45,6 @@ def parse_arguments(args):
     parser = ArgumentParser(add_help=True)
 
     parser.add_argument("-db", "--database", default="../../open_data_raw.db")
-    parser.add_argument(
-        "-csv",
-        "--input_csv",
-        default=None,
-        help="""Path to the CSV file to load into the database.
-            If not specified, data will be assumed to have been
-            already loaded into the database.""",
-    )
 
     # Missing storage durations
     parser.add_argument(
@@ -203,10 +195,6 @@ def main(args=None):
         print("Making manual adjustments")
 
     conn = connect_to_database(db_path=parsed_args.database)
-
-    # ### Load data from CSV
-    if parsed_args.input_csv is not None:
-        read_and_import_csv(conn=conn, f_path=parsed_args.input_csv, table="TABLE_TBD")
 
     # Add missing project files
     copy_files_df = pd.read_csv(parsed_args.files_to_copy_csv, index_col=False)

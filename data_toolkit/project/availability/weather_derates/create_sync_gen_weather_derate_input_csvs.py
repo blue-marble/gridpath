@@ -163,7 +163,7 @@ def main(args=None):
 
     # ### Load data from CSV
     if parsed_args.input_csv is not None:
-        read_and_import_csv(conn=conn, f_path=parsed_args.input_csv, table="TABLE_TBD")
+        read_and_import_csv(conn=conn, f_path=parsed_args.input_csv, table="raw_data_profiles")
 
     c = conn.cursor()
     projects = [
