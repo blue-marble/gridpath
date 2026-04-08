@@ -64,10 +64,9 @@ jobs:
       if: ${{ runner.os == 'Linux' && matrix.python-version == '3.13' }}
       run: |
         coverage run -m unittest discover tests
-        coverage lcov -o coverage.lcov
     - name: Send coverage results to Coveralls
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       if: ${{ runner.os == 'Linux' && matrix.python-version == '3.13' }}
-      uses: coverallsapp/github-action@v2
-      with:
-        github-token: ${{ secrets.COVERALLS_REPO_TOKEN }}
-        file: ./coverage.lcov
+      run: |
+        coveralls --service=github
