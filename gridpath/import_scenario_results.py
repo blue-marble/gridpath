@@ -21,6 +21,7 @@ The main()_ function of this script can also be called with the
 *gridpath_import_results* command when GridPath is installed.
 """
 
+import warnings
 from argparse import ArgumentParser
 import os.path
 import pandas as pd
@@ -63,6 +64,7 @@ def import_scenario_results_into_database(
     scenario_structure,
     db,
     scenario_directory,
+    ignore_incomplete,
     quiet,
 ):
     """
@@ -72,6 +74,7 @@ def import_scenario_results_into_database(
     :param scenario_structure:
     :param db:
     :param scenario_directory:
+    :param ignore_incomplete: boolean
     :param quiet: boolean
 
     :return:
@@ -148,13 +151,28 @@ def import_scenario_results_into_database(
 
                         # Import termination condition data
                         c = db.cursor()
-                        with open(
-                            os.path.join(
-                                results_directory, "termination_condition.txt"
-                            ),
-                            "r",
-                        ) as f:
-                            termination_condition = f.read()
+                        try:
+                            with open(
+                                os.path.join(
+                                    results_directory, "termination_condition.txt"
+                                ),
+                                "r",
+                            ) as f:
+                                termination_condition = f.read()
+                        except FileNotFoundError:
+                            if ignore_incomplete:
+                                warnings.warn(
+                                    "GridPath Warning: termination "
+                                    "condition file not found."
+                                )
+                                termination_condition = (
+                                    "termination condition file not found"
+                                )
+                            else:
+                                tc_fname = os.path.join(
+                                    results_directory, "termination_condition.txt"
+                                )
+                                raise FileNotFoundError(f"{tc_fname} not " f"found.")
 
                         termination_condition_sql = """
                             INSERT INTO results_scenario
@@ -180,10 +198,23 @@ def import_scenario_results_into_database(
                             many=False,
                         )
 
-                        with open(
-                            os.path.join(results_directory, "solver_status.txt"), "r"
-                        ) as status_f:
-                            solver_status = status_f.read()
+                        try:
+                            with open(
+                                os.path.join(results_directory, "solver_status.txt"),
+                                "r",
+                            ) as status_f:
+                                solver_status = status_f.read()
+                        except FileNotFoundError:
+                            if ignore_incomplete:
+                                warnings.warn(
+                                    "GridPath Warning: solver status " "file not found."
+                                )
+                                termination_condition = "solver status file not found"
+                            else:
+                                ss_fname = os.path.join(
+                                    results_directory, "solver_status.txt"
+                                )
+                                raise FileNotFoundError(f"{ss_fname} not found.")
 
                         # Only import other results if solver status was "ok"
                         # When the problem is infeasible, the solver status is "warning"
@@ -353,6 +384,7 @@ def main(args=None):
     scenario_location = parsed_arguments.scenario_location
     quiet = parsed_arguments.quiet
     import_rule = parsed_arguments.results_import_rule
+    ignore_incomplete = parsed_arguments.ignore_incomplete
 
     conn = connect_to_database(db_path=db_path)
     c = conn.cursor()
@@ -404,6 +436,7 @@ def main(args=None):
         scenario_structure=scenario_structure,
         db=conn,
         scenario_directory=scenario_directory,
+        ignore_incomplete=ignore_incomplete,
         quiet=quiet,
     )
 

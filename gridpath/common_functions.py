@@ -305,6 +305,14 @@ def get_import_results_parser():
         "--results_import_rule",
         help="The name of the rule to use to decide whether to import results.",
     )
+    parser.add_argument(
+        "--ignore_incomplete",
+        default=False,
+        action="store_true",
+        help="Ignore problems with no results. Can be used to import results "
+        "for subproblems before all other subproblems have been solved. "
+        "Proceed with caution.",
+    )
 
     return parser
 

@@ -1,4 +1,5 @@
-# Copyright 2016-2023 Blue Marble Analytics LLC.
+# Copyright 2016-2025 Blue Marble Analytics LLC.
+# Copyright 2026 Sylvan Energy Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -179,7 +180,10 @@ def add_model_components(
         ],
     )
 
-    m.OPR_PRJS_IN_TMP = Set(m.TMPS, initialize=op_gens_by_tmp)
+    m.OPR_PRJS_IN_TMP = Set(
+        m.TMPS,
+        initialize=op_gens_by_tmp,
+    )
 
     # Expressions
     ###########################################################################
@@ -281,18 +285,18 @@ def add_model_components(
 ###############################################################################
 
 
-# TODO: the creation of the OPR_PRJS_IN_TMPS is by far
-#  the most time-consuming step in instantiating the problem; is there
-#  any way to speed it up? It is perhaps inefficient to iterate over all
-#  (g, t) for every timepoint, but how do we get around having to do that?
-#  Also, this is a more general problem with all the indexed sets,
-#  but the larger timepoints-based sets are more of a problem
-def op_gens_by_tmp(mod, tmp):
+def op_gens_by_tmp(mod):
     """
-    Figure out which generators are operational in each timepoins.
+    Figure out which generators are operational in each timepoint.
     """
-    gens = list(g for (g, t) in mod.PRJ_OPR_TMPS if t == tmp)
-    return gens
+    tmp_to_projects = {}
+    for g, tmp in mod.PRJ_OPR_TMPS:
+        tmp_to_projects.setdefault(tmp, set()).add(g)
+
+    for tmp in tmp_to_projects:
+        tmp_to_projects[tmp] = list(tmp_to_projects[tmp])
+
+    return tmp_to_projects
 
 
 def operational_periods_by_project(prj, project_operational_periods):
