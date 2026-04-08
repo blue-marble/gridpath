@@ -153,14 +153,13 @@ def main(args=None):
 
     os.makedirs(parsed_args.output_directory, exist_ok=True)
 
-    conn = connect_to_database(db_path=parsed_args.database)
-
     # ### Load data from CSV
+    conn = connect_to_database(db_path=parsed_args.database)
     if parsed_args.input_csv is not None:
-        read_and_import_csv(conn=conn, f_path=parsed_args.input_csv, table="TABLE_TBD")
-
+        read_and_import_csv(conn=conn, f_path=parsed_args.input_csv, table="raw_data_var_project_units")
     conn.close()
 
+    # Create the variable generation profile CSVs
     create_variable_profile_csvs(
         db_path=parsed_args.database,
         weather_bins_id=parsed_args.weather_bins_id,

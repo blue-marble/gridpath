@@ -196,6 +196,7 @@ def make_timeseries_draw_profiles(
             f"{timeseries_name}_day_of_month",
         ]
 
+        c = conn.cursor()
         for column in columns_to_add:
             sql = f"""
                     ALTER TABLE aux_weather_iterations
