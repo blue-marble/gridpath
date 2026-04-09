@@ -1,5 +1,5 @@
 # Copyright 2016-2024 Blue Marble Analytics LLC.
-# Copyright 2029 Sylvan Energy Analytics LLC.
+# Copyright 2026 Sylvan Energy Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ from gridpath.auxiliary.db_interface import directories_to_db_values
 from gridpath.common_functions import create_results_df
 
 from gridpath.system.policy.generic_policy import POLICY_ZONE_PRD_DF
+
 
 def add_model_components(
     m,
