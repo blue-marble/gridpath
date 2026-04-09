@@ -39,6 +39,7 @@ class TestCreateSyncLoadInputCsvs(unittest.TestCase):
         create_db_args = [
             "--database", cls.db_path,
             "--db_schema", "../data_toolkit/raw_data_db_schema.sql",
+            "--quiet",
         ]
         create_database_main(create_db_args)
 
@@ -46,6 +47,7 @@ class TestCreateSyncLoadInputCsvs(unittest.TestCase):
         load_data_args = [
             "--database", cls.db_path,
             "--csv_location", "./csvs_test_examples/raw_data_ra_toolkit/",
+            "--quiet",
         ]
         load_raw_data_main(load_data_args)
 
@@ -54,12 +56,16 @@ class TestCreateSyncLoadInputCsvs(unittest.TestCase):
         args = [
             "--database", self.db_path,
             "--output_directory", "./csvs_test_examples/system_load/system_load",
-            "--load_scenario_id", "6",
-            "--load_scenario_name", "ra_toolkit",
-            "--load_components_scenario_id", "3",
-            "--load_components_scenario_name", "ra_toolkit",
-            "--load_levels_scenario_id", "6",
-            "--load_levels_scenario_name", "ra_toolkit",
+            "--load_scenario_id", "8",
+            "--load_scenario_name", "ra_toolkit_module_tests",
+            "--load_components_scenario_id", "6",
+            "--load_components_scenario_name", "ra_toolkit_module_tests",
+            "--load_levels_scenario_id", "12",
+            "--load_levels_scenario_name", "ra_toolkit_module_tests",
+            "--load_levels_overwrite",
+            "--load_components_overwrite",
+            "--load_scenario_overwrite",
+            "--quiet",
         ]
         create_sync_load_input_csvs_main(args)
 

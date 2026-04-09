@@ -41,6 +41,7 @@ class TestCreateMonteCarloLoadInputCsvs(unittest.TestCase):
         create_db_args = [
             "--database", cls.db_path,
             "--db_schema", "../data_toolkit/raw_data_db_schema.sql",
+            "--quiet",
         ]
         create_database_main(create_db_args)
 
@@ -48,6 +49,7 @@ class TestCreateMonteCarloLoadInputCsvs(unittest.TestCase):
         load_data_args = [
             "--database", cls.db_path,
             "--csv_location", "./csvs_test_examples/raw_data_ra_toolkit/",
+            "--quiet",
         ]
         load_raw_data_main(load_data_args)
 
@@ -57,6 +59,7 @@ class TestCreateMonteCarloLoadInputCsvs(unittest.TestCase):
             "--weather_draws_seed", "0",
             "--n_iterations", "2",
             "--study_year", "2026",
+            "--quiet",
         ]
         create_monte_carlo_weather_draws_main(weather_draws_args)
 
@@ -65,6 +68,7 @@ class TestCreateMonteCarloLoadInputCsvs(unittest.TestCase):
             "--database", cls.db_path,
             "--study_year", "2026",
             "--timeseries_iteration_draw_initial_seed", "0",
+            "--quiet",
         ]
         create_monte_carlo_weather_draw_profiles_main(weather_profiles_args)
 
@@ -73,13 +77,17 @@ class TestCreateMonteCarloLoadInputCsvs(unittest.TestCase):
         args = [
             "--database", self.db_path,
             "--output_directory", "./csvs_test_examples/system_load/system_load",
-            "--load_scenario_id", "6",
-            "--load_scenario_name", "ra_toolkit",
-            "--load_components_scenario_id", "3",
-            "--load_components_scenario_name", "ra_toolkit",
-            "--load_levels_scenario_id", "6",
-            "--load_levels_scenario_name", "ra_toolkit",
+            "--load_scenario_id", "9",
+            "--load_scenario_name", "ra_toolkit_module_tests",
+            "--load_components_scenario_id", "7",
+            "--load_components_scenario_name", "ra_toolkit_module_tests",
+            "--load_levels_scenario_id", "13",
+            "--load_levels_scenario_name", "ra_toolkit_module_tests",
             "--load_levels_overwrite",
+            "--load_components_overwrite",
+            "--load_scenario_overwrite",
+            "--quiet",
+
         ]
         create_monte_carlo_load_input_csvs_main(args)
 

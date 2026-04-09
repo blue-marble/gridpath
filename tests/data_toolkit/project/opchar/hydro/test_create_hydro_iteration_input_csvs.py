@@ -73,8 +73,8 @@ class TestCreateHydroIterationInputCsvs(unittest.TestCase):
         args = [
             "--database", self.db_path,
             "--stage_id", "1",
-            "--hydro_operational_chars_scenario_id", "5",
-            "--hydro_operational_chars_scenario_name", "ra_toolkit",
+            "--hydro_operational_chars_scenario_id", "7",
+            "--hydro_operational_chars_scenario_name", "ra_toolkit_module_tests",
             "--output_directory", "./csvs_test_examples/project/opchar/hydro_operational_chars",
             "--n_parallel_projects", "4",
         ]

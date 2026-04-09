@@ -46,6 +46,7 @@ class TestLoadRawData(unittest.TestCase):
         args = [
             "--database", self.db_path,
             "--csv_location", "./csvs_test_examples/raw_data_ra_toolkit/",
+            "--quiet"
         ]
         load_raw_data_main(args)
 

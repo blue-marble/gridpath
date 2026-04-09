@@ -39,6 +39,7 @@ class TestCreateSyncGenWeatherDerateInputCsvs(unittest.TestCase):
         create_db_args = [
             "--database", cls.db_path,
             "--db_schema", "../data_toolkit/raw_data_db_schema.sql",
+            "--quiet",
         ]
         create_database_main(create_db_args)
 
@@ -46,6 +47,7 @@ class TestCreateSyncGenWeatherDerateInputCsvs(unittest.TestCase):
         load_data_args = [
             "--database", cls.db_path,
             "--csv_location", "./csvs_test_examples/raw_data_ra_toolkit/",
+            "--quiet",
         ]
         load_raw_data_main(load_data_args)
 
@@ -54,9 +56,11 @@ class TestCreateSyncGenWeatherDerateInputCsvs(unittest.TestCase):
         args = [
             "--database", self.db_path,
             "--output_directory", "./csvs_test_examples/project/availability/exogenous_weather",
-            "--exogenous_availability_weather_scenario_id", "1",
-            "--exogenous_availability_weather_scenario_name", "ra_toolkit",
+            "--exogenous_availability_weather_scenario_id", "3",
+            "--exogenous_availability_weather_scenario_name", "ra_toolkit_module_tests",
             "--n_parallel_projects", "4",
+            "--quiet",
+            "--overwrite",
         ]
         create_sync_gen_weather_derate_input_csvs_main(args)
 
