@@ -16,19 +16,18 @@ import os
 import unittest
 
 from db.create_database import main as create_database_main
-from data_toolkit.load_raw_data import main as load_raw_data_main
-from data_toolkit.temporal.create_monte_carlo_weather_draws import main as create_monte_carlo_weather_draws_main
+from data_toolkit.temporal.create_temporal_scenarios import main as create_temporal_scenarios_main
 
 
-class TestCreateMonteCarloWeatherDraws(unittest.TestCase):
+class TestCreateTemporalScenarios(unittest.TestCase):
     """
-    Test create_monte_carlo_weather_draws script
+    Test create_temporal_scenarios script
     """
 
     @classmethod
     def setUpClass(cls):
         """Set up test environment"""
-        os.chdir(os.path.join(os.path.dirname(__file__), "..", "..", "db"))
+        os.chdir(os.path.join(os.path.dirname(__file__), "..", "..", "..", "db"))
         cls.db_path = "ra_toolkit_test_steps_temp.db"
 
         # Clean up temp database if it exists
@@ -42,22 +41,13 @@ class TestCreateMonteCarloWeatherDraws(unittest.TestCase):
         ]
         create_database_main(create_db_args)
 
-        # Load raw data
-        load_data_args = [
-            "--database", cls.db_path,
-            "--csv_location", "./csvs_test_examples/raw_data_ra_toolkit/",
-        ]
-        load_raw_data_main(load_data_args)
-
-    def test_create_monte_carlo_weather_draws(self):
-        """Test create_monte_carlo_weather_draws with hardcoded arguments"""
+    def test_create_temporal_scenarios(self):
+        """Test create_temporal_scenarios with hardcoded arguments"""
         args = [
             "--database", self.db_path,
-            "--weather_draws_seed", "0",
-            "--n_iterations", "2",
-            "--study_year", "2026",
+            "--csv_path", "./csvs_test_examples/raw_data_ra_toolkit/temporal/temporal_scenarios.csv",
         ]
-        create_monte_carlo_weather_draws_main(args)
+        create_temporal_scenarios_main(args)
 
     @classmethod
     def tearDownClass(cls):

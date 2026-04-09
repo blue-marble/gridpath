@@ -28,7 +28,7 @@ class TestCreateSyncGenWeatherDerateInputCsvs(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Set up test environment"""
-        os.chdir(os.path.join(os.path.dirname(__file__), "..", "..", "db"))
+        os.chdir(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "..", "db"))
         cls.db_path = "ra_toolkit_test_steps_temp.db"
 
         # Clean up temp database if it exists

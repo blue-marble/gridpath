@@ -16,18 +16,19 @@ import os
 import unittest
 
 from db.create_database import main as create_database_main
-from data_toolkit.temporal.create_temporal_scenarios import main as create_temporal_scenarios_main
+from data_toolkit.load_raw_data import main as load_raw_data_main
+from data_toolkit.project.opchar.var_profiles.create_sync_var_gen_input_csvs import main as create_sync_var_gen_input_csvs_main
 
 
-class TestCreateTemporalScenarios(unittest.TestCase):
+class TestCreateSyncVarGenInputCsvs(unittest.TestCase):
     """
-    Test create_temporal_scenarios script
+    Test create_sync_var_gen_input_csvs script
     """
 
     @classmethod
     def setUpClass(cls):
         """Set up test environment"""
-        os.chdir(os.path.join(os.path.dirname(__file__), "..", "..", "db"))
+        os.chdir(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "..", "db"))
         cls.db_path = "ra_toolkit_test_steps_temp.db"
 
         # Clean up temp database if it exists
@@ -41,13 +42,23 @@ class TestCreateTemporalScenarios(unittest.TestCase):
         ]
         create_database_main(create_db_args)
 
-    def test_create_temporal_scenarios(self):
-        """Test create_temporal_scenarios with hardcoded arguments"""
+        # Load raw data
+        load_data_args = [
+            "--database", cls.db_path,
+            "--csv_location", "./csvs_test_examples/raw_data_ra_toolkit/",
+        ]
+        load_raw_data_main(load_data_args)
+
+    def test_create_sync_var_gen_input_csvs(self):
+        """Test create_sync_var_gen_input_csvs with hardcoded arguments"""
         args = [
             "--database", self.db_path,
-            "--csv_path", "./csvs_test_examples/raw_data_ra_toolkit/temporal/temporal_scenarios.csv",
+            "--output_directory", "./csvs_test_examples/project/opchar/variable_generator_profiles",
+            "--variable_generator_profile_scenario_id", "3",
+            "--variable_generator_profile_scenario_name", "ra_toolkit",
+            "--n_parallel_projects", "4",
         ]
-        create_temporal_scenarios_main(args)
+        create_sync_var_gen_input_csvs_main(args)
 
     @classmethod
     def tearDownClass(cls):

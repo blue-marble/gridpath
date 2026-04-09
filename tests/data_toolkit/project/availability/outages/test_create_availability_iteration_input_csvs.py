@@ -28,7 +28,7 @@ class TestCreateAvailabilityIterationInputCsvs(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Set up test environment"""
-        os.chdir(os.path.join(os.path.dirname(__file__), "..", "..", "db"))
+        os.chdir(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "..", "db"))
         cls.db_path = "ra_toolkit_test_steps_temp.db"
 
         # Clean up temp database if it exists
@@ -54,7 +54,7 @@ class TestCreateAvailabilityIterationInputCsvs(unittest.TestCase):
         args = [
             "--database", self.db_path,
             "--n_iterations", "4",
-            "--project_availability_scenario_id", "1",
+            "--project_availability_scenario_id", "2",
             "--project_availability_scenario_name", "ra_toolkit",
             "--output_directory", "./csvs_test_examples/project/availability/exogenous_independent",
             "--n_parallel_projects", "4",

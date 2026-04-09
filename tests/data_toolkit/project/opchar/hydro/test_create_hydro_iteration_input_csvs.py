@@ -19,18 +19,18 @@ from db.create_database import main as create_database_main
 from data_toolkit.load_raw_data import main as load_raw_data_main
 from data_toolkit.temporal.create_monte_carlo_weather_draws import main as create_monte_carlo_weather_draws_main
 from data_toolkit.temporal.create_monte_carlo_weather_draw_profiles import main as create_monte_carlo_weather_draw_profiles_main
-from data_toolkit.project.availability.weather_derates.create_monte_carlo_gen_weather_derate_input_csvs import main as create_monte_carlo_gen_weather_derate_input_csvs_main
+from data_toolkit.project.opchar.hydro.create_hydro_iteration_input_csvs import main as create_hydro_iteration_input_csvs_main
 
 
-class TestCreateMonteCarloGenWeatherDerateInputCsvs(unittest.TestCase):
+class TestCreateHydroIterationInputCsvs(unittest.TestCase):
     """
-    Test create_monte_carlo_gen_weather_derate_input_csvs script
+    Test create_hydro_iteration_input_csvs script
     """
 
     @classmethod
     def setUpClass(cls):
         """Set up test environment"""
-        os.chdir(os.path.join(os.path.dirname(__file__), "..", "..", "db"))
+        os.chdir(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "..", "db"))
         cls.db_path = "ra_toolkit_test_steps_temp.db"
 
         # Clean up temp database if it exists
@@ -68,18 +68,17 @@ class TestCreateMonteCarloGenWeatherDerateInputCsvs(unittest.TestCase):
         ]
         create_monte_carlo_weather_draw_profiles_main(weather_profiles_args)
 
-    def test_create_monte_carlo_gen_weather_derate_input_csvs(self):
-        """Test create_monte_carlo_gen_weather_derate_input_csvs with hardcoded arguments"""
+    def test_create_hydro_iteration_input_csvs(self):
+        """Test create_hydro_iteration_input_csvs with hardcoded arguments"""
         args = [
             "--database", self.db_path,
-            "--output_directory", "./csvs_test_examples/project/availability/exogenous_weather",
-            "--exogenous_availability_weather_scenario_id", "1",
-            "--exogenous_availability_weather_scenario_name", "ra_toolkit",
             "--stage_id", "1",
-            "--overwrite",
+            "--hydro_operational_chars_scenario_id", "5",
+            "--hydro_operational_chars_scenario_name", "ra_toolkit",
+            "--output_directory", "./csvs_test_examples/project/opchar/hydro_operational_chars",
             "--n_parallel_projects", "4",
         ]
-        create_monte_carlo_gen_weather_derate_input_csvs_main(args)
+        create_hydro_iteration_input_csvs_main(args)
 
     @classmethod
     def tearDownClass(cls):
