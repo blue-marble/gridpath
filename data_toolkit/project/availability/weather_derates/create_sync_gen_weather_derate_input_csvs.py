@@ -53,7 +53,7 @@ import sys
 from db.common_functions import connect_to_database
 from data_toolkit.load_raw_data import read_and_import_csv
 from data_toolkit.project.create_sync_gen_input_csvs_common import (
-    create_profile_csvs,
+    create_project_profile_csv,
 )
 
 WEATHER_AV_ID_DEFAULT = 1
@@ -142,7 +142,7 @@ def create_weather_availability_profile_csvs_pool(pool_datum):
         overwrite,
     ] = pool_datum
 
-    create_profile_csvs(
+    create_project_profile_csv(
         db_path=db_path,
         project=project,
         profile_scenario_id=exogenous_availability_weather_scenario_id,

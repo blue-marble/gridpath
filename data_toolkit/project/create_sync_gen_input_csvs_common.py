@@ -13,12 +13,61 @@
 # limitations under the License.
 
 import os.path
+from argparse import Namespace
+from multiprocessing import get_context
+from sqlite3 import Connection
+
 import pandas as pd
 
+from data_toolkit.project.common_methods import create_iterations_csv
 from db.common_functions import connect_to_database
 
 
-def create_profile_csvs(
+def get_sync_project_pool_and_make_profile_csvs(
+    db_path,
+    profile_scenario_id,
+    profile_scenario_name,
+    stage_id,
+    output_directory,
+    overwrite,
+    n_parallel_projects,
+):
+
+    conn = connect_to_database(db_path=db_path)
+    c = conn.cursor()
+
+    projects = [
+        prj[0]
+        for prj in c.execute(
+            "SELECT DISTINCT project FROM raw_data_var_project_units;"
+        ).fetchall()
+    ]
+
+    pool_data = tuple(
+        [
+            [
+                db_path,
+                prj,
+                profile_scenario_id,
+                profile_scenario_name,
+                stage_id,
+                output_directory,
+                overwrite,
+            ]
+            for prj in projects
+        ]
+    )
+
+    # Pool must use spawn to work properly on Linux
+    pool = get_context("spawn").Pool(int(n_parallel_projects))
+
+    pool.map(create_project_profile_csv_pool, pool_data)
+    pool.close()
+
+    conn.close()
+
+
+def create_project_profile_csv(
     db_path,
     project,
     profile_scenario_id,
@@ -89,4 +138,42 @@ def create_profile_csvs(
         index=False,
     )
 
+    # Create iterations CSV
+    iterations_directory = os.path.join(output_directory, "iterations")
+    os.makedirs(iterations_directory, exist_ok=True)
+    create_iterations_csv(
+        iterations_directory=iterations_directory,
+        project=project,
+        profile_id=profile_scenario_id,
+        profile_name=profile_scenario_name,
+        varies_by_weather=1,
+        varies_by_hydro=0,
+        overwrite=True,
+    )
+
     conn.close()
+
+
+def create_project_profile_csv_pool(pool_datum):
+    [
+        db_path,
+        project,
+        variable_generator_profile_scenario_id,
+        variable_generator_profile_scenario_name,
+        stage_id,
+        output_directory,
+        overwrite,
+    ] = pool_datum
+
+    create_project_profile_csv(
+        db_path=db_path,
+        project=project,
+        profile_scenario_id=variable_generator_profile_scenario_id,
+        profile_scenario_name=variable_generator_profile_scenario_name,
+        stage_id=stage_id,
+        output_directory=output_directory,
+        overwrite=overwrite,
+        param_name="cap_factor",
+        raw_data_table_name="raw_data_var_profiles",
+        raw_data_units_table_name="raw_data_var_project_units",
+    )

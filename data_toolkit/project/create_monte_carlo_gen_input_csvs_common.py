@@ -19,6 +19,7 @@ import pandas as pd
 from data_toolkit.project.common_methods import (
     create_iterations_csv,
 )
+
 from db.common_functions import connect_to_database
 
 BINS_ID_DEFAULT = 1
@@ -28,7 +29,7 @@ VAR_NAME_DEFAULT = "ra_toolkit"
 STAGE_ID_DEFAULT = 1
 
 
-def create_variable_profile_csvs(
+def get_monte_carlo_timeseries_project_pool_and_make_profile_csvs(
     db_path,
     weather_bins_id,
     weather_draws_id,
@@ -107,13 +108,13 @@ def create_variable_profile_csvs(
     # Pool must use spawn to work properly on Linux
     pool = get_context("spawn").Pool(int(n_parallel_projects))
 
-    pool.map(create_project_csv_pool, pool_data)
+    pool.map(create_project_profile_csv_pool, pool_data)
     pool.close()
 
     conn.close()
 
 
-def create_project_csv(
+def create_project_profile_csv(
     db_path,
     weather_bins_id,
     weather_draws_id,
@@ -208,7 +209,7 @@ def create_project_csv(
             index=False,
         )
 
-        # Add the iterations CSV
+        # Create iterations CSV
         iterations_directory = os.path.join(output_directory, "iterations")
         os.makedirs(iterations_directory, exist_ok=True)
         create_iterations_csv(
@@ -224,7 +225,7 @@ def create_project_csv(
     conn.close()
 
 
-def create_project_csv_pool(pool_datum):
+def create_project_profile_csv_pool(pool_datum):
     [
         db_path,
         weather_bins_id,
@@ -241,7 +242,7 @@ def create_project_csv_pool(pool_datum):
         no_hydro_iteration,
     ] = pool_datum
 
-    create_project_csv(
+    create_project_profile_csv(
         db_path=db_path,
         weather_bins_id=weather_bins_id,
         weather_draws_id=weather_draws_id,

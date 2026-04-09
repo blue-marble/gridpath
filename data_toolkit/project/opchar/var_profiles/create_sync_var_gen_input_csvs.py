@@ -45,17 +45,13 @@ Settings
 """
 
 from argparse import ArgumentParser
-from multiprocessing import get_context
 import os.path
 import sys
 
-from data_toolkit.project.common_methods import (
-    create_iterations_csv,
-)
 from db.common_functions import connect_to_database
 from data_toolkit.load_raw_data import read_and_import_csv
 from data_toolkit.project.create_sync_gen_input_csvs_common import (
-    create_profile_csvs,
+    get_sync_project_pool_and_make_profile_csvs,
 )
 
 VAR_ID_DEFAULT = 1
@@ -125,43 +121,6 @@ def parse_arguments(args):
     return parsed_arguments
 
 
-def create_variable_profile_csvs_pool(pool_datum):
-    [
-        db_path,
-        project,
-        variable_generator_profile_scenario_id,
-        variable_generator_profile_scenario_name,
-        stage_id,
-        output_directory,
-        overwrite,
-    ] = pool_datum
-
-    create_profile_csvs(
-        db_path=db_path,
-        project=project,
-        profile_scenario_id=variable_generator_profile_scenario_id,
-        profile_scenario_name=variable_generator_profile_scenario_name,
-        stage_id=stage_id,
-        output_directory=output_directory,
-        overwrite=overwrite,
-        param_name="cap_factor",
-        raw_data_table_name="raw_data_var_profiles",
-        raw_data_units_table_name="raw_data_var_project_units",
-    )
-
-    iterations_directory = os.path.join(output_directory, "iterations")
-    os.makedirs(iterations_directory, exist_ok=True)
-    create_iterations_csv(
-        iterations_directory=iterations_directory,
-        project=project,
-        profile_id=variable_generator_profile_scenario_id,
-        profile_name=variable_generator_profile_scenario_name,
-        varies_by_weather=1,
-        varies_by_hydro=0,
-        overwrite=True,
-    )
-
-
 def main(args=None):
     if args is None:
         args = sys.argv[1:]
@@ -173,42 +132,21 @@ def main(args=None):
 
     os.makedirs(parsed_args.output_directory, exist_ok=True)
 
-    conn = connect_to_database(db_path=parsed_args.database)
-
     # ### Load data from CSV
     if parsed_args.input_csv is not None:
+        conn = connect_to_database(db_path=parsed_args.database)
         read_and_import_csv(conn=conn, f_path=parsed_args.input_csv, table="TABLE_TBD")
+        conn.close()
 
-    c = conn.cursor()
-    projects = [
-        prj[0]
-        for prj in c.execute(
-            "SELECT DISTINCT project FROM raw_data_var_project_units;"
-        ).fetchall()
-    ]
-
-    pool_data = tuple(
-        [
-            [
-                parsed_args.database,
-                prj,
-                parsed_args.variable_generator_profile_scenario_id,
-                parsed_args.variable_generator_profile_scenario_name,
-                parsed_args.stage_id,
-                parsed_args.output_directory,
-                parsed_args.overwrite,
-            ]
-            for prj in projects
-        ]
+    get_sync_project_pool_and_make_profile_csvs(
+        db_path=parsed_args.database,
+        profile_scenario_id=parsed_args.variable_generator_profile_scenario_id,
+        profile_scenario_name=parsed_args.variable_generator_profile_scenario_name,
+        stage_id=parsed_args.stage_id,
+        output_directory=parsed_args.output_directory,
+        overwrite=parsed_args.overwrite,
+        n_parallel_projects=parsed_args.n_parallel_projects,
     )
-
-    # Pool must use spawn to work properly on Linux
-    pool = get_context("spawn").Pool(int(parsed_args.n_parallel_projects))
-
-    pool.map(create_variable_profile_csvs_pool, pool_data)
-    pool.close()
-
-    conn.close()
 
 
 if __name__ == "__main__":
