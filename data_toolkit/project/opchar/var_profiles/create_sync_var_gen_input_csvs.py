@@ -71,8 +71,16 @@ def parse_arguments(args):
 
     parser.add_argument("-db", "--database")
     parser.add_argument(
-        "-csv",
-        "--input_csv",
+        "-v_csv",
+        "--variable_generator_profile_input_csv",
+        default=None,
+        help="""Path to the availability profiles CSV file to load into the 
+        database. If not specified, data will be assumed to have been
+        already loaded into the database.""",
+    )
+    parser.add_argument(
+        "-u_csv",
+        "--units_input_csv",
         default=None,
         help="""Path to the CSV file to load into the database.
             If not specified, data will be assumed to have been
@@ -132,19 +140,36 @@ def main(args=None):
 
     os.makedirs(parsed_args.output_directory, exist_ok=True)
 
+    conn = connect_to_database(db_path=parsed_args.database)
+
     # ### Load data from CSV
-    if parsed_args.input_csv is not None:
-        conn = connect_to_database(db_path=parsed_args.database)
-        read_and_import_csv(conn=conn, f_path=parsed_args.input_csv, table="TABLE_TBD")
-        conn.close()
+    if parsed_args.variable_generator_profile_input_csv is not None:
+        read_and_import_csv(
+            conn=conn, f_path=parsed_args.input_csv, table="raw_data_var_profiles"
+        )
+
+    if parsed_args.units_input_csv is not None:
+        read_and_import_csv(
+            conn=conn,
+            f_path=parsed_args.input_csv,
+            table="raw_data_var_project_units",
+        )
+
+    conn.close()
 
     get_sync_project_pool_and_make_profile_csvs(
         db_path=parsed_args.database,
+        param_name="cap_factor",
+        raw_data_table_name="raw_data_var_profiles",
+        raw_data_units_table_name="raw_data_var_project_units",
         profile_scenario_id=parsed_args.variable_generator_profile_scenario_id,
         profile_scenario_name=parsed_args.variable_generator_profile_scenario_name,
         stage_id=parsed_args.stage_id,
         output_directory=parsed_args.output_directory,
         overwrite=parsed_args.overwrite,
+        varies_by_weather=1,
+        varies_by_hydro=0,
+        include_hydro_iteration_column=True,
         n_parallel_projects=parsed_args.n_parallel_projects,
     )
 

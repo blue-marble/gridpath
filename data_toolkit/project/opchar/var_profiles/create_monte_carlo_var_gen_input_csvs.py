@@ -79,8 +79,16 @@ def parse_arguments(args):
 
     parser.add_argument("-db", "--database")
     parser.add_argument(
-        "-csv",
-        "--input_csv",
+        "-v_csv",
+        "--variable_generator_profile_input_csv",
+        default=None,
+        help="""Path to the availability profiles CSV file to load into the 
+        database. If not specified, data will be assumed to have been
+        already loaded into the database.""",
+    )
+    parser.add_argument(
+        "-u_csv",
+        "--units_input_csv",
         default=None,
         help="""Path to the CSV file to load into the database.
             If not specified, data will be assumed to have been
@@ -153,12 +161,21 @@ def main(args=None):
 
     os.makedirs(parsed_args.output_directory, exist_ok=True)
 
-    # ### Load data from CSV
     conn = connect_to_database(db_path=parsed_args.database)
-    if parsed_args.input_csv is not None:
+
+    # ### Load data from CSV
+    if parsed_args.variable_generator_profile_input_csv is not None:
         read_and_import_csv(
-            conn=conn, f_path=parsed_args.input_csv, table="raw_data_var_project_units"
+            conn=conn, f_path=parsed_args.input_csv, table="raw_data_var_profiles"
         )
+
+    if parsed_args.units_input_csv is not None:
+        read_and_import_csv(
+            conn=conn,
+            f_path=parsed_args.input_csv,
+            table="raw_data_var_project_units",
+        )
+
     conn.close()
 
     # Create the variable generation profile CSVs

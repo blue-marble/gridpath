@@ -25,11 +25,17 @@ from db.common_functions import connect_to_database
 
 def get_sync_project_pool_and_make_profile_csvs(
     db_path,
+    param_name,
+    raw_data_table_name,
+    raw_data_units_table_name,
     profile_scenario_id,
     profile_scenario_name,
     stage_id,
     output_directory,
     overwrite,
+    varies_by_weather,
+    varies_by_hydro,
+    include_hydro_iteration_column,
     n_parallel_projects,
 ):
 
@@ -39,7 +45,7 @@ def get_sync_project_pool_and_make_profile_csvs(
     projects = [
         prj[0]
         for prj in c.execute(
-            "SELECT DISTINCT project FROM raw_data_var_project_units;"
+            f"SELECT DISTINCT project FROM {raw_data_units_table_name};"
         ).fetchall()
     ]
 
@@ -48,11 +54,17 @@ def get_sync_project_pool_and_make_profile_csvs(
             [
                 db_path,
                 prj,
+                param_name,
+                raw_data_table_name,
+                raw_data_units_table_name,
                 profile_scenario_id,
                 profile_scenario_name,
                 stage_id,
                 output_directory,
                 overwrite,
+                varies_by_weather,
+                varies_by_hydro,
+                include_hydro_iteration_column,
             ]
             for prj in projects
         ]
@@ -78,14 +90,16 @@ def create_project_profile_csv(
     param_name,
     raw_data_table_name,
     raw_data_units_table_name,
-    no_hydro_iteration=False,
+    varies_by_weather,
+    varies_by_hydro,
+    include_hydro_iteration_column,
 ):
     conn = connect_to_database(db_path=db_path)
 
-    # Get the weighted cap factor for each of the project's constituent units,
-    # get the UNION of these tables, and then find the project cap factor
+    # Get the weighted value for each of the project's constituent units,
+    # get the UNION of these tables, and then find the project value
     # with SUM and GROUP BY
-    hydro_iter_sql = "" if no_hydro_iteration else "0 AS hydro_iteration,"
+    hydro_iter_sql = "0 AS hydro_iteration," if include_hydro_iteration_column else ""
     query = f"""
         SELECT year AS weather_iteration, 
         {hydro_iter_sql}
@@ -146,9 +160,9 @@ def create_project_profile_csv(
         project=project,
         profile_id=profile_scenario_id,
         profile_name=profile_scenario_name,
-        varies_by_weather=1,
-        varies_by_hydro=0,
-        overwrite=True,
+        varies_by_weather=varies_by_weather,
+        varies_by_hydro=varies_by_hydro,
+        overwrite=overwrite,
     )
 
     conn.close()
@@ -158,22 +172,31 @@ def create_project_profile_csv_pool(pool_datum):
     [
         db_path,
         project,
-        variable_generator_profile_scenario_id,
-        variable_generator_profile_scenario_name,
+        param_name,
+        raw_data_table_name,
+        raw_data_units_table_name,
+        profile_scenario_id,
+        profile_scenario_name,
         stage_id,
         output_directory,
         overwrite,
+        varies_by_weather,
+        varies_by_hydro,
+        include_hydro_iteration_column,
     ] = pool_datum
 
     create_project_profile_csv(
         db_path=db_path,
         project=project,
-        profile_scenario_id=variable_generator_profile_scenario_id,
-        profile_scenario_name=variable_generator_profile_scenario_name,
+        profile_scenario_id=profile_scenario_id,
+        profile_scenario_name=profile_scenario_name,
         stage_id=stage_id,
         output_directory=output_directory,
         overwrite=overwrite,
-        param_name="cap_factor",
-        raw_data_table_name="raw_data_var_profiles",
-        raw_data_units_table_name="raw_data_var_project_units",
+        param_name=param_name,
+        raw_data_table_name=raw_data_table_name,
+        raw_data_units_table_name=raw_data_units_table_name,
+        varies_by_weather=varies_by_weather,
+        varies_by_hydro=varies_by_hydro,
+        include_hydro_iteration_column=include_hydro_iteration_column,
     )

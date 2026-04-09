@@ -54,6 +54,7 @@ from db.common_functions import connect_to_database
 from data_toolkit.load_raw_data import read_and_import_csv
 from data_toolkit.project.create_sync_gen_input_csvs_common import (
     create_project_profile_csv,
+    get_sync_project_pool_and_make_profile_csvs,
 )
 
 WEATHER_AV_ID_DEFAULT = 1
@@ -131,32 +132,6 @@ def parse_arguments(args):
     return parsed_arguments
 
 
-def create_weather_availability_profile_csvs_pool(pool_datum):
-    [
-        db_path,
-        project,
-        exogenous_availability_weather_scenario_id,
-        exogenous_availability_weather_scenario_name,
-        stage_id,
-        output_directory,
-        overwrite,
-    ] = pool_datum
-
-    create_project_profile_csv(
-        db_path=db_path,
-        project=project,
-        profile_scenario_id=exogenous_availability_weather_scenario_id,
-        profile_scenario_name=exogenous_availability_weather_scenario_name,
-        stage_id=stage_id,
-        output_directory=output_directory,
-        overwrite=overwrite,
-        param_name="availability_derate_weather",
-        raw_data_table_name="raw_data_availability_profiles",
-        raw_data_units_table_name="raw_data_unit_availability_params",
-        no_hydro_iteration=True,
-    )
-
-
 def main(args=None):
     if args is None:
         args = sys.argv[1:]
@@ -184,37 +159,23 @@ def main(args=None):
             table="raw_data_unit_availability_params",
         )
 
-    # Process data
-    c = conn.cursor()
-    projects = [
-        prj[0]
-        for prj in c.execute(
-            "SELECT DISTINCT project FROM raw_data_unit_availability_params;"
-        ).fetchall()
-    ]
-
-    pool_data = tuple(
-        [
-            [
-                parsed_args.database,
-                prj,
-                parsed_args.exogenous_availability_weather_scenario_id,
-                parsed_args.exogenous_availability_weather_scenario_name,
-                parsed_args.stage_id,
-                parsed_args.output_directory,
-                parsed_args.overwrite,
-            ]
-            for prj in projects
-        ]
-    )
-
-    # Pool must use spawn to work properly on Linux
-    pool = get_context("spawn").Pool(int(parsed_args.n_parallel_projects))
-
-    pool.map(create_weather_availability_profile_csvs_pool, pool_data)
-    pool.close()
-
     conn.close()
+
+    get_sync_project_pool_and_make_profile_csvs(
+        db_path=parsed_args.database,
+        param_name="availability_derate_weather",
+        raw_data_table_name="raw_data_availability_profiles",
+        raw_data_units_table_name="raw_data_unit_availability_params",
+        profile_scenario_id=parsed_args.exogenous_availability_weather_scenario_id,
+        profile_scenario_name=parsed_args.exogenous_availability_weather_scenario_name,
+        stage_id=parsed_args.stage_id,
+        output_directory=parsed_args.output_directory,
+        overwrite=parsed_args.overwrite,
+        varies_by_weather=1,
+        varies_by_hydro=0,
+        include_hydro_iteration_column=False,
+        n_parallel_projects=parsed_args.n_parallel_projects,
+    )
 
 
 if __name__ == "__main__":
