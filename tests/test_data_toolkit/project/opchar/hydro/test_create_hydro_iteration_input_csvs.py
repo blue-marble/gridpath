@@ -77,6 +77,8 @@ class TestCreateHydroIterationInputCsvs(unittest.TestCase):
             "--hydro_operational_chars_scenario_name", "ra_toolkit_module_tests",
             "--output_directory", "./csvs_test_examples/project/opchar/hydro_operational_chars",
             "--n_parallel_projects", "4",
+            "--quiet",
+            "--overwrite",
         ]
         create_hydro_iteration_input_csvs_main(args)
 

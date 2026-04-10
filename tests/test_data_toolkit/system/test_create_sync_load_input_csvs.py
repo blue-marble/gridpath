@@ -17,20 +17,18 @@ import unittest
 
 from db.create_database import main as create_database_main
 from data_toolkit.load_raw_data import main as load_raw_data_main
-from data_toolkit.temporal.create_monte_carlo_weather_draws import main as create_monte_carlo_weather_draws_main
-from data_toolkit.temporal.create_monte_carlo_weather_draw_profiles import main as create_monte_carlo_weather_draw_profiles_main
-from data_toolkit.system.create_monte_carlo_load_input_csvs import main as create_monte_carlo_load_input_csvs_main
+from data_toolkit.system.create_sync_load_input_csvs import main as create_sync_load_input_csvs_main
 
-os.chdir(os.path.join(os.path.dirname(__file__), "..", "..", "..", "db"))
 
-class TestCreateMonteCarloLoadInputCsvs(unittest.TestCase):
+class TestCreateSyncLoadInputCsvs(unittest.TestCase):
     """
-    Test create_monte_carlo_load_input_csvs script
+    Test create_sync_load_input_csvs script
     """
 
     @classmethod
     def setUpClass(cls):
         """Set up test environment"""
+        os.chdir(os.path.join(os.path.dirname(__file__), "..", "..", "..", "db"))
         cls.db_path = "ra_toolkit_test_steps_temp.db"
 
         # Clean up temp database if it exists
@@ -53,43 +51,23 @@ class TestCreateMonteCarloLoadInputCsvs(unittest.TestCase):
         ]
         load_raw_data_main(load_data_args)
 
-        # Create monte carlo weather draws (prerequisite)
-        weather_draws_args = [
-            "--database", cls.db_path,
-            "--weather_draws_seed", "0",
-            "--n_iterations", "2",
-            "--study_year", "2026",
-            "--quiet",
-        ]
-        create_monte_carlo_weather_draws_main(weather_draws_args)
-
-        # Create monte carlo weather draw profiles (prerequisite)
-        weather_profiles_args = [
-            "--database", cls.db_path,
-            "--study_year", "2026",
-            "--timeseries_iteration_draw_initial_seed", "0",
-            "--quiet",
-        ]
-        create_monte_carlo_weather_draw_profiles_main(weather_profiles_args)
-
-    def test_create_monte_carlo_load_input_csvs(self):
-        """Test create_monte_carlo_load_input_csvs with hardcoded arguments"""
+    def test_create_sync_load_input_csvs(self):
+        """Test create_sync_load_input_csvs with hardcoded arguments"""
         args = [
             "--database", self.db_path,
             "--output_directory", "./csvs_test_examples/system_load/system_load",
-            "--load_scenario_id", "9",
-            "--load_scenario_name", "ra_toolkit_module_tests",
+            "--load_scenario_id", "13",
+            "--load_scenario_name", "ra_toolkit_module_tests_sync",
             "--load_components_scenario_id", "7",
-            "--load_components_scenario_name", "ra_toolkit_module_tests",
-            "--load_levels_scenario_id", "13",
-            "--load_levels_scenario_name", "ra_toolkit_module_tests",
+            "--load_components_scenario_name", "ra_toolkit_module_tests_sync",
+            "--load_levels_scenario_id", "14",
+            "--load_levels_scenario_name", "ra_toolkit_module_tests_sync",
             "--load_levels_overwrite",
             "--load_components_overwrite",
             "--load_scenario_overwrite",
             "--quiet",
-
         ]
-        create_monte_carlo_load_input_csvs_main(args)
+        create_sync_load_input_csvs_main(args)
 
     @classmethod
     def tearDownClass(cls):

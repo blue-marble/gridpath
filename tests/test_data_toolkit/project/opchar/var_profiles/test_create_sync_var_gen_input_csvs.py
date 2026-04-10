@@ -17,14 +17,12 @@ import unittest
 
 from db.create_database import main as create_database_main
 from data_toolkit.load_raw_data import main as load_raw_data_main
-from data_toolkit.temporal.create_monte_carlo_weather_draws import main as create_monte_carlo_weather_draws_main
-from data_toolkit.temporal.create_monte_carlo_weather_draw_profiles import main as create_monte_carlo_weather_draw_profiles_main
-from data_toolkit.project.opchar.var_profiles.create_monte_carlo_var_gen_input_csvs import main as create_monte_carlo_var_gen_input_csvs_main
+from data_toolkit.project.opchar.var_profiles.create_sync_var_gen_input_csvs import main as create_sync_var_gen_input_csvs_main
 
 
-class TestCreateMonteCarloVarGenInputCsvs(unittest.TestCase):
+class TestCreateSyncVarGenInputCsvs(unittest.TestCase):
     """
-    Test create_monte_carlo_var_gen_input_csvs script
+    Test create_sync_var_gen_input_csvs script
     """
 
     @classmethod
@@ -53,38 +51,19 @@ class TestCreateMonteCarloVarGenInputCsvs(unittest.TestCase):
         ]
         load_raw_data_main(load_data_args)
 
-        # Create monte carlo weather draws (prerequisite)
-        weather_draws_args = [
-            "--database", cls.db_path,
-            "--weather_draws_seed", "0",
-            "--n_iterations", "2",
-            "--study_year", "2026",
-            "--quiet",
-        ]
-        create_monte_carlo_weather_draws_main(weather_draws_args)
-
-        # Create monte carlo weather draw profiles (prerequisite)
-        weather_profiles_args = [
-            "--database", cls.db_path,
-            "--study_year", "2026",
-            "--timeseries_iteration_draw_initial_seed", "0",
-            "--quiet",
-        ]
-        create_monte_carlo_weather_draw_profiles_main(weather_profiles_args)
-
-    def test_create_monte_carlo_var_gen_input_csvs(self):
-        """Test create_monte_carlo_var_gen_input_csvs with hardcoded arguments"""
+    def test_create_sync_var_gen_input_csvs(self):
+        """Test create_sync_var_gen_input_csvs with hardcoded arguments"""
         args = [
             "--database", self.db_path,
             "--output_directory", "./csvs_test_examples/project/opchar/variable_generator_profiles",
-            "--variable_generator_profile_scenario_id", "4",
-            "--variable_generator_profile_scenario_name", "ra_toolkit_module_tests",
-            "--stage_id", "1",
-            "--overwrite",
+            "--variable_generator_profile_scenario_id", "8",
+            "--variable_generator_profile_scenario_name",
+            "ra_toolkit_module_tests_sync",
             "--n_parallel_projects", "4",
             "--quiet",
+            "--overwrite"
         ]
-        create_monte_carlo_var_gen_input_csvs_main(args)
+        create_sync_var_gen_input_csvs_main(args)
 
     @classmethod
     def tearDownClass(cls):

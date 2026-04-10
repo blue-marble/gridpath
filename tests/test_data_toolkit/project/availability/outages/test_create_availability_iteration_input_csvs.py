@@ -61,6 +61,7 @@ class TestCreateAvailabilityIterationInputCsvs(unittest.TestCase):
             "--output_directory", "./csvs_test_examples/project/availability/exogenous_independent",
             "--n_parallel_projects", "4",
             "--quiet",
+            "--overwrite",
         ]
         create_availability_iteration_input_csvs_main(args)
 
