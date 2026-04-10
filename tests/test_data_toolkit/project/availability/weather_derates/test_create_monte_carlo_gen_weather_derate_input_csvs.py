@@ -107,6 +107,7 @@ class TestCreateMonteCarloGenWeatherDerateInputCsvs(unittest.TestCase):
             "--overwrite",
             "--n_parallel_projects",
             "4",
+            "--quiet",
         ]
         create_monte_carlo_gen_weather_derate_input_csvs_main(args)
 

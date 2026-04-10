@@ -46,6 +46,7 @@ class TestCreateMonteCarloWeatherDrawProfiles(unittest.TestCase):
             cls.db_path,
             "--db_schema",
             "../data_toolkit/raw_data_db_schema.sql",
+            "--quiet",
         ]
         create_database_main(create_db_args)
 
@@ -55,6 +56,7 @@ class TestCreateMonteCarloWeatherDrawProfiles(unittest.TestCase):
             cls.db_path,
             "--csv_location",
             "./csvs_test_examples/raw_data_ra_toolkit/",
+            "--quiet",
         ]
         load_raw_data_main(load_data_args)
 
@@ -68,6 +70,7 @@ class TestCreateMonteCarloWeatherDrawProfiles(unittest.TestCase):
             "2",
             "--study_year",
             "2026",
+            "--quiet",
         ]
         create_monte_carlo_weather_draws_main(weather_draws_args)
 
@@ -80,6 +83,7 @@ class TestCreateMonteCarloWeatherDrawProfiles(unittest.TestCase):
             "2026",
             "--timeseries_iteration_draw_initial_seed",
             "0",
+            "--quiet",
         ]
         create_monte_carlo_weather_draw_profiles_main(args)
 

@@ -43,6 +43,7 @@ class TestCreateTemporalScenarios(unittest.TestCase):
             cls.db_path,
             "--db_schema",
             "../data_toolkit/raw_data_db_schema.sql",
+            "--quiet",
         ]
         create_database_main(create_db_args)
 
@@ -53,6 +54,7 @@ class TestCreateTemporalScenarios(unittest.TestCase):
             self.db_path,
             "--csv_path",
             "./csvs_test_examples/raw_data_ra_toolkit/temporal/temporal_scenarios.csv",
+            "--quiet",
         ]
         create_temporal_scenarios_main(args)
 

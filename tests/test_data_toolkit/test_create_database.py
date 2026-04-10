@@ -40,6 +40,7 @@ class TestCreateDatabase(unittest.TestCase):
             self.db_path,
             "--db_schema",
             "../data_toolkit/raw_data_db_schema.sql",
+            "--quiet",
         ]
         create_database_main(args)
 
