@@ -17,7 +17,9 @@ import unittest
 
 from db.create_database import main as create_database_main
 from data_toolkit.load_raw_data import main as load_raw_data_main
-from data_toolkit.project.availability.outages.create_availability_iteration_input_csvs import main as create_availability_iteration_input_csvs_main
+from data_toolkit.project.availability.outages.create_availability_iteration_input_csvs import (
+    main as create_availability_iteration_input_csvs_main,
+)
 
 
 class TestCreateAvailabilityIterationInputCsvs(unittest.TestCase):
@@ -28,7 +30,9 @@ class TestCreateAvailabilityIterationInputCsvs(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Set up test environment"""
-        os.chdir(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "..", "db"))
+        os.chdir(
+            os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "..", "db")
+        )
         cls.db_path = "ra_toolkit_test_steps_temp.db"
 
         # Clean up temp database if it exists
@@ -37,16 +41,20 @@ class TestCreateAvailabilityIterationInputCsvs(unittest.TestCase):
 
         # Create database first
         create_db_args = [
-            "--database", cls.db_path,
-            "--db_schema", "../data_toolkit/raw_data_db_schema.sql",
+            "--database",
+            cls.db_path,
+            "--db_schema",
+            "../data_toolkit/raw_data_db_schema.sql",
             "--quiet",
         ]
         create_database_main(create_db_args)
 
         # Load raw data
         load_data_args = [
-            "--database", cls.db_path,
-            "--csv_location", "./csvs_test_examples/raw_data_ra_toolkit/",
+            "--database",
+            cls.db_path,
+            "--csv_location",
+            "./csvs_test_examples/raw_data_ra_toolkit/",
             "--quiet",
         ]
         load_raw_data_main(load_data_args)
@@ -54,12 +62,18 @@ class TestCreateAvailabilityIterationInputCsvs(unittest.TestCase):
     def test_create_availability_iteration_input_csvs(self):
         """Test create_availability_iteration_input_csvs with hardcoded arguments"""
         args = [
-            "--database", self.db_path,
-            "--n_iterations", "4",
-            "--project_availability_scenario_id", "3",
-            "--project_availability_scenario_name", "ra_toolkit_module_tests",
-            "--output_directory", "./csvs_test_examples/project/availability/exogenous_independent",
-            "--n_parallel_projects", "4",
+            "--database",
+            self.db_path,
+            "--n_iterations",
+            "4",
+            "--project_availability_scenario_id",
+            "3",
+            "--project_availability_scenario_name",
+            "ra_toolkit_module_tests",
+            "--output_directory",
+            "./csvs_test_examples/project/availability/exogenous_independent",
+            "--n_parallel_projects",
+            "4",
             "--quiet",
             "--overwrite",
         ]

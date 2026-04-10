@@ -17,7 +17,9 @@ import unittest
 
 from db.create_database import main as create_database_main
 from data_toolkit.load_raw_data import main as load_raw_data_main
-from data_toolkit.system.create_sync_load_input_csvs import main as create_sync_load_input_csvs_main
+from data_toolkit.system.create_sync_load_input_csvs import (
+    main as create_sync_load_input_csvs_main,
+)
 
 
 class TestCreateSyncLoadInputCsvs(unittest.TestCase):
@@ -37,16 +39,20 @@ class TestCreateSyncLoadInputCsvs(unittest.TestCase):
 
         # Create database first
         create_db_args = [
-            "--database", cls.db_path,
-            "--db_schema", "../data_toolkit/raw_data_db_schema.sql",
+            "--database",
+            cls.db_path,
+            "--db_schema",
+            "../data_toolkit/raw_data_db_schema.sql",
             "--quiet",
         ]
         create_database_main(create_db_args)
 
         # Load raw data
         load_data_args = [
-            "--database", cls.db_path,
-            "--csv_location", "./csvs_test_examples/raw_data_ra_toolkit/",
+            "--database",
+            cls.db_path,
+            "--csv_location",
+            "./csvs_test_examples/raw_data_ra_toolkit/",
             "--quiet",
         ]
         load_raw_data_main(load_data_args)
@@ -54,14 +60,22 @@ class TestCreateSyncLoadInputCsvs(unittest.TestCase):
     def test_create_sync_load_input_csvs(self):
         """Test create_sync_load_input_csvs with hardcoded arguments"""
         args = [
-            "--database", self.db_path,
-            "--output_directory", "./csvs_test_examples/system_load/system_load",
-            "--load_scenario_id", "13",
-            "--load_scenario_name", "ra_toolkit_module_tests_sync",
-            "--load_components_scenario_id", "7",
-            "--load_components_scenario_name", "ra_toolkit_module_tests_sync",
-            "--load_levels_scenario_id", "14",
-            "--load_levels_scenario_name", "ra_toolkit_module_tests_sync",
+            "--database",
+            self.db_path,
+            "--output_directory",
+            "./csvs_test_examples/system_load/system_load",
+            "--load_scenario_id",
+            "13",
+            "--load_scenario_name",
+            "ra_toolkit_module_tests_sync",
+            "--load_components_scenario_id",
+            "7",
+            "--load_components_scenario_name",
+            "ra_toolkit_module_tests_sync",
+            "--load_levels_scenario_id",
+            "14",
+            "--load_levels_scenario_name",
+            "ra_toolkit_module_tests_sync",
             "--load_levels_overwrite",
             "--load_components_overwrite",
             "--load_scenario_overwrite",

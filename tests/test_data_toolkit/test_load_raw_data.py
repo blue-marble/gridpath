@@ -36,17 +36,21 @@ class TestLoadRawData(unittest.TestCase):
 
         # Create database first
         create_db_args = [
-            "--database", cls.db_path,
-            "--db_schema", "../data_toolkit/raw_data_db_schema.sql",
+            "--database",
+            cls.db_path,
+            "--db_schema",
+            "../data_toolkit/raw_data_db_schema.sql",
         ]
         create_database_main(create_db_args)
 
     def test_load_raw_data(self):
         """Test load_raw_data with hardcoded arguments"""
         args = [
-            "--database", self.db_path,
-            "--csv_location", "./csvs_test_examples/raw_data_ra_toolkit/",
-            "--quiet"
+            "--database",
+            self.db_path,
+            "--csv_location",
+            "./csvs_test_examples/raw_data_ra_toolkit/",
+            "--quiet",
         ]
         load_raw_data_main(args)
 

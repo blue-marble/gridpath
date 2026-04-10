@@ -17,9 +17,15 @@ import unittest
 
 from db.create_database import main as create_database_main
 from data_toolkit.load_raw_data import main as load_raw_data_main
-from data_toolkit.temporal.create_monte_carlo_weather_draws import main as create_monte_carlo_weather_draws_main
-from data_toolkit.temporal.create_monte_carlo_weather_draw_profiles import main as create_monte_carlo_weather_draw_profiles_main
-from data_toolkit.project.availability.weather_derates.create_monte_carlo_gen_weather_derate_input_csvs import main as create_monte_carlo_gen_weather_derate_input_csvs_main
+from data_toolkit.temporal.create_monte_carlo_weather_draws import (
+    main as create_monte_carlo_weather_draws_main,
+)
+from data_toolkit.temporal.create_monte_carlo_weather_draw_profiles import (
+    main as create_monte_carlo_weather_draw_profiles_main,
+)
+from data_toolkit.project.availability.weather_derates.create_monte_carlo_gen_weather_derate_input_csvs import (
+    main as create_monte_carlo_gen_weather_derate_input_csvs_main,
+)
 
 
 class TestCreateMonteCarloGenWeatherDerateInputCsvs(unittest.TestCase):
@@ -30,7 +36,9 @@ class TestCreateMonteCarloGenWeatherDerateInputCsvs(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Set up test environment"""
-        os.chdir(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "..", "db"))
+        os.chdir(
+            os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "..", "db")
+        )
         cls.db_path = "ra_toolkit_test_steps_temp.db"
 
         # Clean up temp database if it exists
@@ -39,35 +47,46 @@ class TestCreateMonteCarloGenWeatherDerateInputCsvs(unittest.TestCase):
 
         # Create database first
         create_db_args = [
-            "--database", cls.db_path,
-            "--db_schema", "../data_toolkit/raw_data_db_schema.sql",
+            "--database",
+            cls.db_path,
+            "--db_schema",
+            "../data_toolkit/raw_data_db_schema.sql",
             "--quiet",
         ]
         create_database_main(create_db_args)
 
         # Load raw data
         load_data_args = [
-            "--database", cls.db_path,
-            "--csv_location", "./csvs_test_examples/raw_data_ra_toolkit/",
+            "--database",
+            cls.db_path,
+            "--csv_location",
+            "./csvs_test_examples/raw_data_ra_toolkit/",
             "--quiet",
         ]
         load_raw_data_main(load_data_args)
 
         # Create monte carlo weather draws (prerequisite)
         weather_draws_args = [
-            "--database", cls.db_path,
-            "--weather_draws_seed", "0",
-            "--n_iterations", "2",
-            "--study_year", "2026",
+            "--database",
+            cls.db_path,
+            "--weather_draws_seed",
+            "0",
+            "--n_iterations",
+            "2",
+            "--study_year",
+            "2026",
             "--quiet",
         ]
         create_monte_carlo_weather_draws_main(weather_draws_args)
 
         # Create monte carlo weather draw profiles (prerequisite)
         weather_profiles_args = [
-            "--database", cls.db_path,
-            "--study_year", "2026",
-            "--timeseries_iteration_draw_initial_seed", "0",
+            "--database",
+            cls.db_path,
+            "--study_year",
+            "2026",
+            "--timeseries_iteration_draw_initial_seed",
+            "0",
             "--quiet",
         ]
         create_monte_carlo_weather_draw_profiles_main(weather_profiles_args)
@@ -75,14 +94,19 @@ class TestCreateMonteCarloGenWeatherDerateInputCsvs(unittest.TestCase):
     def test_create_monte_carlo_gen_weather_derate_input_csvs(self):
         """Test create_monte_carlo_gen_weather_derate_input_csvs with hardcoded arguments"""
         args = [
-            "--database", self.db_path,
-            "--output_directory", "./csvs_test_examples/project/availability/exogenous_weather",
-            "--exogenous_availability_weather_scenario_id", "5",
+            "--database",
+            self.db_path,
+            "--output_directory",
+            "./csvs_test_examples/project/availability/exogenous_weather",
+            "--exogenous_availability_weather_scenario_id",
+            "5",
             "--exogenous_availability_weather_scenario_name",
             "ra_toolkit_module_tests_mc",
-            "--stage_id", "1",
+            "--stage_id",
+            "1",
             "--overwrite",
-            "--n_parallel_projects", "4",
+            "--n_parallel_projects",
+            "4",
         ]
         create_monte_carlo_gen_weather_derate_input_csvs_main(args)
 

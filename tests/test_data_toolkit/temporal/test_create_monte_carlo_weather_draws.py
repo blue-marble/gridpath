@@ -17,7 +17,9 @@ import unittest
 
 from db.create_database import main as create_database_main
 from data_toolkit.load_raw_data import main as load_raw_data_main
-from data_toolkit.temporal.create_monte_carlo_weather_draws import main as create_monte_carlo_weather_draws_main
+from data_toolkit.temporal.create_monte_carlo_weather_draws import (
+    main as create_monte_carlo_weather_draws_main,
+)
 
 
 class TestCreateMonteCarloWeatherDraws(unittest.TestCase):
@@ -37,25 +39,33 @@ class TestCreateMonteCarloWeatherDraws(unittest.TestCase):
 
         # Create database first
         create_db_args = [
-            "--database", cls.db_path,
-            "--db_schema", "../data_toolkit/raw_data_db_schema.sql",
+            "--database",
+            cls.db_path,
+            "--db_schema",
+            "../data_toolkit/raw_data_db_schema.sql",
         ]
         create_database_main(create_db_args)
 
         # Load raw data
         load_data_args = [
-            "--database", cls.db_path,
-            "--csv_location", "./csvs_test_examples/raw_data_ra_toolkit/",
+            "--database",
+            cls.db_path,
+            "--csv_location",
+            "./csvs_test_examples/raw_data_ra_toolkit/",
         ]
         load_raw_data_main(load_data_args)
 
     def test_create_monte_carlo_weather_draws(self):
         """Test create_monte_carlo_weather_draws with hardcoded arguments"""
         args = [
-            "--database", self.db_path,
-            "--weather_draws_seed", "0",
-            "--n_iterations", "2",
-            "--study_year", "2026",
+            "--database",
+            self.db_path,
+            "--weather_draws_seed",
+            "0",
+            "--n_iterations",
+            "2",
+            "--study_year",
+            "2026",
         ]
         create_monte_carlo_weather_draws_main(args)
 

@@ -17,11 +17,18 @@ import unittest
 
 from db.create_database import main as create_database_main
 from data_toolkit.load_raw_data import main as load_raw_data_main
-from data_toolkit.temporal.create_monte_carlo_weather_draws import main as create_monte_carlo_weather_draws_main
-from data_toolkit.temporal.create_monte_carlo_weather_draw_profiles import main as create_monte_carlo_weather_draw_profiles_main
-from data_toolkit.system.create_monte_carlo_load_input_csvs import main as create_monte_carlo_load_input_csvs_main
+from data_toolkit.temporal.create_monte_carlo_weather_draws import (
+    main as create_monte_carlo_weather_draws_main,
+)
+from data_toolkit.temporal.create_monte_carlo_weather_draw_profiles import (
+    main as create_monte_carlo_weather_draw_profiles_main,
+)
+from data_toolkit.system.create_monte_carlo_load_input_csvs import (
+    main as create_monte_carlo_load_input_csvs_main,
+)
 
 os.chdir(os.path.join(os.path.dirname(__file__), "..", "..", "..", "db"))
+
 
 class TestCreateMonteCarloLoadInputCsvs(unittest.TestCase):
     """
@@ -39,35 +46,46 @@ class TestCreateMonteCarloLoadInputCsvs(unittest.TestCase):
 
         # Create database first
         create_db_args = [
-            "--database", cls.db_path,
-            "--db_schema", "../data_toolkit/raw_data_db_schema.sql",
+            "--database",
+            cls.db_path,
+            "--db_schema",
+            "../data_toolkit/raw_data_db_schema.sql",
             "--quiet",
         ]
         create_database_main(create_db_args)
 
         # Load raw data
         load_data_args = [
-            "--database", cls.db_path,
-            "--csv_location", "./csvs_test_examples/raw_data_ra_toolkit/",
+            "--database",
+            cls.db_path,
+            "--csv_location",
+            "./csvs_test_examples/raw_data_ra_toolkit/",
             "--quiet",
         ]
         load_raw_data_main(load_data_args)
 
         # Create monte carlo weather draws (prerequisite)
         weather_draws_args = [
-            "--database", cls.db_path,
-            "--weather_draws_seed", "0",
-            "--n_iterations", "2",
-            "--study_year", "2026",
+            "--database",
+            cls.db_path,
+            "--weather_draws_seed",
+            "0",
+            "--n_iterations",
+            "2",
+            "--study_year",
+            "2026",
             "--quiet",
         ]
         create_monte_carlo_weather_draws_main(weather_draws_args)
 
         # Create monte carlo weather draw profiles (prerequisite)
         weather_profiles_args = [
-            "--database", cls.db_path,
-            "--study_year", "2026",
-            "--timeseries_iteration_draw_initial_seed", "0",
+            "--database",
+            cls.db_path,
+            "--study_year",
+            "2026",
+            "--timeseries_iteration_draw_initial_seed",
+            "0",
             "--quiet",
         ]
         create_monte_carlo_weather_draw_profiles_main(weather_profiles_args)
@@ -75,19 +93,26 @@ class TestCreateMonteCarloLoadInputCsvs(unittest.TestCase):
     def test_create_monte_carlo_load_input_csvs(self):
         """Test create_monte_carlo_load_input_csvs with hardcoded arguments"""
         args = [
-            "--database", self.db_path,
-            "--output_directory", "./csvs_test_examples/system_load/system_load",
-            "--load_scenario_id", "12",
-            "--load_scenario_name", "ra_toolkit_module_tests_mc",
-            "--load_components_scenario_id", "8",
-            "--load_components_scenario_name", "ra_toolkit_module_tests_mc",
-            "--load_levels_scenario_id", "13",
-            "--load_levels_scenario_name", "ra_toolkit_module_tests_mc",
+            "--database",
+            self.db_path,
+            "--output_directory",
+            "./csvs_test_examples/system_load/system_load",
+            "--load_scenario_id",
+            "12",
+            "--load_scenario_name",
+            "ra_toolkit_module_tests_mc",
+            "--load_components_scenario_id",
+            "8",
+            "--load_components_scenario_name",
+            "ra_toolkit_module_tests_mc",
+            "--load_levels_scenario_id",
+            "13",
+            "--load_levels_scenario_name",
+            "ra_toolkit_module_tests_mc",
             "--load_levels_overwrite",
             "--load_components_overwrite",
             "--load_scenario_overwrite",
             "--quiet",
-
         ]
         create_monte_carlo_load_input_csvs_main(args)
 

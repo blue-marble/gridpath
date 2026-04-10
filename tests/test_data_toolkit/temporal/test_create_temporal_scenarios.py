@@ -16,9 +16,12 @@ import os
 import unittest
 
 from db.create_database import main as create_database_main
-from data_toolkit.temporal.create_temporal_scenarios import main as create_temporal_scenarios_main
+from data_toolkit.temporal.create_temporal_scenarios import (
+    main as create_temporal_scenarios_main,
+)
 
 os.chdir(os.path.join(os.path.dirname(__file__), "..", "..", "..", "db"))
+
 
 class TestCreateTemporalScenarios(unittest.TestCase):
     """
@@ -36,16 +39,20 @@ class TestCreateTemporalScenarios(unittest.TestCase):
 
         # Create database first
         create_db_args = [
-            "--database", cls.db_path,
-            "--db_schema", "../data_toolkit/raw_data_db_schema.sql",
+            "--database",
+            cls.db_path,
+            "--db_schema",
+            "../data_toolkit/raw_data_db_schema.sql",
         ]
         create_database_main(create_db_args)
 
     def test_create_temporal_scenarios(self):
         """Test create_temporal_scenarios with hardcoded arguments"""
         args = [
-            "--database", self.db_path,
-            "--csv_path", "./csvs_test_examples/raw_data_ra_toolkit/temporal/temporal_scenarios.csv",
+            "--database",
+            self.db_path,
+            "--csv_path",
+            "./csvs_test_examples/raw_data_ra_toolkit/temporal/temporal_scenarios.csv",
         ]
         create_temporal_scenarios_main(args)
 

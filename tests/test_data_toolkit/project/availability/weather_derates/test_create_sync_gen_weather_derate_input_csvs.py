@@ -17,7 +17,9 @@ import unittest
 
 from db.create_database import main as create_database_main
 from data_toolkit.load_raw_data import main as load_raw_data_main
-from data_toolkit.project.availability.weather_derates.create_sync_gen_weather_derate_input_csvs import main as create_sync_gen_weather_derate_input_csvs_main
+from data_toolkit.project.availability.weather_derates.create_sync_gen_weather_derate_input_csvs import (
+    main as create_sync_gen_weather_derate_input_csvs_main,
+)
 
 
 class TestCreateSyncGenWeatherDerateInputCsvs(unittest.TestCase):
@@ -28,7 +30,9 @@ class TestCreateSyncGenWeatherDerateInputCsvs(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Set up test environment"""
-        os.chdir(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "..", "db"))
+        os.chdir(
+            os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "..", "db")
+        )
         cls.db_path = "ra_toolkit_test_steps_temp.db"
 
         # Clean up temp database if it exists
@@ -37,16 +41,20 @@ class TestCreateSyncGenWeatherDerateInputCsvs(unittest.TestCase):
 
         # Create database first
         create_db_args = [
-            "--database", cls.db_path,
-            "--db_schema", "../data_toolkit/raw_data_db_schema.sql",
+            "--database",
+            cls.db_path,
+            "--db_schema",
+            "../data_toolkit/raw_data_db_schema.sql",
             "--quiet",
         ]
         create_database_main(create_db_args)
 
         # Load raw data
         load_data_args = [
-            "--database", cls.db_path,
-            "--csv_location", "./csvs_test_examples/raw_data_ra_toolkit/",
+            "--database",
+            cls.db_path,
+            "--csv_location",
+            "./csvs_test_examples/raw_data_ra_toolkit/",
             "--quiet",
         ]
         load_raw_data_main(load_data_args)
@@ -54,12 +62,16 @@ class TestCreateSyncGenWeatherDerateInputCsvs(unittest.TestCase):
     def test_create_sync_gen_weather_derate_input_csvs(self):
         """Test create_sync_gen_weather_derate_input_csvs with hardcoded arguments"""
         args = [
-            "--database", self.db_path,
-            "--output_directory", "./csvs_test_examples/project/availability/exogenous_weather",
-            "--exogenous_availability_weather_scenario_id", "6",
+            "--database",
+            self.db_path,
+            "--output_directory",
+            "./csvs_test_examples/project/availability/exogenous_weather",
+            "--exogenous_availability_weather_scenario_id",
+            "6",
             "--exogenous_availability_weather_scenario_name",
             "ra_toolkit_module_tests_sync",
-            "--n_parallel_projects", "4",
+            "--n_parallel_projects",
+            "4",
             "--quiet",
             "--overwrite",
         ]

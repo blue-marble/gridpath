@@ -36,8 +36,10 @@ class TestCreateDatabase(unittest.TestCase):
     def test_create_database(self):
         """Test create_database with hardcoded arguments"""
         args = [
-            "--database", self.db_path,
-            "--db_schema", "../data_toolkit/raw_data_db_schema.sql",
+            "--database",
+            self.db_path,
+            "--db_schema",
+            "../data_toolkit/raw_data_db_schema.sql",
         ]
         create_database_main(args)
 
