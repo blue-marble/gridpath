@@ -148,14 +148,14 @@ def main(args=None):
     if parsed_args.availability_profile_input_csv is not None:
         read_and_import_csv(
             conn=conn,
-            f_path=parsed_args.input_csv,
+            f_path=parsed_args.availability_profile_input_csv,
             table="raw_data_availability_profiles",
         )
 
     if parsed_args.units_input_csv is not None:
         read_and_import_csv(
             conn=conn,
-            f_path=parsed_args.input_csv,
+            f_path=parsed_args.units_input_csv,
             table="raw_data_unit_availability_params",
         )
 

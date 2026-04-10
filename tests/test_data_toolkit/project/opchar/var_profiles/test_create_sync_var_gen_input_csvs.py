@@ -16,7 +16,6 @@ import os
 import unittest
 
 from db.create_database import main as create_database_main
-from data_toolkit.load_raw_data import main as load_raw_data_main
 from data_toolkit.project.opchar.var_profiles.create_sync_var_gen_input_csvs import (
     main as create_sync_var_gen_input_csvs_main,
 )
@@ -49,21 +48,15 @@ class TestCreateSyncVarGenInputCsvs(unittest.TestCase):
         ]
         create_database_main(create_db_args)
 
-        # Load raw data
-        load_data_args = [
-            "--database",
-            cls.db_path,
-            "--csv_location",
-            "./csvs_test_examples/raw_data_ra_toolkit/",
-            "--quiet",
-        ]
-        load_raw_data_main(load_data_args)
-
     def test_create_sync_var_gen_input_csvs(self):
         """Test create_sync_var_gen_input_csvs with hardcoded arguments"""
         args = [
             "--database",
             self.db_path,
+            "--variable_generator_profile_input_csv",
+            "./csvs_test_examples/raw_data_ra_toolkit/project/opchar/var_profiles/pudl_ra_toolkit_var_profiles.csv",
+            "--units_input_csv",
+            "./csvs_test_examples/raw_data_ra_toolkit/project/opchar/user_defined_var_project_units.csv",
             "--output_directory",
             "./csvs_test_examples/project/opchar/variable_generator_profiles",
             "--variable_generator_profile_scenario_id",

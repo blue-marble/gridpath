@@ -35,6 +35,10 @@ This module assumes the following raw input database tables have been populated:
     * raw_data_var_project_units
     * aux_weather_iterations (see the ``create_monte_carlo_draws`` step for how to create synthetic weather years and populate this table)
 
+You must run **create_monte_carlo_draw_profiles** before running this module to
+populate the database with the raw data and the synthetic weather draws.
+
+
 =========
 Settings
 =========
@@ -78,22 +82,6 @@ def parse_arguments(args):
     parser = ArgumentParser(add_help=True)
 
     parser.add_argument("-db", "--database")
-    parser.add_argument(
-        "-v_csv",
-        "--variable_generator_profile_input_csv",
-        default=None,
-        help="""Path to the availability profiles CSV file to load into the 
-        database. If not specified, data will be assumed to have been
-        already loaded into the database.""",
-    )
-    parser.add_argument(
-        "-u_csv",
-        "--units_input_csv",
-        default=None,
-        help="""Path to the CSV file to load into the database.
-            If not specified, data will be assumed to have been
-            already loaded into the database.""",
-    )
 
     parser.add_argument(
         "-bins_id",
@@ -163,21 +151,6 @@ def main(args=None):
 
     conn = connect_to_database(db_path=parsed_args.database)
 
-    # ### Load data from CSV
-    if parsed_args.variable_generator_profile_input_csv is not None:
-        read_and_import_csv(
-            conn=conn, f_path=parsed_args.input_csv, table="raw_data_var_profiles"
-        )
-
-    if parsed_args.units_input_csv is not None:
-        read_and_import_csv(
-            conn=conn,
-            f_path=parsed_args.input_csv,
-            table="raw_data_var_project_units",
-        )
-
-    conn.close()
-
     # Create the variable generation profile CSVs
     get_monte_carlo_timeseries_project_pool_and_make_profile_csvs(
         db_path=parsed_args.database,
@@ -193,6 +166,8 @@ def main(args=None):
         param_name="cap_factor",
         raw_data_table="raw_data_var_profiles",
     )
+
+    conn.close()
 
 
 if __name__ == "__main__":

@@ -31,9 +31,13 @@ Input prerequisites
 ===================
 
 This module assumes the following raw input database tables have been populated:
+    * aux_weather_iterations (see the ``create_monte_carlo_draws`` step for how to create synthetic weather years and populate this table)
     * raw_data_system_load
     * user_defined_load_zone_units
-    * aux_weather_iterations (see the ``create_monte_carlo_draws`` step for how to create synthetic weather years and populate this table)
+
+You must run **create_monte_carlo_draws** before running this module to
+populate the database with the raw data and the synthetic weather draws.
+
 
 =========
 Settings
@@ -100,7 +104,6 @@ def parse_arguments(args):
         default=DRAWS_ID_DEFAULT,
         help=f"Defaults to {DRAWS_ID_DEFAULT}.",
     )
-    parser.add_argument("-csv", "--input_csv")
 
     parser.add_argument("-out_dir", "--output_directory")
     parser.add_argument(

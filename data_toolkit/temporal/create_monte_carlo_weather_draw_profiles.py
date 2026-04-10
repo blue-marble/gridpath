@@ -27,7 +27,6 @@ Input prerequisites
 
 This module assumes that the **create_monte_carlo_weather_draws** step has
 been run and the following raw input database tables have been populated:
-    * user_defined_data_availability
     * user_defined_monte_carlo_timeseries
 
 =========
@@ -79,12 +78,28 @@ def parse_arguments(args):
     parser.add_argument("-db", "--database")
 
     parser.add_argument(
-        "-csv",
-        "--input_csv",
+        "-rd_csv",
+        "--raw_data_input_csv",
         default=None,
-        help="Path to the CSV file to load into the raw_data_var_profiles table "
-        "in the database. If not specified, data will be assumed to have "
-        "been loaded into the database already.",
+        help="""Path to the CSV file to load into the 
+        raw data table for the timeseries. If not specified, data will be 
+        assumed to 
+        have been already loaded into the database.""",
+    )
+    parser.add_argument(
+        "-u_csv",
+        "--units_input_csv",
+        default=None,
+        help="""Path to the unit CSV file to load into the 
+        units table for the timeseries. If not specified, data will be 
+        assumed to have been already loaded into the database.""",
+    )
+    parser.add_argument(
+        "-ts_csv",
+        "--timeseries_input_csv",
+        default=None,
+        help="""Path to the timeseries CSV file to load. If not specified, 
+        data will be assumed to have been already loaded into the database.""",
     )
     parser.add_argument(
         "-t",
@@ -97,7 +112,6 @@ def parse_arguments(args):
         "-d",
         "--consider_day_types",
         default=None,
-        choices=list(TIMESERIES_TYPE.keys()),
         help="Required boolean if timeseries_name is specified. Use 1 for "
         "'yes' and 0 for 'no'.",
     )
@@ -105,6 +119,7 @@ def parse_arguments(args):
         "-ts_type",
         "--timeseries_type",
         default=None,
+        choices=list(TIMESERIES_TYPE.keys()),
         help="Required boolean if timeseries_name is specified or to load "
         "data intputs.",
     )
@@ -387,6 +402,35 @@ def main(args=None):
 
     conn = connect_to_database(db_path=parsed_args.database)
 
+    # ##### Load raw data if requested #####
+    # ### Load data from CSVs
+    if parsed_args.timeseries_input_csv is not None:
+        read_and_import_csv(
+            conn=conn,
+            f_path=parsed_args.timeseries_input_csv,
+            table="user_defined_monte_carlo_timeseries",
+        )
+
+    if (
+        parsed_args.raw_data_input_csv is not None
+        or parsed_args.units_input_csv is not None
+    ):
+        if parsed_args.timeseries_type is None:
+            raise ValueError(
+                "Timeseries type must be specified to load "
+                "data into the correct table."
+            )
+        read_and_import_csv(
+            conn=conn,
+            f_path=parsed_args.raw_data_input_csv,
+            table=TIMESERIES_TYPE[parsed_args.timeseries_type]["profiles_table"],
+        )
+        read_and_import_csv(
+            conn=conn,
+            f_path=parsed_args.units_input_csv,
+            table=TIMESERIES_TYPE[parsed_args.timeseries_type]["units_table"],
+        )
+
     # #### Check if specific timeseries is requested #### #
     if parsed_args.timeseries_name is not None:
         if parsed_args.consider_day_types is None:
@@ -406,23 +450,10 @@ def main(args=None):
                 "specified. The draws will not be reproducible."
             )
         else:
-            print(
-                f"Timeseries iteration draw initial seed is {parsed_args.timeseries_iteration_draw_initial_seed}."
-            )
-
-        # ##### Load raw data if requested #####
-        # ### Load data from CSV
-        if parsed_args.input_csv is not None:
-            if parsed_args.timeseries_type is None:
-                raise ValueError(
-                    "Timeseries type must be specified to load "
-                    "data into the correct table."
+            if not parsed_args.quiet:
+                print(
+                    f"Timeseries iteration draw initial seed is {parsed_args.timeseries_iteration_draw_initial_seed}."
                 )
-            read_and_import_csv(
-                conn=conn,
-                f_path=parsed_args.input_csv,
-                table=TIMESERIES_TYPE[parsed_args.timeseries_type]["profiles_table"],
-            )
 
     # ####### Based on the weather draws, create timeseries profiles ###########
     make_timeseries_draw_profiles(

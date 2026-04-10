@@ -69,10 +69,30 @@ def parse_arguments(args):
     parser = ArgumentParser(add_help=True)
     parser.add_argument("-db", "--database", default="../../io.db")
     parser.add_argument(
-        "-csv",
-        "--input_csv",
+        "-h_opchar_y_m_csv",
+        "--project_hydro_opchars_by_year_month_input_csv",
         default=None,
-        help="""Path to the CSV file to load into the database.
+        help="""Path to the CSV file to load into the 
+        raw_data_project_hydro_opchars_by_year_month table.
+            If not specified, data will be assumed to have been
+            already loaded into the database.""",
+    )
+
+    parser.add_argument(
+        "-h_y_csv",
+        "--hydro_years_input_csv",
+        default=None,
+        help="""Path to the CSV file to load into the 
+        raw_data_hydro_years table.
+            If not specified, data will be assumed to have been
+            already loaded into the database.""",
+    )
+    parser.add_argument(
+        "-bt_csv",
+        "--balancing_type_horizons_input_csv",
+        default=None,
+        help="""Path to the CSV file to load into the 
+        user_defined_balancing_type_horizons table.
             If not specified, data will be assumed to have been
             already loaded into the database.""",
     )
@@ -285,8 +305,26 @@ def main(args=None):
     db = connect_to_database(parsed_args.database)
 
     # ### Load data from CSV
-    if parsed_args.input_csv is not None:
-        read_and_import_csv(conn=db, f_path=parsed_args.input_csv, table="TABLE_TBD")
+    if parsed_args.project_hydro_opchars_by_year_month_input_csv is not None:
+        read_and_import_csv(
+            conn=db,
+            f_path=parsed_args.project_hydro_opchars_by_year_month_input_csv,
+            table="raw_data_project_hydro_opchars_by_year_month",
+        )
+
+    if parsed_args.hydro_years_input_csv is not None:
+        read_and_import_csv(
+            conn=db,
+            f_path=parsed_args.hydro_years_input_csv,
+            table="raw_data_hydro_years",
+        )
+
+    if parsed_args.balancing_type_horizons_input_csv is not None:
+        read_and_import_csv(
+            conn=db,
+            f_path=parsed_args.balancing_type_horizons_input_csv,
+            table="user_defined_balancing_type_horizons",
+        )
 
     c = db.cursor()
     projects = [prj[0] for prj in c.execute("""

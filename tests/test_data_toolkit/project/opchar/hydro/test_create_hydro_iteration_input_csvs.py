@@ -16,7 +16,6 @@ import os
 import unittest
 
 from db.create_database import main as create_database_main
-from data_toolkit.load_raw_data import main as load_raw_data_main
 from data_toolkit.temporal.create_monte_carlo_weather_draws import (
     main as create_monte_carlo_weather_draws_main,
 )
@@ -55,20 +54,13 @@ class TestCreateHydroIterationInputCsvs(unittest.TestCase):
         ]
         create_database_main(create_db_args)
 
-        # Load raw data
-        load_data_args = [
-            "--database",
-            cls.db_path,
-            "--csv_location",
-            "./csvs_test_examples/raw_data_ra_toolkit/",
-            "--quiet",
-        ]
-        load_raw_data_main(load_data_args)
-
         # Create monte carlo weather draws (prerequisite)
         weather_draws_args = [
             "--database",
             cls.db_path,
+            "--input_csv",
+            "./csvs_test_examples/raw_data_ra_toolkit/monte_carlo_weather"
+            "/user_defined_monte_carlo_weather_bins.csv",
             "--weather_draws_seed",
             "0",
             "--n_iterations",
@@ -79,23 +71,20 @@ class TestCreateHydroIterationInputCsvs(unittest.TestCase):
         ]
         create_monte_carlo_weather_draws_main(weather_draws_args)
 
-        # Create monte carlo weather draw profiles (prerequisite)
-        weather_profiles_args = [
-            "--database",
-            cls.db_path,
-            "--study_year",
-            "2026",
-            "--timeseries_iteration_draw_initial_seed",
-            "0",
-            "--quiet",
-        ]
-        create_monte_carlo_weather_draw_profiles_main(weather_profiles_args)
-
     def test_create_hydro_iteration_input_csvs(self):
         """Test create_hydro_iteration_input_csvs with hardcoded arguments"""
         args = [
             "--database",
             self.db_path,
+            "--project_hydro_opchars_by_year_month_input_csv",
+            "./csvs_test_examples/raw_data_ra_toolkit/project/opchar/hydro/ra_toolkit_hydro.csv",
+            "--balancing_type_horizons_input_csv",
+            "./csvs_test_examples/raw_data_ra_toolkit/project/opchar/hydro"
+            "/user_defined_bt_horizons.csv",
+            "--hydro_years_input_csv",
+            "./csvs_test_examples/raw_data_ra_toolkit/project/opchar/hydro"
+            "/user_defined_hydro_years.csv",
+            ".csv",
             "--stage_id",
             "1",
             "--hydro_operational_chars_scenario_id",

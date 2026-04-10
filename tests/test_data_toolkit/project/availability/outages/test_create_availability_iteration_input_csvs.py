@@ -16,7 +16,6 @@ import os
 import unittest
 
 from db.create_database import main as create_database_main
-from data_toolkit.load_raw_data import main as load_raw_data_main
 from data_toolkit.project.availability.outages.create_availability_iteration_input_csvs import (
     main as create_availability_iteration_input_csvs_main,
 )
@@ -49,21 +48,13 @@ class TestCreateAvailabilityIterationInputCsvs(unittest.TestCase):
         ]
         create_database_main(create_db_args)
 
-        # Load raw data
-        load_data_args = [
-            "--database",
-            cls.db_path,
-            "--csv_location",
-            "./csvs_test_examples/raw_data_ra_toolkit/",
-            "--quiet",
-        ]
-        load_raw_data_main(load_data_args)
-
     def test_create_availability_iteration_input_csvs(self):
         """Test create_availability_iteration_input_csvs with hardcoded arguments"""
         args = [
             "--database",
             self.db_path,
+            "--input_csv",
+            "./csvs_test_examples/raw_data_ra_toolkit/project/availability/user_defined_unit_availability_params.csv",
             "--n_iterations",
             "4",
             "--project_availability_scenario_id",

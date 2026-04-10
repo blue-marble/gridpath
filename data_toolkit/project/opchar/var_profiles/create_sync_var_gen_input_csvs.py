@@ -145,13 +145,15 @@ def main(args=None):
     # ### Load data from CSV
     if parsed_args.variable_generator_profile_input_csv is not None:
         read_and_import_csv(
-            conn=conn, f_path=parsed_args.input_csv, table="raw_data_var_profiles"
+            conn=conn,
+            f_path=parsed_args.variable_generator_profile_input_csv,
+            table="raw_data_var_profiles",
         )
 
     if parsed_args.units_input_csv is not None:
         read_and_import_csv(
             conn=conn,
-            f_path=parsed_args.input_csv,
+            f_path=parsed_args.units_input_csv,
             table="raw_data_var_project_units",
         )
 

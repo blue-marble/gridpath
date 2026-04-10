@@ -81,6 +81,8 @@ def read_and_import_csv(conn: Connection, f_path: str, table):
     # TODO: actually specify dtypes instead
     df = pd.read_csv(f_path, delimiter=",", low_memory=False, on_bad_lines="warn")
 
+    # print(f_path)
+    # print(df)
     spin_on_database_lock_generic(
         command=df.to_sql(
             name=table,

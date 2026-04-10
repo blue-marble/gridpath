@@ -16,7 +16,6 @@ import os
 import unittest
 
 from db.create_database import main as create_database_main
-from data_toolkit.load_raw_data import main as load_raw_data_main
 from data_toolkit.temporal.create_monte_carlo_weather_draws import (
     main as create_monte_carlo_weather_draws_main,
 )
@@ -54,20 +53,13 @@ class TestCreateMonteCarloLoadInputCsvs(unittest.TestCase):
         ]
         create_database_main(create_db_args)
 
-        # Load raw data
-        load_data_args = [
-            "--database",
-            cls.db_path,
-            "--csv_location",
-            "./csvs_test_examples/raw_data_ra_toolkit/",
-            "--quiet",
-        ]
-        load_raw_data_main(load_data_args)
-
         # Create monte carlo weather draws (prerequisite)
         weather_draws_args = [
             "--database",
             cls.db_path,
+            "--input_csv",
+            "./csvs_test_examples/raw_data_ra_toolkit/monte_carlo_weather"
+            "/user_defined_monte_carlo_weather_bins.csv",
             "--weather_draws_seed",
             "0",
             "--n_iterations",
@@ -82,6 +74,20 @@ class TestCreateMonteCarloLoadInputCsvs(unittest.TestCase):
         weather_profiles_args = [
             "--database",
             cls.db_path,
+            "--raw_data_input_csv",
+            "./csvs_test_examples/raw_data_ra_toolkit/system_load"
+            "/ra_toolkit_load.csv",
+            "--units_input_csv",
+            "./csvs_test_examples/raw_data_ra_toolkit/system_load"
+            "/user_defined_load_zone_units.csv",
+            "--timeseries_name",
+            "load",
+            "--consider_day_types",
+            "1",
+            "--timeseries_type",
+            "load",
+            "--timeseries_iteration_draw_initial_seed",
+            0,
             "--study_year",
             "2026",
             "--timeseries_iteration_draw_initial_seed",
