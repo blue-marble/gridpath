@@ -72,10 +72,11 @@ class TestCreateAvailabilityIterationInputCsvs(unittest.TestCase):
             "ra_toolkit_module_tests",
             "--output_directory",
             "./csvs_test_examples/project/availability/exogenous_independent",
-            "--n_parallel_projects",
-            "4",
             "--quiet",
             "--overwrite",
+            "--user_provided_seeding",
+            "--starting_project_iteration_seed",
+            "1",
         ]
         create_availability_iteration_input_csvs_main(args)
 

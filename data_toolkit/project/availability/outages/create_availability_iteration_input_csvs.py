@@ -415,7 +415,7 @@ def main(args=None):
 
     all_files = []
     pool_data = []
-    project_iteration_seed = parsed_args.starting_project_iteration_seed
+    project_iteration_seed = int(parsed_args.starting_project_iteration_seed)
     for project in projects:
         # Write header if we are overwriting the file or it doesn't exist
         overwrite = parsed_args.overwrite
