@@ -18,6 +18,7 @@ import unittest
 from db.create_database import main as create_database_main
 from data_toolkit.temporal.create_temporal_scenarios import main as create_temporal_scenarios_main
 
+os.chdir(os.path.join(os.path.dirname(__file__), "..", "..", "..", "db"))
 
 class TestCreateTemporalScenarios(unittest.TestCase):
     """
@@ -27,7 +28,6 @@ class TestCreateTemporalScenarios(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Set up test environment"""
-        os.chdir(os.path.join(os.path.dirname(__file__), "..", "..", "..", "db"))
         cls.db_path = "ra_toolkit_test_steps_temp.db"
 
         # Clean up temp database if it exists

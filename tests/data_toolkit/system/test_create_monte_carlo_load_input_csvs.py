@@ -21,6 +21,7 @@ from data_toolkit.temporal.create_monte_carlo_weather_draws import main as creat
 from data_toolkit.temporal.create_monte_carlo_weather_draw_profiles import main as create_monte_carlo_weather_draw_profiles_main
 from data_toolkit.system.create_monte_carlo_load_input_csvs import main as create_monte_carlo_load_input_csvs_main
 
+os.chdir(os.path.join(os.path.dirname(__file__), "..", "..", "..", "db"))
 
 class TestCreateMonteCarloLoadInputCsvs(unittest.TestCase):
     """
@@ -30,7 +31,6 @@ class TestCreateMonteCarloLoadInputCsvs(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Set up test environment"""
-        os.chdir(os.path.join(os.path.dirname(__file__), "..", "..", "..", "db"))
         cls.db_path = "ra_toolkit_test_steps_temp.db"
 
         # Clean up temp database if it exists
