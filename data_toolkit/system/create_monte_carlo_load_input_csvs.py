@@ -148,6 +148,13 @@ def parse_arguments(args):
         default=STAGE_ID_DEFAULT,
         help=f"Defaults to '{STAGE_ID_DEFAULT}",
     )
+    parser.add_argument(
+        "-s_y",
+        "--study_year",
+        default=0,
+        help=f"Defaults to 0. Timepoint IDs will start at 1. Set to YYYY to "
+        f"have timepoint IDs start at YYYY0001.",
+    )
 
     parser.add_argument(
         "-comp",
@@ -215,6 +222,7 @@ def create_load_levels_csv(
     load_levels_scenario_id,
     load_levels_scenario_name,
     stage_id,
+    study_year,
     load_component_name,
     overwrite_load_levels_csv,
 ):
@@ -271,7 +279,8 @@ def create_load_levels_csv(
                         '{load_zone}' AS load_zone,
                         {weather_iteration} AS weather_iteration, 
                         {stage_id} AS stage_id,
-                        ({draw_number}-1)*24+hour_of_day AS timepoint, 
+                        {study_year}*10000+({draw_number}-1)*24+hour_of_day AS 
+                        timepoint, 
                         '{load_component_name}' AS load_component,
                         sum(weighted_load) AS load_mw
                         FROM (
@@ -356,6 +365,7 @@ def main(args=None):
             load_levels_scenario_id=parsed_args.load_levels_scenario_id,
             load_levels_scenario_name=parsed_args.load_levels_scenario_name,
             stage_id=parsed_args.stage_id,
+            study_year=int(parsed_args.study_year),
             load_component_name=parsed_args.load_component,
             overwrite_load_levels_csv=parsed_args.load_levels_overwrite,
         )

@@ -109,6 +109,14 @@ def parse_arguments(args):
         help=f"Defaults to {DRAWS_ID_DEFAULT}.",
     )
 
+    parser.add_argument(
+        "-s_y",
+        "--study_year",
+        default=0,
+        help=f"Defaults to 0. Timepoint IDs will start at 1. Set to YYYY to "
+        f"have timepoint IDs start at YYYY0001.",
+    )
+
     parser.add_argument("-out_dir", "--output_directory")
     parser.add_argument(
         "-id",
@@ -194,6 +202,7 @@ def main(args=None):
         units_table="raw_data_unit_availability_params",
         param_name="availability_derate_weather",
         raw_data_table="raw_data_availability_profiles",
+        study_year=int(parsed_args.study_year),
         no_hydro_iteration=True,
     )
 

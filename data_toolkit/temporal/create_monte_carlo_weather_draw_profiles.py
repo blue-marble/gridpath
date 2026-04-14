@@ -216,7 +216,7 @@ def make_timeseries_draw_profiles(
             )
 
         if not quiet:
-            print(f"...processing timeseries: {timeseries_name}")
+            print(f"      ...processing timeseries: {timeseries_name}")
 
         # Set a starting seed if requested
         timeseries_iteration_draw_seed = (
@@ -279,7 +279,7 @@ def make_timeseries_draw_profiles(
                 and weather_iteration % 10 == 0
             ):
                 if not quiet:
-                    print(f"      ...weather iteration {weather_iteration}")
+                    print(f"         ...weather iteration {weather_iteration}")
             prev_weather_iteration = weather_iteration
 
             sql_set_string = ""

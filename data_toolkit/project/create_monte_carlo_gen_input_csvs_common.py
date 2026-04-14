@@ -42,6 +42,7 @@ def get_monte_carlo_timeseries_project_pool_and_make_profile_csvs(
     units_table,
     param_name,
     raw_data_table,
+    study_year,
     no_hydro_iteration=False,
 ):
     conn = connect_to_database(db_path=db_path)
@@ -98,6 +99,7 @@ def get_monte_carlo_timeseries_project_pool_and_make_profile_csvs(
                 output_directory,
                 param_name,
                 raw_data_table,
+                study_year,
                 no_hydro_iteration,
             ]
             for timeseries_name in timeseries_project_unit_dict.keys()
@@ -127,6 +129,7 @@ def create_project_profile_csv(
     output_directory,
     param_name,
     raw_data_table,
+    study_year,
     no_hydro_iteration=False,
 ):
     # Connect to database
@@ -175,7 +178,8 @@ def create_project_profile_csv(
                 SELECT {weather_iteration} AS weather_iteration,  
                 {hydro_iter_sql}
                 {stage_id} AS stage_id,
-                ({draw_number}-1)*24+hour_of_day AS timepoint, 
+                {study_year}*10000+({draw_number}-1)*24+hour_of_day AS 
+                timepoint, 
                 sum(weighted_{param_name}) as {param_name}
                 FROM (
             """
@@ -239,6 +243,7 @@ def create_project_profile_csv_pool(pool_datum):
         output_directory,
         param_name,
         raw_data_table,
+        study_year,
         no_hydro_iteration,
     ] = pool_datum
 
@@ -255,5 +260,6 @@ def create_project_profile_csv_pool(pool_datum):
         output_directory=output_directory,
         param_name=param_name,
         raw_data_table=raw_data_table,
+        study_year=study_year,
         no_hydro_iteration=no_hydro_iteration,
     )

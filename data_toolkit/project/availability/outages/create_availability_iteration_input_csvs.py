@@ -112,6 +112,13 @@ def parse_arguments(args):
         "be set to True for this to take effect. Proceed with caution.",
     )
     parser.add_argument(
+        "-s_y",
+        "--study_year",
+        default=0,
+        help=f"Defaults to 0. Timepoint IDs will start at 1. Set to YYYY to "
+        f"have timepoint IDs start at YYYY0001.",
+    )
+    parser.add_argument(
         "-id", "--project_availability_scenario_id", default=1, help="Defaults to 1."
     )
     parser.add_argument(
@@ -150,8 +157,10 @@ def parse_arguments(args):
     return parsed_arguments
 
 
-def get_temporal_structure():
-    stage_tmp_dict = {1: [tmp for tmp in range(1, 8760 + 1)]}
+def get_temporal_structure(study_year):
+    stage_tmp_dict = {
+        1: [tmp for tmp in range(study_year * 10000 + 1, study_year * 10000 + 8760 + 1)]
+    }
 
     return stage_tmp_dict
 
@@ -227,10 +236,11 @@ def simulate_project_availability(
     project_iteration_seed,
     max_integer_for_unit_outage_seeding,
     stage_id,
+    study_year,
     filepath,
 ):
 
-    stage_tmp_dict = get_temporal_structure()
+    stage_tmp_dict = get_temporal_structure(study_year)
 
     # No stage simulation at this point; assume single stage
     tmps = stage_tmp_dict[1]
@@ -357,6 +367,7 @@ def simulate_project_availability_pool(pool_datum):
         project_iteration_seed,
         max_integer_for_unit_outage_seeding,
         stage_id,
+        study_year,
         filepath,
     ] = pool_datum
 
@@ -368,6 +379,7 @@ def simulate_project_availability_pool(pool_datum):
         project_iteration_seed=project_iteration_seed,
         max_integer_for_unit_outage_seeding=max_integer_for_unit_outage_seeding,
         stage_id=stage_id,
+        study_year=study_year,
         filepath=filepath,
     )
 
@@ -467,6 +479,7 @@ def main(args=None):
                         else None
                     ),
                     parsed_args.stage_id,
+                    int(parsed_args.study_year),
                     filepath,
                 ]
             )

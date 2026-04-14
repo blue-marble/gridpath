@@ -95,6 +95,13 @@ def parse_arguments(args):
         default=DRAWS_ID_DEFAULT,
         help=f"Defaults to {DRAWS_ID_DEFAULT}.",
     )
+    parser.add_argument(
+        "-s_y",
+        "--study_year",
+        default=0,
+        help=f"Defaults to 0. Timepoint IDs will start at 1. Set to YYYY to "
+        f"have timepoint IDs start at YYYY0001.",
+    )
 
     parser.add_argument("-out_dir", "--output_directory")
     parser.add_argument(
@@ -165,6 +172,7 @@ def main(args=None):
         units_table="raw_data_var_project_units",
         param_name="cap_factor",
         raw_data_table="raw_data_var_profiles",
+        study_year=parsed_args.study_year,
     )
 
     conn.close()
