@@ -56,6 +56,23 @@ def add_model_components(
         initialize=violation_expression_init,
     )
 
+    m.Policy_Month_Hour_Requirement_Shortage = Var(
+        m.POLICIES_ZONE_PRDS_MONTH_HOURS_WITH_REQ, within=NonNegativeReals, initialize=0
+    )
+
+    def month_hour_violation_expression_init(mod, policy, zone, period, mn, hr):
+        if mod.policy_zone_allow_violation[policy, zone]:
+            return mod.Policy_Month_Hour_Requirement_Shortage[
+                policy, zone, period, mn, hr
+            ]
+        else:
+            return 0
+
+    m.Policy_Month_Hour_Requirement_Shortage_Expression = Expression(
+        m.POLICIES_ZONE_PRDS_MONTH_HOURS_WITH_REQ,
+        initialize=month_hour_violation_expression_init,
+    )
+
     def meet_policy_target_constraint_rule(mod, policy, zone, bt, h):
         """
         Total delivered energy-target-eligible energy must exceed target
@@ -74,6 +91,24 @@ def add_model_components(
 
     m.Policy_Requirement_Constraint = Constraint(
         m.POLICIES_ZONE_BLN_TYPE_HRZS_WITH_REQ, rule=meet_policy_target_constraint_rule
+    )
+
+    def meet_policy_month_hour_target_constraint_rule(
+        mod, policy, zone, period, mn, hr
+    ):
+        return (
+            mod.Total_Project_Policy_Zone_Month_Hour_Contributions[
+                policy, zone, period, mn, hr
+            ]
+            + mod.Policy_Month_Hour_Requirement_Shortage_Expression[
+                policy, zone, period, mn, hr
+            ]
+            >= mod.Policy_Zone_Month_Hour_Requirement[policy, zone, period, mn, hr]
+        )
+
+    m.Policy_Month_Hour_Requirement_Constraint = Constraint(
+        m.POLICIES_ZONE_PRDS_MONTH_HOURS_WITH_REQ,
+        rule=meet_policy_month_hour_target_constraint_rule,
     )
 
 
@@ -96,6 +131,9 @@ def export_results(
     :param d:
     :return:
     """
+
+    if not m.POLICIES_ZONE_BLN_TYPE_HRZS_WITH_REQ:
+        return
 
     results_columns = [
         "pre_load_modifier_load_in_hrz",
@@ -162,7 +200,12 @@ def export_results(
         for (p, z, bt, h) in m.POLICIES_ZONE_BLN_TYPE_HRZS_WITH_REQ
     ]
     results_df = create_results_df(
-        index_columns=["policy_name", "policy_zone", "balancing_type", "horizon"],
+        index_columns=[
+            "policy_name",
+            "policy_zone",
+            "balancing_type_horizon",
+            "horizon",
+        ],
         results_columns=results_columns,
         data=data,
     )
@@ -187,5 +230,13 @@ def save_duals(
         "policy_zone",
         "balancing_type",
         "horizon",
+        "dual",
+    ]
+    instance.constraint_indices["Policy_Month_Hour_Requirement_Constraint"] = [
+        "policy_name",
+        "policy_zone",
+        "period",
+        "policy_month",
+        "policy_hour",
         "dual",
     ]

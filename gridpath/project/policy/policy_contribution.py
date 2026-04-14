@@ -32,6 +32,16 @@ from gridpath.auxiliary.db_interface import (
 from gridpath.common_functions import create_results_df
 import gridpath.project.policy.compliance_types as compliance_type_init
 
+SUPPORTED_COMPLIANCE_TYPES = [
+    "f_output",
+    "f_capacity",
+    "flat_horizon",
+    "stor_losses",
+    "sod_flat_block",
+    "sod_exceedance",
+    "sod_stor",
+]
+
 
 def add_model_components(
     m,
@@ -68,7 +78,7 @@ def add_model_components(
     m.PROJECT_POLICY_ZONES = Set(dimen=3, within=m.PROJECTS * m.POLICIES_ZONES)
     m.compliance_type = Param(
         m.PROJECT_POLICY_ZONES,
-        within=["f_output", "f_capacity", "flat_horizon", "stor_losses"],
+        within=SUPPORTED_COMPLIANCE_TYPES,
     )
 
     # Add any components specific to the PRM modules
@@ -96,6 +106,20 @@ def add_model_components(
         return opr_tmps
 
     m.PRJ_POLICY_ZONE_OPR_TMPS = Set(dimen=4, initialize=prj_policy_zone_opr_tmps_init)
+
+    # (project, policy, zone, period, month, hour) for month-hour requirements.
+    # Completely decoupled from timepoints — SOD-type compliance types use this.
+    def prj_policy_zone_prds_month_hours_init(mod):
+        return [
+            (prj, policy, zone, prd, mn, hr)
+            for (prj, policy, zone) in mod.PROJECT_POLICY_ZONES
+            for (p, z, prd, mn, hr) in mod.POLICIES_ZONE_PRDS_MONTH_HOURS_WITH_REQ
+            if p == policy and z == zone
+        ]
+
+    m.PRJ_POLICY_ZONE_PRDS_MONTH_HOURS = Set(
+        dimen=6, initialize=prj_policy_zone_prds_month_hours_init
+    )
 
     # Expressions
     ###########################################################################
@@ -132,6 +156,27 @@ def add_model_components(
     # m.Policy_Contribution_in_Horizon = Expression(
     #     m.PRJ_POLICY_ZONE_OPR_TMPSS, rule=contribution_in_horizon
     # )
+
+    def contribution_in_month_hour(mod, prj, policy, zone, prd, mn, hr):
+        """
+        SOD-type contribution per (period, month, hour), completely decoupled
+        from operational timepoints. Non-SOD types default to 0.
+        """
+        compliance_type = mod.compliance_type[prj, policy, zone]
+        if hasattr(
+            imported_compliance_modules[compliance_type], "contribution_in_month_hour"
+        ):
+            return imported_compliance_modules[
+                compliance_type
+            ].contribution_in_month_hour(mod, prj, policy, zone, prd, mn, hr)
+        else:
+            return compliance_type_init.contribution_in_month_hour(
+                mod, prj, policy, zone, prd, mn, hr
+            )
+
+    m.Policy_Contribution_in_Month_Hour = Expression(
+        m.PRJ_POLICY_ZONE_PRDS_MONTH_HOURS, rule=contribution_in_month_hour
+    )
 
 
 # Input-Output
@@ -239,51 +284,93 @@ def export_results(
     :return:
     """
 
-    results_columns = [
-        "policy_contribution",
-    ]
-    data = [
-        [
-            prj,
-            p,
-            z,
-            tmp,
-            m.tmp_weight[tmp],
-            m.hrs_in_tmp[tmp],
-            m.period[tmp],
-            value(m.Policy_Contribution_in_Timepoint[prj, p, z, tmp]),
+    if m.PRJ_POLICY_ZONE_OPR_TMPS:
+        results_columns = [
+            "policy_contribution",
         ]
-        for (prj, p, z, tmp) in m.PRJ_POLICY_ZONE_OPR_TMPS
-    ]
+        data = [
+            [
+                prj,
+                p,
+                z,
+                tmp,
+                m.tmp_weight[tmp],
+                m.hrs_in_tmp[tmp],
+                m.period[tmp],
+                value(m.Policy_Contribution_in_Timepoint[prj, p, z, tmp]),
+            ]
+            for (prj, p, z, tmp) in m.PRJ_POLICY_ZONE_OPR_TMPS
+        ]
 
-    results_df = create_results_df(
-        index_columns=[
-            "project",
-            "policy_name",
-            "policy_zone",
-            "timepoint",
-            "timepoint_weight",
-            "hours_in_timepoint",
-            "period",
-        ],
-        results_columns=results_columns,
-        data=data,
-    )
+        results_df = create_results_df(
+            index_columns=[
+                "project",
+                "policy_name",
+                "policy_zone",
+                "timepoint",
+                "timepoint_weight",
+                "hours_in_timepoint",
+                "period",
+            ],
+            results_columns=results_columns,
+            data=data,
+        )
 
-    results_df.to_csv(
-        os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "results",
-            "project_policy_zone_timepoint.csv",
-        ),
-        sep=",",
-        index=True,
-    )
+        results_df.to_csv(
+            os.path.join(
+                scenario_directory,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
+                "results",
+                "project_policy_zone_timepoint.csv",
+            ),
+            sep=",",
+            index=True,
+        )
+
+    # Month-hour contributions (SOD-type compliance types only)
+    if m.PRJ_POLICY_ZONE_PRDS_MONTH_HOURS:
+        mh_data = [
+            [
+                prj,
+                p,
+                z,
+                prd,
+                mn,
+                hr,
+                value(m.Policy_Contribution_in_Month_Hour[prj, p, z, prd, mn, hr]),
+            ]
+            for (prj, p, z, prd, mn, hr) in m.PRJ_POLICY_ZONE_PRDS_MONTH_HOURS
+        ]
+        mh_results_df = create_results_df(
+            index_columns=[
+                "project",
+                "policy_name",
+                "policy_zone",
+                "period",
+                "policy_month",
+                "policy_hour",
+            ],
+            results_columns=["contribution_mw"],
+            data=mh_data,
+        )
+        mh_results_df.to_csv(
+            os.path.join(
+                scenario_directory,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
+                "results",
+                "project_policy_month_hour_contributions.csv",
+            ),
+            sep=",",
+            index=True,
+        )
 
 
 # Database
@@ -313,23 +400,23 @@ def get_inputs_from_database(
     # Get the energy-target zones for project in our portfolio and with zones in our
     # Energy target zone
     project_policy_zones = c.execute(
-        f"""SELECT project, policy_name, policy_zone, compliance_type, 
-        f_slope, f_intercept
+        f"""SELECT project, policy_name, policy_zone, compliance_type,
+        f_slope, f_intercept, exceedance_values_scenario_id, sod_stor_rte
         FROM
         -- Get projects from portfolio only
         (SELECT project
             FROM inputs_project_portfolios
             WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
         ) as prj_tbl
-        LEFT OUTER JOIN 
+        LEFT OUTER JOIN
         -- Get energy_target zones for those projects
-        (SELECT project, policy_name, policy_zone, compliance_type, 
-        f_slope, f_intercept
+        (SELECT project, policy_name, policy_zone, compliance_type,
+        f_slope, f_intercept, exceedance_values_scenario_id, sod_stor_rte
             FROM inputs_project_policy_zones
             WHERE project_policy_zone_scenario_id = {subscenarios.PROJECT_POLICY_ZONE_SCENARIO_ID}
         ) as prj_energy_target_zone_tbl
         USING (project)
-        -- Filter out projects whose RPS zone is not one included in our 
+        -- Filter out projects whose RPS zone is not one included in our
         -- energy_target_zone_scenario_id
         WHERE (policy_name, policy_zone) in (
                 SELECT policy_name, policy_zone
@@ -407,12 +494,51 @@ def write_model_inputs(
                 "compliance_type",
                 "f_slope",
                 "f_intercept",
+                "exceedance_values_scenario_id",
+                "sod_stor_rte",
             ]
         )
 
         for row in project_policy_zones:
             replace_nulls = ["." if i is None else i for i in row]
             writer.writerow(replace_nulls)
+
+    project_policy_zone_file = os.path.join(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+        "project_policy_zones.tab",
+    )
+    project_df = pd.read_csv(
+        project_policy_zone_file,
+        sep="\t",
+        usecols=["compliance_type"],
+    )
+    required_compliance_modules = [
+        comp_type for comp_type in project_df.compliance_type.dropna().unique()
+    ]
+    imported_compliance_modules = load_subtype_modules(
+        required_subtype_modules=required_compliance_modules,
+        package="gridpath.project.policy.compliance_types",
+        required_attributes=[],
+    )
+    for comp_m in required_compliance_modules:
+        if hasattr(imported_compliance_modules[comp_m], "write_model_inputs"):
+            imported_compliance_modules[comp_m].write_model_inputs(
+                scenario_directory=scenario_directory,
+                scenario_id=scenario_id,
+                subscenarios=subscenarios,
+                weather_iteration=weather_iteration,
+                hydro_iteration=hydro_iteration,
+                availability_iteration=availability_iteration,
+                subproblem=subproblem,
+                stage=stage,
+                conn=conn,
+            )
 
 
 def import_results_into_database(
@@ -449,3 +575,20 @@ def import_results_into_database(
         results_directory=results_directory,
         which_results="project_policy_zone_timepoint",
     )
+
+    if os.path.exists(
+        os.path.join(results_directory, "project_policy_month_hour_contributions.csv")
+    ):
+        import_csv(
+            conn=db,
+            cursor=c,
+            scenario_id=scenario_id,
+            weather_iteration=weather_iteration,
+            hydro_iteration=hydro_iteration,
+            availability_iteration=availability_iteration,
+            subproblem=subproblem,
+            stage=stage,
+            quiet=quiet,
+            results_directory=results_directory,
+            which_results="project_policy_month_hour_contributions",
+        )

@@ -818,24 +818,6 @@ def validate_inputs(
         ),
     )
 
-    # One horizon cannot straddle multiple periods
-    msg = "All timepoints within a horizon should belong to the same period."
-    write_validation_to_database(
-        conn=conn,
-        scenario_id=scenario_id,
-        weather_iteration=weather_iteration,
-        hydro_iteration=hydro_iteration,
-        availability_iteration=availability_iteration,
-        subproblem_id=subproblem,
-        stage_id=stage,
-        gridpath_module=__name__,
-        db_table="inputs_temporal_horizon_timepoints",
-        severity="High",
-        errors=validate_single_input(
-            df=df_periods_hrzs, idx_col=["balancing_type_horizon", "horizon"], msg=msg
-        ),
-    )
-
     # Make sure there are no missing horizon inputs
     write_validation_to_database(
         conn=conn,

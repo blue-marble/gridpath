@@ -1669,6 +1669,24 @@ class TestExamples(unittest.TestCase):
         scenario_name = "2periods_new_build_generic_policy_recs"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
+    def test_example_generic_policy_sod_test(self):
+        """
+        Check validation and objective function value of
+        "generic_policy_sod_test" example
+        :return:
+        """
+        scenario_name = "generic_policy_sod_test"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_generic_policy_sod_test_w_annual_rps(self):
+        """
+        Check validation and objective function value of
+        "generic_policy_sod_test_w_annual_rps" example
+        :return:
+        """
+        scenario_name = "generic_policy_sod_test_w_annual_rps"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
     def test_example_test_markets_w_tmp_total_limits(self):
         """
         Check validation and objective function value of "test" example
