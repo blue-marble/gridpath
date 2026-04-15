@@ -7709,6 +7709,26 @@ CREATE TABLE results_project_policy_month_hour_contributions
                  policy_month, policy_hour, subproblem_id, stage_id)
 );
 
+DROP TABLE IF EXISTS results_system_month_hour_policy_requirements;
+CREATE TABLE results_system_month_hour_policy_requirements
+(
+    scenario_id                    INTEGER,
+    policy_name                    TEXT,
+    policy_zone                    TEXT,
+    weather_iteration              INTEGER,
+    hydro_iteration                INTEGER,
+    availability_iteration         INTEGER,
+    subproblem_id                  INTEGER,
+    stage_id                       INTEGER,
+    period                         INTEGER,
+    policy_month                   INTEGER,
+    policy_hour                    INTEGER,
+    policy_month_hour_requirement  FLOAT,
+    PRIMARY KEY (scenario_id, policy_name, policy_zone, weather_iteration,
+                 hydro_iteration, availability_iteration, subproblem_id,
+                 stage_id, period, policy_month, policy_hour)
+);
+
 -- PRM balance
 DROP TABLE IF EXISTS results_system_prm;
 CREATE TABLE results_system_prm
