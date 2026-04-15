@@ -125,6 +125,13 @@ class TestGenVar(unittest.TestCase):
             actual_operational_timepoints_by_project,
         )
 
+        # Param: gen_var_cap_factor_default
+        expected_cap_factor_default = {"Wind": 0.5, "Wind_z2": "undefined"}
+        actual_cap_factor_default = {
+            prj: instance.gen_var_cap_factor_default[prj] for prj in instance.GEN_VAR
+        }
+        self.assertDictEqual(expected_cap_factor_default, actual_cap_factor_default)
+
         # Param: gen_var_cap_factor
         all_df = pd.read_csv(
             os.path.join(
@@ -138,11 +145,14 @@ class TestGenVar(unittest.TestCase):
         expected_cap_factor = v_df.set_index(["project", "timepoint"]).to_dict()[
             "cap_factor"
         ]
+        # Add the default value for the missing timepoint
+        expected_cap_factor[("Wind", 20200101)] = 0.5
 
         actual_cap_factor = {
             (g, tmp): instance.gen_var_cap_factor[g, tmp]
             for (g, tmp) in instance.GEN_VAR_OPR_TMPS
         }
+
         self.assertDictEqual(expected_cap_factor, actual_cap_factor)
 
 

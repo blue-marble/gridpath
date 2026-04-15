@@ -125,6 +125,15 @@ class TestGenVarMustTake(unittest.TestCase):
             actual_operational_timepoints_by_project,
         )
 
+        # Param: gen_var_must_take_cap_factor_default
+        expected_cap_factor_default = {"Customer_PV": "undefined"}
+        actual_cap_factor_default = {
+            prj: instance.gen_var_must_take_cap_factor_default[prj]
+            for prj in instance.GEN_VAR_MUST_TAKE
+        }
+
+        self.assertDictEqual(expected_cap_factor_default, actual_cap_factor_default)
+
         # Param: gen_var_must_take_cap_factor
         all_df = pd.read_csv(
             os.path.join(

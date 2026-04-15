@@ -222,7 +222,11 @@ def add_model_components(
     # Required Params
     ###########################################################################
 
-    m.gen_var_cap_factor = Param(m.GEN_VAR_OPR_TMPS, within=Reals)
+    m.gen_var_cap_factor = Param(
+        m.GEN_VAR_OPR_TMPS,
+        within=Reals,
+        default=lambda mod, prj, tmp: mod.gen_var_cap_factor_default[prj],
+    )
 
     # Variables
     ###########################################################################
