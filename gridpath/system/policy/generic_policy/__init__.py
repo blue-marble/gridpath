@@ -62,7 +62,9 @@ def export_results(
                 [p, z, prd, mn, hr]
                 for (p, z, prd, mn, hr) in m.POLICIES_ZONE_PRDS_MONTH_HOURS_WITH_REQ
             ],
-        ).set_index(["policy_name", "policy_zone", "period", "policy_month", "policy_hour"])
+        ).set_index(
+            ["policy_name", "policy_zone", "period", "policy_month", "policy_hour"]
+        )
 
         p_z_prd_mn_hr_df.sort_index(inplace=True)
         setattr(d, POLICY_MH_DF, p_z_prd_mn_hr_df)
