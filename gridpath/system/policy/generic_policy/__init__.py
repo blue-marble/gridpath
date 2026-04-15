@@ -17,6 +17,7 @@ import pandas as pd
 from gridpath.auxiliary.db_interface import import_csv
 
 POLICY_ZONE_PRD_DF = "policy_zone_period_df"
+POLICY_MH_DF = "policy_month_hour_df"
 
 
 def export_results(
@@ -31,8 +32,7 @@ def export_results(
 ):
     """ """
     # First create the results dataframes
-    # Other modules will update these dataframe with actual results
-    # The results dataframes are by index
+    # Other modules will update these dataframes with actual results
 
     p_z_bt_h_df = pd.DataFrame(
         columns=[
@@ -47,9 +47,27 @@ def export_results(
     ).set_index(["policy_name", "policy_zone", "balancing_type_horizon", "horizon"])
 
     p_z_bt_h_df.sort_index(inplace=True)
-
-    # Add the dataframe to the dynamic components to pass to other modules
     setattr(d, POLICY_ZONE_PRD_DF, p_z_bt_h_df)
+
+    if m.POLICIES_ZONE_PRDS_MONTH_HOURS_WITH_REQ:
+        p_z_prd_mn_hr_df = pd.DataFrame(
+            columns=[
+                "policy_name",
+                "policy_zone",
+                "period",
+                "policy_month",
+                "policy_hour",
+            ],
+            data=[
+                [p, z, prd, mn, hr]
+                for (p, z, prd, mn, hr) in m.POLICIES_ZONE_PRDS_MONTH_HOURS_WITH_REQ
+            ],
+        ).set_index(
+            ["policy_name", "policy_zone", "period", "policy_month", "policy_hour"]
+        )
+
+        p_z_prd_mn_hr_df.sort_index(inplace=True)
+        setattr(d, POLICY_MH_DF, p_z_prd_mn_hr_df)
 
 
 def import_results_into_database(
@@ -85,4 +103,18 @@ def import_results_into_database(
         quiet=quiet,
         results_directory=results_directory,
         which_results="system_policy_requirements",
+    )
+
+    import_csv(
+        conn=db,
+        cursor=c,
+        scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        quiet=quiet,
+        results_directory=results_directory,
+        which_results="system_month_hour_policy_requirements",
     )
