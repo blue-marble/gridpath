@@ -139,6 +139,19 @@ def add_model_components(
     |
 
     +-------------------------------------------------------------------------+
+    | Optional Input Params                                                   |
+    +=========================================================================+
+    | | :code:`gen_var_stor_hyb_cap_factor_default`                           |
+    | | *Defined over*: :code:`GEN_VAR_STOR_HYB`                              |
+    | | *Within*: :code:`Reals`                                               |
+    |                                                                         |
+    | Optional default value for gen_var_stor_hyb_cap_factor. Use with        |
+    | caution.                                                                |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
     | Variables                                                               |
     +=========================================================================+
     | | :code:`GenVarStorHyb_Provide_Power_MW`                                |
@@ -286,11 +299,22 @@ def add_model_components(
         ),
     )
 
+    # Optional Params
+    ###########################################################################
+    # Use with caution
+    m.gen_var_stor_hyb_cap_factor_default = Param(
+        m.GEN_VAR_STOR_HYB,
+        within=NonNegativeReals | {"undefined"},
+        initialize="undefined",
+    )
+
     # Required Params
     ###########################################################################
 
     m.gen_var_stor_hyb_cap_factor = Param(
-        m.GEN_VAR_STOR_HYB_OPR_TMPS, within=NonNegativeReals
+        m.GEN_VAR_STOR_HYB_OPR_TMPS,
+        within=NonNegativeReals,
+        default=lambda mod, prj, tmp: mod.gen_var_stor_hyb_cap_factor_default[prj],
     )
 
     m.gen_var_stor_hyb_charging_efficiency = Param(

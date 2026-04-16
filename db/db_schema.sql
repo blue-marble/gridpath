@@ -2019,6 +2019,7 @@ CREATE TABLE inputs_project_operational_chars
     last_commitment_stage                                 INTEGER,
     n_startup_limit_scenario_id                           INTEGER,
     variable_generator_profile_scenario_id                INTEGER, -- determines var profiles
+    cap_factor_default                                    FLOAT,
     curtailment_cost_scenario_id                          INTEGER,
     hydro_operational_chars_scenario_id                   INTEGER, -- determines hydro MWa, min, max
     energy_profile_scenario_id                            INTEGER,
