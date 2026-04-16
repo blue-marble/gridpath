@@ -79,11 +79,26 @@ def add_model_components(
     | Required Input Params                                                   |
     +=========================================================================+
     | | :code:`gen_var_must_take_cap_factor`                                  |
+    | | *Defined over*: :code:`GEN_VAR_MUST_TAKE_OPR_TMPS`                    |
+    | | *Within*: :code:`Reals`                                               |
+    | | *Default*: :code:`gen_var_must_take_cap_factor_default`               |
+    |                                                                         |
+    | The project's power output in each operational timepoint as a fraction  |
+    | of its available capacity (i.e. the capacity factor). Setting the       |
+    | default is optional.                                                    |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Optional Input Params                                                   |
+    +=========================================================================+
+    | | :code:`gen_var_must_take_cap_factor_default`                          |
     | | *Defined over*: :code:`GEN_VAR_MUST_TAKE`                             |
     | | *Within*: :code:`Reals`                                               |
     |                                                                         |
-    | The project's power output in each operational timepoint as a fraction  |
-    | of its available capacity (i.e. the capacity factor).                   |
+    | Optinal default value for gen_var_must_take_cap_factor. Use with        |
+    | caution.                                                                |
     +-------------------------------------------------------------------------+
 
     |
@@ -126,10 +141,23 @@ def add_model_components(
         ),
     )
 
+    # Optional Params
+    ###########################################################################
+    # Use with caution
+    m.gen_var_must_take_cap_factor_default = Param(
+        m.GEN_VAR_MUST_TAKE,
+        within=Reals | {"undefined"},
+        initialize="undefined",
+    )
+
     # Required Params
     ###########################################################################
 
-    m.gen_var_must_take_cap_factor = Param(m.GEN_VAR_MUST_TAKE_OPR_TMPS, within=Reals)
+    m.gen_var_must_take_cap_factor = Param(
+        m.GEN_VAR_MUST_TAKE_OPR_TMPS,
+        within=Reals,
+        default=lambda mod, prj, tmp: mod.gen_var_must_take_cap_factor_default[prj],
+    )
 
     # Constraints
     ###########################################################################

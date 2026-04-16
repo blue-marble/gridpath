@@ -125,6 +125,14 @@ class TestGenVarStorHybOpType(unittest.TestCase):
             actual_operational_timepoints_by_project,
         )
 
+        # Param: gen_var_cap_factor_default
+        expected_cap_factor_default = {"Wind_Battery_Hybrid": "undefined"}
+        actual_cap_factor_default = {
+            prj: instance.gen_var_stor_hyb_cap_factor_default[prj]
+            for prj in instance.GEN_VAR_STOR_HYB
+        }
+        self.assertDictEqual(expected_cap_factor_default, actual_cap_factor_default)
+
         # Param: gen_var_stor_hyb_cap_factor
         all_df = pd.read_csv(
             os.path.join(
