@@ -219,4 +219,6 @@ water/powerhouses,water,water_powerhouse_scenario_id,system_water_powerhouses,si
 policy/generic/geography,policy,policy_zone_scenario_id,geography_policy_zones,simple,,0,,,,,
 policy/generic/requirements,policy,policy_requirement_scenario_id,system_policy_requirements,dir_main,,0,,requirements.csv,,,
 policy/generic/requirements,policy,policy_requirement_scenario_id,system_policy_requirements_load_zone_map,dir_aux,,0,,load_zone_mapping.csv,,,
+policy/generic/requirements,policy,policy_requirement_scenario_id,system_policy_month_hour_requirements,dir_aux,,0,,month_hour_requirements.csv,,,
 policy/generic/project_policy_zones,policy,project_policy_zone_scenario_id,project_policy_zones,simple,,0,,,,,
+policy/generic/project_policy_zones/exceedance_values,policy,exceedance_values_scenario_id,project_policy_exceedance_values,simple,,1,project,,,inputs_project_policy_zones,project_policy_zone_scenario_id

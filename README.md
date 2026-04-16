@@ -3,7 +3,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/blue-marble/gridpath/badge.svg?branch=main)](https://coveralls.io/github/blue-marble/gridpath?branch=main)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Lint Black](https://github.com/blue-marble/gridpath/actions/workflows/black.yml/badge.svg?branch=main)](https://github.com/blue-marble/gridpath/actions/workflows/black.yml)
-[![DOI](https://zenodo.org/badge/65574330.svg)](https://zenodo.org/badge/latestdoi/65574330)
+[![DOI](https://zenodo.org/badge/65574330.svg)](https://doi.org/10.5281/zenodo.5822994)
 
 # Welcome to GridPath
 

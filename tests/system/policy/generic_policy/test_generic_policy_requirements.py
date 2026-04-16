@@ -178,6 +178,58 @@ class TestHorizonEnergyTarget(unittest.TestCase):
         )
         self.assertDictEqual(expected_req_fl, actual_req_fl)
 
+        # Set: POLICIES_ZONE_PRDS_MONTH_HOURS_WITH_REQ
+        expected_p_zone_prd_mh = sorted(
+            [
+                ("SLICE_OF_DAY", "SODZone1", 2020, 1, 7),
+                ("SLICE_OF_DAY", "SODZone1", 2020, 1, 8),
+                ("SLICE_OF_DAY", "SODZone1", 2030, 1, 7),
+                ("SLICE_OF_DAY", "SODZone1", 2030, 1, 8),
+            ]
+        )
+        actual_p_zone_prd_mh = sorted(
+            [
+                (p, z, prd, mn, hr)
+                for (
+                    p,
+                    z,
+                    prd,
+                    mn,
+                    hr,
+                ) in instance.POLICIES_ZONE_PRDS_MONTH_HOURS_WITH_REQ
+            ]
+        )
+        self.assertListEqual(expected_p_zone_prd_mh, actual_p_zone_prd_mh)
+
+        # Param: policy_month_hour_requirement
+        expected_mh_req = OrderedDict(
+            sorted(
+                {
+                    ("SLICE_OF_DAY", "SODZone1", 2020, 1, 7): 100,
+                    ("SLICE_OF_DAY", "SODZone1", 2020, 1, 8): 100,
+                    ("SLICE_OF_DAY", "SODZone1", 2030, 1, 7): 100,
+                    ("SLICE_OF_DAY", "SODZone1", 2030, 1, 8): 100,
+                }.items()
+            )
+        )
+        actual_mh_req = OrderedDict(
+            sorted(
+                {
+                    (p, z, prd, mn, hr): instance.policy_month_hour_requirement[
+                        p, z, prd, mn, hr
+                    ]
+                    for (
+                        p,
+                        z,
+                        prd,
+                        mn,
+                        hr,
+                    ) in instance.POLICIES_ZONE_PRDS_MONTH_HOURS_WITH_REQ
+                }.items()
+            )
+        )
+        self.assertDictEqual(expected_mh_req, actual_mh_req)
+
 
 if __name__ == "__main__":
     unittest.main()

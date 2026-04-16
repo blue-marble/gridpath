@@ -15,7 +15,7 @@
 
 import os.path
 
-from gridpath.system.policy.generic_policy import POLICY_ZONE_PRD_DF
+from gridpath.system.policy.generic_policy import POLICY_ZONE_PRD_DF, POLICY_MH_DF
 
 
 def export_results(
@@ -29,21 +29,30 @@ def export_results(
     d,
 ):
     """
-    Export all results from the POLICY_ZONE_PRD_DF that various modules
-    have added to
+    Write accumulated results DFs to CSV. Both DFs are built up incrementally
+    by upstream modules via .update() before this consolidation step runs.
     """
 
-    getattr(d, POLICY_ZONE_PRD_DF).to_csv(
-        os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "results",
-            "system_policy_requirements.csv",
-        ),
-        sep=",",
-        index=True,
+    results_dir = os.path.join(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "results",
     )
+
+    if m.POLICIES_ZONE_BLN_TYPE_HRZS_WITH_REQ:
+        getattr(d, POLICY_ZONE_PRD_DF).to_csv(
+            os.path.join(results_dir, "system_policy_requirements.csv"),
+            sep=",",
+            index=True,
+        )
+
+    if m.POLICIES_ZONE_PRDS_MONTH_HOURS_WITH_REQ:
+        getattr(d, POLICY_MH_DF).to_csv(
+            os.path.join(results_dir, "system_month_hour_policy_requirements.csv"),
+            sep=",",
+            index=True,
+        )
