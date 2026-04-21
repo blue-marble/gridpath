@@ -53,6 +53,7 @@ from data_toolkit.system.common_methods import (
     create_load_components_scenario_csv,
 )
 from db.common_functions import connect_to_database
+from data_toolkit.load_raw_data import read_and_import_csv
 
 LOAD_SCENARIO_ID_DEFAULT = 1  # it's 6 in the test examples
 LOAD_SCENARIO_NAME_DEFAULT = "ra_toolkit"
@@ -75,6 +76,22 @@ def parse_arguments(args):
     parser = ArgumentParser(add_help=True)
 
     parser.add_argument("-db", "--database")
+    parser.add_argument(
+        "-l_csv",
+        "--load_profile_input_csv",
+        default=None,
+        help="""Path to the availability profiles CSV file to load into the 
+        raw_data_system_load table. If not specified, data will be assumed to 
+        have been already loaded into the database.""",
+    )
+    parser.add_argument(
+        "-u_csv",
+        "--units_input_csv",
+        default=None,
+        help="""Path to the unit availability params CSV file to load into the 
+        user_defined_load_zone_units table. If not specified, data will be 
+        assumed to have been already loaded into the database.""",
+    )
 
     parser.add_argument(
         "-out_dir",
@@ -207,7 +224,8 @@ def create_load_levels_csv(
         '{load_component_name}' AS load_component, sum(weighted_load_mw) as 
         load_mw
         FROM (
-        SELECT year, month, day_of_month, hour_of_day, load_zone_unit, load_zone, unit_weight, load_mw, unit_weight * load_mw as weighted_load_mw,
+        SELECT year, month, day_of_month, hour_of_day, unit, load_zone, 
+        unit_weight, value, unit_weight * value as weighted_load_mw,
             (CAST(
                 strftime('%j',
                     year || '-' || 
@@ -222,7 +240,7 @@ def create_load_levels_csv(
                 ) - 1) * 24 + hour_of_day AS hour_of_year
         FROM raw_data_system_load
         JOIN user_defined_load_zone_units
-        USING (load_zone_unit)
+        USING (unit)
         )
     GROUP BY load_zone, year, hour_of_year
     """
@@ -268,6 +286,21 @@ def main(args=None):
     )
 
     conn = connect_to_database(db_path=parsed_args.database)
+
+    # ### Load data from CSV
+    if parsed_args.load_profile_input_csv is not None:
+        read_and_import_csv(
+            conn=conn,
+            f_path=parsed_args.load_profile_input_csv,
+            table="raw_data_system_load",
+        )
+
+    if parsed_args.units_input_csv is not None:
+        read_and_import_csv(
+            conn=conn,
+            f_path=parsed_args.units_input_csv,
+            table="user_defined_load_zone_units",
+        )
 
     if not parsed_args.skip_load_scenario:
         create_load_scenario_csv(

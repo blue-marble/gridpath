@@ -1,4 +1,5 @@
-# Copyright 2016-2024 Blue Marble Analytics LLC.
+# Copyright 2016-2025 Blue Marble Analytics LLC.
+# Copyright 2026 Sylvan Energy Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,6 +24,7 @@ from data_toolkit import load_raw_data
 from data_toolkit.temporal import (
     create_temporal_scenarios,
     create_monte_carlo_weather_draws,
+    create_monte_carlo_weather_draw_profiles,
 )
 from data_toolkit.system import (
     eia930_load_zone_input_csvs,
@@ -101,9 +103,7 @@ def parse_arguments(args):
     """
     parser = ArgumentParser(add_help=True)
 
-    parser.add_argument(
-        "-s", "--settings_csv", default="./open_data_toolkit_settings_sample.csv"
-    )
+    parser.add_argument("-s", "--settings_csv", default="./settings.csv")
     parser.add_argument("-q", "--quiet", default=False, action="store_true")
     # Run only a single Data Toolkit step
     parser.add_argument(
@@ -115,6 +115,7 @@ def parse_arguments(args):
             "create_sync_load_input_csvs",
             "create_sync_var_gen_input_csvs",
             "create_monte_carlo_weather_draws",
+            "create_monte_carlo_weather_draw_profiles",
             "create_monte_carlo_load_input_csvs",
             "create_monte_carlo_var_gen_input_csvs",
             "create_hydro_iteration_input_csvs",
