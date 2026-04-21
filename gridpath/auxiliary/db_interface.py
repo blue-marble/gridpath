@@ -222,7 +222,8 @@ def import_csv(
 
     results_filepath = os.path.join(results_directory, f"{which_results}.csv")
     if not os.path.exists(results_filepath):
-        print("...not found, skipping...")
+        if not quiet:
+            print("...not found, skipping...")
     else:
         df = pd.read_csv(results_filepath)
         df["scenario_id"] = scenario_id
