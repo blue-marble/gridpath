@@ -107,6 +107,14 @@ def parse_arguments(args):
     )
     parser.add_argument("-hy_id", "--hydro_operational_chars_scenario_id", default=1)
 
+    parser.add_argument(
+        "-hydro_bt",
+        "--hydro_balancing_type",
+        default=None,
+        help="Override balancing_type_project for hydro projects. "
+        "If not specified, uses gridpath_balancing_type from the key table.",
+    )
+
     parser.add_argument("-q", "--quiet", default=False, action="store_true")
 
     parsed_arguments = parser.parse_known_args(args=args)[0]
@@ -131,6 +139,7 @@ def get_project_opchar(
     hr_id,
     var_id,
     hy_id,
+    hydro_balancing_type=None,
 ):
     # Wind, offshore wind, and PV are aggregated, so treated separately since
     # they are aggregated, so here we make a UNION between tables filtering
@@ -160,33 +169,39 @@ def get_project_opchar(
         variable_generator_profile_scenario_id=f"{var_id}",
     )
 
+    hydro_bt_expr = (
+        f"'{hydro_balancing_type}'"
+        if hydro_balancing_type
+        else "gridpath_balancing_type"
+    )
     hydro_opchars_str = make_opchar_sql_str(
         technology="gridpath_technology",
         operational_type="gridpath_operational_type",
-        balancing_type_project="gridpath_balancing_type",
+        balancing_type_project=hydro_bt_expr,
         variable_om_cost_per_mwh="default_variable_om_cost_per_mwh",
         hydro_operational_chars_scenario_id=f"{hy_id}",
     )
 
     sql = f"""
-     SELECT {disagg_project_name_str} AS project,
+     SELECT {agg_project_name_str} AS project,
          {non_var_opchars_str}
      FROM raw_data_eia860_generators
      JOIN user_defined_eia_gridpath_key ON
-            raw_data_eia860_generators.prime_mover_code = 
+            raw_data_eia860_generators.prime_mover_code =
             user_defined_eia_gridpath_key.prime_mover_code
             AND energy_source_code_1 = energy_source_code
      WHERE 1 = 1
      AND {eia860_sql_filter_string}
      AND NOT {var_gen_filter_str}
      AND NOT {hydro_filter_str}
+     GROUP BY project
      -- Variable gen
      UNION
      SELECT {agg_project_name_str} AS project,
          {var_opchars_str}
      FROM raw_data_eia860_generators
      JOIN user_defined_eia_gridpath_key ON
-            raw_data_eia860_generators.prime_mover_code = 
+            raw_data_eia860_generators.prime_mover_code =
             user_defined_eia_gridpath_key.prime_mover_code
             AND energy_source_code_1 = energy_source_code
      WHERE 1 = 1
@@ -199,7 +214,7 @@ def get_project_opchar(
          {hydro_opchars_str}
      FROM raw_data_eia860_generators
      JOIN user_defined_eia_gridpath_key ON
-            raw_data_eia860_generators.prime_mover_code = 
+            raw_data_eia860_generators.prime_mover_code =
             user_defined_eia_gridpath_key.prime_mover_code
             AND energy_source_code_1 = energy_source_code
      WHERE 1 = 1
@@ -455,6 +470,7 @@ def main(args=None):
         hr_id=parsed_args.heat_rate_curves_scenario_id,
         var_id=parsed_args.variable_generator_profile_scenario_id,
         hy_id=parsed_args.hydro_operational_chars_scenario_id,
+        hydro_balancing_type=parsed_args.hydro_balancing_type,
     )
 
     conn.close()

@@ -109,33 +109,6 @@ def get_project_capacity(
     subscenario_name,
 ):
     sql = f"""
-    SELECT {disagg_project_name_str} AS project, 
-        {study_year} as period,
-        capacity_mw AS specified_capacity_mw,
-        NULL AS specified_energy_mwh,
-        NULL AS shaping_capacity_mw,
-        NULL AS hyb_gen_specified_capacity_mw,
-        NULL AS hyb_stor_specified_capacity_mw,
-        CASE 
-            WHEN raw_data_eia860_generators.prime_mover_code NOT IN ('BA', 
-            'ES', 'FW', 'PS') THEN NULL
-            ELSE energy_storage_capacity_mwh
-        END
-            AS specified_stor_capacity_mwh,
-        NULL AS fuel_production_capacity_fuelunitperhour,
-        NULL AS fuel_release_capacity_fuelunitperhour,
-        NULL AS fuel_storage_capacity_fuelunit
-    FROM raw_data_eia860_generators
-    JOIN user_defined_eia_gridpath_key ON
-            raw_data_eia860_generators.prime_mover_code = 
-            user_defined_eia_gridpath_key.prime_mover_code
-            AND energy_source_code_1 = energy_source_code
-     WHERE 1 = 1
-     AND {eia860_sql_filter_string}
-     AND NOT {var_gen_filter_str}
-     AND NOT {hydro_filter_str}
-    UNION
-    -- Aggregated units include wind, offshore wind, solar, and hydro
     SELECT {agg_project_name_str} AS project,
         {study_year} as period,
         SUM(capacity_mw) AS specified_capacity_mw,
@@ -143,17 +116,22 @@ def get_project_capacity(
         NULL AS shaping_capacity_mw,
         NULL AS hyb_gen_specified_capacity_mw,
         NULL AS hyb_stor_specified_capacity_mw,
-        SUM(energy_storage_capacity_mwh) AS specified_stor_capacity_mwh,
+        SUM(CASE
+            WHEN raw_data_eia860_generators.prime_mover_code NOT IN ('BA',
+            'ES', 'FW', 'PS') THEN NULL
+            ELSE energy_storage_capacity_mwh
+        END) AS specified_stor_capacity_mwh,
         NULL AS fuel_production_capacity_fuelunitperhour,
         NULL AS fuel_release_capacity_fuelunitperhour,
         NULL AS fuel_storage_capacity_fuelunit
     FROM raw_data_eia860_generators
-    JOIN user_defined_eia_gridpath_key
-    USING (prime_mover_code)
-    WHERE 1 = 1
-    AND {eia860_sql_filter_string}
-    AND ({var_gen_filter_str} OR {hydro_filter_str})
-    GROUP BY project
+    JOIN user_defined_eia_gridpath_key ON
+            raw_data_eia860_generators.prime_mover_code =
+            user_defined_eia_gridpath_key.prime_mover_code
+            AND energy_source_code_1 = energy_source_code
+     WHERE 1 = 1
+     AND {eia860_sql_filter_string}
+     GROUP BY project
     ;
     """
 

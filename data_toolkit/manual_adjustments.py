@@ -24,6 +24,7 @@ from data_toolkit.load_raw_data import read_and_import_csv
 from data_toolkit.project.project_data_filters_common import (
     get_eia860_sql_filter_string,
     DISAGG_PROJECT_NAME_STR,
+    AGG_PROJECT_NAME_STR,
 )
 
 # Storage durations
@@ -128,7 +129,7 @@ def make_copy_files(
 
 def add_battery_durations(
     conn,
-    disagg_project_name_str,
+    agg_project_name_str,
     study_year,
     eia860_sql_filter_string,
     csv_location,
@@ -147,16 +148,17 @@ def add_battery_durations(
 
     for tech in tech_dur_dict.keys():
         sql = f"""
-            SELECT {disagg_project_name_str} AS project, 
+            SELECT {agg_project_name_str} AS project,
             {study_year} as period
             FROM raw_data_eia860_generators
             JOIN user_defined_eia_gridpath_key ON
-                    raw_data_eia860_generators.prime_mover_code = 
+                    raw_data_eia860_generators.prime_mover_code =
                     user_defined_eia_gridpath_key.prime_mover_code
                     AND energy_source_code_1 = energy_source_code
             WHERE 1 = 1
             AND {eia860_sql_filter_string}
             AND raw_data_eia860_generators.prime_mover_code = '{tech}'
+            GROUP BY project
             ;
         """
         relevant_projects_df = pd.read_sql(sql, conn)
@@ -218,7 +220,7 @@ def main(args=None):
 
     add_battery_durations(
         conn=conn,
-        disagg_project_name_str=DISAGG_PROJECT_NAME_STR,
+        agg_project_name_str=AGG_PROJECT_NAME_STR,
         study_year=parsed_args.study_year,
         eia860_sql_filter_string=get_eia860_sql_filter_string(
             study_year=parsed_args.study_year, region=parsed_args.region

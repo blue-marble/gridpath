@@ -106,7 +106,7 @@ def get_project_availability(
     subscenario_name,
 ):
     sql = f"""
-    SELECT {disagg_project_name_str} AS project, 
+    SELECT {agg_project_name_str} AS project,
     'exogenous' AS availability_type,
     NULL AS exogenous_availability_independent_scenario_id,
     NULL AS exogenous_availability_weather_scenario_id,
@@ -115,28 +115,12 @@ def get_project_availability(
     NULL AS endogenous_availability_scenario_id
     FROM raw_data_eia860_generators
     JOIN user_defined_eia_gridpath_key ON
-            raw_data_eia860_generators.prime_mover_code = 
+            raw_data_eia860_generators.prime_mover_code =
             user_defined_eia_gridpath_key.prime_mover_code
             AND energy_source_code_1 = energy_source_code
      WHERE 1 = 1
      AND {eia860_sql_filter_string}
-     AND NOT {var_gen_filter_str}
-     AND NOT {hydro_filter_str}
-    UNION
-    -- Aggregated units include wind, offshore wind, solar, and hydro
-    SELECT {agg_project_name_str} AS project,
-        'exogenous' AS availability_type,
-    NULL AS exogenous_availability_independent_scenario_id,
-    NULL AS exogenous_availability_weather_scenario_id,
-    NULL AS exogenous_availability_independent_bt_hrz_scenario_id,
-    NULL AS exogenous_availability_weather_bt_hrz_scenario_id,
-    NULL AS endogenous_availability_scenario_id
-    FROM raw_data_eia860_generators
-    JOIN user_defined_eia_gridpath_key
-    USING (prime_mover_code)
-    WHERE 1 = 1
-    AND {eia860_sql_filter_string}
-    AND ({var_gen_filter_str} OR {hydro_filter_str})
+     GROUP BY project
     """
 
     df = pd.read_sql(sql, conn)

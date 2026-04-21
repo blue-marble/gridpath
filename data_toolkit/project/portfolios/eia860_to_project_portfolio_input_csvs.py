@@ -118,39 +118,21 @@ def get_project_portfolio_for_region(
     subscenario_name,
 ):
     """
-    Unit level except for wind (onshore and offshore) and solar PV, which are
-    aggregated to the BA-level.
+    All projects aggregated to the technology-BA level.
     """
-    # For disaggregated unit-level projects, use plant_id_eia__generator_id
-    # as the project name
-    # For BA-aggregated projects, use prime_mover_BA
     sql = f"""
-    -- Disaggregated units
-    SELECT {disagg_project_name_str} AS project, 
-    NULL as specified, 
+    SELECT {agg_project_name_str} AS project,
+    NULL as specified,
     NULL as new_build,
     gridpath_capacity_type AS capacity_type
     FROM raw_data_eia860_generators
     JOIN user_defined_eia_gridpath_key ON
-            raw_data_eia860_generators.prime_mover_code = 
+            raw_data_eia860_generators.prime_mover_code =
             user_defined_eia_gridpath_key.prime_mover_code
             AND energy_source_code_1 = energy_source_code
      WHERE 1 = 1
      AND {eia860_sql_filter_string}
-     AND NOT {var_gen_filter_str}
-     AND NOT {hydro_filter_str}
-    UNION
-    -- Aggregated units include wind, offshore wind, solar, and hydro
-    SELECT {agg_project_name_str} AS project,
-        NULL as specified,
-        NULL as new_build,
-        gridpath_capacity_type AS capacity_type
-    FROM raw_data_eia860_generators
-    JOIN user_defined_eia_gridpath_key
-    USING (prime_mover_code)
-    WHERE 1 = 1
-    AND {eia860_sql_filter_string}
-    AND ({var_gen_filter_str} OR {hydro_filter_str})
+     GROUP BY project
     ;
     """
 

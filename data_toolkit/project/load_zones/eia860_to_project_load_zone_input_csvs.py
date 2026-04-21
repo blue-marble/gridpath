@@ -106,26 +106,16 @@ def get_project_load_zones(
     subscenario_name,
 ):
     sql = f"""
-    SELECT {disagg_project_name_str} AS project, balancing_authority_code_eia AS load_zone
+    SELECT {agg_project_name_str} AS project,
+        balancing_authority_code_eia AS load_zone
     FROM raw_data_eia860_generators
     JOIN user_defined_eia_gridpath_key ON
-            raw_data_eia860_generators.prime_mover_code = 
+            raw_data_eia860_generators.prime_mover_code =
             user_defined_eia_gridpath_key.prime_mover_code
             AND energy_source_code_1 = energy_source_code
     WHERE 1 = 1
     AND {eia860_sql_filter_string}
-    AND NOT {var_gen_filter_str}
-    AND NOT {hydro_filter_str}
-    -- Aggregated units include wind, offshore wind, solar, and hydro
-    UNION
-    SELECT {agg_project_name_str} AS project,
-        balancing_authority_code_eia AS load_zone
-    FROM raw_data_eia860_generators
-    JOIN user_defined_eia_gridpath_key
-    USING (prime_mover_code)
-    WHERE 1 = 1
-    AND {eia860_sql_filter_string}
-    AND ({var_gen_filter_str} OR {hydro_filter_str})
+    GROUP BY project
     ;
     """
 
