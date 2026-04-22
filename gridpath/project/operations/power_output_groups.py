@@ -49,50 +49,55 @@ def add_model_components(
     +-------------------------------------------------------------------------+
     | Sets                                                                    |
     +=========================================================================+
-    | | :code:`POWER_OUTPUT_GROUP_PERIODS`                                        |
+    | | :code:`POWER_OUTPUT_GROUP_PERIODS`                                    |
     |                                                                         |
     | A two-dimensional set of group-period combinations for which there may  |
-    | be group capacity requirements.                                         |
+    | be group power output requirements.                                     |
     +-------------------------------------------------------------------------+
-    | | :code:`POWER_OUTPUT_GROUPS`                                               |
+    | | :code:`POWER_OUTPUT_GROUPS`                                           |
     |                                                                         |
-    | The groups of projects for which there may be group capacity            |
+    | The groups of projects for which there may be group power output        |
     | requirements.                                                           |
     +-------------------------------------------------------------------------+
-    | | :code:`PROJECTS_IN_POWER_OUTPUT_GROUP`                                    |
+    | | :code:`POWER_OUTPUT_GROUP_TMPS`                                       |
     |                                                                         |
-    | The list of projects by capacity group.                                 |
+    | A two-dimensional set of group-timepoint combinations for which power   |
+    | output constraints are enforced.                                        |
+    +-------------------------------------------------------------------------+
+    | | :code:`PROJECTS_IN_POWER_OUTPUT_GROUP`                                |
+    |                                                                         |
+    | The list of projects by power output group.                             |
     +-------------------------------------------------------------------------+
 
     +-------------------------------------------------------------------------+
     | Optional Input Params                                                   |
     +=========================================================================+
-    | | :code:`power_output_group_power_output_min`                             |
-    | | *Defined over*: :code:`POWER_OUTPUT_GROUP_PERIODS`                        |
-    | | *Within*: :code:`Reals`                                    |
-    | | *Default*: :code:`-inf`                                                  |
+    | | :code:`power_output_group_power_output_min`                           |
+    | | *Defined over*: :code:`POWER_OUTPUT_GROUP_PERIODS`                    |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`0`                                                  |
     |                                                                         |
-    | The minimum amount of power (in MW) that projects can produce in a
-    timepoint in a certain period.                                        |
+    | The minimum amount of power (in MW) that projects in a group can       |
+    | produce in any timepoint in a certain period.                           |
     +-------------------------------------------------------------------------+
-    | | :code:`power_output_group_power_output_max`                             |
-    | | *Defined over*: :code:`POWER_OUTPUT_GROUP_PERIODS`                        |
-    | | *Within*: :code:`Reals`                                    |
+    | | :code:`power_output_group_power_output_max`                           |
+    | | *Defined over*: :code:`POWER_OUTPUT_GROUP_PERIODS`                    |
+    | | *Within*: :code:`NonNegativeReals`                                    |
     | | *Default*: :code:`inf`                                                |
     |                                                                         |
-    | The minimum amount of power (in MW) that projects can produce in a
-    timepoint in a certain period.                                        |
-     +-------------------------------------------------------------------------+
+    | The maximum amount of power (in MW) that projects in a group can       |
+    | produce in any timepoint in a certain period.                           |
+    +-------------------------------------------------------------------------+
 
     |
 
     +-------------------------------------------------------------------------+
     | Expressions                                                             |
     +=========================================================================+
-    | | :code:`Group_Total_Power_in_Tmp_Timepoint`                                |
-    | | *Defined over*: :code:`POWER_OUTPUT_GROUP_TMPS`                        |
+    | | :code:`Group_Total_Power_in_Tmp`                                     |
+    | | *Defined over*: :code:`POWER_OUTPUT_GROUP_TMPS`                      |
     |                                                                         |
-    | Total power output from the group in a timepoint.           |
+    | Total power output from the group in a timepoint.                       |
     +-------------------------------------------------------------------------+
 
     |
@@ -100,17 +105,17 @@ def add_model_components(
     +-------------------------------------------------------------------------+
     | Constraints                                                             |
     +=========================================================================+
-    | | :code:`Max_Group_Total_Power_Constraint`                      |
-    | | *Defined over*: :code:`POWER_OUTPUT_GROUP`                        |
+    | | :code:`Max_Group_Total_Power_in_Tmp_Constraint`                      |
+    | | *Defined over*: :code:`POWER_OUTPUT_GROUP_TMPS`                      |
     |                                                                         |
-    | Limits the max amount of power output from each group in each
-    timepoint        |
+    | Limits the maximum amount of power output from each group in each      |
+    | timepoint.                                                              |
     +-------------------------------------------------------------------------+
-    | | :code:`Min_Group_Total_Power_Constraint`                          |
-    | | *Defined over*: :code:`POWER_OUTPUT_GROUP`                        |
+    | | :code:`Min_Group_Total_Power_in_Tmp_Constraint`                      |
+    | | *Defined over*: :code:`POWER_OUTPUT_GROUP_TMPS`                      |
     |                                                                         |
-    | Limits the max amount of power output from each group in each
-    timepoint        |
+    | Limits the minimum amount of power output from each group in each      |
+    | timepoint.                                                              |
     +-------------------------------------------------------------------------+
 
     """
@@ -234,8 +239,10 @@ def load_model_data(
     subproblem,
     stage,
 ):
-    """ """
-    # Only load data if the input files were written; otehrwise, we won't
+    """
+    Load power output group data from tab files.
+    """
+    # Only load data if the input files were written; otherwise, we won't
     # initialize the components in this module
 
     req_file = os.path.join(
@@ -338,7 +345,9 @@ def write_model_inputs(
     stage,
     conn,
 ):
-    """ """
+    """
+    Write power output group model inputs from database to tab files.
+    """
 
     (
         db_weather_iteration,
@@ -409,35 +418,3 @@ def save_duals(
         "period",
         "dual",
     ]
-
-
-#
-# def import_results_into_database(
-#     scenario_id,
-#     weather_iteration,
-#     hydro_iteration,
-#     availability_iteration,
-#     subproblem,
-#     stage,
-#     c,
-#     db,
-#     results_directory,
-#     quiet,
-# ):
-#     which_results = "project_group_capacity"
-#     # Import only if a results-file was exported
-#     results_file = os.path.join(results_directory, f"{which_results}.csv")
-#     if os.path.exists(results_file):
-#         import_csv(
-#             conn=db,
-#             cursor=c,
-#             scenario_id=scenario_id,
-#             weather_iteration=weather_iteration,
-#             hydro_iteration=hydro_iteration,
-#             availability_iteration=availability_iteration,
-#             subproblem=subproblem,
-#             stage=stage,
-#             quiet=quiet,
-#             results_directory=results_directory,
-#             which_results=which_results,
-#         )
