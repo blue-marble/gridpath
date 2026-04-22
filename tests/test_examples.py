@@ -1777,6 +1777,15 @@ class TestExamples(unittest.TestCase):
         scenario_name = "2periods_new_build_2zones_new_build_transmission_stochastic"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
+    def test_example_test_new_build_gen_var_stor_hyb_as_pwr_grp(self):
+        """
+        Check validation and objective function value of
+        "test_new_build_gen_var_stor_hyb_as_pwr_grp" example
+        :return:
+        """
+        scenario_name = "test_new_build_gen_var_stor_hyb_as_pwr_grp"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
     @classmethod
     def tearDownClass(cls):
         os.remove(DB_PATH)

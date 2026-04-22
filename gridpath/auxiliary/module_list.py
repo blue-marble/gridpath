@@ -116,6 +116,7 @@ def all_modules_list():
         "project.operations.carbon_tax",
         "project.operations.performance_standard",
         "project.operations.carbon_credits",
+        "project.operations.power_output_groups",
         "project.reliability.prm",
         "project.reliability.prm.prm_types",
         "project.reliability.prm.prm_simple",

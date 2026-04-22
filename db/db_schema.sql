@@ -2890,6 +2890,52 @@ CREATE TABLE inputs_project_cap_factor_limits
         subscenarios_project_cap_factor_limits (project, cap_factor_limits_scenario_id)
 );
 
+-- Group capacity requirements
+-- Requirements
+DROP TABLE IF EXISTS subscenarios_project_power_output_group_requirements;
+CREATE TABLE subscenarios_project_power_output_group_requirements
+(
+    project_power_output_group_requirement_scenario_id INTEGER PRIMARY KEY
+        AUTOINCREMENT,
+    name                                           VARCHAR(32),
+    description                                    VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_project_power_output_group_requirements;
+CREATE TABLE inputs_project_power_output_group_requirements
+(
+    project_power_output_group_requirement_scenario_id INTEGER,
+    power_output_group                                 VARCHAR(64),
+    period                                         INTEGER,
+    power_output_group_total_power_min              FLOAT,
+    power_output_group_total_power_max              FLOAT,
+    PRIMARY KEY (project_power_output_group_requirement_scenario_id,
+                 power_output_group, period),
+    FOREIGN KEY (project_power_output_group_requirement_scenario_id) REFERENCES
+        subscenarios_project_power_output_group_requirements
+            (project_power_output_group_requirement_scenario_id)
+);
+
+-- Group project mapping
+DROP TABLE IF EXISTS subscenarios_project_power_output_groups;
+CREATE TABLE subscenarios_project_power_output_groups
+(
+    project_power_output_group_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name                               VARCHAR(32),
+    description                        VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_project_power_output_groups;
+CREATE TABLE inputs_project_power_output_groups
+(
+    project_power_output_group_scenario_id INTEGER,
+    power_output_group                     VARCHAR(64),
+    project                            VARCHAR(64),
+    PRIMARY KEY (project_power_output_group_scenario_id, power_output_group, project),
+    FOREIGN KEY (project_power_output_group_scenario_id) REFERENCES
+        subscenarios_project_power_output_groups (project_power_output_group_scenario_id)
+);
+
 -- Bt-hrz ramp up rate limits
 DROP TABLE IF EXISTS subscenarios_project_bt_hrz_ramp_up_rate_limits;
 CREATE TABLE subscenarios_project_bt_hrz_ramp_up_rate_limits
@@ -5790,6 +5836,8 @@ CREATE TABLE scenarios
     project_capacity_group_requirement_scenario_id              INTEGER,
     project_relative_capacity_requirement_scenario_id           INTEGER,
     project_capacity_group_scenario_id                          INTEGER,
+    project_power_output_group_requirement_scenario_id          INTEGER,
+    project_power_output_group_scenario_id                      INTEGER,
     transmission_portfolio_scenario_id                          INTEGER,
     transmission_load_zone_scenario_id                          INTEGER,
     transmission_specified_capacity_scenario_id                 INTEGER,
@@ -6022,6 +6070,12 @@ CREATE TABLE scenarios
     FOREIGN KEY (project_relative_capacity_requirement_scenario_id) REFERENCES
         subscenarios_project_relative_capacity_requirements
             (project_relative_capacity_requirement_scenario_id),
+    FOREIGN KEY (project_power_output_group_requirement_scenario_id) REFERENCES
+        subscenarios_project_power_output_group_requirements
+            (project_power_output_group_requirement_scenario_id),
+    FOREIGN KEY (project_power_output_group_scenario_id) REFERENCES
+        subscenarios_project_power_output_groups
+            (project_power_output_group_scenario_id),
     FOREIGN KEY (transmission_portfolio_scenario_id) REFERENCES
         subscenarios_transmission_portfolios (transmission_portfolio_scenario_id),
     FOREIGN KEY (transmission_load_zone_scenario_id)
