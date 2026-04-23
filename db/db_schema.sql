@@ -345,6 +345,11 @@ CREATE TABLE inputs_temporal
     FOREIGN KEY (month) REFERENCES mod_months (month)
 );
 
+-- Composite index for temporal lookups
+CREATE INDEX idx_temporal_scenario_subproblem_stage
+ON inputs_temporal(temporal_scenario_id, subproblem_id, stage_id, timepoint);
+
+
 -- Horizons (with balancing types)
 -- How timepoints are organized for operational-decision purposes
 -- Each timepoint can belong to more than one balancing_type-horizon (e.g.
@@ -428,6 +433,10 @@ CREATE TABLE inputs_temporal_horizon_timepoints
         REFERENCES inputs_temporal_horizons (temporal_scenario_id,
                                              balancing_type_horizon, horizon)
 );
+
+-- Index for horizon timepoints lookups
+CREATE INDEX idx_horizon_temporal_scenario_subproblem_stage
+ON inputs_temporal_horizon_timepoints(temporal_scenario_id, subproblem_id, stage_id);
 
 
 ---------------------
@@ -1669,6 +1678,10 @@ CREATE TABLE inputs_project_portfolios
     FOREIGN KEY (capacity_type) REFERENCES mod_capacity_types (capacity_type)
 );
 
+-- Index for filtering by project_portfolio_scenario_id in inputs_project_portfolios
+CREATE INDEX idx_project_portfolios_scenario
+ON inputs_project_portfolios(project_portfolio_scenario_id);
+
 -- Existing project capacity and fixed costs
 -- The capacity and fixed costs of 'specified' projects, i.e. exogenously
 -- specified capacity that is not a variable in the model
@@ -2137,6 +2150,11 @@ CREATE TABLE inputs_project_operational_chars
     FOREIGN KEY (operational_type) REFERENCES mod_operational_types
         (operational_type)
 );
+
+-- Index for filtering operational_type in inputs_project_operational_chars
+CREATE INDEX idx_operational_chars_scenario_optype
+ON inputs_project_operational_chars(project_operational_chars_scenario_id, operational_type);
+
 
 -- Variable O&M by period
 DROP TABLE IF EXISTS subscenarios_project_variable_om_cost_by_period;
