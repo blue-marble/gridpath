@@ -1,8 +1,8 @@
 project,load_zone
-1__Batteries,Zone1
-2__Gas,Zone1
-7__Batteries,Zone2
-8__Gas,Zone2
+Batteries_Zone1,Zone1
+Batteries_Zone2,Zone2
+Gas_Zone1,Zone1
+Gas_Zone2,Zone2
 Hydro_Zone1,Zone1
 Hydro_Zone2,Zone2
 Solar_Zone1,Zone1

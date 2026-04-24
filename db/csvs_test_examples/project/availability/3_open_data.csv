@@ -1,8 +1,8 @@
 project,availability_type,exogenous_availability_independent_scenario_id,exogenous_availability_weather_scenario_id,exogenous_availability_independent_bt_hrz_scenario_id,exogenous_availability_weather_bt_hrz_scenario_id,endogenous_availability_scenario_id
-1__Batteries,exogenous,,,,,
-2__Gas,exogenous,,,,,
-7__Batteries,exogenous,,,,,
-8__Gas,exogenous,,,,,
+Batteries_Zone1,exogenous,,,,,
+Batteries_Zone2,exogenous,,,,,
+Gas_Zone1,exogenous,,,,,
+Gas_Zone2,exogenous,,,,,
 Hydro_Zone1,exogenous,,,,,
 Hydro_Zone2,exogenous,,,,,
 Solar_Zone1,exogenous,,,,,

@@ -1,8 +1,8 @@
 project,specified,new_build,capacity_type
-1__Batteries,,,stor_spec
-2__Gas,,,gen_spec
-7__Batteries,,,stor_spec
-8__Gas,,,gen_spec
+Batteries_Zone1,,,stor_spec
+Batteries_Zone2,,,stor_spec
+Gas_Zone1,,,gen_spec
+Gas_Zone2,,,gen_spec
 Hydro_Zone1,,,gen_spec
 Hydro_Zone2,,,gen_spec
 Solar_Zone1,,,gen_spec
