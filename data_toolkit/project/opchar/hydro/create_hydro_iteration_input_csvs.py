@@ -119,6 +119,15 @@ def parse_arguments(args):
     )
 
     parser.add_argument(
+        "-hydro_bt",
+        "--hydro_balancing_type",
+        default=None,
+        help="Filter to a specific balancing type (e.g., 'day', 'week', 'month'). "
+        "If not specified, all balancing types from "
+        "user_defined_balancing_type_horizons are included.",
+    )
+
+    parser.add_argument(
         "-parallel",
         "--n_parallel_projects",
         default=1,
@@ -140,6 +149,7 @@ def calculate_from_project_year_month_data(
     hydro_operational_chars_scenario_name,
     output_directory,
     overwrite,
+    hydro_balancing_type=None,
 ):
     """
     Create hydro project CSVs for a temporal subscenario and a balancing
@@ -153,9 +163,12 @@ def calculate_from_project_year_month_data(
     """).fetchall()]
 
     bt_horizons = [bt_h for bt_h in c.execute("""
-            SELECT DISTINCT balancing_type, horizon 
+            SELECT DISTINCT balancing_type, horizon
             FROM user_defined_balancing_type_horizons;
             """).fetchall()]
+
+    if hydro_balancing_type is not None:
+        bt_horizons = [bt_h for bt_h in bt_horizons if bt_h[0] == hydro_balancing_type]
 
     if overwrite:
         filename = get_filename(
@@ -266,6 +279,7 @@ def calculate_from_project_year_month_data_pool(pool_datum):
         output_directory,
         overwrite,
         stage_id,
+        hydro_balancing_type,
     ) = pool_datum
 
     calculate_from_project_year_month_data(
@@ -276,6 +290,7 @@ def calculate_from_project_year_month_data_pool(pool_datum):
         output_directory=output_directory,
         overwrite=overwrite,
         stage_id=stage_id,
+        hydro_balancing_type=hydro_balancing_type,
     )
 
 
@@ -341,6 +356,7 @@ def main(args=None):
                 parsed_args.output_directory,
                 parsed_args.overwrite,
                 parsed_args.stage_id,
+                parsed_args.hydro_balancing_type,
             ]
             for prj in projects
         ]
