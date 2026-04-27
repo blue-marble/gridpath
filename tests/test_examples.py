@@ -1585,7 +1585,7 @@ class TestExamples(unittest.TestCase):
     def test_example_test_w_energy_products(self):
         """
         Check validation and objective function value of
-        "test_w_lf_only_and_prices" example
+        "test_w_energy_products" example
         :return:
         """
         scenario_name = "test_w_energy_products"

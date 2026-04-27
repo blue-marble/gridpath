@@ -1081,6 +1081,7 @@ def get_inputs_from_database(
         table="inputs_project_variable_om_cost_by_timepoint",
         subscenario_id_column="variable_om_cost_by_timepoint_scenario_id",
         data_column="variable_om_cost_by_timepoint",
+        exclude_stage=True,
     )
 
     c5 = conn.cursor()
