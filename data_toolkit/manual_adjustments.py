@@ -229,7 +229,8 @@ def main(args=None):
     }
 
     project_name_str = (
-        AGG_PROJECT_NAME_STR if parsed_args.aggregate_projects
+        AGG_PROJECT_NAME_STR
+        if parsed_args.aggregate_projects
         else DISAGG_PROJECT_NAME_STR
     )
 
