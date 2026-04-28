@@ -173,6 +173,8 @@ def main(args=None):
         varies_by_hydro=0,
         include_hydro_iteration_column=True,
         n_parallel_projects=parsed_args.n_parallel_projects,
+        print_default_values=True,
+        default_value=None,
     )
 
 

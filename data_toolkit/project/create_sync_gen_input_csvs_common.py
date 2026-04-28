@@ -37,6 +37,8 @@ def get_sync_project_pool_and_make_profile_csvs(
     varies_by_hydro,
     include_hydro_iteration_column,
     n_parallel_projects,
+    print_default_values,
+    default_value,
 ):
 
     conn = connect_to_database(db_path=db_path)
@@ -65,6 +67,8 @@ def get_sync_project_pool_and_make_profile_csvs(
                 varies_by_weather,
                 varies_by_hydro,
                 include_hydro_iteration_column,
+                print_default_values,
+                default_value,
             ]
             for prj in projects
         ]
@@ -93,6 +97,8 @@ def create_project_profile_csv(
     varies_by_weather,
     varies_by_hydro,
     include_hydro_iteration_column,
+    print_default_values,
+    default_value,
 ):
     conn = connect_to_database(db_path=db_path)
 
@@ -132,6 +138,11 @@ def create_project_profile_csv(
 
     # Put into a dataframe and add to file
     df = pd.read_sql(query, con=conn)
+
+    # Filter out rows where the value is at the default, unless
+    # print_default_values is True
+    if not print_default_values:
+        df = df[df[param_name] != default_value]
 
     filename = os.path.join(
         output_directory,
@@ -183,6 +194,8 @@ def create_project_profile_csv_pool(pool_datum):
         varies_by_weather,
         varies_by_hydro,
         include_hydro_iteration_column,
+        print_default_values,
+        default_value,
     ] = pool_datum
 
     create_project_profile_csv(
@@ -199,4 +212,6 @@ def create_project_profile_csv_pool(pool_datum):
         varies_by_weather=varies_by_weather,
         varies_by_hydro=varies_by_hydro,
         include_hydro_iteration_column=include_hydro_iteration_column,
+        print_default_values=print_default_values,
+        default_value=default_value,
     )
