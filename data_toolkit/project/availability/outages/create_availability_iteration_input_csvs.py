@@ -158,6 +158,14 @@ def parse_arguments(args):
         help="The number of projects to simulate in parallel. Defaults to 1.",
     )
 
+    parser.add_argument(
+        "-print_ones",
+        "--print_ones",
+        default=False,
+        action="store_true",
+        help="Include rows where derate values equal 1. Defaults to False.",
+    )
+
     parser.add_argument("-q", "--quiet", default=False, action="store_true")
 
     parsed_arguments = parser.parse_known_args(args=args)[0]
@@ -268,6 +276,7 @@ def simulate_project_availability(
     stage_id,
     study_year,
     filepath,
+    print_ones,
 ):
 
     stage_tmp_dict = get_temporal_structure(study_year)
@@ -293,6 +302,31 @@ def simulate_project_availability(
             "hyb_stor_cap_availability_derate": hyb_stor_derate,
         }
     )
+
+    # Filter out rows where derate values are 1, unless print_ones is True
+    if not print_ones:
+        # For non-hybrids, find rows with (!=1, None)
+        export_df_non_hyb = export_df[
+            (
+                (export_df["availability_derate_independent"] != 1)
+                & (export_df["hyb_stor_cap_availability_derate"].isna())
+            )
+        ]
+
+        # For hybrids, find rows where either column is not 1
+        # First, skip the rows where the storage derate is NA (so that we
+        # don't end up including the ones for non-hybrids)
+        export_df_hyb = export_df[
+            (
+                (export_df["hyb_stor_cap_availability_derate"].notna())
+                & (
+                    (export_df["availability_derate_independent"] != 1)
+                    | ((export_df["hyb_stor_cap_availability_derate"] != 1))
+                )
+            )
+        ]
+
+        export_df = pd.concat([export_df_non_hyb, export_df_hyb]).drop_duplicates()
 
     export_df.to_csv(
         filepath,
@@ -401,6 +435,7 @@ def simulate_project_availability_pool(pool_datum):
         stage_id,
         study_year,
         filepath,
+        print_ones,
     ] = pool_datum
 
     simulate_project_availability(
@@ -414,6 +449,7 @@ def simulate_project_availability_pool(pool_datum):
         stage_id=stage_id,
         study_year=study_year,
         filepath=filepath,
+        print_ones=print_ones,
     )
 
 
@@ -520,6 +556,7 @@ def main(args=None):
                     parsed_args.stage_id,
                     int(parsed_args.study_year),
                     filepath,
+                    parsed_args.print_ones,
                 ]
             )
 

@@ -53,7 +53,6 @@ import sys
 from db.common_functions import connect_to_database
 from data_toolkit.load_raw_data import read_and_import_csv
 from data_toolkit.project.create_sync_gen_input_csvs_common import (
-    create_project_profile_csv,
     get_sync_project_pool_and_make_profile_csvs,
 )
 
@@ -125,6 +124,14 @@ def parse_arguments(args):
         help="The number of projects to simulate in parallel. Defaults to 1.",
     )
 
+    parser.add_argument(
+        "-ones",
+        "--print_ones",
+        default=False,
+        action="store_true",
+        help="Include rows where derate values equal 1. Defaults to False.",
+    )
+
     parser.add_argument("-q", "--quiet", default=False, action="store_true")
 
     parsed_arguments = parser.parse_known_args(args=args)[0]
@@ -175,6 +182,8 @@ def main(args=None):
         varies_by_hydro=0,
         include_hydro_iteration_column=False,
         n_parallel_projects=parsed_args.n_parallel_projects,
+        print_default_values=parsed_args.print_ones,
+        default_value=1,
     )
 
 
