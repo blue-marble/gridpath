@@ -480,11 +480,6 @@ def validate_inputs(
         conn,
         "gen_var_must_take",
     )
-    if cap_factor_validation_error:
-        warnings.warn("""
-            Found gen_var_must_take cap factors that are <0 or >1. This is 
-            allowed but this warning is here to make sure it is intended.
-            """)
 
     # Other module specific validations
 

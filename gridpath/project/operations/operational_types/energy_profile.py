@@ -522,12 +522,10 @@ def validate_inputs(
         stage,
         conn,
         "energy_profile",
+        table="inputs_project_energy_profiles",
+        subscenario_id_column="energy_profile_scenario_id",
+        data_column="energy_fraction",
     )
-    if energy_fraction_validation_error:
-        warnings.warn("""
-            Found energy_profile cap factors that are <0 or >1. This is 
-            allowed but this warning is here to make sure it is intended.
-            """)
 
     # Other module specific validations
 

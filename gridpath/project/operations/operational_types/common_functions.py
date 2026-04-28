@@ -589,131 +589,13 @@ def get_prj_temporal_index_opr_inputs_from_db(
     subscenario_id_column,
     data_column,
     opr_index_dict=None,
+    exclude_stage=False,
 ):
     """
     Determine appropriate iterations for projects and get those inputs
-    :param subscenarios: SubScenarios object with all subscenario info
-    :param subproblem:
-    :param stage:
-    :param conn: database connection
-    :param op_type:
-    :return: cursor object with query results
     """
     if opr_index_dict is None:
         opr_index_dict = TIMEPOINT_INDEX_QUERY_PARAMS
-
-    all_projects_sql = str()
-    # Check for no iterations projects
-    no_iterations_project_sql = make_iteration_subset_project_list_query(
-        conn=conn,
-        subscenarios=subscenarios,
-        table=table,
-        data_columns=data_column,
-        subscenario_id_column=subscenario_id_column,
-        op_type=op_type,
-        subproblem=subproblem,
-        stage=stage,
-        varies_by_weather_iteration=0,
-        varies_by_hydro_iteration=0,
-        weather_iteration=weather_iteration,
-        hydro_iteration=hydro_iteration,
-        opr_index_dict=opr_index_dict,
-    )
-    all_projects_sql += no_iterations_project_sql
-
-    # Check for weather iterations projects
-    if no_iterations_project_sql != "":
-        all_projects_sql += " UNION "
-
-    weather_iterations_project_sql = make_iteration_subset_project_list_query(
-        conn=conn,
-        subscenarios=subscenarios,
-        table=table,
-        data_columns=data_column,
-        subscenario_id_column=subscenario_id_column,
-        op_type=op_type,
-        subproblem=subproblem,
-        stage=stage,
-        varies_by_weather_iteration=1,
-        varies_by_hydro_iteration=0,
-        weather_iteration=weather_iteration,
-        hydro_iteration=hydro_iteration,
-        opr_index_dict=opr_index_dict,
-    )
-    all_projects_sql += weather_iterations_project_sql
-
-    # Check of hydro iterations projects
-    if weather_iterations_project_sql != "":
-        all_projects_sql += " UNION "
-    hydro_iterations_project_sql = make_iteration_subset_project_list_query(
-        conn=conn,
-        subscenarios=subscenarios,
-        table=table,
-        data_columns=data_column,
-        subscenario_id_column=subscenario_id_column,
-        op_type=op_type,
-        subproblem=subproblem,
-        stage=stage,
-        varies_by_weather_iteration=0,
-        varies_by_hydro_iteration=1,
-        weather_iteration=weather_iteration,
-        hydro_iteration=hydro_iteration,
-        opr_index_dict=opr_index_dict,
-    )
-    all_projects_sql += hydro_iterations_project_sql
-
-    # Check for weather and hydro iterations projects
-    if hydro_iterations_project_sql != "":
-        all_projects_sql += " UNION "
-    weather_and_hydro_iterations_project_sql = make_iteration_subset_project_list_query(
-        conn=conn,
-        subscenarios=subscenarios,
-        table=table,
-        data_columns=data_column,
-        subscenario_id_column=subscenario_id_column,
-        op_type=op_type,
-        subproblem=subproblem,
-        stage=stage,
-        varies_by_weather_iteration=1,
-        varies_by_hydro_iteration=1,
-        weather_iteration=weather_iteration,
-        hydro_iteration=hydro_iteration,
-        opr_index_dict=opr_index_dict,
-    )
-    all_projects_sql += weather_and_hydro_iterations_project_sql
-
-    if all_projects_sql[-7:] == " UNION ":
-        all_projects_sql = all_projects_sql[: len(all_projects_sql) - 7]
-
-    c = conn.cursor()
-
-    prj_tmp_data = c.execute(all_projects_sql)
-
-    return prj_tmp_data
-
-
-def get_prj_indx_inputs_with_iterations_sql(
-    subscenarios,
-    opr_index_dict,
-    inputs_table,
-    data_columns,
-    subscenario_id_column,
-    op_type,
-    subproblem,
-    stage,
-    project_filter,
-    weather_iteration_to_use,
-    hydro_iteration_to_use,
-):
-    """
-    Select only profiles of projects in the portfolio
-    Select only profiles of projects with 'op_type' operational type
-    Select only profiles for timepoints from the correct temporal scenario
-    and the correct subproblem
-    Select only timepoints on periods when the project is operational
-    (periods with existing project capacity for existing projects or
-    with costs specified for new projects)
-    """
 
     select_columns = opr_index_dict["select_columns"]
     index_columns = opr_index_dict["index_columns"]
@@ -723,87 +605,115 @@ def get_prj_indx_inputs_with_iterations_sql(
     optype_filter = (
         f"""AND operational_type = '{op_type}'""" if op_type != "all" else ""
     )
-    sql = f"""
-        SELECT project, {select_columns}, {data_columns}
-        FROM {inputs_table}
-        -- Portfolio projects only
-        WHERE project IN (
+
+    # Build the CTE once at the top level
+    cte_prj_sql = f"""
+        WITH portfolio_projects AS (
             SELECT project FROM inputs_project_portfolios
             WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
-        )
-        -- Optype projects from this opchar ID only
-        AND project IN (
-            SELECT project
-            FROM inputs_project_operational_chars
-            WHERE project_operational_chars_scenario_id = {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
-            {optype_filter}
-        )
-        -- Relevant optype opchar ID
-        AND (project, {subscenario_id_column}) IN (
+        ),
+        optype_projects AS (
             SELECT project, {subscenario_id_column}
             FROM inputs_project_operational_chars
             WHERE project_operational_chars_scenario_id = {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
-            {project_filter}
-        )
-        -- Relevant temporal index
-        AND ({index_columns}) IN (
+            {optype_filter}
+        )"""
+    cte_tmp_sql = f""",
+        relevant_temporal AS (
             SELECT {index_columns_join_table}
             FROM {index_join_table}
             WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
             AND subproblem_id = {subproblem}
             AND stage_id = {stage}
+        ),
+        iteration_config AS (
+            SELECT project, {subscenario_id_column},
+                   varies_by_weather_iteration,
+                   varies_by_hydro_iteration
+            FROM {table}_iterations
         )
-        AND weather_iteration = {weather_iteration_to_use}
-        AND hydro_iteration = {hydro_iteration_to_use}
-        """
+    """
+    cte_sql = cte_prj_sql + cte_tmp_sql
 
-    return sql
-
-
-def make_iteration_subset_project_list_query(
-    conn,
-    subscenarios,
-    table,
-    data_columns,
-    subscenario_id_column,
-    op_type,
-    subproblem,
-    stage,
-    varies_by_weather_iteration,
-    varies_by_hydro_iteration,
-    weather_iteration,
-    hydro_iteration,
-    opr_index_dict,
-):
+    # Query iteration configuration once to see which combinations actually exist
+    # We'll only iterate over those to make the UNION ALL queries
     c = conn.cursor()
-    projects_list = c.execute(f"""
-        SELECT project, {subscenario_id_column}
+    iteration_configs = c.execute(f"""
+        {cte_prj_sql}
+        SELECT DISTINCT varies_by_weather_iteration, varies_by_hydro_iteration
         FROM {table}_iterations
-        WHERE varies_by_weather_iteration = {varies_by_weather_iteration}
-        AND varies_by_hydro_iteration = {varies_by_hydro_iteration}
-        ;
-        """).fetchall()
-    if projects_list:
-        project_str = make_project_str(projects_list=projects_list)
-        sql = get_prj_indx_inputs_with_iterations_sql(
-            subscenarios=subscenarios,
-            opr_index_dict=opr_index_dict,
-            inputs_table=table,
-            data_columns=data_columns,
-            subscenario_id_column=subscenario_id_column,
-            op_type=op_type,
-            subproblem=subproblem,
-            stage=stage,
-            project_filter=f"AND (project, {subscenario_id_column}) in {project_str}",
-            weather_iteration_to_use=(
-                weather_iteration if varies_by_weather_iteration else 0
-            ),
-            hydro_iteration_to_use=hydro_iteration if varies_by_hydro_iteration else 0,
-        )
-    else:
-        sql = ""
+        WHERE project IN portfolio_projects
+        AND (project, {subscenario_id_column}) IN optype_projects
+    """).fetchall()
 
-    return sql
+    # If no iteration configs exist, return empty result
+    if not iteration_configs:
+        return c.execute("SELECT NULL WHERE 1=0")
+
+    # If weather_iteration and hydro_iteration are both 0, we should only have (0,0) config
+    if weather_iteration == 0 and hydro_iteration == 0:
+        # Check if any projects vary by iteration when they shouldn't
+        non_zero_configs = [config for config in iteration_configs if config != (0, 0)]
+        if non_zero_configs:
+            raise ValueError(
+                f"Table {table} has iteration configurations {non_zero_configs} "
+                f"but weather_iteration=0 and hydro_iteration=0. "
+                f"Projects should not vary by iteration when iterations are set to 0."
+            )
+        # Force iteration_configs to only (0,0)
+        iteration_configs = [(0, 0)]
+
+    # Check if weather_iteration is 0 but projects vary by weather
+    if weather_iteration == 0:
+        invalid_configs = [config for config in iteration_configs if config[0] != 0]
+        if invalid_configs:
+            raise ValueError(
+                f"Table {table} has iteration configurations {invalid_configs} "
+                f"with varies_by_weather_iteration=1, but weather_iteration=0. "
+                f"Projects should not vary by weather iteration when weather_iteration is set to 0."
+            )
+
+    # Check if hydro_iteration is 0 but projects vary by hydro
+    if hydro_iteration == 0:
+        invalid_configs = [config for config in iteration_configs if config[1] != 0]
+        if invalid_configs:
+            raise ValueError(
+                f"Table {table} has iteration configurations {invalid_configs} "
+                f"with varies_by_hydro_iteration=1, but hydro_iteration=0. "
+                f"Projects should not vary by hydro iteration when hydro_iteration is set to 0."
+            )
+
+    # Build UNION ALL queries only for iteration configs that actually exist
+    union_parts = []
+    stage_subquery = "" if exclude_stage else f"AND stage_id = {stage}"
+
+    for varies_weather, varies_hydro in iteration_configs:
+        weather_iter = weather_iteration if varies_weather else 0
+        hydro_iter = hydro_iteration if varies_hydro else 0
+
+        union_parts.append(f"""
+            SELECT project, {select_columns}, {data_column}
+            FROM {table}
+            WHERE project IN (SELECT project FROM portfolio_projects)
+            AND (project, {subscenario_id_column}) IN (SELECT project, {subscenario_id_column} FROM optype_projects)
+            AND (project, {subscenario_id_column}) IN (
+                SELECT project, {subscenario_id_column}
+                FROM iteration_config
+                WHERE varies_by_weather_iteration = {varies_weather}
+                AND varies_by_hydro_iteration = {varies_hydro}
+            )
+            AND ({index_columns}) IN (SELECT {index_columns_join_table} FROM relevant_temporal)
+            AND weather_iteration = {weather_iter}
+            AND hydro_iteration = {hydro_iter}
+            {stage_subquery}
+        """)
+
+    # Combine CTE with UNION ALL
+    all_projects_sql = cte_sql + "\nUNION ALL\n".join(union_parts)
+
+    prj_tmp_data = c.execute(all_projects_sql)
+
+    return prj_tmp_data
 
 
 def make_project_str(projects_list):
@@ -834,6 +744,9 @@ def validate_var_profiles(
     stage,
     conn,
     op_type,
+    table="inputs_project_variable_generator_profiles",
+    subscenario_id_column="variable_generator_profile_scenario_id",
+    data_column="cap_factor",
 ):
     """
 
@@ -852,16 +765,16 @@ def validate_var_profiles(
         subproblem=subproblem,
         stage=stage,
         conn=conn,
-        op_type="gen_var",
-        table="inputs_project_variable_generator_profiles",
-        subscenario_id_column="variable_generator_profile_scenario_id",
-        data_column="cap_factor",
+        op_type=op_type,
+        table=table,
+        subscenario_id_column=subscenario_id_column,
+        data_column=data_column,
     )
 
     # Convert input data into pandas DataFrame
     df = cursor_to_df(var_profiles)
 
-    value_cols = ["cap_factor"]
+    value_cols = [data_column]
 
     # Check for missing inputs
     write_validation_to_database(
@@ -873,27 +786,28 @@ def validate_var_profiles(
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
-        db_table="inputs_project_variable_generator_profiles",
+        db_table=table,
         severity="High",
         errors=validate_missing_inputs(df, value_cols, ["project", "timepoint"]),
     )
 
-    # Check for sign (should be percent fraction)
-    cap_factor_validation_error = write_validation_to_database(
-        conn=conn,
-        scenario_id=scenario_id,
-        weather_iteration=weather_iteration,
-        hydro_iteration=hydro_iteration,
-        availability_iteration=availability_iteration,
-        subproblem_id=subproblem,
-        stage_id=stage,
-        gridpath_module=__name__,
-        db_table="inputs_project_variable_generator_profiles",
-        severity="Low",
-        errors=validate_values(df, ["cap_factor"], min=0, max=1),
-    )
-
-    return cap_factor_validation_error
+    # We now allow negative values and values > 1, so commenting this out
+    # # Check for sign (should be percent fraction)
+    # cap_factor_validation_error = write_validation_to_database(
+    #     conn=conn,
+    #     scenario_id=scenario_id,
+    #     weather_iteration=weather_iteration,
+    #     hydro_iteration=hydro_iteration,
+    #     availability_iteration=availability_iteration,
+    #     subproblem_id=subproblem,
+    #     stage_id=stage,
+    #     gridpath_module=__name__,
+    #     db_table=table,
+    #     severity="Low",
+    #     errors=validate_values(df, [data_column], min=0, max=1),
+    # )
+    #
+    # return cap_factor_validation_error
 
 
 def load_hydro_opchars(
@@ -998,10 +912,10 @@ def validate_hydro_opchars(
         subproblem=subproblem,
         stage=stage,
         conn=conn,
-        op_type="gen_hydro_must_take",
+        op_type=op_type,
         table="inputs_project_hydro_operational_chars",
         subscenario_id_column="hydro_operational_chars_scenario_id",
-        data_column="average_power_fraction, min_power_fraction, " "max_power_fraction",
+        data_column="average_power_fraction, min_power_fraction, max_power_fraction",
         opr_index_dict=BT_HRZ_INDEX_QUERY_PARAMS,
     )
 

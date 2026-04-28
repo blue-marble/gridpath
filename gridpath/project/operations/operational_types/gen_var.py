@@ -641,7 +641,7 @@ def get_model_inputs_from_database(
         stage=db_stage,
         conn=conn,
         op_type="gen_var",
-        table="inputs_project_variable_generator_profiles" "",
+        table="inputs_project_variable_generator_profiles",
         subscenario_id_column="variable_generator_profile_scenario_id",
         data_column="cap_factor",
     )
@@ -801,8 +801,3 @@ def validate_inputs(
         conn,
         "gen_var",
     )
-    if cap_factor_validation_error:
-        warnings.warn("""
-            Found gen_var_must_take cap factors that are <0 or >1. This is 
-            allowed but this warning is here to make sure it is intended.
-            """)
