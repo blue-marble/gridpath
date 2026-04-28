@@ -101,7 +101,8 @@ def parse_arguments(args):
         "Setting the seeds will ensure that you get the same results each "
         "time, but can compromise randomness. Make sure to set "
         "'--user_provided_seeding' flag to True to use this functionality and "
-        "proceed with caution.",
+        "proceed with caution. If the '--user_provided_seeding' flag is not set, "
+        "this seed will be ignored.",
     )
     parser.add_argument(
         "-max_unit_seed_int",
@@ -110,6 +111,13 @@ def parse_arguments(args):
         help="The max integer for assigning seeds to each unit outage "
         "simulation for a given project. The --user_provided_seeding flag must "
         "be set to True for this to take effect. Proceed with caution.",
+    )
+    parser.add_argument(
+        "-hyb_s_seed_inc",
+        "--hybrid_storage_seed_increment",
+        default=1000,
+        help="The seed increment for hybrid storage components relative to "
+        "the generator component. If the --user_provided_seeding flag is not set, this value will be ignored.",
     )
     parser.add_argument(
         "-s_y",
@@ -171,6 +179,7 @@ def get_weighted_availability_adjustment(
     user_provided_seeding,
     project_iteration_seed,
     max_integer_for_unit_outage_seeding,
+    hyb_stor_seed_unit_increment,
 ):
     project_outage_adjustment = []
     project_hyb_stor_outage_adjustment = []
@@ -199,7 +208,7 @@ def get_weighted_availability_adjustment(
         unit_mttr = row["unit_mttr"]
         hybrid_stor = row["hybrid_stor"]
 
-        # Reset seed to None if
+        # This is None if no seed was provided
         unit_seed = unit_seeds[index]
 
         unit_for_array = np.full((len(tmps), 1), unit_for, dtype=float)
@@ -212,18 +221,38 @@ def get_weighted_availability_adjustment(
             unit_seed=unit_seed,
         )
 
-        if not hybrid_stor:
-            project_outage_adjustment.append(unit_outage_adjustment * unit_weight)
-        else:
+        # Get the project outage
+        # For hybrids, this is applied to the generator component
+        project_outage_adjustment.append(unit_outage_adjustment * unit_weight)
+
+        # For hybrids, also get the outage for the storage component
+        # TODO: check that this works properly
+        if hybrid_stor:
+            unit_outage_adjustment = simulate_unit_outages(
+                outage_model=outage_model,
+                for_array=unit_for_array,
+                mttr=unit_mttr,
+                n_units=n_units,
+                unit_seed=(
+                    None
+                    if unit_seed is None
+                    else unit_seed + hyb_stor_seed_unit_increment
+                ),
+            )
             project_hyb_stor_outage_adjustment.append(
                 unit_outage_adjustment * unit_weight
             )
+
     # Only sum the unit outages if there were units, otherwise, pass None
     if project_outage_adjustment:
         adjustment = sum(project_outage_adjustment)
     else:
         adjustment = None
-    hyb_stor_adjustment = sum(project_hyb_stor_outage_adjustment)
+
+    if hybrid_stor:
+        hyb_stor_adjustment = sum(project_hyb_stor_outage_adjustment)
+    else:
+        hyb_stor_adjustment = None
 
     return adjustment, hyb_stor_adjustment
 
@@ -235,6 +264,7 @@ def simulate_project_availability(
     user_provided_seeding,
     project_iteration_seed,
     max_integer_for_unit_outage_seeding,
+    hyb_stor_seed_unit_increment,
     stage_id,
     study_year,
     filepath,
@@ -251,6 +281,7 @@ def simulate_project_availability(
         user_provided_seeding=user_provided_seeding,
         project_iteration_seed=project_iteration_seed,
         max_integer_for_unit_outage_seeding=max_integer_for_unit_outage_seeding,
+        hyb_stor_seed_unit_increment=hyb_stor_seed_unit_increment,
     )
 
     export_df = pd.DataFrame(
@@ -296,8 +327,8 @@ def simulate_unit_outages(
     if starting_outage_states is None:
         starting_outage_states = []
 
-    # TODO: probably remove derates; should be handled default availablity
-    #  values
+    # TODO: probably remove derates; should be handled via default availablity
+    #  values rather than writing timepoint-level derates
     if outage_model == "Derate":
         availability = 1 - np.outer(for_array, np.ones(n_units))
 
@@ -366,6 +397,7 @@ def simulate_project_availability_pool(pool_datum):
         user_provided_seeding,
         project_iteration_seed,
         max_integer_for_unit_outage_seeding,
+        hyb_stor_seed_unit_increment,
         stage_id,
         study_year,
         filepath,
@@ -378,6 +410,7 @@ def simulate_project_availability_pool(pool_datum):
         user_provided_seeding=user_provided_seeding,
         project_iteration_seed=project_iteration_seed,
         max_integer_for_unit_outage_seeding=max_integer_for_unit_outage_seeding,
+        hyb_stor_seed_unit_increment=hyb_stor_seed_unit_increment,
         stage_id=stage_id,
         study_year=study_year,
         filepath=filepath,
@@ -428,6 +461,7 @@ def main(args=None):
     all_files = []
     pool_data = []
     project_iteration_seed = int(parsed_args.starting_project_iteration_seed)
+    hyb_stor_seed_unit_increment = int(parsed_args.hybrid_storage_seed_increment)
     for project in projects:
         # Write header if we are overwriting the file or it doesn't exist
         overwrite = parsed_args.overwrite
@@ -475,6 +509,11 @@ def main(args=None):
                     ),
                     (
                         parsed_args.max_integer_for_unit_outage_seeding
+                        if parsed_args.user_provided_seeding
+                        else None
+                    ),
+                    (
+                        hyb_stor_seed_unit_increment
                         if parsed_args.user_provided_seeding
                         else None
                     ),
