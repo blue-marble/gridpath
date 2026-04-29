@@ -347,7 +347,8 @@ CREATE TABLE inputs_temporal
 
 -- Composite index for temporal lookups
 CREATE INDEX idx_temporal_scenario_subproblem_stage
-ON inputs_temporal(temporal_scenario_id, subproblem_id, stage_id, timepoint);
+    ON inputs_temporal (temporal_scenario_id, subproblem_id, stage_id,
+                        timepoint);
 
 
 -- Horizons (with balancing types)
@@ -436,7 +437,7 @@ CREATE TABLE inputs_temporal_horizon_timepoints
 
 -- Index for horizon timepoints lookups
 CREATE INDEX idx_horizon_temporal_scenario_subproblem_stage
-ON inputs_temporal_horizon_timepoints(temporal_scenario_id, subproblem_id, stage_id);
+    ON inputs_temporal_horizon_timepoints (temporal_scenario_id, subproblem_id, stage_id);
 
 
 ---------------------
@@ -1680,7 +1681,7 @@ CREATE TABLE inputs_project_portfolios
 
 -- Index for filtering by project_portfolio_scenario_id in inputs_project_portfolios
 CREATE INDEX idx_project_portfolios_scenario
-ON inputs_project_portfolios(project_portfolio_scenario_id);
+    ON inputs_project_portfolios (project_portfolio_scenario_id);
 
 -- Existing project capacity and fixed costs
 -- The capacity and fixed costs of 'specified' projects, i.e. exogenously
@@ -2153,7 +2154,8 @@ CREATE TABLE inputs_project_operational_chars
 
 -- Index for filtering operational_type in inputs_project_operational_chars
 CREATE INDEX idx_operational_chars_scenario_optype
-ON inputs_project_operational_chars(project_operational_chars_scenario_id, operational_type);
+    ON inputs_project_operational_chars (project_operational_chars_scenario_id,
+                                         operational_type);
 
 
 -- Variable O&M by period
@@ -2915,8 +2917,8 @@ CREATE TABLE subscenarios_project_power_output_group_requirements
 (
     project_power_output_group_requirement_scenario_id INTEGER PRIMARY KEY
         AUTOINCREMENT,
-    name                                           VARCHAR(32),
-    description                                    VARCHAR(128)
+    name                                               VARCHAR(32),
+    description                                        VARCHAR(128)
 );
 
 DROP TABLE IF EXISTS inputs_project_power_output_group_requirements;
@@ -2924,9 +2926,9 @@ CREATE TABLE inputs_project_power_output_group_requirements
 (
     project_power_output_group_requirement_scenario_id INTEGER,
     power_output_group                                 VARCHAR(64),
-    period                                         INTEGER,
-    power_output_group_total_power_min              FLOAT,
-    power_output_group_total_power_max              FLOAT,
+    period                                             INTEGER,
+    power_output_group_total_power_min                 FLOAT,
+    power_output_group_total_power_max                 FLOAT,
     PRIMARY KEY (project_power_output_group_requirement_scenario_id,
                  power_output_group, period),
     FOREIGN KEY (project_power_output_group_requirement_scenario_id) REFERENCES
@@ -2939,8 +2941,8 @@ DROP TABLE IF EXISTS subscenarios_project_power_output_groups;
 CREATE TABLE subscenarios_project_power_output_groups
 (
     project_power_output_group_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name                               VARCHAR(32),
-    description                        VARCHAR(128)
+    name                                   VARCHAR(32),
+    description                            VARCHAR(128)
 );
 
 DROP TABLE IF EXISTS inputs_project_power_output_groups;
@@ -2948,8 +2950,9 @@ CREATE TABLE inputs_project_power_output_groups
 (
     project_power_output_group_scenario_id INTEGER,
     power_output_group                     VARCHAR(64),
-    project                            VARCHAR(64),
-    PRIMARY KEY (project_power_output_group_scenario_id, power_output_group, project),
+    project                                VARCHAR(64),
+    PRIMARY KEY (project_power_output_group_scenario_id, power_output_group,
+                 project),
     FOREIGN KEY (project_power_output_group_scenario_id) REFERENCES
         subscenarios_project_power_output_groups (project_power_output_group_scenario_id)
 );
@@ -3143,6 +3146,7 @@ CREATE TABLE inputs_project_availability
     exogenous_availability_weather_scenario_id            INTEGER,
     exogenous_availability_independent_bt_hrz_scenario_id INTEGER,
     exogenous_availability_weather_bt_hrz_scenario_id     INTEGER,
+    exogenous_availability_monthly_scenario_id            INTEGER,
     endogenous_availability_scenario_id                   INTEGER,
     PRIMARY KEY (project_availability_scenario_id, project, availability_type)
 );
@@ -3254,6 +3258,30 @@ CREATE TABLE inputs_project_availability_exogenous_weather_bt_hrz
     FOREIGN KEY (project, exogenous_availability_weather_bt_hrz_scenario_id)
         REFERENCES subscenarios_project_availability_exogenous_weather_bt_hrz
             (project, exogenous_availability_weather_bt_hrz_scenario_id)
+);
+
+DROP TABLE IF EXISTS subscenarios_project_availability_exogenous_monthly;
+CREATE TABLE subscenarios_project_availability_exogenous_monthly
+(
+    project                                  VARCHAR(64),
+    exogenous_availability_monthly_scenario_id INTEGER,
+    name                                     VARCHAR(32),
+    description                              VARCHAR(128),
+    PRIMARY KEY (project, exogenous_availability_monthly_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_availability_exogenous_monthly;
+CREATE TABLE inputs_project_availability_exogenous_monthly
+(
+    project                                  VARCHAR(64),
+    exogenous_availability_monthly_scenario_id INTEGER,
+    month                                    INTEGER,
+    availability_derate_monthly              FLOAT,
+    PRIMARY KEY (project, exogenous_availability_monthly_scenario_id,
+                 month),
+    FOREIGN KEY (project, exogenous_availability_monthly_scenario_id)
+        REFERENCES subscenarios_project_availability_exogenous_monthly
+            (project, exogenous_availability_monthly_scenario_id)
 );
 
 
@@ -5508,13 +5536,13 @@ CREATE TABLE inputs_system_policy_requirements
 DROP TABLE IF EXISTS inputs_system_policy_month_hour_requirements;
 CREATE TABLE inputs_system_policy_month_hour_requirements
 (
-    policy_requirement_scenario_id  INTEGER,
-    policy_name                     TEXT,
-    policy_zone                     TEXT,
-    period                          INTEGER,
-    policy_month                    INTEGER,
-    policy_hour                     INTEGER,
-    policy_requirement              FLOAT,
+    policy_requirement_scenario_id INTEGER,
+    policy_name                    TEXT,
+    policy_zone                    TEXT,
+    period                         INTEGER,
+    policy_month                   INTEGER,
+    policy_hour                    INTEGER,
+    policy_requirement             FLOAT,
     PRIMARY KEY (policy_requirement_scenario_id, policy_name, policy_zone,
                  period, policy_month, policy_hour)
 );
@@ -5583,11 +5611,11 @@ CREATE TABLE inputs_project_policy_exceedance_values
     policy_month                  INTEGER,
     policy_hour                   INTEGER,
     cap_fac                       FLOAT,
-    PRIMARY KEY (project, exceedance_values_scenario_id, period, policy_month, policy_hour),
+    PRIMARY KEY (project, exceedance_values_scenario_id, period, policy_month,
+                 policy_hour),
     FOREIGN KEY (project, exceedance_values_scenario_id) REFERENCES
         subscenarios_project_policy_exceedance_values (project, exceedance_values_scenario_id)
 );
-
 
 
 -- PRM requirements
@@ -7784,18 +7812,18 @@ CREATE TABLE results_project_policy_month_hour_contributions
 DROP TABLE IF EXISTS results_system_month_hour_policy_requirements;
 CREATE TABLE results_system_month_hour_policy_requirements
 (
-    scenario_id                    INTEGER,
-    policy_name                    TEXT,
-    policy_zone                    TEXT,
-    weather_iteration              INTEGER,
-    hydro_iteration                INTEGER,
-    availability_iteration         INTEGER,
-    subproblem_id                  INTEGER,
-    stage_id                       INTEGER,
-    period                         INTEGER,
-    policy_month                   INTEGER,
-    policy_hour                    INTEGER,
-    policy_month_hour_requirement  FLOAT,
+    scenario_id                   INTEGER,
+    policy_name                   TEXT,
+    policy_zone                   TEXT,
+    weather_iteration             INTEGER,
+    hydro_iteration               INTEGER,
+    availability_iteration        INTEGER,
+    subproblem_id                 INTEGER,
+    stage_id                      INTEGER,
+    period                        INTEGER,
+    policy_month                  INTEGER,
+    policy_hour                   INTEGER,
+    policy_month_hour_requirement FLOAT,
     PRIMARY KEY (scenario_id, policy_name, policy_zone, weather_iteration,
                  hydro_iteration, availability_iteration, subproblem_id,
                  stage_id, period, policy_month, policy_hour)
