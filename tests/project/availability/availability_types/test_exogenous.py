@@ -322,6 +322,27 @@ class TestExogenousAvailabilityType(unittest.TestCase):
             actual_avl_exog_cap_derate_weather_bt_hrz_by_tmp,
         )
 
+        # Param: avl_exog_mnth_derate
+        expected_avl_exog_mnth = {}
+
+        # Set default values
+        for prj in expected_project_subset:
+            for month in [4, 5, 7, 9]:
+                expected_avl_exog_mnth[prj, month] = 1
+        # Replace Coal
+        expected_avl_exog_mnth["Coal", 5] = 0.95
+
+        actual_avl_exog_mnth = {
+            (prj, month): instance.avl_exog_mnth_derate[prj, month]
+            for prj in instance.AVL_EXOG
+            for month in instance.MONTHS
+        }
+
+        self.assertDictEqual(
+            expected_avl_exog_mnth,
+            actual_avl_exog_mnth,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
