@@ -1,4 +1,5 @@
-# Copyright 2016-2023 Blue Marble Analytics LLC.
+# Copyright 2016-2025 Blue Marble Analytics LLC.
+# Copyright 2026 Sylvan Energy Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -204,6 +205,12 @@ def get_run_scenario_parser():
         default=False,
         action="store_true",
         help="Skip solve and load results from a Gurobi solution file instead.",
+    )
+    parser.add_argument(
+        "--load_highs_solution",
+        default=False,
+        action="store_true",
+        help="Skip solve and load results from a HiGHS solution file instead.",
     )
     # Solver options
     parser.add_argument(
