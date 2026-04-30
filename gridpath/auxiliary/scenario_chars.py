@@ -1,4 +1,5 @@
-# Copyright 2016-2023 Blue Marble Analytics LLC.
+# Copyright 2016-2025 Blue Marble Analytics LLC.
+# Copyright 2026 Sylvan Energy Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,7 +17,11 @@
 Scenario characteristics in database.
 """
 
+import copy
 import os.path
+import pandas as pd
+from pathlib import Path
+from typing import Dict, Union
 
 from gridpath.auxiliary.auxiliary import (
     check_for_integer_subdirectories,
@@ -100,44 +105,56 @@ class SubScenarios(object):
 
 
 class ScenarioStructure(object):
-    def __init__(self, iteration_structure, subproblem_stage_structure):
-        # Weather, hydro, and availability iterations
-        # {weather_iteration: {hydro_iteration: [availability_iterations]}}
+    def __init__(
+        self,
+        weather_hydro_avail_subproblem_stage_dict,
+        weather_iteration_flag,
+        hydro_iteration_flag,
+        availability_iteration_flag,
+        subproblem_flag,
+        stage_flag,
+    ):
+        # Weather, hydro, and availability iterations are the first three
+        # levels, followed by subproblem and stage
+        # {weather_iteration:
+        #   {hydro_iteration:
+        #       {availability_iterations:
+        #           {subproblem: [stage]
+        #           }
+        #        }
+        #    }
+        # }
         # If no weather iterations, we're expecting a single key with 0 as value
         # If no hydro iterations, we're expecting a single key with 0 as value
         # If no availability itertions, we're expecting a list with 0 as member
         # [0]
         # No weather, no hydro, no availability: {0: {0: [0]}}
-        self.ITERATION_STRUCTURE = iteration_structure
-        # List of stages by subproblem in dict {subproblem: [stages]}
+        # List of stages by subproblem in dict within each iteration
+        # combination in a dictionary format {subproblem: [stages]}
         # This should have a single key, 1, if a single subproblem
         # This should be subproblem: [1] when a single stage in the subproblem
-        self.SUBPROBLEM_STAGES = subproblem_stage_structure
-
-        # If any subproblem's stage list is non-empty, we have stages, so set
-        # the MULTI_STAGE flag to True to pass to determine_modules
-        # This tells the determine_modules function to include the
-        # stages-related modules
-        self.MULTI_STAGE = any(
-            [
-                len(self.SUBPROBLEM_STAGES[subp]) > 1
-                for subp in list(self.SUBPROBLEM_STAGES.keys())
-            ]
+        self.WEATHER_HYDRO_AVAIL_SUBPROBLEM_STAGE_DICT = (
+            weather_hydro_avail_subproblem_stage_dict
         )
+
+        self.WEATHER_ITERATION_FLAG = weather_iteration_flag
+        self.HYDRO_ITERATION_FLAG = hydro_iteration_flag
+        self.AVAILABILITY_ITERATION_FLAG = availability_iteration_flag
+        self.SUBPROBLEM_FLAG = subproblem_flag
+        self.STAGE_FLAG = stage_flag
 
         # For determining whether we can parallelize
         self.N_SUBPROBLEMS = self.calculate_n_subproblems(
-            iteration_structure=iteration_structure,
-            subproblem_stage_structure=subproblem_stage_structure,
+            weather_hydro_avail_subproblem_stage_dict=weather_hydro_avail_subproblem_stage_dict,
         )
 
-    def calculate_n_subproblems(self, iteration_structure, subproblem_stage_structure):
+    def calculate_n_subproblems(self, weather_hydro_avail_subproblem_stage_dict):
         # Total subproblems to determine parallelization
         n_subproblems = 0
-        for w in iteration_structure.keys():
-            for h in iteration_structure[w].keys():
-                for a in iteration_structure[w][h]:
-                    for s in subproblem_stage_structure.keys():
+        for w in weather_hydro_avail_subproblem_stage_dict.keys():
+            for h in weather_hydro_avail_subproblem_stage_dict[w].keys():
+                for a in weather_hydro_avail_subproblem_stage_dict[w][h].keys():
+                    for s in weather_hydro_avail_subproblem_stage_dict[w][h][a].keys():
                         n_subproblems += 1
 
         return n_subproblems
@@ -145,191 +162,74 @@ class ScenarioStructure(object):
 
 class ScenarioDirectoryStructure(object):
     def __init__(self, scenario_structure):
-        self.ITERATION_DIRECTORIES = (
-            determine_iteration_directories_from_iteration_structure(scenario_structure)
-        )
-        self.SUBPROBLEM_STAGE_DIRECTORIES = (
-            determine_subproblem_stage_directory_structure(scenario_structure)
+        self.SCENARIO_DIRECTORY_STRUCTURE = (
+            determine_directory_structure_from_scenario_structure(scenario_structure)
         )
 
 
-def determine_iteration_directories_from_iteration_structure(scenario_structure):
+def determine_directory_structure_from_scenario_structure(scenario_structure):
     """
     Determine whether we will have iteration (weather, hydro iteration),
     We write the subdirectories if we have multiple items at that level
     """
 
     iteration_directory_strings_dict = {}
-
-    # Check the top-level keys; these are the weather iterations
-    # If no weather iterations, something went wrong upstream, so raise an
-    # error (we're expecting at least one weather iteration)
-    if len(scenario_structure.ITERATION_STRUCTURE.keys()) == 0:
-        raise ValueError("Expecting at least one weather iteration.")
-
-    # Don't make the directory for weather iterations if it's a single
-    # iteration with ID 0
-    if len(scenario_structure.ITERATION_STRUCTURE.keys()) > 1:
-        make_weather_iteration_dirs = True
-    elif list(scenario_structure.ITERATION_STRUCTURE.keys())[0] != 0:
-        make_weather_iteration_dirs = True
-    else:
-        make_weather_iteration_dirs = False
-
-    for weather_iteration in scenario_structure.ITERATION_STRUCTURE.keys():
-        weather_iteration_str = (
-            f"weather_iteration_{weather_iteration}"
-            if make_weather_iteration_dirs
-            else "empty_string"
+    for w in scenario_structure.WEATHER_HYDRO_AVAIL_SUBPROBLEM_STAGE_DICT.keys():
+        w_string = (
+            f"weather_iteration_{w}"
+            if scenario_structure.WEATHER_ITERATION_FLAG
+            else ""
         )
-
-        # Check the hydro iteration level
-        iteration_directory_strings_dict[weather_iteration_str] = {}
-        # Determine whether we will have hydro iterations
-        # Make the hydro directories if 1) there are multiple
-        # hydro iterations within a weather iteration or 2) there are
-        # multiple hydro iterations across weather iterations
-        # Case 2) captures case 1), but keeping separate for clarity
-        if len(scenario_structure.ITERATION_STRUCTURE[weather_iteration].keys()) > 1:
-            make_hydro_iteration_dirs = True
-        elif (
-            len(
-                set(
-                    [
-                        i
-                        for sublist in [
-                            scenario_structure.ITERATION_STRUCTURE[w]
-                            for w in scenario_structure.ITERATION_STRUCTURE.keys()
-                        ]
-                        for i in sublist
-                    ]
-                )
+        iteration_directory_strings_dict[w_string] = {}
+        for h in scenario_structure.WEATHER_HYDRO_AVAIL_SUBPROBLEM_STAGE_DICT[w].keys():
+            h_string = (
+                f"hydro_iteration_{h}"
+                if (scenario_structure.HYDRO_ITERATION_FLAG)
+                else ""
             )
-            > 1
-        ):
-            make_hydro_iteration_dirs = True
-        elif (
-            list(scenario_structure.ITERATION_STRUCTURE[weather_iteration].keys())[0]
-            != 0
-        ):
-            make_hydro_iteration_dirs = True
-        else:
-            make_hydro_iteration_dirs = False
-
-        for hydro_iteration in scenario_structure.ITERATION_STRUCTURE[
-            weather_iteration
-        ].keys():
-            hydro_iteration_str = (
-                f"hydro_iteration_{hydro_iteration}"
-                if make_hydro_iteration_dirs
-                else "empty_string"
-            )
-            iteration_directory_strings_dict[weather_iteration_str][
-                hydro_iteration_str
-            ] = []
-
-            # Check the availability level
-            # Make the availability directories if 1) there are multiple
-            # availability iterations within a hydro iteration or 2) there are
-            # multiple availability iterations across hydro iterations
-            # Case 2) captures case 1), but keeping separate for clarity
-            if (
-                len(
-                    scenario_structure.ITERATION_STRUCTURE[weather_iteration][
-                        hydro_iteration
-                    ]
+            iteration_directory_strings_dict[w_string][h_string] = {}
+            for a in scenario_structure.WEATHER_HYDRO_AVAIL_SUBPROBLEM_STAGE_DICT[w][
+                h
+            ].keys():
+                a_string = (
+                    f"availability_iteration_{a}"
+                    if (scenario_structure.AVAILABILITY_ITERATION_FLAG)
+                    else ""
                 )
-                > 1
-            ):
-                make_availability_iteration_dirs = True
-            elif (
-                len(
-                    set(
-                        [
-                            i
-                            for sublist in [
-                                scenario_structure.ITERATION_STRUCTURE[w][h]
-                                for w in scenario_structure.ITERATION_STRUCTURE.keys()
-                                for h in scenario_structure.ITERATION_STRUCTURE[
-                                    w
-                                ].keys()
-                            ]
-                            for i in sublist
-                        ]
+                iteration_directory_strings_dict[w_string][h_string][a_string] = {}
+                #     The subproblem structure is the same within each iteration
+                #     If we only have a single subproblem AND it does not have stages, set the
+                #     subproblem_string to an empty string (the subproblem directory should not
+                #     have been created)
+                #     If we have multiple subproblems or a single subproblems with stages,
+                #     we're expecting a subproblem directory
+                for (
+                    subproblem
+                ) in scenario_structure.WEATHER_HYDRO_AVAIL_SUBPROBLEM_STAGE_DICT[w][h][
+                    a
+                ].keys():
+                    subproblem_string = (
+                        f"{subproblem}"
+                        if (
+                            scenario_structure.SUBPROBLEM_FLAG
+                            or scenario_structure.STAGE_FLAG
+                        )
+                        else ""
                     )
-                )
-                > 1
-            ):
-                make_availability_iteration_dirs = True
-            elif (
-                list(
-                    scenario_structure.ITERATION_STRUCTURE[weather_iteration][
-                        hydro_iteration
-                    ]
-                )[0]
-                != 0
-            ):
-                make_availability_iteration_dirs = True
-            else:
-                make_availability_iteration_dirs = False
-            for availability_iteration in scenario_structure.ITERATION_STRUCTURE[
-                weather_iteration
-            ][hydro_iteration]:
-                availability_iteration_str = (
-                    f"availability_iteration_{availability_iteration}"
-                    if make_availability_iteration_dirs
-                    else "empty_string"
-                )
-                iteration_directory_strings_dict[weather_iteration_str][
-                    hydro_iteration_str
-                ].append(availability_iteration_str)
+                    iteration_directory_strings_dict[w_string][h_string][a_string][
+                        subproblem_string
+                    ] = []
+                    for stage in (
+                        scenario_structure.WEATHER_HYDRO_AVAIL_SUBPROBLEM_STAGE_DICT
+                    )[w][h][a][subproblem]:
+                        stage_string = (
+                            f"{stage}" if (scenario_structure.STAGE_FLAG) else ""
+                        )
+                        iteration_directory_strings_dict[w_string][h_string][a_string][
+                            subproblem_string
+                        ].append(stage_string)
 
     return iteration_directory_strings_dict
-
-
-def determine_subproblem_stage_directory_structure(scenario_structure):
-    """
-    The subproblem structure is the same within each iteration
-    If we only have a single subproblem AND it does not have stages, set the
-    subproblem_string to an empty string (the subproblem directory should not
-    have been created)
-    If we have multiple subproblems or a single subproblems with stages,
-    we're expecting a subproblem directory
-    """
-    subproblem_stage_directory_strings = {}
-
-    if (
-        len(scenario_structure.SUBPROBLEM_STAGES) <= 1
-        and scenario_structure.MULTI_STAGE is False
-    ):
-        make_subproblem_directories = False
-    else:
-        make_subproblem_directories = True
-
-    for subproblem in scenario_structure.SUBPROBLEM_STAGES.keys():
-        # If there are subproblems/stages, input directory will be nested
-        if make_subproblem_directories:
-            subproblem_str = str(subproblem)
-        else:
-            subproblem_str = ""
-
-        subproblem_stage_directory_strings[subproblem_str] = []
-
-        stages = scenario_structure.SUBPROBLEM_STAGES[subproblem]
-        if len(stages) == 1:
-            make_stage_directories = False
-        else:
-            make_stage_directories = True
-
-        for stage in stages:
-            if make_stage_directories:
-                stage_str = str(stage)
-            else:
-                stage_str = ""
-
-            subproblem_stage_directory_strings[subproblem_str].append(stage_str)
-
-    return subproblem_stage_directory_strings
 
 
 def get_scenario_structure_from_db(conn, scenario_id):
@@ -340,58 +240,62 @@ def get_scenario_structure_from_db(conn, scenario_id):
     """
     cursor = conn.cursor()
 
-    # Weather iterations
-    weather_iterations = [
-        row[0] for row in cursor.execute("""SELECT DISTINCT weather_iteration
+    # Iterations
+    iterations_query = f"""SELECT weather_iteration, 
+        hydro_iteration, availability_iteration
                FROM inputs_temporal_iterations
                INNER JOIN scenarios
                USING (temporal_scenario_id)
-               WHERE scenario_id = {};""".format(scenario_id)).fetchall()
-    ]
+               WHERE scenario_id = {scenario_id};"""
 
-    # Store weather iterations and hydro iterations in dict
-    # {weather_iteration: [hydro_iterations]}
-    # If we don't find any weather iterations, there were no iterations of
-    # any kind (we know there are no hydro and availability iterations since
-    # NULL values are not allowed)
-    if not weather_iterations:
-        iteration_structure_dict = {0: {0: [0]}}
+    iter_df = pd.read_sql(iterations_query, conn)
+
+    if iter_df.empty:
+        weather_hydro_avail_subproblem_stage_dict = {0: {0: {0: None}}}
+        weather_iteration_flag = False
+        hydro_iteration_flag = False
+        availability_iteration_flag = False
     else:
-        iteration_structure_dict = {}
-        for weather_iteration in weather_iterations:
-            # Get the hydro iterations for this weather iteration
-            hydro_iterations = cursor.execute(f"""SELECT hydro_iteration
-                   FROM inputs_temporal_iterations
-                   INNER JOIN scenarios
-                   USING (temporal_scenario_id)
-                   WHERE scenario_id = {scenario_id}
-                   AND weather_iteration = {weather_iteration}
-                   ;""").fetchall()
-            hydro_iterations_dict = {
-                hydro_iteration[0]: [] for hydro_iteration in hydro_iterations
-            }  # to list
-            iteration_structure_dict[weather_iteration] = hydro_iterations_dict
-
-            for hydro_iteration in hydro_iterations_dict.keys():
-                # Get the availability iterations for this weather/hydro
-                # iteration
-                availability_iterations = cursor.execute(
-                    f"""SELECT availability_iteration
-                       FROM inputs_temporal_iterations
-                       INNER JOIN scenarios
-                       USING (temporal_scenario_id)
-                       WHERE scenario_id = {scenario_id}
-                       AND weather_iteration = {weather_iteration}
-                       AND hydro_iteration = {hydro_iteration}
-                       ;"""
-                ).fetchall()
-                availability_iterations = [
-                    availability_iteration[0]
-                    for availability_iteration in availability_iterations
-                ]
-                iteration_structure_dict[weather_iteration][
+        weather_hydro_avail_subproblem_stage_dict = {}
+        for row in iter_df.itertuples():
+            ix, weather_iteration, hydro_iteration, availability_iteration = row
+            if weather_iteration not in weather_hydro_avail_subproblem_stage_dict:
+                weather_hydro_avail_subproblem_stage_dict[weather_iteration] = {}
+            if (
+                hydro_iteration
+                not in weather_hydro_avail_subproblem_stage_dict[weather_iteration]
+            ):
+                weather_hydro_avail_subproblem_stage_dict[weather_iteration][
                     hydro_iteration
-                ] = availability_iterations
+                ] = {}
+            weather_hydro_avail_subproblem_stage_dict[weather_iteration][
+                hydro_iteration
+            ][availability_iteration] = None
+
+        weather_iterations = get_distinct_iterations_from_db(
+            conn, scenario_id, "weather_iteration"
+        )
+        weather_iteration_flag = (
+            False
+            if (len(weather_iterations) == 1 and weather_iterations[0] == 0)
+            else True
+        )
+
+        hydro_iterations = get_distinct_iterations_from_db(
+            conn, scenario_id, "hydro_iteration"
+        )
+        hydro_iteration_flag = (
+            False if (len(hydro_iterations) == 1 and hydro_iterations[0] == 0) else True
+        )
+
+        availability_iterations = get_distinct_iterations_from_db(
+            conn, scenario_id, "availability_iteration"
+        )
+        availability_iteration_flag = (
+            False
+            if (len(availability_iterations) == 1 and availability_iterations[0] == 0)
+            else True
+        )
 
     # TODO: make sure there is data integrity between subproblems_stages
     #   and inputs_temporal_horizons and inputs_temporal
@@ -404,6 +308,7 @@ def get_scenario_structure_from_db(conn, scenario_id):
                USING (temporal_scenario_id)
                WHERE scenario_id = {};""".format(scenario_id)).fetchall()
     ]
+    subproblem_flag = False if len(all_subproblems) == 1 else True
 
     # Store subproblems and stages in dict {subproblem: [stages]}
     stages_by_subproblem = {}
@@ -418,202 +323,229 @@ def get_scenario_structure_from_db(conn, scenario_id):
         stages = [stage[0] for stage in stages]  # convert to simple list
         stages_by_subproblem[subproblem] = stages
 
-    return ScenarioStructure(
-        iteration_structure=iteration_structure_dict,
-        subproblem_stage_structure=stages_by_subproblem,
+    # Assuming the same for all subproblems
+    stage_flag = (
+        False
+        if len(stages_by_subproblem[next(iter(stages_by_subproblem))]) == 1
+        else True
     )
+
+    # Assumes same subproblems/stages for each iteration combo
+    for w_it in weather_hydro_avail_subproblem_stage_dict.keys():
+        for h_it in weather_hydro_avail_subproblem_stage_dict[w_it].keys():
+            for ave_it in weather_hydro_avail_subproblem_stage_dict[w_it][h_it].keys():
+                weather_hydro_avail_subproblem_stage_dict[w_it][h_it][
+                    ave_it
+                ] = stages_by_subproblem
+
+    return ScenarioStructure(
+        weather_hydro_avail_subproblem_stage_dict=weather_hydro_avail_subproblem_stage_dict,
+        weather_iteration_flag=weather_iteration_flag,
+        hydro_iteration_flag=hydro_iteration_flag,
+        availability_iteration_flag=availability_iteration_flag,
+        subproblem_flag=subproblem_flag,
+        stage_flag=stage_flag,
+    )
+
+
+def get_distinct_iterations_from_db(conn, scenario_id, iteration_type):
+    c = conn.cursor()
+    iterations = [i[0] for i in c.execute(f"""SELECT DISTINCT 
+    {iteration_type}
+                   FROM inputs_temporal_iterations
+                   INNER JOIN scenarios
+                   USING (temporal_scenario_id)
+                   WHERE scenario_id = {scenario_id};""").fetchall()]
+    return iterations
 
 
 def get_scenario_structure_from_disk(scenario_directory):
-    iteration_structure_dict = {}
 
-    # Get the iteration structure
-    # Check if there are weather directories
-    weather_directories = check_for_starting_string_subdirectories(
-        main_directory=scenario_directory, starting_string="weather_iteration"
+    # Iterate through items in the scenario_directory and create a nested
+    # dictionary of the directory structure
+    # Limit to five levels (weather, hydro, availability, subproblem, stage)
+    # We'll then parse this dictionary to understand which levels exist
+    level_start = 1
+    max_level = 5
+    dir_structure_from_disk = dir_to_nested_dict(
+        Path(scenario_directory), level_start, max_level
     )
 
-    iteration_structure_dict = {}
-    if not weather_directories:
-        # Check if there are hydro and availability iterations
-        hydro_and_availability_iterations = (
-            check_hydro_and_availability_iteration_levels(
-                starting_directory=scenario_directory
-            )
-        )
-        iteration_structure_dict = {0: hydro_and_availability_iterations}
+    # First, reverse engineer the directory structure that was sent to the
+    # scenario
+    # We need empty strings for layers that do not exist
+    # We'll start with what we got from disk
+    dir_structure_start = copy.deepcopy(dir_structure_from_disk)
+
+    # Check if we have a weather iteration level; if we don't, add the level
+    # with a single key weather_iteration_0
+    if not check_dict_key_for_string_recursive(
+        dir_structure_from_disk, "weather_iteration_"
+    ):
+        weather_iteration_flag = False
+        dir_structure_w_weather = {
+            "weather_iteration_0": copy.deepcopy(dir_structure_start)
+        }
     else:
-        for weather_directory in weather_directories:
-            weather_iteration = int(weather_directory.replace("weather_iteration_", ""))
-            w_d_full_path = os.path.join(scenario_directory, weather_directory)
-            # Check if there are hydro and availability iterations for this
-            # weather iteration
-            hydro_and_availability_iterations = (
-                check_hydro_and_availability_iteration_levels(
-                    starting_directory=w_d_full_path
-                )
-            )
-            iteration_structure_dict[weather_iteration] = (
-                hydro_and_availability_iterations
-            )
+        weather_iteration_flag = True
+        dir_structure_w_weather = copy.deepcopy(dir_structure_start)
 
-    # Get the subproblem structure
-    subproblem_main_directory = get_directory_for_subproblem_structure(
-        scenario_directory=scenario_directory
+    # Check if we have a hydro iteration level; if we don't, add the level
+    # with a single hydro_iteration_0 under each weather iteration key
+    if not check_dict_key_for_string_recursive(
+        dir_structure_from_disk, "hydro_iteration_"
+    ):
+        hydro_iteration_flag = False
+        dir_structure_w_weather_hydro = {}
+        for w in dir_structure_w_weather.keys():
+            dir_structure_w_weather_hydro[w] = {}
+            dir_structure_w_weather_hydro[w]["hydro_iteration_0"] = copy.deepcopy(
+                dir_structure_w_weather
+            )[w]
+    else:
+        hydro_iteration_flag = True
+        dir_structure_w_weather_hydro = copy.deepcopy(dir_structure_w_weather)
+
+    # Check if we have an availability iteration level; if we don't, add the level
+    # with a single availability_iteration_0 under each weather/hydro iteration
+    # key
+    if not check_dict_key_for_string_recursive(
+        dir_structure_from_disk, "availability_iteration_"
+    ):
+        availability_iteration_flag = False
+        dir_structure_w_weather_hydro_av = {}
+        for w in dir_structure_w_weather_hydro.keys():
+            dir_structure_w_weather_hydro_av[w] = {}
+            for h in dir_structure_w_weather_hydro[w].keys():
+                dir_structure_w_weather_hydro_av[w][h] = {}
+                dir_structure_w_weather_hydro_av[w][h]["availability_iteration_0"] = (
+                    copy.deepcopy(dir_structure_w_weather_hydro[w][h])
+                )
+    else:
+        availability_iteration_flag = True
+        dir_structure_w_weather_hydro_av = copy.deepcopy(dir_structure_w_weather_hydro)
+
+    # Iteration layers
+    iteration_layers_n = sum(
+        [weather_iteration_flag, hydro_iteration_flag, availability_iteration_flag]
     )
-    stages_by_subproblem = check_subproblem_structure(
-        subproblem_main_directory=subproblem_main_directory
-    )
+    dir_structure_depth = get_dictionary_depth(dir_structure_from_disk) - 1
+    non_iteration_layers_n = dir_structure_depth - iteration_layers_n
+
+    # Finally, figure out the subproblem/stage structure from the non-iteration
+    # layers
+    # 0 - no subproblems exist, add the levels as {1:[1]}
+    # 1 - subproblems exist or single subproblem with stages if there
+    # is a passthrough directory
+    # 2 - subproblems and stages exist
+    if non_iteration_layers_n == 0:
+        subproblem_flag = False
+        stage_flag = False
+        for w in dir_structure_w_weather_hydro_av.keys():
+            for h in dir_structure_w_weather_hydro_av[w].keys():
+                for a in dir_structure_w_weather_hydro_av[w][h].keys():
+                    dir_structure_w_weather_hydro_av[w][h][a] = {1: [1]}
+    elif non_iteration_layers_n == 1:
+        # If stages, add the subproblem
+        txt_file_for_stage_flag = os.path.join(
+            scenario_directory, "multi_stage_flag.txt"
+        )
+        if os.path.exists(txt_file_for_stage_flag):
+            with open(txt_file_for_stage_flag) as f:
+                with open(txt_file_for_stage_flag) as f:
+                    check_true = f.read()
+                    if check_true != "True":
+                        raise ValueError(
+                            "ERROR: Scenario directory structure appears to have "
+                            "stages but the multi_stage_flag.txt file is not set "
+                            "to True, indicating an upstream error in handling "
+                            "the scenario structure."
+                        )
+
+            subproblem_flag = False
+            stage_flag = True
+            for w in dir_structure_w_weather_hydro_av.keys():
+                for h in dir_structure_w_weather_hydro_av[w].keys():
+                    for a in dir_structure_w_weather_hydro_av[w][h].keys():
+                        dir_structure_w_weather_hydro_av[w][h][a] = {
+                            1: list(dir_structure_w_weather_hydro_av[w][h][a].keys())
+                        }
+        # If no stages, add them
+        else:
+            subproblem_flag = True
+            stage_flag = False
+            for w in dir_structure_w_weather_hydro_av.keys():
+                for h in dir_structure_w_weather_hydro_av[w].keys():
+                    for a in dir_structure_w_weather_hydro_av[w][h].keys():
+                        for subproblem in dir_structure_w_weather_hydro_av[w][h][
+                            a
+                        ].keys():
+                            dir_structure_w_weather_hydro_av[w][h][a][subproblem] = [1]
+    elif non_iteration_layers_n == 2:
+        txt_file_for_stage_flag = os.path.join(
+            scenario_directory, "multi_stage_flag.txt"
+        )
+        if os.path.exists(txt_file_for_stage_flag):
+            with open(txt_file_for_stage_flag) as f:
+                check_true = f.read()
+                if check_true != "True":
+                    raise ValueError(
+                        "ERROR: Scenario directory structure appears to have "
+                        "stages but the multi_stage_flag.txt file is not set "
+                        "to True, indicating an upstream error in handling "
+                        "the scenario structure."
+                    )
+        else:
+            raise ValueError(
+                "ERROR: Scenario directory structure appears to have "
+                "stages but the multi_stage_flag.txt does not exist, "
+                "indicating an upstream error in handling the scenario "
+                "structure."
+            )
+        subproblem_flag = True
+        stage_flag = True
+        for w in dir_structure_w_weather_hydro_av.keys():
+            for h in dir_structure_w_weather_hydro_av[w].keys():
+                for a in dir_structure_w_weather_hydro_av[w][h].keys():
+                    for subproblem in dir_structure_w_weather_hydro_av[w][h][a].keys():
+                        dir_structure_w_weather_hydro_av[w][h][a][subproblem] = list(
+                            dir_structure_w_weather_hydro_av[w][h][a][subproblem].keys()
+                        )
+    else:
+        raise ValueError(
+            "ERROR: Scenario directory structure is not supported. "
+            "The number of non-iteration layers must be 0, 1, or 2."
+        )
+
+    # Remove the starting strings for the iteration levels and make the final
+    # dictionary
+    weather_hydro_avail_subproblem_stage_dict_final = {}
+    for w in dir_structure_w_weather_hydro_av.keys():
+        w_int = int(w.replace(f"weather_iteration_", ""))
+        weather_hydro_avail_subproblem_stage_dict_final[w_int] = {}
+        for h in dir_structure_w_weather_hydro_av[w].keys():
+            h_int = int(h.replace(f"hydro_iteration_", ""))
+            weather_hydro_avail_subproblem_stage_dict_final[w_int][h_int] = {}
+            for a in dir_structure_w_weather_hydro_av[w][h].keys():
+                a_int = int(a.replace(f"availability_iteration_", ""))
+                weather_hydro_avail_subproblem_stage_dict_final[w_int][h_int][
+                    a_int
+                ] = {}
+                for subproblem, stages in dir_structure_w_weather_hydro_av[w][h][
+                    a
+                ].items():
+                    weather_hydro_avail_subproblem_stage_dict_final[w_int][h_int][
+                        a_int
+                    ][subproblem] = stages
 
     return ScenarioStructure(
-        iteration_structure=iteration_structure_dict,
-        subproblem_stage_structure=stages_by_subproblem,
+        weather_hydro_avail_subproblem_stage_dict=weather_hydro_avail_subproblem_stage_dict_final,
+        weather_iteration_flag=weather_iteration_flag,
+        hydro_iteration_flag=hydro_iteration_flag,
+        availability_iteration_flag=availability_iteration_flag,
+        subproblem_flag=subproblem_flag,
+        stage_flag=stage_flag,
     )
-
-
-def check_hydro_and_availability_iteration_levels(starting_directory):
-    """
-    Check if there are hydro directories in the starting directory.
-    If not found, return a dictionary with 0 as key and a list of availability
-    iterations found in the starting directory, else return a list with
-    the hydro iteration numbers as keys and the availability iterations found
-    within each hydro iteration (as list for the respective key).
-    """
-    # Check for hydro directories in the starting directory
-    hydro_directories = check_for_starting_string_subdirectories(
-        main_directory=starting_directory, starting_string="hydro_iteration"
-    )
-    # If there are no hydro directories, check for availability
-    # directories in the main directory
-    if not hydro_directories:
-        availability_iterations = check_availability_iteration_level(
-            starting_directory=starting_directory
-        )
-
-        hydro_and_availability_iterations = {0: availability_iterations}
-
-    else:
-        hydro_and_availability_iterations = {}
-        for hydro_directory in hydro_directories:
-            hydro_iteration = int(hydro_directory.replace("hydro_iteration_", ""))
-            availability_iterations = check_availability_iteration_level(
-                starting_directory=os.path.join(starting_directory, hydro_directory)
-            )
-
-            hydro_and_availability_iterations[hydro_iteration] = availability_iterations
-
-    return hydro_and_availability_iterations
-
-
-def check_availability_iteration_level(starting_directory):
-    """
-    Check if there are availability directories in the starting directory.
-    If not found, return a list with 0, else return a list with the
-    availability iteration numbers.
-    """
-    availability_directories = check_for_starting_string_subdirectories(
-        main_directory=starting_directory,
-        starting_string="availability_iteration",
-    )
-
-    # If there are no availability directories, return the "empty"
-    # iteration structure
-    if not availability_directories:
-        availability_iterations = [0]
-        # subproblem_main_directory = scenario_directory
-    # If there are availability directory, add those iterations to
-    # the iteration structure
-    else:
-        availability_iterations = dir_strings_to_iteration_numbers_list(
-            dir_list=availability_directories,
-            starting_string="availability_iteration",
-        )
-
-    return availability_iterations
-
-
-def get_directory_for_subproblem_structure(scenario_directory):
-    weather_directories = check_for_starting_string_subdirectories(
-        main_directory=scenario_directory, starting_string="weather_iteration"
-    )
-    if weather_directories:
-        weather_dir_for_subproblem_structure = weather_directories[0]
-    else:
-        weather_dir_for_subproblem_structure = ""
-
-    hydro_directories = check_for_starting_string_subdirectories(
-        main_directory=os.path.join(
-            scenario_directory, weather_dir_for_subproblem_structure
-        ),
-        starting_string="hydro_iteration",
-    )
-
-    if hydro_directories:
-        hydro_dir_for_subproblem_structure = hydro_directories[0]
-    else:
-        hydro_dir_for_subproblem_structure = ""
-
-    availability_directories = check_for_starting_string_subdirectories(
-        main_directory=os.path.join(
-            scenario_directory,
-            weather_dir_for_subproblem_structure,
-            hydro_dir_for_subproblem_structure,
-        ),
-        starting_string="availability_iteration",
-    )
-
-    if availability_directories:
-        availability_dir_for_subproblem_structure = availability_directories[0]
-    else:
-        availability_dir_for_subproblem_structure = ""
-
-    directory_for_subproblem_structure = os.path.join(
-        scenario_directory,
-        weather_dir_for_subproblem_structure,
-        hydro_dir_for_subproblem_structure,
-        availability_dir_for_subproblem_structure,
-    )
-
-    return directory_for_subproblem_structure
-
-
-def dir_strings_to_iteration_numbers_list(dir_list, starting_string):
-    iteration_numbers_list = [d.replace(f"{starting_string}_", "") for d in dir_list]
-
-    return iteration_numbers_list
-
-
-def check_subproblem_structure(subproblem_main_directory):
-    # Convert to integers
-    subproblem_directories = [
-        str(i) for i in check_for_integer_subdirectories(subproblem_main_directory)
-    ]
-
-    # Make dictionary for the stages by subproblem, starting with empty
-    # list for each subproblem
-    stages_by_subproblem = {subp: [] for subp in subproblem_directories}
-
-    # If we have subproblems, check for stage subdirectories for each
-    # subproblem directory
-    if subproblem_directories:
-        for subproblem in subproblem_directories:
-            subproblem_dir = os.path.join(subproblem_main_directory, subproblem)
-            # Convert to integers
-            stages = [str(i) for i in check_for_integer_subdirectories(subproblem_dir)]
-            if stages:
-                stages_by_subproblem[subproblem] = stages
-            else:
-                # If we didn't find stage directories, we have a single
-                # stage
-                # Downstream, we need a list with just 1 as member
-                stages_by_subproblem[subproblem] = [1]
-    else:
-        # If we didn't find integer directories, we have a single subproblem
-        # with a single stage
-        # Downstream, we need {1: [1]}
-        stages_by_subproblem[1] = [1]
-
-    return stages_by_subproblem
 
 
 class SolverOptions(object):
@@ -686,3 +618,67 @@ def get_scenario_table_columns(conn):
     column_names = [description[0] for description in scenario_query.description]
 
     return column_names
+
+
+def dir_to_nested_dict(
+    path: Union[str, Path], current_level, max_level: int = 5
+) -> Dict[str, dict]:
+    """
+    Recursively convert a directory structure to a nested dictionary.
+    Only add directories that are integers or start with one of
+    weather_iteration_, hydro_iteration_, or availability_iteration_.
+
+    Args:
+    path: Path to the directory to convert
+
+    Returns:
+    Nested dictionary where keys are directory names and values are
+    either empty dicts (for leaf directories) or nested dicts (for
+    directories containing subdirectories).
+    """
+    if current_level > max_level:
+        return
+
+    path = Path(path)
+
+    if not path.is_dir():
+        raise ValueError(f"{path} is not a directory")
+
+    result = {}
+
+    # Iterate through items in the directory
+    for item in sorted(path.iterdir()):
+        # Only process directories, skip files
+        # Only add directories that are integers or start with one of
+        # weather_iteration_, hydro_iteration_, or availability_iteration_
+        if item.is_dir() and (
+            str(item.name).isdigit()
+            or str(item.name).startswith("weather_iteration_")
+            or str(item.name).startswith("hydro_iteration_")
+            or str(item.name).startswith("availability_iteration_")
+        ):
+            # Recursively process subdirectories
+            subdirs = dir_to_nested_dict(item, current_level + 1, max_level)
+            # If subdirectory has no subdirs, use empty dict
+            result[item.name] = subdirs if subdirs else {}
+
+    return result
+
+
+def check_dict_key_for_string_recursive(d, starting_string):
+    if not d:
+        return False
+    else:
+        for key, value in d.items():
+            if key.startswith(starting_string):
+                return True
+            if isinstance(value, dict):
+                if check_dict_key_for_string_recursive(value, starting_string):
+                    return True
+    return False
+
+
+def get_dictionary_depth(d):
+    if isinstance(d, dict):
+        return 1 + (max(map(get_dictionary_depth, d.values()), default=0))
+    return 0
