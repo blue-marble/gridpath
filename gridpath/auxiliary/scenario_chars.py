@@ -447,7 +447,21 @@ def get_scenario_structure_from_disk(scenario_directory):
                     dir_structure_w_weather_hydro_av[w][h][a] = {1: [1]}
     elif non_iteration_layers_n == 1:
         # If stages, add the subproblem
-        if os.path.exists(os.path.join(scenario_directory, "multi_stage_flag.csv")):
+        txt_file_for_stage_flag = os.path.join(
+            scenario_directory, "multi_stage_flag.txt"
+        )
+        if os.path.exists(txt_file_for_stage_flag):
+            with open(txt_file_for_stage_flag) as f:
+                with open(txt_file_for_stage_flag) as f:
+                    check_true = f.read()
+                    if check_true != "True":
+                        raise ValueError(
+                            "ERROR: Scenario directory structure appears to have "
+                            "stages but the multi_stage_flag.txt file is not set "
+                            "to True, indicating an upstream error in handling "
+                            "the scenario structure."
+                        )
+
             subproblem_flag = False
             stage_flag = True
             for w in dir_structure_w_weather_hydro_av.keys():
@@ -468,6 +482,26 @@ def get_scenario_structure_from_disk(scenario_directory):
                         ].keys():
                             dir_structure_w_weather_hydro_av[w][h][a][subproblem] = [1]
     elif non_iteration_layers_n == 2:
+        txt_file_for_stage_flag = os.path.join(
+            scenario_directory, "multi_stage_flag.txt"
+        )
+        if os.path.exists(txt_file_for_stage_flag):
+            with open(txt_file_for_stage_flag) as f:
+                check_true = f.read()
+                if check_true != "True":
+                    raise ValueError(
+                        "ERROR: Scenario directory structure appears to have "
+                        "stages but the multi_stage_flag.txt file is not set "
+                        "to True, indicating an upstream error in handling "
+                        "the scenario structure."
+                    )
+        else:
+            raise ValueError(
+                "ERROR: Scenario directory structure appears to have "
+                "stages but the multi_stage_flag.txt does not exist, "
+                "indicating an upstream error in handling the scenario "
+                "structure."
+            )
         subproblem_flag = True
         stage_flag = True
         for w in dir_structure_w_weather_hydro_av.keys():
@@ -512,25 +546,6 @@ def get_scenario_structure_from_disk(scenario_directory):
         subproblem_flag=subproblem_flag,
         stage_flag=stage_flag,
     )
-
-
-def check_dict_key_for_string_recursive(d, starting_string):
-    if not d:
-        return False
-    else:
-        for key, value in d.items():
-            if key.startswith(starting_string):
-                return True
-            if isinstance(value, dict):
-                if check_dict_key_for_string_recursive(value, starting_string):
-                    return True
-    return False
-
-
-def dir_strings_to_iteration_numbers_list(dir_list, starting_string):
-    iteration_numbers_list = [d.replace(f"{starting_string}_", "") for d in dir_list]
-
-    return iteration_numbers_list
 
 
 class SolverOptions(object):
@@ -610,14 +625,16 @@ def dir_to_nested_dict(
 ) -> Dict[str, dict]:
     """
     Recursively convert a directory structure to a nested dictionary.
+    Only add directories that are integers or start with one of
+    weather_iteration_, hydro_iteration_, or availability_iteration_.
 
     Args:
-        path: Path to the directory to convert
+    path: Path to the directory to convert
 
     Returns:
-        Nested dictionary where keys are directory names and values are
-        either empty dicts (for leaf directories) or nested dicts (for
-        directories containing subdirectories)
+    Nested dictionary where keys are directory names and values are
+    either empty dicts (for leaf directories) or nested dicts (for
+    directories containing subdirectories).
     """
     if current_level > max_level:
         return
@@ -646,6 +663,19 @@ def dir_to_nested_dict(
             result[item.name] = subdirs if subdirs else {}
 
     return result
+
+
+def check_dict_key_for_string_recursive(d, starting_string):
+    if not d:
+        return False
+    else:
+        for key, value in d.items():
+            if key.startswith(starting_string):
+                return True
+            if isinstance(value, dict):
+                if check_dict_key_for_string_recursive(value, starting_string):
+                    return True
+    return False
 
 
 def get_dictionary_depth(d):
