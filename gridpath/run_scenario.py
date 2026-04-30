@@ -210,14 +210,6 @@ def run_optimization_for_subproblem_stage(
     Return the objective function (Total_Cost) value; only used in testing mode
 
     """
-
-    print("DIRECTORY PASSED: ", os.path.join(
-            scenario_directory,
-            weather_iteration_directory,
-            hydro_iteration_directory,
-            availability_iteration_directory,
-            subproblem_directory,
-            stage_directory,))
     # If directed to do so, log optimization run
     if parsed_arguments.log:
         logs_directory = create_logs_directory_if_not_exists(
@@ -433,7 +425,6 @@ def run_optimization_for_subproblem(
     Check if there are stages in the subproblem; if not solve subproblem;
     if, yes, solve each stage sequentially
     """
-    print("DO WE MAKE IT HERE")
     subproblem = 1 if subproblem_directory == "" else int(subproblem_directory)
 
     for stage_directory in stage_directories:
@@ -497,7 +488,6 @@ def solve_sequentially(
     # objective function values
     objective_values = {}
 
-    print("SCENARIO DIR STRUCTURE IN SOLVE ", scenario_directory_structure)
     # TODO: refactor this
     for weather_iteration_str in scenario_directory_structure.keys():
         for hydro_iteration_str in scenario_directory_structure[
@@ -584,7 +574,6 @@ def run_scenario(
      'testing' mode.
     """
 
-    print("RUN SCENARIO FUNCTION CALLED")
     scenario_directory_structure = ScenarioDirectoryStructure(
         scenario_structure
     ).SCENARIO_DIRECTORY_STRUCTURE
@@ -610,10 +599,6 @@ def run_scenario(
 
     # If parallelization is not requested, solve sequentially
     if n_parallel_subproblems == 1:
-        print("UNDER no parallelization")
-        print(scenario_directory_structure)
-        print(scenario_directory)
-        print(scenario_structure.WEATHER_HYDRO_AVAIL_SUBPROBLEM_STAGE_DICT)
         objective_values = solve_sequentially(
             scenario_directory_structure=scenario_directory_structure,
             scenario_directory=scenario_directory,
@@ -671,7 +656,9 @@ def run_scenario(
                         availability_iteration_str = ensure_empty_string(
                             availability_iteration_str
                         )
-                        for subproblem_str in subproblem_stage_directory_strings.keys():
+                        for subproblem_str in scenario_directory_structure[
+                            weather_iteration_str
+                        ][hydro_iteration_str][availability_iteration_str].keys():
                             if scenario_structure.STAGE_FLAG:
                                 create_pass_through_inputs(
                                     scenario_directory,
@@ -721,7 +708,9 @@ def run_scenario(
                         availability_iteration_str = ensure_empty_string(
                             availability_iteration_str
                         )
-                        for subproblem_str in subproblem_stage_directory_strings.keys():
+                        for subproblem_str in scenario_directory_structure[
+                            weather_iteration_str
+                        ][hydro_iteration_str][availability_iteration_str].keys():
                             pool_data.append(
                                 [
                                     scenario_directory,
@@ -729,7 +718,9 @@ def run_scenario(
                                     hydro_iteration_str,
                                     availability_iteration_str,
                                     subproblem_str,
-                                    subproblem_stage_directory_strings[subproblem_str],
+                                    scenario_directory_structure[weather_iteration_str][
+                                        hydro_iteration_str
+                                    ][availability_iteration_str][subproblem_str],
                                     scenario_structure.STAGE_FLAG,
                                     parsed_arguments,
                                     objective_values,

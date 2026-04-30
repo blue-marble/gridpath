@@ -163,20 +163,25 @@ def write_model_inputs(
                     for subproblem_str in scenario_directory_structure[
                         weather_iteration_str
                     ][hydro_iteration_str][availability_iteration_str].keys():
-                        pool_data.append(
-                            [
-                                scenario_directory,
-                                weather_iteration_str,
-                                hydro_iteration_str,
-                                availability_iteration_str,
-                                subproblem_str,
-                                stage_str,
-                                modules_to_use,
-                                scenario_id,
-                                subscenarios,
-                                db_path,
-                            ]
-                        )
+                        for stage_str in scenario_directory_structure[
+                            weather_iteration_str
+                        ][hydro_iteration_str][availability_iteration_str][
+                            subproblem_str
+                        ]:
+                            pool_data.append(
+                                [
+                                    scenario_directory,
+                                    weather_iteration_str,
+                                    hydro_iteration_str,
+                                    availability_iteration_str,
+                                    subproblem_str,
+                                    stage_str,
+                                    modules_to_use,
+                                    scenario_id,
+                                    subscenarios,
+                                    db_path,
+                                ]
+                            )
 
         pool_data = tuple(pool_data)
 
@@ -423,6 +428,19 @@ def write_solver_options(scenario_directory, solver_options):
                 writer.writerow([opt, solver_options.SOLVER_OPTIONS[opt]])
 
 
+def write_multi_stage_flag(scenario_directory, stage_flag):
+    """
+    Write the multi-stage flag to the scenario directory.
+    """
+    if stage_flag:
+        with open(
+            os.path.join(scenario_directory, "multi_stage_flag.txt"),
+            "w",
+            newline="",
+        ) as stage_flag_file:
+            stage_flag_file.write(str(stage_flag))
+
+
 def write_linked_subproblems_map(scenario_directory, conn, subscenarios):
     sql = """
         SELECT subproblem_id as subproblem, stage_id as stage, timepoint, 
@@ -485,6 +503,7 @@ def main(args=None):
     scenario_structure = get_scenario_structure_from_db(
         conn=conn, scenario_id=scenario_id
     )
+    write_multi_stage_flag(scenario_directory, scenario_structure.STAGE_FLAG)
     solver_options = SolverOptions(conn=conn, scenario_id=scenario_id)
 
     # Determine requested features and use this to determine what modules to

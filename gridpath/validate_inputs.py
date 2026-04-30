@@ -72,10 +72,10 @@ def validate_inputs(
             for a in scenario_structure.WEATHER_HYDRO_AVAIL_SUBPROBLEM_STAGE_DICT[w][h]:
                 for subproblem in (
                     scenario_structure.WEATHER_HYDRO_AVAIL_SUBPROBLEM_STAGE_DICT
-                )[w][h][w].keys():
+                )[w][h][a].keys():
                     for stage in (
                         scenario_structure.WEATHER_HYDRO_AVAIL_SUBPROBLEM_STAGE_DICT
-                    )[w][h][w][subproblem]:
+                    )[w][h][a][subproblem]:
                         for m in loaded_modules:
                             if hasattr(m, "validate_inputs"):
                                 m.validate_inputs(

@@ -21,6 +21,7 @@ import copy
 import os.path
 import pandas as pd
 from pathlib import Path
+from typing import Dict, Union
 
 from gridpath.auxiliary.auxiliary import (
     check_for_integer_subdirectories,
@@ -142,13 +143,6 @@ class ScenarioStructure(object):
         self.SUBPROBLEM_FLAG = subproblem_flag
         self.STAGE_FLAG = stage_flag
 
-        # print(weather_hydro_avail_subproblem_stage_dict)
-        # print(weather_iteration_flag)
-        # print(hydro_iteration_flag)
-        # print(availability_iteration_flag)
-        # print(subproblem_flag)
-        # print(stage_flag)
-
         # For determining whether we can parallelize
         self.N_SUBPROBLEMS = self.calculate_n_subproblems(
             weather_hydro_avail_subproblem_stage_dict=weather_hydro_avail_subproblem_stage_dict,
@@ -255,7 +249,6 @@ def get_scenario_structure_from_db(conn, scenario_id):
                WHERE scenario_id = {scenario_id};"""
 
     iter_df = pd.read_sql(iterations_query, conn)
-    print(iter_df)
 
     if iter_df.empty:
         weather_hydro_avail_subproblem_stage_dict = {0: {0: {0: None}}}
@@ -266,9 +259,18 @@ def get_scenario_structure_from_db(conn, scenario_id):
         weather_hydro_avail_subproblem_stage_dict = {}
         for row in iter_df.itertuples():
             ix, weather_iteration, hydro_iteration, availability_iteration = row
-            weather_hydro_avail_subproblem_stage_dict[weather_iteration] = {
-                hydro_iteration: {availability_iteration: None}
-            }
+            if weather_iteration not in weather_hydro_avail_subproblem_stage_dict:
+                weather_hydro_avail_subproblem_stage_dict[weather_iteration] = {}
+            if (
+                hydro_iteration
+                not in weather_hydro_avail_subproblem_stage_dict[weather_iteration]
+            ):
+                weather_hydro_avail_subproblem_stage_dict[weather_iteration][
+                    hydro_iteration
+                ] = {}
+            weather_hydro_avail_subproblem_stage_dict[weather_iteration][
+                hydro_iteration
+            ][availability_iteration] = None
 
         weather_iterations = get_distinct_iterations_from_db(
             conn, scenario_id, "weather_iteration"
@@ -306,7 +308,6 @@ def get_scenario_structure_from_db(conn, scenario_id):
                USING (temporal_scenario_id)
                WHERE scenario_id = {};""".format(scenario_id)).fetchall()
     ]
-    print("SUPROBLEMS", all_subproblems)
     subproblem_flag = False if len(all_subproblems) == 1 else True
 
     # Store subproblems and stages in dict {subproblem: [stages]}
@@ -336,8 +337,6 @@ def get_scenario_structure_from_db(conn, scenario_id):
                 weather_hydro_avail_subproblem_stage_dict[w_it][h_it][
                     ave_it
                 ] = stages_by_subproblem
-
-    print("HERE: ", weather_hydro_avail_subproblem_stage_dict)
 
     return ScenarioStructure(
         weather_hydro_avail_subproblem_stage_dict=weather_hydro_avail_subproblem_stage_dict,
@@ -371,12 +370,12 @@ def get_scenario_structure_from_disk(scenario_directory):
     dir_structure_from_disk = dir_to_nested_dict(
         Path(scenario_directory), level_start, max_level
     )
-    print("DIR STRUCTURE FROM DISK", dir_structure_from_disk)
 
-    # First, reverse engineer the directory structure
+    # First, reverse engineer the directory structure that was sent to the
+    # scenario
     # We need empty strings for layers that do not exist
     # We'll start with what we got from disk
-    dir_structure_intermediate = copy.deepcopy(dir_structure_from_disk)
+    dir_structure_start = copy.deepcopy(dir_structure_from_disk)
 
     # Check if we have a weather iteration level; if we don't, add the level
     # with a single key weather_iteration_0
@@ -384,11 +383,12 @@ def get_scenario_structure_from_disk(scenario_directory):
         dir_structure_from_disk, "weather_iteration_"
     ):
         weather_iteration_flag = False
-        dir_structure_intermediate = {"weather_iteration_0": dir_structure_intermediate}
+        dir_structure_w_weather = {
+            "weather_iteration_0": copy.deepcopy(dir_structure_start)
+        }
     else:
         weather_iteration_flag = True
-
-    # print(dir_structure_intermediate)
+        dir_structure_w_weather = copy.deepcopy(dir_structure_start)
 
     # Check if we have a hydro iteration level; if we don't, add the level
     # with a single hydro_iteration_0 under each weather iteration key
@@ -396,13 +396,15 @@ def get_scenario_structure_from_disk(scenario_directory):
         dir_structure_from_disk, "hydro_iteration_"
     ):
         hydro_iteration_flag = False
-        for w in dir_structure_intermediate.keys():
-            dir_structure_intermediate[w]["hydro_iteration_0"] = {}
+        dir_structure_w_weather_hydro = {}
+        for w in dir_structure_w_weather.keys():
+            dir_structure_w_weather_hydro[w] = {}
+            dir_structure_w_weather_hydro[w]["hydro_iteration_0"] = copy.deepcopy(
+                dir_structure_w_weather
+            )[w]
     else:
         hydro_iteration_flag = True
-
-    # print(dir_structure_intermediate)
-    # print(dir_structure_from_disk)
+        dir_structure_w_weather_hydro = copy.deepcopy(dir_structure_w_weather)
 
     # Check if we have an availability iteration level; if we don't, add the level
     # with a single availability_iteration_0 under each weather/hydro iteration
@@ -411,22 +413,23 @@ def get_scenario_structure_from_disk(scenario_directory):
         dir_structure_from_disk, "availability_iteration_"
     ):
         availability_iteration_flag = False
-        for w in dir_structure_intermediate.keys():
-            for h in dir_structure_intermediate[w].keys():
-                dir_structure_intermediate[w][h]["availability_iteration_0"] = {}
+        dir_structure_w_weather_hydro_av = {}
+        for w in dir_structure_w_weather_hydro.keys():
+            dir_structure_w_weather_hydro_av[w] = {}
+            for h in dir_structure_w_weather_hydro[w].keys():
+                dir_structure_w_weather_hydro_av[w][h] = {}
+                dir_structure_w_weather_hydro_av[w][h]["availability_iteration_0"] = (
+                    copy.deepcopy(dir_structure_w_weather_hydro[w][h])
+                )
     else:
         availability_iteration_flag = True
-    # print(dir_structure_intermediate)
+        dir_structure_w_weather_hydro_av = copy.deepcopy(dir_structure_w_weather_hydro)
 
     # Iteration layers
     iteration_layers_n = sum(
         [weather_iteration_flag, hydro_iteration_flag, availability_iteration_flag]
     )
-    print("ITERATION LAYERS", iteration_layers_n)
-    print("THIS IS THE DICT ", dir_structure_from_disk)
-    print("ORIGINAL DEPTH", get_dictionary_depth(dir_structure_from_disk))
     dir_structure_depth = get_dictionary_depth(dir_structure_from_disk) - 1
-    print("DIR STRUCTURE DEPTH", dir_structure_depth)
     non_iteration_layers_n = dir_structure_depth - iteration_layers_n
 
     # Finally, figure out the subproblem/stage structure from the non-iteration
@@ -438,39 +441,41 @@ def get_scenario_structure_from_disk(scenario_directory):
     if non_iteration_layers_n == 0:
         subproblem_flag = False
         stage_flag = False
-        for w in dir_structure_intermediate.keys():
-            for h in dir_structure_intermediate[w].keys():
-                for a in dir_structure_intermediate[w][h].keys():
-                    dir_structure_intermediate[w][h][a] = {1: [1]}
+        for w in dir_structure_w_weather_hydro_av.keys():
+            for h in dir_structure_w_weather_hydro_av[w].keys():
+                for a in dir_structure_w_weather_hydro_av[w][h].keys():
+                    dir_structure_w_weather_hydro_av[w][h][a] = {1: [1]}
     elif non_iteration_layers_n == 1:
         # If stages, add the subproblem
-        if os.path.exists(os.path.join(scenario_directory, "pass_through_inputs")):
+        if os.path.exists(os.path.join(scenario_directory, "multi_stage_flag.csv")):
             subproblem_flag = False
             stage_flag = True
-            for w in dir_structure_intermediate.keys():
-                for h in dir_structure_intermediate[w].keys():
-                    for a in dir_structure_intermediate[w][h].keys():
-                        dir_structure_intermediate[w][h][a] = {
-                            1: list(dir_structure_intermediate[w][h][a].keys())
+            for w in dir_structure_w_weather_hydro_av.keys():
+                for h in dir_structure_w_weather_hydro_av[w].keys():
+                    for a in dir_structure_w_weather_hydro_av[w][h].keys():
+                        dir_structure_w_weather_hydro_av[w][h][a] = {
+                            1: list(dir_structure_w_weather_hydro_av[w][h][a].keys())
                         }
         # If no stages, add them
         else:
             subproblem_flag = True
             stage_flag = False
-            for w in dir_structure_intermediate.keys():
-                for h in dir_structure_intermediate[w].keys():
-                    for a in dir_structure_intermediate[w][h].keys():
-                        for subproblem in dir_structure_intermediate[w][h][a].keys():
-                            dir_structure_intermediate[w][h][a][subproblem] = [1]
+            for w in dir_structure_w_weather_hydro_av.keys():
+                for h in dir_structure_w_weather_hydro_av[w].keys():
+                    for a in dir_structure_w_weather_hydro_av[w][h].keys():
+                        for subproblem in dir_structure_w_weather_hydro_av[w][h][
+                            a
+                        ].keys():
+                            dir_structure_w_weather_hydro_av[w][h][a][subproblem] = [1]
     elif non_iteration_layers_n == 2:
         subproblem_flag = True
         stage_flag = True
-        for w in dir_structure_intermediate.keys():
-            for h in dir_structure_intermediate[w].keys():
-                for a in dir_structure_intermediate[w][h].keys():
-                    for subproblem in dir_structure_intermediate[w][h][a].keys():
-                        dir_structure_intermediate[w][h][a][subproblem] = list(
-                            dir_structure_intermediate[w][h][a][subproblem].keys()
+        for w in dir_structure_w_weather_hydro_av.keys():
+            for h in dir_structure_w_weather_hydro_av[w].keys():
+                for a in dir_structure_w_weather_hydro_av[w][h].keys():
+                    for subproblem in dir_structure_w_weather_hydro_av[w][h][a].keys():
+                        dir_structure_w_weather_hydro_av[w][h][a][subproblem] = list(
+                            dir_structure_w_weather_hydro_av[w][h][a][subproblem].keys()
                         )
     else:
         raise ValueError(
@@ -481,29 +486,23 @@ def get_scenario_structure_from_disk(scenario_directory):
     # Remove the starting strings for the iteration levels and make the final
     # dictionary
     weather_hydro_avail_subproblem_stage_dict_final = {}
-    for w in dir_structure_intermediate.keys():
+    for w in dir_structure_w_weather_hydro_av.keys():
         w_int = int(w.replace(f"weather_iteration_", ""))
-        print(w, w_int)
         weather_hydro_avail_subproblem_stage_dict_final[w_int] = {}
-        print(weather_hydro_avail_subproblem_stage_dict_final)
-        for h in dir_structure_intermediate[w].keys():
+        for h in dir_structure_w_weather_hydro_av[w].keys():
             h_int = int(h.replace(f"hydro_iteration_", ""))
-            print(h, h_int)
             weather_hydro_avail_subproblem_stage_dict_final[w_int][h_int] = {}
-            print(weather_hydro_avail_subproblem_stage_dict_final)
-            for a in dir_structure_intermediate[w][h].keys():
+            for a in dir_structure_w_weather_hydro_av[w][h].keys():
                 a_int = int(a.replace(f"availability_iteration_", ""))
-                print(a, a_int)
                 weather_hydro_avail_subproblem_stage_dict_final[w_int][h_int][
                     a_int
                 ] = {}
-                for subproblem, stages in dir_structure_intermediate[w][h][a].items():
+                for subproblem, stages in dir_structure_w_weather_hydro_av[w][h][
+                    a
+                ].items():
                     weather_hydro_avail_subproblem_stage_dict_final[w_int][h_int][
                         a_int
                     ][subproblem] = stages
-
-    print("IS THIS THE PROBLEM",
-          weather_hydro_avail_subproblem_stage_dict_final)
 
     return ScenarioStructure(
         weather_hydro_avail_subproblem_stage_dict=weather_hydro_avail_subproblem_stage_dict_final,
@@ -516,7 +515,6 @@ def get_scenario_structure_from_disk(scenario_directory):
 
 
 def check_dict_key_for_string_recursive(d, starting_string):
-    # print(d, starting_string)
     if not d:
         return False
     else:
@@ -533,11 +531,6 @@ def dir_strings_to_iteration_numbers_list(dir_list, starting_string):
     iteration_numbers_list = [d.replace(f"{starting_string}_", "") for d in dir_list]
 
     return iteration_numbers_list
-
-
-import os
-from pathlib import Path
-from typing import Dict, Union
 
 
 class SolverOptions(object):
