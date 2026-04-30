@@ -82,15 +82,10 @@ def write_model_inputs(
     # files
     delete_prior_aux_files(scenario_directory=scenario_directory)
 
-    # Determine whether we will have iteration (weather, hydro iteration),
-    # and subproblem and stage directories
-    # The subproblem structure is the same within each iteration
-    iteration_directory_strings = ScenarioDirectoryStructure(
+    # Get the directory structure from the scenario structure
+    scenario_directory_structure = ScenarioDirectoryStructure(
         scenario_structure
-    ).ITERATION_DIRECTORIES
-    subproblem_stage_directory_strings = ScenarioDirectoryStructure(
-        scenario_structure
-    ).SUBPROBLEM_STAGE_DIRECTORIES
+    ).SCENARIO_DIRECTORY_STRUCTURE
 
     # Do a few checks on parallelization request
     if n_parallel_subproblems < 1:
@@ -111,13 +106,13 @@ def write_model_inputs(
     # If no parallelization requested, loop through the iterations
     # and subproblems
     if n_parallel_subproblems == 1:
-        for weather_iteration_str in iteration_directory_strings.keys():
-            for hydro_iteration_str in iteration_directory_strings[
+        for weather_iteration_str in scenario_directory_structure.keys():
+            for hydro_iteration_str in scenario_directory_structure[
                 weather_iteration_str
             ].keys():
-                for availability_iteration_str in iteration_directory_strings[
+                for availability_iteration_str in scenario_directory_structure[
                     weather_iteration_str
-                ][hydro_iteration_str]:
+                ][hydro_iteration_str].keys():
                     # We may have passed "empty_string" to avoid actual empty
                     # strings as dictionary keys; convert to actual empty
                     # strings here to pass to the directory creation methods
@@ -127,8 +122,12 @@ def write_model_inputs(
                         availability_iteration_str
                     )
 
-                    for subproblem_str in subproblem_stage_directory_strings.keys():
-                        for stage_str in subproblem_stage_directory_strings[
+                    for subproblem_str in scenario_directory_structure[
+                        weather_iteration_str
+                    ][hydro_iteration_str][availability_iteration_str].keys():
+                        for stage_str in scenario_directory_structure[
+                            weather_iteration_str
+                        ][hydro_iteration_str][availability_iteration_str][
                             subproblem_str
                         ]:
                             write_inputs(
@@ -145,13 +144,13 @@ def write_model_inputs(
                             )
     else:
         pool_data = []
-        for weather_iteration_str in iteration_directory_strings.keys():
-            for hydro_iteration_str in iteration_directory_strings[
+        for weather_iteration_str in scenario_directory_structure.keys():
+            for hydro_iteration_str in scenario_directory_structure[
                 weather_iteration_str
             ].keys():
-                for availability_iteration_str in iteration_directory_strings[
+                for availability_iteration_str in scenario_directory_structure[
                     weather_iteration_str
-                ][hydro_iteration_str]:
+                ][hydro_iteration_str].keys():
                     # We may have passed "empty_string" to avoid actual empty
                     # strings as dictionary keys; convert to actual empty
                     # strings here to pass to the directory creation methods
@@ -161,24 +160,23 @@ def write_model_inputs(
                         availability_iteration_str
                     )
 
-                    for subproblem_str in subproblem_stage_directory_strings.keys():
-                        for stage_str in subproblem_stage_directory_strings[
-                            subproblem_str
-                        ]:
-                            pool_data.append(
-                                [
-                                    scenario_directory,
-                                    weather_iteration_str,
-                                    hydro_iteration_str,
-                                    availability_iteration_str,
-                                    subproblem_str,
-                                    stage_str,
-                                    modules_to_use,
-                                    scenario_id,
-                                    subscenarios,
-                                    db_path,
-                                ]
-                            )
+                    for subproblem_str in scenario_directory_structure[
+                        weather_iteration_str
+                    ][hydro_iteration_str][availability_iteration_str].keys():
+                        pool_data.append(
+                            [
+                                scenario_directory,
+                                weather_iteration_str,
+                                hydro_iteration_str,
+                                availability_iteration_str,
+                                subproblem_str,
+                                stage_str,
+                                modules_to_use,
+                                scenario_id,
+                                subscenarios,
+                                db_path,
+                            ]
+                        )
 
         pool_data = tuple(pool_data)
 
@@ -495,7 +493,7 @@ def main(args=None):
 
     # Figure out which modules to use and load the modules
     modules_to_use = determine_modules(
-        features=feature_list, multi_stage=scenario_structure.MULTI_STAGE
+        features=feature_list, multi_stage=scenario_structure.STAGE_FLAG
     )
 
     # Get appropriate inputs from database and write the .tab file model inputs

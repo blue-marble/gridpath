@@ -80,19 +80,16 @@ def import_scenario_results_into_database(
     :return:
     """
 
-    iteration_directory_strings = ScenarioDirectoryStructure(
+    scenario_directory_structure = ScenarioDirectoryStructure(
         scenario_structure
-    ).ITERATION_DIRECTORIES
-    subproblem_stage_directory_strings = ScenarioDirectoryStructure(
-        scenario_structure
-    ).SUBPROBLEM_STAGE_DIRECTORIES
+    ).SCENARIO_DIRECTORY_STRUCTURE
 
     # Hydro years first
-    for weather_iteration_str in iteration_directory_strings.keys():
-        for hydro_iteration_str in iteration_directory_strings[
+    for weather_iteration_str in scenario_directory_structure.keys():
+        for hydro_iteration_str in scenario_directory_structure[
             weather_iteration_str
         ].keys():
-            for availability_iteration_str in iteration_directory_strings[
+            for availability_iteration_str in scenario_directory_structure[
                 weather_iteration_str
             ][hydro_iteration_str]:
                 # We may have passed "empty_string" to avoid actual empty
@@ -123,9 +120,13 @@ def import_scenario_results_into_database(
                         )
                     )
                 )
-                for subproblem_str in subproblem_stage_directory_strings.keys():
+                for subproblem_str in scenario_directory_structure[
+                    weather_iteration_str
+                ][hydro_iteration_str][availability_iteration_str].keys():
                     subproblem = 0 if subproblem_str == "" else int(subproblem_str)
-                    for stage_str in subproblem_stage_directory_strings[subproblem_str]:
+                    for stage_str in scenario_directory_structure[
+                        weather_iteration_str
+                    ][hydro_iteration_str][availability_iteration_str][subproblem_str]:
                         stage = 0 if stage_str == "" else int(stage_str)
                         results_directory = os.path.join(
                             scenario_directory,

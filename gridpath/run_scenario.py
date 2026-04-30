@@ -211,6 +211,13 @@ def run_optimization_for_subproblem_stage(
 
     """
 
+    print("DIRECTORY PASSED: ", os.path.join(
+            scenario_directory,
+            weather_iteration_directory,
+            hydro_iteration_directory,
+            availability_iteration_directory,
+            subproblem_directory,
+            stage_directory,))
     # If directed to do so, log optimization run
     if parsed_arguments.log:
         logs_directory = create_logs_directory_if_not_exists(
@@ -426,6 +433,7 @@ def run_optimization_for_subproblem(
     Check if there are stages in the subproblem; if not solve subproblem;
     if, yes, solve each stage sequentially
     """
+    print("DO WE MAKE IT HERE")
     subproblem = 1 if subproblem_directory == "" else int(subproblem_directory)
 
     for stage_directory in stage_directories:
@@ -480,8 +488,7 @@ def run_optimization_for_subproblem_pool(pool_datum):
 
 
 def solve_sequentially(
-    iteration_directory_strings,
-    subproblem_stage_directory_strings,
+    scenario_directory_structure,
     scenario_directory,
     scenario_structure,
     parsed_arguments,
@@ -490,12 +497,13 @@ def solve_sequentially(
     # objective function values
     objective_values = {}
 
+    print("SCENARIO DIR STRUCTURE IN SOLVE ", scenario_directory_structure)
     # TODO: refactor this
-    for weather_iteration_str in iteration_directory_strings.keys():
-        for hydro_iteration_str in iteration_directory_strings[
+    for weather_iteration_str in scenario_directory_structure.keys():
+        for hydro_iteration_str in scenario_directory_structure[
             weather_iteration_str
         ].keys():
-            for availability_iteration_str in iteration_directory_strings[
+            for availability_iteration_str in scenario_directory_structure[
                 weather_iteration_str
             ][hydro_iteration_str]:
                 # We may have passed "empty_string" to avoid actual empty
@@ -507,7 +515,9 @@ def solve_sequentially(
                     availability_iteration_str
                 )
 
-                for subproblem_str in subproblem_stage_directory_strings.keys():
+                for subproblem_str in scenario_directory_structure[
+                    weather_iteration_str
+                ][hydro_iteration_str][availability_iteration_str].keys():
                     subproblem = 1 if subproblem_str == "" else int(subproblem_str)
 
                     # Write pass through input file headers
@@ -518,7 +528,7 @@ def solve_sequentially(
                     #  alternatively be created by the first stage that
                     #  exports pass through inputs, but this will require
                     #  changes to the formulation (for commitment)
-                    if scenario_structure.MULTI_STAGE:
+                    if scenario_structure.STAGE_FLAG:
                         create_pass_through_inputs(
                             scenario_directory,
                             scenario_structure,
@@ -542,10 +552,12 @@ def solve_sequentially(
                         hydro_iteration_directory=hydro_iteration_str,
                         availability_iteration_directory=availability_iteration_str,
                         subproblem_directory=subproblem_str,
-                        stage_directories=subproblem_stage_directory_strings[
+                        stage_directories=scenario_directory_structure[
+                            weather_iteration_str
+                        ][hydro_iteration_str][availability_iteration_str][
                             subproblem_str
                         ],
-                        multi_stage=scenario_structure.MULTI_STAGE,
+                        multi_stage=scenario_structure.STAGE_FLAG,
                         parsed_arguments=parsed_arguments,
                         objective_values=objective_values,
                     )
@@ -572,12 +584,10 @@ def run_scenario(
      'testing' mode.
     """
 
-    iteration_directory_strings = ScenarioDirectoryStructure(
+    print("RUN SCENARIO FUNCTION CALLED")
+    scenario_directory_structure = ScenarioDirectoryStructure(
         scenario_structure
-    ).ITERATION_DIRECTORIES
-    subproblem_stage_directory_strings = ScenarioDirectoryStructure(
-        scenario_structure
-    ).SUBPROBLEM_STAGE_DIRECTORIES
+    ).SCENARIO_DIRECTORY_STRUCTURE
 
     # TODO: consolidate parallelization checks
     try:
@@ -600,9 +610,12 @@ def run_scenario(
 
     # If parallelization is not requested, solve sequentially
     if n_parallel_subproblems == 1:
+        print("UNDER no parallelization")
+        print(scenario_directory_structure)
+        print(scenario_directory)
+        print(scenario_structure.WEATHER_HYDRO_AVAIL_SUBPROBLEM_STAGE_DICT)
         objective_values = solve_sequentially(
-            iteration_directory_strings=iteration_directory_strings,
-            subproblem_stage_directory_strings=subproblem_stage_directory_strings,
+            scenario_directory_structure=scenario_directory_structure,
             scenario_directory=scenario_directory,
             scenario_structure=scenario_structure,
             parsed_arguments=parsed_arguments,
@@ -624,7 +637,7 @@ def run_scenario(
                 "sequentially."
             )
             objective_values = solve_sequentially(
-                iteration_directory_strings=iteration_directory_strings,
+                scenario_directory_structure=scenario_directory_structure,
                 subproblem_stage_directory_strings=subproblem_stage_directory_strings,
                 scenario_directory=scenario_directory,
                 scenario_structure=scenario_structure,
@@ -641,11 +654,11 @@ def run_scenario(
             manager = Manager()
             objective_values = manager.dict()
 
-            for weather_iteration_str in iteration_directory_strings.keys():
-                for hydro_iteration_str in iteration_directory_strings[
+            for weather_iteration_str in scenario_directory_structure.keys():
+                for hydro_iteration_str in scenario_directory_structure[
                     weather_iteration_str
                 ].keys():
-                    for availability_iteration_str in iteration_directory_strings[
+                    for availability_iteration_str in scenario_directory_structure[
                         weather_iteration_str
                     ][hydro_iteration_str]:
                         # We may have passed "empty_string" to avoid actual empty
@@ -659,7 +672,7 @@ def run_scenario(
                             availability_iteration_str
                         )
                         for subproblem_str in subproblem_stage_directory_strings.keys():
-                            if scenario_structure.MULTI_STAGE:
+                            if scenario_structure.STAGE_FLAG:
                                 create_pass_through_inputs(
                                     scenario_directory,
                                     scenario_structure,
@@ -691,11 +704,11 @@ def run_scenario(
             pool = get_context("spawn").Pool(n_parallel_subproblems)
 
             pool_data = []
-            for weather_iteration_str in iteration_directory_strings.keys():
-                for hydro_iteration_str in iteration_directory_strings[
+            for weather_iteration_str in scenario_directory_structure.keys():
+                for hydro_iteration_str in scenario_directory_structure[
                     weather_iteration_str
                 ].keys():
-                    for availability_iteration_str in iteration_directory_strings[
+                    for availability_iteration_str in scenario_directory_structure[
                         weather_iteration_str
                     ][hydro_iteration_str]:
                         # We may have passed "empty_string" to avoid actual empty
@@ -717,7 +730,7 @@ def run_scenario(
                                     availability_iteration_str,
                                     subproblem_str,
                                     subproblem_stage_directory_strings[subproblem_str],
-                                    scenario_structure.MULTI_STAGE,
+                                    scenario_structure.STAGE_FLAG,
                                     parsed_arguments,
                                     objective_values,
                                 ]
@@ -741,7 +754,7 @@ def create_pass_through_inputs(
 ):
     modules_to_use, loaded_modules = set_up_gridpath_modules(
         scenario_directory=scenario_directory,
-        multi_stage=scenario_structure.MULTI_STAGE,
+        multi_stage=scenario_structure.STAGE_FLAG,
     )
     pass_through_directory = os.path.join(
         scenario_directory,
