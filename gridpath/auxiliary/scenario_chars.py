@@ -259,11 +259,16 @@ def get_scenario_structure_from_db(conn, scenario_id):
         weather_hydro_avail_subproblem_stage_dict = {}
         for row in iter_df.itertuples():
             ix, weather_iteration, hydro_iteration, availability_iteration = row
-            if weather_iteration not in weather_hydro_avail_subproblem_stage_dict:
+            if (
+                weather_iteration
+                not in weather_hydro_avail_subproblem_stage_dict.keys()
+            ):
                 weather_hydro_avail_subproblem_stage_dict[weather_iteration] = {}
             if (
                 hydro_iteration
-                not in weather_hydro_avail_subproblem_stage_dict[weather_iteration]
+                not in weather_hydro_avail_subproblem_stage_dict[
+                    weather_iteration
+                ].keys()
             ):
                 weather_hydro_avail_subproblem_stage_dict[weather_iteration][
                     hydro_iteration
@@ -337,6 +342,93 @@ def get_scenario_structure_from_db(conn, scenario_id):
                 weather_hydro_avail_subproblem_stage_dict[w_it][h_it][
                     ave_it
                 ] = stages_by_subproblem
+
+    return ScenarioStructure(
+        weather_hydro_avail_subproblem_stage_dict=weather_hydro_avail_subproblem_stage_dict,
+        weather_iteration_flag=weather_iteration_flag,
+        hydro_iteration_flag=hydro_iteration_flag,
+        availability_iteration_flag=availability_iteration_flag,
+        subproblem_flag=subproblem_flag,
+        stage_flag=stage_flag,
+    )
+
+
+def get_scenario_structure_from_csv(csv_path):
+    """
+
+    :param conn:
+    :param scenario_id:
+    """
+
+    df = pd.read_csv(csv_path)
+
+    if df.empty:
+        weather_hydro_avail_subproblem_stage_dict = {0: {0: {0: {1: [1]}}}}
+        weather_iteration_flag = False
+        hydro_iteration_flag = False
+        availability_iteration_flag = False
+        subproblem_flag = False
+        stage_flag = False
+    else:
+        weather_hydro_avail_subproblem_stage_dict = {}
+        for row in df.itertuples():
+            (
+                ix,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
+            ) = row
+            if (
+                weather_iteration
+                not in weather_hydro_avail_subproblem_stage_dict.keys()
+            ):
+                weather_hydro_avail_subproblem_stage_dict[weather_iteration] = {}
+            if (
+                hydro_iteration
+                not in weather_hydro_avail_subproblem_stage_dict[
+                    weather_iteration
+                ].keys()
+            ):
+                weather_hydro_avail_subproblem_stage_dict[weather_iteration][
+                    hydro_iteration
+                ] = {}
+            if (
+                availability_iteration
+                not in weather_hydro_avail_subproblem_stage_dict[weather_iteration][
+                    hydro_iteration
+                ].keys()
+            ):
+                weather_hydro_avail_subproblem_stage_dict[weather_iteration][
+                    hydro_iteration
+                ][availability_iteration] = {}
+            if (
+                subproblem
+                not in weather_hydro_avail_subproblem_stage_dict[weather_iteration][
+                    hydro_iteration
+                ][availability_iteration].keys()
+            ):
+                weather_hydro_avail_subproblem_stage_dict[weather_iteration][
+                    hydro_iteration
+                ][availability_iteration][subproblem] = [stage]
+            else:
+                weather_hydro_avail_subproblem_stage_dict[weather_iteration][
+                    hydro_iteration
+                ][availability_iteration][subproblem].append(stage)
+
+        weather_iteration_flag = (
+            True if any(w != 0 for w in list(df["weather_iteration"])) else False
+        )
+
+        hydro_iteration_flag = (
+            True if any(w != 0 for w in list(df["hydro_iteration"])) else False
+        )
+        availability_iteration_flag = (
+            True if any(w != 0 for w in list(df["availability_iteration"])) else False
+        )
+        subproblem_flag = True if any(w != 1 for w in list(df["subproblem"])) else False
+        stage_flag = True if any(w != 1 for w in list(df["stage"])) else False
 
     return ScenarioStructure(
         weather_hydro_avail_subproblem_stage_dict=weather_hydro_avail_subproblem_stage_dict,

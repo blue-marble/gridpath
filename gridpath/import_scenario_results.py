@@ -33,6 +33,7 @@ from gridpath.common_functions import (
     determine_scenario_directory,
     get_db_parser,
     get_required_e2e_arguments_parser,
+    get_temporal_structure_csv_overwrite_parser,
     get_import_results_parser,
     ensure_empty_string,
 )
@@ -41,6 +42,7 @@ from db.utilities.scenario import delete_scenario_results
 from gridpath.auxiliary.module_list import determine_modules, load_modules
 from gridpath.auxiliary.scenario_chars import (
     get_scenario_structure_from_db,
+    get_scenario_structure_from_csv,
     ScenarioDirectoryStructure,
 )
 
@@ -361,6 +363,7 @@ def parse_arguments(args):
         parents=[
             get_db_parser(),
             get_required_e2e_arguments_parser(),
+            get_temporal_structure_csv_overwrite_parser(),
             get_import_results_parser(),
         ],
     )
@@ -386,6 +389,8 @@ def main(args=None):
     quiet = parsed_arguments.quiet
     import_rule = parsed_arguments.results_import_rule
     ignore_incomplete = parsed_arguments.ignore_incomplete
+    temporal_structure_csv_overwrite = parsed_arguments.temporal_structure_csv_overwrite
+    temporal_structure_csv_path = parsed_arguments.temporal_structure_csv_path
 
     conn = connect_to_database(db_path=db_path)
     c = conn.cursor()
@@ -400,9 +405,14 @@ def main(args=None):
         script="import_scenario_results",
     )
 
-    scenario_structure = get_scenario_structure_from_db(
-        conn=conn, scenario_id=scenario_id
-    )
+    if temporal_structure_csv_overwrite:
+        scenario_structure = get_scenario_structure_from_csv(
+            temporal_structure_csv_path
+        )
+    else:
+        scenario_structure = get_scenario_structure_from_db(
+            conn=conn, scenario_id=scenario_id
+        )
 
     # Determine scenario directory
     scenario_directory = determine_scenario_directory(

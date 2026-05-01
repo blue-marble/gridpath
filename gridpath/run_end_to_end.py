@@ -34,6 +34,7 @@ import sys
 from db.common_functions import connect_to_database, spin_on_database_lock
 from gridpath.common_functions import (
     get_db_parser,
+    get_temporal_structure_csv_overwrite_parser,
     get_run_scenario_parser,
     get_required_e2e_arguments_parser,
     get_get_inputs_parser,
@@ -66,6 +67,7 @@ def parse_arguments(args):
         add_help=True,
         parents=[
             get_db_parser(),
+            get_temporal_structure_csv_overwrite_parser(),
             get_required_e2e_arguments_parser(),
             get_run_scenario_parser(),
             get_get_inputs_parser(),
