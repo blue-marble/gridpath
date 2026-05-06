@@ -36,6 +36,7 @@ from gridpath.common_functions import (
     create_directory_if_not_exists,
     get_db_parser,
     get_required_e2e_arguments_parser,
+    get_temporal_structure_csv_overwrite_parser,
     get_get_inputs_parser,
     ensure_empty_string,
 )
@@ -44,6 +45,7 @@ from gridpath.auxiliary.scenario_chars import (
     OptionalFeatures,
     SubScenarios,
     get_scenario_structure_from_db,
+    get_scenario_structure_from_csv,
     SolverOptions,
     ScenarioDirectoryStructure,
 )
@@ -323,6 +325,7 @@ def parse_arguments(args):
         parents=[
             get_db_parser(),
             get_required_e2e_arguments_parser(),
+            get_temporal_structure_csv_overwrite_parser(),
             get_get_inputs_parser(),
         ],
     )
@@ -476,6 +479,19 @@ def main(args=None):
     scenario_name_arg = parsed_arguments.scenario
     scenario_location = parsed_arguments.scenario_location
 
+    temporal_structure_csv_overwrite = parsed_arguments.temporal_structure_csv_overwrite
+    temporal_structure_csv_path = parsed_arguments.temporal_structure_csv_path
+
+    if (
+        temporal_structure_csv_overwrite is False
+        and temporal_structure_csv_path is not None
+    ):
+        raise ValueError(
+            "You must turn on temporal_structure_csv_overwrite "
+            "explicitly to overwrite the temporal structure from "
+            f"{temporal_structure_csv_path}."
+        )
+
     conn = connect_to_database(db_path=db_path)
     c = conn.cursor()
 
@@ -500,9 +516,14 @@ def main(args=None):
     #  some validation
     optional_features = OptionalFeatures(conn=conn, scenario_id=scenario_id)
     subscenarios = SubScenarios(conn=conn, scenario_id=scenario_id)
-    scenario_structure = get_scenario_structure_from_db(
-        conn=conn, scenario_id=scenario_id
-    )
+    if temporal_structure_csv_overwrite:
+        scenario_structure = get_scenario_structure_from_csv(
+            temporal_structure_csv_path
+        )
+    else:
+        scenario_structure = get_scenario_structure_from_db(
+            conn=conn, scenario_id=scenario_id
+        )
     write_multi_stage_flag(scenario_directory, scenario_structure.STAGE_FLAG)
     solver_options = SolverOptions(conn=conn, scenario_id=scenario_id)
 

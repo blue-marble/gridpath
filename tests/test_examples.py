@@ -99,7 +99,12 @@ class TestExamples(unittest.TestCase):
         self.assertListEqual(expected_validations, actual_validations)
 
     def run_and_check_objective(
-        self, scenario_name, expected_objective, solver=None, parallel=1
+        self,
+        scenario_name,
+        expected_objective,
+        additional_args=[],
+        solver=None,
+        parallel=1,
     ):
         """
 
@@ -128,7 +133,9 @@ class TestExamples(unittest.TestCase):
             "--quiet",
             "--mute_solver_output",
             "--testing",
-        ]
+        ] + additional_args
+
+        print(args_to_pass)
         if solver is not None:
             args_to_pass.append("--solver")
             args_to_pass.append(solver)
@@ -225,7 +232,7 @@ class TestExamples(unittest.TestCase):
             os.remove(DB_PATH)
 
     def validate_and_test_example_generic(
-        self, scenario_name, solver=None, skip_validation=False
+        self, scenario_name, solver=None, skip_validation=False, additional_args=[]
     ):
         # Use the expected objective column by default
         # Since most development happens on MacOS, the generic expected
@@ -253,7 +260,10 @@ class TestExamples(unittest.TestCase):
         if not skip_validation:
             self.check_validation(scenario_name)
         self.run_and_check_objective(
-            scenario_name=scenario_name, solver=solver, expected_objective=objective
+            scenario_name=scenario_name,
+            solver=solver,
+            expected_objective=objective,
+            additional_args=additional_args,
         )
 
     def test_example_test(self):
@@ -1793,6 +1803,24 @@ class TestExamples(unittest.TestCase):
         """
         scenario_name = "test_w_monthly_prj_derates"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_ra_toolkit_sync_temporal_structure_overwrite(self):
+        """
+        Check validation and objective function values of
+        "ra_toolkit_sync_temporal_structure_overwrite" example
+        :return:
+        """
+        scenario_name = "ra_toolkit_sync_temporal_structure_overwrite"
+        self.validate_and_test_example_generic(
+            scenario_name=scenario_name,
+            skip_validation=True,
+            additional_args=[
+                "--temporal_structure_csv_overwrite",
+                "--temporal_structure_csv_path",
+                f""
+                f"{os.path.join(EXAMPLES_DIRECTORY, 'ra_toolkit_sync_temporal_structure_overwrite', 'temporal_structure_overwrite.csv')}",
+            ],
+        )
 
     @classmethod
     def tearDownClass(cls):
