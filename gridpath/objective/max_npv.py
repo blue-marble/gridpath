@@ -55,7 +55,6 @@ from pyomo.environ import Expression, Objective, maximize, value
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.dynamic_components import cost_components, revenue_components
-from gridpath.auxiliary.db_interface import setup_results_import
 
 
 def add_model_components(
@@ -176,18 +175,6 @@ def import_results_into_database(
     #  components or flag revenue and cost components
     if not quiet:
         print("results system cost")
-    # Delete prior results and create temporary import table for ordering
-    setup_results_import(
-        conn=db,
-        cursor=c,
-        table="results_system_costs",
-        scenario_id=scenario_id,
-        weather_iteration=weather_iteration,
-        hydro_iteration=hydro_iteration,
-        availability_iteration=availability_iteration,
-        subproblem=subproblem,
-        stage=stage,
-    )
 
     df = pd.read_csv(os.path.join(results_directory, "npv.csv"))
     df["scenario_id"] = scenario_id

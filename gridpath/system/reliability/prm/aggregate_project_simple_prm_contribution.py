@@ -22,7 +22,6 @@ import os.path
 from pyomo.environ import Expression, value
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.auxiliary.dynamic_components import prm_balance_provision_components
 from gridpath.common_functions import create_results_df
 from gridpath.system.reliability.prm import PRM_ZONE_PRD_DF

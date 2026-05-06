@@ -135,7 +135,6 @@ class TestExamples(unittest.TestCase):
             "--testing",
         ] + additional_args
 
-        print(args_to_pass)
         if solver is not None:
             args_to_pass.append("--solver")
             args_to_pass.append(solver)

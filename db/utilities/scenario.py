@@ -253,7 +253,7 @@ def delete_scenario_results(conn, scenario_id):
     :param scenario_id:
     :return:
 
-    Delete scenario from all results tables.
+    Delete prior results for this scenario from all results tables.
     """
     c = conn.cursor()
     all_tables = c.execute(

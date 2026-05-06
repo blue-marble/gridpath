@@ -30,7 +30,6 @@ from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import check_for_integer_subdirectories
 from gridpath.auxiliary.dynamic_components import load_balance_production_components
 from gridpath.auxiliary.db_interface import (
-    setup_results_import,
     import_csv,
     directories_to_db_values,
 )
