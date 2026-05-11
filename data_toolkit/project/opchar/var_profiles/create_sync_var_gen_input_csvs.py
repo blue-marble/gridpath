@@ -157,6 +157,7 @@ def main(args=None):
             table="raw_data_var_project_units",
         )
 
+    conn.commit()
     conn.close()
 
     get_sync_project_pool_and_make_profile_csvs(

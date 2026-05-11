@@ -56,7 +56,7 @@ def spin_on_database_lock(
     max_attempts=61,
     interval=10,
     quiet=True,
-    commit_immediately=True,
+    commit_immediately=False,
 ):
     """
     :param conn: the connection object

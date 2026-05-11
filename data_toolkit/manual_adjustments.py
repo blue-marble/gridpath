@@ -229,6 +229,7 @@ def main(args=None):
         tech_dur_dict=tech_dur_dict,
     )
 
+    conn.commit()
     conn.close()
 
 

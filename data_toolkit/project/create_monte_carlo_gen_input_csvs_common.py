@@ -117,6 +117,7 @@ def get_monte_carlo_timeseries_project_pool_and_make_profile_csvs(
     pool.map(create_project_profile_csv_pool, pool_data)
     pool.close()
 
+    conn.commit()
     conn.close()
 
 
@@ -237,6 +238,7 @@ def create_project_profile_csv(
             overwrite=True,
         )
 
+    conn.commit()
     conn.close()
 
 

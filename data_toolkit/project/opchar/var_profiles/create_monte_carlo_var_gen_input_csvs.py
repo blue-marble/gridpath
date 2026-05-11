@@ -177,6 +177,7 @@ def main(args=None):
         default_value=None,
     )
 
+    conn.commit()
     conn.close()
 
 

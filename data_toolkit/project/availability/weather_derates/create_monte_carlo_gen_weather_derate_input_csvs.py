@@ -195,6 +195,7 @@ def main(args=None):
             table="raw_data_unit_availability_params",
         )
 
+    conn.commit()
     conn.close()
 
     get_monte_carlo_timeseries_project_pool_and_make_profile_csvs(

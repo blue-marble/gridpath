@@ -267,8 +267,6 @@ def calculate_from_project_year_month_data(
 
             # TODO: add iterations CSVs
 
-    conn.close()
-
 
 def calculate_from_project_year_month_data_pool(pool_datum):
     (
@@ -368,6 +366,7 @@ def main(args=None):
     pool.map(calculate_from_project_year_month_data_pool, pool_data)
     pool.close()
 
+    conn.commit()
     conn.close()
 
 

@@ -137,6 +137,7 @@ def update_run_status(db_path, scenario, status_id):
         conn=conn, cursor=c, sql=sql, data=(status_id, scenario), many=False
     )
 
+    conn.commit()
     conn.close()
 
 
@@ -168,6 +169,7 @@ def record_process_id_and_start_time(db_path, scenario, process_id, start_time):
         many=False,
     )
 
+    conn.commit()
     conn.close()
 
 
@@ -195,6 +197,7 @@ def record_end_time(db_path, scenario, process_id, end_time):
         conn=conn, cursor=c, sql=sql, data=(end_time, scenario, process_id), many=False
     )
 
+    conn.commit()
     conn.close()
 
 
@@ -215,6 +218,7 @@ def check_if_in_queue(db_path, scenario):
         WHERE scenario_name = '{}'
         """.format(scenario)).fetchone()[0]
 
+    conn.commit()
     conn.close()
 
     return queue_order_id
@@ -242,6 +246,7 @@ def remove_from_queue_if_in_queue(db_path, scenario, queue_order_id):
             conn=conn, cursor=c, sql=sql, data=(scenario,), many=False
         )
 
+    conn.commit()
     conn.close()
 
 
@@ -500,6 +505,7 @@ def exit_gracefully():
     remove_from_queue_if_in_queue(db_path, scenario, queue_order_id)
     update_run_status(db_path, scenario, 4)
 
+    conn.commit()
     conn.close()
 
 

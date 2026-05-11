@@ -478,7 +478,8 @@ def main(args=None):
             quiet=parsed_args.quiet,
         )
 
-    # Close connection
+    # Commit and close connection
+    conn.commit()
     conn.close()
 
 

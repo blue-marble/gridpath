@@ -426,6 +426,7 @@ def main(args=None):
                         conn=conn, scenarios_df=csv_to_df, scenario_name=scenario
                     )
 
+    conn.commit()
     conn.close()
 
 
