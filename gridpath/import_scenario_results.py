@@ -237,7 +237,7 @@ def import_scenario_results_into_database(
                             )
                             import_subproblem_stage_results_into_database(
                                 import_rule=import_rule,
-                                db=db,
+                                conn=db,
                                 scenario_id=scenario_id,
                                 weather_iteration=weather_iteration_str,
                                 hydro_iteration=hydro_iteration_str,
@@ -305,7 +305,7 @@ def import_objective_function_value(
 
 def import_subproblem_stage_results_into_database(
     import_rule,
-    db,
+    conn,
     weather_iteration,
     hydro_iteration,
     availability_iteration,
@@ -328,7 +328,7 @@ def import_subproblem_stage_results_into_database(
         )
 
     if import_results:
-        c = db.cursor()
+        c = conn.cursor()
         for m in loaded_modules:
             if hasattr(m, "import_results_into_database"):
                 m.import_results_into_database(
@@ -339,7 +339,7 @@ def import_subproblem_stage_results_into_database(
                     subproblem=subproblem,
                     stage=stage,
                     c=c,
-                    db=db,
+                    db=conn,
                     results_directory=results_directory,
                     quiet=quiet,
                 )
@@ -452,6 +452,7 @@ def main(args=None):
     )
 
     # Close the database connection
+    conn.commit()
     conn.close()
 
 

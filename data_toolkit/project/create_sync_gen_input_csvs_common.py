@@ -176,6 +176,7 @@ def create_project_profile_csv(
         overwrite=overwrite,
     )
 
+    conn.commit()
     conn.close()
 
 

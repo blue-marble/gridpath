@@ -333,6 +333,7 @@ def main(args=None):
             overwrite=parsed_args.load_levels_overwrite,
         )
 
+    conn.commit()
     conn.close()
 
 

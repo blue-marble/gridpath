@@ -301,6 +301,7 @@ def main(args=None):
         quiet=parsed_args.quiet,
     )
 
+    conn.commit()
     conn.close()
 
 

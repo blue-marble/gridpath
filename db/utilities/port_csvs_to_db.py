@@ -221,6 +221,8 @@ def load_all_from_csv_structure(conn, csv_path, csv_structure, quiet):
                 quiet,
             )
 
+        conn.commit()
+
 
 def load_all_subscenario_ids_from_directory(
     conn, csv_path, csv_structure, subscenario, quiet
@@ -478,7 +480,8 @@ def main(args=None):
             quiet=parsed_args.quiet,
         )
 
-    # Close connection
+    # Commit and close connection
+    conn.commit()
     conn.close()
 
 

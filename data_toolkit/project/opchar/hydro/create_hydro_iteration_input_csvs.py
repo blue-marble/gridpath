@@ -267,8 +267,6 @@ def calculate_from_project_year_month_data(
 
             # TODO: add iterations CSVs
 
-    conn.close()
-
 
 def calculate_from_project_year_month_data_pool(pool_datum):
     (
@@ -317,31 +315,31 @@ def main(args=None):
 
     os.makedirs(parsed_args.output_directory, exist_ok=True)
 
-    db = connect_to_database(parsed_args.database)
+    conn = connect_to_database(parsed_args.database)
 
     # ### Load data from CSV
     if parsed_args.project_hydro_opchars_by_year_month_input_csv is not None:
         read_and_import_csv(
-            conn=db,
+            conn=conn,
             f_path=parsed_args.project_hydro_opchars_by_year_month_input_csv,
             table="raw_data_project_hydro_opchars_by_year_month",
         )
 
     if parsed_args.hydro_years_input_csv is not None:
         read_and_import_csv(
-            conn=db,
+            conn=conn,
             f_path=parsed_args.hydro_years_input_csv,
             table="raw_data_hydro_years",
         )
 
     if parsed_args.balancing_type_horizons_input_csv is not None:
         read_and_import_csv(
-            conn=db,
+            conn=conn,
             f_path=parsed_args.balancing_type_horizons_input_csv,
             table="user_defined_balancing_type_horizons",
         )
 
-    c = db.cursor()
+    c = conn.cursor()
     projects = [prj[0] for prj in c.execute("""
                 SELECT DISTINCT project
                 FROM raw_data_project_hydro_opchars_by_year_month;
@@ -368,7 +366,8 @@ def main(args=None):
     pool.map(calculate_from_project_year_month_data_pool, pool_data)
     pool.close()
 
-    db.close()
+    conn.commit()
+    conn.close()
 
 
 if __name__ == "__main__":

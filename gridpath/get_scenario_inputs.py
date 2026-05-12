@@ -245,6 +245,7 @@ def write_inputs(
                 conn=conn,
             )
 
+    conn.commit()
     conn.close()
 
 
@@ -571,6 +572,7 @@ def main(args=None):
     write_linked_subproblems_map(scenario_directory, conn, subscenarios)
 
     # Close the database connection
+    # conn.commit()
     conn.close()
 
 

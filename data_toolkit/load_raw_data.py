@@ -73,6 +73,7 @@ def main(args=None):
 
             read_and_import_csv(conn, f_path, table)
 
+    conn.commit()
     conn.close()
 
 

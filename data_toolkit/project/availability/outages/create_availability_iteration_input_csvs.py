@@ -475,12 +475,12 @@ def main(args=None):
     if not parsed_args.quiet:
         print("Creating availability iteration CSVs...")
 
-    db = connect_to_database(parsed_args.database)
+    conn = connect_to_database(parsed_args.database)
 
     # ### Load data from CSV
     if parsed_args.input_csv is not None:
         read_and_import_csv(
-            conn=db,
+            conn=conn,
             f_path=parsed_args.input_csv,
             table="raw_data_unit_availability_params",
         )
@@ -490,7 +490,7 @@ def main(args=None):
         os.makedirs(parsed_args.output_directory)
 
     # Get projects
-    projects = [i[0] for i in db.execute("""
+    projects = [i[0] for i in conn.execute("""
         SELECT DISTINCT project FROM raw_data_unit_availability_params;
         """).fetchall()]
 
@@ -527,7 +527,7 @@ def main(args=None):
                     SELECT * FROM raw_data_unit_availability_params
                     WHERE project = '{project}'
                     ;""",
-                db,
+                conn,
             )
 
             # Pass user provided seed values if user_provide_seeding
@@ -584,7 +584,7 @@ def main(args=None):
                 ascending=[True, True, True],
             )
 
-    db.close()
+    conn.close()
 
 
 if __name__ == "__main__":

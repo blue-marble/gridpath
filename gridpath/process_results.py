@@ -116,6 +116,7 @@ def main(args=None):
     )
 
     # Close the database connection
+    conn.commit()
     conn.close()
 
 
