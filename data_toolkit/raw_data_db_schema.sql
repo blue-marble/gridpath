@@ -175,9 +175,9 @@ CREATE TABLE raw_data_eia930_hourly_interchange
 DROP TABLE IF EXISTS user_defined_load_zone_units;
 CREATE TABLE user_defined_load_zone_units
 (
-    unit        TEXT,
-    load_zone   TEXT,
-    unit_weight DECIMAL,
+    unit            TEXT,
+    load_zone       TEXT,
+    unit_weight     DECIMAL,
     timeseries_name VARCHAR(32),
     PRIMARY KEY (unit, load_zone)
 );
@@ -299,3 +299,7 @@ CREATE TABLE aux_weather_iterations
                  weather_iteration, draw_number,
                  month, day_type, weather_day_bin)
 );
+
+CREATE INDEX idx_draws_it_n
+    ON aux_weather_iterations (weather_draws_id, weather_iteration,
+                               draw_number);

@@ -178,7 +178,7 @@ def make_timeseries_draw_profiles(
                 timeseries_type,
                 initial_seed,
             ) in c.execute(
-                f"""SELECT timeseries_name, consider_day_types, 
+                f"""SELECT timeseries_name, consider_day_types,
                 timeseries_type, initial_seed
                 FROM user_defined_monte_carlo_timeseries
                 ;"""
@@ -262,10 +262,26 @@ def make_timeseries_draw_profiles(
                     ;
                 """
             spin_on_database_lock_generic(c.execute(sql))
-        conn.commit()
 
-        # Iterate over weather iterations and draws
+        # Build cache of options by (month, day_type, weather_bin)
+        if not quiet:
+            print(f"         ...building options cache...")
+
+        options_cache = build_options_cache(
+            conn=conn,
+            weather_draws=weather_draws,
+            consider_day_types=consider_day_types,
+            weather_bins_id=weather_bins_id,
+            data_availability_string=data_availability_string,
+        )
+
+        # Collect all updates in batch
+        if not quiet:
+            print(f"         ...generating draws...")
+
+        batch_updates = []
         prev_weather_iteration = None
+
         for (
             weather_iteration,
             draw_number,
@@ -282,52 +298,46 @@ def make_timeseries_draw_profiles(
                     print(f"         ...weather iteration {weather_iteration}")
             prev_weather_iteration = weather_iteration
 
-            sql_set_string = ""
+            # Get cached options
+            cache_key = (month, day_type if consider_day_types else None, weather_bin)
+            options_list = options_cache.get(cache_key, [])
 
-            consider_day_types_str = (
-                f"AND day_type = {day_type}" if consider_day_types else ""
-            )
-
-            get_options_sql = f"""
-                    SELECT year, month, day_of_month, 
-                    day_type, weather_bin
-                    FROM (
-                        SELECT year, month, day_of_month, day_type, weather_bin
-                        FROM user_defined_weather_bins
-                        WHERE month = {month}
-                        {consider_day_types_str}
-                        AND weather_bin = {weather_bin}
-                        AND weather_bins_id = {weather_bins_id}
-                    )
-                    WHERE year in (
-                        {data_availability_string}
-                        )
-                    ORDER BY year, month, day_of_month
-                ;
-                """
-
-            c2 = conn.cursor()
-            get_options = c2.execute(get_options_sql).fetchall()
-
-            # Make into a list
-            options_list = [o for o in get_options]
+            if not options_list:
+                continue
 
             # Draw the conditions
-            draw_conditions(
-                conn=conn,
-                weather_draws_id=int(weather_draws_id),
-                weather_iteration=weather_iteration,
-                draw_number=draw_number,
-                timeseries_name=timeseries_name,
-                sql_set_string=sql_set_string,
+            year, month_out, day_of_month = draw_conditions_batch(
                 options_list=options_list,
                 timeseries_iteration_draw_seed=timeseries_iteration_draw_seed,
+            )
+
+            # Add to batch
+            batch_updates.append(
+                (
+                    year,
+                    month_out,
+                    day_of_month,
+                    weather_draws_id,
+                    weather_iteration,
+                    draw_number,
+                )
             )
 
             if timeseries_iteration_draw_seed is not None:
                 # TODO: instead of incrementing seed, possibly set seeds via CSV
                 #  data input for easier reproducibility
                 timeseries_iteration_draw_seed += 1
+
+        # Execute batch update
+        if not quiet:
+            print(f"         ...executing batch update ({len(batch_updates)} rows)...")
+
+        execute_batch_update(
+            conn=conn,
+            timeseries_name=timeseries_name,
+            batch_updates=batch_updates,
+            weather_draws_id=weather_draws_id,
+        )
 
 
 def get_weather_draws(conn, weather_bins_id, weather_draws_id):
@@ -342,53 +352,99 @@ def get_weather_draws(conn, weather_bins_id, weather_draws_id):
     return draws
 
 
-def draw_conditions(
+def build_options_cache(
     conn,
-    weather_draws_id,
-    weather_iteration,
-    draw_number,
-    timeseries_name,
-    sql_set_string,
+    weather_draws,
+    consider_day_types,
+    weather_bins_id,
+    data_availability_string,
+):
+    """
+    Build a cache of options for each unique (month, day_type, weather_bin) combination.
+    This eliminates redundant database queries.
+    """
+    cache = {}
+    unique_keys = set()
+
+    # Collect unique combinations
+    for _, _, month, day_type, weather_bin in weather_draws:
+        cache_key = (month, day_type if consider_day_types else None, weather_bin)
+        unique_keys.add(cache_key)
+
+    # Query database once per unique combination
+    c = conn.cursor()
+    for cache_key in unique_keys:
+        month, day_type, weather_bin = cache_key
+
+        consider_day_types_str = (
+            f"AND day_type = {day_type}"
+            if consider_day_types and day_type is not None
+            else ""
+        )
+
+        get_options_sql = f"""
+            SELECT year, month, day_of_month
+            FROM user_defined_weather_bins
+            WHERE month = {month}
+            {consider_day_types_str}
+            AND weather_bin = {weather_bin}
+            AND weather_bins_id = {weather_bins_id}
+            AND year in ({data_availability_string})
+            ORDER BY year, month, day_of_month
+        ;
+        """
+
+        options_list = c.execute(get_options_sql).fetchall()
+        cache[cache_key] = options_list
+
+    c.close()
+    return cache
+
+
+def draw_conditions_batch(
     options_list,
     timeseries_iteration_draw_seed,
 ):
-    """ """
-
+    """
+    Draw random conditions from the options list.
+    Returns (year, month, day_of_month) tuple.
+    """
     np.random.seed(seed=timeseries_iteration_draw_seed)
+
+    # Randomly select from list
+    year, month, day_of_month = options_list[np.random.randint(len(options_list))]
+
+    return year, month, day_of_month
+
+
+def execute_batch_update(
+    conn,
+    timeseries_name,
+    batch_updates,
+    weather_draws_id,
+):
+    """
+    Execute batch update using executemany for better performance.
+    """
+    if not batch_updates:
+        return
 
     c = conn.cursor()
 
-    # Randomly select from list
-    # If seed is set, this will always select the same number
-    (
-        year,
-        month,
-        day_of_month,
-        day_type,
-        weather_bin,
-    ) = options_list[np.random.randint(len(options_list))]
-
-    # Add to dictionary
-    sql_set_string += f"""{timeseries_name}_year = {year},
-        {timeseries_name}_month = {month},
-        {timeseries_name}_day_of_month = {day_of_month},"""
-
-    # Remove the trailing comma
-    sql_set_string = sql_set_string.rstrip(",")
-
-    # Load the selection into the database
+    # Use executemany for bulk updates
     update_sql = f"""
         UPDATE aux_weather_iterations
-        SET {sql_set_string}
-        WHERE weather_draws_id = {weather_draws_id}
-        AND weather_iteration = {weather_iteration}
-        AND draw_number = {draw_number}
-        ;
+        SET {timeseries_name}_year = ?,
+            {timeseries_name}_month = ?,
+            {timeseries_name}_day_of_month = ?
+        WHERE weather_draws_id = ?
+        AND weather_iteration = ?
+        AND draw_number = ?
     """
 
-    spin_on_database_lock_generic(c.execute(update_sql))
-
+    spin_on_database_lock_generic(c.executemany(update_sql, batch_updates))
     conn.commit()
+    c.close()
 
 
 def main(args=None):
