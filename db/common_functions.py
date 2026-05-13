@@ -48,7 +48,15 @@ def connect_to_database(db_path="../db/io.db", timeout=5, detect_types=0):
 
 # TODO: move to spin_database_lock_generic
 def spin_on_database_lock(
-    conn, cursor, sql, data, many=True, max_attempts=61, interval=10, quiet=True
+    conn,
+    cursor,
+    sql,
+    data,
+    many=True,
+    max_attempts=61,
+    interval=10,
+    quiet=True,
+    commit_immediately=False,
 ):
     """
     :param conn: the connection object
@@ -85,7 +93,8 @@ def spin_on_database_lock(
                 cursor.executemany(sql, data)
             else:
                 cursor.execute(sql, data)
-            conn.commit()
+            if commit_immediately:
+                conn.commit()
         except sqlite3.OperationalError as e:
             if "locked" in str(e):
                 print(

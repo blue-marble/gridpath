@@ -308,6 +308,7 @@ def main(args=None):
             custom_units=parsed_args.custom_units,
         )
     # Close the database
+    conn.commit()
     conn.close()
 
 

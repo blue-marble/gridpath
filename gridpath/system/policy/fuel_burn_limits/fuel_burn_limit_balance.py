@@ -23,7 +23,6 @@ import os.path
 from pyomo.environ import Var, Constraint, NonNegativeReals, Expression, value
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.auxiliary.dynamic_components import fuel_burn_balance_components
 from gridpath.common_functions import (
     create_results_df,

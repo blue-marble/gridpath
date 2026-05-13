@@ -141,6 +141,7 @@ def get_project_availability(
     NULL AS exogenous_availability_weather_scenario_id,
     NULL AS exogenous_availability_independent_bt_hrz_scenario_id,
     NULL AS exogenous_availability_weather_bt_hrz_scenario_id,
+    NULL AS exogenous_availability_monthly_scenario_id,
     NULL AS endogenous_availability_scenario_id
     FROM raw_data_eia860_generators
     JOIN user_defined_eia_gridpath_key ON
@@ -159,6 +160,7 @@ def get_project_availability(
     NULL AS exogenous_availability_weather_scenario_id,
     NULL AS exogenous_availability_independent_bt_hrz_scenario_id,
     NULL AS exogenous_availability_weather_bt_hrz_scenario_id,
+    NULL AS exogenous_availability_monthly_scenario_id,
     NULL AS endogenous_availability_scenario_id
     FROM raw_data_eia860_generators
     JOIN user_defined_eia_gridpath_key

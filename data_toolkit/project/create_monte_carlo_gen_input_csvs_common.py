@@ -43,6 +43,8 @@ def get_monte_carlo_timeseries_project_pool_and_make_profile_csvs(
     param_name,
     raw_data_table,
     study_year,
+    print_default_values,
+    default_value,
     no_hydro_iteration=False,
 ):
     conn = connect_to_database(db_path=db_path)
@@ -100,6 +102,8 @@ def get_monte_carlo_timeseries_project_pool_and_make_profile_csvs(
                 param_name,
                 raw_data_table,
                 study_year,
+                print_default_values,
+                default_value,
                 no_hydro_iteration,
             ]
             for timeseries_name in timeseries_project_unit_dict.keys()
@@ -113,6 +117,7 @@ def get_monte_carlo_timeseries_project_pool_and_make_profile_csvs(
     pool.map(create_project_profile_csv_pool, pool_data)
     pool.close()
 
+    conn.commit()
     conn.close()
 
 
@@ -130,6 +135,8 @@ def create_project_profile_csv(
     param_name,
     raw_data_table,
     study_year,
+    print_default_values,
+    default_value,
     no_hydro_iteration=False,
 ):
     # Connect to database
@@ -194,6 +201,11 @@ def create_project_profile_csv(
         # Put into a dataframe and add to file
         df = pd.read_sql(project_query, con=conn)
 
+        # Filter out rows where the value is the default, unless
+        # print_default_values is True
+        if not print_default_values:
+            df = df[df[param_name] != default_value]
+
         filename = os.path.join(
             output_directory,
             f"{project}-{profile_scenario_id}-" f"{profile_scenario_name}.csv",
@@ -226,6 +238,7 @@ def create_project_profile_csv(
             overwrite=True,
         )
 
+    conn.commit()
     conn.close()
 
 
@@ -244,6 +257,8 @@ def create_project_profile_csv_pool(pool_datum):
         param_name,
         raw_data_table,
         study_year,
+        print_default_values,
+        default_value,
         no_hydro_iteration,
     ] = pool_datum
 
@@ -261,5 +276,7 @@ def create_project_profile_csv_pool(pool_datum):
         param_name=param_name,
         raw_data_table=raw_data_table,
         study_year=study_year,
+        print_default_values=print_default_values,
+        default_value=default_value,
         no_hydro_iteration=no_hydro_iteration,
     )

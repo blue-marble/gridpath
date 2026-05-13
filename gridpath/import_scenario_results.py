@@ -33,6 +33,7 @@ from gridpath.common_functions import (
     determine_scenario_directory,
     get_db_parser,
     get_required_e2e_arguments_parser,
+    get_temporal_structure_csv_overwrite_parser,
     get_import_results_parser,
     ensure_empty_string,
 )
@@ -41,6 +42,7 @@ from db.utilities.scenario import delete_scenario_results
 from gridpath.auxiliary.module_list import determine_modules, load_modules
 from gridpath.auxiliary.scenario_chars import (
     get_scenario_structure_from_db,
+    get_scenario_structure_from_csv,
     ScenarioDirectoryStructure,
 )
 
@@ -80,19 +82,16 @@ def import_scenario_results_into_database(
     :return:
     """
 
-    iteration_directory_strings = ScenarioDirectoryStructure(
+    scenario_directory_structure = ScenarioDirectoryStructure(
         scenario_structure
-    ).ITERATION_DIRECTORIES
-    subproblem_stage_directory_strings = ScenarioDirectoryStructure(
-        scenario_structure
-    ).SUBPROBLEM_STAGE_DIRECTORIES
+    ).SCENARIO_DIRECTORY_STRUCTURE
 
     # Hydro years first
-    for weather_iteration_str in iteration_directory_strings.keys():
-        for hydro_iteration_str in iteration_directory_strings[
+    for weather_iteration_str in scenario_directory_structure.keys():
+        for hydro_iteration_str in scenario_directory_structure[
             weather_iteration_str
         ].keys():
-            for availability_iteration_str in iteration_directory_strings[
+            for availability_iteration_str in scenario_directory_structure[
                 weather_iteration_str
             ][hydro_iteration_str]:
                 # We may have passed "empty_string" to avoid actual empty
@@ -123,9 +122,13 @@ def import_scenario_results_into_database(
                         )
                     )
                 )
-                for subproblem_str in subproblem_stage_directory_strings.keys():
+                for subproblem_str in scenario_directory_structure[
+                    weather_iteration_str
+                ][hydro_iteration_str][availability_iteration_str].keys():
                     subproblem = 0 if subproblem_str == "" else int(subproblem_str)
-                    for stage_str in subproblem_stage_directory_strings[subproblem_str]:
+                    for stage_str in scenario_directory_structure[
+                        weather_iteration_str
+                    ][hydro_iteration_str][availability_iteration_str][subproblem_str]:
                         stage = 0 if stage_str == "" else int(stage_str)
                         results_directory = os.path.join(
                             scenario_directory,
@@ -234,7 +237,7 @@ def import_scenario_results_into_database(
                             )
                             import_subproblem_stage_results_into_database(
                                 import_rule=import_rule,
-                                db=db,
+                                conn=db,
                                 scenario_id=scenario_id,
                                 weather_iteration=weather_iteration_str,
                                 hydro_iteration=hydro_iteration_str,
@@ -302,7 +305,7 @@ def import_objective_function_value(
 
 def import_subproblem_stage_results_into_database(
     import_rule,
-    db,
+    conn,
     weather_iteration,
     hydro_iteration,
     availability_iteration,
@@ -325,7 +328,7 @@ def import_subproblem_stage_results_into_database(
         )
 
     if import_results:
-        c = db.cursor()
+        c = conn.cursor()
         for m in loaded_modules:
             if hasattr(m, "import_results_into_database"):
                 m.import_results_into_database(
@@ -336,7 +339,7 @@ def import_subproblem_stage_results_into_database(
                     subproblem=subproblem,
                     stage=stage,
                     c=c,
-                    db=db,
+                    db=conn,
                     results_directory=results_directory,
                     quiet=quiet,
                 )
@@ -360,6 +363,7 @@ def parse_arguments(args):
         parents=[
             get_db_parser(),
             get_required_e2e_arguments_parser(),
+            get_temporal_structure_csv_overwrite_parser(),
             get_import_results_parser(),
         ],
     )
@@ -385,6 +389,8 @@ def main(args=None):
     quiet = parsed_arguments.quiet
     import_rule = parsed_arguments.results_import_rule
     ignore_incomplete = parsed_arguments.ignore_incomplete
+    temporal_structure_csv_overwrite = parsed_arguments.temporal_structure_csv_overwrite
+    temporal_structure_csv_path = parsed_arguments.temporal_structure_csv_path
 
     conn = connect_to_database(db_path=db_path)
     c = conn.cursor()
@@ -399,9 +405,14 @@ def main(args=None):
         script="import_scenario_results",
     )
 
-    scenario_structure = get_scenario_structure_from_db(
-        conn=conn, scenario_id=scenario_id
-    )
+    if temporal_structure_csv_overwrite:
+        scenario_structure = get_scenario_structure_from_csv(
+            temporal_structure_csv_path
+        )
+    else:
+        scenario_structure = get_scenario_structure_from_db(
+            conn=conn, scenario_id=scenario_id
+        )
 
     # Determine scenario directory
     scenario_directory = determine_scenario_directory(
@@ -441,6 +452,7 @@ def main(args=None):
     )
 
     # Close the database connection
+    conn.commit()
     conn.close()
 
 

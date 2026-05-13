@@ -37,7 +37,6 @@ from gridpath.auxiliary.db_interface import (
     determine_table_subset_by_start_and_column,
     directories_to_db_values,
 )
-from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.auxiliary.validations import write_validation_to_database, validate_idxs
 from gridpath.common_functions import create_results_df
 from gridpath.transmission import TX_TIMEPOINT_DF

@@ -1,4 +1,5 @@
-# Copyright 2016-2023 Blue Marble Analytics LLC.
+# Copyright 2016-2025 Blue Marble Analytics LLC.
+# Copyright 2026 Sylvan Energy Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -209,7 +210,6 @@ def run_optimization_for_subproblem_stage(
     Return the objective function (Total_Cost) value; only used in testing mode
 
     """
-
     # If directed to do so, log optimization run
     if parsed_arguments.log:
         logs_directory = create_logs_directory_if_not_exists(
@@ -320,6 +320,11 @@ def run_optimization_for_subproblem_stage(
                 prob_sol_files_directory=prob_sol_files_directory,
                 solution_filename="gurobi_solution.json",
             )
+        if parsed_arguments.load_highs_solution:
+            solved_instance, results, dynamic_components = load_highs_xml_solution(
+                prob_sol_files_directory=prob_sol_files_directory,
+                solution_filename="highs_solution.sol",
+            )
         else:
             dynamic_components, instance = create_problem(
                 scenario_directory=scenario_directory,
@@ -357,7 +362,7 @@ def run_optimization_for_subproblem_stage(
                 symbol_map = instance.solutions.symbol_map[smap_id]
 
                 symbol_cuid_pairs = tuple(
-                    (symbol, ComponentUID(var_weakref(), cuid_buffer={}))
+                    (symbol, ComponentUID(var_weakref, cuid_buffer={}))
                     for symbol, var_weakref in symbol_map.bySymbol.items()
                 )
 
@@ -474,8 +479,7 @@ def run_optimization_for_subproblem_pool(pool_datum):
 
 
 def solve_sequentially(
-    iteration_directory_strings,
-    subproblem_stage_directory_strings,
+    scenario_directory_structure,
     scenario_directory,
     scenario_structure,
     parsed_arguments,
@@ -485,11 +489,11 @@ def solve_sequentially(
     objective_values = {}
 
     # TODO: refactor this
-    for weather_iteration_str in iteration_directory_strings.keys():
-        for hydro_iteration_str in iteration_directory_strings[
+    for weather_iteration_str in scenario_directory_structure.keys():
+        for hydro_iteration_str in scenario_directory_structure[
             weather_iteration_str
         ].keys():
-            for availability_iteration_str in iteration_directory_strings[
+            for availability_iteration_str in scenario_directory_structure[
                 weather_iteration_str
             ][hydro_iteration_str]:
                 # We may have passed "empty_string" to avoid actual empty
@@ -501,7 +505,9 @@ def solve_sequentially(
                     availability_iteration_str
                 )
 
-                for subproblem_str in subproblem_stage_directory_strings.keys():
+                for subproblem_str in scenario_directory_structure[
+                    weather_iteration_str
+                ][hydro_iteration_str][availability_iteration_str].keys():
                     subproblem = 1 if subproblem_str == "" else int(subproblem_str)
 
                     # Write pass through input file headers
@@ -512,7 +518,7 @@ def solve_sequentially(
                     #  alternatively be created by the first stage that
                     #  exports pass through inputs, but this will require
                     #  changes to the formulation (for commitment)
-                    if scenario_structure.MULTI_STAGE:
+                    if scenario_structure.STAGE_FLAG:
                         create_pass_through_inputs(
                             scenario_directory,
                             scenario_structure,
@@ -536,10 +542,12 @@ def solve_sequentially(
                         hydro_iteration_directory=hydro_iteration_str,
                         availability_iteration_directory=availability_iteration_str,
                         subproblem_directory=subproblem_str,
-                        stage_directories=subproblem_stage_directory_strings[
+                        stage_directories=scenario_directory_structure[
+                            weather_iteration_str
+                        ][hydro_iteration_str][availability_iteration_str][
                             subproblem_str
                         ],
-                        multi_stage=scenario_structure.MULTI_STAGE,
+                        multi_stage=scenario_structure.STAGE_FLAG,
                         parsed_arguments=parsed_arguments,
                         objective_values=objective_values,
                     )
@@ -566,12 +574,9 @@ def run_scenario(
      'testing' mode.
     """
 
-    iteration_directory_strings = ScenarioDirectoryStructure(
+    scenario_directory_structure = ScenarioDirectoryStructure(
         scenario_structure
-    ).ITERATION_DIRECTORIES
-    subproblem_stage_directory_strings = ScenarioDirectoryStructure(
-        scenario_structure
-    ).SUBPROBLEM_STAGE_DIRECTORIES
+    ).SCENARIO_DIRECTORY_STRUCTURE
 
     # TODO: consolidate parallelization checks
     try:
@@ -595,8 +600,7 @@ def run_scenario(
     # If parallelization is not requested, solve sequentially
     if n_parallel_subproblems == 1:
         objective_values = solve_sequentially(
-            iteration_directory_strings=iteration_directory_strings,
-            subproblem_stage_directory_strings=subproblem_stage_directory_strings,
+            scenario_directory_structure=scenario_directory_structure,
             scenario_directory=scenario_directory,
             scenario_structure=scenario_structure,
             parsed_arguments=parsed_arguments,
@@ -618,7 +622,7 @@ def run_scenario(
                 "sequentially."
             )
             objective_values = solve_sequentially(
-                iteration_directory_strings=iteration_directory_strings,
+                scenario_directory_structure=scenario_directory_structure,
                 subproblem_stage_directory_strings=subproblem_stage_directory_strings,
                 scenario_directory=scenario_directory,
                 scenario_structure=scenario_structure,
@@ -635,11 +639,11 @@ def run_scenario(
             manager = Manager()
             objective_values = manager.dict()
 
-            for weather_iteration_str in iteration_directory_strings.keys():
-                for hydro_iteration_str in iteration_directory_strings[
+            for weather_iteration_str in scenario_directory_structure.keys():
+                for hydro_iteration_str in scenario_directory_structure[
                     weather_iteration_str
                 ].keys():
-                    for availability_iteration_str in iteration_directory_strings[
+                    for availability_iteration_str in scenario_directory_structure[
                         weather_iteration_str
                     ][hydro_iteration_str]:
                         # We may have passed "empty_string" to avoid actual empty
@@ -652,8 +656,10 @@ def run_scenario(
                         availability_iteration_str = ensure_empty_string(
                             availability_iteration_str
                         )
-                        for subproblem_str in subproblem_stage_directory_strings.keys():
-                            if scenario_structure.MULTI_STAGE:
+                        for subproblem_str in scenario_directory_structure[
+                            weather_iteration_str
+                        ][hydro_iteration_str][availability_iteration_str].keys():
+                            if scenario_structure.STAGE_FLAG:
                                 create_pass_through_inputs(
                                     scenario_directory,
                                     scenario_structure,
@@ -685,11 +691,11 @@ def run_scenario(
             pool = get_context("spawn").Pool(n_parallel_subproblems)
 
             pool_data = []
-            for weather_iteration_str in iteration_directory_strings.keys():
-                for hydro_iteration_str in iteration_directory_strings[
+            for weather_iteration_str in scenario_directory_structure.keys():
+                for hydro_iteration_str in scenario_directory_structure[
                     weather_iteration_str
                 ].keys():
-                    for availability_iteration_str in iteration_directory_strings[
+                    for availability_iteration_str in scenario_directory_structure[
                         weather_iteration_str
                     ][hydro_iteration_str]:
                         # We may have passed "empty_string" to avoid actual empty
@@ -702,7 +708,9 @@ def run_scenario(
                         availability_iteration_str = ensure_empty_string(
                             availability_iteration_str
                         )
-                        for subproblem_str in subproblem_stage_directory_strings.keys():
+                        for subproblem_str in scenario_directory_structure[
+                            weather_iteration_str
+                        ][hydro_iteration_str][availability_iteration_str].keys():
                             pool_data.append(
                                 [
                                     scenario_directory,
@@ -710,8 +718,10 @@ def run_scenario(
                                     hydro_iteration_str,
                                     availability_iteration_str,
                                     subproblem_str,
-                                    subproblem_stage_directory_strings[subproblem_str],
-                                    scenario_structure.MULTI_STAGE,
+                                    scenario_directory_structure[weather_iteration_str][
+                                        hydro_iteration_str
+                                    ][availability_iteration_str][subproblem_str],
+                                    scenario_structure.STAGE_FLAG,
                                     parsed_arguments,
                                     objective_values,
                                 ]
@@ -735,7 +745,7 @@ def create_pass_through_inputs(
 ):
     modules_to_use, loaded_modules = set_up_gridpath_modules(
         scenario_directory=scenario_directory,
-        multi_stage=scenario_structure.MULTI_STAGE,
+        multi_stage=scenario_structure.STAGE_FLAG,
     )
     pass_through_directory = os.path.join(
         scenario_directory,
@@ -1638,8 +1648,9 @@ def load_cplex_xml_solution(
             type_tag.get("index"),
             type_tag.get("value"),
         )
-        if not var_id == "ONE_VAR_CONSTANT":
-            symbol_map.bySymbol[var_id]().value = float(value)
+        # "x2" with value None added for CPLEXSolution version 1.2
+        if not var_id in ["ONE_VAR_CONSTANT", "x2"]:
+            symbol_map.bySymbol[var_id].value = float(value)
 
     # Constraints
     for type_tag in root.findall("linearConstraints/constraint"):
@@ -1649,8 +1660,9 @@ def load_cplex_xml_solution(
             type_tag.get("dual"),
         )
         if not constraint_id_w_extra_symbols == "c_e_ONE_VAR_CONSTANT":
-            constraint_id = constraint_id_w_extra_symbols[4:-1]
-            instance.dual[symbol_map.bySymbol[constraint_id]()] = float(dual)
+            # constraint_id = constraint_id_w_extra_symbols[4:-1]
+            constraint_id = constraint_id_w_extra_symbols
+            instance.dual[symbol_map.bySymbol[constraint_id]] = float(dual)
 
     # Solver status
     header = root.findall("header")[0]  # Need a check that there is only one element
@@ -1708,6 +1720,95 @@ def load_gurobi_json_solution(
         "optimal" if solution["SolutionInfo"]["Status"] == 2 else "unknown"
     )
     solver_status = "ok" if solution["SolutionInfo"]["Status"] == 2 else "unknown"
+    results = Results(
+        solver_status=solver_status, termination_condition=termination_condition
+    )
+
+    return instance, results, dynamic_components
+
+
+def load_highs_xml_solution(
+    prob_sol_files_directory, solution_filename="highs_solution.sol"
+):
+    """
+    :param prob_sol_files_directory:
+    :param solution_filename:
+    :return:
+    """
+    print(
+        "Loading results from solution file {}...".format(
+            os.path.join(prob_sol_files_directory, solution_filename)
+        )
+    )
+    instance, dynamic_components, symbol_map = load_problem_info(
+        prob_sol_files_directory=prob_sol_files_directory
+    )
+
+    # Read HiGHS solution file
+    with open(os.path.join(prob_sol_files_directory, solution_filename), "r") as f:
+        lines = f.readlines()
+
+    # Model status is  th second line
+    model_status = lines[1].strip() if len(lines) > 1 else "Unknown"
+    termination_condition = model_status.lower()
+    solver_status = "ok" if termination_condition == "optimal" else "unknown"
+
+    # Parse the HiGHS solution file
+    section = None
+
+    for line in lines:
+        line = line.strip()
+
+        # Skip empty lines and comments
+        if not line or line.startswith("#"):
+            # Check for section headers in comments
+            if line == "# Primal solution values":
+                section = "primal_start"
+            elif "# Columns" in line and section == "primal_start":
+                section = "primal_columns"
+            elif "# Rows" in line and section == "primal_columns":
+                section = "primal_rows"
+            elif line == "# Dual solution values":
+                section = "dual_start"
+            elif "# Columns" in line and section == "dual_start":
+                section = "dual_columns"
+            elif "# Rows" in line and section in ["dual_start", "dual_columns"]:
+                section = "dual_rows"
+            elif line == "# Basis":
+                # Stop parsing once we reach basis section
+                break
+            continue
+
+        # Skip non-data lines
+        if line in ["Model status", "Feasible", "Valid"]:
+            continue
+        if line.startswith("Objective "):
+            continue
+
+        # Parse primal variable values (x variables only)
+        if section == "primal_columns":
+            parts = line.split()
+            if len(parts) == 2:
+                var_id, value = parts[0], parts[1]
+                if (
+                    var_id.startswith("x")
+                    and var_id in symbol_map.bySymbol
+                    and var_id not in ["ONE_VAR_CONSTANT", "x2"]
+                ):
+                    symbol_map.bySymbol[var_id].value = float(value)
+
+        # Parse constraint dual values (c_ constraints only) from dual rows
+        elif section == "dual_rows":
+            parts = line.split()
+            if len(parts) == 2:
+                constraint_id, dual = parts[0], parts[1]
+                if (
+                    constraint_id.startswith("c_")
+                    and constraint_id in symbol_map.bySymbol
+                    and constraint_id != "c_e_ONE_VAR_CONSTANT"
+                ):
+                    instance.dual[symbol_map.bySymbol[constraint_id]] = float(dual)
+
     results = Results(
         solver_status=solver_status, termination_condition=termination_condition
     )

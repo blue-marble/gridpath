@@ -1,4 +1,5 @@
-# Copyright 2016-2023 Blue Marble Analytics LLC.
+# Copyright 2016-2025 Blue Marble Analytics LLC.
+# Copyright 2026 Sylvan Energy Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -150,6 +151,24 @@ def get_db_parser():
     return parser
 
 
+def get_temporal_structure_csv_overwrite_parser():
+    """ """
+    parser = ArgumentParser(add_help=False)
+    parser.add_argument(
+        "--temporal_structure_csv_overwrite",
+        default=False,
+        action="store_true",
+        help="Overwrite the temporal structure from the database with the "
+        "provided CSV file.",
+    )
+    parser.add_argument(
+        "--temporal_structure_csv_path",
+        help="Path to the CSV where the temporal structure is defined.",
+    )
+
+    return parser
+
+
 def get_get_inputs_parser():
     """ """
 
@@ -204,6 +223,12 @@ def get_run_scenario_parser():
         default=False,
         action="store_true",
         help="Skip solve and load results from a Gurobi solution file instead.",
+    )
+    parser.add_argument(
+        "--load_highs_solution",
+        default=False,
+        action="store_true",
+        help="Skip solve and load results from a HiGHS solution file instead.",
     )
     # Solver options
     parser.add_argument(

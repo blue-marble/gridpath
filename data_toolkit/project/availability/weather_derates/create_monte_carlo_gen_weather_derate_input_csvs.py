@@ -153,6 +153,14 @@ def parse_arguments(args):
         help="The number of projects to simulate in parallel. Defaults to 1.",
     )
 
+    parser.add_argument(
+        "-ones",
+        "--print_ones",
+        default=False,
+        action="store_true",
+        help="Include rows where derate values equal 1. " "Defaults to False.",
+    )
+
     parser.add_argument("-q", "--quiet", default=False, action="store_true")
 
     parsed_arguments = parser.parse_known_args(args=args)[0]
@@ -187,6 +195,7 @@ def main(args=None):
             table="raw_data_unit_availability_params",
         )
 
+    conn.commit()
     conn.close()
 
     get_monte_carlo_timeseries_project_pool_and_make_profile_csvs(
@@ -203,6 +212,8 @@ def main(args=None):
         param_name="availability_derate_weather",
         raw_data_table="raw_data_availability_profiles",
         study_year=int(parsed_args.study_year),
+        print_default_values=parsed_args.print_ones,
+        default_value=1,
         no_hydro_iteration=True,
     )
 

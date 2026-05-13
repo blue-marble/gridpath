@@ -173,8 +173,11 @@ def main(args=None):
         param_name="cap_factor",
         raw_data_table="raw_data_var_profiles",
         study_year=parsed_args.study_year,
+        print_default_values=True,
+        default_value=None,
     )
 
+    conn.commit()
     conn.close()
 
 

@@ -157,6 +157,7 @@ def main(args=None):
             table="raw_data_var_project_units",
         )
 
+    conn.commit()
     conn.close()
 
     get_sync_project_pool_and_make_profile_csvs(
@@ -173,6 +174,8 @@ def main(args=None):
         varies_by_hydro=0,
         include_hydro_iteration_column=True,
         n_parallel_projects=parsed_args.n_parallel_projects,
+        print_default_values=True,
+        default_value=None,
     )
 
 

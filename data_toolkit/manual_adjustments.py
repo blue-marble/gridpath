@@ -248,6 +248,7 @@ def main(args=None):
         aggregate_projects=parsed_args.aggregate_projects,
     )
 
+    conn.commit()
     conn.close()
 
 

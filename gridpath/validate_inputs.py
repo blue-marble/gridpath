@@ -38,7 +38,7 @@ from gridpath.auxiliary.scenario_chars import (
 
 
 def validate_inputs(
-    subproblems,
+    scenario_structure,
     loaded_modules,
     scenario_id,
     weather_iteration,
@@ -50,8 +50,8 @@ def validate_inputs(
     """ "
     For each module, load the inputs from the database and validate them
 
-    :param subproblems: SubProblems object with info on the subproblem/stage
-        structure
+    :param scenario_structure: ScenarioStructure object with info on the
+        iteration and subproblem/stage structure
     :param loaded_modules: list of imported modules (Python <class 'module'>
         objects)
     :param subscenarios: SubScenarios object with all subscenario info
@@ -67,23 +67,27 @@ def validate_inputs(
     #  each table in the database? Problem is that you don't necessarily want
     #  to check the full table but only the appropriate subscenario
 
-    subproblems_list = subproblems.SUBPROBLEM_STAGES.keys()
-    for subproblem in subproblems_list:
-        stages = subproblems.SUBPROBLEM_STAGES[subproblem]
-        for stage in stages:
-            # 1. input validation within each module
-            for m in loaded_modules:
-                if hasattr(m, "validate_inputs"):
-                    m.validate_inputs(
-                        scenario_id=scenario_id,
-                        subscenarios=subscenarios,
-                        weather_iteration=weather_iteration,
-                        hydro_iteration=hydro_iteration,
-                        availability_iteration=availability_iteration,
-                        subproblem=subproblem,
-                        stage=stage,
-                        conn=conn,
-                    )
+    for w in scenario_structure.WEATHER_HYDRO_AVAIL_SUBPROBLEM_STAGE_DICT.keys():
+        for h in scenario_structure.WEATHER_HYDRO_AVAIL_SUBPROBLEM_STAGE_DICT[w].keys():
+            for a in scenario_structure.WEATHER_HYDRO_AVAIL_SUBPROBLEM_STAGE_DICT[w][h]:
+                for subproblem in (
+                    scenario_structure.WEATHER_HYDRO_AVAIL_SUBPROBLEM_STAGE_DICT
+                )[w][h][a].keys():
+                    for stage in (
+                        scenario_structure.WEATHER_HYDRO_AVAIL_SUBPROBLEM_STAGE_DICT
+                    )[w][h][a][subproblem]:
+                        for m in loaded_modules:
+                            if hasattr(m, "validate_inputs"):
+                                m.validate_inputs(
+                                    scenario_id=scenario_id,
+                                    subscenarios=subscenarios,
+                                    weather_iteration=w,
+                                    hydro_iteration=h,
+                                    availability_iteration=a,
+                                    subproblem=subproblem,
+                                    stage=stage,
+                                    conn=conn,
+                                )
 
             # 2. input validation across modules
             #    make sure geography and projects are in line
@@ -428,25 +432,28 @@ def main(args=None):
         # the stages_flag to True to pass to determine_modules below
         # This tells the determine_modules function to include the
         # stages-related modules
-        stages_flag = any(
-            [
-                len(scenario_structure.SUBPROBLEM_STAGES[subp]) > 1
-                for subp in list(scenario_structure.SUBPROBLEM_STAGES.keys())
-            ]
-        )
+        stages_flag = scenario_structure.STAGE_FLAG
         modules_to_use = determine_modules(
             features=feature_list, multi_stage=stages_flag
         )
         loaded_modules = load_modules(modules_to_use=modules_to_use)
 
         # Read in inputs from db and validate inputs for loaded modules
-        for weather_iteration in scenario_structure.ITERATION_STRUCTURE.keys():
-            for hydro_iteration in scenario_structure.ITERATION_STRUCTURE[
+        for (
+            weather_iteration
+        ) in scenario_structure.WEATHER_HYDRO_AVAIL_SUBPROBLEM_STAGE_DICT.keys():
+            for (
+                hydro_iteration
+            ) in scenario_structure.WEATHER_HYDRO_AVAIL_SUBPROBLEM_STAGE_DICT[
                 weather_iteration
             ].keys():
-                for availability_iteration in scenario_structure.ITERATION_STRUCTURE[
+                for (
+                    availability_iteration
+                ) in scenario_structure.WEATHER_HYDRO_AVAIL_SUBPROBLEM_STAGE_DICT[
                     weather_iteration
-                ][hydro_iteration]:
+                ][
+                    hydro_iteration
+                ]:
                     validate_inputs(
                         scenario_structure,
                         loaded_modules,

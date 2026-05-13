@@ -3,5 +3,5 @@ Coal	gen_spec	exogenous	gen_commit_cap	day	0	0.0	Coal	Zone1	1.0	0.4	6.0	1.0	0.0	
 Gas_CCGT	gen_spec	.	gen_commit_cap	day	0	0.0	Gas	Zone1	2.0	0.4	6.0	1.0	2.0	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	1	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	Zone1	.	Zone1	.	Zone1	.	Zone1	.	.	.	.	.	Carbon_Credits_Zone1
 Gas_CT	gen_spec	.	gen_commit_cap	day	0	0.0	Gas	Zone1	2.0	0.4	6.0	0.0	1.0	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	3	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	Carbon_Credits_Zone1
 Nuclear	gen_spec	.	gen_must_run	day	0	0.0	Nuclear	Zone1	1.0	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.
-Solar	gen_new_lin	.	gen_var	day	0	0.0	Solar	Zone1	0.0	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.
 Wind	gen_spec	.	gen_var	day	0	0.0	Wind	Zone1	0.0	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.
+Solar	gen_new_lin	.	gen_var	day	0	0.0	Solar	Zone1	0.0	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.

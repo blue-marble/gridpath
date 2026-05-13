@@ -2,6 +2,6 @@ project	capacity_type	availability_type	operational_type	balancing_type_project	
 Coal	gen_spec	.	gen_commit_lin	day	0	0.0	Coal	Zone1	1.0	0.4	.	.	0.0	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	2	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	Zone1	.	Zone1	.	.	.	.	.
 Gas_CCGT	gen_spec	.	gen_commit_lin	day	0	0.0	Gas	Zone1	2.0	0.4	.	.	2.0	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	1	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	Zone1	.	Zone1	.	Zone1	.	Zone1	.	.	.	.	.
 Gas_CT	gen_spec	.	gen_commit_lin	day	0	0.0	Gas	Zone1	2.0	0.4	.	.	1.0	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	3	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.
-Hydro	gen_spec	.	gen_hydro_must_take	day	0	0.0	Hydro	Zone1	0.0	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	Zone1	.	Zone1	.	Zone1	.	Zone1	.	.	.	.	.
 Nuclear	gen_spec	binary	gen_must_run	day	0	0.0	Nuclear	Zone1	1.0	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.
 Wind	gen_spec	.	gen_var	day	0	0.0	Wind	Zone1	0.0	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.
+Hydro	gen_spec	.	gen_hydro_must_take	day	0	0.0	Hydro	Zone1	0.0	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	Zone1	.	Zone1	.	Zone1	.	Zone1	.	.	.	.	.

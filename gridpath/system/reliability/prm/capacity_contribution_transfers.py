@@ -36,7 +36,6 @@ from pyomo.environ import (
 
 from db.common_functions import spin_on_database_lock, spin_on_database_lock_generic
 from gridpath.auxiliary.db_interface import (
-    setup_results_import,
     directories_to_db_values,
 )
 from gridpath.auxiliary.dynamic_components import prm_balance_provision_components
@@ -616,18 +615,6 @@ def import_results_into_database(
     """
     if not quiet:
         print("PRM capacity transfers")
-    # Delete prior results and create temporary import table for ordering
-    setup_results_import(
-        conn=db,
-        cursor=c,
-        table="results_system_costs",
-        scenario_id=scenario_id,
-        weather_iteration=weather_iteration,
-        hydro_iteration=hydro_iteration,
-        availability_iteration=availability_iteration,
-        subproblem=subproblem,
-        stage=stage,
-    )
 
     df = pd.read_csv(
         os.path.join(results_directory, "capacity_contribution_transfers.csv")
