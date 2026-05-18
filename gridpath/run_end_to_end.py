@@ -455,8 +455,9 @@ def main(args=None):
         print("Done. Run finished on {}.".format(end_time))
 
     # If logging, we need to return sys.stdout to original (i.e. stop writing
-    # to log file)
+    # to log file) and close the log file to release file descriptor
     if parsed_args.log:
+        logger.close()
         sys.stdout = stdout_original
         sys.stderr = stderr_original
 
