@@ -453,6 +453,33 @@ class Logging(object):
         self.terminal.flush()
         self.log_file.flush()
 
+    def close(self):
+        """
+        Close the log file to release the file descriptor.
+        Critical for preventing "too many open files" errors.
+        """
+        if hasattr(self, "log_file") and self.log_file and not self.log_file.closed:
+            self.log_file.close()
+
+    def __del__(self):
+        """
+        Ensure log file is closed when object is garbage collected
+        """
+        self.close()
+
+    def __enter__(self):
+        """
+        Support context manager protocol
+        """
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """
+        Close log file when exiting context manager
+        """
+        self.close()
+        return False
+
 
 def string_from_time(datetime_string):
     """

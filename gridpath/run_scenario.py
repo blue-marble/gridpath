@@ -25,6 +25,7 @@ import argparse
 from csv import reader, writer
 import datetime
 import dill
+import gc
 import json
 from multiprocessing import get_context, Manager
 import os.path
@@ -210,7 +211,43 @@ def run_optimization_for_subproblem_stage(
     Return the objective function (Total_Cost) value; only used in testing mode
 
     """
-    # If directed to do so, log optimization run
+    # Determine whether to skip this optimization before creating logger to
+    # avoid the logging overhead and opening too many files for large
+    # simulations
+    skip_solve = False
+    if parsed_arguments.incomplete_only:
+        termination_condition_file = os.path.join(
+            scenario_directory,
+            weather_iteration_directory,
+            hydro_iteration_directory,
+            availability_iteration_directory,
+            subproblem_directory,
+            stage_directory,
+            "results",
+            "termination_condition.txt",
+        )
+        if os.path.isfile(termination_condition_file):
+            with open(termination_condition_file, "r") as f:
+                termination_condition = f.read()
+            if not parsed_arguments.quiet:
+                print(
+                    f"Subproblem stage {subproblem_directory} "
+                    f"{stage_directory} "
+                    f"previously solved with termination condition "
+                    f"**{termination_condition}**. Skipping solve."
+                )
+            skip_solve = True
+            if not parsed_arguments.quiet:
+                print(
+                    f"Skipping {weather_iteration_directory}/{hydro_iteration_directory}/"
+                    f"{availability_iteration_directory}/{subproblem_directory}/{stage_directory} "
+                    f"(already solved)"
+                )
+            # Force garbage collection to release file descriptor immediately
+            gc.collect()
+            return None  # Exit early without creating logger
+
+    # If directed to do so, log optimization run (only if actually solving)
     if parsed_arguments.log:
         logs_directory = create_logs_directory_if_not_exists(
             scenario_directory,
@@ -237,31 +274,6 @@ def run_optimization_for_subproblem_stage(
         )
         sys.stdout = logger
         sys.stderr = logger
-
-    # Determine whether to skip this optimization
-    skip_solve = False
-    if parsed_arguments.incomplete_only:
-        termination_condition_file = os.path.join(
-            scenario_directory,
-            weather_iteration_directory,
-            hydro_iteration_directory,
-            availability_iteration_directory,
-            subproblem_directory,
-            stage_directory,
-            "results",
-            "termination_condition.txt",
-        )
-        if os.path.isfile(termination_condition_file):
-            with open(termination_condition_file, "r") as f:
-                termination_condition = f.read()
-            if not parsed_arguments.quiet:
-                print(
-                    f"Subproblem stage {subproblem_directory} "
-                    f"{stage_directory} "
-                    f"previously solved with termination condition "
-                    f"**{termination_condition}**. Skipping solve."
-                )
-                skip_solve = True
 
     if not skip_solve:
         # If directed, set temporary file directory to be the logs directory
@@ -395,10 +407,14 @@ def run_optimization_for_subproblem_stage(
         )
 
         # If logging, we need to return sys.stdout to original (i.e. stop writing
-        # to log file)
+        # to log file) and close the log file to release file descriptor
         if parsed_arguments.log:
+            logger.close()
             sys.stdout = stdout_original
             sys.stderr = stderr_original
+            # Explicitly delete logger reference and force garbage collection
+            del logger
+            gc.collect()
 
         # Return the objective function value (in the testing suite, the value
         # gets checked against the expected value, but this is the only place
@@ -446,6 +462,8 @@ def run_optimization_for_subproblem(
             multi_stage,
             parsed_arguments,
         )
+        # Force garbage collection after each stage to release file descriptors
+        gc.collect()
 
 
 def run_optimization_for_subproblem_pool(pool_datum):
@@ -551,6 +569,10 @@ def solve_sequentially(
                         parsed_arguments=parsed_arguments,
                         objective_values=objective_values,
                     )
+                    # Force garbage collection after each subproblem to release file descriptors
+                    gc.collect()
+                # Force garbage collection after each availability iteration
+                gc.collect()
 
     return objective_values
 
@@ -915,6 +937,10 @@ def save_results(
             dynamic_components=dynamic_components,
             verbose=parsed_arguments.verbose,
         )
+
+        # Force garbage collection to release file descriptors immediately
+        # This prevents "too many open files" errors when processing many iterations
+        gc.collect()
     # If solver status is not ok, don't export results and print some
     # messages for the user
     else:
