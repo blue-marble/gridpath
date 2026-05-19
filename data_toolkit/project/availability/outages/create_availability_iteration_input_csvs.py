@@ -481,38 +481,64 @@ def simulate_unit_outages(
     return outage_adjustment
 
 
-def simulate_project_availability_pool(pool_datum):
+def simulate_all_project_iterations(pool_datum):
     """
-    Helper function to easily pass to pool.map if solving subproblems in
-    parallel
+    Helper function to simulate all iterations for a single project.
+    This allows parallelization by project rather than by project-iteration.
     """
     [
-        project_df,
+        conn_string,
         project,
-        iteration_n,
+        n_iterations,
         user_provided_seeding,
-        project_iteration_seed,
+        starting_project_iteration_seed,
         max_integer_for_unit_outage_seeding,
         hyb_stor_seed_unit_increment,
         stage_id,
         study_year,
         filepath,
         print_ones,
+        historical_data,
     ] = pool_datum
 
-    simulate_project_availability(
-        project_df=project_df,
-        project=project,
-        iteration_n=iteration_n,
-        user_provided_seeding=user_provided_seeding,
-        project_iteration_seed=project_iteration_seed,
-        max_integer_for_unit_outage_seeding=max_integer_for_unit_outage_seeding,
-        hyb_stor_seed_unit_increment=hyb_stor_seed_unit_increment,
-        stage_id=stage_id,
-        study_year=study_year,
-        filepath=filepath,
-        print_ones=print_ones,
-    )
+    # Reconnect to database in this process
+    conn = connect_to_database(conn_string)
+
+    # Loop through all iterations for this project
+    project_iteration_seed = starting_project_iteration_seed
+    for iteration_n in range(1, n_iterations + 1):
+        project_df = pd.read_sql(
+            f"""
+                SELECT * FROM raw_data_unit_availability_params
+                WHERE project = '{project}'
+                ;""",
+            conn,
+        )
+
+        simulate_project_availability(
+            project_df=project_df,
+            project=project,
+            iteration_n=iteration_n,
+            user_provided_seeding=user_provided_seeding,
+            project_iteration_seed=(
+                project_iteration_seed if user_provided_seeding else None
+            ),
+            max_integer_for_unit_outage_seeding=(
+                max_integer_for_unit_outage_seeding if user_provided_seeding else None
+            ),
+            hyb_stor_seed_unit_increment=(
+                hyb_stor_seed_unit_increment if user_provided_seeding else None
+            ),
+            stage_id=stage_id,
+            study_year=study_year,
+            filepath=filepath,
+            print_ones=print_ones,
+            historical_data=historical_data,
+        )
+
+        project_iteration_seed += 1
+
+    conn.close()
 
 
 def sort_csv_file(filepath, columns_to_sort_by, ascending):
@@ -575,7 +601,12 @@ def main(args=None):
     pool_data = []
     project_iteration_seed = int(parsed_args.starting_project_iteration_seed)
     hyb_stor_seed_unit_increment = int(parsed_args.hybrid_storage_seed_increment)
-    for project in projects:
+    n_iterations = int(parsed_args.n_iterations)
+
+    # Calculate total iterations per project for seed incrementing
+    iterations_per_project = n_iterations
+
+    for project_idx, project in enumerate(projects):
         # Write header if we are overwriting the file or it doesn't exist
         overwrite = parsed_args.overwrite
         header = [
@@ -597,54 +628,36 @@ def main(args=None):
                 csvwriter = csv.writer(f)
                 csvwriter.writerow(header)
 
-        # Create iteration seeds
-        for iteration_n in range(1, int(parsed_args.n_iterations) + 1):
-            project_df = pd.read_sql(
-                f"""
-                    SELECT * FROM raw_data_unit_availability_params
-                    WHERE project = '{project}'
-                    ;""",
-                conn,
-            )
+        # Calculate starting seed for this project
+        starting_seed_for_project = (
+            int(parsed_args.starting_project_iteration_seed)
+            + project_idx * iterations_per_project
+        )
 
-            # Pass user provided seed values if user_provide_seeding
-            # requested; otherwise, pass None
-            pool_data.append(
-                [
-                    project_df,
-                    project,
-                    iteration_n,
-                    parsed_args.user_provided_seeding,
-                    (
-                        project_iteration_seed
-                        if parsed_args.user_provided_seeding
-                        else None
-                    ),
-                    (
-                        parsed_args.max_integer_for_unit_outage_seeding
-                        if parsed_args.user_provided_seeding
-                        else None
-                    ),
-                    (
-                        hyb_stor_seed_unit_increment
-                        if parsed_args.user_provided_seeding
-                        else None
-                    ),
-                    parsed_args.stage_id,
-                    int(parsed_args.study_year),
-                    filepath,
-                    parsed_args.print_ones,
-                ]
-            )
-
-            project_iteration_seed += 1
+        # Create pool data entry for this project (all iterations)
+        pool_data.append(
+            [
+                parsed_args.database,
+                project,
+                n_iterations,
+                parsed_args.user_provided_seeding,
+                starting_seed_for_project,
+                parsed_args.max_integer_for_unit_outage_seeding,
+                hyb_stor_seed_unit_increment,
+                parsed_args.stage_id,
+                int(parsed_args.study_year),
+                filepath,
+                parsed_args.print_ones,
+                historical_data,
+            ]
+        )
 
     pool_data = tuple(pool_data)
 
     # Pool must use spawn to work properly on Linux
     pool = get_context("spawn").Pool(int(parsed_args.n_parallel_projects))
 
-    pool.map(simulate_project_availability_pool, pool_data)
+    pool.map(simulate_all_project_iterations, pool_data)
     pool.close()
 
     # Sort the resulting CSV file if requested
