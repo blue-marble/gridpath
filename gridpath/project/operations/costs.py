@@ -745,10 +745,10 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
         variable_om_cost, fuel_cost, startup_cost, shutdown_cost)
         SELECT scenario_id, subproblem_id, stage_id, period, load_zone,
         spinup_or_lookahead,
-        SUM(fuel_cost * timepoint_weight * number_of_hours_in_timepoint) 
-        AS fuel_cost,
-        SUM(variable_om_cost * timepoint_weight * number_of_hours_in_timepoint) 
+        SUM(variable_om_cost * timepoint_weight * number_of_hours_in_timepoint)
         AS variable_om_cost,
+        SUM(fuel_cost * timepoint_weight * number_of_hours_in_timepoint)
+        AS fuel_cost,
         SUM(startup_cost * timepoint_weight) AS startup_cost,
         SUM(shutdown_cost * timepoint_weight) AS shutdown_cost
         FROM results_project_timepoint

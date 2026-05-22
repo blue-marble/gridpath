@@ -8945,7 +8945,7 @@ FROM results_project_costs_capacity_agg AS a
          AND a.stage_id = b.stage_id
          AND a.period = b.period
          AND a.load_zone = b.load_zone
-         AND a.spinup_or_lookahead = b.spinup_or_lookahead
+         AND COALESCE(a.spinup_or_lookahead, 0) = COALESCE(b.spinup_or_lookahead, 0)
          )
 
          LEFT JOIN
@@ -8963,7 +8963,7 @@ FROM results_project_costs_capacity_agg AS a
          AND a.stage_id = c.stage_id
          AND a.period = c.period
          AND a.load_zone = c.load_zone
-         AND a.spinup_or_lookahead = c.spinup_or_lookahead
+         AND COALESCE(a.spinup_or_lookahead, 0) = COALESCE(c.spinup_or_lookahead, 0)
          )
 
          LEFT JOIN
@@ -8973,17 +8973,17 @@ FROM results_project_costs_capacity_agg AS a
          AND a.stage_id = d.stage_id
          AND a.period = d.period
          AND a.load_zone = d.load_zone
-         AND a.spinup_or_lookahead = d.spinup_or_lookahead
+         AND COALESCE(a.spinup_or_lookahead, 0) = COALESCE(d.spinup_or_lookahead, 0)
          )
 
          LEFT JOIN
      results_transmission_hurdle_costs_by_timepoint_agg as e
-     ON (a.scenario_id = d.scenario_id
-         AND a.subproblem_id = d.subproblem_id
-         AND a.stage_id = d.stage_id
-         AND a.period = d.period
-         AND a.load_zone = d.load_zone
-         AND a.spinup_or_lookahead = d.spinup_or_lookahead
+     ON (a.scenario_id = e.scenario_id
+         AND a.subproblem_id = e.subproblem_id
+         AND a.stage_id = e.stage_id
+         AND a.period = e.period
+         AND a.load_zone = e.load_zone
+         AND COALESCE(a.spinup_or_lookahead, 0) = COALESCE(e.spinup_or_lookahead, 0)
          )
 ;
 
