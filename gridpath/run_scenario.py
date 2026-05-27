@@ -466,6 +466,38 @@ def run_optimization_for_subproblem(
         gc.collect()
 
 
+def is_subproblem_stage_complete(
+    scenario_directory,
+    weather_iteration_directory,
+    hydro_iteration_directory,
+    availability_iteration_directory,
+    subproblem_directory,
+    stage_directory,
+):
+    """
+    Check if a subproblem stage has been previously solved successfully.
+
+    :param scenario_directory: the main scenario directory
+    :param weather_iteration_directory: weather iteration directory
+    :param hydro_iteration_directory: hydro iteration directory
+    :param availability_iteration_directory: availability iteration directory
+    :param subproblem_directory: subproblem directory
+    :param stage_directory: stage directory
+    :return: True if the subproblem stage is complete, False otherwise
+    """
+    termination_condition_file = os.path.join(
+        scenario_directory,
+        weather_iteration_directory,
+        hydro_iteration_directory,
+        availability_iteration_directory,
+        subproblem_directory,
+        stage_directory,
+        "results",
+        "termination_condition.txt",
+    )
+    return os.path.isfile(termination_condition_file)
+
+
 def run_optimization_for_subproblem_pool(pool_datum):
     """
     Helper function to easily pass to pool.map if solving subproblems in
@@ -704,14 +736,6 @@ def run_scenario(
                                 )
                             ] = manager.dict()
 
-            # If we have more processes requested than subproblems, don't launch
-            # the unnecessary processes by reducing n_parallel_subproblems here
-            if n_parallel_subproblems > scenario_structure.N_SUBPROBLEMS:
-                n_parallel_subproblems = scenario_structure.N_SUBPROBLEMS
-
-            # Pool must use spawn to work properly on Linux
-            pool = get_context("spawn").Pool(n_parallel_subproblems)
-
             pool_data = []
             for weather_iteration_str in scenario_directory_structure.keys():
                 for hydro_iteration_str in scenario_directory_structure[
@@ -733,23 +757,74 @@ def run_scenario(
                         for subproblem_str in scenario_directory_structure[
                             weather_iteration_str
                         ][hydro_iteration_str][availability_iteration_str].keys():
-                            pool_data.append(
-                                [
-                                    scenario_directory,
-                                    weather_iteration_str,
-                                    hydro_iteration_str,
-                                    availability_iteration_str,
-                                    subproblem_str,
-                                    scenario_directory_structure[weather_iteration_str][
-                                        hydro_iteration_str
-                                    ][availability_iteration_str][subproblem_str],
-                                    scenario_structure.STAGE_FLAG,
-                                    parsed_arguments,
-                                    objective_values,
+                            stage_directories = scenario_directory_structure[
+                                weather_iteration_str
+                            ][hydro_iteration_str][availability_iteration_str][
+                                subproblem_str
+                            ]
+
+                            # If --incomplete_only flag is set, filter out complete subproblems
+                            if parsed_arguments.incomplete_only:
+                                # Filter stage directories to only include incomplete stages
+                                incomplete_stage_directories = [
+                                    stage_dir
+                                    for stage_dir in stage_directories
+                                    if not is_subproblem_stage_complete(
+                                        scenario_directory,
+                                        weather_iteration_str,
+                                        hydro_iteration_str,
+                                        availability_iteration_str,
+                                        subproblem_str,
+                                        stage_dir,
+                                    )
                                 ]
-                            )
+                                # Only add to pool if there are incomplete stages
+                                if incomplete_stage_directories:
+                                    pool_data.append(
+                                        [
+                                            scenario_directory,
+                                            weather_iteration_str,
+                                            hydro_iteration_str,
+                                            availability_iteration_str,
+                                            subproblem_str,
+                                            incomplete_stage_directories,
+                                            scenario_structure.STAGE_FLAG,
+                                            parsed_arguments,
+                                            objective_values,
+                                        ]
+                                    )
+                            else:
+                                # Add all stages if not filtering
+                                pool_data.append(
+                                    [
+                                        scenario_directory,
+                                        weather_iteration_str,
+                                        hydro_iteration_str,
+                                        availability_iteration_str,
+                                        subproblem_str,
+                                        stage_directories,
+                                        scenario_structure.STAGE_FLAG,
+                                        parsed_arguments,
+                                        objective_values,
+                                    ]
+                                )
 
             pool_data = tuple(pool_data)
+
+            # Adjust pool size based on actual number of tasks
+            # (may be less than total subproblems if using --incomplete_only)
+            n_tasks = len(pool_data)
+            if n_tasks == 0:
+                if not parsed_arguments.quiet:
+                    print("All subproblems already complete. Nothing to solve.")
+                return objective_values
+
+            # Don't create more processes than tasks
+            if n_parallel_subproblems > n_tasks:
+                n_parallel_subproblems = n_tasks
+
+            # Pool must use spawn to work properly on Linux
+            pool = get_context("spawn").Pool(n_parallel_subproblems)
 
             pool.map(run_optimization_for_subproblem_pool, pool_data)
             pool.close()
