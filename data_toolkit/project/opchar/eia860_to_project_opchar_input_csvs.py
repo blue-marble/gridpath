@@ -113,6 +113,8 @@ def parse_arguments(args):
         default=False,
         action="store_true",
         help="Aggregate all projects to the BA-technology level.",
+    )
+    parser.add_argument(
         "-hydro_bt",
         "--hydro_balancing_type",
         default=None,
