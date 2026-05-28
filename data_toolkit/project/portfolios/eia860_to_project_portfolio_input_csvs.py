@@ -99,6 +99,14 @@ def parse_arguments(args):
         "-p_name", "--project_portfolio_scenario_name", default="wecc_plants_units"
     )
 
+    parser.add_argument(
+        "-agg",
+        "--aggregate_projects",
+        default=False,
+        action="store_true",
+        help="Aggregate all projects to the BA-technology level.",
+    )
+
     parser.add_argument("-q", "--quiet", default=False, action="store_true")
 
     parsed_arguments = parser.parse_known_args(args=args)[0]
@@ -116,43 +124,54 @@ def get_project_portfolio_for_region(
     csv_location,
     subscenario_id,
     subscenario_name,
+    aggregate_projects=False,
 ):
-    """
-    Unit level except for wind (onshore and offshore) and solar PV, which are
-    aggregated to the BA-level.
-    """
-    # For disaggregated unit-level projects, use plant_id_eia__generator_id
-    # as the project name
-    # For BA-aggregated projects, use prime_mover_BA
-    sql = f"""
-    -- Disaggregated units
-    SELECT {disagg_project_name_str} AS project, 
-    NULL as specified, 
-    NULL as new_build,
-    gridpath_capacity_type AS capacity_type
-    FROM raw_data_eia860_generators
-    JOIN user_defined_eia_gridpath_key ON
-            raw_data_eia860_generators.prime_mover_code = 
-            user_defined_eia_gridpath_key.prime_mover_code
-            AND energy_source_code_1 = energy_source_code
-     WHERE 1 = 1
-     AND {eia860_sql_filter_string}
-     AND NOT {var_gen_filter_str}
-     AND NOT {hydro_filter_str}
-    UNION
-    -- Aggregated units include wind, offshore wind, solar, and hydro
-    SELECT {agg_project_name_str} AS project,
+    if aggregate_projects:
+        sql = f"""
+        SELECT {agg_project_name_str} AS project,
         NULL as specified,
         NULL as new_build,
         gridpath_capacity_type AS capacity_type
-    FROM raw_data_eia860_generators
-    JOIN user_defined_eia_gridpath_key
-    USING (prime_mover_code)
-    WHERE 1 = 1
-    AND {eia860_sql_filter_string}
-    AND ({var_gen_filter_str} OR {hydro_filter_str})
-    ;
-    """
+        FROM raw_data_eia860_generators
+        JOIN user_defined_eia_gridpath_key ON
+                raw_data_eia860_generators.prime_mover_code =
+                user_defined_eia_gridpath_key.prime_mover_code
+                AND energy_source_code_1 = energy_source_code
+         WHERE 1 = 1
+         AND {eia860_sql_filter_string}
+         GROUP BY project
+        ;
+        """
+    else:
+        sql = f"""
+        -- Disaggregated units
+        SELECT {disagg_project_name_str} AS project,
+        NULL as specified,
+        NULL as new_build,
+        gridpath_capacity_type AS capacity_type
+        FROM raw_data_eia860_generators
+        JOIN user_defined_eia_gridpath_key ON
+                raw_data_eia860_generators.prime_mover_code =
+                user_defined_eia_gridpath_key.prime_mover_code
+                AND energy_source_code_1 = energy_source_code
+         WHERE 1 = 1
+         AND {eia860_sql_filter_string}
+         AND NOT {var_gen_filter_str}
+         AND NOT {hydro_filter_str}
+        UNION
+        -- Aggregated units include wind, offshore wind, solar, and hydro
+        SELECT {agg_project_name_str} AS project,
+            NULL as specified,
+            NULL as new_build,
+            gridpath_capacity_type AS capacity_type
+        FROM raw_data_eia860_generators
+        JOIN user_defined_eia_gridpath_key
+        USING (prime_mover_code)
+        WHERE 1 = 1
+        AND {eia860_sql_filter_string}
+        AND ({var_gen_filter_str} OR {hydro_filter_str})
+        ;
+        """
 
     df = pd.read_sql(sql, conn)
     df.to_csv(
@@ -186,6 +205,7 @@ def main(args=None):
         csv_location=parsed_args.output_directory,
         subscenario_id=parsed_args.project_portfolio_scenario_id,
         subscenario_name=parsed_args.project_portfolio_scenario_name,
+        aggregate_projects=parsed_args.aggregate_projects,
     )
 
     conn.close()

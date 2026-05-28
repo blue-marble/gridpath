@@ -87,6 +87,14 @@ def parse_arguments(args):
         "-lz_name", "--project_load_zone_scenario_name", default="wecc_baas"
     )
 
+    parser.add_argument(
+        "-agg",
+        "--aggregate_projects",
+        default=False,
+        action="store_true",
+        help="Aggregate all projects to the BA-technology level.",
+    )
+
     parser.add_argument("-q", "--quiet", default=False, action="store_true")
 
     parsed_arguments = parser.parse_known_args(args=args)[0]
@@ -104,8 +112,24 @@ def get_project_load_zones(
     output_directory,
     subscenario_id,
     subscenario_name,
+    aggregate_projects=False,
 ):
-    sql = f"""
+    if aggregate_projects:
+        sql = f"""
+        SELECT {agg_project_name_str} AS project,
+            balancing_authority_code_eia AS load_zone
+        FROM raw_data_eia860_generators
+        JOIN user_defined_eia_gridpath_key ON
+                raw_data_eia860_generators.prime_mover_code =
+                user_defined_eia_gridpath_key.prime_mover_code
+                AND energy_source_code_1 = energy_source_code
+        WHERE 1 = 1
+        AND {eia860_sql_filter_string}
+        GROUP BY project
+        ;
+        """
+    else:
+        sql = f"""
     SELECT {disagg_project_name_str} AS project, balancing_authority_code_eia AS load_zone
     FROM raw_data_eia860_generators
     JOIN user_defined_eia_gridpath_key ON
@@ -161,6 +185,7 @@ def main(args=None):
         output_directory=parsed_args.output_directory,
         subscenario_id=parsed_args.project_load_zone_scenario_id,
         subscenario_name=parsed_args.project_load_zone_scenario_name,
+        aggregate_projects=parsed_args.aggregate_projects,
     )
 
     conn.close()

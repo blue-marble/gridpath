@@ -89,6 +89,14 @@ def parse_arguments(args):
         "-cap_name", "--project_specified_capacity_scenario_name", default="base"
     )
 
+    parser.add_argument(
+        "-agg",
+        "--aggregate_projects",
+        default=False,
+        action="store_true",
+        help="Aggregate all projects to the BA-technology level.",
+    )
+
     parser.add_argument("-q", "--quiet", default=False, action="store_true")
 
     parsed_arguments = parser.parse_known_args(args=args)[0]
@@ -107,8 +115,38 @@ def get_project_capacity(
     csv_location,
     subscenario_id,
     subscenario_name,
+    aggregate_projects=False,
 ):
-    sql = f"""
+    if aggregate_projects:
+        sql = f"""
+        SELECT {agg_project_name_str} AS project,
+            {study_year} as period,
+            SUM(capacity_mw) AS specified_capacity_mw,
+            NULL AS specified_energy_mwh,
+            NULL AS shaping_capacity_mw,
+            NULL AS hyb_gen_specified_capacity_mw,
+            NULL AS hyb_stor_specified_capacity_mw,
+            SUM(CASE
+                WHEN raw_data_eia860_generators.prime_mover_code NOT IN ('BA',
+                'ES', 'FW', 'PS') THEN NULL
+                ELSE energy_storage_capacity_mwh
+            END)
+                AS specified_stor_capacity_mwh,
+            NULL AS fuel_production_capacity_fuelunitperhour,
+            NULL AS fuel_release_capacity_fuelunitperhour,
+            NULL AS fuel_storage_capacity_fuelunit
+        FROM raw_data_eia860_generators
+        JOIN user_defined_eia_gridpath_key ON
+                raw_data_eia860_generators.prime_mover_code =
+                user_defined_eia_gridpath_key.prime_mover_code
+                AND energy_source_code_1 = energy_source_code
+         WHERE 1 = 1
+         AND {eia860_sql_filter_string}
+         GROUP BY project
+        ;
+        """
+    else:
+        sql = f"""
     SELECT {disagg_project_name_str} AS project, 
         {study_year} as period,
         capacity_mw AS specified_capacity_mw,
@@ -190,6 +228,7 @@ def main(args=None):
         csv_location=parsed_args.output_directory,
         subscenario_id=parsed_args.project_specified_capacity_scenario_id,
         subscenario_name=parsed_args.project_specified_capacity_scenario_name,
+        aggregate_projects=parsed_args.aggregate_projects,
     )
 
     conn.close()
