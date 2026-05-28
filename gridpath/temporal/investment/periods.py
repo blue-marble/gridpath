@@ -118,18 +118,23 @@ def add_model_components(
     +-------------------------------------------------------------------------+
     | | :code:`hours_in_period_timepoints`                                    |
     | | *Defined over*: :code:`PERIODS`                                       |
-    | | *Within*: :code:`[8760, 8766, 8784]`                                  |
+    | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
     | The number of hours in the timepoints representing a period (across     |
     | all scenario subproblems, within a stage, excluding spinup/lookahead.   |
     | Note that to ensure consistent weighting of period-level and            |
     | timepoint-level costs, this derived parameter must have a value of the  |
-    | number of hours in a year. This is automatically calculated from the    |
-    | temporal_scenario_id  structure if using the database and an error will |
-    | be thrown if the timepoint param inputs do not summ up to one of the    |
-    | allowed values. Within GridPath, this parameter is used to adjust the   |
-    | capacity-related costs incurred within a subproblem if a subproblem is  |
-    | shorter than the period.                                                |
+    | number of hours in a year. In each period,  regardless of period param  |
+    | values, the total number of hours in timepoints adjusted for timepoint  |
+    | weight and duration and excluding spinup and lookahead timepoints       |
+    | should be the number of hours in a year (8760, 8766, or 8784). This is  |
+    | to ensure consistent weighting of timepoint-level and period-level      |
+    | costs. The value of this parameter is automatically calculated from the |
+    | temporal_scenario_id  structure if using the database and you will see  |
+    | a validation warning if the timepoint param inputs do not sum up to     |
+    | one of 8760, 8766, or 8784. Within GridPath, this parameter is also     |
+    | used to adjust the capacity-related costs incurred within a subproblem  |
+    | if a subproblem is shorter than the period.                             |
     +-------------------------------------------------------------------------+
     | | :code:`period_start_year`                                             |
     | | *Defined over*: :code:`PERIODS`                                       |

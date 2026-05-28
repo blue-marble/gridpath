@@ -1,0 +1,5 @@
+policy_name	policy_zone	period	policy_month	policy_hour	policy_requirement
+SLICE_OF_DAY	SODZone1	2020	1	7	100
+SLICE_OF_DAY	SODZone1	2020	1	8	100
+SLICE_OF_DAY	SODZone1	2030	1	7	100
+SLICE_OF_DAY	SODZone1	2030	1	8	100

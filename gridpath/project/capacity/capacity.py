@@ -1,4 +1,5 @@
-# Copyright 2016-2023 Blue Marble Analytics LLC.
+# Copyright 2016-2025 Blue Marble Analytics LLC.
+# Copyright 2026 Sylvan Energy Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -179,7 +180,10 @@ def add_model_components(
         ],
     )
 
-    m.OPR_PRJS_IN_TMP = Set(m.TMPS, initialize=op_gens_by_tmp)
+    m.OPR_PRJS_IN_TMP = Set(
+        m.TMPS,
+        initialize=op_gens_by_tmp,
+    )
 
     # Expressions
     ###########################################################################
@@ -281,18 +285,18 @@ def add_model_components(
 ###############################################################################
 
 
-# TODO: the creation of the OPR_PRJS_IN_TMPS is by far
-#  the most time-consuming step in instantiating the problem; is there
-#  any way to speed it up? It is perhaps inefficient to iterate over all
-#  (g, t) for every timepoint, but how do we get around having to do that?
-#  Also, this is a more general problem with all the indexed sets,
-#  but the larger timepoints-based sets are more of a problem
-def op_gens_by_tmp(mod, tmp):
+def op_gens_by_tmp(mod):
     """
-    Figure out which generators are operational in each timepoins.
+    Figure out which generators are operational in each timepoint.
     """
-    gens = list(g for (g, t) in mod.PRJ_OPR_TMPS if t == tmp)
-    return gens
+    tmp_to_projects = {}
+    for g, tmp in mod.PRJ_OPR_TMPS:
+        tmp_to_projects.setdefault(tmp, set()).add(g)
+
+    for tmp in tmp_to_projects:
+        tmp_to_projects[tmp] = list(tmp_to_projects[tmp])
+
+    return tmp_to_projects
 
 
 def operational_periods_by_project(prj, project_operational_periods):
@@ -442,68 +446,3 @@ def export_results(
                 if column not in getattr(d, PROJECT_PERIOD_DF):
                     getattr(d, PROJECT_PERIOD_DF)[column] = None
             getattr(d, PROJECT_PERIOD_DF).update(optype_df)
-
-
-def summarize_results(
-    scenario_directory,
-    weather_iteration,
-    hydro_iteration,
-    availability_iteration,
-    subproblem,
-    stage,
-    skip_quick_summary,
-):
-    """
-    :param scenario_directory:
-    :param subproblem:
-    :param stage:
-    :return:
-
-    Summarize capacity results
-    """
-
-    summary_results_file = os.path.join(
-        scenario_directory,
-        weather_iteration,
-        hydro_iteration,
-        availability_iteration,
-        subproblem,
-        stage,
-        "results",
-        "summary_results.txt",
-    )
-    # Check if the 'technology' exists in  projects.tab; if it doesn't, we
-    # don't have a category to aggregate by, so we'll skip summarizing results
-
-    # Open in 'append' mode, so that results already written by other
-    # modules are not overridden
-    if not skip_quick_summary:
-        with open(summary_results_file, "a") as outfile:
-            outfile.write("\n### CAPACITY RESULTS ###\n")
-
-    required_capacity_modules = get_required_subtype_modules(
-        scenario_directory=scenario_directory,
-        weather_iteration=weather_iteration,
-        hydro_iteration=hydro_iteration,
-        availability_iteration=availability_iteration,
-        subproblem=subproblem,
-        stage=stage,
-        which_type="capacity_type",
-    )
-
-    # Import needed capacity type modules
-    imported_capacity_modules = load_project_capacity_type_modules(
-        required_capacity_modules
-    )
-    for op_m in required_capacity_modules:
-        if hasattr(imported_capacity_modules[op_m], "summarize_results"):
-            imported_capacity_modules[op_m].summarize_results(
-                scenario_directory,
-                weather_iteration,
-                hydro_iteration,
-                availability_iteration,
-                subproblem,
-                stage,
-                skip_quick_summary,
-                summary_results_file,
-            )

@@ -18,7 +18,7 @@ Weather Derates (Monte Carlo)
 *****************************
 
 Create GridPath Monte Carlo weather iteration availability inputs. Before
-running this module,you will need to create weather draws with the
+running this module, you will need to create weather draws with the
 ``create_monte_carlo_draws`` module (see :ref:`monte-carlo-draws-section-ref`).
 
 =====
@@ -33,7 +33,7 @@ Input prerequisites
 
 This module assumes the following raw input database tables have been populated:
     * raw_data_unit_availability_params
-    * raw_data_unit_availability_weather_derates
+    * raw_data_availability_profiles
     * aux_weather_iterations (see the ``create_monte_carlo_draws`` step for how to create synthetic weather years and populate this table)
 
 =========
@@ -54,8 +54,10 @@ from argparse import ArgumentParser
 import os.path
 import sys
 
+from db.common_functions import connect_to_database
+from data_toolkit.load_raw_data import read_and_import_csv
 from data_toolkit.project.create_monte_carlo_gen_input_csvs_common import (
-    create_variable_profile_csvs,
+    get_monte_carlo_timeseries_project_pool_and_make_profile_csvs,
 )
 
 BINS_ID_DEFAULT = 1
@@ -77,6 +79,22 @@ def parse_arguments(args):
     parser = ArgumentParser(add_help=True)
 
     parser.add_argument("-db", "--database")
+    parser.add_argument(
+        "-av_csv",
+        "--availability_profile_input_csv",
+        default=None,
+        help="""Path to the availability profiles CSV file to load into the 
+        database. If not specified, data will be assumed to have been
+        already loaded into the database.""",
+    )
+    parser.add_argument(
+        "-u_csv",
+        "--units_input_csv",
+        default=None,
+        help="""Path to the unit availability params CSV file to load into the 
+        database. If not specified, data will be assumed to have been
+        already loaded into the database.""",
+    )
 
     parser.add_argument(
         "-bins_id",
@@ -89,6 +107,14 @@ def parse_arguments(args):
         "--weather_draws_id",
         default=DRAWS_ID_DEFAULT,
         help=f"Defaults to {DRAWS_ID_DEFAULT}.",
+    )
+
+    parser.add_argument(
+        "-s_y",
+        "--study_year",
+        default=0,
+        help=f"Defaults to 0. Timepoint IDs will start at 1. Set to YYYY to "
+        f"have timepoint IDs start at YYYY0001.",
     )
 
     parser.add_argument("-out_dir", "--output_directory")
@@ -127,6 +153,14 @@ def parse_arguments(args):
         help="The number of projects to simulate in parallel. Defaults to 1.",
     )
 
+    parser.add_argument(
+        "-ones",
+        "--print_ones",
+        default=False,
+        action="store_true",
+        help="Include rows where derate values equal 1. " "Defaults to False.",
+    )
+
     parser.add_argument("-q", "--quiet", default=False, action="store_true")
 
     parsed_arguments = parser.parse_known_args(args=args)[0]
@@ -144,7 +178,27 @@ def main(args=None):
 
     os.makedirs(parsed_args.output_directory, exist_ok=True)
 
-    create_variable_profile_csvs(
+    conn = connect_to_database(db_path=parsed_args.database)
+
+    # ### Load data from CSV
+    if parsed_args.availability_profile_input_csv is not None:
+        read_and_import_csv(
+            conn=conn,
+            f_path=parsed_args.input_csv,
+            table="raw_data_availability_profiles",
+        )
+
+    if parsed_args.units_input_csv is not None:
+        read_and_import_csv(
+            conn=conn,
+            f_path=parsed_args.input_csv,
+            table="raw_data_unit_availability_params",
+        )
+
+    conn.commit()
+    conn.close()
+
+    get_monte_carlo_timeseries_project_pool_and_make_profile_csvs(
         db_path=parsed_args.database,
         weather_bins_id=parsed_args.weather_bins_id,
         weather_draws_id=parsed_args.weather_draws_id,
@@ -156,7 +210,10 @@ def main(args=None):
         n_parallel_projects=parsed_args.n_parallel_projects,
         units_table="raw_data_unit_availability_params",
         param_name="availability_derate_weather",
-        raw_data_table="raw_data_unit_availability_weather_derates",
+        raw_data_table="raw_data_availability_profiles",
+        study_year=int(parsed_args.study_year),
+        print_default_values=parsed_args.print_ones,
+        default_value=1,
         no_hydro_iteration=True,
     )
 

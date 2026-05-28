@@ -7,3 +7,4 @@ Gas_CCGT_z2,Zone2
 Gas_CCGT_new_z2,Zone2
 Battery_z2,Zone2
 Wind_Battery_Hybrid,Zone1
+Hybrid_Wind,Zone1

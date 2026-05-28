@@ -582,6 +582,7 @@ def get_model_inputs_from_database(
         subscenario_id_column="load_component_shift_bounds_scenario_id",
         data_column="min_load_mw, max_load_mw",
         opr_index_dict=BT_HRZ_INDEX_QUERY_PARAMS,
+        exclude_stage=True,
     )
 
     return prj_bt_hrz_data

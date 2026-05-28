@@ -51,6 +51,7 @@ import pandas as pd
 import sys
 
 from db.common_functions import connect_to_database
+from data_toolkit.load_raw_data import read_and_import_csv
 
 # TODO: leap years
 # TODO: hydro bins -- pick bin at random, pick year from bin at random; match
@@ -67,6 +68,34 @@ def parse_arguments(args):
     """
     parser = ArgumentParser(add_help=True)
     parser.add_argument("-db", "--database", default="../../io.db")
+    parser.add_argument(
+        "-h_opchar_y_m_csv",
+        "--project_hydro_opchars_by_year_month_input_csv",
+        default=None,
+        help="""Path to the CSV file to load into the 
+        raw_data_project_hydro_opchars_by_year_month table.
+            If not specified, data will be assumed to have been
+            already loaded into the database.""",
+    )
+
+    parser.add_argument(
+        "-h_y_csv",
+        "--hydro_years_input_csv",
+        default=None,
+        help="""Path to the CSV file to load into the 
+        raw_data_hydro_years table.
+            If not specified, data will be assumed to have been
+            already loaded into the database.""",
+    )
+    parser.add_argument(
+        "-bt_csv",
+        "--balancing_type_horizons_input_csv",
+        default=None,
+        help="""Path to the CSV file to load into the 
+        user_defined_balancing_type_horizons table.
+            If not specified, data will be assumed to have been
+            already loaded into the database.""",
+    )
     parser.add_argument("-stage", "--stage_id", default=1, help="Defaults to 1.")
     parser.add_argument(
         "-id",
@@ -87,6 +116,15 @@ def parse_arguments(args):
         default=False,
         action="store_true",
         help="Overwrite existing files.",
+    )
+
+    parser.add_argument(
+        "-hydro_bt",
+        "--hydro_balancing_type",
+        default=None,
+        help="Filter to a specific balancing type (e.g., 'day', 'week', 'month'). "
+        "If not specified, all balancing types from "
+        "user_defined_balancing_type_horizons are included.",
     )
 
     parser.add_argument(
@@ -111,6 +149,7 @@ def calculate_from_project_year_month_data(
     hydro_operational_chars_scenario_name,
     output_directory,
     overwrite,
+    hydro_balancing_type=None,
 ):
     """
     Create hydro project CSVs for a temporal subscenario and a balancing
@@ -124,9 +163,12 @@ def calculate_from_project_year_month_data(
     """).fetchall()]
 
     bt_horizons = [bt_h for bt_h in c.execute("""
-            SELECT DISTINCT balancing_type, horizon 
+            SELECT DISTINCT balancing_type, horizon
             FROM user_defined_balancing_type_horizons;
             """).fetchall()]
+
+    if hydro_balancing_type is not None:
+        bt_horizons = [bt_h for bt_h in bt_horizons if bt_h[0] == hydro_balancing_type]
 
     if overwrite:
         filename = get_filename(
@@ -225,8 +267,6 @@ def calculate_from_project_year_month_data(
 
             # TODO: add iterations CSVs
 
-    conn.close()
-
 
 def calculate_from_project_year_month_data_pool(pool_datum):
     (
@@ -237,6 +277,7 @@ def calculate_from_project_year_month_data_pool(pool_datum):
         output_directory,
         overwrite,
         stage_id,
+        hydro_balancing_type,
     ) = pool_datum
 
     calculate_from_project_year_month_data(
@@ -247,6 +288,7 @@ def calculate_from_project_year_month_data_pool(pool_datum):
         output_directory=output_directory,
         overwrite=overwrite,
         stage_id=stage_id,
+        hydro_balancing_type=hydro_balancing_type,
     )
 
 
@@ -273,9 +315,31 @@ def main(args=None):
 
     os.makedirs(parsed_args.output_directory, exist_ok=True)
 
-    db = connect_to_database(parsed_args.database)
+    conn = connect_to_database(parsed_args.database)
 
-    c = db.cursor()
+    # ### Load data from CSV
+    if parsed_args.project_hydro_opchars_by_year_month_input_csv is not None:
+        read_and_import_csv(
+            conn=conn,
+            f_path=parsed_args.project_hydro_opchars_by_year_month_input_csv,
+            table="raw_data_project_hydro_opchars_by_year_month",
+        )
+
+    if parsed_args.hydro_years_input_csv is not None:
+        read_and_import_csv(
+            conn=conn,
+            f_path=parsed_args.hydro_years_input_csv,
+            table="raw_data_hydro_years",
+        )
+
+    if parsed_args.balancing_type_horizons_input_csv is not None:
+        read_and_import_csv(
+            conn=conn,
+            f_path=parsed_args.balancing_type_horizons_input_csv,
+            table="user_defined_balancing_type_horizons",
+        )
+
+    c = conn.cursor()
     projects = [prj[0] for prj in c.execute("""
                 SELECT DISTINCT project
                 FROM raw_data_project_hydro_opchars_by_year_month;
@@ -290,6 +354,7 @@ def main(args=None):
                 parsed_args.output_directory,
                 parsed_args.overwrite,
                 parsed_args.stage_id,
+                parsed_args.hydro_balancing_type,
             ]
             for prj in projects
         ]
@@ -301,7 +366,8 @@ def main(args=None):
     pool.map(calculate_from_project_year_month_data_pool, pool_data)
     pool.close()
 
-    db.close()
+    conn.commit()
+    conn.close()
 
 
 if __name__ == "__main__":

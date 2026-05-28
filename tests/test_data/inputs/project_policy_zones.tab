@@ -1,6 +1,9 @@
-project	policy_name	policy_zone	compliance_type	f_slope	f_intercept
-Wind	RPS	RPSZone1	f_output	1	0
-Wind_z2	RPS	RPSZone1	f_output	1	0
-Gas_CCGT	Carbon	CarbonZone1	f_output	0.4	10
-Coal	Carbon	CarbonZone1	f_output	0.7	100
-Battery	RPS	RPSZone1	stor_losses	.	.
+project	policy_name	policy_zone	compliance_type	f_slope	f_intercept	exceedance_values_scenario_id	sod_stor_rte
+Wind	RPS	RPSZone1	f_output	1	0	.	.
+Wind_z2	RPS	RPSZone1	f_output	1	0	.	.
+Gas_CCGT	Carbon	CarbonZone1	f_output	0.4	10	.	.
+Coal	Carbon	CarbonZone1	f_output	0.7	100	.	.
+Battery	RPS	RPSZone1	stor_losses	.	.	.	.
+Wind	SLICE_OF_DAY	SODZone1	sod_exceedance	.	.	.	.
+Gas_CCGT	SLICE_OF_DAY	SODZone1	sod_flat_block	.	.	.	.
+Battery	SLICE_OF_DAY	SODZone1	sod_stor	.	.	.	0.7

@@ -1,4 +1,5 @@
-# Copyright 2016-2023 Blue Marble Analytics LLC.
+# Copyright 2016-2025 Blue Marble Analytics LLC.
+# Copyright 2026 Sylvan Energy Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -150,6 +151,24 @@ def get_db_parser():
     return parser
 
 
+def get_temporal_structure_csv_overwrite_parser():
+    """ """
+    parser = ArgumentParser(add_help=False)
+    parser.add_argument(
+        "--temporal_structure_csv_overwrite",
+        default=False,
+        action="store_true",
+        help="Overwrite the temporal structure from the database with the "
+        "provided CSV file.",
+    )
+    parser.add_argument(
+        "--temporal_structure_csv_path",
+        help="Path to the CSV where the temporal structure is defined.",
+    )
+
+    return parser
+
+
 def get_get_inputs_parser():
     """ """
 
@@ -204,6 +223,12 @@ def get_run_scenario_parser():
         default=False,
         action="store_true",
         help="Skip solve and load results from a Gurobi solution file instead.",
+    )
+    parser.add_argument(
+        "--load_highs_solution",
+        default=False,
+        action="store_true",
+        help="Skip solve and load results from a HiGHS solution file instead.",
     )
     # Solver options
     parser.add_argument(
@@ -304,6 +329,14 @@ def get_import_results_parser():
     parser.add_argument(
         "--results_import_rule",
         help="The name of the rule to use to decide whether to import results.",
+    )
+    parser.add_argument(
+        "--ignore_incomplete",
+        default=False,
+        action="store_true",
+        help="Ignore problems with no results. Can be used to import results "
+        "for subproblems before all other subproblems have been solved. "
+        "Proceed with caution.",
     )
 
     return parser
@@ -419,6 +452,33 @@ class Logging(object):
         """
         self.terminal.flush()
         self.log_file.flush()
+
+    def close(self):
+        """
+        Close the log file to release the file descriptor.
+        Critical for preventing "too many open files" errors.
+        """
+        if hasattr(self, "log_file") and self.log_file and not self.log_file.closed:
+            self.log_file.close()
+
+    def __del__(self):
+        """
+        Ensure log file is closed when object is garbage collected
+        """
+        self.close()
+
+    def __enter__(self):
+        """
+        Support context manager protocol
+        """
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """
+        Close log file when exiting context manager
+        """
+        self.close()
+        return False
 
 
 def string_from_time(datetime_string):

@@ -31,9 +31,13 @@ Input prerequisites
 ===================
 
 This module assumes the following raw input database tables have been populated:
+    * aux_weather_iterations (see the ``create_monte_carlo_draws`` step for how to create synthetic weather years and populate this table)
     * raw_data_system_load
     * user_defined_load_zone_units
-    * aux_weather_iterations (see the ``create_monte_carlo_draws`` step for how to create synthetic weather years and populate this table)
+
+You must run **create_monte_carlo_draws** before running this module to
+populate the database with the raw data and the synthetic weather draws.
+
 
 =========
 Settings
@@ -100,7 +104,6 @@ def parse_arguments(args):
         default=DRAWS_ID_DEFAULT,
         help=f"Defaults to {DRAWS_ID_DEFAULT}.",
     )
-    parser.add_argument("-csv", "--input_csv")
 
     parser.add_argument("-out_dir", "--output_directory")
     parser.add_argument(
@@ -144,6 +147,13 @@ def parse_arguments(args):
         "--stage_id",
         default=STAGE_ID_DEFAULT,
         help=f"Defaults to '{STAGE_ID_DEFAULT}",
+    )
+    parser.add_argument(
+        "-s_y",
+        "--study_year",
+        default=0,
+        help=f"Defaults to 0. Timepoint IDs will start at 1. Set to YYYY to "
+        f"have timepoint IDs start at YYYY0001.",
     )
 
     parser.add_argument(
@@ -212,6 +222,7 @@ def create_load_levels_csv(
     load_levels_scenario_id,
     load_levels_scenario_name,
     stage_id,
+    study_year,
     load_component_name,
     overwrite_load_levels_csv,
 ):
@@ -230,12 +241,10 @@ def create_load_levels_csv(
 
     for index, row in df.iterrows():
         if row["load_zone"] not in load_zone_unit_dict.keys():
-            load_zone_unit_dict[row["load_zone"]] = [
-                (row["load_zone_unit"], row["unit_weight"])
-            ]
+            load_zone_unit_dict[row["load_zone"]] = [(row["unit"], row["unit_weight"])]
         else:
             load_zone_unit_dict[row["project"]].append(
-                (row["load_zone_unit"], row["unit_weight"])
+                (row["unit"], row["unit_weight"])
             )
 
     draws = c.execute(f"""
@@ -251,16 +260,15 @@ def create_load_levels_csv(
     draw_n = 0
     for d in draws:
         weather_iteration, draw_number, year, month, day_of_month = d
-
         for load_zone in load_zone_unit_dict.keys():
             unit_queries = [f"""
-                SELECT year, month, day_of_month, hour_of_day, load_zone_unit, 
-                load_mw * {weight} as weighted_load
+                SELECT year, month, day_of_month, hour_of_day, unit, 
+                value * {weight} as weighted_load
                 FROM raw_data_system_load
                 WHERE year = {year}
                 AND month = {month}
                 AND day_of_month = {day_of_month}
-                AND load_zone_unit = '{unit}'
+                AND unit = '{unit}'
                 """ for (unit, weight) in load_zone_unit_dict[load_zone]]
 
             union_query = " UNION ".join(unit_queries)
@@ -271,7 +279,8 @@ def create_load_levels_csv(
                         '{load_zone}' AS load_zone,
                         {weather_iteration} AS weather_iteration, 
                         {stage_id} AS stage_id,
-                        ({draw_number}-1)*24+hour_of_day AS timepoint, 
+                        {study_year}*10000+({draw_number}-1)*24+hour_of_day AS 
+                        timepoint, 
                         '{load_component_name}' AS load_component,
                         sum(weighted_load) AS load_mw
                         FROM (
@@ -356,6 +365,7 @@ def main(args=None):
             load_levels_scenario_id=parsed_args.load_levels_scenario_id,
             load_levels_scenario_name=parsed_args.load_levels_scenario_name,
             stage_id=parsed_args.stage_id,
+            study_year=int(parsed_args.study_year),
             load_component_name=parsed_args.load_component,
             overwrite_load_levels_csv=parsed_args.load_levels_overwrite,
         )

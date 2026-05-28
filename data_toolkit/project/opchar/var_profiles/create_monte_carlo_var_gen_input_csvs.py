@@ -31,9 +31,13 @@ Input prerequisites
 ===================
 
 This module assumes the following raw input database tables have been populated:
-    * raw_data_project_variable_profiles
+    * raw_data_var_profiles
     * raw_data_var_project_units
     * aux_weather_iterations (see the ``create_monte_carlo_draws`` step for how to create synthetic weather years and populate this table)
+
+You must run **create_monte_carlo_draw_profiles** before running this module to
+populate the database with the raw data and the synthetic weather draws.
+
 
 =========
 Settings
@@ -53,8 +57,10 @@ from argparse import ArgumentParser
 import os.path
 import sys
 
+from db.common_functions import connect_to_database
+from data_toolkit.load_raw_data import read_and_import_csv
 from data_toolkit.project.create_monte_carlo_gen_input_csvs_common import (
-    create_variable_profile_csvs,
+    get_monte_carlo_timeseries_project_pool_and_make_profile_csvs,
 )
 
 BINS_ID_DEFAULT = 1
@@ -88,6 +94,13 @@ def parse_arguments(args):
         "--weather_draws_id",
         default=DRAWS_ID_DEFAULT,
         help=f"Defaults to {DRAWS_ID_DEFAULT}.",
+    )
+    parser.add_argument(
+        "-s_y",
+        "--study_year",
+        default=0,
+        help=f"Defaults to 0. Timepoint IDs will start at 1. Set to YYYY to "
+        f"have timepoint IDs start at YYYY0001.",
     )
 
     parser.add_argument("-out_dir", "--output_directory")
@@ -143,7 +156,10 @@ def main(args=None):
 
     os.makedirs(parsed_args.output_directory, exist_ok=True)
 
-    create_variable_profile_csvs(
+    conn = connect_to_database(db_path=parsed_args.database)
+
+    # Create the variable generation profile CSVs
+    get_monte_carlo_timeseries_project_pool_and_make_profile_csvs(
         db_path=parsed_args.database,
         weather_bins_id=parsed_args.weather_bins_id,
         weather_draws_id=parsed_args.weather_draws_id,
@@ -155,8 +171,14 @@ def main(args=None):
         n_parallel_projects=parsed_args.n_parallel_projects,
         units_table="raw_data_var_project_units",
         param_name="cap_factor",
-        raw_data_table="raw_data_project_variable_profiles",
+        raw_data_table="raw_data_var_profiles",
+        study_year=parsed_args.study_year,
+        print_default_values=True,
+        default_value=None,
     )
+
+    conn.commit()
+    conn.close()
 
 
 if __name__ == "__main__":

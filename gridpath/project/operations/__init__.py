@@ -1012,7 +1012,7 @@ def get_inputs_from_database(
         charging_capacity_multiplier, discharging_capacity_multiplier,
         minimum_duration_hours, maximum_duration_hours,
         aux_consumption_frac_capacity, aux_consumption_frac_power,
-        last_commitment_stage,
+        last_commitment_stage, cap_factor_default,
         powerunithour_per_fuelunit, soc_penalty_cost_per_energyunit,
         soc_last_tmp_penalty_cost_per_energyunit,
         max_losses_in_hrz_frac_stor_energy_capacity,
@@ -1081,6 +1081,7 @@ def get_inputs_from_database(
         table="inputs_project_variable_om_cost_by_timepoint",
         subscenario_id_column="variable_om_cost_by_timepoint_scenario_id",
         data_column="variable_om_cost_by_timepoint",
+        exclude_stage=True,
     )
 
     c5 = conn.cursor()
@@ -1431,6 +1432,7 @@ def write_model_inputs(
         "aux_consumption_frac_capacity",
         "aux_consumption_frac_power",
         "last_commitment_stage",
+        "cap_factor_default",
         "powerunithour_per_fuelunit",
         "soc_penalty_cost_per_energyunit",
         "soc_last_tmp_penalty_cost_per_energyunit",
@@ -1866,6 +1868,7 @@ def validate_inputs(
         "max_losses_in_hrz_frac_stor_energy_capacity",
         "aux_consumption_frac_capacity",
         "aux_consumption_frac_power",
+        "cap_factor_default",
         "partial_availability_threshold",
         "nonfuel_carbon_emissions_per_mwh",
         "powerhouse",

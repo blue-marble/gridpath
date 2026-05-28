@@ -506,6 +506,13 @@ def get_model_inputs_from_database(
             FROM inputs_temporal_periods
             WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
         )
+        AND period in (
+                 SELECT DISTINCT period
+                 FROM inputs_temporal
+                 WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+                 AND subproblem_id = {db_subproblem}
+                 AND stage_id = {db_stage}
+                 )
         AND (project, base_net_requirement_scenario_id) IN (
             SELECT project, base_net_requirement_scenario_id
             FROM inputs_project_operational_chars
@@ -532,6 +539,13 @@ def get_model_inputs_from_database(
                 AND subproblem_id = {db_subproblem}
                 AND stage_id = {db_stage}
             )
+            AND period in (
+                 SELECT DISTINCT period
+                 FROM inputs_temporal
+                 WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+                 AND subproblem_id = {db_subproblem}
+                 AND stage_id = {db_stage}
+                 )
             AND (project, peak_deviation_demand_charge_scenario_id) IN (
                 SELECT project, peak_deviation_demand_charge_scenario_id
                 FROM inputs_project_operational_chars

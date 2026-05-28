@@ -60,6 +60,31 @@ def add_model_components(
         rule=policy_target_total_tmp_contributions_rule,
     )
 
+    def policy_target_total_month_hour_contributions_rule(
+        mod, policy, zone, prd, mn, hr
+    ):
+        return sum(
+            mod.Policy_Contribution_in_Month_Hour[prj, policy, zone, prd, mn, hr]
+            for (
+                prj,
+                _policy,
+                _zone,
+                _prd,
+                _mn,
+                _hr,
+            ) in mod.PRJ_POLICY_ZONE_PRDS_MONTH_HOURS
+            if _policy == policy
+            and _zone == zone
+            and _prd == prd
+            and _mn == mn
+            and _hr == hr
+        )
+
+    m.Total_Project_Policy_Zone_Month_Hour_Contributions = Expression(
+        m.POLICIES_ZONE_PRDS_MONTH_HOURS_WITH_REQ,
+        rule=policy_target_total_month_hour_contributions_rule,
+    )
+
 
 def export_results(
     scenario_directory,

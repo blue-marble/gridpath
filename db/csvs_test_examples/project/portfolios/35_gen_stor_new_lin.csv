@@ -1,0 +1,5 @@
+project,specified,new_build,capacity_type
+Wind,,,gen_spec
+Solar,,,gen_spec
+Month_Block,,,gen_new_lin
+Battery,,,stor_new_lin

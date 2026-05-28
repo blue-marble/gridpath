@@ -277,13 +277,20 @@ def main(args=None):
     else:
         db_path = parsed_args.database
         if os.path.isfile(db_path):
-            print(
-                """WARNING: The database file {} already exists. Please 
-                delete it before re-creating the database""".format(
-                    os.path.abspath(db_path)
+            response = (
+                input(
+                    f"Database file {os.path.abspath(db_path)} already exists. "
+                    "Delete and recreate? [y/N]: "
                 )
+                .strip()
+                .lower()
             )
-            sys.exit()
+            if response == "y" or response == "yes":
+                os.remove(db_path)
+                print(f"Deleted existing database: {os.path.abspath(db_path)}")
+            else:
+                print("Database creation cancelled.")
+                sys.exit()
 
     # Connect to the database
     conn = sqlite3.connect(database=db_path)
@@ -301,6 +308,7 @@ def main(args=None):
             custom_units=parsed_args.custom_units,
         )
     # Close the database
+    conn.commit()
     conn.close()
 
 

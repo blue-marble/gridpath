@@ -23,6 +23,8 @@ into which database table.
 import sys
 from argparse import ArgumentParser
 import os.path
+from sqlite3 import Connection
+
 import pandas as pd
 
 from db.common_functions import spin_on_database_lock_generic, connect_to_database
@@ -69,22 +71,27 @@ def main(args=None):
                 print(f"... {f}...")
             f_path = str(os.path.join(parsed_args.csv_location, f))
 
-            # Set low_memory to False to avoid dtype warning
-            # TODO: actually specify dtypes instead
-            df = pd.read_csv(
-                f_path, delimiter=",", low_memory=False, on_bad_lines="warn"
-            )
+            read_and_import_csv(conn, f_path, table)
 
-            spin_on_database_lock_generic(
-                command=df.to_sql(
-                    name=table,
-                    con=conn,
-                    if_exists="append",
-                    index=False,
-                )
-            )
-
+    conn.commit()
     conn.close()
+
+
+def read_and_import_csv(conn: Connection, f_path: str, table):
+    # Set low_memory to False to avoid dtype warning
+    # TODO: actually specify dtypes instead
+    df = pd.read_csv(f_path, delimiter=",", low_memory=False, on_bad_lines="warn")
+
+    # print(f_path)
+    # print(df)
+    spin_on_database_lock_generic(
+        command=df.to_sql(
+            name=table,
+            con=conn,
+            if_exists="append",
+            index=False,
+        )
+    )
 
 
 if __name__ == "__main__":

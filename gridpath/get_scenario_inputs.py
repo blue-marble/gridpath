@@ -36,6 +36,7 @@ from gridpath.common_functions import (
     create_directory_if_not_exists,
     get_db_parser,
     get_required_e2e_arguments_parser,
+    get_temporal_structure_csv_overwrite_parser,
     get_get_inputs_parser,
     ensure_empty_string,
 )
@@ -44,6 +45,7 @@ from gridpath.auxiliary.scenario_chars import (
     OptionalFeatures,
     SubScenarios,
     get_scenario_structure_from_db,
+    get_scenario_structure_from_csv,
     SolverOptions,
     ScenarioDirectoryStructure,
 )
@@ -82,15 +84,10 @@ def write_model_inputs(
     # files
     delete_prior_aux_files(scenario_directory=scenario_directory)
 
-    # Determine whether we will have iteration (weather, hydro iteration),
-    # and subproblem and stage directories
-    # The subproblem structure is the same within each iteration
-    iteration_directory_strings = ScenarioDirectoryStructure(
+    # Get the directory structure from the scenario structure
+    scenario_directory_structure = ScenarioDirectoryStructure(
         scenario_structure
-    ).ITERATION_DIRECTORIES
-    subproblem_stage_directory_strings = ScenarioDirectoryStructure(
-        scenario_structure
-    ).SUBPROBLEM_STAGE_DIRECTORIES
+    ).SCENARIO_DIRECTORY_STRUCTURE
 
     # Do a few checks on parallelization request
     if n_parallel_subproblems < 1:
@@ -111,13 +108,13 @@ def write_model_inputs(
     # If no parallelization requested, loop through the iterations
     # and subproblems
     if n_parallel_subproblems == 1:
-        for weather_iteration_str in iteration_directory_strings.keys():
-            for hydro_iteration_str in iteration_directory_strings[
+        for weather_iteration_str in scenario_directory_structure.keys():
+            for hydro_iteration_str in scenario_directory_structure[
                 weather_iteration_str
             ].keys():
-                for availability_iteration_str in iteration_directory_strings[
+                for availability_iteration_str in scenario_directory_structure[
                     weather_iteration_str
-                ][hydro_iteration_str]:
+                ][hydro_iteration_str].keys():
                     # We may have passed "empty_string" to avoid actual empty
                     # strings as dictionary keys; convert to actual empty
                     # strings here to pass to the directory creation methods
@@ -127,8 +124,12 @@ def write_model_inputs(
                         availability_iteration_str
                     )
 
-                    for subproblem_str in subproblem_stage_directory_strings.keys():
-                        for stage_str in subproblem_stage_directory_strings[
+                    for subproblem_str in scenario_directory_structure[
+                        weather_iteration_str
+                    ][hydro_iteration_str][availability_iteration_str].keys():
+                        for stage_str in scenario_directory_structure[
+                            weather_iteration_str
+                        ][hydro_iteration_str][availability_iteration_str][
                             subproblem_str
                         ]:
                             write_inputs(
@@ -145,13 +146,13 @@ def write_model_inputs(
                             )
     else:
         pool_data = []
-        for weather_iteration_str in iteration_directory_strings.keys():
-            for hydro_iteration_str in iteration_directory_strings[
+        for weather_iteration_str in scenario_directory_structure.keys():
+            for hydro_iteration_str in scenario_directory_structure[
                 weather_iteration_str
             ].keys():
-                for availability_iteration_str in iteration_directory_strings[
+                for availability_iteration_str in scenario_directory_structure[
                     weather_iteration_str
-                ][hydro_iteration_str]:
+                ][hydro_iteration_str].keys():
                     # We may have passed "empty_string" to avoid actual empty
                     # strings as dictionary keys; convert to actual empty
                     # strings here to pass to the directory creation methods
@@ -161,8 +162,12 @@ def write_model_inputs(
                         availability_iteration_str
                     )
 
-                    for subproblem_str in subproblem_stage_directory_strings.keys():
-                        for stage_str in subproblem_stage_directory_strings[
+                    for subproblem_str in scenario_directory_structure[
+                        weather_iteration_str
+                    ][hydro_iteration_str][availability_iteration_str].keys():
+                        for stage_str in scenario_directory_structure[
+                            weather_iteration_str
+                        ][hydro_iteration_str][availability_iteration_str][
                             subproblem_str
                         ]:
                             pool_data.append(
@@ -240,6 +245,7 @@ def write_inputs(
                 conn=conn,
             )
 
+    conn.commit()
     conn.close()
 
 
@@ -320,6 +326,7 @@ def parse_arguments(args):
         parents=[
             get_db_parser(),
             get_required_e2e_arguments_parser(),
+            get_temporal_structure_csv_overwrite_parser(),
             get_get_inputs_parser(),
         ],
     )
@@ -425,6 +432,19 @@ def write_solver_options(scenario_directory, solver_options):
                 writer.writerow([opt, solver_options.SOLVER_OPTIONS[opt]])
 
 
+def write_multi_stage_flag(scenario_directory, stage_flag):
+    """
+    Write the multi-stage flag to the scenario directory.
+    """
+    if stage_flag:
+        with open(
+            os.path.join(scenario_directory, "multi_stage_flag.txt"),
+            "w",
+            newline="",
+        ) as stage_flag_file:
+            stage_flag_file.write(str(stage_flag))
+
+
 def write_linked_subproblems_map(scenario_directory, conn, subscenarios):
     sql = """
         SELECT subproblem_id as subproblem, stage_id as stage, timepoint, 
@@ -460,6 +480,19 @@ def main(args=None):
     scenario_name_arg = parsed_arguments.scenario
     scenario_location = parsed_arguments.scenario_location
 
+    temporal_structure_csv_overwrite = parsed_arguments.temporal_structure_csv_overwrite
+    temporal_structure_csv_path = parsed_arguments.temporal_structure_csv_path
+
+    if (
+        temporal_structure_csv_overwrite is False
+        and temporal_structure_csv_path is not None
+    ):
+        raise ValueError(
+            "You must turn on temporal_structure_csv_overwrite "
+            "explicitly to overwrite the temporal structure from "
+            f"{temporal_structure_csv_path}."
+        )
+
     conn = connect_to_database(db_path=db_path)
     c = conn.cursor()
 
@@ -484,9 +517,15 @@ def main(args=None):
     #  some validation
     optional_features = OptionalFeatures(conn=conn, scenario_id=scenario_id)
     subscenarios = SubScenarios(conn=conn, scenario_id=scenario_id)
-    scenario_structure = get_scenario_structure_from_db(
-        conn=conn, scenario_id=scenario_id
-    )
+    if temporal_structure_csv_overwrite:
+        scenario_structure = get_scenario_structure_from_csv(
+            temporal_structure_csv_path
+        )
+    else:
+        scenario_structure = get_scenario_structure_from_db(
+            conn=conn, scenario_id=scenario_id
+        )
+    write_multi_stage_flag(scenario_directory, scenario_structure.STAGE_FLAG)
     solver_options = SolverOptions(conn=conn, scenario_id=scenario_id)
 
     # Determine requested features and use this to determine what modules to
@@ -495,7 +534,7 @@ def main(args=None):
 
     # Figure out which modules to use and load the modules
     modules_to_use = determine_modules(
-        features=feature_list, multi_stage=scenario_structure.MULTI_STAGE
+        features=feature_list, multi_stage=scenario_structure.STAGE_FLAG
     )
 
     # Get appropriate inputs from database and write the .tab file model inputs
@@ -533,6 +572,7 @@ def main(args=None):
     write_linked_subproblems_map(scenario_directory, conn, subscenarios)
 
     # Close the database connection
+    # conn.commit()
     conn.close()
 
 

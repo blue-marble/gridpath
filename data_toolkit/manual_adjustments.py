@@ -20,9 +20,11 @@ import sys
 import pandas as pd
 
 from db.common_functions import connect_to_database
+from data_toolkit.load_raw_data import read_and_import_csv
 from data_toolkit.project.project_data_filters_common import (
     get_eia860_sql_filter_string,
     DISAGG_PROJECT_NAME_STR,
+    AGG_PROJECT_NAME_STR,
 )
 
 # Storage durations
@@ -93,6 +95,14 @@ def parse_arguments(args):
         help="Overwrite existing CSV files.",
     )
 
+    parser.add_argument(
+        "-agg",
+        "--aggregate_projects",
+        default=False,
+        action="store_true",
+        help="Aggregate all projects to the BA-technology level.",
+    )
+
     parser.add_argument("-q", "--quiet", default=False, action="store_true")
 
     parsed_arguments = parser.parse_known_args(args=args)[0]
@@ -127,13 +137,14 @@ def make_copy_files(
 
 def add_battery_durations(
     conn,
-    disagg_project_name_str,
+    project_name_str,
     study_year,
     eia860_sql_filter_string,
     csv_location,
     subscenario_id,
     subscenario_name,
     tech_dur_dict,
+    aggregate_projects=False,
 ):
     duckdb_conn = duckdb.connect(database=":memory:")
     spec_cap_df = pd.read_csv(
@@ -145,17 +156,19 @@ def add_battery_durations(
     )
 
     for tech in tech_dur_dict.keys():
+        group_by = "GROUP BY project" if aggregate_projects else ""
         sql = f"""
-            SELECT {disagg_project_name_str} AS project, 
+            SELECT {project_name_str} AS project,
             {study_year} as period
             FROM raw_data_eia860_generators
             JOIN user_defined_eia_gridpath_key ON
-                    raw_data_eia860_generators.prime_mover_code = 
+                    raw_data_eia860_generators.prime_mover_code =
                     user_defined_eia_gridpath_key.prime_mover_code
                     AND energy_source_code_1 = energy_source_code
             WHERE 1 = 1
             AND {eia860_sql_filter_string}
             AND raw_data_eia860_generators.prime_mover_code = '{tech}'
+            {group_by}
             ;
         """
         relevant_projects_df = pd.read_sql(sql, conn)
@@ -215,9 +228,15 @@ def main(args=None):
         "PS": parsed_args.pumped_storage_duration,
     }
 
+    project_name_str = (
+        AGG_PROJECT_NAME_STR
+        if parsed_args.aggregate_projects
+        else DISAGG_PROJECT_NAME_STR
+    )
+
     add_battery_durations(
         conn=conn,
-        disagg_project_name_str=DISAGG_PROJECT_NAME_STR,
+        project_name_str=project_name_str,
         study_year=parsed_args.study_year,
         eia860_sql_filter_string=get_eia860_sql_filter_string(
             study_year=parsed_args.study_year, region=parsed_args.region
@@ -226,8 +245,10 @@ def main(args=None):
         subscenario_id=parsed_args.project_specified_capacity_scenario_id,
         subscenario_name=parsed_args.project_specified_capacity_scenario_name,
         tech_dur_dict=tech_dur_dict,
+        aggregate_projects=parsed_args.aggregate_projects,
     )
 
+    conn.commit()
     conn.close()
 
 

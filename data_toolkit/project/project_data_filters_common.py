@@ -44,4 +44,4 @@ HYDRO_FILTER_STR = (
 DISAGG_PROJECT_NAME_STR = (
     "plant_id_eia || '__' || REPLACE(REPLACE(generator_id, ' ', '_'), '-', '_')"
 )
-AGG_PROJECT_NAME_STR = "DISTINCT agg_project || '_' || balancing_authority_code_eia"
+AGG_PROJECT_NAME_STR = "DISTINCT COALESCE(agg_project, gridpath_technology) || '_' || balancing_authority_code_eia"

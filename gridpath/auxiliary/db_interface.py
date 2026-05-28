@@ -112,81 +112,6 @@ def get_scenario_id_and_name(scenario_id_arg, scenario_name_arg, c, script):
             return scenario_id_arg, scenario_name_arg
 
 
-def setup_results_import(
-    conn,
-    cursor,
-    table,
-    scenario_id,
-    weather_iteration,
-    hydro_iteration,
-    availability_iteration,
-    subproblem,
-    stage,
-):
-    """
-    :param conn: the connection object
-    :param cursor: the cursor object
-    :param table: the results table we'll be inserting into
-    :param scenario_id:
-    :param subproblem:
-    :param stage:
-
-    Prepare for results import: 1) delete prior results and 2) create a
-    temporary table we'll insert into first (for sorting before inserting
-    into the final table)
-    """
-    # Delete prior results
-    del_sql = """
-        DELETE FROM {} 
-        WHERE scenario_id = ?
-        AND weather_iteration = ?
-        AND hydro_iteration = ?
-        AND availability_iteration = ?
-        AND subproblem_id = ?
-        AND stage_id = ?;
-        """.format(table)
-    spin_on_database_lock(
-        conn=conn,
-        cursor=cursor,
-        sql=del_sql,
-        data=(
-            scenario_id,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-        ),
-        many=False,
-    )
-
-    # Create temporary table, which we'll use to sort the results before
-    # inserting them into our persistent table
-    drop_tbl_sql = """DROP TABLE IF EXISTS temp_{}{};
-        """.format(table, scenario_id)
-    spin_on_database_lock(
-        conn=conn, cursor=cursor, sql=drop_tbl_sql, data=(), many=False
-    )
-
-    # Get the CREATE statemnt for the persistent table
-    tbl_sql = cursor.execute("""
-        SELECT sql 
-        FROM sqlite_master
-        WHERE type='table'
-        AND name='{}'
-        """.format(table)).fetchone()[0]
-
-    # Create a temporary table with the same structure as the persistent table
-    temp_tbl_sql = tbl_sql.replace(
-        "CREATE TABLE {}".format(table),
-        "CREATE TEMPORARY TABLE temp_{}{}".format(table, scenario_id),
-    )
-
-    spin_on_database_lock(
-        conn=conn, cursor=cursor, sql=temp_tbl_sql, data=(), many=False
-    )
-
-
 def import_csv(
     conn,
     cursor,
@@ -207,22 +132,10 @@ def import_csv(
     if not quiet:
         print(which_results)
 
-    # Delete prior results and create temporary import table for ordering
-    setup_results_import(
-        conn=conn,
-        cursor=cursor,
-        table=f"results_{which_results}",
-        scenario_id=scenario_id,
-        weather_iteration=weather_iteration,
-        hydro_iteration=hydro_iteration,
-        availability_iteration=availability_iteration,
-        subproblem=subproblem,
-        stage=stage,
-    )
-
     results_filepath = os.path.join(results_directory, f"{which_results}.csv")
     if not os.path.exists(results_filepath):
-        print("...not found, skipping...")
+        if not quiet:
+            print("...not found, skipping...")
     else:
         df = pd.read_csv(results_filepath)
         df["scenario_id"] = scenario_id

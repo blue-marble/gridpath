@@ -98,11 +98,25 @@ def add_model_components(
     | Required Input Params                                                   |
     +=========================================================================+
     | | :code:`gen_var_cap_factor`                                            |
+    | | *Defined over*: :code:`GEN_VAR_OPR_TMPS`                              |
+    | | *Within*: :code:`Reals`                                               |
+    | | *Default*: :code:`gen_var_cap_factor_default`                         |
+    |                                                                         |
+    | The project's power output in each operational timepoint as a fraction  |
+    | of its available capacity (i.e. the capacity factor). Setting the       |
+    | default is optional.                                                    |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Optional Input Params                                                   |
+    +=========================================================================+
+    | | :code:`gen_var_cap_factor_default`                                    |
     | | *Defined over*: :code:`GEN_VAR`                                       |
     | | *Within*: :code:`Reals`                                               |
     |                                                                         |
-    | The project's power output in each operational timepoint as a fraction  |
-    | of its available capacity (i.e. the capacity factor).                   |
+    | Optinal default value for gen_var_cap_factor. Use with caution.         |                                                    |
     +-------------------------------------------------------------------------+
 
     |
@@ -196,10 +210,23 @@ def add_model_components(
         ),
     )
 
+    # Optional Params
+    ###########################################################################
+    # Use with caution
+    m.gen_var_cap_factor_default = Param(
+        m.GEN_VAR,
+        within=Reals | {"undefined"},
+        initialize="undefined",
+    )
+
     # Required Params
     ###########################################################################
 
-    m.gen_var_cap_factor = Param(m.GEN_VAR_OPR_TMPS, within=Reals)
+    m.gen_var_cap_factor = Param(
+        m.GEN_VAR_OPR_TMPS,
+        within=Reals,
+        default=lambda mod, prj, tmp: mod.gen_var_cap_factor_default[prj],
+    )
 
     # Variables
     ###########################################################################
@@ -614,7 +641,7 @@ def get_model_inputs_from_database(
         stage=db_stage,
         conn=conn,
         op_type="gen_var",
-        table="inputs_project_variable_generator_profiles" "",
+        table="inputs_project_variable_generator_profiles",
         subscenario_id_column="variable_generator_profile_scenario_id",
         data_column="cap_factor",
     )
@@ -774,8 +801,3 @@ def validate_inputs(
         conn,
         "gen_var",
     )
-    if cap_factor_validation_error:
-        warnings.warn("""
-            Found gen_var_must_take cap factors that are <0 or >1. This is 
-            allowed but this warning is here to make sure it is intended.
-            """)

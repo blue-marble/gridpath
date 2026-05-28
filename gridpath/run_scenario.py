@@ -1,4 +1,5 @@
-# Copyright 2016-2023 Blue Marble Analytics LLC.
+# Copyright 2016-2025 Blue Marble Analytics LLC.
+# Copyright 2026 Sylvan Energy Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,6 +25,7 @@ import argparse
 from csv import reader, writer
 import datetime
 import dill
+import gc
 import json
 from multiprocessing import get_context, Manager
 import os.path
@@ -206,13 +208,46 @@ def run_optimization_for_subproblem_stage(
 
     Save results. See *save_results()* method.
 
-    Summarize results. See *summarize_results()* method.
-
     Return the objective function (Total_Cost) value; only used in testing mode
 
     """
+    # Determine whether to skip this optimization before creating logger to
+    # avoid the logging overhead and opening too many files for large
+    # simulations
+    skip_solve = False
+    if parsed_arguments.incomplete_only:
+        termination_condition_file = os.path.join(
+            scenario_directory,
+            weather_iteration_directory,
+            hydro_iteration_directory,
+            availability_iteration_directory,
+            subproblem_directory,
+            stage_directory,
+            "results",
+            "termination_condition.txt",
+        )
+        if os.path.isfile(termination_condition_file):
+            with open(termination_condition_file, "r") as f:
+                termination_condition = f.read()
+            if not parsed_arguments.quiet:
+                print(
+                    f"Subproblem stage {subproblem_directory} "
+                    f"{stage_directory} "
+                    f"previously solved with termination condition "
+                    f"**{termination_condition}**. Skipping solve."
+                )
+            skip_solve = True
+            if not parsed_arguments.quiet:
+                print(
+                    f"Skipping {weather_iteration_directory}/{hydro_iteration_directory}/"
+                    f"{availability_iteration_directory}/{subproblem_directory}/{stage_directory} "
+                    f"(already solved)"
+                )
+            # Force garbage collection to release file descriptor immediately
+            gc.collect()
+            return None  # Exit early without creating logger
 
-    # If directed to do so, log optimization run
+    # If directed to do so, log optimization run (only if actually solving)
     if parsed_arguments.log:
         logs_directory = create_logs_directory_if_not_exists(
             scenario_directory,
@@ -239,31 +274,6 @@ def run_optimization_for_subproblem_stage(
         )
         sys.stdout = logger
         sys.stderr = logger
-
-    # Determine whether to skip this optimization
-    skip_solve = False
-    if parsed_arguments.incomplete_only:
-        termination_condition_file = os.path.join(
-            scenario_directory,
-            weather_iteration_directory,
-            hydro_iteration_directory,
-            availability_iteration_directory,
-            subproblem_directory,
-            stage_directory,
-            "results",
-            "termination_condition.txt",
-        )
-        if os.path.isfile(termination_condition_file):
-            with open(termination_condition_file, "r") as f:
-                termination_condition = f.read()
-            if not parsed_arguments.quiet:
-                print(
-                    f"Subproblem stage {subproblem_directory} "
-                    f"{stage_directory} "
-                    f"previously solved with termination condition "
-                    f"**{termination_condition}**. Skipping solve."
-                )
-                skip_solve = True
 
     if not skip_solve:
         # If directed, set temporary file directory to be the logs directory
@@ -322,6 +332,11 @@ def run_optimization_for_subproblem_stage(
                 prob_sol_files_directory=prob_sol_files_directory,
                 solution_filename="gurobi_solution.json",
             )
+        if parsed_arguments.load_highs_solution:
+            solved_instance, results, dynamic_components = load_highs_xml_solution(
+                prob_sol_files_directory=prob_sol_files_directory,
+                solution_filename="highs_solution.sol",
+            )
         else:
             dynamic_components, instance = create_problem(
                 scenario_directory=scenario_directory,
@@ -359,7 +374,7 @@ def run_optimization_for_subproblem_stage(
                 symbol_map = instance.solutions.symbol_map[smap_id]
 
                 symbol_cuid_pairs = tuple(
-                    (symbol, ComponentUID(var_weakref(), cuid_buffer={}))
+                    (symbol, ComponentUID(var_weakref, cuid_buffer={}))
                     for symbol, var_weakref in symbol_map.bySymbol.items()
                 )
 
@@ -391,23 +406,15 @@ def run_optimization_for_subproblem_stage(
             parsed_arguments,
         )
 
-        # Summarize results
-        summarize_results(
-            scenario_directory,
-            weather_iteration_directory,
-            hydro_iteration_directory,
-            availability_iteration_directory,
-            subproblem_directory,
-            stage_directory,
-            multi_stage,
-            parsed_arguments,
-        )
-
         # If logging, we need to return sys.stdout to original (i.e. stop writing
-        # to log file)
+        # to log file) and close the log file to release file descriptor
         if parsed_arguments.log:
+            logger.close()
             sys.stdout = stdout_original
             sys.stderr = stderr_original
+            # Explicitly delete logger reference and force garbage collection
+            del logger
+            gc.collect()
 
         # Return the objective function value (in the testing suite, the value
         # gets checked against the expected value, but this is the only place
@@ -455,6 +462,40 @@ def run_optimization_for_subproblem(
             multi_stage,
             parsed_arguments,
         )
+        # Force garbage collection after each stage to release file descriptors
+        gc.collect()
+
+
+def is_subproblem_stage_complete(
+    scenario_directory,
+    weather_iteration_directory,
+    hydro_iteration_directory,
+    availability_iteration_directory,
+    subproblem_directory,
+    stage_directory,
+):
+    """
+    Check if a subproblem stage has been previously solved successfully.
+
+    :param scenario_directory: the main scenario directory
+    :param weather_iteration_directory: weather iteration directory
+    :param hydro_iteration_directory: hydro iteration directory
+    :param availability_iteration_directory: availability iteration directory
+    :param subproblem_directory: subproblem directory
+    :param stage_directory: stage directory
+    :return: True if the subproblem stage is complete, False otherwise
+    """
+    termination_condition_file = os.path.join(
+        scenario_directory,
+        weather_iteration_directory,
+        hydro_iteration_directory,
+        availability_iteration_directory,
+        subproblem_directory,
+        stage_directory,
+        "results",
+        "termination_condition.txt",
+    )
+    return os.path.isfile(termination_condition_file)
 
 
 def run_optimization_for_subproblem_pool(pool_datum):
@@ -488,8 +529,7 @@ def run_optimization_for_subproblem_pool(pool_datum):
 
 
 def solve_sequentially(
-    iteration_directory_strings,
-    subproblem_stage_directory_strings,
+    scenario_directory_structure,
     scenario_directory,
     scenario_structure,
     parsed_arguments,
@@ -499,11 +539,11 @@ def solve_sequentially(
     objective_values = {}
 
     # TODO: refactor this
-    for weather_iteration_str in iteration_directory_strings.keys():
-        for hydro_iteration_str in iteration_directory_strings[
+    for weather_iteration_str in scenario_directory_structure.keys():
+        for hydro_iteration_str in scenario_directory_structure[
             weather_iteration_str
         ].keys():
-            for availability_iteration_str in iteration_directory_strings[
+            for availability_iteration_str in scenario_directory_structure[
                 weather_iteration_str
             ][hydro_iteration_str]:
                 # We may have passed "empty_string" to avoid actual empty
@@ -515,7 +555,9 @@ def solve_sequentially(
                     availability_iteration_str
                 )
 
-                for subproblem_str in subproblem_stage_directory_strings.keys():
+                for subproblem_str in scenario_directory_structure[
+                    weather_iteration_str
+                ][hydro_iteration_str][availability_iteration_str].keys():
                     subproblem = 1 if subproblem_str == "" else int(subproblem_str)
 
                     # Write pass through input file headers
@@ -526,7 +568,7 @@ def solve_sequentially(
                     #  alternatively be created by the first stage that
                     #  exports pass through inputs, but this will require
                     #  changes to the formulation (for commitment)
-                    if scenario_structure.MULTI_STAGE:
+                    if scenario_structure.STAGE_FLAG:
                         create_pass_through_inputs(
                             scenario_directory,
                             scenario_structure,
@@ -550,13 +592,19 @@ def solve_sequentially(
                         hydro_iteration_directory=hydro_iteration_str,
                         availability_iteration_directory=availability_iteration_str,
                         subproblem_directory=subproblem_str,
-                        stage_directories=subproblem_stage_directory_strings[
+                        stage_directories=scenario_directory_structure[
+                            weather_iteration_str
+                        ][hydro_iteration_str][availability_iteration_str][
                             subproblem_str
                         ],
-                        multi_stage=scenario_structure.MULTI_STAGE,
+                        multi_stage=scenario_structure.STAGE_FLAG,
                         parsed_arguments=parsed_arguments,
                         objective_values=objective_values,
                     )
+                    # Force garbage collection after each subproblem to release file descriptors
+                    gc.collect()
+                # Force garbage collection after each availability iteration
+                gc.collect()
 
     return objective_values
 
@@ -580,12 +628,9 @@ def run_scenario(
      'testing' mode.
     """
 
-    iteration_directory_strings = ScenarioDirectoryStructure(
+    scenario_directory_structure = ScenarioDirectoryStructure(
         scenario_structure
-    ).ITERATION_DIRECTORIES
-    subproblem_stage_directory_strings = ScenarioDirectoryStructure(
-        scenario_structure
-    ).SUBPROBLEM_STAGE_DIRECTORIES
+    ).SCENARIO_DIRECTORY_STRUCTURE
 
     # TODO: consolidate parallelization checks
     try:
@@ -609,8 +654,7 @@ def run_scenario(
     # If parallelization is not requested, solve sequentially
     if n_parallel_subproblems == 1:
         objective_values = solve_sequentially(
-            iteration_directory_strings=iteration_directory_strings,
-            subproblem_stage_directory_strings=subproblem_stage_directory_strings,
+            scenario_directory_structure=scenario_directory_structure,
             scenario_directory=scenario_directory,
             scenario_structure=scenario_structure,
             parsed_arguments=parsed_arguments,
@@ -632,7 +676,7 @@ def run_scenario(
                 "sequentially."
             )
             objective_values = solve_sequentially(
-                iteration_directory_strings=iteration_directory_strings,
+                scenario_directory_structure=scenario_directory_structure,
                 subproblem_stage_directory_strings=subproblem_stage_directory_strings,
                 scenario_directory=scenario_directory,
                 scenario_structure=scenario_structure,
@@ -649,11 +693,11 @@ def run_scenario(
             manager = Manager()
             objective_values = manager.dict()
 
-            for weather_iteration_str in iteration_directory_strings.keys():
-                for hydro_iteration_str in iteration_directory_strings[
+            for weather_iteration_str in scenario_directory_structure.keys():
+                for hydro_iteration_str in scenario_directory_structure[
                     weather_iteration_str
                 ].keys():
-                    for availability_iteration_str in iteration_directory_strings[
+                    for availability_iteration_str in scenario_directory_structure[
                         weather_iteration_str
                     ][hydro_iteration_str]:
                         # We may have passed "empty_string" to avoid actual empty
@@ -666,8 +710,10 @@ def run_scenario(
                         availability_iteration_str = ensure_empty_string(
                             availability_iteration_str
                         )
-                        for subproblem_str in subproblem_stage_directory_strings.keys():
-                            if scenario_structure.MULTI_STAGE:
+                        for subproblem_str in scenario_directory_structure[
+                            weather_iteration_str
+                        ][hydro_iteration_str][availability_iteration_str].keys():
+                            if scenario_structure.STAGE_FLAG:
                                 create_pass_through_inputs(
                                     scenario_directory,
                                     scenario_structure,
@@ -690,20 +736,12 @@ def run_scenario(
                                 )
                             ] = manager.dict()
 
-            # If we have more processes requested than subproblems, don't launch
-            # the unnecessary processes by reducing n_parallel_subproblems here
-            if n_parallel_subproblems > scenario_structure.N_SUBPROBLEMS:
-                n_parallel_subproblems = scenario_structure.N_SUBPROBLEMS
-
-            # Pool must use spawn to work properly on Linux
-            pool = get_context("spawn").Pool(n_parallel_subproblems)
-
             pool_data = []
-            for weather_iteration_str in iteration_directory_strings.keys():
-                for hydro_iteration_str in iteration_directory_strings[
+            for weather_iteration_str in scenario_directory_structure.keys():
+                for hydro_iteration_str in scenario_directory_structure[
                     weather_iteration_str
                 ].keys():
-                    for availability_iteration_str in iteration_directory_strings[
+                    for availability_iteration_str in scenario_directory_structure[
                         weather_iteration_str
                     ][hydro_iteration_str]:
                         # We may have passed "empty_string" to avoid actual empty
@@ -716,22 +754,77 @@ def run_scenario(
                         availability_iteration_str = ensure_empty_string(
                             availability_iteration_str
                         )
-                        for subproblem_str in subproblem_stage_directory_strings.keys():
-                            pool_data.append(
-                                [
-                                    scenario_directory,
-                                    weather_iteration_str,
-                                    hydro_iteration_str,
-                                    availability_iteration_str,
-                                    subproblem_str,
-                                    subproblem_stage_directory_strings[subproblem_str],
-                                    scenario_structure.MULTI_STAGE,
-                                    parsed_arguments,
-                                    objective_values,
+                        for subproblem_str in scenario_directory_structure[
+                            weather_iteration_str
+                        ][hydro_iteration_str][availability_iteration_str].keys():
+                            stage_directories = scenario_directory_structure[
+                                weather_iteration_str
+                            ][hydro_iteration_str][availability_iteration_str][
+                                subproblem_str
+                            ]
+
+                            # If --incomplete_only flag is set, filter out complete subproblems
+                            if parsed_arguments.incomplete_only:
+                                # Filter stage directories to only include incomplete stages
+                                incomplete_stage_directories = [
+                                    stage_dir
+                                    for stage_dir in stage_directories
+                                    if not is_subproblem_stage_complete(
+                                        scenario_directory,
+                                        weather_iteration_str,
+                                        hydro_iteration_str,
+                                        availability_iteration_str,
+                                        subproblem_str,
+                                        stage_dir,
+                                    )
                                 ]
-                            )
+                                # Only add to pool if there are incomplete stages
+                                if incomplete_stage_directories:
+                                    pool_data.append(
+                                        [
+                                            scenario_directory,
+                                            weather_iteration_str,
+                                            hydro_iteration_str,
+                                            availability_iteration_str,
+                                            subproblem_str,
+                                            incomplete_stage_directories,
+                                            scenario_structure.STAGE_FLAG,
+                                            parsed_arguments,
+                                            objective_values,
+                                        ]
+                                    )
+                            else:
+                                # Add all stages if not filtering
+                                pool_data.append(
+                                    [
+                                        scenario_directory,
+                                        weather_iteration_str,
+                                        hydro_iteration_str,
+                                        availability_iteration_str,
+                                        subproblem_str,
+                                        stage_directories,
+                                        scenario_structure.STAGE_FLAG,
+                                        parsed_arguments,
+                                        objective_values,
+                                    ]
+                                )
 
             pool_data = tuple(pool_data)
+
+            # Adjust pool size based on actual number of tasks
+            # (may be less than total subproblems if using --incomplete_only)
+            n_tasks = len(pool_data)
+            if n_tasks == 0:
+                if not parsed_arguments.quiet:
+                    print("All subproblems already complete. Nothing to solve.")
+                return objective_values
+
+            # Don't create more processes than tasks
+            if n_parallel_subproblems > n_tasks:
+                n_parallel_subproblems = n_tasks
+
+            # Pool must use spawn to work properly on Linux
+            pool = get_context("spawn").Pool(n_parallel_subproblems)
 
             pool.map(run_optimization_for_subproblem_pool, pool_data)
             pool.close()
@@ -749,7 +842,7 @@ def create_pass_through_inputs(
 ):
     modules_to_use, loaded_modules = set_up_gridpath_modules(
         scenario_directory=scenario_directory,
-        multi_stage=scenario_structure.MULTI_STAGE,
+        multi_stage=scenario_structure.STAGE_FLAG,
     )
     pass_through_directory = os.path.join(
         scenario_directory,
@@ -869,21 +962,21 @@ def save_results(
                 parsed_arguments.results_export_summary_rule
             ]["export_summary"](instance=instance, quiet=parsed_arguments.quiet)
 
-        if not parsed_arguments.quiet:
-            print("...exporting summary CSV results")
-        export_summary_results(
-            scenario_directory=scenario_directory,
-            weather_iteration=weather_iteration,
-            hydro_iteration=hydro_iteration,
-            availability_iteration=availability_iteration,
-            subproblem=subproblem,
-            stage=stage,
-            multi_stage=multi_stage,
-            instance=instance,
-            dynamic_components=dynamic_components,
-            export_summary_results_rule=export_summary_rule,
-            verbose=parsed_arguments.verbose,
-        )
+        if export_summary_rule:
+            if not parsed_arguments.quiet:
+                print("...exporting summary CSV results")
+            export_summary_results(
+                scenario_directory=scenario_directory,
+                weather_iteration=weather_iteration,
+                hydro_iteration=hydro_iteration,
+                availability_iteration=availability_iteration,
+                subproblem=subproblem,
+                stage=stage,
+                multi_stage=multi_stage,
+                instance=instance,
+                dynamic_components=dynamic_components,
+                verbose=parsed_arguments.verbose,
+            )
 
         export_pass_through_inputs(
             scenario_directory=scenario_directory,
@@ -919,6 +1012,10 @@ def save_results(
             dynamic_components=dynamic_components,
             verbose=parsed_arguments.verbose,
         )
+
+        # Force garbage collection to release file descriptors immediately
+        # This prevents "too many open files" errors when processing many iterations
+        gc.collect()
     # If solver status is not ok, don't export results and print some
     # messages for the user
     else:
@@ -1278,7 +1375,6 @@ def export_summary_results(
     multi_stage,
     instance,
     dynamic_components,
-    export_summary_results_rule,
     verbose,
 ):
     """
@@ -1294,29 +1390,28 @@ def export_summary_results(
 
     Export results for each loaded module (if applicable)
     """
-    if export_summary_results_rule:
-        # Determine/load modules and dynamic components
-        modules_to_use, loaded_modules = set_up_gridpath_modules(
-            scenario_directory=scenario_directory, multi_stage=multi_stage
-        )
+    # Determine/load modules and dynamic components
+    modules_to_use, loaded_modules = set_up_gridpath_modules(
+        scenario_directory=scenario_directory, multi_stage=multi_stage
+    )
 
-        n = 0
-        for m in loaded_modules:
-            if hasattr(m, "export_summary_results"):
-                if verbose:
-                    print(f"... {modules_to_use[n]}")
-                m.export_summary_results(
-                    scenario_directory,
-                    weather_iteration,
-                    hydro_iteration,
-                    availability_iteration,
-                    subproblem,
-                    stage,
-                    instance,
-                    dynamic_components,
-                )
+    n = 0
+    for m in loaded_modules:
+        if hasattr(m, "export_summary_results"):
+            if verbose:
+                print(f"... {modules_to_use[n]}")
+            m.export_summary_results(
+                scenario_directory,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
+                instance,
+                dynamic_components,
+            )
 
-            n += 1
+        n += 1
 
 
 def export_pass_through_inputs(
@@ -1448,114 +1543,6 @@ def save_duals(
                 dynamic_components,
             )
         n += 1
-
-
-def summarize_results(
-    scenario_directory,
-    weather_iteration,
-    hydro_iteration,
-    availability_iteration,
-    subproblem,
-    stage,
-    multi_stage,
-    parsed_arguments,
-):
-    """
-    :param scenario_directory:
-    :param subproblem:
-    :param stage:
-    :param parsed_arguments:
-    :return:
-
-    Summarize results (after results export)
-    """
-    if parsed_arguments.results_export_rule is None:
-        summarize_rule = _summarize_rule(
-            scenario_directory=scenario_directory,
-            weather_iteration=weather_iteration,
-            hydro_iteration=hydro_iteration,
-            availability_iteration=availability_iteration,
-            subproblem=subproblem,
-            stage=stage,
-            quiet=parsed_arguments.quiet,
-        )
-    else:
-        summarize_rule = import_export_rules[parsed_arguments.results_export_rule][
-            "summarize"
-        ](
-            scenario_directory=scenario_directory,
-            weather_iteration=weather_iteration,
-            hydro_iteration=hydro_iteration,
-            availability_iteration=availability_iteration,
-            subproblem=subproblem,
-            stage=stage,
-            quiet=parsed_arguments.quiet,
-        )
-
-    if summarize_rule:
-        # Only summarize results if solver status was "optimal"
-        with open(
-            os.path.join(
-                scenario_directory,
-                weather_iteration,
-                hydro_iteration,
-                availability_iteration,
-                subproblem,
-                stage,
-                "results",
-                "solver_status.txt",
-            ),
-            "r",
-        ) as f:
-            solver_status = f.read()
-
-        if solver_status == "ok":
-            if not parsed_arguments.quiet:
-                print("Summarizing results...")
-
-            # Determine/load modules and dynamic components
-            modules_to_use, loaded_modules = set_up_gridpath_modules(
-                scenario_directory=scenario_directory, multi_stage=multi_stage
-            )
-
-            # Make the summary results file unless instructed to skip
-            if not parsed_arguments.skip_quick_summary:
-                summary_results_file = os.path.join(
-                    scenario_directory,
-                    weather_iteration,
-                    hydro_iteration,
-                    availability_iteration,
-                    subproblem,
-                    stage,
-                    "results",
-                    "summary_results.txt",
-                )
-
-                # TODO: how to handle results from previous runs
-                # Overwrite prior results
-                with open(summary_results_file, "w", newline="") as outfile:
-                    outfile.write(
-                        "##### SUMMARY RESULTS FOR SCENARIO *{}* #####\n".format(
-                            parsed_arguments.scenario
-                        )
-                    )
-
-            # Go through the modules and get the appropriate results
-            n = 0
-            for m in loaded_modules:
-                if hasattr(m, "summarize_results"):
-                    if parsed_arguments.verbose:
-                        print(f"... {modules_to_use[n]}")
-                    m.summarize_results(
-                        scenario_directory,
-                        weather_iteration,
-                        hydro_iteration,
-                        availability_iteration,
-                        subproblem,
-                        stage,
-                        parsed_arguments.skip_quick_summary,
-                    )
-                n += 1
 
 
 def set_up_gridpath_modules(scenario_directory, multi_stage):
@@ -1762,8 +1749,9 @@ def load_cplex_xml_solution(
             type_tag.get("index"),
             type_tag.get("value"),
         )
-        if not var_id == "ONE_VAR_CONSTANT":
-            symbol_map.bySymbol[var_id]().value = float(value)
+        # "x2" with value None added for CPLEXSolution version 1.2
+        if not var_id in ["ONE_VAR_CONSTANT", "x2"]:
+            symbol_map.bySymbol[var_id].value = float(value)
 
     # Constraints
     for type_tag in root.findall("linearConstraints/constraint"):
@@ -1773,8 +1761,9 @@ def load_cplex_xml_solution(
             type_tag.get("dual"),
         )
         if not constraint_id_w_extra_symbols == "c_e_ONE_VAR_CONSTANT":
-            constraint_id = constraint_id_w_extra_symbols[4:-1]
-            instance.dual[symbol_map.bySymbol[constraint_id]()] = float(dual)
+            # constraint_id = constraint_id_w_extra_symbols[4:-1]
+            constraint_id = constraint_id_w_extra_symbols
+            instance.dual[symbol_map.bySymbol[constraint_id]] = float(dual)
 
     # Solver status
     header = root.findall("header")[0]  # Need a check that there is only one element
@@ -1832,6 +1821,95 @@ def load_gurobi_json_solution(
         "optimal" if solution["SolutionInfo"]["Status"] == 2 else "unknown"
     )
     solver_status = "ok" if solution["SolutionInfo"]["Status"] == 2 else "unknown"
+    results = Results(
+        solver_status=solver_status, termination_condition=termination_condition
+    )
+
+    return instance, results, dynamic_components
+
+
+def load_highs_xml_solution(
+    prob_sol_files_directory, solution_filename="highs_solution.sol"
+):
+    """
+    :param prob_sol_files_directory:
+    :param solution_filename:
+    :return:
+    """
+    print(
+        "Loading results from solution file {}...".format(
+            os.path.join(prob_sol_files_directory, solution_filename)
+        )
+    )
+    instance, dynamic_components, symbol_map = load_problem_info(
+        prob_sol_files_directory=prob_sol_files_directory
+    )
+
+    # Read HiGHS solution file
+    with open(os.path.join(prob_sol_files_directory, solution_filename), "r") as f:
+        lines = f.readlines()
+
+    # Model status is  th second line
+    model_status = lines[1].strip() if len(lines) > 1 else "Unknown"
+    termination_condition = model_status.lower()
+    solver_status = "ok" if termination_condition == "optimal" else "unknown"
+
+    # Parse the HiGHS solution file
+    section = None
+
+    for line in lines:
+        line = line.strip()
+
+        # Skip empty lines and comments
+        if not line or line.startswith("#"):
+            # Check for section headers in comments
+            if line == "# Primal solution values":
+                section = "primal_start"
+            elif "# Columns" in line and section == "primal_start":
+                section = "primal_columns"
+            elif "# Rows" in line and section == "primal_columns":
+                section = "primal_rows"
+            elif line == "# Dual solution values":
+                section = "dual_start"
+            elif "# Columns" in line and section == "dual_start":
+                section = "dual_columns"
+            elif "# Rows" in line and section in ["dual_start", "dual_columns"]:
+                section = "dual_rows"
+            elif line == "# Basis":
+                # Stop parsing once we reach basis section
+                break
+            continue
+
+        # Skip non-data lines
+        if line in ["Model status", "Feasible", "Valid"]:
+            continue
+        if line.startswith("Objective "):
+            continue
+
+        # Parse primal variable values (x variables only)
+        if section == "primal_columns":
+            parts = line.split()
+            if len(parts) == 2:
+                var_id, value = parts[0], parts[1]
+                if (
+                    var_id.startswith("x")
+                    and var_id in symbol_map.bySymbol
+                    and var_id not in ["ONE_VAR_CONSTANT", "x2"]
+                ):
+                    symbol_map.bySymbol[var_id].value = float(value)
+
+        # Parse constraint dual values (c_ constraints only) from dual rows
+        elif section == "dual_rows":
+            parts = line.split()
+            if len(parts) == 2:
+                constraint_id, dual = parts[0], parts[1]
+                if (
+                    constraint_id.startswith("c_")
+                    and constraint_id in symbol_map.bySymbol
+                    and constraint_id != "c_e_ONE_VAR_CONSTANT"
+                ):
+                    instance.dual[symbol_map.bySymbol[constraint_id]] = float(dual)
+
     results = Results(
         solver_status=solver_status, termination_condition=termination_condition
     )

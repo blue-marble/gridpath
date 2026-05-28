@@ -84,7 +84,13 @@ class TestGeographyGenericPolicy(unittest.TestCase):
             stage="",
         )
         instance = m.create_instance(data)
-        expected = sorted([("RPS", "RPSZone1"), ("Carbon", "CarbonZone1")])
+        expected = sorted(
+            [
+                ("RPS", "RPSZone1"),
+                ("Carbon", "CarbonZone1"),
+                ("SLICE_OF_DAY", "SODZone1"),
+            ]
+        )
         actual = sorted([(p, z) for (p, z) in instance.POLICIES_ZONES])
         self.assertListEqual(
             expected, actual, msg="LOAD_ZONES set data does not load correctly."
@@ -92,7 +98,13 @@ class TestGeographyGenericPolicy(unittest.TestCase):
 
         # Param: policy_zone_allow_violation
         expected_allow_viol = OrderedDict(
-            sorted({("RPS", "RPSZone1"): 0, ("Carbon", "CarbonZone1"): 1}.items())
+            sorted(
+                {
+                    ("RPS", "RPSZone1"): 0,
+                    ("Carbon", "CarbonZone1"): 1,
+                    ("SLICE_OF_DAY", "SODZone1"): 0,
+                }.items()
+            )
         )
         actual_allow_viol = OrderedDict(
             sorted(
@@ -106,7 +118,13 @@ class TestGeographyGenericPolicy(unittest.TestCase):
 
         # Param: policy_zone_violation_penalty_per_unit
         expected_overgen_penalty = OrderedDict(
-            sorted({("RPS", "RPSZone1"): 0, ("Carbon", "CarbonZone1"): 100}.items())
+            sorted(
+                {
+                    ("RPS", "RPSZone1"): 0,
+                    ("Carbon", "CarbonZone1"): 100,
+                    ("SLICE_OF_DAY", "SODZone1"): 0,
+                }.items()
+            )
         )
         actual_overgen_penalty = OrderedDict(
             sorted(

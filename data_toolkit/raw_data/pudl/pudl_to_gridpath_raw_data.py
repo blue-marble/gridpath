@@ -214,11 +214,12 @@ def convert_ra_toolkit_profiles_to_csv(raw_data_directory, pudl_download_directo
         df["day_of_month_hs"] = pd.DatetimeIndex(df["datetime_pst_hs"]).day
         df["hour_of_day_hs"] = pd.DatetimeIndex(df["datetime_pst_hs"]).hour
 
-        # Populate initial values based on HE
-        df["year"] = df["year_he"]
-        df["month"] = df["month_he"]
-        df["day_of_month"] = df["day_of_month_he"]
-        df["hour_of_day"] = df["hour_of_day_he"]
+        # Populate initial values based on HE; use int64 to avoid
+        # LossySetitemError on pandas 2.x when overwriting with HS values
+        df["year"] = df["year_he"].astype("int64")
+        df["month"] = df["month_he"].astype("int64")
+        df["day_of_month"] = df["day_of_month_he"].astype("int64")
+        df["hour_of_day"] = df["hour_of_day_he"].astype("int64")
 
         # Go from HE timestamps to 1-24 timepoint indexing
         df.loc[
@@ -275,11 +276,12 @@ def convert_eia930_hourly_interchange_to_csv(
         df["day_of_month_hs"] = pd.DatetimeIndex(df["datetime_pst_hs"]).day
         df["hour_of_day_hs"] = pd.DatetimeIndex(df["datetime_pst_hs"]).hour
 
-        # Populate initial values based on HE
-        df["year"] = df["year_he"]
-        df["month"] = df["month_he"]
-        df["day_of_month"] = df["day_of_month_he"]
-        df["hour_of_day"] = df["hour_of_day_he"]
+        # Populate initial values based on HE; use int64 to avoid
+        # LossySetitemError on pandas 2.x when overwriting with HS values
+        df["year"] = df["year_he"].astype("int64")
+        df["month"] = df["month_he"].astype("int64")
+        df["day_of_month"] = df["day_of_month_he"].astype("int64")
+        df["hour_of_day"] = df["hour_of_day_he"].astype("int64")
 
         # Go from HE timestamps to 1-24 timepoint indexing
         df.loc[

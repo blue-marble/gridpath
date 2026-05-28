@@ -1,0 +1,3 @@
+timeseries_name,consider_day_types,initial_seed,timeseries_type
+solar,0,730,var_profiles
+wind,0,1460,var_profiles

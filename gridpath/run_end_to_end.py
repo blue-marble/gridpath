@@ -34,6 +34,7 @@ import sys
 from db.common_functions import connect_to_database, spin_on_database_lock
 from gridpath.common_functions import (
     get_db_parser,
+    get_temporal_structure_csv_overwrite_parser,
     get_run_scenario_parser,
     get_required_e2e_arguments_parser,
     get_get_inputs_parser,
@@ -66,6 +67,7 @@ def parse_arguments(args):
         add_help=True,
         parents=[
             get_db_parser(),
+            get_temporal_structure_csv_overwrite_parser(),
             get_required_e2e_arguments_parser(),
             get_run_scenario_parser(),
             get_get_inputs_parser(),
@@ -135,6 +137,7 @@ def update_run_status(db_path, scenario, status_id):
         conn=conn, cursor=c, sql=sql, data=(status_id, scenario), many=False
     )
 
+    conn.commit()
     conn.close()
 
 
@@ -166,6 +169,7 @@ def record_process_id_and_start_time(db_path, scenario, process_id, start_time):
         many=False,
     )
 
+    conn.commit()
     conn.close()
 
 
@@ -193,6 +197,7 @@ def record_end_time(db_path, scenario, process_id, end_time):
         conn=conn, cursor=c, sql=sql, data=(end_time, scenario, process_id), many=False
     )
 
+    conn.commit()
     conn.close()
 
 
@@ -213,6 +218,7 @@ def check_if_in_queue(db_path, scenario):
         WHERE scenario_name = '{}'
         """.format(scenario)).fetchone()[0]
 
+    conn.commit()
     conn.close()
 
     return queue_order_id
@@ -240,6 +246,7 @@ def remove_from_queue_if_in_queue(db_path, scenario, queue_order_id):
             conn=conn, cursor=c, sql=sql, data=(scenario,), many=False
         )
 
+    conn.commit()
     conn.close()
 
 
@@ -448,8 +455,9 @@ def main(args=None):
         print("Done. Run finished on {}.".format(end_time))
 
     # If logging, we need to return sys.stdout to original (i.e. stop writing
-    # to log file)
+    # to log file) and close the log file to release file descriptor
     if parsed_args.log:
+        logger.close()
         sys.stdout = stdout_original
         sys.stderr = stderr_original
 
@@ -498,6 +506,7 @@ def exit_gracefully():
     remove_from_queue_if_in_queue(db_path, scenario, queue_order_id)
     update_run_status(db_path, scenario, 4)
 
+    conn.commit()
     conn.close()
 
 

@@ -1,0 +1,5 @@
+project	policy_name	policy_zone	period	policy_month	policy_hour	cap_fac
+Wind	SLICE_OF_DAY	SODZone1	2020	1	7	0.5
+Wind	SLICE_OF_DAY	SODZone1	2020	1	8	0.5
+Wind	SLICE_OF_DAY	SODZone1	2030	1	7	0.5
+Wind	SLICE_OF_DAY	SODZone1	2030	1	8	0.5

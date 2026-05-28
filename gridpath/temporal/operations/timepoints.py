@@ -503,13 +503,13 @@ def validate_inputs(
 
         if hours_in_period_timepoints not in [8760, 8766, 8784]:
             msg = """
-            Check timepoint parameters for period {}. Your timepoint 
-            parameters currently sum up to {}. In each period,  regardless 
-            of period param values, the total number of hours in timepoints 
-            adjusted for timepoint weight and duration and excluding spinup 
-            and lookahead timepoints should be the number of hours in a year 
+            Check timepoint parameters for period {}. Your timepoint
+            parameters currently sum up to {}. In each period,  regardless
+            of period param values, the total number of hours in timepoints
+            adjusted for timepoint weight and duration and excluding spinup
+            and lookahead timepoints should be the number of hours in a year
             (8760, 8766, or 8784). This is to ensure consistent weighting of 
-            timepoint-level and period-level costs. 
+            timepoint-level and period-level costs.
             """.format(str(period), str(hours_in_period_timepoints))
 
             # Check values of hours_in_period_timepoints

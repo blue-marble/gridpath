@@ -1,4 +1,5 @@
 # Copyright 2016-2025 Blue Marble Analytics LLC.
+# Copyright 2026 Sylvan Energy Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -59,6 +60,7 @@ import pandas as pd
 import sys
 
 from db.common_functions import connect_to_database
+from data_toolkit.load_raw_data import read_and_import_csv
 
 
 def parse_arguments(args):
@@ -72,6 +74,25 @@ def parse_arguments(args):
     parser = ArgumentParser(add_help=True)
 
     parser.add_argument("-db", "--database", default="../../io.db")
+    parser.add_argument(
+        "-o_csv",
+        "--outage_params_input_csv",
+        default=None,
+        help="""Path to the unit availability  params CSV file to load into the 
+        raw_data_unit_availability_params table in the database. If not 
+        specified, data will be assumed to have been already loaded into the 
+        database.""",
+    )
+    parser.add_argument(
+        "-hist_csv",
+        "--historical_availability_csv",
+        default=None,
+        help="""Path to the historical availability data CSV file to load for the
+        historical_year outage model. Expected columns: year, month, day_of_month,
+        hour_of_day, unit, derate. Each unit can have multiple years of hourly
+        derate data. If not specified, model will not be able to use historical_year
+        outage_model.""",
+    )
     parser.add_argument("-stage", "--stage_id", default=1, help="Defaults to 1.")
     parser.add_argument("-n_iter", "--n_iterations")
     parser.add_argument(
@@ -91,7 +112,8 @@ def parse_arguments(args):
         "Setting the seeds will ensure that you get the same results each "
         "time, but can compromise randomness. Make sure to set "
         "'--user_provided_seeding' flag to True to use this functionality and "
-        "proceed with caution.",
+        "proceed with caution. If the '--user_provided_seeding' flag is not set, "
+        "this seed will be ignored.",
     )
     parser.add_argument(
         "-max_unit_seed_int",
@@ -100,6 +122,20 @@ def parse_arguments(args):
         help="The max integer for assigning seeds to each unit outage "
         "simulation for a given project. The --user_provided_seeding flag must "
         "be set to True for this to take effect. Proceed with caution.",
+    )
+    parser.add_argument(
+        "-hyb_s_seed_inc",
+        "--hybrid_storage_seed_increment",
+        default=1000,
+        help="The seed increment for hybrid storage components relative to "
+        "the generator component. If the --user_provided_seeding flag is not set, this value will be ignored.",
+    )
+    parser.add_argument(
+        "-s_y",
+        "--study_year",
+        default=0,
+        help=f"Defaults to 0. Timepoint IDs will start at 1. Set to YYYY to "
+        f"have timepoint IDs start at YYYY0001.",
     )
     parser.add_argument(
         "-id", "--project_availability_scenario_id", default=1, help="Defaults to 1."
@@ -133,6 +169,14 @@ def parse_arguments(args):
         help="The number of projects to simulate in parallel. Defaults to 1.",
     )
 
+    parser.add_argument(
+        "-print_ones",
+        "--print_ones",
+        default=False,
+        action="store_true",
+        help="Include rows where derate values equal 1. Defaults to False.",
+    )
+
     parser.add_argument("-q", "--quiet", default=False, action="store_true")
 
     parsed_arguments = parser.parse_known_args(args=args)[0]
@@ -140,8 +184,10 @@ def parse_arguments(args):
     return parsed_arguments
 
 
-def get_temporal_structure():
-    stage_tmp_dict = {1: [tmp for tmp in range(1, 8760 + 1)]}
+def get_temporal_structure(study_year):
+    stage_tmp_dict = {
+        1: [tmp for tmp in range(study_year * 10000 + 1, study_year * 10000 + 8760 + 1)]
+    }
 
     return stage_tmp_dict
 
@@ -152,6 +198,8 @@ def get_weighted_availability_adjustment(
     user_provided_seeding,
     project_iteration_seed,
     max_integer_for_unit_outage_seeding,
+    hyb_stor_seed_unit_increment,
+    historical_data=None,
 ):
     project_outage_adjustment = []
     project_hyb_stor_outage_adjustment = []
@@ -180,7 +228,7 @@ def get_weighted_availability_adjustment(
         unit_mttr = row["unit_mttr"]
         hybrid_stor = row["hybrid_stor"]
 
-        # Reset seed to None if
+        # This is None if no seed was provided
         unit_seed = unit_seeds[index]
 
         unit_for_array = np.full((len(tmps), 1), unit_for, dtype=float)
@@ -191,20 +239,44 @@ def get_weighted_availability_adjustment(
             mttr=unit_mttr,
             n_units=n_units,
             unit_seed=unit_seed,
+            historical_data=historical_data,
+            unit=unit,
         )
 
-        if not hybrid_stor:
-            project_outage_adjustment.append(unit_outage_adjustment * unit_weight)
-        else:
+        # Get the project outage
+        # For hybrids, this is applied to the generator component
+        project_outage_adjustment.append(unit_outage_adjustment * unit_weight)
+
+        # For hybrids, also get the outage for the storage component
+        # TODO: check that this works properly
+        if hybrid_stor:
+            unit_outage_adjustment = simulate_unit_outages(
+                outage_model=outage_model,
+                for_array=unit_for_array,
+                mttr=unit_mttr,
+                n_units=n_units,
+                unit_seed=(
+                    None
+                    if unit_seed is None
+                    else unit_seed + hyb_stor_seed_unit_increment
+                ),
+                historical_data=historical_data,
+                unit=unit,
+            )
             project_hyb_stor_outage_adjustment.append(
                 unit_outage_adjustment * unit_weight
             )
+
     # Only sum the unit outages if there were units, otherwise, pass None
     if project_outage_adjustment:
         adjustment = sum(project_outage_adjustment)
     else:
         adjustment = None
-    hyb_stor_adjustment = sum(project_hyb_stor_outage_adjustment)
+
+    if hybrid_stor:
+        hyb_stor_adjustment = sum(project_hyb_stor_outage_adjustment)
+    else:
+        hyb_stor_adjustment = None
 
     return adjustment, hyb_stor_adjustment
 
@@ -216,11 +288,16 @@ def simulate_project_availability(
     user_provided_seeding,
     project_iteration_seed,
     max_integer_for_unit_outage_seeding,
+    hyb_stor_seed_unit_increment,
     stage_id,
+    study_year,
     filepath,
+    print_ones,
+    historical_data=None,
 ):
 
-    stage_tmp_dict = get_temporal_structure()
+    # print(f"Simulating project {project}, iteration {iteration_n}")
+    stage_tmp_dict = get_temporal_structure(study_year)
 
     # No stage simulation at this point; assume single stage
     tmps = stage_tmp_dict[1]
@@ -231,6 +308,8 @@ def simulate_project_availability(
         user_provided_seeding=user_provided_seeding,
         project_iteration_seed=project_iteration_seed,
         max_integer_for_unit_outage_seeding=max_integer_for_unit_outage_seeding,
+        hyb_stor_seed_unit_increment=hyb_stor_seed_unit_increment,
+        historical_data=historical_data,
     )
 
     export_df = pd.DataFrame(
@@ -242,6 +321,31 @@ def simulate_project_availability(
             "hyb_stor_cap_availability_derate": hyb_stor_derate,
         }
     )
+
+    # Filter out rows where derate values are 1, unless print_ones is True
+    if not print_ones:
+        # For non-hybrids, find rows with (!=1, None)
+        export_df_non_hyb = export_df[
+            (
+                (export_df["availability_derate_independent"] != 1)
+                & (export_df["hyb_stor_cap_availability_derate"].isna())
+            )
+        ]
+
+        # For hybrids, find rows where either column is not 1
+        # First, skip the rows where the storage derate is NA (so that we
+        # don't end up including the ones for non-hybrids)
+        export_df_hyb = export_df[
+            (
+                (export_df["hyb_stor_cap_availability_derate"].notna())
+                & (
+                    (export_df["availability_derate_independent"] != 1)
+                    | ((export_df["hyb_stor_cap_availability_derate"] != 1))
+                )
+            )
+        ]
+
+        export_df = pd.concat([export_df_non_hyb, export_df_hyb]).drop_duplicates()
 
     export_df.to_csv(
         filepath,
@@ -259,16 +363,23 @@ def simulate_unit_outages(
     unit_seed,
     dt=1,
     starting_outage_states=None,
+    historical_data=None,
+    unit=None,
 ):
     """
-    outage_model: ["Derate", "MC_independent", "MC_sequential"]
+    outage_model: ["Derate", "MC_independent", "MC_sequential", "historical_year"]
     FOR: numpy array with the length of the simulation window and the FOR as
         value; note this can vary by timepoint
     N_units: integer, number of units modeled
     starting_outage_states: array with the starting outage state (1/0) for
         each of the N units
     dt: outage timestep length
+    historical_data: dict with unit names as keys and DataFrames containing
+        historical availability data with columns: year, month, day_of_month,
+        hour_of_day, unit, derate (for historical_year model)
+    unit: unit name (for historical_year model)
     """
+    # print(f"Simulating unit outages for {unit}... Outage model: {outage_model}")
     # Seed the simulation if requested
     if unit_seed is not None:
         np.random.seed(unit_seed)
@@ -276,6 +387,8 @@ def simulate_unit_outages(
     if starting_outage_states is None:
         starting_outage_states = []
 
+    # TODO: probably remove derates; should be handled via default availablity
+    #  values rather than writing timepoint-level derates
     if outage_model == "Derate":
         availability = 1 - np.outer(for_array, np.ones(n_units))
 
@@ -324,6 +437,42 @@ def simulate_unit_outages(
             availability[t, :] = avail_tmp
             avail_last = avail_tmp
 
+    elif outage_model == "historical_year":
+        # Sample a random year from historical data for this unit
+        if historical_data is None or unit not in historical_data:
+            raise ValueError(
+                f"Historical data not provided for unit {unit}. "
+                "Please provide historical_availability_csv."
+            )
+
+        unit_hist_data = historical_data[unit]
+
+        # Get list of unique years in the historical data
+        available_years = unit_hist_data["year"].unique()
+
+        if len(available_years) == 0:
+            raise ValueError(f"No historical years found for unit {unit}.")
+
+        # Randomly select a year
+        selected_year = np.random.choice(available_years)
+
+        # Get the derate values for the selected year
+        # Data is already sorted by year, month, day_of_month, hour_of_day
+        year_data = unit_hist_data[unit_hist_data["year"] == selected_year]
+        derate_values = year_data["value"].values
+
+        # Check if we have the right number of hours
+        if len(derate_values) != len(for_array):
+            raise ValueError(
+                f"Historical data for unit {unit}, year {selected_year} "
+                f"has {len(derate_values)} hours, but expected {len(for_array)}."
+            )
+
+        # Create availability array - replicate the same derate pattern for each
+        # of the n_units (this represents multiple identical units with the same
+        # historical outage pattern)
+        availability = np.outer(derate_values, np.ones(n_units))
+
     else:
         availability = np.ones([len(for_array), n_units])
 
@@ -332,32 +481,64 @@ def simulate_unit_outages(
     return outage_adjustment
 
 
-def simulate_project_availability_pool(pool_datum):
+def simulate_all_project_iterations(pool_datum):
     """
-    Helper function to easily pass to pool.map if solving subproblems in
-    parallel
+    Helper function to simulate all iterations for a single project.
+    This allows parallelization by project rather than by project-iteration.
     """
     [
-        project_df,
+        conn_string,
         project,
-        iteration_n,
+        n_iterations,
         user_provided_seeding,
-        project_iteration_seed,
+        starting_project_iteration_seed,
         max_integer_for_unit_outage_seeding,
+        hyb_stor_seed_unit_increment,
         stage_id,
+        study_year,
         filepath,
+        print_ones,
+        historical_data,
     ] = pool_datum
 
-    simulate_project_availability(
-        project_df=project_df,
-        project=project,
-        iteration_n=iteration_n,
-        user_provided_seeding=user_provided_seeding,
-        project_iteration_seed=project_iteration_seed,
-        max_integer_for_unit_outage_seeding=max_integer_for_unit_outage_seeding,
-        stage_id=stage_id,
-        filepath=filepath,
-    )
+    # Reconnect to database in this process
+    conn = connect_to_database(conn_string)
+
+    # Loop through all iterations for this project
+    project_iteration_seed = starting_project_iteration_seed
+    for iteration_n in range(1, n_iterations + 1):
+        project_df = pd.read_sql(
+            f"""
+                SELECT * FROM raw_data_unit_availability_params
+                WHERE project = '{project}'
+                ;""",
+            conn,
+        )
+
+        simulate_project_availability(
+            project_df=project_df,
+            project=project,
+            iteration_n=iteration_n,
+            user_provided_seeding=user_provided_seeding,
+            project_iteration_seed=(
+                project_iteration_seed if user_provided_seeding else None
+            ),
+            max_integer_for_unit_outage_seeding=(
+                max_integer_for_unit_outage_seeding if user_provided_seeding else None
+            ),
+            hyb_stor_seed_unit_increment=(
+                hyb_stor_seed_unit_increment if user_provided_seeding else None
+            ),
+            stage_id=stage_id,
+            study_year=study_year,
+            filepath=filepath,
+            print_ones=print_ones,
+            historical_data=historical_data,
+        )
+
+        project_iteration_seed += 1
+
+    conn.close()
 
 
 def sort_csv_file(filepath, columns_to_sort_by, ascending):
@@ -382,16 +563,50 @@ def main(args=None):
     if not parsed_args.quiet:
         print("Creating availability iteration CSVs...")
 
-    db = connect_to_database(parsed_args.database)
+    conn = connect_to_database(parsed_args.database)
 
-    projects = [i[0] for i in db.execute("""
+    # ### Load data from CSV
+    if parsed_args.outage_params_input_csv is not None:
+        read_and_import_csv(
+            conn=conn,
+            f_path=parsed_args.outage_params_input_csv,
+            table="raw_data_unit_availability_params",
+        )
+
+    # Load historical availability data if provided
+    # Not loaded into the database for now
+    historical_data = None
+    if parsed_args.historical_availability_csv is not None:
+        # Read the CSV file directly into a DataFrame
+        hist_df = pd.read_csv(parsed_args.historical_availability_csv)
+
+        # Expected columns: year, month, day_of_month, hour_of_day, unit, derate
+        # Create an hour index for ordering (1-8760 or 1-8784 for leap years)
+        # Sort by temporal columns to ensure proper ordering
+        hist_df = hist_df.sort_values(["year", "month", "day_of_month", "hour_of_day"])
+
+        # Group by unit for unit-level access
+        historical_data = {unit: group for unit, group in hist_df.groupby("unit")}
+
+    # Make out directory if it doesn't exist
+    if not os.path.exists(parsed_args.output_directory):
+        os.makedirs(parsed_args.output_directory)
+
+    # Get projects
+    projects = [i[0] for i in conn.execute("""
         SELECT DISTINCT project FROM raw_data_unit_availability_params;
         """).fetchall()]
 
     all_files = []
     pool_data = []
-    project_iteration_seed = parsed_args.starting_project_iteration_seed
-    for project in projects:
+    project_iteration_seed = int(parsed_args.starting_project_iteration_seed)
+    hyb_stor_seed_unit_increment = int(parsed_args.hybrid_storage_seed_increment)
+    n_iterations = int(parsed_args.n_iterations)
+
+    # Calculate total iterations per project for seed incrementing
+    iterations_per_project = n_iterations
+
+    for project_idx, project in enumerate(projects):
         # Write header if we are overwriting the file or it doesn't exist
         overwrite = parsed_args.overwrite
         header = [
@@ -413,47 +628,36 @@ def main(args=None):
                 csvwriter = csv.writer(f)
                 csvwriter.writerow(header)
 
-        # Create iteration seeds
-        for iteration_n in range(1, int(parsed_args.n_iterations) + 1):
-            project_df = pd.read_sql(
-                f"""
-                    SELECT * FROM raw_data_unit_availability_params
-                    WHERE project = '{project}'
-                    ;""",
-                db,
-            )
+        # Calculate starting seed for this project
+        starting_seed_for_project = (
+            int(parsed_args.starting_project_iteration_seed)
+            + project_idx * iterations_per_project
+        )
 
-            # Pass user provided seed values if user_provide_seeding
-            # requested; otherwise, pass None
-            pool_data.append(
-                [
-                    project_df,
-                    project,
-                    iteration_n,
-                    parsed_args.user_provided_seeding,
-                    (
-                        project_iteration_seed
-                        if parsed_args.user_provided_seeding
-                        else None
-                    ),
-                    (
-                        parsed_args.max_integer_for_unit_outage_seeding
-                        if parsed_args.user_provided_seeding
-                        else None
-                    ),
-                    parsed_args.stage_id,
-                    filepath,
-                ]
-            )
-
-            project_iteration_seed += 1
+        # Create pool data entry for this project (all iterations)
+        pool_data.append(
+            [
+                parsed_args.database,
+                project,
+                n_iterations,
+                parsed_args.user_provided_seeding,
+                starting_seed_for_project,
+                parsed_args.max_integer_for_unit_outage_seeding,
+                hyb_stor_seed_unit_increment,
+                parsed_args.stage_id,
+                int(parsed_args.study_year),
+                filepath,
+                parsed_args.print_ones,
+                historical_data,
+            ]
+        )
 
     pool_data = tuple(pool_data)
 
     # Pool must use spawn to work properly on Linux
     pool = get_context("spawn").Pool(int(parsed_args.n_parallel_projects))
 
-    pool.map(simulate_project_availability_pool, pool_data)
+    pool.map(simulate_all_project_iterations, pool_data)
     pool.close()
 
     # Sort the resulting CSV file if requested
@@ -470,7 +674,7 @@ def main(args=None):
                 ascending=[True, True, True],
             )
 
-    db.close()
+    conn.close()
 
 
 if __name__ == "__main__":

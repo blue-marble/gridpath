@@ -33,7 +33,6 @@ from pyomo.environ import (
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import subset_init_by_set_membership
 from gridpath.auxiliary.db_interface import (
-    setup_results_import,
     directories_to_db_values,
 )
 from gridpath.auxiliary.dynamic_components import carbon_cap_balance_emission_components

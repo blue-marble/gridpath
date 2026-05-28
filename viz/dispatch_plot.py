@@ -139,6 +139,33 @@ def get_timepoints(conn, scenario_id, starting_tmp=None, ending_tmp=None, stage_
     return tmps
 
 
+def _batch_query_with_timepoints(query_template, conn, timepoints, batch_size=1000):
+    """
+    Helper function to batch large timepoint queries to avoid SQLite limit.
+    Splits timepoints into batches and concatenates results.
+
+    :param query_template: Query template that accepts a timepoints_str placeholder
+    :param conn: Database connection
+    :param timepoints: List of all timepoints
+    :param batch_size: Max number of timepoints per query
+    :return: Concatenated DataFrame or list of results
+    """
+    all_dfs = []
+
+    for i in range(0, len(timepoints), batch_size):
+        batch = timepoints[i : i + batch_size]
+        timepoints_str = ",".join(["?"] * len(batch))
+        query = query_template.format(timepoints_str=timepoints_str)
+        df = pd.read_sql(query, conn, params=batch)
+        if not df.empty:
+            all_dfs.append(df)
+
+    if all_dfs:
+        return pd.concat(all_dfs, ignore_index=True)
+    else:
+        return pd.DataFrame()
+
+
 def get_power_by_tech_results(
     conn,
     scenario_id,
@@ -163,9 +190,8 @@ def get_power_by_tech_results(
     :return:
     """
 
-    # Power by technology
-    timepoints_str = ",".join(["?"] * len(timepoints))
-    query = f"""SELECT timepoint, technology, power_mw
+    # Power by technology with batching to handle large timepoint lists
+    query_template = f"""SELECT timepoint, technology, power_mw
         FROM results_project_dispatch_by_technology
         WHERE scenario_id = {scenario_id}
         AND load_zone = '{load_zone}'
@@ -173,10 +199,10 @@ def get_power_by_tech_results(
         AND hydro_iteration = {hydro_iteration}
         AND availability_iteration = {availability_iteration}
         AND stage_id = {stage}
-        AND timepoint IN ({timepoints_str})
+        AND timepoint IN ({{timepoints_str}})
         ;"""
 
-    df = pd.read_sql(query, conn, params=timepoints)
+    df = _batch_query_with_timepoints(query_template, conn, timepoints)
     if not df.empty:
         df = df.pivot(index="timepoint", columns="technology")["power_mw"]
         return df
@@ -185,6 +211,29 @@ def get_power_by_tech_results(
     else:
         index_only_df = pd.DataFrame(index=timepoints)
         return index_only_df
+
+
+def _batch_execute_query(query_template, cursor, timepoints, batch_size=1000):
+    """
+    Helper function to batch large timepoint queries to avoid SQLite limit.
+    Splits timepoints into batches and concatenates results.
+
+    :param query_template: Query template that accepts a timepoints_str placeholder
+    :param cursor: Database cursor
+    :param timepoints: List of all timepoints
+    :param batch_size: Max number of timepoints per query
+    :return: List of concatenated results
+    """
+    all_results = []
+
+    for i in range(0, len(timepoints), batch_size):
+        batch = timepoints[i : i + batch_size]
+        timepoints_str = ",".join(["?"] * len(batch))
+        query = query_template.format(timepoints_str=timepoints_str)
+        results = cursor.execute(query, batch).fetchall()
+        all_results.extend(results)
+
+    return all_results
 
 
 def get_variable_curtailment_results(
@@ -210,7 +259,7 @@ def get_variable_curtailment_results(
     :param timepoints:
     :return:
     """
-    query = f"""SELECT scheduled_curtailment_mw
+    query_template = f"""SELECT scheduled_curtailment_mw
             FROM results_project_curtailment_variable_periodagg
             WHERE scenario_id = {scenario_id}
             AND load_zone = '{load_zone}'
@@ -218,10 +267,11 @@ def get_variable_curtailment_results(
             AND hydro_iteration = {hydro_iteration}
             AND availability_iteration = {availability_iteration}
             AND stage_id = {stage}
-            AND timepoint IN ({",".join(["?"] * len(timepoints))})
+            AND timepoint IN ({{timepoints_str}})
             ;"""
 
-    curtailment = [i[0] for i in c.execute(query, timepoints).fetchall()]
+    results = _batch_execute_query(query_template, c, timepoints)
+    curtailment = [i[0] for i in results]
 
     return curtailment
 
@@ -248,7 +298,7 @@ def get_hydro_curtailment_results(
     :param timepoints:
     :return:
     """
-    query = f"""SELECT scheduled_curtailment_mw
+    query_template = f"""SELECT scheduled_curtailment_mw
             FROM results_project_curtailment_hydro_periodagg
             WHERE scenario_id = {scenario_id}
             AND load_zone = '{load_zone}'
@@ -256,10 +306,11 @@ def get_hydro_curtailment_results(
             AND hydro_iteration = {hydro_iteration}
             AND availability_iteration = {availability_iteration}
             AND stage_id = {stage}
-            AND timepoint IN ({",".join(["?"] * len(timepoints))})
+            AND timepoint IN ({{timepoints_str}})
             ;"""
 
-    curtailment = [i[0] for i in c.execute(query, timepoints).fetchall()]
+    results = _batch_execute_query(query_template, c, timepoints)
+    curtailment = [i[0] for i in results]
 
     return curtailment
 
@@ -286,7 +337,7 @@ def get_imports_exports_results(
     :param timepoints:
     :return:
     """
-    query = f"""SELECT net_imports_mw
+    query_template = f"""SELECT net_imports_mw
         FROM results_system_load_zone_timepoint
         WHERE scenario_id = {scenario_id}
         AND load_zone = '{load_zone}'
@@ -294,10 +345,10 @@ def get_imports_exports_results(
         AND hydro_iteration = {hydro_iteration}
         AND availability_iteration = {availability_iteration}
         AND stage_id = {stage}
-        AND timepoint IN ({",".join(["?"] * len(timepoints))})
+        AND timepoint IN ({{timepoints_str}})
         ;"""
 
-    net_imports = c.execute(query, timepoints).fetchall()
+    net_imports = _batch_execute_query(query_template, c, timepoints)
 
     # None values should only happen if the transmission feature was not
     # included
@@ -329,7 +380,7 @@ def get_market_participation_results(
     :param timepoints:
     :return:
     """
-    query = f"""SELECT net_market_purchases_mw
+    query_template = f"""SELECT net_market_purchases_mw
         FROM results_system_load_zone_timepoint
         WHERE scenario_id = {scenario_id}
             AND load_zone = '{load_zone}'
@@ -337,10 +388,10 @@ def get_market_participation_results(
             AND hydro_iteration = {hydro_iteration}
             AND availability_iteration = {availability_iteration}
             AND stage_id = {stage}
-            AND timepoint IN ({",".join(["?"] * len(timepoints))})
+            AND timepoint IN ({{timepoints_str}})
             ;"""
 
-    market_participation = c.execute(query, timepoints).fetchall()
+    market_participation = _batch_execute_query(query_template, c, timepoints)
 
     sales = []
     purchases = []
@@ -385,7 +436,7 @@ def get_load(
     :return:
     """
 
-    query = f"""SELECT static_load_mw, unserved_energy_mw
+    query_template = f"""SELECT static_load_mw, unserved_energy_mw
         FROM results_system_load_zone_timepoint
         WHERE scenario_id = {scenario_id}
         AND load_zone = '{load_zone}'
@@ -393,10 +444,10 @@ def get_load(
         AND hydro_iteration = {hydro_iteration}
         AND availability_iteration = {availability_iteration}
         AND stage_id = {stage}
-        AND timepoint IN ({",".join(["?"] * len(timepoints))})
+        AND timepoint IN ({{timepoints_str}})
         ;"""
 
-    load_balance = c.execute(query, timepoints).fetchall()
+    load_balance = _batch_execute_query(query_template, c, timepoints)
 
     load = [i[0] for i in load_balance]
     unserved_energy = [i[1] for i in load_balance]
@@ -460,11 +511,20 @@ def get_plotting_data(
 
     # Split storage into charging and discharging and aggregate storage charging
     # Assume any dispatch that is negative is storage charging
+    # TODO: this doesn't work if there are other negative dispatch values (
+    #  e.g., negative capacity factors for certain technologies)
     df["Storage_Charging"] = 0
     stor_techs = df.columns[(df < 0).any()]
+    # stor_techs = ["Battery"]
     for tech in stor_techs:
         df["Storage_Charging"] += -df[tech].clip(upper=0)
         df[tech] = df[tech].clip(lower=0)
+
+    # df["Flex_Load_Charging"] = 0
+    # flex_load_techs = ["Flexible_Load"]
+    # for tech in flex_load_techs:
+    #     df["Flex_Load_Charging"] += -df[tech].clip(upper=0)
+    #     df[tech] = df[tech].clip(lower=0)
 
     # Add variable curtailment (if any)
     curtailment_variable = get_variable_curtailment_results(
@@ -607,7 +667,12 @@ def create_plot(
     # treated as lines instead)
     # Note: the order of this list determines the order of the 'Load + ...'
     # lines
-    items_treated_as_load_plus_lines = ["Storage_Charging", "Exports", "Market_Sales"]
+    items_treated_as_load_plus_lines = [
+        # "Flex_Load_Charging",
+        "Storage_Charging",
+        "Exports",
+        "Market_Sales",
+    ]
     line_cols_storage_sum_track = [
         "Load",
     ] + items_treated_as_load_plus_lines
@@ -629,7 +694,7 @@ def create_plot(
 
     # Set up the figure
     plot = figure(
-        min_width=800,
+        min_width=1200,
         min_height=500,
         tools=["pan", "reset", "zoom_in", "zoom_out", "save", "help"],
         title=title,
@@ -661,7 +726,7 @@ def create_plot(
 
     # Add 'Load + ...' lines
     active_items = []
-    for i in ["Storage_Charging", "Exports", "Market_Sales"]:
+    for i in items_treated_as_load_plus_lines:
         if i not in df.columns:
             inactive = True
         else:

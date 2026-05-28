@@ -19,6 +19,7 @@ import pandas as pd
 from data_toolkit.project.common_methods import (
     create_iterations_csv,
 )
+
 from db.common_functions import connect_to_database
 
 BINS_ID_DEFAULT = 1
@@ -28,7 +29,7 @@ VAR_NAME_DEFAULT = "ra_toolkit"
 STAGE_ID_DEFAULT = 1
 
 
-def create_variable_profile_csvs(
+def get_monte_carlo_timeseries_project_pool_and_make_profile_csvs(
     db_path,
     weather_bins_id,
     weather_draws_id,
@@ -41,6 +42,9 @@ def create_variable_profile_csvs(
     units_table,
     param_name,
     raw_data_table,
+    study_year,
+    print_default_values,
+    default_value,
     no_hydro_iteration=False,
 ):
     conn = connect_to_database(db_path=db_path)
@@ -97,6 +101,9 @@ def create_variable_profile_csvs(
                 output_directory,
                 param_name,
                 raw_data_table,
+                study_year,
+                print_default_values,
+                default_value,
                 no_hydro_iteration,
             ]
             for timeseries_name in timeseries_project_unit_dict.keys()
@@ -107,13 +114,14 @@ def create_variable_profile_csvs(
     # Pool must use spawn to work properly on Linux
     pool = get_context("spawn").Pool(int(n_parallel_projects))
 
-    pool.map(create_project_csv_pool, pool_data)
+    pool.map(create_project_profile_csv_pool, pool_data)
     pool.close()
 
+    conn.commit()
     conn.close()
 
 
-def create_project_csv(
+def create_project_profile_csv(
     db_path,
     weather_bins_id,
     weather_draws_id,
@@ -126,6 +134,9 @@ def create_project_csv(
     output_directory,
     param_name,
     raw_data_table,
+    study_year,
+    print_default_values,
+    default_value,
     no_hydro_iteration=False,
 ):
     # Connect to database
@@ -151,7 +162,7 @@ def create_project_csv(
         unit_queries = [
             f"""
             SELECT year, month, day_of_month, hour_of_day, unit, 
-            {param_name} * {weight} as weighted_{param_name}
+            value * {weight} as weighted_{param_name}
             FROM {raw_data_table}
             WHERE year = {year}
             AND month = {month}
@@ -174,7 +185,8 @@ def create_project_csv(
                 SELECT {weather_iteration} AS weather_iteration,  
                 {hydro_iter_sql}
                 {stage_id} AS stage_id,
-                ({draw_number}-1)*24+hour_of_day AS timepoint, 
+                {study_year}*10000+({draw_number}-1)*24+hour_of_day AS 
+                timepoint, 
                 sum(weighted_{param_name}) as {param_name}
                 FROM (
             """
@@ -188,6 +200,11 @@ def create_project_csv(
 
         # Put into a dataframe and add to file
         df = pd.read_sql(project_query, con=conn)
+
+        # Filter out rows where the value is the default, unless
+        # print_default_values is True
+        if not print_default_values:
+            df = df[df[param_name] != default_value]
 
         filename = os.path.join(
             output_directory,
@@ -208,7 +225,7 @@ def create_project_csv(
             index=False,
         )
 
-        # Add the iterations CSV
+        # Create iterations CSV
         iterations_directory = os.path.join(output_directory, "iterations")
         os.makedirs(iterations_directory, exist_ok=True)
         create_iterations_csv(
@@ -221,10 +238,11 @@ def create_project_csv(
             overwrite=True,
         )
 
+    conn.commit()
     conn.close()
 
 
-def create_project_csv_pool(pool_datum):
+def create_project_profile_csv_pool(pool_datum):
     [
         db_path,
         weather_bins_id,
@@ -238,10 +256,13 @@ def create_project_csv_pool(pool_datum):
         output_directory,
         param_name,
         raw_data_table,
+        study_year,
+        print_default_values,
+        default_value,
         no_hydro_iteration,
     ] = pool_datum
 
-    create_project_csv(
+    create_project_profile_csv(
         db_path=db_path,
         weather_bins_id=weather_bins_id,
         weather_draws_id=weather_draws_id,
@@ -254,5 +275,8 @@ def create_project_csv_pool(pool_datum):
         output_directory=output_directory,
         param_name=param_name,
         raw_data_table=raw_data_table,
+        study_year=study_year,
+        print_default_values=print_default_values,
+        default_value=default_value,
         no_hydro_iteration=no_hydro_iteration,
     )

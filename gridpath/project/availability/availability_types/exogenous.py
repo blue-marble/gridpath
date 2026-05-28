@@ -69,6 +69,7 @@ def add_model_components(
     | availability type and their operational timepoints.                     |
     +-------------------------------------------------------------------------+
 
+
     |
 
     +-------------------------------------------------------------------------+
@@ -92,6 +93,14 @@ def add_model_components(
     | outages) that depends on weather. Defaults to 1 if not specified.       |
     | Availaibility can also be more than 1.                                  |
     +-------------------------------------------------------------------------+
+    | | :code:`avl_exog_mnth_derate`                                            |
+    | | *Defined over*: :code:`AVL_EXOG, MONTHS`                              |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`1`                                                  |
+    |                                                                         |
+    | Availabilty derate that varies by month.                                |
+    +-------------------------------------------------------------------------+
+
 
     """
 
@@ -116,7 +125,7 @@ def add_model_components(
         dimen=3, within=m.PROJECTS * m.BLN_TYPE_HRZS
     )
 
-    # Required Params
+    # Optional Params
     ###########################################################################
 
     # For hybrids, this is the derate applied to the generator component
@@ -138,6 +147,10 @@ def add_model_components(
 
     m.avl_exog_cap_derate_independent_bt_hrz = Param(
         m.AVL_EXOG_PRJ_BT_HRZ_W_INDEPENDENT_DERATES, within=NonNegativeReals, default=1
+    )
+
+    m.avl_exog_mnth_derate = Param(
+        m.AVL_EXOG, m.MONTHS, within=NonNegativeReals, default=1
     )
 
     # Make timepoint params from the bt-hrz params
@@ -217,6 +230,7 @@ def availability_derate_cap_rule(mod, g, tmp):
         * mod.avl_exog_cap_derate_weather[g, tmp]
         * mod.avl_exog_cap_derate_weather_bt_hrz_by_tmp[g, tmp]
         * mod.avl_exog_cap_derate_independent_bt_hrz_by_tmp[g, tmp]
+        * mod.avl_exog_mnth_derate[g, mod.month[tmp]]
     )
 
 
@@ -350,6 +364,20 @@ def load_model_data(
             index=m.AVL_EXOG_PRJ_BT_HRZ_W_WEATHER_DERATES,
             param=m.avl_exog_cap_derate_weather_bt_hrz,
         )
+
+    monthly_av_file = os.path.join(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+        "project_availability_exogenous_monthly.tab",
+    )
+
+    if os.path.exists(monthly_av_file):
+        data_portal.load(filename=monthly_av_file, param=m.avl_exog_mnth_derate)
 
 
 # Database
@@ -530,11 +558,48 @@ def get_inputs_from_database(
     c4 = conn.cursor()
     bt_hrz_weather_availabilities = c4.execute(bt_hrz_weather_sql)
 
+    # Simple monthly derates
+    mnth_sql = f"""
+            SELECT project, month, availability_derate_monthly
+            FROM inputs_project_availability_exogenous_monthly
+            -- Portfolio projects only
+            WHERE project IN (
+                SELECT project FROM inputs_project_portfolios
+                WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
+            )
+            -- Projects from this availability ID and type only
+            AND project IN (
+                SELECT project
+                FROM inputs_project_availability
+                WHERE project_availability_scenario_id = {subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID}
+                AND availability_type = 'exogenous'
+                AND exogenous_availability_monthly_scenario_id IS NOT NULL
+            )
+            -- Relevant optype opchar ID
+            AND (project, exogenous_availability_monthly_scenario_id) IN (
+                SELECT project, exogenous_availability_monthly_scenario_id
+                FROM inputs_project_availability
+                WHERE project_availability_scenario_id = {subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID}
+            )
+            -- Relevant temporal index
+            AND month IN (
+            SELECT month
+            FROM inputs_temporal
+            WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+            AND subproblem_id = {subproblem}
+        )
+            ;
+        """
+
+    c5 = conn.cursor()
+    monthly_availabilities = c5.execute(mnth_sql)
+
     return (
         independent_availabilities,
         weather_availabilities,
         bt_hrz_independent_availabilities,
         bt_hrz_weather_availabilities,
+        monthly_availabilities,
     )
 
 
@@ -573,6 +638,7 @@ def write_model_inputs(
         weather_availabilities,
         independent_availabilities_bt_hrz,
         weather_availabilities_bt_hrz,
+        monthly_availabilities,
     ) = get_inputs_from_database(
         scenario_id,
         subscenarios,
@@ -644,6 +710,18 @@ def write_model_inputs(
         replace_nulls=True,
     )
 
+    write_tab_file_model_inputs(
+        scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        fname="project_availability_exogenous_monthly.tab",
+        data=monthly_availabilities,
+        replace_nulls=True,
+    )
+
 
 # Validation
 ###############################################################################
@@ -671,6 +749,7 @@ def validate_inputs(
         weather_availabilities,
         independent_availabilities_bt_hrz,
         weather_availabilities_bt_hrz,
+        monthly_availabilities,
     ) = get_inputs_from_database(
         scenario_id,
         subscenarios,
