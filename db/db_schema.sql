@@ -8934,8 +8934,7 @@ SELECT a.scenario_id,
        startup_cost,
        shutdown_cost,
        tx_capacity_cost,
-       tx_hurdle_cost,
-       tx_hurdle_cost_by_timepoint
+       tx_hurdle_cost
 FROM results_project_costs_capacity_agg AS a
 
          LEFT JOIN
@@ -8945,7 +8944,7 @@ FROM results_project_costs_capacity_agg AS a
          AND a.stage_id = b.stage_id
          AND a.period = b.period
          AND a.load_zone = b.load_zone
-         AND a.spinup_or_lookahead = b.spinup_or_lookahead
+         AND COALESCE(a.spinup_or_lookahead, 0) = COALESCE(b.spinup_or_lookahead, 0)
          )
 
          LEFT JOIN
@@ -8963,7 +8962,7 @@ FROM results_project_costs_capacity_agg AS a
          AND a.stage_id = c.stage_id
          AND a.period = c.period
          AND a.load_zone = c.load_zone
-         AND a.spinup_or_lookahead = c.spinup_or_lookahead
+         AND COALESCE(a.spinup_or_lookahead, 0) = COALESCE(c.spinup_or_lookahead, 0)
          )
 
          LEFT JOIN
@@ -8973,17 +8972,7 @@ FROM results_project_costs_capacity_agg AS a
          AND a.stage_id = d.stage_id
          AND a.period = d.period
          AND a.load_zone = d.load_zone
-         AND a.spinup_or_lookahead = d.spinup_or_lookahead
-         )
-
-         LEFT JOIN
-     results_transmission_hurdle_costs_by_timepoint_agg as e
-     ON (a.scenario_id = d.scenario_id
-         AND a.subproblem_id = d.subproblem_id
-         AND a.stage_id = d.stage_id
-         AND a.period = d.period
-         AND a.load_zone = d.load_zone
-         AND a.spinup_or_lookahead = d.spinup_or_lookahead
+         AND COALESCE(a.spinup_or_lookahead, 0) = COALESCE(d.spinup_or_lookahead, 0)
          )
 ;
 
@@ -9003,7 +8992,6 @@ SELECT a.scenario_id,
        shutdown_cost,
        tx_capacity_cost,
        tx_hurdle_cost,
-       tx_hurdle_cost_by_timepoint,
        deliverable_capacity_cost
 FROM (SELECT scenario_id,
              subproblem_id,
@@ -9016,8 +9004,7 @@ FROM (SELECT scenario_id,
              SUM(startup_cost)                AS startup_cost,
              SUM(shutdown_cost)               AS shutdown_cost,
              SUM(tx_capacity_cost)            AS tx_capacity_cost,
-             SUM(tx_hurdle_cost)              AS tx_hurdle_cost,
-             SUM(tx_hurdle_cost_by_timepoint) AS tx_hurdle_cost_by_timepoint
+             SUM(tx_hurdle_cost)              AS tx_hurdle_cost
       FROM results_costs_by_period_load_zone
       GROUP BY scenario_id, subproblem_id, stage_id, period,
                spinup_or_lookahead) AS a
