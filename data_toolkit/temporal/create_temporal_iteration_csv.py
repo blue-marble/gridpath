@@ -13,8 +13,102 @@
 # limitations under the License.
 
 """
+Create Temporal Iterations CSV
+******************************
+
 Create temporal iterations CSV from user-defined params. Does not cover all
 possible cases yet.
+
+===================
+What this step does
+===================
+
+This module builds the temporal ``iterations.csv`` that tells GridPath which
+combinations of weather, hydro, and availability iterations to run. It reads
+the user-defined ``--iterations_csv_path`` (which specifies, per dimension, the
+sampling "mode" and the iterations to draw from) and writes an
+``iterations.csv`` -- with ``weather_iteration``, ``hydro_iteration``, and
+``availability_iteration`` columns -- into ``--output_directory``. This file
+ties together the per-dimension Monte Carlo draws produced by the earlier steps
+(e.g., ``create_monte_carlo_weather_draws``) into the actual set of scenario
+iterations the model runs.
+
+===========
+Methodology
+===========
+
+The input file at ``--iterations_csv_path`` is a CSV with one column per
+dimension: ``weather``, ``hydro``, and ``availability``. Within each column the
+*first* data row holds that dimension's sampling **mode** (a string), and the
+remaining non-empty rows list the iteration numbers available to draw from for
+that dimension. The columns may be of unequal length; trailing blank cells are
+ignored.
+
+----------------
+Sampling modes
+----------------
+
+The mode in each column's first row controls how iterations are selected for
+that dimension:
+
+    * ``loop`` -- iterate over every listed iteration in order. This is the
+      driving mode: only the ``weather`` (and, when also ``loop``, the
+      ``hydro``) dimension uses it to enumerate combinations.
+    * ``ordered`` -- step through the listed iterations sequentially, advancing
+      an index by one each time a value is requested.
+    * ``random_keep`` -- draw an iteration uniformly at random, leaving the pool
+      unchanged (sampling with replacement).
+    * ``random_remove`` -- draw an iteration uniformly at random and remove it
+      from the pool (sampling without replacement).
+    * ``all`` -- always return the first listed iteration.
+
+------------------------------
+How combinations are generated
+------------------------------
+
+The current implementation only enumerates combinations when the ``weather``
+mode is ``loop``; if ``weather`` uses any other mode, no rows are written.
+Given ``weather`` is ``loop``:
+
+    * If ``hydro`` is also ``loop``, the script writes one row for every
+      ``(weather_iteration, hydro_iteration)`` pair (a full nested loop), with
+      the ``availability_iteration`` for each row chosen according to the
+      ``availability`` mode.
+    * Otherwise, for each ``weather_iteration`` a single ``hydro_iteration`` is
+      chosen according to the ``hydro`` mode and a single
+      ``availability_iteration`` is chosen according to the ``availability``
+      mode, producing one row per weather iteration.
+
+The ``--n_passes`` argument (default ``1``) repeats this whole generation
+process ``n_passes`` times, with each pass starting from a fresh copy of the
+iteration pools; this is useful with the random modes to accumulate additional
+draws. After all passes complete, ``iterations.csv`` is sorted ascending by
+``weather_iteration``, then ``hydro_iteration``, then ``availability_iteration``.
+
+Note that the random modes do not set a seed, so repeated runs produce
+different draws.
+
+=====
+Usage
+=====
+
+>>> python -m data_toolkit.temporal.create_temporal_iteration_csv --iterations_csv_path PATH/TO/ITERATIONS/CSV --output_directory PATH/TO/OUTPUT/DIR
+
+===================
+Input prerequisites
+===================
+
+This module requires a user-defined iterations CSV at ``--iterations_csv_path``
+with the columns ``weather``, ``hydro``, and ``availability`` populated as
+described above (a mode in the first row, followed by the iteration numbers to
+draw from).
+
+=========
+Settings
+=========
+    * n_passes
+    * iterations_csv_path
+    * output_directory
 """
 
 import sys

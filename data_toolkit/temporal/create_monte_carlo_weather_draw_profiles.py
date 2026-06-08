@@ -15,6 +15,107 @@
 
 
 """
+.. _monte-carlo-draw-profiles-section-ref:
+Monte Carlo Weather Draw Profiles
+*********************************
+
+This module maps the abstract weather draws produced by the
+``create_monte_carlo_weather_draws`` step onto real historical data for a single
+timeseries (e.g., system load, a VER profile, or a thermal availability
+profile). Each synthetic study year produced upstream is only a sequence of
+weather *bins* (one bin per day), not actual data; this module turns each
+abstract day into a concrete historical calendar day for the timeseries, and
+optionally loads the raw timeseries data and its unit mapping into the database
+first.
+
+===========
+Methodology
+===========
+
+For each synthetic day, the upstream draws (stored in
+``aux_weather_iterations``) provide a ``month``, a ``day_type`` (1 for weekend,
+0 for weekday), and a ``weather_day_bin``. This module looks up every historical
+day that shares that same weather bin and month -- and, when
+``consider_day_types`` is set, the same ``day_type`` -- restricted to the years
+for which this timeseries actually has data, then randomly picks one of those
+matching historical days and records its ``year`` / ``month`` /
+``day_of_month`` against the synthetic day.
+
+----------------------------
+Matching historical days
+----------------------------
+
+The candidate pool for each synthetic day is built in ``build_options_cache``
+(one query per unique ``(month, day_type, weather_bin)`` combination, cached to
+avoid redundant queries):
+
+    1. Candidate historical days are read from ``user_defined_weather_bins``,
+       filtered to the synthetic day's ``month`` and ``weather_bin`` (for the
+       active ``weather_bins_id``).
+    2. The pool is restricted to the set of years for which this timeseries has
+       data. That set is derived from the distinct ``year`` values in the
+       timeseries' profiles table (e.g., ``raw_data_system_load``) for the
+       ``unit`` records mapped to the timeseries in its units table (e.g.,
+       ``user_defined_load_zone_units``).
+    3. ``draw_conditions_batch`` selects uniformly at random one day from the
+       resulting list and returns its ``(year, month, day_of_month)``, which is
+       written back into per-timeseries columns
+       (``<timeseries_name>_year`` / ``_month`` / ``_day_of_month``) on
+       ``aux_weather_iterations``.
+
+Edge case -- no data for a draw: a ``(month [, day_type], weather_bin)``
+combination may have no matching historical day (e.g., that bin never occurred
+in a year for which this timeseries has data). ``build_options_cache`` falls
+back through progressively relaxed criteria so the day still gets a plausible
+same-month source day, preserving the weather bin as far as possible: it relaxes
+the day type first, then substitutes the *nearest available* bin in the month.
+Only when the timeseries has no data for the month at all is the synthetic day
+left unassigned (NULL source day). Every relaxed match and every unmatched draw
+is reported at the end of the timeseries (unmatched draws raise a
+``UserWarning``), so compromised coverage is never silent.
+
+The actual hourly values for these source days are not assembled here; they are
+pulled later, when the input CSVs are written. Because every timeseries is
+matched against the *same* weather draws, all timeseries stay
+weather-consistent with one another (the same bin is used on the same synthetic
+day), while each pulls from a real historical day for which it has data.
+
+------------------------------
+The ``consider_day_types`` flag
+------------------------------
+
+When ``consider_day_types`` is truthy, the cache key and the candidate-day query
+additionally filter on ``day_type``, so a weekend synthetic day draws only from
+historical weekend days and a weekday from weekdays. When it is falsy, the
+``day_type`` filter is dropped and candidates are drawn from any matching day
+regardless of weekday/weekend. Run this module once per timeseries:
+weather-driven renewables typically use ``consider_day_types 0`` (solar/wind
+output does not depend on weekday vs. weekend), while load and imports use
+``consider_day_types 1``.
+
+------------------------
+Reproducibility (seeding)
+------------------------
+
+By default no seed is set (``timeseries_iteration_draw_initial_seed`` defaults
+to ``None``). When a timeseries is requested explicitly via ``--timeseries_name``
+and no initial seed is given, the script emits a ``UserWarning`` that the draws
+will not be reproducible. (When timeseries are instead loaded from
+``user_defined_monte_carlo_timeseries``, each row supplies its own
+``initial_seed`` and no such warning is emitted.) To make source-day selection
+reproducible, pass ``--timeseries_iteration_draw_initial_seed <int>``.
+
+The RNG is re-seeded before *every single day's draw*: ``draw_conditions_batch``
+calls ``np.random.seed(seed=...)`` immediately before each selection, and
+``make_timeseries_draw_profiles`` increments the seed by 1 after each draw. The
+draw sequence therefore starts from the initial seed and steps through
+``seed``, ``seed + 1``, ``seed + 2``, ... Re-seeding with a different value per
+draw (rather than one fixed seed for all draws) keeps each day's selection
+independent, while re-running with the same initial seed reproduces the exact
+same set of source days. When running once per timeseries, give each timeseries
+its own initial seed so their selections do not correlate. Use seeding with
+caution.
+
 =====
 Usage
 =====
@@ -112,8 +213,11 @@ def parse_arguments(args):
         "-d",
         "--consider_day_types",
         default=None,
+        type=int,
         help="Required boolean if timeseries_name is specified. Use 1 for "
-        "'yes' and 0 for 'no'.",
+        "'yes' and 0 for 'no'. NOTE: parsed as an int -- passing the string "
+        "'0' without int parsing would be truthy and silently enable day-type "
+        "matching.",
     )
     parser.add_argument(
         "-ts_type",
@@ -244,8 +348,21 @@ def make_timeseries_draw_profiles(
                     FROM {TIMESERIES_TYPE[timeseries_type]["units_table"]}
                     WHERE timeseries_name = '{timeseries_name}'
                     );""")]
-        data_availability_string = ", ".join(data_availability_list)
         data_av_c.close()
+
+        # Bail out with a clear message if no data years were found for this
+        # timeseries. Otherwise data_availability_string would be empty and the
+        # candidate-day query below would build an invalid "year IN ()" clause.
+        if not data_availability_list:
+            raise ValueError(
+                f"No data years found for timeseries '{timeseries_name}' "
+                f"(type '{timeseries_type}'). Check that "
+                f"{TIMESERIES_TYPE[timeseries_type]['profiles_table']} and "
+                f"{TIMESERIES_TYPE[timeseries_type]['units_table']} are "
+                f"populated and that the unit mapping references this "
+                f"timeseries."
+            )
+        data_availability_string = ", ".join(data_availability_list)
 
         # Add the necessary columns
         columns_to_add = [
@@ -255,7 +372,22 @@ def make_timeseries_draw_profiles(
         ]
 
         c = conn.cursor()
+        # Only add columns that don't already exist. SQLite has no
+        # "ADD COLUMN IF NOT EXISTS", so re-running this step for a timeseries
+        # whose columns are already present would otherwise raise a
+        # "duplicate column name" error.
+        existing_columns = {
+            row[1]
+            for row in c.execute(
+                "PRAGMA table_info(aux_weather_iterations);"
+            ).fetchall()
+        }
         for column in columns_to_add:
+            if column in existing_columns:
+                if not quiet:
+                    warnings.warn(f"Column {column }already exists. Is this "
+                                  f"expected? Skipping column addition.")
+                continue
             sql = f"""
                     ALTER TABLE aux_weather_iterations
                     ADD COLUMN {column} INTEGER
@@ -282,6 +414,13 @@ def make_timeseries_draw_profiles(
         batch_updates = []
         prev_weather_iteration = None
 
+        # Track edge cases for reporting: draws that needed relaxed (fallback)
+        # matching, and draws that could not be matched to any historical day.
+        fallback_counts = {"dropped_day_type": 0, "nearest_bin": 0}
+        fallback_keys = {"dropped_day_type": set(), "nearest_bin": set()}
+        unmatched_draws = 0
+        unmatched_keys = set()
+
         for (
             weather_iteration,
             draw_number,
@@ -298,12 +437,26 @@ def make_timeseries_draw_profiles(
                     print(f"         ...weather iteration {weather_iteration}")
             prev_weather_iteration = weather_iteration
 
-            # Get cached options
+            # Get cached options for this (month, day_type, weather_bin)
             cache_key = (month, day_type if consider_day_types else None, weather_bin)
-            options_list = options_cache.get(cache_key, [])
+            cache_entry = options_cache.get(
+                cache_key, {"options": [], "fallback": "none"}
+            )
+            options_list = cache_entry["options"]
 
+            # Edge case: no historical day matched even after relaxing the day
+            # type and weather bin (the timeseries has no data for this month at
+            # all in its data-availability years). Leave the synthetic day
+            # unassigned and record it for the warning emitted below.
             if not options_list:
+                unmatched_draws += 1
+                unmatched_keys.add(cache_key)
                 continue
+
+            # Record any relaxed (fallback) match for the summary below.
+            if cache_entry["fallback"] in fallback_counts:
+                fallback_counts[cache_entry["fallback"]] += 1
+                fallback_keys[cache_entry["fallback"]].add(cache_key)
 
             # Draw the conditions
             year, month_out, day_of_month = draw_conditions_batch(
@@ -327,6 +480,54 @@ def make_timeseries_draw_profiles(
                 # TODO: instead of incrementing seed, possibly set seeds via CSV
                 #  data input for easier reproducibility
                 timeseries_iteration_draw_seed += 1
+
+        # ### Report edge cases for this timeseries ### #
+        # Draws that used relaxed matching: surface them so the user knows the
+        # synthetic series is not a perfect (month, day_type, weather_bin) match
+        # everywhere.
+        total_fallback = sum(fallback_counts.values())
+        if total_fallback and not quiet:
+            # Warn so relaxed matching is not silent (suppressed in quiet mode).
+            warnings.warn(
+                f"{total_fallback} draw(s) for timeseries '{timeseries_name}' "
+                f"had no exact (month, "
+                f"{'day_type, ' if consider_day_types else ''}weather_bin) "
+                f"match and were assigned a historical day using relaxed "
+                f"criteria ({fallback_counts['dropped_day_type']} with the day "
+                f"type ignored, {fallback_counts['nearest_bin']} using the "
+                f"nearest available weather bin). The synthetic series is "
+                f"therefore not an exact weather match on those days."
+            )
+            print(
+                f"         ...note: {total_fallback} draw(s) for "
+                f"'{timeseries_name}' had no exact match and used relaxed "
+                f"criteria:"
+            )
+            if fallback_counts["dropped_day_type"]:
+                print(
+                    f"            - same weather bin, day type ignored: "
+                    f"{fallback_counts['dropped_day_type']} draw(s); "
+                    f"(month, day_type, weather_bin): "
+                    f"{sorted(fallback_keys['dropped_day_type'])}"
+                )
+            if fallback_counts["nearest_bin"]:
+                print(
+                    f"            - nearest available weather bin substituted: "
+                    f"{fallback_counts['nearest_bin']} draw(s); "
+                    f"(month, day_type, weather_bin): "
+                    f"{sorted(fallback_keys['nearest_bin'])}"
+                )
+        # Draws that could not be matched at all: warn (suppressed in quiet
+        # mode), since these synthetic days are left with a NULL source day.
+        if unmatched_draws and not quiet:
+            warnings.warn(
+                f"{unmatched_draws} draw(s) for timeseries '{timeseries_name}' "
+                f"could not be matched to any historical day -- the timeseries "
+                f"has no data for these months in its data-availability years. "
+                f"These synthetic days were left unassigned (NULL source day). "
+                f"Affected (month, day_type, weather_bin) combinations: "
+                f"{sorted(unmatched_keys)}."
+            )
 
         # Execute batch update
         if not quiet:
@@ -360,42 +561,109 @@ def build_options_cache(
     data_availability_string,
 ):
     """
-    Build a cache of options for each unique (month, day_type, weather_bin) combination.
-    This eliminates redundant database queries.
+    Build a cache of candidate historical days for each unique
+    ``(month, day_type, weather_bin)`` combination that appears in the weather
+    draws. Querying once per unique combination avoids redundant queries.
+
+    Edge case -- no data for a draw: a ``(month [, day_type], weather_bin)``
+    combination can have no candidate historical day -- for example when that
+    weather bin never occurred in a year for which this timeseries has data.
+    Rather than silently leaving the synthetic day unassigned, we fall back
+    through progressively relaxed criteria so the day still receives a plausible
+    same-month source day. The weather bin is a severity signal and is preserved
+    as far as possible: the day type is relaxed first, then the bin is relaxed
+    to the *nearest available* bin in the month (ties broken toward the lower
+    bin).
+
+    Returns a dict mapping ``cache_key`` ->
+    ``{"options": [...], "fallback": <level>}``, where ``<level>`` is one of:
+
+        * ``"exact"``            -- matched month (+ day_type) + weather_bin
+        * ``"dropped_day_type"`` -- matched month + weather_bin, day type ignored
+        * ``"nearest_bin"``      -- matched month (+ day_type), nearest available
+                                    bin substituted for the requested one
+        * ``"none"``             -- no historical day for the month at all in the
+                                    timeseries' data-availability years (the
+                                    ``options`` list is empty)
     """
+    c = conn.cursor()
+
+    def query_days(month, day_type, weather_bin):
+        """Historical (year, month, day_of_month) matching the given filters.
+
+        ``day_type`` and/or ``weather_bin`` of ``None`` drop that filter.
+        """
+        filters = [
+            f"month = {month}",
+            f"weather_bins_id = {weather_bins_id}",
+            f"year in ({data_availability_string})",
+        ]
+        if day_type is not None:
+            filters.append(f"day_type = {day_type}")
+        if weather_bin is not None:
+            filters.append(f"weather_bin = {weather_bin}")
+        sql = f"""
+            SELECT year, month, day_of_month
+            FROM user_defined_weather_bins
+            WHERE {" AND ".join(filters)}
+            ORDER BY year, month, day_of_month
+        ;
+        """
+        return c.execute(sql).fetchall()
+
+    def available_bins(month, day_type):
+        """Distinct weather bins present in the month (within data years)."""
+        filters = [
+            f"month = {month}",
+            f"weather_bins_id = {weather_bins_id}",
+            f"year in ({data_availability_string})",
+        ]
+        if day_type is not None:
+            filters.append(f"day_type = {day_type}")
+        sql = f"""
+            SELECT DISTINCT weather_bin
+            FROM user_defined_weather_bins
+            WHERE {" AND ".join(filters)}
+        ;
+        """
+        return sorted(row[0] for row in c.execute(sql).fetchall())
+
     cache = {}
     unique_keys = set()
-
-    # Collect unique combinations
     for _, _, month, day_type, weather_bin in weather_draws:
         cache_key = (month, day_type if consider_day_types else None, weather_bin)
         unique_keys.add(cache_key)
 
-    # Query database once per unique combination
-    c = conn.cursor()
     for cache_key in unique_keys:
         month, day_type, weather_bin = cache_key
 
-        consider_day_types_str = (
-            f"AND day_type = {day_type}"
-            if consider_day_types and day_type is not None
-            else ""
-        )
+        # 1. Exact match: month (+ day_type) + weather_bin.
+        options = query_days(month, day_type, weather_bin)
+        fallback = "exact"
 
-        get_options_sql = f"""
-            SELECT year, month, day_of_month
-            FROM user_defined_weather_bins
-            WHERE month = {month}
-            {consider_day_types_str}
-            AND weather_bin = {weather_bin}
-            AND weather_bins_id = {weather_bins_id}
-            AND year in ({data_availability_string})
-            ORDER BY year, month, day_of_month
-        ;
-        """
+        # 2. Relax the day type but keep the weather bin.
+        if not options and day_type is not None:
+            options = query_days(month, None, weather_bin)
+            if options:
+                fallback = "dropped_day_type"
 
-        options_list = c.execute(get_options_sql).fetchall()
-        cache[cache_key] = options_list
+        # 3. Relax the bin to the nearest available bin in the month, preferring
+        #    the same day type and then any day type.
+        if not options:
+            for dt in ([day_type, None] if day_type is not None else [None]):
+                bins = available_bins(month, dt)
+                if not bins:
+                    continue
+                nearest = min(bins, key=lambda b: (abs(b - weather_bin), b))
+                options = query_days(month, dt, nearest)
+                if options:
+                    fallback = "nearest_bin"
+                    break
+
+        if not options:
+            fallback = "none"
+
+        cache[cache_key] = {"options": options, "fallback": fallback}
 
     c.close()
     return cache
