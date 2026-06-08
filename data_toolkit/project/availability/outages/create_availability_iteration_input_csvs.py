@@ -215,6 +215,7 @@ def parse_arguments(args):
         "-max_unit_seed_int",
         "--max_integer_for_unit_outage_seeding",
         default=1000000,
+        type=int,
         help="The max integer for assigning seeds to each unit outage "
         "simulation for a given project. The --user_provided_seeding flag must "
         "be set to True for this to take effect. Proceed with caution.",
@@ -307,9 +308,37 @@ def get_weighted_availability_adjustment(
         # For each project iteration, we assign a seed to each unit outage
         # simulation based on the project_iteration_seed and a
         # max_integer_for_unit_seeding number set by the user
+        # Draw a distinct generator-component seed per unit (without
+        # replacement) so no two units share a seed and thus an identical
+        # outage timeline. To also keep each hybrid unit's storage-component
+        # seed (generator seed + hyb_stor_seed_unit_increment, assigned below)
+        # from coinciding with another unit's generator or storage seed, draw
+        # the generator seeds from values spaced (increment + 1) apart: no two
+        # then differ by exactly the increment, so {seeds} and
+        # {seeds + increment} are disjoint.
+        n_units_in_project = len(project_df.index)
+        seed_population = np.arange(
+            1,
+            max_integer_for_unit_outage_seeding,
+            hyb_stor_seed_unit_increment + 1,
+        )
+        # Guard: np.random.choice(replace=False) cannot draw more values than
+        # are available. Fail with an actionable message rather than an opaque
+        # ValueError.
+        if n_units_in_project > len(seed_population):
+            raise ValueError(
+                f"Cannot assign {n_units_in_project} distinct, "
+                f"non-colliding outage seeds to project "
+                f"'{project_df['project'].iloc[0]}': only "
+                f"{len(seed_population)} are available given "
+                f"max_integer_for_unit_outage_seeding="
+                f"{max_integer_for_unit_outage_seeding} and "
+                f"hybrid_storage_seed_increment={hyb_stor_seed_unit_increment}. "
+                f"Increase --max_integer_for_unit_outage_seeding."
+            )
         np.random.seed(project_iteration_seed)
-        unit_seeds = np.random.randint(
-            1, max_integer_for_unit_outage_seeding, size=len(project_df.index)
+        unit_seeds = np.random.choice(
+            seed_population, size=n_units_in_project, replace=False
         )
     else:
         unit_seeds = [None for n in project_df.index]
@@ -603,10 +632,13 @@ def simulate_all_project_iterations(pool_datum):
     # Loop through all iterations for this project
     project_iteration_seed = starting_project_iteration_seed
     for iteration_n in range(1, n_iterations + 1):
+        # ORDER BY unit so each unit maps to the same drawn seed (unit_seeds is
+        # indexed positionally) across runs; required for reproducible draws
         project_df = pd.read_sql(
             f"""
                 SELECT * FROM raw_data_unit_availability_params
                 WHERE project = '{project}'
+                ORDER BY unit
                 ;""",
             conn,
         )
@@ -688,9 +720,12 @@ def main(args=None):
     if not os.path.exists(parsed_args.output_directory):
         os.makedirs(parsed_args.output_directory)
 
-    # Get projects
+    # Get projects. ORDER BY so that project_idx (and therefore each project's
+    # seed base, starting_project_iteration_seed + project_idx * n_iterations)
+    # is stable across runs -- otherwise seeded results are not reproducible.
     projects = [i[0] for i in conn.execute("""
-        SELECT DISTINCT project FROM raw_data_unit_availability_params;
+        SELECT DISTINCT project FROM raw_data_unit_availability_params
+        ORDER BY project;
         """).fetchall()]
 
     all_files = []
