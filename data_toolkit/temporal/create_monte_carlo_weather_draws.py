@@ -332,9 +332,9 @@ def create_weather_draws(
 
             # Find the indices where the weather bin matches the prior weather
             # bin; the "following day" candidates are those indices + 1
-            match_indices = np.where(weather_bins_in_current_month == prior_weather_bin)[
-                0
-            ]
+            match_indices = np.where(
+                weather_bins_in_current_month == prior_weather_bin
+            )[0]
             current_weather_bin_index_options = match_indices + 1
             # Drop any index that runs past the end of the month's record (a
             # match on the very last day has no "following" day)

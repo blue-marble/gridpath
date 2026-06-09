@@ -385,8 +385,10 @@ def make_timeseries_draw_profiles(
         for column in columns_to_add:
             if column in existing_columns:
                 if not quiet:
-                    warnings.warn(f"Column {column }already exists. Is this "
-                                  f"expected? Skipping column addition.")
+                    warnings.warn(
+                        f"Column {column }already exists. Is this "
+                        f"expected? Skipping column addition."
+                    )
                 continue
             sql = f"""
                     ALTER TABLE aux_weather_iterations
