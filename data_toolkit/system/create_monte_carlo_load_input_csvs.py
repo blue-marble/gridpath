@@ -26,13 +26,12 @@ What this step does
 
 This module reads the synthetic per-iteration load implied by the weather
 draws produced upstream and writes it out as the GridPath load input CSVs that
-the model actually consumes. There is no separate "synthetic load" table: the
-synthetic per-iteration load is reconstructed here by joining the drawn
-synthetic weather days (``aux_weather_iterations``, indexed by
-``weather_bins_id`` and ``weather_draws_id``) back to the historical hourly
-load in ``raw_data_system_load``. The resulting CSVs are tagged with the given
-load / load-components / load-levels scenario ids and names and are written to
-``--output_directory``.
+the model actually consumes. The synthetic per-iteration load is constructed
+by joining the drawn synthetic weather days (``aux_weather_iterations``,
+indexed by ``weather_bins_id`` and ``weather_draws_id``) back to the historical
+hourly load in ``raw_data_system_load``. The resulting CSVs are tagged with
+the given load / load-components / load-levels scenario ids and names and are
+written to ``--output_directory``.
 
 ===========
 Methodology

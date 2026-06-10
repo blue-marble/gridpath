@@ -33,16 +33,15 @@ weights), resampled according to the weather draws stored in
 profile input CSVs in ``--output_directory``, tagged with the given
 ``--variable_generator_profile_scenario_id`` and
 ``--variable_generator_profile_scenario_name``. These CSVs are the files the
-GridPath model consumes for variable generation (PV, wind, and imports treated
-as a VER).
+GridPath model consumes for variable generation.
 
 ===========
 Methodology
 ===========
 
 For each project, the per-unit ``cap_factor`` values from ``raw_data_var_profiles``
-are multiplied by their ``unit_weight`` and summed (``GROUP BY`` hour) to produce
-a single project-level ``cap_factor`` time series. The weather draws in
+are multiplied by their ``unit_weight`` and summed to produce a single
+project-level ``cap_factor`` time series. The weather draws in
 ``aux_weather_iterations`` (selected by ``--weather_bins_id`` and
 ``--weather_draws_id``) determine, for each Monte Carlo ``weather_iteration`` and
 ``draw_number``, which historical day's data to pull, and the draw number is used

@@ -23,16 +23,16 @@ What this step does
 ==================
 
 This module is a generic bulk loader for raw CSV data into the GridPath
-database. It reads a manifest file named ``files_to_import.csv`` located in the
-directory given by ``--csv_location``. Each row of that manifest describes one
+database. It reads a  file named ``files_to_import.csv`` located in the
+directory given by ``--csv_location``. Each row of that file describes one
 CSV file: an import flag (whether the file should be loaded), the CSV
 filename (relative to ``--csv_location``), and the database table the file
 should be loaded into.
 
-The loader iterates over the manifest rows and, for each row whose import flag
-is truthy, reads the corresponding CSV from ``--csv_location`` and appends its
+The loader iterates over the CSV file rows and, for each row whose import flag
+is True, reads the corresponding CSV from ``--csv_location`` and appends its
 contents to the named database table (existing rows are preserved; data is
-inserted with ``if_exists="append"``). Rows whose import flag is falsy are
+inserted with ``if_exists="append"``). Rows whose import flag is False are
 skipped.
 
 This generic loader is used throughout the Data Toolkit workflow to populate

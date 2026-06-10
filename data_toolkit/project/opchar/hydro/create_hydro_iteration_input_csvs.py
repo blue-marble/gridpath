@@ -66,8 +66,7 @@ The distinct projects to process are read from
 ``raw_data_project_hydro_opchars_by_year_month``, and one CSV is written per
 project, named ``<project>-<scenario_id>-<scenario_name>.csv`` in
 ``--output_directory``. Projects are processed in a multiprocessing pool sized
-by ``--n_parallel_projects`` (defaults to ``1``); the pool uses the ``spawn``
-start method so it behaves consistently across platforms.
+by ``--n_parallel_projects`` (defaults to ``1``).
 
 ----------------------------------
 Hydro iterations and balancing-type horizons
@@ -103,7 +102,8 @@ hour-count weight, sums across months, and divides by the total number of hours
 in the horizon. The result is an hours-weighted average of the monthly
 fractions for each of the three parameters, written as a single row keyed by
 ``balancing_type_project`` and ``horizon`` (with ``weather_iteration`` set to
-``0``, i.e. no weather iteration).
+``0``, i.e. no weather iteration). Note we take the weighted averages of the
+mins and maxes, not the mins of the mins or the maxes of the maxes.
 
 ----------------------------------
 Writing and overwriting output

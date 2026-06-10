@@ -51,16 +51,17 @@ be one of:
       across timepoints.
     * ``historical_year`` -- instead of simulating, a random historical year is
       sampled for the unit from ``--historical_availability_csv`` and that
-      year's hourly derate series is used directly. (This is the path used for
-      units, such as imports, whose availability is taken from a historical
-      record rather than simulated; the choice is driven by the unit's
-      ``unit_fo_model`` value, not by project type.)
+      year's hourly derate series is used directly. (This is can be used for
+      units whose availability is taken from a historical record rather than
+      simulated; the choice is driven by the unit's ``unit_fo_model`` value,
+      not by project type.)
 
 For each project the per-unit availability adjustments are combined using each
 unit's ``unit_weight`` to form a weighted project-level derate. Hybrid-storage
 projects (``hybrid_stor`` set) additionally get a separately simulated derate
 for the storage component. By default only rows whose derate differs from 1 are
-written; pass ``--print_ones`` to retain all rows.
+written (as default availability in GridPath is 1); pass ``--print_ones`` to
+retain all rows.
 
 Output is written to ``--output_directory`` as one CSV per project, named
 ``<project>-<project_availability_scenario_id>-<project_availability_scenario_name>.csv``.
@@ -86,11 +87,9 @@ on:
 
     * **Per-project, non-overlapping seed ranges.** Each project is assigned a
       starting seed of ``starting_project_iteration_seed + project_idx *
-      n_iterations`` (the code names the second factor ``iterations_per_project``,
-      which is set equal to ``n_iterations``). Within a project the per-iteration
-      seed starts at that value and is incremented by 1 for each of the
-      ``n_iterations`` iterations, so the seed ranges of distinct projects do
-      not overlap.
+      n_iterations``. Within a project the per-iteration seed starts at that
+      value and is incremented by 1 for each of the ``n_iterations``
+      iterations, so the seed ranges of distinct projects do not overlap.
     * **Per-unit seeds within an iteration.** For a given project iteration, the
       per-iteration seed is used to seed NumPy's RNG, which then draws one
       integer seed per unit via ``np.random.randint(1,
