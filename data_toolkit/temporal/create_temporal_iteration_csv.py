@@ -85,8 +85,17 @@ iteration pools; this is useful with the random modes to accumulate additional
 draws. After all passes complete, ``iterations.csv`` is sorted ascending by
 ``weather_iteration``, then ``hydro_iteration``, then ``availability_iteration``.
 
-Note that the random modes do not set a seed, so repeated runs produce
-different draws.
+------------------------
+Reproducibility (seeding)
+------------------------
+
+The random sampling modes (``random_keep`` and ``random_remove``) draw from
+Python's ``random`` module. By default ``--seed`` is unset, so the module is
+seeded from system entropy and repeated runs produce different draws. Pass
+``--seed <int>`` to seed the RNG once, up front, before any pass begins;
+re-running with the same seed (and the same inputs and ``--n_passes``) then
+reproduces the identical ``iterations.csv``. The non-random modes (``loop``,
+``ordered``, ``all``) are deterministic regardless of the seed.
 
 =====
 Usage
@@ -109,6 +118,7 @@ Settings
     * n_passes
     * iterations_csv_path
     * output_directory
+    * seed
 """
 
 import sys
@@ -142,6 +152,15 @@ def parse_arguments(args):
 
     parser.add_argument("-o", "--output_directory")
 
+    parser.add_argument(
+        "-s",
+        "--seed",
+        default=None,
+        help="Random seed for the random sampling modes (random_keep, "
+        "random_remove). Defaults to None (no seeding; draws differ each run). "
+        "Set an integer for reproducible draws.",
+    )
+
     parser.add_argument("-q", "--quiet", default=False, action="store_true")
 
     parsed_arguments = parser.parse_known_args(args=args)[0]
@@ -149,7 +168,14 @@ def parse_arguments(args):
     return parsed_arguments
 
 
-def create_temporal_scenario_iterations_csv(n_passes, filepath, output_directory):
+def create_temporal_scenario_iterations_csv(
+    n_passes, filepath, output_directory, seed=None
+):
+    # Seed the RNG once, up front, before any pass begins, so that the random
+    # sampling modes (random_keep / random_remove) are reproducible when a seed
+    # is provided. seed=None falls back to system (non-reproducible)
+    random.seed(seed)
+
     with open(os.path.join(output_directory, "iterations.csv"), "w") as f:
         writer = csv.writer(f, delimiter=",")
         writer.writerow(
@@ -239,7 +265,6 @@ def create_temporal_scenario_iterations_csv(n_passes, filepath, output_directory
 
 
 def random_remove(starting_list):
-    # random.seed(0)
     i = random.randrange(len(starting_list))
     starting_list[i], starting_list[-1] = starting_list[-1], starting_list[i]
     iteration = starting_list.pop()
@@ -248,7 +273,6 @@ def random_remove(starting_list):
 
 
 def random_keep(starting_list):
-    # random.seed(0)
     i = random.randrange(len(starting_list))
     iteration = starting_list[i]
 
@@ -297,6 +321,7 @@ def main(args=None):
         n_passes=int(parsed_args.n_passes),
         filepath=parsed_args.iterations_csv_path,
         output_directory=parsed_args.output_directory,
+        seed=int(parsed_args.seed) if parsed_args.seed is not None else None,
     )
     sort_final_file(
         filepath=os.path.join(parsed_args.output_directory, "iterations.csv")
