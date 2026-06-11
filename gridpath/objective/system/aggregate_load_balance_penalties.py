@@ -46,42 +46,68 @@ def add_model_components(
     Here, we aggregate total unserved-energy and overgeneration costs as
     well as any penalties on max unserved load by load zone,
     and add them as a dynamic component to the objective function.
+
+    Note these are aggregated over the entire optimization, not per period.
     """
 
-    m.Max_Unserved_Load_Penalty = Var(
-        m.LOAD_ZONES, within=NonNegativeReals, initialize=0
-    )
+    m.Max_Unserved_Load_MW = Var(m.LOAD_ZONES, within=NonNegativeReals, initialize=0)
 
     def max_unserved_load_penalty_constraint_rule(mod, lz, tmp):
         if mod.max_unserved_load_penalty_per_mw[lz] == 0:
             return Constraint.Skip
         else:
             return (
-                mod.Max_Unserved_Load_Penalty[lz]
+                mod.Max_Unserved_Load_MW[lz]
                 >= mod.Unserved_Energy_MW_Expression[lz, tmp]
             )
 
-    m.Max_Unserved_Load_Penalty_Constraint = Constraint(
+    m.Max_Unserved_Load_Constraint = Constraint(
         m.LOAD_ZONES, m.TMPS, rule=max_unserved_load_penalty_constraint_rule
     )
 
-    def total_penalty_costs_rule(mod):
+    def avg_unserved_load(mod, lz):
         return sum(
-            (
-                mod.Unserved_Energy_MW_Expression[z, tmp]
-                * mod.unserved_energy_penalty_per_mwh[z]
-                + mod.Overgeneration_MW_Expression[z, tmp]
-                * mod.overgeneration_penalty_per_mw[z]
-            )
+            mod.Unserved_Energy_MW_Expression[lz, tmp]
             * mod.hrs_in_tmp[tmp]
             * mod.tmp_weight[tmp]
             * mod.number_years_represented[mod.period[tmp]]
             * mod.discount_factor[mod.period[tmp]]
-            for z in mod.LOAD_ZONES
             for tmp in mod.TMPS
-        ) + sum(
-            mod.Max_Unserved_Load_Penalty[z] * mod.max_unserved_load_penalty_per_mw[z]
-            for z in mod.LOAD_ZONES
+        ) / sum(
+            mod.hrs_in_tmp[tmp]
+            * mod.tmp_weight[tmp]
+            * mod.number_years_represented[mod.period[tmp]]
+            * mod.discount_factor[mod.period[tmp]]
+            for tmp in mod.TMPS
+        )
+
+    m.Avg_Unserved_Load_MWa = Expression(m.LOAD_ZONES, rule=avg_unserved_load)
+
+    def total_penalty_costs_rule(mod):
+        return (
+            sum(
+                (
+                    mod.Unserved_Energy_MW_Expression[z, tmp]
+                    * mod.unserved_energy_penalty_per_mwh[z]
+                    + mod.Overgeneration_MW_Expression[z, tmp]
+                    * mod.overgeneration_penalty_per_mw[z]
+                )
+                * mod.hrs_in_tmp[tmp]
+                * mod.tmp_weight[tmp]
+                * mod.number_years_represented[mod.period[tmp]]
+                * mod.discount_factor[mod.period[tmp]]
+                for z in mod.LOAD_ZONES
+                for tmp in mod.TMPS
+            )
+            + sum(
+                mod.Max_Unserved_Load_MW[z] * mod.max_unserved_load_penalty_per_mw[z]
+                for z in mod.LOAD_ZONES
+            )
+            + sum(
+                mod.Avg_Unserved_Load_MWa[z] *
+                mod.avg_unserved_load_penalty_per_mwa[z]
+                for z in mod.LOAD_ZONES
+            )
         )
 
     m.Total_Load_Balance_Penalty_Costs = Expression(rule=total_penalty_costs_rule)
