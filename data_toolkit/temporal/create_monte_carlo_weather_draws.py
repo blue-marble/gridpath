@@ -1,4 +1,5 @@
-# Copyright 2016-2024 Blue Marble Analytics LLC.
+# Copyright 2016-2025 Blue Marble Analytics LLC.
+# Copyright 2026 Sylvan Energy Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -31,6 +32,57 @@ temperature derate shapes from different but similar days in the historical
 record. For a detailed description of the methodology, see Appendix B of the
 report available at
 https://gridlab.org/wp-content/uploads/2022/10/GridLab_RA-Toolkit-Report-10-12-22.pdf.
+
+===========
+Methodology
+===========
+
+This module produces, for each Monte Carlo iteration, a full synthetic
+study-year sequence of *weather day bins*. A weather day bin is a categorical
+label (e.g., one of five quintiles per month/day_type) that indicates the
+historical day's weather (e.g., based on maximum or average temperature). The
+bins themselves are produced upstream by the user and are stored in
+``user_defined_weather_bins``; this module only resamples them into
+new synthetic chronologies. The downstream
+``create_monte_carlo_weather_draw_profiles`` step then maps each drawn bin to
+an actual historical day's load/wind/solar/derate shapes.
+
+----------------------------
+First-order Markov bin chain
+----------------------------
+
+The synthetic bin sequence is generated as a *first-order Markov chain* over
+the historical record, in order to preserve realistic day-to-day persistence
+of weather (e.g., heat waves and cold snaps span multiple days):
+
+    1. The first day of the year (Jan 1) is seeded by drawing uniformly at
+       random from all historical January bins (see ``starting_weather_bin``).
+    2. For each subsequent calendar day, given the *prior* day's bin ``b``, we
+       look across the historical record for every day in the *current month*
+       whose bin equals ``b``, take the bin of the day that *immediately
+       followed* each such day, and draw uniformly at random from that set of
+       "following-day" bins. That draw becomes the current day's bin and the
+       prior bin for the next step. In effect, step 2 samples from the
+       empirically estimated transition probability ``P(bin_today |
+       bin_yesterday)`` for the relevant month.
+
+------------------------
+Reproducibility (seeding)
+------------------------
+
+By default no seed is set (``weather_draws_seed`` defaults to ``None``), so each
+run produces a different random ensemble of synthetic weather years. To get
+reproducible draws, pass ``--weather_draws_seed <int>``. The seed actually used
+is recorded in ``aux_weather_draws_info`` alongside the draws.
+
+------------------------
+Other notes
+------------------------
+Modeled distributions may deviate from historical averages depending on
+within-month weather drift. In shoulder seasons, day-to-day directional trends
+can cause modeled averages to deviate from historical means by ~1–3% (skewing
+lower in warming months and higher in cooling months).
+
 
 =====
 Usage
@@ -137,6 +189,7 @@ def create_weather_draws(
         SELECT year, month, day_of_month, day_type, weather_bin
         FROM user_defined_weather_bins
         WHERE weather_bins_id = {weather_bins_id}
+        ORDER BY year, month, day_of_month
         """
     weather_bins = pd.read_sql(sql=weather_bins_sql, con=conn)
 
@@ -152,6 +205,12 @@ def create_weather_draws(
         # Start on January 1; note this can be made flexible
         draw_number = 1
         current_date = starting_date
+        # Day type of the recorded calendar date (1 if weekend, 0 if weekday).
+        # Used only for the stored day_type column / downstream profile draws,
+        # NOT to condition the weather-bin draw.
+        current_day_type_bool = (
+            current_date.astype(datetime.datetime).isoweekday() > 5
+        ) * 1
         # Find the weather conditions on all January weather days
         starting_weather_bin_options = weather_bins[weather_bins["month"] == 1][
             "weather_bin"
@@ -170,7 +229,7 @@ def create_weather_draws(
                 draw_number,
                 str(current_date),
                 current_date.astype(object).month,
-                (current_date.astype(datetime.datetime).isoweekday() > 5) * 1,
+                current_day_type_bool,
                 int(starting_weather_bin),
             )
         )
@@ -191,23 +250,62 @@ def create_weather_draws(
                 current_date.astype(datetime.datetime).isoweekday() > 5
             ) * 1
 
-            # Get the weather bins across all days in the month
-            weather_bins_in_current_month = weather_bins[
+            # Get the weather bins (and aligned years) across all days in the
+            # month, in chronological order. Note: the weather-bin draw is
+            # intentionally NOT conditioned on day type -- the bin reflects
+            # weather severity, which is day-type-agnostic. Day-type matching is
+            # handled (and is optional) downstream in
+            # create_monte_carlo_weather_draw_profiles.
+            weather_bins_in_current_month_df = weather_bins[
                 weather_bins["month"] == current_month
-            ]["weather_bin"].to_numpy()
+            ]
+            weather_bins_in_current_month = weather_bins_in_current_month_df[
+                "weather_bin"
+            ].to_numpy()
+            years_in_current_month = weather_bins_in_current_month_df["year"].to_numpy()
 
             # Find the indices where the weather bin matches the prior weather
-            # bin, and add 1 to those indices to get the (index) options for the
-            # current weather bin
-            current_weather_bin_index_options = (
-                np.array(np.where(weather_bins_in_current_month == prior_weather_bin))
-                + 1
+            # bin; the "following day" candidates are those indices + 1
+            match_indices = np.where(
+                weather_bins_in_current_month == prior_weather_bin
+            )[0]
+            current_weather_bin_index_options = match_indices + 1
+            # Drop any index that runs past the end of the month's record (a
+            # match on the very last day has no "following" day)
+            in_bounds = current_weather_bin_index_options < len(
+                weather_bins_in_current_month
             )
-            # Randomly select from the above list of indices and get the
-            # corresponding weather bin to assign to the current day
-            current_weather_bin = weather_bins_in_current_month[
-                np.random.randint(len(current_weather_bin_index_options))
+            match_indices = match_indices[in_bounds]
+            current_weather_bin_index_options = current_weather_bin_index_options[
+                in_bounds
             ]
+            # Exclude year-boundary crossings: because the record is restricted
+            # to a single month, the day after the last day of the month in one
+            # year is positionally the first day of the same month in the next
+            # year -- not a real next-day transition. Keep only followers that
+            # fall in the same year as their matched day.
+            same_year = (
+                years_in_current_month[current_weather_bin_index_options]
+                == years_in_current_month[match_indices]
+            )
+            current_weather_bin_index_options = current_weather_bin_index_options[
+                same_year
+            ]
+            # Randomly select from the above list of indices and get the
+            # corresponding weather bin to assign to the current day. If no
+            # valid follower exists -- e.g., the prior bin does not occur in
+            # this month at all (this happens at month boundaries when bins are
+            # month-specific, since the prior bin comes from the previous month)
+            # or it occurs only on end-of-month days -- fall back to sampling
+            # unconditionally from the month's bins, mirroring the
+            # start-of-year draw.
+            if len(current_weather_bin_index_options) > 0:
+                chosen_index = current_weather_bin_index_options[
+                    np.random.randint(len(current_weather_bin_index_options))
+                ]
+            else:
+                chosen_index = np.random.randint(len(weather_bins_in_current_month))
+            current_weather_bin = weather_bins_in_current_month[chosen_index]
 
             data.append(
                 (

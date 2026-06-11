@@ -15,8 +15,45 @@
 """
 Load data into the GridPath raw data database. See the documentation of each
 GridPath Data Toolkit module for data prerequisites. Use the
-files_to_import.csv file to tell GridPath which CSV files should be loaded
+``files_to_import.csv`` file to tell GridPath which CSV files should be loaded
 into which database table.
+
+==================
+What this step does
+==================
+
+This module is a generic bulk loader for raw CSV data into the GridPath
+database. It reads a  file named ``files_to_import.csv`` located in the
+directory given by ``--csv_location``. Each row of that file describes one
+CSV file: an import flag (whether the file should be loaded), the CSV
+filename (relative to ``--csv_location``), and the database table the file
+should be loaded into.
+
+The loader iterates over the CSV file rows and, for each row whose import flag
+is True, reads the corresponding CSV from ``--csv_location`` and appends its
+contents to the named database table (existing rows are preserved; data is
+inserted with ``if_exists="append"``). Rows whose import flag is False are
+skipped.
+
+This generic loader is used throughout the Data Toolkit workflow to populate
+``raw_data`` tables (e.g., VER profiles and their unit mapping, hydro operating
+characteristics) that later Data Toolkit steps depend on.
+
+=====
+Usage
+=====
+
+>>> python -m data_toolkit.load_raw_data --database PATH/TO/DATABASE --csv_location PATH/TO/CSV/DIRECTORY
+
+=========
+Settings
+=========
+    * database
+    * csv_location
+
+The ``--csv_location`` directory must contain a ``files_to_import.csv``
+manifest with columns for the import flag, the CSV filename, and the
+destination database table, in that order.
 
 """
 

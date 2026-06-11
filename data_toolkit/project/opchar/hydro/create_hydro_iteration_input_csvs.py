@@ -42,6 +42,84 @@ Settings
     * hydro_operational_chars_scenario_name
     * overwrite
     * n_parallel_projects
+
+==================
+What this step does
+==================
+
+This module builds GridPath hydro operational-characteristics input CSVs from
+the year/month hydro data loaded earlier
+(``raw_data_project_hydro_opchars_by_year_month``, ``raw_data_hydro_years``,
+and the user-defined balancing-type horizons in
+``user_defined_balancing_type_horizons``). For each hydro iteration it derives
+the per-horizon hydro operating parameters -- the average, minimum, and maximum
+power fractions -- and writes them to ``--output_directory`` under the given
+``hydro_operational_chars_scenario_id`` and
+``hydro_operational_chars_scenario_name``. ``--n_parallel_projects N`` runs up
+to ``N`` projects at once, and ``--overwrite`` replaces existing CSVs.
+
+===========
+Methodology
+===========
+
+The distinct projects to process are read from
+``raw_data_project_hydro_opchars_by_year_month``, and one CSV is written per
+project, named ``<project>-<scenario_id>-<scenario_name>.csv`` in
+``--output_directory``. Projects are processed in a multiprocessing pool sized
+by ``--n_parallel_projects`` (defaults to ``1``).
+
+----------------------------------
+Hydro iterations and balancing-type horizons
+----------------------------------
+
+The set of hydro years is read from ``raw_data_hydro_years`` and each year is
+treated as one hydro iteration (written into the ``hydro_iteration`` column).
+The set of ``(balancing_type, horizon)`` pairs is read from
+``user_defined_balancing_type_horizons``; if ``--hydro_balancing_type`` is
+supplied, the pairs are filtered to that single balancing type (e.g. ``day``,
+``week``, ``month``), otherwise all balancing types are included. For every
+combination of hydro year and balancing-type horizon, one output row is
+produced.
+
+----------------------------------
+Deriving per-horizon power fractions
+----------------------------------
+
+The ``average_power_fraction``, ``min_power_fraction``, and
+``max_power_fraction`` for each horizon are computed by month-weighting the raw
+monthly opchar values. For a given balancing-type horizon, the module reads its
+``hour_ending_of_year_start`` and ``hour_ending_of_year_end`` from
+``user_defined_balancing_type_horizons`` and walks each hour of the year in that
+range, mapping the hour to a calendar month (via a ``pandas.Timestamp`` anchored
+at January 1 of the hydro year) and counting the number of hours that fall in
+each month. These hour counts become the per-month weights for the horizon.
+
+For each month touched by the horizon, the module looks up the project's
+``average_power_fraction``, ``min_power_fraction``, and ``max_power_fraction``
+for that hydro year and month in
+``raw_data_project_hydro_opchars_by_year_month``, multiplies each by the month's
+hour-count weight, sums across months, and divides by the total number of hours
+in the horizon. The result is an hours-weighted average of the monthly
+fractions for each of the three parameters, written as a single row keyed by
+``balancing_type_project`` and ``horizon`` (with ``weather_iteration`` set to
+``0``, i.e. no weather iteration). Note we take the weighted averages of the
+mins and maxes, not the mins of the mins or the maxes of the maxes.
+
+----------------------------------
+Writing and overwriting output
+----------------------------------
+
+Rows are appended to the project's CSV as they are generated, with the header
+written only when the file does not yet exist. When ``--overwrite`` is set, any
+existing CSV for the project is deleted before processing begins so it is
+rebuilt from scratch; without ``--overwrite``, new rows are appended to any
+existing file.
+
+If the corresponding ``--*_input_csv`` paths are provided, the raw-data tables
+(``raw_data_project_hydro_opchars_by_year_month``, ``raw_data_hydro_years``,
+``user_defined_balancing_type_horizons``) are loaded from those CSVs before the
+inputs are built; otherwise the data is assumed to already be present in the
+database.
 """
 
 from argparse import ArgumentParser

@@ -20,6 +20,40 @@ Create GridPath Monte Carlo variable generation profile inputs. Before running
 this module,you will need to create weather draws with the
 ``create_monte_carlo_draws`` module (see :ref:`monte-carlo-draws-section-ref`).
 
+================
+What this step does
+================
+
+This is the variable energy resource (VER) counterpart to the load-CSV step. It
+reads the synthetic per-iteration variable generation profiles -- assembled from
+``raw_data_var_profiles`` (the raw hourly unit-level ``cap_factor`` data) and
+``raw_data_var_project_units`` (the project-to-unit mapping and per-unit
+weights), resampled according to the weather draws stored in
+``aux_weather_iterations`` -- and writes them out as GridPath variable-generator
+profile input CSVs in ``--output_directory``, tagged with the given
+``--variable_generator_profile_scenario_id`` and
+``--variable_generator_profile_scenario_name``. These CSVs are the files the
+GridPath model consumes for variable generation.
+
+===========
+Methodology
+===========
+
+For each project, the per-unit ``cap_factor`` values from ``raw_data_var_profiles``
+are multiplied by their ``unit_weight`` and summed to produce a single
+project-level ``cap_factor`` time series. The weather draws in
+``aux_weather_iterations`` (selected by ``--weather_bins_id`` and
+``--weather_draws_id``) determine, for each Monte Carlo ``weather_iteration`` and
+``draw_number``, which historical day's data to pull, and the draw number is used
+to compute the ``timepoint`` ID. One output CSV is written per project, named
+``{project}-{scenario_id}-{scenario_name}.csv``, with an accompanying iterations
+CSV written to an ``iterations`` subdirectory of ``--output_directory``.
+
+``--n_parallel_projects N`` processes up to ``N`` projects concurrently (via a
+multiprocessing pool over the project pool) to speed things up. ``--overwrite``
+deletes any existing CSVs with the matching project/scenario filename before
+writing; without it, output is appended to existing files.
+
 =====
 Usage
 =====
