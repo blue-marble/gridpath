@@ -20,6 +20,71 @@ Create GridPath Monte Carlo load profile inputs. Before running this module,
 you will need to create weather draws with the ``create_monte_carlo_draws``
 module (see :ref:`monte-carlo-draws-section-ref`).
 
+==================
+What this step does
+==================
+
+This module reads the synthetic per-iteration load implied by the weather
+draws produced upstream and writes it out as the GridPath load input CSVs that
+the model actually consumes. The synthetic per-iteration load is constructed
+by joining the drawn synthetic weather days (``aux_weather_iterations``,
+indexed by ``weather_bins_id`` and ``weather_draws_id``) back to the historical
+hourly load in ``raw_data_system_load``. The resulting CSVs are tagged with
+the given load / load-components / load-levels scenario ids and names and are
+written to ``--output_directory``.
+
+===========
+Methodology
+===========
+
+The module produces up to three CSVs, each of which can be suppressed with a
+corresponding ``--skip_*`` flag:
+
+    * **Load scenario CSV** (``create_load_scenario_csv``): written to
+      ``--output_directory`` as ``<load_scenario_id>_<load_scenario_name>.csv``.
+      It is a one-row mapping that ties the ``load_scenario_id`` to its
+      ``load_components_scenario_id`` and ``load_levels_scenario_id``.
+    * **Load components CSV** (``create_load_components_scenario_csv``): written
+      to the ``load_components`` subdirectory as
+      ``<load_components_scenario_id>_<load_components_scenario_name>.csv``. It
+      lists one ``load_component`` (named via ``--load_component``, default
+      ``all``) per ``load_zone`` found in ``user_defined_load_zone_units``.
+    * **Load levels CSV** (``create_load_levels_csv``): written to the
+      ``load_levels`` subdirectory as
+      ``<load_levels_scenario_id>_<load_levels_scenario_name>.csv``. This file
+      holds the actual hourly ``load_mw`` per ``load_zone``, ``weather_iteration``,
+      ``stage_id``, and ``timepoint``.
+
+The load levels are built one synthetic weather iteration at a time. For every
+drawn day in ``aux_weather_iterations`` (matched on ``weather_bins_id`` and
+``weather_draws_id``), the module identifies the corresponding historical
+calendar day and, for each ``load_zone``, sums the hourly load from
+``raw_data_system_load`` across that zone's constituent ``unit`` rows, each
+scaled by its ``unit_weight`` from ``user_defined_load_zone_units``. Timepoint
+IDs are derived from the draw number and ``hour_of_day`` and are offset by
+``--study_year`` (so they start at 1 by default, or at ``YYYY0001`` when a
+study year is provided). Rows for successive draws are appended to the single
+load-levels CSV for the scenario.
+
+These CSVs are the files the GridPath model consumes for load; they are not
+loaded back into the database by this step.
+
+----------------
+Overwrite behavior
+----------------
+
+By default each output file is created only if it does not already exist. The
+three ``*_overwrite`` flags allow the corresponding scenario CSVs to be
+regenerated in place when they already exist:
+
+    * ``--load_scenario_overwrite`` for the load scenario CSV,
+    * ``--load_components_overwrite`` for the load components CSV, and
+    * ``--load_levels_overwrite`` for the load levels CSV.
+
+For the load levels CSV, overwrite resets the file (writes a fresh header) only
+on the first draw of the run and then appends the remaining draws, so the file
+is rebuilt for the full ensemble rather than truncated mid-write.
+
 =====
 Usage
 =====
@@ -43,13 +108,24 @@ populate the database with the raw data and the synthetic weather draws.
 Settings
 =========
     * database
+    * weather_bins_id
+    * weather_draws_id
     * output_directory
     * load_scenario_id
     * load_scenario_name
+    * load_components_scenario_id
+    * load_components_scenario_name
+    * load_levels_scenario_id
+    * load_levels_scenario_name
     * stage_id
-    * overwrite
-    * weather_bins_id
-    * weather_draws_id
+    * study_year
+    * load_component
+    * load_scenario_overwrite
+    * load_components_overwrite
+    * load_levels_overwrite
+    * skip_load_scenario
+    * skip_load_components
+    * skip_load_levels
 
 """
 

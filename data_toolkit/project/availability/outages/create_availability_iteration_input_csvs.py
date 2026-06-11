@@ -25,6 +25,86 @@ Availability Iteration Inputs
 
 Run unit outage simulation and create availability iteration inputs.
 
+===================
+What this step does
+===================
+
+This module runs a Monte Carlo unit-outage simulation and writes the resulting
+exogenous availability (derate) input CSVs. Using the per-unit availability
+parameters loaded from ``--outage_params_input_csv`` (into the
+``raw_data_unit_availability_params`` table) -- forced-outage rates
+(``unit_for``), mean time to repair (``unit_mttr``), the number of units
+(``n_units``), the unit weight, and the per-unit outage model
+(``unit_fo_model``) -- it simulates ``--n_iterations`` independent outage
+timelines for each project, drawing random forced and (under the sequential
+model) repair/maintenance transitions.
+
+The outage model is selected per unit via the ``unit_fo_model`` column and may
+be one of:
+
+    * ``Derate`` -- a static derate ``1 - unit_for`` applied in every timepoint.
+    * ``MC_independent`` -- each timepoint's outage state is drawn independently
+      from a uniform distribution against the forced-outage rate.
+    * ``MC_sequential`` -- a sequential (exponential) failure/repair process
+      driven by the forced-outage rate and ``unit_mttr`` (the implied mean time
+      to failure is ``mttr * (1 / for - 1)``), preserving outage persistence
+      across timepoints.
+    * ``historical_year`` -- instead of simulating, a random historical year is
+      sampled for the unit from ``--historical_availability_csv`` and that
+      year's hourly derate series is used directly. (This is can be used for
+      units whose availability is taken from a historical record rather than
+      simulated; the choice is driven by the unit's ``unit_fo_model`` value,
+      not by project type.)
+
+For each project the per-unit availability adjustments are combined using each
+unit's ``unit_weight`` to form a weighted project-level derate. Hybrid-storage
+projects (``hybrid_stor`` set) additionally get a separately simulated derate
+for the storage component. By default only rows whose derate differs from 1 are
+written (as default availability in GridPath is 1); pass ``--print_ones`` to
+retain all rows.
+
+Output is written to ``--output_directory`` as one CSV per project, named
+``<project>-<project_availability_scenario_id>-<project_availability_scenario_name>.csv``.
+``--n_parallel_projects`` parallelizes the simulation across projects and
+``--overwrite`` replaces existing files (otherwise existing files are appended
+to). ``--sort`` re-sorts each output file at the end. These outage iterations
+are intended to align with the weather/hydro iterations to form complete Monte
+Carlo draws.
+
+========================
+Reproducibility (seeding)
+========================
+
+By default seeding is OFF: ``--user_provided_seeding`` is not set, so the
+outage simulation is fully random and non-reproducible from run to run. When
+seeding is off, *all* of the seeding flags below are ignored -- the seed
+arguments are replaced with ``None`` before the simulation runs, and NumPy's
+global RNG is never explicitly seeded.
+
+To get reproducible outages, set ``--user_provided_seeding`` together with a
+``--starting_project_iteration_seed <int>`` (defaults to ``0``). With seeding
+on:
+
+    * **Per-project, non-overlapping seed ranges.** Each project is assigned a
+      starting seed of ``starting_project_iteration_seed + project_idx *
+      n_iterations``. Within a project the per-iteration seed starts at that
+      value and is incremented by 1 for each of the ``n_iterations``
+      iterations, so the seed ranges of distinct projects do not overlap.
+    * **Per-unit seeds within an iteration.** For a given project iteration, the
+      per-iteration seed is used to seed NumPy's RNG, which then draws one
+      integer seed per unit via ``np.random.randint(1,
+      max_integer_for_unit_outage_seeding, size=n_units_in_project)``. Each
+      unit's outage timeline is then simulated from its own seed.
+      ``--max_integer_for_unit_outage_seeding`` defaults to ``1000000``.
+    * **Hybrid-storage offset.** For hybrid-storage projects, the storage
+      component is simulated with a seed offset from the generator component's
+      unit seed by ``--hybrid_storage_seed_increment`` (defaults to ``1000``).
+
+Every project / unit / iteration still draws its own independent random outage
+timeline, but the whole simulation reproduces exactly when re-run with the same
+seed settings. Again, these flags are ignored unless ``--user_provided_seeding``
+is set. Caution advised when seeding.
+
 =====
 Usage
 =====
@@ -35,19 +115,34 @@ Usage
 Input prerequisites
 ===================
 
-This module assumes the following raw input database tables have been populated:
+This module assumes the following raw input database table has been populated:
     * raw_data_unit_availability_params
-    * raw_data_var_project_units
+
+This table can be populated ahead of time, or loaded at run time by passing
+``--outage_params_input_csv``. Units that use the ``historical_year`` outage
+model additionally read their derate series from the CSV passed via
+``--historical_availability_csv``.
 
 =========
 Settings
 =========
     * database
-    * output_directory
+    * outage_params_input_csv
+    * historical_availability_csv
+    * stage_id
+    * n_iterations
+    * study_year
     * project_availability_scenario_id
     * project_availability_scenario_name
+    * output_directory
     * overwrite
+    * sort
+    * print_ones
     * n_parallel_projects
+    * user_provided_seeding
+    * starting_project_iteration_seed
+    * max_integer_for_unit_outage_seeding
+    * hybrid_storage_seed_increment
 
 """
 
@@ -119,6 +214,7 @@ def parse_arguments(args):
         "-max_unit_seed_int",
         "--max_integer_for_unit_outage_seeding",
         default=1000000,
+        type=int,
         help="The max integer for assigning seeds to each unit outage "
         "simulation for a given project. The --user_provided_seeding flag must "
         "be set to True for this to take effect. Proceed with caution.",
@@ -211,9 +307,37 @@ def get_weighted_availability_adjustment(
         # For each project iteration, we assign a seed to each unit outage
         # simulation based on the project_iteration_seed and a
         # max_integer_for_unit_seeding number set by the user
+        # Draw a distinct generator-component seed per unit (without
+        # replacement) so no two units share a seed and thus an identical
+        # outage timeline. To also keep each hybrid unit's storage-component
+        # seed (generator seed + hyb_stor_seed_unit_increment, assigned below)
+        # from coinciding with another unit's generator or storage seed, draw
+        # the generator seeds from values spaced (increment + 1) apart: no two
+        # then differ by exactly the increment, so {seeds} and
+        # {seeds + increment} are disjoint.
+        n_units_in_project = len(project_df.index)
+        seed_population = np.arange(
+            1,
+            max_integer_for_unit_outage_seeding,
+            hyb_stor_seed_unit_increment + 1,
+        )
+        # Guard: np.random.choice(replace=False) cannot draw more values than
+        # are available. Fail with an actionable message rather than an opaque
+        # ValueError.
+        if n_units_in_project > len(seed_population):
+            raise ValueError(
+                f"Cannot assign {n_units_in_project} distinct, "
+                f"non-colliding outage seeds to project "
+                f"'{project_df['project'].iloc[0]}': only "
+                f"{len(seed_population)} are available given "
+                f"max_integer_for_unit_outage_seeding="
+                f"{max_integer_for_unit_outage_seeding} and "
+                f"hybrid_storage_seed_increment={hyb_stor_seed_unit_increment}. "
+                f"Increase --max_integer_for_unit_outage_seeding."
+            )
         np.random.seed(project_iteration_seed)
-        unit_seeds = np.random.randint(
-            1, max_integer_for_unit_outage_seeding, size=len(project_df.index)
+        unit_seeds = np.random.choice(
+            seed_population, size=n_units_in_project, replace=False
         )
     else:
         unit_seeds = [None for n in project_df.index]
@@ -507,10 +631,13 @@ def simulate_all_project_iterations(pool_datum):
     # Loop through all iterations for this project
     project_iteration_seed = starting_project_iteration_seed
     for iteration_n in range(1, n_iterations + 1):
+        # ORDER BY unit so each unit maps to the same drawn seed (unit_seeds is
+        # indexed positionally) across runs; required for reproducible draws
         project_df = pd.read_sql(
             f"""
                 SELECT * FROM raw_data_unit_availability_params
                 WHERE project = '{project}'
+                ORDER BY unit
                 ;""",
             conn,
         )
@@ -592,9 +719,12 @@ def main(args=None):
     if not os.path.exists(parsed_args.output_directory):
         os.makedirs(parsed_args.output_directory)
 
-    # Get projects
+    # Get projects. ORDER BY so that project_idx (and therefore each project's
+    # seed base, starting_project_iteration_seed + project_idx * n_iterations)
+    # is stable across runs -- otherwise seeded results are not reproducible.
     projects = [i[0] for i in conn.execute("""
-        SELECT DISTINCT project FROM raw_data_unit_availability_params;
+        SELECT DISTINCT project FROM raw_data_unit_availability_params
+        ORDER BY project;
         """).fetchall()]
 
     all_files = []
