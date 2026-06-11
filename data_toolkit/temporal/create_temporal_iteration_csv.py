@@ -1,4 +1,5 @@
-# Copyright 2016-2024 Blue Marble Analytics LLC.
+# Copyright 2016-2025 Blue Marble Analytics LLC.
+# Copyright 2026 Sylvan Energy Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -48,12 +49,13 @@ ignored.
 Sampling modes
 ----------------
 
-The mode in each column's first row controls how iterations are selected for
-that dimension:
+Every dimension (``weather``, ``hydro``, and ``availability``) supports the
+same set of modes; the mode in a column's first row controls how iterations are
+selected for that dimension:
 
-    * ``loop`` -- iterate over every listed iteration in order. This is the
-      driving mode: only the ``weather`` (and, when also ``loop``, the
-      ``hydro``) dimension uses it to enumerate combinations.
+    * ``loop`` -- enumerate over every listed iteration. ``loop`` dimensions are
+      the *drivers*: the output is the Cartesian product across all dimensions
+      set to ``loop`` (see below).
     * ``ordered`` -- step through the listed iterations sequentially, advancing
       an index by one each time a value is requested.
     * ``random_keep`` -- draw an iteration uniformly at random, leaving the pool
@@ -66,24 +68,29 @@ that dimension:
 How combinations are generated
 ------------------------------
 
-The current implementation only enumerates combinations when the ``weather``
-mode is ``loop``; if ``weather`` uses any other mode, no rows are written.
-Given ``weather`` is ``loop``:
+The dimensions set to ``loop`` drive enumeration: the script writes one row for
+every combination in the Cartesian product of those dimensions' iteration
+lists, taken in ``weather``, ``hydro``, ``availability`` order. For each such
+row, every dimension *not* set to ``loop`` contributes a single iteration drawn
+according to its own mode (``ordered`` / ``random_keep`` / ``random_remove`` /
+``all``). Some examples:
 
-    * If ``hydro`` is also ``loop``, the script writes one row for every
-      ``(weather_iteration, hydro_iteration)`` pair (a full nested loop), with
-      the ``availability_iteration`` for each row chosen according to the
-      ``availability`` mode.
-    * Otherwise, for each ``weather_iteration`` a single ``hydro_iteration`` is
-      chosen according to the ``hydro`` mode and a single
-      ``availability_iteration`` is chosen according to the ``availability``
-      mode, producing one row per weather iteration.
+    * ``weather`` ``loop`` and ``hydro`` ``loop`` -> one row per
+      ``(weather_iteration, hydro_iteration)`` pair, with each row's
+      ``availability_iteration`` chosen according to the ``availability`` mode.
+    * Only ``weather`` ``loop`` -> one row per ``weather_iteration``, with the
+      ``hydro`` and ``availability`` iterations each drawn per row by their
+      modes.
+    * No dimension ``loop`` -> the product is a single (empty) combination, so
+      each pass produces exactly one row with all three iterations drawn by
+      their modes (useful for fully random sampling of combinations).
 
 The ``--n_passes`` argument (default ``1``) repeats this whole generation
 process ``n_passes`` times, with each pass starting from a fresh copy of the
-iteration pools; this is useful with the random modes to accumulate additional
-draws. After all passes complete, ``iterations.csv`` is sorted ascending by
-``weather_iteration``, then ``hydro_iteration``, then ``availability_iteration``.
+iteration pools (and a fresh ``ordered`` index); this is useful with the random
+modes to accumulate additional draws. After all passes complete,
+``iterations.csv`` is sorted ascending by ``weather_iteration``, then
+``hydro_iteration``, then ``availability_iteration``.
 
 ------------------------
 Reproducibility (seeding)
@@ -124,11 +131,15 @@ Settings
 import sys
 from argparse import ArgumentParser
 import csv
+import itertools
 import os.path
 import pandas as pd
 import random
 
 N_PASSES_DEFAULT = 1
+
+# Sampling modes available to every dimension (weather, hydro, availability).
+VALID_MODES = ("loop", "ordered", "random_keep", "random_remove", "all")
 
 
 def parse_arguments(args):
@@ -185,83 +196,52 @@ def create_temporal_scenario_iterations_csv(
     # print(os.path.abspath(filepath))
     df = pd.read_csv(filepath)
 
-    weather_df = df["weather"]
-    weather_list = [i[1] for i in weather_df.items()]
-    weather_mode = weather_list[0]
-    weather_iterations_pass = [i for i in weather_list[1:] if not pd.isna(i)]
+    # Parse the mode (first data row) and the available iterations (remaining
+    # non-empty rows) for each dimension.
+    dimension_order = ["weather", "hydro", "availability"]
+    modes = {}
+    iterations_pass = {}
+    for dim in dimension_order:
+        column = [i[1] for i in df[dim].items()]
+        modes[dim] = column[0]
+        iterations_pass[dim] = [i for i in column[1:] if not pd.isna(i)]
+        if modes[dim] not in VALID_MODES:
+            raise ValueError(
+                f"Unknown sampling mode '{modes[dim]}' for the '{dim}' "
+                f"dimension. Valid modes are: {', '.join(VALID_MODES)}."
+            )
 
-    hydro_df = df["hydro"]
-    hydro_list = [i[1] for i in hydro_df.items()]
-    hydro_mode = hydro_list[0]
-    hydro_iterations_pass = [i for i in hydro_list[1:] if not pd.isna(i)]
+    rows = []
+    for _ in range(n_passes):
+        # Each pass starts from a fresh copy of every dimension's pool (and a
+        # fresh "ordered" index), so the random/ordered modes restart per pass.
+        pools = {dim: iterations_pass[dim].copy() for dim in dimension_order}
+        ordered_indices = {dim: 0 for dim in dimension_order}
 
-    availability_df = df["availability"]
-    availability_list = [i[1] for i in availability_df.items()]
-    availability_mode = availability_list[0]
-    availability_iterations_pass = [i for i in availability_list[1:] if not pd.isna(i)]
+        # Dimensions in "loop" mode drive the enumeration: we write one row for
+        # every combination in their Cartesian product (in weather, hydro,
+        # availability order). Dimensions not in "loop" mode each contribute a
+        # single drawn iteration per row, according to their own mode. If no
+        # dimension is in "loop" mode, the product is a single empty
+        # combination, so each pass produces exactly one row.
+        loop_dims = [dim for dim in dimension_order if modes[dim] == "loop"]
+        loop_pools = [pools[dim] for dim in loop_dims]
 
-    # TODO: possibly remove
-    weather_iteration, hydro_iteration, availability_iteration = None, None, None
+        for loop_combo in itertools.product(*loop_pools):
+            row_values = dict(zip(loop_dims, loop_combo))
+            for dim in dimension_order:
+                if modes[dim] == "loop":
+                    continue
+                row_values[dim], ordered_indices[dim] = draw_single_iteration(
+                    mode=modes[dim],
+                    pool=pools[dim],
+                    ordered_index=ordered_indices[dim],
+                )
+            rows.append([row_values[d] for d in dimension_order])
 
-    for n in range(n_passes):
-        weather_iterations = weather_iterations_pass.copy()
-        hydro_iterations = hydro_iterations_pass.copy()
-        availability_iterations = availability_iterations_pass.copy()
-
-        av_current_index = 0
-        hy_current_index = 0
-        if weather_mode == "loop":
-            for weather_iteration in weather_iterations:
-                if hydro_mode == "loop":
-                    for hydro_iteration in hydro_iterations:
-                        (
-                            availability_iteration,
-                            av_current_index,
-                        ) = get_availability_iteration(
-                            availability_mode=availability_mode,
-                            availability_iterations=availability_iterations,
-                            av_current_index=av_current_index,
-                        )
-
-                        with open(
-                            os.path.join(output_directory, "iterations.csv"), "a"
-                        ) as f_out:
-                            writer = csv.writer(f_out, delimiter=",")
-                            writer.writerow(
-                                [
-                                    weather_iteration,
-                                    hydro_iteration,
-                                    availability_iteration,
-                                ]
-                            )
-                else:
-                    if hydro_mode == "ordered":
-                        hydro_iteration = hydro_iterations[hy_current_index]
-                        hy_current_index += 1
-                    elif hydro_mode == "random_remove":
-                        hydro_iteration = random_remove(hydro_iterations)
-                    elif hydro_mode == "all":
-                        hydro_iteration = hydro_iterations[0]
-                    elif hydro_mode == "random_keep":
-                        hydro_iteration = random_keep(hydro_iterations)
-                    else:
-                        print("Unknown hydro mode")
-                    (
-                        availability_iteration,
-                        av_current_index,
-                    ) = get_availability_iteration(
-                        availability_mode=availability_mode,
-                        availability_iterations=availability_iterations,
-                        av_current_index=av_current_index,
-                    )
-
-                    with open(
-                        os.path.join(output_directory, "iterations.csv"), "a"
-                    ) as f_out:
-                        writer = csv.writer(f_out, delimiter=",")
-                        writer.writerow(
-                            [weather_iteration, hydro_iteration, availability_iteration]
-                        )
+    with open(os.path.join(output_directory, "iterations.csv"), "a") as f_out:
+        writer = csv.writer(f_out, delimiter=",")
+        writer.writerows(rows)
 
 
 def random_remove(starting_list):
@@ -290,23 +270,33 @@ def sort_final_file(filepath):
     df.to_csv(filepath, index=False)
 
 
-def get_availability_iteration(
-    availability_mode, availability_iterations, av_current_index
-):
-    availability_iteration = None
-    if availability_mode == "ordered":
-        availability_iteration = availability_iterations[av_current_index]
-        av_current_index += 1
-    elif availability_mode == "random_remove":
-        availability_iteration = random_remove(availability_iterations)
-    elif availability_mode == "random_keep":
-        availability_iteration = random_keep(availability_iterations)
-    elif availability_mode == "all":
-        availability_iteration = availability_iterations[0]
-    else:
-        print("Unknown availability mode.")
+def draw_single_iteration(mode, pool, ordered_index):
+    """
+    Return ``(iteration, next_ordered_index)`` for a single draw from a
+    non-"loop" dimension. ``pool`` is the (mutable) list of remaining iterations
+    for the current pass; ``ordered_index`` is the position used by the
+    ``ordered`` mode.
 
-    return availability_iteration, av_current_index
+    This handles every non-"loop" mode; "loop" dimensions are enumerated by the
+    Cartesian product in ``create_temporal_scenario_iterations_csv`` and never
+    reach this function.
+    """
+    if mode == "ordered":
+        iteration = pool[ordered_index]
+        ordered_index += 1
+    elif mode == "random_remove":
+        iteration = random_remove(pool)
+    elif mode == "random_keep":
+        iteration = random_keep(pool)
+    elif mode == "all":
+        iteration = pool[0]
+    else:
+        raise ValueError(
+            f"Unknown sampling mode '{mode}'. Valid modes are: "
+            f"{', '.join(VALID_MODES)}."
+        )
+
+    return iteration, ordered_index
 
 
 def main(args=None):
