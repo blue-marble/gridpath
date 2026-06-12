@@ -479,17 +479,18 @@ CREATE TABLE subscenarios_geography_load_balance
 DROP TABLE IF EXISTS inputs_geography_load_balance;
 CREATE TABLE inputs_geography_load_balance
 (
-    load_balance_scenario_id           INTEGER,
-    load_zone                          VARCHAR(32),
-    allow_overgeneration               INTEGER,
-    overgeneration_penalty_per_mw      FLOAT,
-    allow_unserved_energy              INTEGER,
-    unserved_energy_penalty_per_mwh    FLOAT,
-    unserved_energy_limit_mwh          FLOAT, -- limit on the total USE
-    max_unserved_load_penalty_per_mw   FLOAT,
-    max_unserved_load_limit_mw         FLOAT, -- limit on the max unserved load
-    export_penalty_cost_per_mwh        FLOAT,
-    unserved_energy_stats_threshold_mw FLOAT, -- defaults to 0
+    load_balance_scenario_id            INTEGER,
+    load_zone                           VARCHAR(32),
+    allow_overgeneration                INTEGER,
+    overgeneration_penalty_per_mw       FLOAT,
+    allow_unserved_energy               INTEGER,
+    unserved_energy_penalty_per_mwh     FLOAT,
+    unserved_energy_limit_mwh           FLOAT, -- limit on the total USE
+    max_unserved_load_penalty_per_mw    FLOAT,
+    max_unserved_load_limit_mw          FLOAT, -- limit on the max unserved load
+    avg_unserved_load_penalty_per_mwa   FLOAT,
+    export_penalty_cost_per_mwh         FLOAT,
+    unserved_energy_stats_threshold_mw  FLOAT, -- defaults to 0
     PRIMARY KEY (load_balance_scenario_id, load_zone),
     FOREIGN KEY (load_balance_scenario_id) REFERENCES
         subscenarios_geography_load_balance (load_balance_scenario_id)
@@ -3263,20 +3264,20 @@ CREATE TABLE inputs_project_availability_exogenous_weather_bt_hrz
 DROP TABLE IF EXISTS subscenarios_project_availability_exogenous_monthly;
 CREATE TABLE subscenarios_project_availability_exogenous_monthly
 (
-    project                                  VARCHAR(64),
+    project                                    VARCHAR(64),
     exogenous_availability_monthly_scenario_id INTEGER,
-    name                                     VARCHAR(32),
-    description                              VARCHAR(128),
+    name                                       VARCHAR(32),
+    description                                VARCHAR(128),
     PRIMARY KEY (project, exogenous_availability_monthly_scenario_id)
 );
 
 DROP TABLE IF EXISTS inputs_project_availability_exogenous_monthly;
 CREATE TABLE inputs_project_availability_exogenous_monthly
 (
-    project                                  VARCHAR(64),
+    project                                    VARCHAR(64),
     exogenous_availability_monthly_scenario_id INTEGER,
-    month                                    INTEGER,
-    availability_derate_monthly              FLOAT,
+    month                                      INTEGER,
+    availability_derate_monthly                FLOAT,
     PRIMARY KEY (project, exogenous_availability_monthly_scenario_id,
                  month),
     FOREIGN KEY (project, exogenous_availability_monthly_scenario_id)
@@ -8944,7 +8945,8 @@ FROM results_project_costs_capacity_agg AS a
          AND a.stage_id = b.stage_id
          AND a.period = b.period
          AND a.load_zone = b.load_zone
-         AND COALESCE(a.spinup_or_lookahead, 0) = COALESCE(b.spinup_or_lookahead, 0)
+         AND
+         COALESCE(a.spinup_or_lookahead, 0) = COALESCE(b.spinup_or_lookahead, 0)
          )
 
          LEFT JOIN
@@ -8962,7 +8964,8 @@ FROM results_project_costs_capacity_agg AS a
          AND a.stage_id = c.stage_id
          AND a.period = c.period
          AND a.load_zone = c.load_zone
-         AND COALESCE(a.spinup_or_lookahead, 0) = COALESCE(c.spinup_or_lookahead, 0)
+         AND
+         COALESCE(a.spinup_or_lookahead, 0) = COALESCE(c.spinup_or_lookahead, 0)
          )
 
          LEFT JOIN
@@ -8972,7 +8975,8 @@ FROM results_project_costs_capacity_agg AS a
          AND a.stage_id = d.stage_id
          AND a.period = d.period
          AND a.load_zone = d.load_zone
-         AND COALESCE(a.spinup_or_lookahead, 0) = COALESCE(d.spinup_or_lookahead, 0)
+         AND
+         COALESCE(a.spinup_or_lookahead, 0) = COALESCE(d.spinup_or_lookahead, 0)
          )
 ;
 
@@ -8998,13 +9002,13 @@ FROM (SELECT scenario_id,
              stage_id,
              period,
              spinup_or_lookahead,
-             SUM(capacity_cost)               AS capacity_cost,
-             SUM(variable_om_cost)            AS variable_om_cost,
-             SUM(fuel_cost)                   AS fuel_cost,
-             SUM(startup_cost)                AS startup_cost,
-             SUM(shutdown_cost)               AS shutdown_cost,
-             SUM(tx_capacity_cost)            AS tx_capacity_cost,
-             SUM(tx_hurdle_cost)              AS tx_hurdle_cost
+             SUM(capacity_cost)    AS capacity_cost,
+             SUM(variable_om_cost) AS variable_om_cost,
+             SUM(fuel_cost)        AS fuel_cost,
+             SUM(startup_cost)     AS startup_cost,
+             SUM(shutdown_cost)    AS shutdown_cost,
+             SUM(tx_capacity_cost) AS tx_capacity_cost,
+             SUM(tx_hurdle_cost)   AS tx_hurdle_cost
       FROM results_costs_by_period_load_zone
       GROUP BY scenario_id, subproblem_id, stage_id, period,
                spinup_or_lookahead) AS a
