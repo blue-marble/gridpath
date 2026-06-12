@@ -50,7 +50,9 @@ def add_model_components(
 
     m.allow_unserved_energy = Param(m.LOAD_ZONES, within=Boolean)
 
-    m.unserved_energy_penalty_per_mwh = Param(m.LOAD_ZONES, within=NonNegativeReals)
+    m.unserved_energy_penalty_per_mwh = Param(
+        m.LOAD_ZONES, within=NonNegativeReals, default=0
+    )
     m.unserved_energy_limit_mwh = Param(
         m.LOAD_ZONES, within=NonNegativeReals, default=float("inf")
     )
@@ -60,6 +62,10 @@ def add_model_components(
     )
     m.max_unserved_load_limit_mw = Param(
         m.LOAD_ZONES, within=NonNegativeReals, default=float("inf")
+    )
+
+    m.avg_unserved_load_penalty_per_mwa = Param(
+        m.LOAD_ZONES, within=NonNegativeReals, default=0
     )
 
     # Can only be applied if transmission is included
@@ -115,6 +121,7 @@ def load_model_data(
             m.unserved_energy_limit_mwh,
             m.max_unserved_load_penalty_per_mw,
             m.max_unserved_load_limit_mw,
+            m.avg_unserved_load_penalty_per_mwa,
             m.export_penalty_cost_per_mwh,
         ),
     )
@@ -143,7 +150,8 @@ def get_inputs_from_database(
         SELECT load_zone, allow_overgeneration, overgeneration_penalty_per_mw, 
         allow_unserved_energy, unserved_energy_penalty_per_mwh, 
         unserved_energy_limit_mwh, max_unserved_load_penalty_per_mw, 
-        max_unserved_load_limit_mw, export_penalty_cost_per_mwh
+        max_unserved_load_limit_mw, avg_unserved_load_penalty_per_mwa, 
+        export_penalty_cost_per_mwh
         FROM inputs_geography_load_balance
         WHERE load_balance_scenario_id = {subscenarios.LOAD_BALANCE_SCENARIO_ID}
         AND load_zone in (
@@ -249,6 +257,7 @@ def write_model_inputs(
                 "unserved_energy_limit_mwh",
                 "max_unserved_load_penalty_per_mw",
                 "max_unserved_load_limit_mw",
+                "avg_unserved_load_penalty_per_mwa",
                 "export_penalty_cost_per_mwh",
             ]
         )

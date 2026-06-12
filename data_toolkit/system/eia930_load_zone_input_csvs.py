@@ -51,6 +51,7 @@ Settings
     * allow_unserved_energy
     * unserved_energy_penalty_per_mwh
     * max_unserved_load_penalty_per_mw
+    * avg_unserved_load_penalty_per_mwa
     * export_penalty_cost_per_mwh
     * unserved_energy_stats_threshold_mw
 
@@ -96,6 +97,7 @@ def parse_arguments(args):
     parser.add_argument("--unserved_energy_limit_mwh", default=None)
     parser.add_argument("--max_unserved_load_penalty_per_mw", default=0)
     parser.add_argument("--max_unserved_load_limit_mw", default=None)
+    parser.add_argument("--avg_unserved_load_penalty_per_mwa", default=0)
     parser.add_argument("--export_penalty_cost_per_mwh", default=0)
     parser.add_argument("--unserved_energy_stats_threshold_mw", default=None)
     parser.add_argument(
@@ -162,6 +164,7 @@ def make_load_balance_csv(
     unserved_energy_limit_mwh,
     max_unserved_load_penalty_per_mw,
     max_unserved_load_limit_mw,
+    avg_unserved_load_penalty_per_mwa,
     export_penalty_cost_per_mwh,
     unserved_energy_stats_threshold_mw,
     output_directory,
@@ -184,6 +187,9 @@ def make_load_balance_csv(
             max_unserved_load_penalty_per_mw for lz in all_lzs
         ],
         "max_unserved_load_limit_mw": [max_unserved_load_limit_mw for lz in all_lzs],
+        "avg_unserved_load_penalty_per_mwa": [
+            avg_unserved_load_penalty_per_mwa for lz in all_lzs
+        ],
         "export_penalty_cost_per_mwh": [export_penalty_cost_per_mwh for lz in all_lzs],
         "unserved_energy_stats_threshold_mw": [
             unserved_energy_stats_threshold_mw for lz in all_lzs
@@ -233,6 +239,7 @@ def main(args=None):
         unserved_energy_limit_mwh=parsed_args.unserved_energy_limit_mwh,
         max_unserved_load_penalty_per_mw=parsed_args.max_unserved_load_penalty_per_mw,
         max_unserved_load_limit_mw=parsed_args.max_unserved_load_limit_mw,
+        avg_unserved_load_penalty_per_mwa=parsed_args.avg_unserved_load_penalty_per_mwa,
         export_penalty_cost_per_mwh=parsed_args.export_penalty_cost_per_mwh,
         unserved_energy_stats_threshold_mw=parsed_args.unserved_energy_stats_threshold_mw,
         output_directory=parsed_args.lb_output_directory,
