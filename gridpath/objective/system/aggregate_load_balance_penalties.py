@@ -104,8 +104,7 @@ def add_model_components(
                 for z in mod.LOAD_ZONES
             )
             + sum(
-                mod.Avg_Unserved_Load_MWa[z] *
-                mod.avg_unserved_load_penalty_per_mwa[z]
+                mod.Avg_Unserved_Load_MWa[z] * mod.avg_unserved_load_penalty_per_mwa[z]
                 for z in mod.LOAD_ZONES
             )
         )

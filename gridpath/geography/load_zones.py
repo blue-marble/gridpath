@@ -50,7 +50,9 @@ def add_model_components(
 
     m.allow_unserved_energy = Param(m.LOAD_ZONES, within=Boolean)
 
-    m.unserved_energy_penalty_per_mwh = Param(m.LOAD_ZONES, within=NonNegativeReals)
+    m.unserved_energy_penalty_per_mwh = Param(
+        m.LOAD_ZONES, within=NonNegativeReals, default=0
+    )
     m.unserved_energy_limit_mwh = Param(
         m.LOAD_ZONES, within=NonNegativeReals, default=float("inf")
     )
