@@ -71,9 +71,9 @@ to). ``--sort`` re-sorts each output file at the end. These outage iterations
 are intended to align with the weather/hydro iterations to form complete Monte
 Carlo draws.
 
-========================
+=========================
 Reproducibility (seeding)
-========================
+=========================
 
 By default seeding is OFF: ``--user_provided_seeding`` is not set, so the
 outage simulation is fully random and non-reproducible from run to run. When

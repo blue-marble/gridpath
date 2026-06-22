@@ -85,7 +85,7 @@ def add_model_components(
     |                                                                         |
     | The set of generators of the :code:`gen_hydro` operational type.        |
     +-------------------------------------------------------------------------+
-    | | :code:`GEN_HYDRO_OPR_BT_HRZS`                                            |
+    | | :code:`GEN_HYDRO_OPR_BT_HRZS`                                         |
     |                                                                         |
     | Two-dimensional set with generators of the :code:`gen_hydro`            |
     | operational type and their operational horizons.                        |
@@ -107,21 +107,21 @@ def add_model_components(
     | Required Input Params                                                   |
     +=========================================================================+
     | | :code:`gen_hydro_max_power_fraction`                                  |
-    | | *Defined over*: :code:`GEN_HYDRO_OPR_BT_HRZS`                            |
+    | | *Defined over*: :code:`GEN_HYDRO_OPR_BT_HRZS`                         |
     | | *Within*: :code:`Reals`                                               |
     |                                                                         |
     | The project's maximum power output in each operational horizon as a     |
     | fraction of its available capacity.                                     |
     +-------------------------------------------------------------------------+
     | | :code:`gen_hydro_min_power_fraction`                                  |
-    | | *Defined over*: :code:`GEN_HYDRO_OPR_BT_HRZS`                            |
+    | | *Defined over*: :code:`GEN_HYDRO_OPR_BT_HRZS`                         |
     | | *Within*: :code:`Reals`                                               |
     |                                                                         |
     | The project's minimum power output in each operational horizon as a     |
     | fraction of its available capacity.                                     |
     +-------------------------------------------------------------------------+
     | | :code:`gen_hydro_average_power_fraction`                              |
-    | | *Defined over*: :code:`GEN_HYDRO_OPR_BT_HRZS`                            |
+    | | *Defined over*: :code:`GEN_HYDRO_OPR_BT_HRZS`                         |
     | | *Within*: :code:`Reals`                                               |
     |                                                                         |
     | The project's avarage power output in each operational horizon as a     |
@@ -238,20 +238,20 @@ def add_model_components(
     | Power                                                                   |
     +-------------------------------------------------------------------------+
     | | :code:`GenHydro_Max_Power_Constraint`                                 |
-    | | *Defined over*: :code:`GEN_HYDRO_OPR_BT_HRZS`                            |
+    | | *Defined over*: :code:`GEN_HYDRO_OPR_BT_HRZS`                         |
     |                                                                         |
     | Limits the power plus upward reserves based on the                      |
     | :code:`gen_hydro_max_power_fraction` and the available capacity.        |
     +-------------------------------------------------------------------------+
     | | :code:`GenHydro_Min_Power_Constraint`                                 |
-    | | *Defined over*: :code:`GEN_HYDRO_OPR_BT_HRZS`                            |
+    | | *Defined over*: :code:`GEN_HYDRO_OPR_BT_HRZS`                         |
     |                                                                         |
     | Power provision minus downward reserves should exceed a certain level   |
     | based on the :code:`gen_hydro_min_power_fraction` and the available     |
     | capacity.                                                               |
     +-------------------------------------------------------------------------+
     | | :code:`GenHydro_Energy_Budget_Constraint`                             |
-    | | *Defined over*: :code:`GEN_HYDRO_OPR_BT_HRZS`                            |
+    | | *Defined over*: :code:`GEN_HYDRO_OPR_BT_HRZS`                         |
     |                                                                         |
     | The project's average capacity factor in each operational horizon,      |
     | including curtailment, should match the specified                       |

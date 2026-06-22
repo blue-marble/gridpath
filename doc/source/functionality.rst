@@ -424,7 +424,7 @@ Fuel Production (*fuel_prod*)
 .. automodule:: gridpath.project.operations.operational_types.fuel_prod
 
 Dispatchable Load (*dispatchable_load*)
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: gridpath.project.operations.operational_types.dispatchable_load
 
 .. _load-balance-section-ref:

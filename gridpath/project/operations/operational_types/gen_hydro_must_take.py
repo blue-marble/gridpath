@@ -80,7 +80,7 @@ def add_model_components(
     | The set of generators of the :code:`gen_hydro_must_take` operational    |
     | type.                                                                   |
     +-------------------------------------------------------------------------+
-    | | :code:`GEN_HYDRO_MUST_TAKE_OPR_BT_HRZS`                                  |
+    | | :code:`GEN_HYDRO_MUST_TAKE_OPR_BT_HRZS`                               |
     |                                                                         |
     | Two-dimensional set with generators of the :code:`gen_hydro_must_take`  |
     | operational type and their operational horizons.                        |
@@ -132,7 +132,7 @@ def add_model_components(
     | | :code:`gen_hydro_must_take_ramp_up_when_on_rate`                      |
     | | *Defined over*: :code:`GEN_HYDRO_MUST_TAKE`                           |
     | | *Within*: :code:`NonNegativeReals`                                    |
-    | | *Default*: :code:``inf                                                |
+    | | *Default*: :code:`inf`                                                |
     |                                                                         |
     | The project's upward ramp rate limit during operations, defined as a    |
     | fraction of its capacity per minute.                                    |
@@ -218,21 +218,21 @@ def add_model_components(
     | Power                                                                   |
     +-------------------------------------------------------------------------+
     | | :code:`GenHydroMustTake_Max_Power_Constraint`                         |
-    | | *Defined over*: :code:`GEN_HYDRO_MUST_TAKE_OPR_BT_HRZS`                  |
+    | | *Defined over*: :code:`GEN_HYDRO_MUST_TAKE_OPR_BT_HRZS`               |
     |                                                                         |
     | Limits the power plus upward reserves based on the                      |
     | :code:`gen_hydro_must_take_max_power_fraction` and the available        |
     | capacity.                                                               |
     +-------------------------------------------------------------------------+
     | | :code:`GenHydroMustTake_Min_Power_Constraint`                         |
-    | | *Defined over*: :code:`GEN_HYDRO_MUST_TAKE_OPR_BT_HRZS`                  |
+    | | *Defined over*: :code:`GEN_HYDRO_MUST_TAKE_OPR_BT_HRZS`               |
     |                                                                         |
     | Power provision minus downward reserves should exceed a certain level   |
     | based on the :code:`gen_hydro_must_take_min_power_fraction` and the     |
     | available capacity.                                                     |
     +-------------------------------------------------------------------------+
     | | :code:`GenHydroMustTake_Energy_Budget_Constraint`                     |
-    | | *Defined over*: :code:`GEN_HYDRO_MUST_TAKE_OPR_BT_HRZS`                  |
+    | | *Defined over*: :code:`GEN_HYDRO_MUST_TAKE_OPR_BT_HRZS`               |
     |                                                                         |
     | The project's average capacity factor in each operational horizon,      |
     | should match the specified                                              |

@@ -39,6 +39,7 @@ more details.
 
 
 .. _running-gridpath-scenarios-section-ref:
+
 Running GridPath Scenarios
 ==========================
 
