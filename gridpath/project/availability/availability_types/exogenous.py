@@ -93,7 +93,7 @@ def add_model_components(
     | outages) that depends on weather. Defaults to 1 if not specified.       |
     | Availaibility can also be more than 1.                                  |
     +-------------------------------------------------------------------------+
-    | | :code:`avl_exog_mnth_derate`                                            |
+    | | :code:`avl_exog_mnth_derate`                                          |
     | | *Defined over*: :code:`AVL_EXOG, MONTHS`                              |
     | | *Within*: :code:`NonNegativeReals`                                    |
     | | *Default*: :code:`1`                                                  |

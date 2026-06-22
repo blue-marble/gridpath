@@ -27,6 +27,7 @@ Running GridPath requires a Python 3 installation. GridPath is `tested nightly
 Python 3.11, 3.12, and 3.13. You can get Python `here <https://www.python.org/downloads/>`__.
 
 .. _python-virtual-env-section-ref:
+
 Python Virtual Environment
 --------------------------
 You must set up a Python virtual environment for GridPath to ensure

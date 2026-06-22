@@ -321,12 +321,12 @@ def add_model_components(
     | is unavailable, thus avoiding startup costs.                            |
     +-------------------------------------------------------------------------+
     | | :code:`gen_commit_bin_max_n_starts_per_hrz`                           |
-    | | *Defined over*: :code:`GEN_COMMIT_BIN_N_STARTUP_BT_HRZS'              |
+    | | *Defined over*: :code:`GEN_COMMIT_BIN_N_STARTUP_BT_HRZS`              |
     | | *Within*: :code:`NonNegativeReals`                                    |
     | | *Default*: :code:`inf`                                                |
     |                                                                         |
     | | :code:`gen_commit_lin_max_n_starts_per_hrz`                           |
-    | | *Defined over*: :code:`GEN_COMMIT_LIN_N_STARTUP_BT_HRZS'              |
+    | | *Defined over*: :code:`GEN_COMMIT_LIN_N_STARTUP_BT_HRZS`              |
     | | *Within*: :code:`NonNegativeReals`                                    |
     | | *Default*: :code:`inf`                                                |
     |                                                                         |
@@ -509,22 +509,22 @@ def add_model_components(
     | The project's shutdown ramp rate in MW in the linked timepoints         |
     | (depends on timepoint duration.)                                        |
     +-------------------------------------------------------------------------+
-    | | :code:`gen_commit_bin_linked_pmin_mw`           |
+    | | :code:`gen_commit_bin_linked_pmin_mw`                                 |
     | | *Defined over*: :code:`GEN_COMMIT_BIN_LINKED_TMPS`                    |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
-    | | :code:`gen_commit_lin_linked_pmin_mw`           |
+    | | :code:`gen_commit_lin_linked_pmin_mw`                                 |
     | | *Defined over*: :code:`GEN_COMMIT_LIN_LINKED_TMPS`                    |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
     | The project's minimum power output (in MW), if the unit was committed,  |
     | in the linked timepoints.                                               |
     +-------------------------------------------------------------------------+
-    | | :code:`gen_commit_bin_linked_pmax_mw`           |
+    | | :code:`gen_commit_bin_linked_pmax_mw`                                 |
     | | *Defined over*: :code:`GEN_COMMIT_BIN_LINKED_TMPS`                    |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
-    | | :code:`gen_commit_lin_linked_pmax_mw`           |
+    | | :code:`gen_commit_lin_linked_pmax_mw`                                 |
     | | *Defined over*: :code:`GEN_COMMIT_LIN_LINKED_TMPS`                    |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |

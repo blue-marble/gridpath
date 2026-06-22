@@ -20,9 +20,9 @@ Create GridPath Monte Carlo variable generation profile inputs. Before running
 this module,you will need to create weather draws with the
 ``create_monte_carlo_draws`` module (see :ref:`monte-carlo-draws-section-ref`).
 
-================
+===================
 What this step does
-================
+===================
 
 This is the variable energy resource (VER) counterpart to the load-CSV step. It
 reads the synthetic per-iteration variable generation profiles -- assembled from

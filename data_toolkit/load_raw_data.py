@@ -18,9 +18,9 @@ GridPath Data Toolkit module for data prerequisites. Use the
 ``files_to_import.csv`` file to tell GridPath which CSV files should be loaded
 into which database table.
 
-==================
+===================
 What this step does
-==================
+===================
 
 This module is a generic bulk loader for raw CSV data into the GridPath
 database. It reads a  file named ``files_to_import.csv`` located in the

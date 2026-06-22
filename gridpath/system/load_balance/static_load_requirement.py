@@ -124,7 +124,7 @@ def add_model_components(
     +-------------------------------------------------------------------------+
     | Expressions                                                             |
     +=========================================================================+
-    | | :code:`LZ_Bulk_Static_Load_in_Tmp`                                                |
+    | | :code:`LZ_Bulk_Static_Load_in_Tmp`                                    |
     | | *Defined over*: :code:`LOAD_ZONES, TMPS`                              |
     |                                                                         |
     | The total load (sum of all load components) for this load zone and      |

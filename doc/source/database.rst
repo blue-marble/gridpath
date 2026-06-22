@@ -13,6 +13,7 @@ This chapter describes the following:
 
 
 .. _building-the-database-section-ref:
+
 Building the Database
 #####################
 
@@ -51,6 +52,7 @@ Creating Scenarios
 .. automodule:: db.utilities.scenario
 
 .. _db-structure-section-ref:
+
 Database Structure
 ##################
 
@@ -63,6 +65,7 @@ features that are enabled for a scenario.
 .. automodule:: db.doc
 
 .. _gridpath-input-data-section-ref:
+
 GridPath Input Data
 ###################
 
@@ -158,8 +161,6 @@ Potential
 Project Availability
 ********************
 
-.. automodule:: db.csvs_test_examples.project.availability.doc
-
 =========
 Exogenous
 =========
@@ -179,8 +180,8 @@ Project Operational Characteristics
 .. automodule:: db.csvs_test_examples.project.opchar.doc
 
 ==========
-Heat Rates 
-===========
+Heat Rates
+==========
 
 .. automodule:: db.csvs_test_examples.project.opchar.heat_rate_curves.doc
 
@@ -322,21 +323,21 @@ Requirement
 .. automodule:: db.csvs_test_examples.reserves.spinning_reserves.req.doc
 
 
-Spinning Reserves
-*****************
+Inertia Reserves
+****************
 
 ===============
 Balancing Areas
 ===============
 
-.. automodule:: db.csvs_test_examples.reserves.spinning_reserves.geography_inertia_reserves_bas.doc
+.. automodule:: db.csvs_test_examples.reserves.inertia_reserves.geography_inertia_reserves_bas.doc
 
 
 =====================
 Contributing Projects
 =====================
 
-.. automodule:: db.csvs_test_examples.reserves.spinning_reserves.project_inertia_reserves_bas.doc
+.. automodule:: db.csvs_test_examples.reserves.inertia_reserves.project_inertia_reserves_bas.doc
 
 
 ===========

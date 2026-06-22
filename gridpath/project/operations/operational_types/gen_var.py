@@ -116,7 +116,7 @@ def add_model_components(
     | | *Defined over*: :code:`GEN_VAR`                                       |
     | | *Within*: :code:`Reals`                                               |
     |                                                                         |
-    | Optinal default value for gen_var_cap_factor. Use with caution.         |                                                    |
+    | Optinal default value for gen_var_cap_factor. Use with caution.         |
     +-------------------------------------------------------------------------+
 
     |
