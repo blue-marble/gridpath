@@ -52,6 +52,11 @@ def get_monte_carlo_timeseries_project_pool_and_make_profile_csvs(
     # Get project units and their weights and timeseries
     df = pd.read_sql(f"""SELECT * FROM {units_table};""", conn)
 
+    # Close before spawning workers: on Windows, holding an open SQLite file
+    # handle in the main process conflicts with the spawn workers trying to
+    # open the same file (WinError 32). Workers each open their own connection.
+    conn.close()
+
     # Create a dictionary of the form {timeseries: project: [units]}
     timeseries_project_unit_dict = {}
 
@@ -125,9 +130,7 @@ def get_monte_carlo_timeseries_project_pool_and_make_profile_csvs(
 
     pool.map(create_project_profile_csv_pool, pool_data)
     pool.close()
-
-    conn.commit()
-    conn.close()
+    pool.join()
 
 
 def create_project_profile_csv(
