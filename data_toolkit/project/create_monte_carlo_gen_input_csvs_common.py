@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from multiprocessing import get_context
+from multiprocessing import current_process, get_context
 import os.path
 import pandas as pd
 
@@ -111,7 +111,16 @@ def get_monte_carlo_timeseries_project_pool_and_make_profile_csvs(
         ]
     )
 
-    # Pool must use spawn to work properly on Linux
+    # Pool must use spawn to work properly on Linux.
+    # Guard against re-entry on Windows: spawn re-imports __main__ in each
+    # worker, triggering this function again. parent_process() looks correct
+    # but is set in _bootstrap(), which runs *after* prepare() re-imports
+    # __main__, so it's still None when the guard is evaluated. Use
+    # current_process().name instead — it's set during prepare() before the
+    # __main__ import.
+    if current_process().name != "MainProcess":
+        return
+
     pool = get_context("spawn").Pool(int(n_parallel_projects))
 
     pool.map(create_project_profile_csv_pool, pool_data)
