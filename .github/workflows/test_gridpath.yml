@@ -41,6 +41,7 @@ jobs:
     - name: Install Cbc (MacOS)
       if: startsWith(runner.os, 'macOS')
       run: |
+        brew trust coin-or-tools/coinor
         brew tap coin-or-tools/coinor
         brew install coin-or-tools/coinor/cbc
         echo "/opt/homebrew/opt/cbc/bin" >> $GITHUB_PATH
