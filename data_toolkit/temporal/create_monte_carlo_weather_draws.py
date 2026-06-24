@@ -21,6 +21,7 @@
 
 """
 .. _monte-carlo-draws-section-ref:
+
 Monte Carlo Weather Iteration Draws
 ***********************************
 
@@ -66,9 +67,9 @@ of weather (e.g., heat waves and cold snaps span multiple days):
        empirically estimated transition probability ``P(bin_today |
        bin_yesterday)`` for the relevant month.
 
-------------------------
+-------------------------
 Reproducibility (seeding)
-------------------------
+-------------------------
 
 By default no seed is set (``weather_draws_seed`` defaults to ``None``), so each
 run produces a different random ensemble of synthetic weather years. To get

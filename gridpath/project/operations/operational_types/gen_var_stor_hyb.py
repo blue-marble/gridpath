@@ -192,7 +192,7 @@ def add_model_components(
     +-------------------------------------------------------------------------+
     | Expressions                                                             |
     +=========================================================================+
-    | | :code:`GenVarStorHyb_Available_Gen_Power_MW`                              |
+    | | :code:`GenVarStorHyb_Available_Gen_Power_MW`                          |
     | | *Defined over*: :code:`GEN_VAR_STOR_HYB_OPR_TMPS`                     |
     |                                                                         |
     | The available power from the variable resource.                         |

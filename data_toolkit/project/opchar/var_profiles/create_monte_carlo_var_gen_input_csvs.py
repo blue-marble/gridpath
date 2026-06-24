@@ -20,9 +20,9 @@ Create GridPath Monte Carlo variable generation profile inputs. Before running
 this module,you will need to create weather draws with the
 ``create_monte_carlo_draws`` module (see :ref:`monte-carlo-draws-section-ref`).
 
-================
+===================
 What this step does
-================
+===================
 
 This is the variable energy resource (VER) counterpart to the load-CSV step. It
 reads the synthetic per-iteration variable generation profiles -- assembled from
@@ -91,7 +91,6 @@ from argparse import ArgumentParser
 import os.path
 import sys
 
-from db.common_functions import connect_to_database
 from data_toolkit.load_raw_data import read_and_import_csv
 from data_toolkit.project.create_monte_carlo_gen_input_csvs_common import (
     get_monte_carlo_timeseries_project_pool_and_make_profile_csvs,
@@ -190,8 +189,6 @@ def main(args=None):
 
     os.makedirs(parsed_args.output_directory, exist_ok=True)
 
-    conn = connect_to_database(db_path=parsed_args.database)
-
     # Create the variable generation profile CSVs
     get_monte_carlo_timeseries_project_pool_and_make_profile_csvs(
         db_path=parsed_args.database,
@@ -210,9 +207,6 @@ def main(args=None):
         print_default_values=True,
         default_value=None,
     )
-
-    conn.commit()
-    conn.close()
 
 
 if __name__ == "__main__":

@@ -43,9 +43,9 @@ Settings
     * overwrite
     * n_parallel_projects
 
-==================
+===================
 What this step does
-==================
+===================
 
 This module builds GridPath hydro operational-characteristics input CSVs from
 the year/month hydro data loaded earlier
@@ -68,9 +68,9 @@ project, named ``<project>-<scenario_id>-<scenario_name>.csv`` in
 ``--output_directory``. Projects are processed in a multiprocessing pool sized
 by ``--n_parallel_projects`` (defaults to ``1``).
 
-----------------------------------
+--------------------------------------------
 Hydro iterations and balancing-type horizons
-----------------------------------
+--------------------------------------------
 
 The set of hydro years is read from ``raw_data_hydro_years`` and each year is
 treated as one hydro iteration (written into the ``hydro_iteration`` column).
@@ -81,9 +81,9 @@ supplied, the pairs are filtered to that single balancing type (e.g. ``day``,
 combination of hydro year and balancing-type horizon, one output row is
 produced.
 
-----------------------------------
+------------------------------------
 Deriving per-horizon power fractions
-----------------------------------
+------------------------------------
 
 The ``average_power_fraction``, ``min_power_fraction``, and
 ``max_power_fraction`` for each horizon are computed by month-weighting the raw
@@ -123,7 +123,7 @@ database.
 """
 
 from argparse import ArgumentParser
-from multiprocessing import get_context
+from multiprocessing import current_process, get_context
 import os.path
 import pandas as pd
 import sys
@@ -438,14 +438,25 @@ def main(args=None):
         ]
     )
 
-    # Pool must use spawn to work properly on Linux
+    # Close before spawning workers: on Windows, holding an open SQLite file
+    # handle in the main process conflicts with spawn workers opening the same
+    # file (WinError 32). Workers each open their own connection.
+    conn.commit()
+    conn.close()
+
+    # Pool must use spawn to work properly on Linux.
+    # Guard against re-entry on Windows: spawn re-imports __main__ in each
+    # worker, triggering main() again. current_process().name is set during
+    # prepare() before __main__ is re-imported, so it reliably identifies
+    # worker processes (unlike parent_process(), which isn't set until later).
+    if current_process().name != "MainProcess":
+        return
+
     pool = get_context("spawn").Pool(int(parsed_args.n_parallel_projects))
 
     pool.map(calculate_from_project_year_month_data_pool, pool_data)
     pool.close()
-
-    conn.commit()
-    conn.close()
+    pool.join()
 
 
 if __name__ == "__main__":

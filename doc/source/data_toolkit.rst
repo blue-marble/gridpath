@@ -72,9 +72,7 @@ Load Inputs
 ***********
 
 .. automodule:: data_toolkit.system.create_sync_load_input_csvs
-.. automodule:: data_toolkit.system.create_sync_load_input_csvs.create_load_profile_csv
 .. automodule:: data_toolkit.system.create_monte_carlo_load_input_csvs
-.. automodule:: data_toolkit.system.create_monte_carlo_load_input_csvs.create_load_profile_csv
 
 **************
 Project Inputs
@@ -111,10 +109,4 @@ Transmission Inputs
 .. automodule:: data_toolkit.transmission.load_zones.eia930_to_transmission_load_zone_input_csvs
 .. automodule:: data_toolkit.transmission.availability.eia930_to_transmission_availability_input_csvs
 .. automodule:: data_toolkit.transmission.capacity_specified.eia930_to_transmission_specified_capacity_input_csvs
-.. automodule:: data_toolkit.transmission.fixed_cost.eia930_to_transmission_fixed_cost_input_csvs
 .. automodule:: data_toolkit.transmission.opchar.eia930_to_transmission_opchar_input_csvs
-.. automodule:: data_toolkit.transmission.opchar.fuels.eia930_to_transmission_fuel_input_csvs
-.. automodule:: data_toolkit.transmission.opchar.heat_rates.eia930_to_transmission_heat_rate_input_csvs
-.. automodule:: data_toolkit.transmission.opchar.var_profiles.create_sync_var_gen_input_csvs
-.. automodule:: data_toolkit.transmission.opchar.var_profiles.create_monte_carlo_var_gen_input_csvs
-.. automodule:: data_toolkit.transmission.opchar.hydro.create_hydro_iteration_input_csvs

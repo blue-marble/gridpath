@@ -33,27 +33,29 @@ This script depends on having loaded the Form EIA 930 hourly interchange data
 and to have defined a region for each BA in the user_defined_baa_key table (
 in order to filter BAs if needed). It assumes the following raw input
 database tables have been populated:
-    * raw_data_eia930_hourly_interchange
-    * user_defined_baa_key
+
+* raw_data_eia930_hourly_interchange
+* user_defined_baa_key
 
 =========
 Settings
 =========
-    * database
-    * lz_output_directory
-    * load_zone_scenario_id
-    * load_zone_scenario_name
-    * lb_output_directory
-    * load_balance_scenario_id
-    * load_balance_scenario_name
-    * allow_overgeneration
-    * overgeneration_penalty_per_mw
-    * allow_unserved_energy
-    * unserved_energy_penalty_per_mwh
-    * max_unserved_load_penalty_per_mw
-    * avg_unserved_load_penalty_per_mwa
-    * export_penalty_cost_per_mwh
-    * unserved_energy_stats_threshold_mw
+
+* database
+* lz_output_directory
+* load_zone_scenario_id
+* load_zone_scenario_name
+* lb_output_directory
+* load_balance_scenario_id
+* load_balance_scenario_name
+* allow_overgeneration
+* overgeneration_penalty_per_mw
+* allow_unserved_energy
+* unserved_energy_penalty_per_mwh
+* max_unserved_load_penalty_per_mw
+* avg_unserved_load_penalty_per_mwa
+* export_penalty_cost_per_mwh
+* unserved_energy_stats_threshold_mw
 
 """
 

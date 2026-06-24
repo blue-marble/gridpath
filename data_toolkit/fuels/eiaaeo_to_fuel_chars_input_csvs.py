@@ -32,21 +32,23 @@ Input prerequisites
 
 Thios module assumes the following raw input database tables have been
 populated:
-    * raw_data_eiaaeo_fuel_prices
-    * user_defined_eia_gridpath_key
-    * user_defined_generic_fuel_intensities
-    * user_defined_eiaaeo_region_key
+
+* raw_data_eiaaeo_fuel_prices
+* user_defined_eia_gridpath_key
+* user_defined_generic_fuel_intensities
+* user_defined_eiaaeo_region_key
 
 
 =========
 Settings
 =========
-    * database
-    * output_directory
-    * model_case
-    * report_year
-    * fuel_scenario_id
-    * fuel_scenario_name
+
+* database
+* output_directory
+* model_case
+* report_year
+* fuel_scenario_id
+* fuel_scenario_name
 
 """
 
