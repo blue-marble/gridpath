@@ -79,6 +79,7 @@ local_capacity_balance_provision_components = (
 fuel_burn_balance_components = "fuel_burn_balance_components"
 
 policy_balance_contribution_components = "policy_balance_contribution_components"
+policy_balance_base_components = "policy_balance_base_components"
 
 period_energy_target_balance_contribution_components = (
     "period_energy_target_balance_contribution_components"
@@ -187,8 +188,12 @@ class DynamicComponents(object):
         setattr(self, fuel_burn_balance_components, list())
 
         # Generic policy constraint
-        # Modules will add component names to this list
+        # Modules will add component names to these lists: the contributions
+        # toward the requirement and the base quantities the requirement can
+        # scale with (e.g. the mapped projects' output for an intensity
+        # target)
         setattr(self, policy_balance_contribution_components, list())
+        setattr(self, policy_balance_base_components, list())
 
         # Energy target constraints
         # Modules will add component names to these lists

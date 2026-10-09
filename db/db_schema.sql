@@ -6173,6 +6173,11 @@ CREATE TABLE inputs_system_policy_requirements
     -- exceed it). NULL means 'min'.
     policy_requirement_sense        VARCHAR(3) DEFAULT 'min'
         CHECK (policy_requirement_sense IN ('min', 'max')),
+    -- The requirement per unit of the requirement's base, i.e. the output or
+    -- capacity of the projects in
+    -- inputs_system_policy_requirements_base_projects, e.g. an emissions
+    -- intensity per MWh of those projects' output
+    policy_requirement_f_base_coeff FLOAT,
     PRIMARY KEY (policy_requirement_scenario_id, policy_name, policy_zone,
                  subproblem_id, stage_id, balancing_type_horizon, horizon)
 );
@@ -6204,6 +6209,29 @@ CREATE TABLE inputs_system_policy_requirements_load_zone_map
     load_zone                      TEXT,
     PRIMARY KEY (policy_requirement_scenario_id, policy_name, policy_zone,
                  load_zone)
+);
+
+-- If the policy requirement is specified as a function of a base (via
+-- policy_requirement_f_base_coeff), we need to also specify the base: the
+-- projects whose output (energy over the requirement horizon) or capacity
+-- (in the horizon's period) the requirement scales with, e.g. the
+-- generation an emissions intensity standard applies to. Which projects
+-- drive the requirement is part of the requirement's definition and is
+-- independent of which projects count toward meeting it
+-- (inputs_project_policy_zones); a project may do either or both. Each
+-- project's base quantity is weighted by base_multiplier (NULL = 1).
+DROP TABLE IF EXISTS inputs_system_policy_requirements_base_projects;
+CREATE TABLE inputs_system_policy_requirements_base_projects
+(
+    policy_requirement_scenario_id INTEGER,
+    policy_name                    TEXT,
+    policy_zone                    TEXT,
+    project                        VARCHAR(64),
+    base_type                      VARCHAR(8) NOT NULL
+        CHECK (base_type IN ('output', 'capacity')),
+    base_multiplier                FLOAT,
+    PRIMARY KEY (policy_requirement_scenario_id, policy_name, policy_zone,
+                 project, base_type)
 );
 
 -- Project, policy, zones
@@ -8885,6 +8913,7 @@ CREATE TABLE results_system_policy_requirements
     policy_requirement                        FLOAT,
     pre_load_modifier_load_in_hrz             FLOAT,
     post_load_modifier_load_in_hrz            FLOAT,
+    policy_requirement_base_in_hrz            FLOAT,
     policy_requirement_calculated_in_horizon  FLOAT,
     policy_requirement_sense                  TEXT,
     policy_requirement_shortage               FLOAT,
@@ -8894,6 +8923,33 @@ CREATE TABLE results_system_policy_requirements
     PRIMARY KEY (scenario_id, policy_name, policy_zone, weather_iteration,
                  hydro_iteration, availability_iteration, subproblem_id,
                  stage_id, balancing_type_horizon, horizon)
+);
+
+-- The base projects' quantities in each requirement horizon (energy in MWh
+-- for the output base, capacity in MW for the capacity base), before and
+-- after the project's multiplier
+DROP TABLE IF EXISTS results_project_policy_requirement_base;
+CREATE TABLE results_project_policy_requirement_base
+(
+    scenario_id            INTEGER,
+    weather_iteration      INTEGER,
+    hydro_iteration        INTEGER,
+    availability_iteration INTEGER,
+    subproblem_id          INTEGER,
+    stage_id               INTEGER,
+    policy_name            TEXT,
+    policy_zone            TEXT,
+    balancing_type_horizon VARCHAR(64),
+    horizon                INTEGER,
+    project                VARCHAR(64),
+    base_type              TEXT,
+    base_multiplier        FLOAT,
+    base_in_hrz            FLOAT,
+    weighted_base_in_hrz   FLOAT,
+    PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
+                 availability_iteration, subproblem_id, stage_id,
+                 policy_name, policy_zone, balancing_type_horizon, horizon,
+                 project, base_type)
 );
 
 

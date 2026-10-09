@@ -2411,6 +2411,41 @@ class TestExamples(unittest.TestCase):
         scenario_name = "test_performance_standard_both"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
+    def test_example_test_generic_policy_performance_standard(self):
+        """
+        Check validation and objective function value of
+        "test_generic_policy_performance_standard" example: the
+        "test_performance_standard" tCO2/MWh standard expressed as a 'max'
+        generic policy on emissions with the projects' output as the base;
+        the objective is the same as the original's.
+        :return:
+        """
+        scenario_name = "test_generic_policy_performance_standard"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_generic_policy_performance_standard_power(self):
+        """
+        Check validation and objective function value of
+        "test_generic_policy_performance_standard_power" example: the
+        "test_performance_standard_power" tCO2/MW standard expressed as a
+        'max' generic policy on emissions with the projects' capacity as the
+        base; the objective is the same as the original's.
+        :return:
+        """
+        scenario_name = "test_generic_policy_performance_standard_power"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_generic_policy_performance_standard_both(self):
+        """
+        Check validation and objective function value of
+        "test_generic_policy_performance_standard_both" example, the generic
+        policy twin of "test_performance_standard_both" (one policy per
+        standard); the objective is the same as the original's.
+        :return:
+        """
+        scenario_name = "test_generic_policy_performance_standard_both"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
     def test_test_new_instantaneous_penetration(self):
         """
         Check validation and objective function value of "test_new_instantaneous_penetration" example
