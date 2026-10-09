@@ -868,6 +868,8 @@ Performance Standard
 GridPath can optionally impose a performance standard requirement, i.e. limiting the
 emissions intensity of energy produced by a set of projects.
 
+.. _generic-policy-section-ref:
+
 Generic Policy
 --------------
 
@@ -897,8 +899,10 @@ import into the zone to the policy's contributions, at an import intensity
 and, in a zone with the ``net_prd`` import-emissions basis, less a credit for
 exports at an export intensity (the same accounting as the carbon cap's
 tracked imports); since the imported-power variables are bounded from below
-only, this is available for ``max`` requirements. Each policy zone can allow
-violations of its requirements at a penalty per unit.
+only, this is available for ``max`` requirements. Carbon credits purchased by
+the mapped projects from the carbon credits zones mapped to the policy zone
+reduce the policy's contributions, as for the carbon cap. Each policy zone can
+allow violations of its requirements at a penalty per unit.
 
 .. _custom-modules-section-ref:
 

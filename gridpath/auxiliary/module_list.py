@@ -253,6 +253,7 @@ def all_modules_list():
         "system.policy.generic_policy.aggregate_transmission_import_emissions",
         "system.policy.generic_policy.aggregate_market_import_emissions",
         "system.policy.generic_policy.aggregate_import_emissions",
+        "system.policy.generic_policy.aggregate_project_carbon_credits",
         "system.policy.generic_policy.policy_target_balance",
         "system.policy.generic_policy.consolidate_results",
         "system.reliability.prm.aggregate_project_simple_prm_contribution",
@@ -622,6 +623,9 @@ def cross_feature_modules_list():
         ],
         ("performance_standard", "carbon_credits"): [
             "system.policy.performance_standard.aggregate_project_carbon_credits",
+        ],
+        ("policy", "carbon_credits"): [
+            "system.policy.generic_policy.aggregate_project_carbon_credits",
         ],
         ("carbon_tax", "carbon_credits"): [
             "system.policy.carbon_tax.aggregate_project_carbon_credits",

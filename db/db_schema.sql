@@ -911,6 +911,32 @@ CREATE TABLE inputs_system_performance_standard_zones_carbon_credits_zones
             (performance_standard_zones_carbon_credits_zones_scenario_id)
 );
 
+-- Generic policy zone <--> carbon credit zone mapping: the credits the
+-- projects mapped to the policy zone purchase from the mapped credit zones
+-- reduce the policy's contributions
+DROP TABLE IF EXISTS subscenarios_system_policy_zones_carbon_credits_zones;
+CREATE TABLE subscenarios_system_policy_zones_carbon_credits_zones
+(
+    policy_zones_carbon_credits_zones_scenario_id INTEGER PRIMARY KEY
+        AUTOINCREMENT,
+    name                                          VARCHAR(32),
+    description                                   VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_system_policy_zones_carbon_credits_zones;
+CREATE TABLE inputs_system_policy_zones_carbon_credits_zones
+(
+    policy_zones_carbon_credits_zones_scenario_id INTEGER,
+    policy_name                                   TEXT,
+    policy_zone                                   TEXT,
+    carbon_credits_zone                           VARCHAR(32),
+    PRIMARY KEY (policy_zones_carbon_credits_zones_scenario_id,
+                 policy_name, policy_zone, carbon_credits_zone),
+    FOREIGN KEY (policy_zones_carbon_credits_zones_scenario_id) REFERENCES
+        subscenarios_system_policy_zones_carbon_credits_zones
+            (policy_zones_carbon_credits_zones_scenario_id)
+);
+
 -- Carbon tax zone <--> carbon credit zone mapping
 DROP TABLE IF EXISTS subscenarios_system_carbon_tax_zones_carbon_credits_zones;
 CREATE TABLE subscenarios_system_carbon_tax_zones_carbon_credits_zones
@@ -6617,6 +6643,7 @@ CREATE TABLE scenarios
     carbon_credits_zone_scenario_id                             INTEGER,
     carbon_cap_zones_carbon_credits_zones_scenario_id           INTEGER,
     performance_standard_zones_carbon_credits_zones_scenario_id INTEGER,
+    policy_zones_carbon_credits_zones_scenario_id               INTEGER,
     carbon_tax_zones_carbon_credits_zones_scenario_id           INTEGER,
     carbon_credits_params_scenario_id                           INTEGER,
     fuel_burn_limit_ba_scenario_id                              INTEGER,
@@ -6771,6 +6798,9 @@ CREATE TABLE scenarios
     FOREIGN KEY (performance_standard_zones_carbon_credits_zones_scenario_id) REFERENCES
         subscenarios_system_performance_standard_zones_carbon_credits_zones
             (performance_standard_zones_carbon_credits_zones_scenario_id),
+    FOREIGN KEY (policy_zones_carbon_credits_zones_scenario_id) REFERENCES
+        subscenarios_system_policy_zones_carbon_credits_zones
+            (policy_zones_carbon_credits_zones_scenario_id),
     FOREIGN KEY (carbon_tax_zones_carbon_credits_zones_scenario_id) REFERENCES
         subscenarios_system_carbon_tax_zones_carbon_credits_zones
             (carbon_tax_zones_carbon_credits_zones_scenario_id),
@@ -9027,6 +9057,9 @@ CREATE TABLE results_system_policy_requirements
     market_export_credits                     FLOAT,
     total_import_emissions                    FLOAT,
     total_import_emissions_degen              FLOAT,
+    -- Carbon credits purchased by the mapped projects, which reduce the
+    -- policy's contributions
+    carbon_credits                            FLOAT,
     PRIMARY KEY (scenario_id, policy_name, policy_zone, weather_iteration,
                  hydro_iteration, availability_iteration, subproblem_id,
                  stage_id, balancing_type_horizon, horizon)
@@ -9585,6 +9618,10 @@ SELECT scenario_id,
         FROM subscenarios_system_performance_standard_zones_carbon_credits_zones
         WHERE performance_standard_zones_carbon_credits_zones_scenario_id =
               scenarios.performance_standard_zones_carbon_credits_zones_scenario_id) AS performance_standard_zones_carbon_credits_zones,
+       (SELECT name
+        FROM subscenarios_system_policy_zones_carbon_credits_zones
+        WHERE policy_zones_carbon_credits_zones_scenario_id =
+              scenarios.policy_zones_carbon_credits_zones_scenario_id)               AS policy_zones_carbon_credits_zones,
        (SELECT name
         FROM subscenarios_system_carbon_tax_zones_carbon_credits_zones
         WHERE carbon_tax_zones_carbon_credits_zones_scenario_id =

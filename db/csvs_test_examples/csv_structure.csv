@@ -246,3 +246,4 @@ policy/generic/transmission_policy_zones,policy,transmission_policy_zone_scenari
 policy/generic/transmission_policy_zones/transmission_emissions_profiles,policy,tmp_import_emissions_scenario_id,transmission_policy_timepoint_emissions,simple,,1,transmission_line,,,,
 policy/generic/market_policy_zones,policy,market_policy_zone_scenario_id,market_policy_zones,simple,,0,,,,,
 policy/generic/market_policy_zones/market_emissions_profiles,policy,tmp_import_emissions_scenario_id,market_policy_timepoint_emissions,simple,,1,market,,,,
+policy/generic/carbon_credits,carbon_credits,policy_zones_carbon_credits_zones_scenario_id,system_policy_zones_carbon_credits_zones,simple,,0,,,,,
