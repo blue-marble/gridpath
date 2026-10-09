@@ -53,10 +53,13 @@ from gridpath.auxiliary.dynamic_components import (
     carbon_cap_signed_import_emission_components,
     carbon_tax_import_emission_components,
     carbon_tax_signed_import_emission_components,
+    policy_import_emission_components,
+    policy_signed_import_emission_components,
 )
 from gridpath.common_functions import create_results_df, update_results_df
 from gridpath.system.policy.carbon_cap import CARBON_CAP_ZONE_PRD_DF
 from gridpath.system.policy.carbon_tax import CARBON_TAX_ZONE_PRD_DF
+from gridpath.system.policy.generic_policy import POLICY_ZONE_PRD_DF
 
 GROSS = "gross"
 NET_PRD = "net_prd"
@@ -64,12 +67,23 @@ IMPORT_EMISSIONS_BASES = [GROSS, NET_PRD]
 
 IMPORT_DIRECTIONS = ["positive", "negative"]
 
+# The generic policy's compliance type whose rows carry import emissions
+IMPORT_EMISSIONS_COMPLIANCE_TYPE = "import_emissions"
+
 
 def period_keys(mod, tmp):
     """
     The temporal keys of a period-enforced policy: the timepoint's period.
     """
     return [(mod.period[tmp],)]
+
+
+def horizon_keys(mod, tmp):
+    """
+    The temporal keys of a horizon-enforced policy: the timepoint's horizon
+    under each balancing type.
+    """
+    return [(bt, mod.horizon[tmp, bt]) for bt in mod.BLN_TYPES]
 
 
 class ImportEmissionsPolicy(object):
@@ -98,8 +112,11 @@ class ImportEmissionsPolicy(object):
         results_df,
         import_emission_components,
         signed_import_emission_components,
+        rows_filter_sql="",
+        zones_file_tag="zones",
+        validate_rows=None,
     ):
-        # 'carbon_cap' / 'carbon_tax'
+        # 'carbon_cap' / 'carbon_tax' / 'policy'
         self.name = name
         # 'Carbon_Cap' / 'Carbon_Tax', for Var/Expression/Constraint names
         self.component_prefix = name.title()
@@ -119,6 +136,16 @@ class ImportEmissionsPolicy(object):
         self.results_df = results_df
         self.import_emission_components = import_emission_components
         self.signed_import_emission_components = signed_import_emission_components
+        # an extra SQL filter on the sources' mapping tables, e.g. to keep
+        # only the rows of one compliance type
+        self.rows_filter_sql = rows_filter_sql
+        # the tag in the sources' .tab file names (<source>_<name>_<tag>.tab),
+        # so the import mappings do not collide with another .tab of the
+        # policy's source mappings
+        self.zones_file_tag = zones_file_tag
+        # optional extra validation of the mapping rows:
+        # (cursor, subscenarios, df, entity_columns, policy) -> error messages
+        self.validate_rows = validate_rows
 
     @property
     def index_columns(self):
@@ -158,6 +185,57 @@ CARBON_TAX = ImportEmissionsPolicy(
     results_df=CARBON_TAX_ZONE_PRD_DF,
     import_emission_components=carbon_tax_import_emission_components,
     signed_import_emission_components=carbon_tax_signed_import_emission_components,
+)
+
+
+def validate_import_rows_in_max_policies(c, subscenarios, df, idx_cols, policy):
+    """
+    Error messages for import-emissions mapping rows of a policy zone with a
+    ``min`` horizon requirement or a month-hour requirement: the imported
+    power variables are bounded from below only, so import emissions can be
+    counted exactly only where the policy pushes them down, i.e. toward a
+    ``max`` requirement.
+    """
+    min_zones = set(c.execute(f"""
+            SELECT DISTINCT policy_name, policy_zone
+            FROM inputs_system_policy_requirements
+            WHERE policy_requirement_scenario_id =
+                {subscenarios.POLICY_REQUIREMENT_SCENARIO_ID}
+            AND COALESCE(policy_requirement_sense, 'min') = 'min'
+            UNION
+            SELECT DISTINCT policy_name, policy_zone
+            FROM inputs_system_policy_month_hour_requirements
+            WHERE policy_requirement_scenario_id =
+                {subscenarios.POLICY_REQUIREMENT_SCENARIO_ID}
+            """).fetchall())
+    bad = df[zone_tuples(df, policy).isin(min_zones)]
+    if bad.empty:
+        return []
+    label_cols = idx_cols + policy.zone_columns
+    labels = ", ".join(
+        "-".join(str(row[col]) for col in label_cols) for _, row in bad.iterrows()
+    )
+    return [
+        f"{'-'.join(label_cols)}(s) '{labels}': import emissions can only count "
+        "toward policies with 'max' horizon requirements (the imported power "
+        "variables are exact only where the policy pushes them down)."
+    ]
+
+
+POLICY = ImportEmissionsPolicy(
+    name="policy",
+    zone_columns=["policy_name", "policy_zone"],
+    zones_set="POLICIES_ZONES",
+    requirement_set="POLICIES_ZONE_BLN_TYPE_HRZS_WITH_REQ",
+    requirement_columns=["balancing_type_horizon", "horizon"],
+    requirement_keys=horizon_keys,
+    zone_subscenario_attr="POLICY_ZONE_SCENARIO_ID",
+    results_df=POLICY_ZONE_PRD_DF,
+    import_emission_components=policy_import_emission_components,
+    signed_import_emission_components=policy_signed_import_emission_components,
+    rows_filter_sql=f"AND compliance_type = '{IMPORT_EMISSIONS_COMPLIANCE_TYPE}'",
+    zones_file_tag=IMPORT_EMISSIONS_COMPLIANCE_TYPE,
+    validate_rows=validate_import_rows_in_max_policies,
 )
 
 

@@ -76,7 +76,7 @@ def names(policy):
         import_emissions_constraint=f"Market_{Pc}_Import_Emissions_Constraint",
         import_mw_var=f"Market_{Pc}_Import_MW",
         import_mw_constraint=f"Market_{Pc}_Import_MW_Constraint",
-        zones_file=f"market_{p}_zones.tab",
+        zones_file=f"market_{p}_{policy.zones_file_tag}.tab",
         timepoint_emissions_file=f"market_{p}_timepoint_emissions.tab",
         results=f"system_market_{p}_imports",
         zones_table=f"inputs_market_{p}_zones",
@@ -579,6 +579,7 @@ def lz_market_zones_sql(subscenarios, policy, scope_zones=True):
                 WHERE market_scenario_id = {subscenarios.MARKET_SCENARIO_ID}
             )
         )
+        {policy.rows_filter_sql}
         {zone_filter}
     """
 
@@ -778,6 +779,8 @@ def generic_validate_inputs(
         )
     errors += validate_export_intensities(df, basis_by_zone, tmp_df, ["market"], policy)
     errors += validate_single_profile_per_entity(df, ["market"])
+    if policy.validate_rows is not None:
+        errors += policy.validate_rows(c, subscenarios, df, pair_cols, policy)
 
     write_validation_to_database(
         conn=conn,

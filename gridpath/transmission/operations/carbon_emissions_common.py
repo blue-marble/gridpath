@@ -83,7 +83,7 @@ def names(policy):
         import_emissions_constraint=f"Tx_{Pc}_Import_Emissions_Constraint",
         import_mw_var=f"Tx_{Pc}_Import_MW",
         import_mw_constraint=f"Tx_{Pc}_Import_MW_Constraint",
-        zones_file=f"transmission_{p}_zones.tab",
+        zones_file=f"transmission_{p}_{policy.zones_file_tag}.tab",
         timepoint_emissions_file=f"transmission_{p}_timepoint_emissions.tab",
         results=f"transmission_{p}_imports",
         zones_table=f"inputs_transmission_{p}_zones",
@@ -621,6 +621,7 @@ def line_zones_sql(subscenarios, policy, scope_zones=True):
             WHERE transmission_portfolio_scenario_id =
                 {subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID}
         )
+        {policy.rows_filter_sql}
         {zone_filter}
     """
 
@@ -818,6 +819,10 @@ def generic_validate_inputs(
         )
         + validate_single_profile_per_entity(df, ["transmission_line"])
     )
+    if policy.validate_rows is not None:
+        errors += policy.validate_rows(
+            c, subscenarios, df, ["transmission_line"], policy
+        )
 
     write_validation_to_database(
         conn=conn,

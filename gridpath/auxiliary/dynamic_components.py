@@ -56,6 +56,8 @@ carbon_tax_import_emission_components = "carbon_tax_import_emission_components"
 carbon_tax_signed_import_emission_components = (
     "carbon_tax_signed_import_emission_components"
 )
+policy_import_emission_components = "policy_import_emission_components"
+policy_signed_import_emission_components = "policy_signed_import_emission_components"
 
 performance_standard_balance_emission_components = (
     "performance_standard_balance_emission_components"
@@ -165,6 +167,8 @@ class DynamicComponents(object):
         setattr(self, carbon_cap_signed_import_emission_components, list())
         setattr(self, carbon_tax_import_emission_components, list())
         setattr(self, carbon_tax_signed_import_emission_components, list())
+        setattr(self, policy_import_emission_components, list())
+        setattr(self, policy_signed_import_emission_components, list())
 
         # Performance standard constraint
         setattr(self, performance_standard_balance_emission_components, list())

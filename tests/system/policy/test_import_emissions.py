@@ -22,15 +22,20 @@ import unittest
 
 import pandas as pd
 
+import sqlite3
+
 from gridpath.system.policy.import_emissions import (
     CARBON_CAP,
     GROSS,
     NET_PRD,
+    POLICY,
     ImportEmissionsPolicy,
     ImportEmissionsSource,
+    horizon_keys,
     period_keys,
     split_index,
     validate_export_intensities,
+    validate_import_rows_in_max_policies,
     validate_zones,
     zone_scope_sql,
 )
@@ -47,6 +52,14 @@ class _Mod(object):
 class _Subscenarios(object):
     CARBON_CAP_ZONE_SCENARIO_ID = 7
     POLICY_ZONE_SCENARIO_ID = 3
+    POLICY_REQUIREMENT_SCENARIO_ID = 5
+
+
+class _HorizonMod(object):
+    """A stand-in model with horizons per balancing type."""
+
+    BLN_TYPES = ["day", "year"]
+    horizon = {(1, "day"): 20200101, (1, "year"): 2020}
 
 
 # A policy enforced over (policy_name, policy_zone, balancing_type, horizon)
@@ -80,6 +93,61 @@ class TestImportEmissionsHelpers(unittest.TestCase):
             ("CarbonCap", "Zone1"),
             COMPOSITE.zone_of(("CarbonCap", "Zone1", "year", 2020)),
         )
+
+    def test_policy_descriptor_for_the_generic_policy(self):
+        self.assertEqual(["policy_name", "policy_zone"], POLICY.zone_columns)
+        self.assertEqual(
+            ["policy_name", "policy_zone", "balancing_type_horizon", "horizon"],
+            POLICY.index_columns,
+        )
+        self.assertEqual(
+            [("day", 20200101), ("year", 2020)], horizon_keys(_HorizonMod(), 1)
+        )
+        self.assertIn("compliance_type = 'import_emissions'", POLICY.rows_filter_sql)
+        self.assertEqual("import_emissions", POLICY.zones_file_tag)
+
+    def test_validate_import_rows_in_max_policies(self):
+        """
+        Rows mapped to a policy zone with a 'min' (or unspecified) horizon
+        requirement or with month-hour requirements are errors; rows of
+        'max'-only zones are fine.
+        """
+        conn = sqlite3.connect(":memory:")
+        c = conn.cursor()
+        c.execute("""CREATE TABLE inputs_system_policy_requirements
+            (policy_requirement_scenario_id, policy_name, policy_zone,
+            policy_requirement_sense)""")
+        c.execute("""CREATE TABLE inputs_system_policy_month_hour_requirements
+            (policy_requirement_scenario_id, policy_name, policy_zone)""")
+        c.executemany(
+            "INSERT INTO inputs_system_policy_requirements VALUES (?, ?, ?, ?)",
+            [
+                (5, "CarbonCap", "Zone1", "max"),
+                (5, "CarbonCap", "Zone2", "max"),
+                (5, "CarbonCap", "Zone2", None),
+                (5, "RPS", "Zone1", "min"),
+                (9, "CarbonCap", "Zone1", "min"),  # another subscenario
+            ],
+        )
+        c.execute(
+            "INSERT INTO inputs_system_policy_month_hour_requirements VALUES (?, ?, ?)",
+            (5, "SOD", "Zone1"),
+        )
+        df = pd.DataFrame(
+            {
+                "transmission_line": ["Tx1", "Tx2", "Tx3", "Tx4"],
+                "policy_name": ["CarbonCap", "CarbonCap", "RPS", "SOD"],
+                "policy_zone": ["Zone1", "Zone2", "Zone1", "Zone1"],
+            }
+        )
+        errors = validate_import_rows_in_max_policies(
+            c, _Subscenarios(), df, ["transmission_line"], POLICY
+        )
+        self.assertEqual(1, len(errors))
+        self.assertNotIn("Tx1-", errors[0])
+        for bad in ["Tx2-CarbonCap-Zone2", "Tx3-RPS-Zone1", "Tx4-SOD-Zone1"]:
+            self.assertIn(bad, errors[0])
+        conn.close()
 
     def test_split_index(self):
         # Transmission line, one-column zone

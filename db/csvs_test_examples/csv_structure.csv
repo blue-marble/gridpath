@@ -243,3 +243,6 @@ policy/generic/requirements,policy,policy_requirement_scenario_id,system_policy_
 policy/generic/project_policy_zones,policy,project_policy_zone_scenario_id,project_policy_zones,simple,,0,,,,,
 policy/generic/project_policy_zones/exceedance_values,policy,exceedance_values_scenario_id,project_policy_exceedance_values,simple,,1,project,,,inputs_project_policy_zones,project_policy_zone_scenario_id
 policy/generic/transmission_policy_zones,policy,transmission_policy_zone_scenario_id,transmission_policy_zones,simple,,0,,,,,
+policy/generic/transmission_policy_zones/transmission_emissions_profiles,policy,tmp_import_emissions_scenario_id,transmission_policy_timepoint_emissions,simple,,1,transmission_line,,,,
+policy/generic/market_policy_zones,policy,market_policy_zone_scenario_id,market_policy_zones,simple,,0,,,,,
+policy/generic/market_policy_zones/market_emissions_profiles,policy,tmp_import_emissions_scenario_id,market_policy_timepoint_emissions,simple,,1,market,,,,

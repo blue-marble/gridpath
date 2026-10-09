@@ -890,8 +890,15 @@ the requirement) and can be declared a ceiling instead
 (``policy_requirement_sense`` = ``max``), e.g. a cap on the generation of the
 mapped projects, or an emissions intensity standard (``emissions``
 contributions from the emitting projects, a ``max`` requirement scaling with
-the ``output`` base of the projects the standard applies to). Each policy zone
-can allow violations of its requirements at a penalty per unit.
+the ``output`` base of the projects the standard applies to). Transmission
+lines and market purchases mapped to a policy zone with the
+``import_emissions`` compliance type add the emissions of the power they
+import into the zone to the policy's contributions, at an import intensity
+and, in a zone with the ``net_prd`` import-emissions basis, less a credit for
+exports at an export intensity (the same accounting as the carbon cap's
+tracked imports); since the imported-power variables are bounded from below
+only, this is available for ``max`` requirements. Each policy zone can allow
+violations of its requirements at a penalty per unit.
 
 .. _custom-modules-section-ref:
 
