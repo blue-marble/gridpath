@@ -33,12 +33,17 @@ def add_model_components(
     :param m: the Pyomo abstract model object we are adding components to
     :param d: the DynamicComponents class object we will get components from
 
-    Here, we aggregate total penalty costs for not meeting the energy-target constraint.
+    Here, we aggregate total penalty costs for not meeting the policy
+    requirements: the shortage of 'min' policies and the overage of 'max'
+    policies, each at the policy zone's penalty per unit.
     """
 
     def total_penalty_costs_rule(mod):
         horizon_penalties = sum(
-            mod.Policy_Requirement_Shortage_Expression[policy, zone, bt, h]
+            (
+                mod.Policy_Requirement_Shortage_Expression[policy, zone, bt, h]
+                + mod.Policy_Requirement_Overage_Expression[policy, zone, bt, h]
+            )
             * mod.policy_zone_violation_penalty_per_unit[policy, zone]
             * mod.number_years_represented[mod.period[mod.last_hrz_tmp[bt, h]]]
             * mod.probability_weighted_discount_factor[

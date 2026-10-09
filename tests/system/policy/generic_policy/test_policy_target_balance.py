@@ -19,6 +19,8 @@ import os.path
 import sys
 import unittest
 
+from pyomo.repn import generate_standard_repn
+
 from tests.common_functions import create_abstract_model, add_components_and_load_data
 
 TEST_DATA_DIRECTORY = os.path.join(
@@ -124,6 +126,56 @@ class TestAggregateProjectPolicyContributions(unittest.TestCase):
             stage="",
         )
         instance = m.create_instance(data)
+
+        # The 'min' RPS requirement is a floor on the contributions and the
+        # 'max' Carbon requirement a ceiling. Pyomo stores both as
+        # body <= 0: 'requirement - contributions' for the RPS (whose zone
+        # does not allow violations, so no shortage variable enters) and
+        # 'contributions - overage - requirement' for the Carbon policy
+        # (whose zone does allow violations).
+        constraint = instance.Policy_Requirement_Constraint
+        contributions = (
+            instance.Total_Policy_Zone_Tmp_Contributions_from_All_Sources_Expression
+        )
+        requirement = instance.Policy_Zone_Horizon_Requirement
+        for h in [2020, 2030]:
+            rps = ("RPS", "RPSZone1", "year", h)
+            self.assertTrue(linear_coefficients_by_var(contributions[rps]))
+            self.assertEqual(
+                linear_repn(requirement[rps] - contributions[rps]),
+                linear_repn(constraint[rps].body),
+            )
+
+            carbon = ("Carbon", "CarbonZone1", "year", h)
+            self.assertTrue(linear_coefficients_by_var(contributions[carbon]))
+            self.assertEqual(
+                linear_repn(
+                    contributions[carbon]
+                    - instance.Policy_Target_Overage[carbon]
+                    - requirement[carbon]
+                ),
+                linear_repn(constraint[carbon].body),
+            )
+
+
+def linear_coefficients_by_var(expr):
+    """
+    The linear coefficient of each variable in the expression, keyed by the
+    variable's name.
+    """
+    repn = generate_standard_repn(expr)
+    return {var.name: coef for var, coef in zip(repn.linear_vars, repn.linear_coefs)}
+
+
+def linear_repn(expr):
+    """
+    The constant and the linear coefficients by variable name of the
+    expression, for comparing two linear expressions.
+    """
+    return (
+        generate_standard_repn(expr).constant,
+        linear_coefficients_by_var(expr),
+    )
 
 
 if __name__ == "__main__":

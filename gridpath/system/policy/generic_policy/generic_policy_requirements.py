@@ -14,7 +14,13 @@
 # limitations under the License.
 
 """
-Requirements for each policy and policy zone
+Requirements for each policy and policy zone.
+
+A horizon-level requirement is a floor by default (the policy's contributions
+must be at least the requirement) and can instead be declared a ceiling
+(``policy_requirement_sense`` = ``max``: the contributions may not exceed the
+requirement), e.g. a cap on the emissions or the generation of the projects
+mapped to the policy.
 """
 
 import csv
@@ -23,10 +29,17 @@ import os.path
 from pyomo.environ import Set, Param, Reals, NonNegativeReals, Expression, value, Any
 
 from gridpath.auxiliary.db_interface import directories_to_db_values
-from gridpath.auxiliary.validations import warn_on_unknown_balancing_types
+from gridpath.auxiliary.validations import (
+    warn_on_unknown_balancing_types,
+    write_validation_to_database,
+)
 from gridpath.common_functions import create_results_df, update_results_df
 
 from gridpath.system.policy.generic_policy import POLICY_ZONE_PRD_DF, POLICY_MH_DF
+
+MIN = "min"
+MAX = "max"
+REQUIREMENT_SENSES = [MIN, MAX]
 
 
 def add_model_components(
@@ -40,6 +53,58 @@ def add_model_components(
     stage,
 ):
     """
+    The following Pyomo model components are defined in this module:
+
+    +-------------------------------------------------------------------------+
+    | Sets                                                                    |
+    +=========================================================================+
+    | | :code:`POLICIES_ZONE_BLN_TYPE_HRZS_WITH_REQ`                          |
+    |                                                                         |
+    | Four-dimensional set of the policy, policy zone, balancing type and     |
+    | horizon combinations with a horizon-level requirement.                  |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Optional Input Params                                                   |
+    +=========================================================================+
+    | | :code:`policy_requirement`                                            |
+    | | *Defined over*: :code:`POLICIES_ZONE_BLN_TYPE_HRZS_WITH_REQ`          |
+    | | *Within*: :code:`Reals`                                               |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | The scalar part of the requirement.                                     |
+    +-------------------------------------------------------------------------+
+    | | :code:`policy_requirement_f_load_coeff`                               |
+    | | *Defined over*: :code:`POLICIES_ZONE_BLN_TYPE_HRZS_WITH_REQ`          |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | The requirement per unit of load in the policy zone's mapped load       |
+    | zones.                                                                  |
+    +-------------------------------------------------------------------------+
+    | | :code:`policy_requirement_sense`                                      |
+    | | *Defined over*: :code:`POLICIES_ZONE_BLN_TYPE_HRZS_WITH_REQ`          |
+    | | *Within*: :code:`["min", "max"]`                                      |
+    | | *Default*: :code:`"min"`                                              |
+    |                                                                         |
+    | Whether the requirement is a floor (``min``: the contributions must be  |
+    | at least the requirement) or a ceiling (``max``: the contributions may  |
+    | not exceed the requirement).                                            |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Expressions                                                             |
+    +=========================================================================+
+    | | :code:`Policy_Zone_Horizon_Requirement`                               |
+    | | *Defined over*: :code:`POLICIES_ZONE_BLN_TYPE_HRZS_WITH_REQ`          |
+    |                                                                         |
+    | The requirement: the scalar part plus the load coefficient times the    |
+    | load in the mapped load zones over the horizon.                         |
+    +-------------------------------------------------------------------------+
 
     :param m:
     :param d:
@@ -64,6 +129,13 @@ def add_model_components(
         m.POLICIES_ZONE_BLN_TYPE_HRZS_WITH_REQ,
         within=NonNegativeReals,
         default=0,
+    )
+
+    # Whether the target is a floor or a ceiling on the contributions
+    m.policy_requirement_sense = Param(
+        m.POLICIES_ZONE_BLN_TYPE_HRZS_WITH_REQ,
+        within=REQUIREMENT_SENSES,
+        default=MIN,
     )
 
     # Load zones included in the function of load policy requirement
@@ -167,7 +239,11 @@ def load_model_data(
         data_portal.load(
             filename=policy_requirements_file,
             index=m.POLICIES_ZONE_BLN_TYPE_HRZS_WITH_REQ,
-            param=(m.policy_requirement, m.policy_requirement_f_load_coeff),
+            param=(
+                m.policy_requirement,
+                m.policy_requirement_f_load_coeff,
+                m.policy_requirement_sense,
+            ),
             select=(
                 "policy_name",
                 "policy_zone",
@@ -175,6 +251,7 @@ def load_model_data(
                 "horizon",
                 "policy_requirement",
                 "policy_requirement_f_load_coeff",
+                "policy_requirement_sense",
             ),
         )
         with open(policy_requirements_file, "r") as f:
@@ -257,8 +334,9 @@ def get_inputs_from_database(
 
     c = conn.cursor()
     policy_requirements = c.execute(
-        """SELECT policy_name, policy_zone, balancing_type_horizon, horizon, 
-        policy_requirement, policy_requirement_f_load_coeff
+        """SELECT policy_name, policy_zone, balancing_type_horizon, horizon,
+        policy_requirement, policy_requirement_f_load_coeff,
+        COALESCE(policy_requirement_sense, 'min') AS policy_requirement_sense
         FROM inputs_system_policy_requirements
         JOIN
         (SELECT balancing_type_horizon, horizon
@@ -340,17 +418,54 @@ def validate_inputs(
     conn,
 ):
     """
-    Get inputs from database and validate the inputs
+    Get inputs from database and validate the inputs: the requirement sense
+    must be one of the supported senses.
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
     :param conn: database connection
     :return:
     """
-    pass
-    # Validation to be added
-    # policy_requirements = get_inputs_from_database(
-    #     scenario_id, subscenarios, subproblem, stage, conn)
+    policy_requirements, _, _ = get_inputs_from_database(
+        scenario_id,
+        subscenarios,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        conn,
+    )
+
+    bad_rows = [
+        (policy, zone, bt, h, sense)
+        for (policy, zone, bt, h, _req, _coeff, sense) in policy_requirements
+        if sense not in REQUIREMENT_SENSES
+    ]
+    errors = [
+        "Policy-zone-horizon(s) {}: Invalid entry for policy_requirement_sense. "
+        "Valid options are {}.".format(
+            ", ".join(
+                "'{}-{}-{}-{}' ({})".format(*row_and_sense)
+                for row_and_sense in bad_rows
+            ),
+            REQUIREMENT_SENSES,
+        )
+    ]
+    if bad_rows:
+        write_validation_to_database(
+            conn=conn,
+            scenario_id=scenario_id,
+            weather_iteration=weather_iteration,
+            hydro_iteration=hydro_iteration,
+            availability_iteration=availability_iteration,
+            subproblem_id=subproblem,
+            stage_id=stage,
+            gridpath_module=__name__,
+            db_table="inputs_system_policy_requirements",
+            severity="High",
+            errors=errors,
+        )
 
 
 def write_model_inputs(
@@ -427,6 +542,7 @@ def write_model_inputs(
                     "horizon",
                     "policy_requirement",
                     "policy_requirement_f_load_coeff",
+                    "policy_requirement_sense",
                 ]
             )
 
@@ -516,6 +632,7 @@ def export_results(
     if m.POLICIES_ZONE_BLN_TYPE_HRZS_WITH_REQ:
         results_columns = [
             "policy_requirement",
+            "policy_requirement_sense",
         ]
         data = [
             [
@@ -524,6 +641,7 @@ def export_results(
                 bt,
                 h,
                 m.policy_requirement[p, z, bt, h],
+                m.policy_requirement_sense[p, z, bt, h],
             ]
             for (p, z, bt, h) in m.POLICIES_ZONE_BLN_TYPE_HRZS_WITH_REQ
         ]
