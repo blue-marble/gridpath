@@ -1935,6 +1935,59 @@ class TestExamples(unittest.TestCase):
         scenario_name = "test_new_solar_carbon_cap_dac"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
+    def test_example_test_new_solar_generic_policy_emissions_cap(self):
+        """
+        Check validation and objective function value of
+        "test_new_solar_generic_policy_emissions_cap" example: the
+        "test_new_solar_carbon_cap" example with its carbon cap expressed as a
+        'max' generic policy over the projects' emissions (the 'emissions'
+        compliance type); the objective is the same as the original's.
+        :return:
+        """
+        scenario_name = "test_new_solar_generic_policy_emissions_cap"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_new_solar_generic_policy_emissions_cap_dac(self):
+        """
+        Check validation and objective function value of
+        "test_new_solar_generic_policy_emissions_cap_dac" example, the generic
+        policy twin of "test_new_solar_carbon_cap_dac" (the DAC project's
+        negative emissions count toward the policy); the objective is the
+        same as the original's.
+        :return:
+        """
+        scenario_name = "test_new_solar_generic_policy_emissions_cap_dac"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_new_solar_generic_policy_emissions_cap_2zones_dont_count_tx(
+        self,
+    ):
+        """
+        Check validation and objective function value of
+        "test_new_solar_generic_policy_emissions_cap_2zones_dont_count_tx"
+        example, the generic policy twin of
+        "test_new_solar_carbon_cap_2zones_dont_count_tx"; the objective is
+        the same as the original's.
+        :return:
+        """
+        scenario_name = (
+            "test_new_solar_generic_policy_emissions_cap_2zones_dont_count_tx"
+        )
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_new_solar_generic_policy_load_emissions_intensity(self):
+        """
+        Check validation and objective function value of
+        "test_new_solar_generic_policy_load_emissions_intensity" example: the
+        "test_new_solar_carbon_cap" cap expressed as a 'max' generic policy
+        on emissions per unit of load (the load coefficient times the zone's
+        load equals the original 300-tonne cap); the objective is the same as
+        the original's.
+        :return:
+        """
+        scenario_name = "test_new_solar_generic_policy_load_emissions_intensity"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
     def test_example_test_cap_factor_limits(self):
         """
         Check validation and objective function value of "test" example

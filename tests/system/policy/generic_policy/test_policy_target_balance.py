@@ -54,6 +54,8 @@ PREREQUISITE_MODULE_NAMES = [
     "project.capacity.potential",
     "project.operations.operational_types",
     "project.operations.power",
+    "project.operations.fuel_burn",
+    "project.operations.carbon_emissions",
     "project.policy.policy_contribution",
     "system.policy.generic_policy.aggregate_project_policy_contributions",
 ]
