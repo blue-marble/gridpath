@@ -59,7 +59,14 @@ subproblem, period, month and day of month, so they need no horizon inputs:
 The month and day types group timepoints by period and calendar month or
 date, so a period that spans several calendar years merges the same month or
 date of those years into one horizon; define your own balancing types where
-that matters. Horizon-indexed inputs on the month and day types can also be
+that matters.
+
+Only the built-in balancing types that the scenario's inputs reference are
+built, as each costs memory for every timepoint: a built-in type is
+referenced if it appears in a column whose name contains
+:code:`balancing_type` in any input file (e.g. a project's
+:code:`balancing_type_project` in :code:`projects.tab`, or a horizon-indexed
+input's :code:`balancing_type_horizon`). Horizon-indexed inputs on the month and day types can also be
 given once per month or date for every period (month-of-year and day-of-year
 rows; see :code:`gridpath.auxiliary.calendar_rows`).
 
@@ -103,6 +110,34 @@ BUILTIN_HORIZON_TYPES = (
 
 # Cached on the model instance by calendar_horizon_tmps()
 CALENDAR_HORIZON_TMPS_CACHE = "_gridpath_calendar_horizon_tmps"
+
+
+def referenced_builtin_balancing_types(inputs_directory):
+    """
+    The built-in balancing types referenced by the input files (.tab and
+    .csv) in *inputs_directory*, i.e. appearing in a column whose name
+    contains "balancing_type"; only the header and those columns are read.
+
+    :return: sorted list of the referenced built-in balancing types
+    """
+    builtin = set(BUILTIN_HORIZON_TYPES)
+    referenced = set()
+    for filename in sorted(os.listdir(inputs_directory)):
+        if filename.endswith(".tab"):
+            delimiter = "\t"
+        elif filename.endswith(".csv"):
+            delimiter = ","
+        else:
+            continue
+        with open(os.path.join(inputs_directory, filename), newline="") as f:
+            reader = csv.reader(f, delimiter=delimiter)
+            header = next(reader, [])
+            bt_columns = [i for i, col in enumerate(header) if "balancing_type" in col]
+            if not bt_columns:
+                continue
+            for row in reader:
+                referenced.update(row[i] for i in bt_columns if i < len(row))
+    return sorted(referenced & builtin)
 
 
 def calendar_horizon_tmps(mod):
@@ -246,6 +281,10 @@ def add_model_components(
 
     m.BLN_TYPE_HRZS_USER_DEFINED = Set(dimen=2)
 
+    # The built-in balancing types the inputs reference, which are the only
+    # ones built
+    m.BUILTIN_BLN_TYPES = Set(within=BUILTIN_HORIZON_TYPES)
+
     def get_valid_period_months_by_tmp(mod):
         prd_months = list(set([(mod.period[tmp], mod.month[tmp]) for tmp in mod.TMPS]))
 
@@ -266,29 +305,22 @@ def add_model_components(
         * subproblem_period_day: all timepoints on a given day (month and
           day of month) in the subproblem and period
 
-        These can be linear or circular
+        These can be linear or circular. Only the balancing types in
+        BUILTIN_BLN_TYPES are built.
         """
-        return set(
-            [("subproblem_circular", 1)]
-            + [("subproblem_period_circular", period) for period in mod.PERIODS]
-            + [("subproblem_linear", 1)]
-            + [("subproblem_period_linear", period) for period in mod.PERIODS]
-            + [("subproblem_linked", 1)]
-            + [("subproblem_period_linked", period) for period in mod.PERIODS]
-            + [
-                ("subproblem_period_month_linear", period * 100 + month)
-                for (period, month) in mod.VALID_PERIOD_MONTHS
-            ]
-            + [
-                ("subproblem_period_month_circular", period * 100 + month)
-                for (period, month) in mod.VALID_PERIOD_MONTHS
-            ]
-            + [
-                (bt, hrz)
-                for bt in DAY_HORIZON_TYPES
-                for hrz in calendar_horizon_tmps(mod)["day"]
-            ]
-        )
+        horizons_by_type = {
+            "subproblem": lambda: [1],
+            "subproblem_period": lambda: list(mod.PERIODS),
+            "subproblem_period_month": lambda: sorted(
+                period * 100 + month for (period, month) in mod.VALID_PERIOD_MONTHS
+            ),
+            "subproblem_period_day": lambda: list(calendar_horizon_tmps(mod)["day"]),
+        }
+        return [
+            (bt, hrz)
+            for bt in mod.BUILTIN_BLN_TYPES
+            for hrz in horizons_by_type[bt.rsplit("_", 1)[0]]()
+        ]
 
     m.BLN_TYPE_HRZS_BUILTIN = Set(dimen=2, initialize=builtin_bln_type_hrz_init)
 
@@ -605,7 +637,7 @@ def load_model_data(
     stage,
 ):
     """ """
-    hrz_filename = os.path.join(
+    inputs_directory = os.path.join(
         scenario_directory,
         weather_iteration,
         hydro_iteration,
@@ -613,8 +645,12 @@ def load_model_data(
         subproblem,
         stage,
         "inputs",
-        "horizons_user_defined.tab",
     )
+    data_portal.data()["BUILTIN_BLN_TYPES"] = {
+        None: referenced_builtin_balancing_types(inputs_directory)
+    }
+
+    hrz_filename = os.path.join(inputs_directory, "horizons_user_defined.tab")
 
     # Load user-defined horizons if any (i.e., the file exists)
     if os.path.exists(hrz_filename):
