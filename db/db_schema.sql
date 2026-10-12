@@ -3635,13 +3635,13 @@ CREATE TABLE inputs_project_availability
     project_availability_scenario_id                      INTEGER,
     project                                               VARCHAR(64),
     availability_type                                     VARCHAR(32),
+    default_exogenous_availability                        FLOAT,
     exogenous_availability_independent_scenario_id        INTEGER,
     exogenous_availability_weather_scenario_id            INTEGER,
     exogenous_availability_independent_bt_hrz_scenario_id INTEGER,
     exogenous_availability_weather_bt_hrz_scenario_id     INTEGER,
     exogenous_availability_monthly_scenario_id            INTEGER,
     endogenous_availability_scenario_id                   INTEGER,
-    default_exogenous_availability                        FLOAT,
     PRIMARY KEY (project_availability_scenario_id, project, availability_type)
 );
 
