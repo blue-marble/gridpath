@@ -14,6 +14,11 @@
 
 """
 Minimum and maximum total power output by period and project group.
+
+The requirements are written for the subproblem's periods only, so one
+requirement subscenario can cover periods that some of the scenarios using it
+don't model. A group's requirements can also be given once for every period
+with a :code:`period = 0` row (see :code:`gridpath.auxiliary.period_wildcards`).
 """
 
 import csv
@@ -22,6 +27,12 @@ import pandas as pd
 from pyomo.environ import Set, Param, Constraint, NonNegativeReals, Expression, value
 
 from gridpath.auxiliary.auxiliary import get_required_subtype_modules
+from gridpath.auxiliary.period_wildcards import (
+    period_wildcard_rows_sql,
+    require_period_wildcard_only_rows,
+    subproblem_periods_sql,
+)
+from gridpath.auxiliary.validations import validate_period_wildcard_rows
 from gridpath.common_functions import constraint_dual, none_dual_type_error_wrapper
 from gridpath.project.operations.common_functions import (
     load_operational_type_modules,
@@ -409,6 +420,22 @@ def import_results_into_database(
     )
 
 
+REQUIREMENTS_TABLE = "inputs_project_power_output_group_requirements"
+REQUIREMENTS_KEY_COLUMNS = [
+    "power_output_group",
+    "project_power_output_group_requirement_scenario_id",
+]
+
+
+def get_requirements_row_filter(subscenarios):
+    """
+    :return: SQL condition selecting the rows of the power output group
+        requirement subscenario
+    """
+    return f"""project_power_output_group_requirement_scenario_id =
+        {subscenarios.PROJECT_POWER_OUTPUT_GROUP_REQUIREMENT_SCENARIO_ID}"""
+
+
 def get_inputs_from_database(
     scenario_id,
     subscenarios,
@@ -428,12 +455,23 @@ def get_inputs_from_database(
     """
 
     c1 = conn.cursor()
-    pwr_grp_reqs = c1.execute("""
-        SELECT power_output_group, period,
-        power_output_group_total_power_min, power_output_group_total_power_max
-        FROM inputs_project_power_output_group_requirements
-        WHERE project_power_output_group_requirement_scenario_id = {}
-        """.format(subscenarios.PROJECT_POWER_OUTPUT_GROUP_REQUIREMENT_SCENARIO_ID))
+    # The subproblem's periods only, with period = 0 rows applying to each
+    pwr_grp_reqs = c1.execute(
+        period_wildcard_rows_sql(
+            table=REQUIREMENTS_TABLE,
+            columns=[
+                "power_output_group",
+                "period",
+                "power_output_group_total_power_min",
+                "power_output_group_total_power_max",
+            ],
+            key_columns=REQUIREMENTS_KEY_COLUMNS,
+            row_filter=get_requirements_row_filter(subscenarios),
+            periods_sql=subproblem_periods_sql(
+                subscenarios.TEMPORAL_SCENARIO_ID, subproblem
+            ),
+        )
+    )
 
     c2 = conn.cursor()
     pwr_grp_prj = c2.execute(
@@ -493,6 +531,12 @@ def write_model_inputs(
 
     # Write the input files only if a subscenario is specified
     if subscenarios.PROJECT_POWER_OUTPUT_GROUP_REQUIREMENT_SCENARIO_ID != "NULL":
+        require_period_wildcard_only_rows(
+            conn=conn,
+            table=REQUIREMENTS_TABLE,
+            key_columns=REQUIREMENTS_KEY_COLUMNS,
+            row_filter=get_requirements_row_filter(subscenarios),
+        )
         write_tab_file_model_inputs(
             scenario_directory=scenario_directory,
             weather_iteration=weather_iteration,
@@ -516,3 +560,37 @@ def write_model_inputs(
             fname="power_output_group_projects.tab",
             data=pwr_grp_prj,
         )
+
+
+# Validation
+###############################################################################
+
+
+def validate_inputs(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
+    """
+    Validate the power output group inputs.
+    """
+    # Series mixing period wildcard rows and explicit rows
+    validate_period_wildcard_rows(
+        conn=conn,
+        scenario_id=scenario_id,
+        subscenarios=subscenarios,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        gridpath_module=__name__,
+        table=REQUIREMENTS_TABLE,
+        key_columns=REQUIREMENTS_KEY_COLUMNS,
+        row_filter=get_requirements_row_filter(subscenarios),
+    )

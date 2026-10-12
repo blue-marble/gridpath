@@ -17,12 +17,17 @@ from collections import OrderedDict
 from importlib import import_module
 import os.path
 import pandas as pd
+import sqlite3
 import sys
+from types import SimpleNamespace
 import unittest
 
 from tests.common_functions import create_abstract_model, add_components_and_load_data
 
 TEST_DATA_DIRECTORY = os.path.join(os.path.dirname(__file__), "..", "..", "test_data")
+DB_SCHEMA_FILE = os.path.join(
+    os.path.dirname(__file__), "..", "..", "..", "db", "db_schema.sql"
+)
 
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
@@ -170,3 +175,91 @@ class TestPowerOutputGroups(unittest.TestCase):
             for (g, p) in instance.POWER_OUTPUT_GROUP_PERIODS
         }
         self.assertDictEqual(expected_new_max, actual_new_max)
+
+
+class TestPowerOutputGroupRequirementInputs(unittest.TestCase):
+    """
+    The requirements written for a subproblem: only its periods, with
+    period = 0 rows applying to each.
+    """
+
+    def setUp(self):
+        self.conn = sqlite3.connect(":memory:")
+        self.addCleanup(self.conn.close)
+        with open(DB_SCHEMA_FILE) as f:
+            self.conn.executescript(f.read())
+        # Subproblem 1 models 2020; subproblem 2 models 2030
+        for period, subproblem in [(2020, 1), (2030, 2)]:
+            self.conn.execute(
+                """INSERT INTO inputs_temporal
+                (temporal_scenario_id, subproblem_id, stage_id, timepoint,
+                period, number_of_hours_in_timepoint, timepoint_weight,
+                spinup_or_lookahead)
+                VALUES (1, ?, 1, ?, ?, 1, 1, 0)""",
+                (subproblem, period, period),
+            )
+        # Subscenario 1: Group_A for 2020, 2030 and 2040, Group_B every
+        # period; subscenario 2 mixes the two for Group_A
+        self.conn.executemany(
+            """INSERT INTO inputs_project_power_output_group_requirements
+            (project_power_output_group_requirement_scenario_id,
+            power_output_group, period, power_output_group_total_power_min,
+            power_output_group_total_power_max)
+            VALUES (?, ?, ?, ?, ?)""",
+            [
+                (1, "Group_A", 2020, 0, 10),
+                (1, "Group_A", 2030, 0, 20),
+                (1, "Group_A", 2040, 0, 30),
+                (1, "Group_B", 0, 1, None),
+                (2, "Group_A", 0, 0, 10),
+                (2, "Group_A", 2030, 0, 20),
+            ],
+        )
+
+    @staticmethod
+    def subscenarios(requirement_scenario_id):
+        return SimpleNamespace(
+            TEMPORAL_SCENARIO_ID=1,
+            PROJECT_POWER_OUTPUT_GROUP_REQUIREMENT_SCENARIO_ID=(
+                requirement_scenario_id
+            ),
+            PROJECT_POWER_OUTPUT_GROUP_SCENARIO_ID="NULL",
+            PROJECT_PORTFOLIO_SCENARIO_ID="NULL",
+        )
+
+    def requirements(self, subproblem):
+        reqs, _ = MODULE_BEING_TESTED.get_inputs_from_database(
+            scenario_id=1,
+            subscenarios=self.subscenarios(1),
+            weather_iteration=0,
+            hydro_iteration=0,
+            availability_iteration=0,
+            subproblem=subproblem,
+            stage=1,
+            conn=self.conn,
+        )
+        return reqs.fetchall()
+
+    def test_requirements_for_the_subproblems_periods_only(self):
+        self.assertListEqual(
+            [("Group_A", 2020, 0, 10), ("Group_B", 2020, 1, None)],
+            self.requirements(subproblem=1),
+        )
+        self.assertListEqual(
+            [("Group_A", 2030, 0, 20), ("Group_B", 2030, 1, None)],
+            self.requirements(subproblem=2),
+        )
+
+    def test_mixed_rows_fail_the_input_writing(self):
+        with self.assertRaisesRegex(ValueError, "Group_A"):
+            MODULE_BEING_TESTED.write_model_inputs(
+                scenario_directory="unused",
+                scenario_id=1,
+                subscenarios=self.subscenarios(2),
+                weather_iteration="",
+                hydro_iteration="",
+                availability_iteration="",
+                subproblem="",
+                stage="",
+                conn=self.conn,
+            )
