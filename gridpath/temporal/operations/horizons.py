@@ -66,9 +66,10 @@ built, as each costs memory for every timepoint: a built-in type is
 referenced if it appears in a column whose name contains
 :code:`balancing_type` in any input file (e.g. a project's
 :code:`balancing_type_project` in :code:`projects.tab`, or a horizon-indexed
-input's :code:`balancing_type_horizon`). Horizon-indexed inputs on the month and day types can also be
-given once per month or date for every period (month-of-year and day-of-year
-rows; see :code:`gridpath.auxiliary.calendar_rows`).
+input's :code:`balancing_type_horizon`). Horizon-indexed inputs on the
+month and day types can also be given once per month or date for every
+period (month-of-year and day-of-year rows; see
+:code:`gridpath.auxiliary.calendar_rows`).
 
 Each *horizon* can optionally also be designated as an 'average' or 'stress'
 horizon via the :code:`stor_stress_hrz_type` input; this designation is used
