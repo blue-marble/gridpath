@@ -182,33 +182,11 @@ def add_model_components(
         m.AVL_EXOG, within=NonNegativeReals, default=1
     )
 
-    # Only fall back to the project defaults when there are any: a function
-    # default is called (and domain-checked) on every access, so keep the
-    # constant default otherwise
-    if os.path.exists(
-        os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "inputs",
-            DEFAULT_DERATE_FILENAME,
-        )
-    ):
-
-        def independent_derate_default(mod, prj, tmp):
-            return mod.avl_exog_default_cap_derate[prj]
-
-    else:
-        independent_derate_default = 1
-
     # For hybrids, this is the derate applied to the generator component
+    # The default is replaced with the project defaults in load_model_data
+    # if any are specified
     m.avl_exog_cap_derate_independent = Param(
-        m.AVL_EXOG_OPR_TMPS,
-        within=NonNegativeReals,
-        default=independent_derate_default,
+        m.AVL_EXOG_OPR_TMPS, within=NonNegativeReals, default=1
     )
 
     m.avl_exog_cap_derate_weather = Param(
@@ -512,9 +490,15 @@ def load_model_data(
 
     default_derate_file = os.path.join(input_directory, DEFAULT_DERATE_FILENAME)
 
+    # Only fall back to the project defaults when there are any: a function
+    # default is called (and domain-checked) on every access, so keep the
+    # constant default otherwise
     if os.path.exists(default_derate_file):
         data_portal.load(
             filename=default_derate_file, param=m.avl_exog_default_cap_derate
+        )
+        m.avl_exog_cap_derate_independent.set_default(
+            lambda mod, prj, tmp: mod.avl_exog_default_cap_derate[prj]
         )
 
 
