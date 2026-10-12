@@ -1209,6 +1209,7 @@ def write_model_inputs(
         check_rows=require_bt_hrz_rows_for_every_project(
             conn=conn,
             subscenarios=subscenarios,
+            subproblem=subproblem,
             op_type="gen_hydro_must_take",
             db_table="inputs_project_hydro_operational_chars",
         ),

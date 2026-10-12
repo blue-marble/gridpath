@@ -39,6 +39,7 @@ MONTH_BT = "subproblem_period_month_circular"
 class SubScenariosStub:
     PROJECT_PORTFOLIO_SCENARIO_ID = 1
     PROJECT_OPERATIONAL_CHARS_SCENARIO_ID = 1
+    PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID = 1
     TEMPORAL_SCENARIO_ID = 1
 
 
@@ -279,6 +280,7 @@ class TestOpcharMonthOfYearInputs(unittest.TestCase):
         check_rows = require_bt_hrz_rows_for_every_project(
             conn=self.conn,
             subscenarios=SubScenariosStub(),
+            subproblem="",
             op_type="gen_hydro",
             db_table="inputs_project_hydro_operational_chars",
         )

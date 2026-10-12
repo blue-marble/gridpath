@@ -523,24 +523,27 @@ def load_model_data(
         op_type="load_component_shift",
     )
 
-    # Load data
-    data_portal.load(
-        filename=os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "inputs",
-            "load_component_shift_bounds.tab",
-        ),
-        index=mod.LOAD_COMPONENT_SHIFT_PRJS_BT_HRZS,
-        param=(
-            mod.load_component_shift_min_load_mw,
-            mod.load_component_shift_max_load_mw,
-        ),
+    # Load data; there is no file if none of the projects are operational
+    # in the subproblem's periods
+    params_file = os.path.join(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+        "load_component_shift_bounds.tab",
     )
+    if os.path.exists(params_file):
+        data_portal.load(
+            filename=params_file,
+            index=mod.LOAD_COMPONENT_SHIFT_PRJS_BT_HRZS,
+            param=(
+                mod.load_component_shift_min_load_mw,
+                mod.load_component_shift_max_load_mw,
+            ),
+        )
 
 
 # Database

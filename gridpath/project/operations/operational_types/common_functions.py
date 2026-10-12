@@ -30,6 +30,10 @@ from gridpath.auxiliary.calendar_rows import (
     calendar_index_cte_sql,
     calendar_rows_sql,
 )
+from gridpath.project.capacity.capacity_types.common_methods import (
+    spec_non_operational_periods_sql,
+    spec_projects_not_operational_sql,
+)
 from gridpath.auxiliary.validations import (
     write_validation_to_database,
     validate_req_cols,
@@ -532,18 +536,23 @@ def load_var_profile_inputs(
     var_prjs = list(op_type_prjs) + list(other_var_op_type_prjs)
 
     # Read in the cap factors, filter for projects with the correct op_type
-    # and convert to dictionary
+    # and convert to dictionary; there is no file if none of the projects
+    # are operational in the subproblem's periods
+    cf_file = os.path.join(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+        tab_filename,
+    )
+    if not os.path.exists(cf_file):
+        data_portal.data()[f"{op_type}_{param_name}"] = {}
+        return
     cf_df = pd.read_csv(
-        os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "inputs",
-            tab_filename,
-        ),
+        cf_file,
         sep="\t",
         usecols=["project", "timepoint", param_name],
         dtype={param_name: float},
@@ -677,6 +686,12 @@ def get_prj_temporal_index_opr_inputs_from_db(
     """
     Determine appropriate iterations for projects and get those inputs
 
+    Projects of the specified capacity types get no rows for the timepoints
+    of the periods in which they aren't operational, and no rows for the
+    horizons whose timepoints are all in such periods (see
+    :code:`spec_non_operational_periods_sql`), as the model has no
+    operational timepoints or horizons for them there.
+
     For projects reading timepoint-indexed data through a timepoint map,
     every operational timepoint must find data at its resolved data
     timepoint (mapped timepoints don't fall back to their own data): the
@@ -771,6 +786,23 @@ def get_prj_temporal_index_opr_inputs_from_db(
         else ""
     )
     cte_sql = cte_prj_sql + cte_tmp_sql + map_cte_sql + calendar_cte_sql
+
+    # The periods in which projects of the specified capacity types aren't
+    # operational; if there are none, the query is unchanged
+    spec_non_opr_sql = spec_non_operational_periods_sql(
+        subscenarios=subscenarios, subproblem=subproblem
+    )
+    has_spec_non_opr_periods = (
+        c.execute(f"SELECT 1 FROM ({spec_non_opr_sql}) LIMIT 1").fetchone() is not None
+    )
+    if has_spec_non_opr_periods:
+        cte_sql += spec_non_operational_index_ctes_sql(
+            spec_non_opr_sql=spec_non_opr_sql,
+            subscenarios=subscenarios,
+            subproblem=subproblem,
+            stage=stage,
+            horizon_indexed=bt_column is not None,
+        )
 
     # If no iteration configs exist, return empty result
     if not iteration_configs:
@@ -940,6 +972,7 @@ def get_prj_temporal_index_opr_inputs_from_db(
                     if map_id is not None
                 ],
                 stage_subquery=stage_subquery,
+                has_spec_non_opr_periods=has_spec_non_opr_periods,
             )
         ).fetchall()
         if gaps:
@@ -948,11 +981,98 @@ def get_prj_temporal_index_opr_inputs_from_db(
             map_data_gaps_handler(gaps)
 
     # Combine CTE with UNION ALL
-    all_projects_sql = cte_sql + "\nUNION ALL\n".join(union_parts)
+    all_projects_sql = "\nUNION ALL\n".join(union_parts)
+    if has_spec_non_opr_periods:
+        all_projects_sql = spec_non_operational_index_filter_sql(
+            inputs_sql=all_projects_sql,
+            subscenarios=subscenarios,
+            subproblem=subproblem,
+            stage=stage,
+            bt_column=bt_column,
+        )
+    all_projects_sql = cte_sql + all_projects_sql
 
     prj_tmp_data = c.execute(all_projects_sql)
 
     return prj_tmp_data
+
+
+def spec_non_operational_index_ctes_sql(
+    spec_non_opr_sql, subscenarios, subproblem, stage, horizon_indexed
+):
+    """
+    :param spec_non_opr_sql: SQL selecting the (project, period)s in which
+        projects of the specified capacity types aren't operational
+    :param horizon_indexed: whether the inputs are indexed by balancing type
+        and horizon
+    :return: CTEs (following the CTEs of
+        :code:`get_prj_temporal_index_opr_inputs_from_db`) with those
+        (project, period)s and, for horizon-indexed inputs, the (project,
+        balancing type, horizon)s whose timepoints are all in such periods
+    """
+    ctes = f""",
+        spec_non_operational_periods AS ({spec_non_opr_sql})"""
+    if horizon_indexed:
+        ctes += f""",
+        horizon_periods AS (
+            SELECT DISTINCT h.balancing_type_horizon, h.horizon, t.period
+            FROM inputs_temporal_horizon_timepoints AS h
+            JOIN inputs_temporal AS t
+            USING (temporal_scenario_id, subproblem_id, stage_id, timepoint)
+            WHERE h.temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+            AND h.subproblem_id = {subproblem}
+            AND h.stage_id = {stage}
+        ),
+        spec_non_operational_horizons AS (
+            SELECT DISTINCT non_opr.project, hp.balancing_type_horizon,
+                hp.horizon
+            FROM spec_non_operational_periods AS non_opr
+            JOIN horizon_periods AS hp USING (period)
+            EXCEPT
+            -- The horizons with a timepoint in an operational period
+            SELECT prj.project, hp.balancing_type_horizon, hp.horizon
+            FROM (SELECT DISTINCT project FROM spec_non_operational_periods)
+                AS prj
+            CROSS JOIN horizon_periods AS hp
+            WHERE (prj.project, hp.period) NOT IN (
+                SELECT project, period FROM spec_non_operational_periods
+            )
+        )"""
+    return ctes
+
+
+def spec_non_operational_index_filter_sql(
+    inputs_sql, subscenarios, subproblem, stage, bt_column
+):
+    """
+    :param inputs_sql: SQL selecting project, the index columns, and the
+        data columns of the inputs
+    :param bt_column: the balancing type column of horizon-indexed inputs;
+        None for timepoint-indexed inputs
+    :return: SQL selecting the rows of *inputs_sql* other than those of the
+        timepoints (horizons) in which projects of the specified capacity
+        types aren't operational (see
+        :code:`spec_non_operational_index_ctes_sql`)
+    """
+    if bt_column is None:
+        non_operational_filter = f"""(opr_inputs.project, (
+                SELECT period FROM inputs_temporal AS t
+                WHERE t.temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+                AND t.subproblem_id = {subproblem}
+                AND t.stage_id = {stage}
+                AND t.timepoint = opr_inputs.timepoint
+            )) NOT IN (
+                SELECT project, period FROM spec_non_operational_periods
+            )"""
+    else:
+        non_operational_filter = f"""(opr_inputs.project,
+                opr_inputs.{bt_column}, opr_inputs.horizon) NOT IN (
+                SELECT project, balancing_type_horizon, horizon
+                FROM spec_non_operational_horizons
+            )"""
+    return f"""
+        SELECT * FROM ({inputs_sql}) AS opr_inputs
+        WHERE {non_operational_filter}"""
 
 
 def mapped_timepoint_data_gaps_sql(
@@ -964,16 +1084,34 @@ def mapped_timepoint_data_gaps_sql(
     map_column,
     iteration_configs,
     stage_subquery,
+    has_spec_non_opr_periods=False,
 ):
     """
     :param iteration_configs: (varies_by_weather_iteration,
         varies_by_hydro_iteration, map_id, weather_iteration,
         hydro_iteration) of the mapped project groups
+    :param has_spec_non_opr_periods: whether the CTEs include the periods in
+        which projects of the specified capacity types aren't operational
+        (see :code:`spec_non_operational_index_ctes_sql`), whose timepoints
+        need no data
     :return: SQL (following the CTEs of
         :code:`get_prj_temporal_index_opr_inputs_from_db`) selecting the
         (project, timepoint, data_timepoint)s of the mapped projects'
         operational timepoints whose resolved data timepoint has no data
     """
+    spec_non_opr_filter = (
+        f"""AND (op.project, (
+                SELECT period FROM inputs_temporal AS t
+                WHERE t.temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+                AND t.subproblem_id = {subproblem}
+                AND t.stage_id = {stage}
+                AND t.timepoint = op.timepoint
+            )) NOT IN (
+                SELECT project, period FROM spec_non_operational_periods
+            )"""
+        if has_spec_non_opr_periods
+        else ""
+    )
     parts = []
     for (
         varies_weather,
@@ -1007,6 +1145,7 @@ def mapped_timepoint_data_gaps_sql(
                 WHERE varies_by_weather_iteration = {varies_weather}
                 AND varies_by_hydro_iteration = {varies_hydro}
             )
+            {spec_non_opr_filter}
             AND NOT EXISTS (
                 SELECT 1 FROM {table}
                 WHERE {table}.project = prj.project
@@ -1178,26 +1317,30 @@ def load_hydro_opchars(
     min = dict()
     max = dict()
 
-    prj_hor_opchar_df = pd.read_csv(
-        os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "inputs",
-            "hydro_conventional_horizon_params.tab",
-        ),
-        sep="\t",
-        usecols=[
-            "project",
-            "balancing_type_project",
-            "horizon",
-            "average_power_fraction",
-            "min_power_fraction",
-            "max_power_fraction",
-        ],
+    # There is no file if none of the hydro projects are operational in the
+    # subproblem's periods
+    opchar_file = os.path.join(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+        "hydro_conventional_horizon_params.tab",
+    )
+    opchar_columns = [
+        "project",
+        "balancing_type_project",
+        "horizon",
+        "average_power_fraction",
+        "min_power_fraction",
+        "max_power_fraction",
+    ]
+    prj_hor_opchar_df = (
+        pd.read_csv(opchar_file, sep="\t", usecols=opchar_columns)
+        if os.path.exists(opchar_file)
+        else pd.DataFrame(columns=opchar_columns)
     )
     for row in zip(
         prj_hor_opchar_df["project"],
@@ -1254,18 +1397,43 @@ def projects_without_bt_hrz_rows_error(projects, db_table):
     )
 
 
-def require_bt_hrz_rows_for_every_project(conn, subscenarios, op_type, db_table):
+def get_projects_operational_in_subproblem(conn, subscenarios, subproblem, op_type):
     """
+    :param subproblem: the subproblem ID in the database
+    :return: the *op_type* portfolio projects other than those of the
+        specified capacity types that aren't operational in any of the
+        subproblem's periods (see spec_projects_not_operational_sql)
+    """
+    not_operational = {
+        prj
+        for (prj,) in conn.cursor()
+        .execute(spec_projects_not_operational_sql(subscenarios, subproblem))
+        .fetchall()
+    }
+    return set(get_energy_budget_bt_by_prj(conn, subscenarios, op_type)) - (
+        not_operational
+    )
+
+
+def require_bt_hrz_rows_for_every_project(
+    conn, subscenarios, subproblem, op_type, db_table
+):
+    """
+    :param subproblem: the subproblem directory name ("" if there is a single
+        subproblem)
     :return: a check_rows function for write_tab_file_model_inputs that
-        raises a ValueError if any *op_type* portfolio project has no
-        (project, balancing type, horizon)-indexed rows (project in the
-        first column), as the model would fail to build (the same check as
-        validate_energy_budget_balancing_type_rows)
+        raises a ValueError if any *op_type* portfolio project operational in
+        the subproblem has no (project, balancing type, horizon)-indexed rows
+        (project in the first column), as the model would fail to build (the
+        same check as validate_energy_budget_balancing_type_rows)
     """
+    db_subproblem = 1 if subproblem == "" else int(subproblem)
 
     def check_rows(rows):
-        projects = get_energy_budget_bt_by_prj(conn, subscenarios, op_type)
-        without_rows = sorted(set(projects) - {row[0] for row in rows})
+        projects = get_projects_operational_in_subproblem(
+            conn, subscenarios, db_subproblem, op_type
+        )
+        without_rows = sorted(projects - {row[0] for row in rows})
         if without_rows:
             raise ValueError(projects_without_bt_hrz_rows_error(without_rows, db_table))
 
@@ -1291,8 +1459,9 @@ def validate_energy_budget_balancing_type_rows(
     must be for horizons of the project's energy-budget balancing type
     (energy_budget_balancing_type if specified, else balancing_type_project):
     rows for any other balancing type are never looked up by the per-horizon
-    constraints. Every such project must also have at least one row for the
-    temporal scenario's horizons (in this subproblem, stage, and iteration):
+    constraints. Every such project operational in the subproblem must also
+    have at least one row for the temporal scenario's horizons (in this
+    subproblem, stage, and iteration):
     the per-horizon parameters are looked up for each of the project's
     operational timepoints, so a project without rows fails at model
     construction (a KeyError), not here. Writes High-severity validation
@@ -1316,7 +1485,10 @@ def validate_energy_budget_balancing_type_rows(
     # Only rows for (balancing type, horizon)s of the temporal scenario are
     # returned, so this also catches rows that exist but are all for
     # horizons outside it (e.g. of an unknown balancing type)
-    without_rows = sorted(set(budget_bt_by_prj) - set(df["project"]))
+    without_rows = sorted(
+        get_projects_operational_in_subproblem(conn, subscenarios, subproblem, op_type)
+        - set(df["project"])
+    )
     if without_rows:
         errors.append(projects_without_bt_hrz_rows_error(without_rows, db_table))
     write_validation_to_database(
