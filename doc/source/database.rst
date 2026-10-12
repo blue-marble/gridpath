@@ -203,6 +203,8 @@ Hydro Energy-Budget Allocation
 
 .. automodule:: db.csvs_test_examples.project.opchar.hydro_budget_allocation.doc
 
+.. _opchar-timepoint-maps-section-ref:
+
 =====================
 Opchar Timepoint Maps
 =====================
