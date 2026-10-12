@@ -15,7 +15,8 @@
 """
 Period wildcard rows for period-indexed inputs.
 
-In the period-indexed inputs that support it, a series (e.g. a project's
+In the period-indexed inputs that support it (listed in
+:code:`gridpath.temporal.investment.periods`), a series (e.g. a project's
 rows in one subscenario) is given either for every period at once, with
 ``period = 0`` rows, or period by period, with explicit rows only: data that
 doesn't change across periods needs one row (or one set of rows, e.g. the
