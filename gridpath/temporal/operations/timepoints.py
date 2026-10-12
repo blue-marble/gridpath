@@ -153,6 +153,22 @@ def add_model_components(
     | The month that each timepoint belongs to. Can be undefined, but is      |
     | needed if you have any parameters that are indexed by month.            |
     +-------------------------------------------------------------------------+
+    | | :code:`day_of_month`                                                  |
+    | | *Defined over*: :code:`TMPS`                                          |
+    | | *Within*: :code:`NonNegativeIntegers`                                 |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | The day of the month of each timepoint (0 if not specified). Needed for |
+    | the built-in day balancing types; timepoints without a day of month are |
+    | in no day horizon.                                                      |
+    +-------------------------------------------------------------------------+
+    | | :code:`hour_of_day`                                                   |
+    | | *Defined over*: :code:`TMPS`                                          |
+    | | *Within*: :code:`NonNegativeIntegers`                                 |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | The hour of day of each timepoint (0 if not specified).                 |
+    +-------------------------------------------------------------------------+
 
     .. TODO:: varying timepoint durations haven't been extensiveliy tested
 

@@ -303,6 +303,136 @@ three-stage tree with four leaves. The
 :code:`..._deterministic_twin` carry identical data in both branches and
 reproduce each other's objective and decisions.
 
+.. _inputs-once-sub-section-ref:
+
+Specifying Inputs Once for Many Periods, Horizons, or Timepoints
+----------------------------------------------------------------
+
+Most temporal inputs are indexed by period, horizon, or timepoint, and would
+need a row for every period, horizon, or timepoint of a scenario. Several
+mechanisms let data that repeats be stored once instead. Except for the
+built-in balancing types, which the model builds from the timepoints, they
+are resolved when the model inputs are written from the database, so the
+model's input files list every period, horizon, or timepoint as if each row
+were explicit.
+
+.. list-table::
+    :header-rows: 1
+    :widths: 20 25 30 25
+
+    * - Mechanism
+      - Stores
+      - Inputs
+      - Combines with explicit rows
+    * - :code:`period = 0` rows
+      - one row (or set of rows) for every period
+      - specified capacity and fixed costs, variable O&M by period, heat
+        rate and variable O&M curves, curtailment costs, hurdle rates,
+        carbon credit purchase limits
+      - not at all: a series is either all :code:`period = 0` or all
+        explicit
+    * - Built-in month and day balancing types
+      - horizons from the timepoints' calendar columns, with no horizon
+        inputs
+      - any input or constraint that takes a balancing type
+      - n/a
+    * - Month-of-year and day-of-year rows
+      - one row per month (horizon 1-12) or date (horizon 101-1231) for
+        every period, on the built-in month and day types
+      - horizon-indexed operating characteristics, exogenous availability
+        by horizon, market volume horizon and horizon-to-timepoint limits
+      - an explicit row for the horizon wins (per column in the market
+        volume limits)
+    * - Opchar timepoint maps
+      - each timepoint reads its data at another timepoint
+      - variable generator and energy profiles, variable O&M by timepoint,
+        storage exogenous state of charge, load modifier profiles
+      - the map always wins for mapped timepoints
+    * - Built-in calendar-hour map
+      - one year of data by calendar hour for every period
+      - same as opchar timepoint maps
+      - same as opchar timepoint maps
+    * - Opchar horizon maps
+      - each horizon reads its data at another horizon
+      - hydro operational characteristics, hydro budget allocation,
+        energy (slice) horizon shaping, load component shift bounds
+      - the map always wins for mapped horizons
+    * - Market volume wildcard rows and flat limits
+      - :code:`timepoint`, :code:`horizon`, or :code:`period` 0 rows and
+        flat limits on the market group
+      - market volume limit profiles
+      - per column: an explicit value, then the wildcard row, then the
+        flat limit
+
+**Period = 0 rows.** Data that doesn't change across periods can be given
+once with :code:`period = 0` rows instead of one row per period. A series
+(e.g. a project's rows in one subscenario) can't mix :code:`period = 0`
+rows with explicit periods, so a wildcard never quietly fills a period that
+was left out on purpose, such as a retired project's periods in the
+specified capacity inputs. See :ref:`periods-sub-section-ref` for the full
+list of inputs.
+
+**Built-in balancing types.** The :code:`subproblem_*`,
+:code:`subproblem_period_*`, :code:`subproblem_period_month_*`, and
+:code:`subproblem_period_day_*` balancing types are built from the
+timepoints' subproblem, period, month, and day of month, so they need no
+horizon inputs (see :ref:`horizons-sub-section-ref`). The month and day types
+need the :code:`month` and :code:`day_of_month` columns of the temporal
+inputs.
+
+**Month-of-year and day-of-year rows.** On the built-in month and day
+balancing types, a horizon-indexed input row whose horizon is the month
+(1-12) or :code:`month * 100 + day_of_month` (101-1231) supplies that month
+or date in every period that doesn't have an explicit row for its own
+horizon, e.g. a monthly hydro budget for every year, or a maintenance outage
+on the same dates every year. In the operating characteristics and
+exogenous availability inputs, an explicit row wins as a whole; in the
+market volume profiles, whose blank cells fall through to defaults, they
+combine per column. Projects that use a horizon map for an input don't read
+its calendar rows. See :ref:`hydro-opchar-section-ref` and
+:ref:`exogenous-availability-section-ref`.
+
+**Opchar timepoint and horizon maps.** A named map points a project's
+timepoint- or horizon-indexed input at the data stored under other
+timepoints or horizons, e.g. to repeat the first period's profiles in later
+periods, or one representative day's hydro characteristics for every day.
+Projects opt in per input through the :code:`*_tmp_map_scenario_id` and
+:code:`*_hrz_map_scenario_id` columns of the operating characteristics.
+Mapped timepoints and horizons always read the data they are mapped to, and
+every operational timepoint of a project using a timepoint map must find
+data there. See :ref:`opchar-timepoint-maps-section-ref` and
+:ref:`opchar-horizon-maps-section-ref`.
+
+**Built-in calendar-hour map.** The timepoint map with the reserved ID 0
+needs no map rows: each timepoint reads its data at its calendar hour,
+:code:`month * 10000 + day_of_month * 100 + hour_of_day`, so one year of
+hourly data (stored with the calendar hours as its timepoints) serves every
+period of any temporal scenario, whatever its timepoint numbering. Every
+timepoint needs a month, day of month, and hour of day, and February 29
+timepoints need data at :code:`229HH`. See
+:ref:`opchar-timepoint-maps-section-ref`.
+
+**Market volume limits.** A market group's limit profiles each accept a
+wildcard row (:code:`timepoint = 0`, :code:`horizon = 0` per balancing
+type, or :code:`period = 0`), and the group can carry flat limits; see :code:`gridpath.system.markets.volume` in
+:doc:`advanced_docs`.
+
+**Which to use.**
+
+* The same value in every period: :code:`period = 0` rows.
+* One year of hourly data for a multi-year study: the calendar-hour map.
+* Monthly or daily values that repeat every year: the built-in month or day
+  balancing types with month-of-year or day-of-year rows.
+* Representative periods, days, or other horizons repeated across the
+  study: a named timepoint or horizon map.
+
+.. note:: Databases created with GridPath v2026.13.1 or earlier need to be
+    recreated to use :code:`period = 0` specified capacity rows (which
+    changed the :code:`project_operational_periods` and
+    :code:`transmission_operational_periods` views) and the calendar-hour map
+    (whose row the schema seeds in
+    :code:`subscenarios_project_opchar_timepoint_map`).
+
 Examples
 --------
 
