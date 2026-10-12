@@ -3641,6 +3641,7 @@ CREATE TABLE inputs_project_availability
     exogenous_availability_weather_bt_hrz_scenario_id     INTEGER,
     exogenous_availability_monthly_scenario_id            INTEGER,
     endogenous_availability_scenario_id                   INTEGER,
+    default_exogenous_availability                        FLOAT,
     PRIMARY KEY (project_availability_scenario_id, project, availability_type)
 );
 

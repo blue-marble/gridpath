@@ -156,6 +156,7 @@ open_data,"{('weather_iteration_2010', 'hydro_iteration_2010', '', 1): {1: -1772
 hydro_system_exog_elev_w_travel_time_and_max_halfday_flows,"{('', 'hydro_iteration_1', '', 1): {1: -0.0}}","{('', 'hydro_iteration_1', '', 1): {1: -0.0}}",,,
 hydro_system_w_ramp_limits,"{('', 'hydro_iteration_1', '', 1): {1: -0.0}}","{('', 'hydro_iteration_1', '', 1): {1: -0.0}}",,,
 test_w_bt_hrz_avl,"{('', '', '', 1): {1: -11138261746583.814}}","{('', '', '', 1): {1: -11138261746583.814}}",,,
+test_w_bt_hrz_avl_w_default_avl,"{('', '', '', 1): {1: -11138261746583.814}}","{('', '', '', 1): {1: -11138261746583.814}}",,,
 hydro_system_exog_elev_w_gen_ramp_limits,"{('', 'hydro_iteration_1', '', 1): {1: -0.0}}","{('', 'hydro_iteration_1', '', 1): {1: -0.0}}",,,
 hydro_system_exog_elev_w_binding_tmp_flow_max,"{('', 'hydro_iteration_1', '', 1): {1: -5230047626449.524}}","{('', 'hydro_iteration_1', '', 1): {1: -5230047626449.524}}",,,
 hydro_system_exog_elev_w_binding_tmp_flow_max_w_threshold,"{('', 'hydro_iteration_1', '', 1): {1: -82917026358.3299}}","{('', 'hydro_iteration_1', '', 1): {1: -82917026358.3299}}",,,

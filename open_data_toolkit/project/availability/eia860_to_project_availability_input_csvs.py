@@ -419,7 +419,8 @@ def get_project_availability(
     NULL AS exogenous_availability_independent_bt_hrz_scenario_id,
     NULL AS exogenous_availability_weather_bt_hrz_scenario_id,
     NULL AS exogenous_availability_monthly_scenario_id,
-    NULL AS endogenous_availability_scenario_id
+    NULL AS endogenous_availability_scenario_id,
+    NULL AS default_exogenous_availability
     {fleet_relation_sql}
     {group_by_sql}
     """

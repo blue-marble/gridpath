@@ -20,6 +20,13 @@ the available project capacity will be 0 in that timepoint and all
 operational decision variables will therefore also be constrained to 0 in the
 optimization.
 
+A project-level :code:`default_exogenous_availability` (in the
+:code:`inputs_project_availability` table) replaces 1 as the independent
+timepoint derate wherever the project has no timepoint-level independent
+derate, so a single value can apply to all timepoints; the other derates
+(weather, balancing type - horizon, monthly) still multiply it. It does not
+apply to the hybrid storage capacity derate.
+
 """
 
 import csv
@@ -54,6 +61,8 @@ from gridpath.project.operations.operational_types.common_functions import (
 # The exogenous derates are fixed input data, so the availability
 # derate is a constant in the model
 DERATE_IS_CONSTANT = True
+
+DEFAULT_DERATE_FILENAME = "project_availability_exogenous_default.tab"
 
 
 def add_model_components(
@@ -94,8 +103,17 @@ def add_model_components(
     | | *Default*: :code:`1`                                                  |
     |                                                                         |
     | The pre-specified availability derate (e.g. for maintenance/planned     |
-    | outages) that does not depend on weather. Defaults to 1 if not          |
-    | specified. Availaibility can also be more than 1.                       |
+    | outages) that does not depend on weather. Defaults to the project's     |
+    | :code:`avl_exog_default_cap_derate` if not specified. Availaibility can |
+    | also be more than 1.                                                    |
+    +-------------------------------------------------------------------------+
+    | | :code:`avl_exog_default_cap_derate`                                   |
+    | | *Defined over*: :code:`AVL_EXOG`                                      |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`1`                                                  |
+    |                                                                         |
+    | The project's independent availability derate in the timepoints         |
+    | without a timepoint-level :code:`avl_exog_cap_derate_independent`.      |
     +-------------------------------------------------------------------------+
     | | :code:`avl_exog_cap_derate_weather`                                   |
     | | *Defined over*: :code:`AVL_EXOG_OPR_TMPS`                             |
@@ -160,9 +178,37 @@ def add_model_components(
     # Optional Params
     ###########################################################################
 
+    m.avl_exog_default_cap_derate = Param(
+        m.AVL_EXOG, within=NonNegativeReals, default=1
+    )
+
+    # Only fall back to the project defaults when there are any: a function
+    # default is called (and domain-checked) on every access, so keep the
+    # constant default otherwise
+    if os.path.exists(
+        os.path.join(
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            DEFAULT_DERATE_FILENAME,
+        )
+    ):
+
+        def independent_derate_default(mod, prj, tmp):
+            return mod.avl_exog_default_cap_derate[prj]
+
+    else:
+        independent_derate_default = 1
+
     # For hybrids, this is the derate applied to the generator component
     m.avl_exog_cap_derate_independent = Param(
-        m.AVL_EXOG_OPR_TMPS, within=NonNegativeReals, default=1
+        m.AVL_EXOG_OPR_TMPS,
+        within=NonNegativeReals,
+        default=independent_derate_default,
     )
 
     m.avl_exog_cap_derate_weather = Param(
@@ -282,6 +328,11 @@ def _active_cap_derate_params(mod):
                 getattr(mod, p)
                 for p in _TMP_INDEXED_CAP_DERATE_PARAMS
                 if any(True for _ in getattr(mod, p).sparse_keys())
+                # The independent derate defaults to the project defaults
+                or (
+                    p == "avl_exog_cap_derate_independent"
+                    and any(True for _ in mod.avl_exog_default_cap_derate.sparse_keys())
+                )
             ],
             # Is the monthly param active
             any(True for _ in mod.avl_exog_mnth_derate.sparse_keys()),
@@ -458,6 +509,13 @@ def load_model_data(
 
     if os.path.exists(monthly_av_file):
         data_portal.load(filename=monthly_av_file, param=m.avl_exog_mnth_derate)
+
+    default_derate_file = os.path.join(input_directory, DEFAULT_DERATE_FILENAME)
+
+    if os.path.exists(default_derate_file):
+        data_portal.load(
+            filename=default_derate_file, param=m.avl_exog_default_cap_derate
+        )
 
 
 # Database
@@ -721,12 +779,31 @@ def get_inputs_from_database(
     c5 = conn.cursor()
     monthly_availabilities = c5.execute(mnth_sql)
 
+    # Project defaults for the independent derate
+    default_sql = f"""
+        SELECT project, default_exogenous_availability
+        FROM inputs_project_availability
+        WHERE project_availability_scenario_id = {subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID}
+        AND availability_type = 'exogenous'
+        AND default_exogenous_availability IS NOT NULL
+        -- Portfolio projects only
+        AND project IN (
+            SELECT project FROM inputs_project_portfolios
+            WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
+        )
+        ;
+    """
+
+    c6 = conn.cursor()
+    default_availabilities = c6.execute(default_sql)
+
     return (
         independent_availabilities,
         weather_availabilities,
         bt_hrz_independent_availabilities,
         bt_hrz_weather_availabilities,
         monthly_availabilities,
+        default_availabilities,
     )
 
 
@@ -766,6 +843,7 @@ def write_model_inputs(
         independent_availabilities_bt_hrz,
         weather_availabilities_bt_hrz,
         monthly_availabilities,
+        default_availabilities,
     ) = get_inputs_from_database(
         scenario_id,
         subscenarios,
@@ -849,6 +927,17 @@ def write_model_inputs(
         replace_nulls=True,
     )
 
+    write_tab_file_model_inputs(
+        scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        fname=DEFAULT_DERATE_FILENAME,
+        data=default_availabilities,
+    )
+
 
 # Validation
 ###############################################################################
@@ -877,6 +966,7 @@ def validate_inputs(
         independent_availabilities_bt_hrz,
         weather_availabilities_bt_hrz,
         monthly_availabilities,
+        default_availabilities,
     ) = get_inputs_from_database(
         scenario_id,
         subscenarios,
@@ -950,4 +1040,39 @@ def validate_inputs(
             db_table="inputs_project_availability_exogenous_independent",
             severity="High",
             errors=validate_values(df, value_cols, min=0, max=1),
+        )
+
+    # Project defaults for the independent derate
+    default_df = cursor_to_df(default_availabilities)
+    default_dtype_errors, default_error_columns = validate_dtypes(
+        default_df, expected_dtypes
+    )
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_availability",
+        severity="High",
+        errors=default_dtype_errors,
+    )
+    if "default_exogenous_availability" not in default_error_columns:
+        write_validation_to_database(
+            conn=conn,
+            scenario_id=scenario_id,
+            weather_iteration=weather_iteration,
+            hydro_iteration=hydro_iteration,
+            availability_iteration=availability_iteration,
+            subproblem_id=subproblem,
+            stage_id=stage,
+            gridpath_module=__name__,
+            db_table="inputs_project_availability",
+            severity="High",
+            errors=validate_values(
+                default_df, ["default_exogenous_availability"], min=0, max=1
+            ),
         )
