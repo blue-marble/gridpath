@@ -328,7 +328,7 @@ were explicit.
       - one row (or set of rows) for every period
       - specified capacity and fixed costs, variable O&M by period, heat
         rate and variable O&M curves, curtailment costs, hurdle rates,
-        carbon credit purchase limits
+        carbon credit purchase limits, power output group requirements
       - not at all: a series is either all :code:`period = 0` or all
         explicit
     * - Built-in month and day balancing types

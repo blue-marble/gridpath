@@ -49,7 +49,8 @@ files always list each period. The inputs that accept them are:
   curves (a curve's :code:`period = 0` load points apply to every period);
 * project and transmission curtailment costs;
 * transmission hurdle rates;
-* project carbon credit purchase limits.
+* project carbon credit purchase limits;
+* power output group requirements.
 
 The market volume period profiles also take :code:`period = 0` rows, but
 combine them with explicit rows per column (see
