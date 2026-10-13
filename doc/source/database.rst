@@ -161,6 +161,8 @@ Potential
 Project Availability
 ********************
 
+.. _exogenous-availability-section-ref:
+
 =========
 Exogenous
 =========
@@ -191,6 +193,8 @@ Variable Generator Profiles
 
 .. automodule:: db.csvs_test_examples.project.opchar.variable_generator_profiles.doc
 
+.. _hydro-opchar-section-ref:
+
 =================================
 Hydro Operational Characteristics 
 =================================
@@ -203,11 +207,15 @@ Hydro Energy-Budget Allocation
 
 .. automodule:: db.csvs_test_examples.project.opchar.hydro_budget_allocation.doc
 
+.. _opchar-timepoint-maps-section-ref:
+
 =====================
 Opchar Timepoint Maps
 =====================
 
 .. automodule:: db.csvs_test_examples.project.opchar.timepoint_maps.doc
+
+.. _opchar-horizon-maps-section-ref:
 
 ===================
 Opchar Horizon Maps

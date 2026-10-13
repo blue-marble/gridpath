@@ -42,6 +42,35 @@ the previous horizon as the previous timepoint for the first timepoint of a
 horizon (this can only be done when running multiple subproblems and inputs
 must be specified appropriately).
 
+GridPath also builds a set of *built-in* balancing types from the timepoints'
+subproblem, period, month and day of month, so they need no horizon inputs:
+
+* :code:`subproblem_{circular,linear,linked}`: one horizon (1) with all
+  timepoints of the subproblem;
+* :code:`subproblem_period_{circular,linear,linked}`: one horizon per period
+  (horizon = period);
+* :code:`subproblem_period_month_{circular,linear}`: one horizon per period
+  and month (horizon = :code:`period * 100 + month`);
+* :code:`subproblem_period_day_{circular,linear}`: one horizon per period and
+  day (horizon = :code:`period * 10000 + month * 100 + day_of_month`, i.e.
+  YYYYMMDD when periods are calendar years); timepoints without a day of
+  month are in no day horizon.
+
+The month and day types group timepoints by period and calendar month or
+date, so a period that spans several calendar years merges the same month or
+date of those years into one horizon; define your own balancing types where
+that matters.
+
+Only the built-in balancing types that the scenario's inputs reference are
+built, as each costs memory for every timepoint: a built-in type is
+referenced if it appears in a column whose name contains
+:code:`balancing_type` in any input file (e.g. a project's
+:code:`balancing_type_project` in :code:`projects.tab`, or a horizon-indexed
+input's :code:`balancing_type_horizon`). Horizon-indexed inputs on the
+month and day types can also be given once per month or date for every
+period (month-of-year and day-of-year rows; see
+:code:`gridpath.auxiliary.calendar_rows`).
+
 Each *horizon* can optionally also be designated as an 'average' or 'stress'
 horizon via the :code:`stor_stress_hrz_type` input; this designation is used
 only by projects of the :code:`stor_stress_hrz` operational type and is
@@ -55,6 +84,7 @@ import warnings
 from pyomo.environ import Set, Param, PositiveIntegers
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
+from gridpath.auxiliary.calendar_rows import DAY_HORIZON_TYPES, MONTH_HORIZON_TYPES
 from gridpath.auxiliary.db_interface import directories_to_db_values
 from gridpath.auxiliary.validations import (
     write_validation_to_database,
@@ -66,14 +96,72 @@ from gridpath.auxiliary.validations import (
 )
 from gridpath.project import write_tab_file_model_inputs
 
-BUILTIN_HORIZON_TYPES = [
-    "subproblem_circular",
-    "subproblem_period_circular",
-    "subproblem_linear",
-    "subproblem_period_linear",
-    "subproblem_linked",
-    "subproblem_period_linked",
-]
+BUILTIN_HORIZON_TYPES = (
+    [
+        "subproblem_circular",
+        "subproblem_period_circular",
+        "subproblem_linear",
+        "subproblem_period_linear",
+        "subproblem_linked",
+        "subproblem_period_linked",
+    ]
+    + MONTH_HORIZON_TYPES
+    + DAY_HORIZON_TYPES
+)
+
+# Cached on the model instance by calendar_horizon_tmps()
+CALENDAR_HORIZON_TMPS_CACHE = "_gridpath_calendar_horizon_tmps"
+
+
+def referenced_builtin_balancing_types(inputs_directory):
+    """
+    The built-in balancing types referenced by the input files (.tab and
+    .csv) in *inputs_directory*, i.e. appearing in a column whose name
+    contains "balancing_type"; only the header and those columns are read.
+
+    :return: sorted list of the referenced built-in balancing types
+    """
+    builtin = set(BUILTIN_HORIZON_TYPES)
+    referenced = set()
+    for filename in sorted(os.listdir(inputs_directory)):
+        if filename.endswith(".tab"):
+            delimiter = "\t"
+        elif filename.endswith(".csv"):
+            delimiter = ","
+        else:
+            continue
+        with open(os.path.join(inputs_directory, filename), newline="") as f:
+            reader = csv.reader(f, delimiter=delimiter)
+            header = next(reader, [])
+            bt_columns = [i for i, col in enumerate(header) if "balancing_type" in col]
+            if not bt_columns:
+                continue
+            for row in reader:
+                referenced.update(row[i] for i in bt_columns if i < len(row))
+    return sorted(referenced & builtin)
+
+
+def calendar_horizon_tmps(mod):
+    """
+    The timepoints of each built-in month horizon (period * 100 + month) and
+    day horizon (period * 10000 + month * 100 + day_of_month), in timepoint
+    order, built in one pass over the timepoints and cached on the model
+    instance. Timepoints without a day of month (0) are in no day horizon.
+
+    :return: dict of {"month": {horizon: [tmps]}, "day": {horizon: [tmps]}}
+    """
+    cached = getattr(mod, CALENDAR_HORIZON_TMPS_CACHE, None)
+    if cached is None:
+        cached = {"month": {}, "day": {}}
+        for tmp in mod.TMPS:
+            period, month, day = mod.period[tmp], mod.month[tmp], mod.day_of_month[tmp]
+            cached["month"].setdefault(period * 100 + month, []).append(tmp)
+            if day > 0:
+                cached["day"].setdefault(period * 10000 + month * 100 + day, []).append(
+                    tmp
+                )
+        setattr(mod, CALENDAR_HORIZON_TMPS_CACHE, cached)
+    return cached
 
 
 def add_model_components(
@@ -194,6 +282,10 @@ def add_model_components(
 
     m.BLN_TYPE_HRZS_USER_DEFINED = Set(dimen=2)
 
+    # The built-in balancing types the inputs reference, which are the only
+    # ones built
+    m.BUILTIN_BLN_TYPES = Set(within=BUILTIN_HORIZON_TYPES)
+
     def get_valid_period_months_by_tmp(mod):
         prd_months = list(set([(mod.period[tmp], mod.month[tmp]) for tmp in mod.TMPS]))
 
@@ -211,25 +303,25 @@ def add_model_components(
         * subproblem_period: all timepoints in a given period in the subproblem
         * subproblem_period_month: all timepoints in a given month in the
         subproblem and period
+        * subproblem_period_day: all timepoints on a given day (month and
+          day of month) in the subproblem and period
 
-        These can be linear or circular
+        These can be linear or circular. Only the balancing types in
+        BUILTIN_BLN_TYPES are built.
         """
-        return set(
-            [("subproblem_circular", 1)]
-            + [("subproblem_period_circular", period) for period in mod.PERIODS]
-            + [("subproblem_linear", 1)]
-            + [("subproblem_period_linear", period) for period in mod.PERIODS]
-            + [("subproblem_linked", 1)]
-            + [("subproblem_period_linked", period) for period in mod.PERIODS]
-            + [
-                ("subproblem_period_month_linear", period * 100 + month)
-                for (period, month) in mod.VALID_PERIOD_MONTHS
-            ]
-            + [
-                ("subproblem_period_month_circular", period * 100 + month)
-                for (period, month) in mod.VALID_PERIOD_MONTHS
-            ]
-        )
+        horizons_by_type = {
+            "subproblem": lambda: [1],
+            "subproblem_period": lambda: list(mod.PERIODS),
+            "subproblem_period_month": lambda: sorted(
+                period * 100 + month for (period, month) in mod.VALID_PERIOD_MONTHS
+            ),
+            "subproblem_period_day": lambda: list(calendar_horizon_tmps(mod)["day"]),
+        }
+        return [
+            (bt, hrz)
+            for bt in mod.BUILTIN_BLN_TYPES
+            for hrz in horizons_by_type[bt.rsplit("_", 1)[0]]()
+        ]
 
     m.BLN_TYPE_HRZS_BUILTIN = Set(dimen=2, initialize=builtin_bln_type_hrz_init)
 
@@ -256,13 +348,10 @@ def add_model_components(
             "subproblem_period_linked",
         ]:
             return [tmp for tmp in mod.TMPS_IN_PRD[h]]
-        elif b in [
-            "subproblem_period_month_circular",
-            "subproblem_period_month_linear",
-        ]:
-            return [
-                tmp for tmp in mod.TMPS if (mod.month[tmp] + 100 * mod.period[tmp]) == h
-            ]
+        elif b in MONTH_HORIZON_TYPES:
+            return calendar_horizon_tmps(mod)["month"][h]
+        elif b in DAY_HORIZON_TYPES:
+            return calendar_horizon_tmps(mod)["day"][h]
         else:
             raise ValueError(
                 f"Unrecognized built-in balancing type '{b}' " f"with horizon '{h}'."
@@ -549,7 +638,7 @@ def load_model_data(
     stage,
 ):
     """ """
-    hrz_filename = os.path.join(
+    inputs_directory = os.path.join(
         scenario_directory,
         weather_iteration,
         hydro_iteration,
@@ -557,8 +646,12 @@ def load_model_data(
         subproblem,
         stage,
         "inputs",
-        "horizons_user_defined.tab",
     )
+    data_portal.data()["BUILTIN_BLN_TYPES"] = {
+        None: referenced_builtin_balancing_types(inputs_directory)
+    }
+
+    hrz_filename = os.path.join(inputs_directory, "horizons_user_defined.tab")
 
     # Load user-defined horizons if any (i.e., the file exists)
     if os.path.exists(hrz_filename):

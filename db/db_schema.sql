@@ -1166,6 +1166,7 @@ CREATE TABLE inputs_market_volume
         CHECK (basis IN ('net', 'gross')),
     market_volume_tmp_profile_scenario_id                  INTEGER,
     market_volume_hrz_profile_scenario_id                  INTEGER,
+    market_volume_hrz_to_tmp_profile_scenario_id           INTEGER,
     market_volume_prd_profile_scenario_id                  INTEGER,
     varies_by_weather_iteration                            INTEGER,
     varies_by_hydro_iteration                              INTEGER,
@@ -1185,6 +1186,9 @@ CREATE TABLE inputs_market_volume
     FOREIGN KEY (market_group, market_volume_hrz_profile_scenario_id) REFERENCES
         subscenarios_market_volume_hrz_profiles
             (market_group, market_volume_hrz_profile_scenario_id),
+    FOREIGN KEY (market_group, market_volume_hrz_to_tmp_profile_scenario_id)
+        REFERENCES subscenarios_market_volume_hrz_to_tmp_profiles
+            (market_group, market_volume_hrz_to_tmp_profile_scenario_id),
     FOREIGN KEY (market_group, market_volume_prd_profile_scenario_id) REFERENCES
         subscenarios_market_volume_prd_profiles
             (market_group, market_volume_prd_profile_scenario_id)
@@ -1260,6 +1264,44 @@ CREATE TABLE inputs_market_volume_hrz_profiles
     FOREIGN KEY (market_group, market_volume_hrz_profile_scenario_id) REFERENCES
         subscenarios_market_volume_hrz_profiles
             (market_group, market_volume_hrz_profile_scenario_id)
+);
+
+-- Timepoint-level limits, in MW, given by horizon: each applies in every
+-- timepoint of the horizon, between the explicit timepoint rows and the
+-- timepoint wildcard row of the timepoint-level resolution
+-- A row with horizon = 0 sets the default for every horizon of the
+-- respective balancing type that has no explicit row (and for every NULL
+-- cell in an explicit row)
+DROP TABLE IF EXISTS subscenarios_market_volume_hrz_to_tmp_profiles;
+CREATE TABLE subscenarios_market_volume_hrz_to_tmp_profiles
+(
+    market_group                                 TEXT,
+    market_volume_hrz_to_tmp_profile_scenario_id INTEGER,
+    name                                         VARCHAR(32),
+    description                                  VARCHAR(128),
+    PRIMARY KEY (market_group, market_volume_hrz_to_tmp_profile_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_market_volume_hrz_to_tmp_profiles;
+CREATE TABLE inputs_market_volume_hrz_to_tmp_profiles
+(
+    market_group                                 VARCHAR(32),
+    market_volume_hrz_to_tmp_profile_scenario_id INTEGER,
+    weather_iteration                            INTEGER,
+    hydro_iteration                              INTEGER,
+    stage_id                                     INTEGER,
+    balancing_type_horizon                       VARCHAR(32),
+    horizon                                      INTEGER,
+    max_market_sales                             FLOAT,
+    max_market_purchases                         FLOAT,
+    max_final_market_sales                       FLOAT,
+    max_final_market_purchases                   FLOAT,
+    PRIMARY KEY (market_group, market_volume_hrz_to_tmp_profile_scenario_id,
+                 weather_iteration, hydro_iteration, stage_id,
+                 balancing_type_horizon, horizon),
+    FOREIGN KEY (market_group, market_volume_hrz_to_tmp_profile_scenario_id)
+        REFERENCES subscenarios_market_volume_hrz_to_tmp_profiles
+            (market_group, market_volume_hrz_to_tmp_profile_scenario_id)
 );
 
 -- Period-level limits, in MWh, on the group's net position summed over the
@@ -2272,6 +2314,15 @@ CREATE TABLE subscenarios_project_opchar_timepoint_map
     name                             VARCHAR(32),
     description                      VARCHAR(128)
 );
+
+-- The built-in calendar-hour map (reserved ID 0) has no rows in
+-- inputs_project_opchar_timepoint_map: it reads each timepoint's data at
+-- month * 10000 + day_of_month * 100 + hour_of_day (see
+-- gridpath.auxiliary.calendar_rows)
+INSERT INTO subscenarios_project_opchar_timepoint_map
+    (opchar_timepoint_map_scenario_id, name, description)
+VALUES (0, 'calendar_hour',
+        'Built-in: month * 10000 + day_of_month * 100 + hour_of_day');
 
 DROP TABLE IF EXISTS inputs_project_opchar_timepoint_map;
 CREATE TABLE inputs_project_opchar_timepoint_map
@@ -3584,6 +3635,7 @@ CREATE TABLE inputs_project_availability
     project_availability_scenario_id                      INTEGER,
     project                                               VARCHAR(64),
     availability_type                                     VARCHAR(32),
+    default_exogenous_availability                        FLOAT,
     exogenous_availability_independent_scenario_id        INTEGER,
     exogenous_availability_weather_scenario_id            INTEGER,
     exogenous_availability_independent_bt_hrz_scenario_id INTEGER,
@@ -8049,6 +8101,45 @@ CREATE TABLE results_system_market_volume_tmp
                  market_group, basis, timepoint)
 );
 
+DROP TABLE IF EXISTS results_system_market_volume_hrz_to_tmp;
+CREATE TABLE results_system_market_volume_hrz_to_tmp
+(
+    scenario_id                                    INTEGER,
+    weather_iteration                              INTEGER,
+    hydro_iteration                                INTEGER,
+    availability_iteration                         INTEGER,
+    subproblem_id                                  INTEGER,
+    stage_id                                       INTEGER,
+    market_group                                   VARCHAR(32),
+    basis                                          VARCHAR(8),
+    balancing_type_horizon                         VARCHAR(32),
+    horizon                                        INTEGER,
+    timepoint                                      INTEGER,
+    period                                         INTEGER,
+    net_market_purchased_power_mw                  FLOAT,
+    final_net_market_purchased_power_mw            FLOAT,
+    gross_market_sales_mw                          FLOAT,
+    gross_market_purchases_mw                      FLOAT,
+    final_gross_market_sales_mw                    FLOAT,
+    final_gross_market_purchases_mw                FLOAT,
+    max_market_purchases                           FLOAT,
+    max_market_sales                               FLOAT,
+    max_final_market_purchases                     FLOAT,
+    max_final_market_sales                         FLOAT,
+    max_market_purchases_dual                      FLOAT,
+    max_market_sales_dual                          FLOAT,
+    max_final_market_purchases_dual                FLOAT,
+    max_final_market_sales_dual                    FLOAT,
+    max_market_purchases_marginal_cost             FLOAT,
+    max_market_sales_marginal_cost                 FLOAT,
+    max_final_market_purchases_marginal_cost       FLOAT,
+    max_final_market_sales_marginal_cost           FLOAT,
+    PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
+                 availability_iteration, subproblem_id, stage_id,
+                 market_group, basis, balancing_type_horizon, horizon,
+                 timepoint)
+);
+
 DROP TABLE IF EXISTS results_system_market_volume_hrz;
 CREATE TABLE results_system_market_volume_hrz
 (
@@ -9771,6 +9862,18 @@ FROM (
                 project,
                 period
          FROM inputs_project_specified_capacity
+         WHERE period != 0
+         -- A period 0 row applies to every period
+         UNION ALL
+         SELECT project_specified_capacity_scenario_id,
+                NULL AS project_new_cost_scenario_id,
+                project,
+                all_periods.period
+         FROM inputs_project_specified_capacity
+                  CROSS JOIN
+              (SELECT DISTINCT period
+               FROM inputs_temporal_periods) AS all_periods
+         WHERE inputs_project_specified_capacity.period = 0
          -- Add operational periods of new projects
          UNION ALL
          SELECT NULL AS project_specified_capacity_scenario_id,
@@ -9803,6 +9906,18 @@ FROM (
                 transmission_line,
                 period
          FROM inputs_transmission_specified_capacity
+         WHERE period != 0
+         -- A period 0 row applies to every period
+         UNION ALL
+         SELECT transmission_specified_capacity_scenario_id,
+                NULL AS transmission_new_cost_scenario_id,
+                transmission_line,
+                all_periods.period
+         FROM inputs_transmission_specified_capacity
+                  CROSS JOIN
+              (SELECT DISTINCT period
+               FROM inputs_temporal_periods) AS all_periods
+         WHERE inputs_transmission_specified_capacity.period = 0
          -- Add operational periods of new projects
          UNION ALL
          SELECT NULL AS transmission_specified_capacity_scenario_id,

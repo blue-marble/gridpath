@@ -58,6 +58,10 @@ STAGE = 1
 # group containing it narrows to Market_Hub_1 and the group containing only
 # it narrows to nothing
 SCENARIO_MARKETS = ["Market_Hub_1"]
+
+# A built-in balancing type whose horizons (period * 100 + month) accept
+# month-of-year rows
+MONTH_BT = "subproblem_period_month_circular"
 ALL_MARKETS = ["Market_Hub_1", "Market_Hub_2"]
 
 
@@ -148,7 +152,16 @@ class TestMarketVolumeInputResolution(unittest.TestCase):
     def tearDown(self):
         self.conn.close()
 
-    def limit_group(self, group, tmp=None, hrz=None, prd=None, basis="net", **flat):
+    def limit_group(
+        self,
+        group,
+        tmp=None,
+        hrz=None,
+        prd=None,
+        hrz_to_tmp=None,
+        basis="net",
+        **flat,
+    ):
         """
         Give *group* a volume profile, at the resolutions whose profile ID is
         passed, and the flat limits in *flat* (keyed by the profile column
@@ -171,6 +184,11 @@ class TestMarketVolumeInputResolution(unittest.TestCase):
                 prd,
                 "subscenarios_market_volume_prd_profiles",
                 "market_volume_prd_profile_scenario_id",
+            ),
+            (
+                hrz_to_tmp,
+                "subscenarios_market_volume_hrz_to_tmp_profiles",
+                "market_volume_hrz_to_tmp_profile_scenario_id",
             ),
         ]:
             if profile_id is not None:
@@ -195,10 +213,11 @@ class TestMarketVolumeInputResolution(unittest.TestCase):
              market_volume_tmp_profile_scenario_id,
              market_volume_hrz_profile_scenario_id,
              market_volume_prd_profile_scenario_id,
+             market_volume_hrz_to_tmp_profile_scenario_id,
              varies_by_weather_iteration, varies_by_hydro_iteration,
              {", ".join("default_" + col for col in flat_columns)})
-            VALUES (?, ?, ?, ?, ?, ?, 0, 0, {", ".join("?" * len(flat_columns))})""",
-            (MARKET_VOLUME_SCENARIO_ID, group, basis, tmp, hrz, prd)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, {", ".join("?" * len(flat_columns))})""",
+            (MARKET_VOLUME_SCENARIO_ID, group, basis, tmp, hrz, prd, hrz_to_tmp)
             + tuple(flat.get(col) for col in flat_columns),
         )
         self.conn.commit()
@@ -228,6 +247,83 @@ class TestMarketVolumeInputResolution(unittest.TestCase):
         )
         self.conn.commit()
 
+    def insert_hrz_to_tmp_limits(self, group, profile_id, rows):
+        """
+        Horizon-to-timepoint limits: rows of (balancing type, horizon, sales,
+        purchases, final sales, final purchases).
+        """
+        self.conn.cursor().executemany(
+            """INSERT INTO inputs_market_volume_hrz_to_tmp_profiles
+            (market_group, market_volume_hrz_to_tmp_profile_scenario_id,
+             weather_iteration, hydro_iteration, stage_id,
+             balancing_type_horizon, horizon, max_market_sales,
+             max_market_purchases, max_final_market_sales,
+             max_final_market_purchases)
+            VALUES (?, ?, 0, 0, ?, ?, ?, ?, ?, ?, ?)""",
+            [(group, profile_id, STAGE) + r for r in rows],
+        )
+        self.conn.commit()
+
+    def add_month_horizon_timepoints(self):
+        """Put both timepoints in 'month' horizon 202001 too."""
+        self.conn.cursor().executemany(
+            """INSERT INTO inputs_temporal_horizon_timepoints
+            (temporal_scenario_id, subproblem_id, stage_id, timepoint,
+             balancing_type_horizon, horizon)
+            VALUES (?, ?, ?, ?, 'month', 202001)""",
+            [(TEMPORAL_SCENARIO_ID, SUBPROBLEM, STAGE, tmp) for tmp in TIMEPOINTS],
+        )
+        self.conn.commit()
+
+    def add_builtin_month_horizons(self):
+        """
+        Give timepoints 1 and 2 months 1 and 2, add period 2030 with
+        timepoints 3 (month 1) and 4 (month 2), and put all four in the
+        built-in month horizons (202001, 202002, 203001, 203002).
+        """
+        c = self.conn.cursor()
+        c.execute(
+            "INSERT INTO inputs_temporal_periods (temporal_scenario_id, period) "
+            "VALUES (?, 2030)",
+            (TEMPORAL_SCENARIO_ID,),
+        )
+        for tmp, period, month in [
+            (1, 2020, 1),
+            (2, 2020, 2),
+            (3, 2030, 1),
+            (4, 2030, 2),
+        ]:
+            c.execute(
+                """INSERT INTO inputs_temporal
+                (temporal_scenario_id, subproblem_id, stage_id, timepoint, period,
+                 number_of_hours_in_timepoint, timepoint_weight,
+                 spinup_or_lookahead, month)
+                VALUES (?, ?, ?, ?, ?, 1, 1, 0, ?)
+                ON CONFLICT DO UPDATE SET month = excluded.month""",
+                (TEMPORAL_SCENARIO_ID, SUBPROBLEM, STAGE, tmp, period, month),
+            )
+            c.execute(
+                """INSERT INTO inputs_temporal_horizon_timepoints
+                (temporal_scenario_id, subproblem_id, stage_id, timepoint,
+                 balancing_type_horizon, horizon)
+                VALUES (?, ?, ?, ?, ?, ?)""",
+                (
+                    TEMPORAL_SCENARIO_ID,
+                    SUBPROBLEM,
+                    STAGE,
+                    tmp,
+                    MONTH_BT,
+                    period * 100 + month,
+                ),
+            )
+            c.execute(
+                """INSERT INTO inputs_temporal_horizons
+                (temporal_scenario_id, balancing_type_horizon, horizon, boundary)
+                VALUES (?, ?, ?, 'circular')""",
+                (TEMPORAL_SCENARIO_ID, MONTH_BT, period * 100 + month),
+            )
+        self.conn.commit()
+
     def insert_prd_limits(self, group, profile_id, rows):
         self.conn.cursor().executemany(
             """INSERT INTO inputs_market_volume_prd_profiles
@@ -242,7 +338,8 @@ class TestMarketVolumeInputResolution(unittest.TestCase):
 
     def resolve(self):
         """
-        Run the module's input queries and return the four results as lists
+        Run the module's input queries and return the five results (groups,
+        timepoint, horizon, period and horizon-to-timepoint limits) as lists
         of rows.
         """
         return [
@@ -265,7 +362,7 @@ class TestMarketVolumeInputResolution(unittest.TestCase):
         a group named after itself. A group keeps the members the scenario
         models, and one left with none of them does not appear at all.
         """
-        groups, _, _, _ = self.resolve()
+        groups, _, _, _, _ = self.resolve()
         self.assertListEqual(
             [("All_Hubs", "Market_Hub_1"), ("Market_Hub_1", "Market_Hub_1")], groups
         )
@@ -287,7 +384,7 @@ class TestMarketVolumeInputResolution(unittest.TestCase):
         """
         self.limit_group("Market_Hub_1", tmp=1)
         self.insert_tmp_limits("Market_Hub_1", 1, [(0, 10, 5, None, None)])
-        _, tmp_limits, _, _ = self.resolve()
+        _, tmp_limits, _, _, _ = self.resolve()
         self.assertListEqual(
             [
                 ("Market_Hub_1", "net", 1, 10, 5, None, None),
@@ -303,7 +400,7 @@ class TestMarketVolumeInputResolution(unittest.TestCase):
         """
         self.limit_group("Nowhere", tmp=1)
         self.insert_tmp_limits("Nowhere", 1, [(0, 10, 5, None, None)])
-        groups, tmp_limits, _, _ = self.resolve()
+        groups, tmp_limits, _, _, _ = self.resolve()
         self.assertNotIn("Nowhere", [grp for grp, mrkt in groups])
         self.assertListEqual([], tmp_limits)
 
@@ -314,7 +411,7 @@ class TestMarketVolumeInputResolution(unittest.TestCase):
         """
         self.limit_group("All_Hubs", tmp=1)
         self.insert_tmp_limits("All_Hubs", 1, [(0, 10, 5, None, None)])
-        _, tmp_limits, _, _ = self.resolve()
+        _, tmp_limits, _, _, _ = self.resolve()
         self.assertListEqual(
             [
                 ("All_Hubs", "net", 1, 10, 5, None, None),
@@ -334,7 +431,7 @@ class TestMarketVolumeInputResolution(unittest.TestCase):
             1,
             [(0, 10, 5, None, 99), (2, None, 7, None, None)],
         )
-        _, tmp_limits, _, _ = self.resolve()
+        _, tmp_limits, _, _, _ = self.resolve()
         self.assertListEqual(
             [
                 ("All_Hubs", "net", 1, 10, 5, None, 99),
@@ -352,14 +449,14 @@ class TestMarketVolumeInputResolution(unittest.TestCase):
         self.insert_hrz_limits(
             "All_Hubs", 1, [("day", 0, 100, 200, 1), ("month", 0, 300, 400, None)]
         )
-        _, _, hrz_limits, _ = self.resolve()
+        _, _, hrz_limits, _, _ = self.resolve()
         # Only 'day' 202001 is in this subproblem and stage
         self.assertListEqual(
             [("All_Hubs", "net", "day", 202001, 100, 200, 1)], hrz_limits
         )
 
         self.insert_hrz_limits("All_Hubs", 1, [("day", 202001, None, 250, None)])
-        _, _, hrz_limits, _ = self.resolve()
+        _, _, hrz_limits, _, _ = self.resolve()
         self.assertListEqual(
             [("All_Hubs", "net", "day", 202001, 100, 250, 1)], hrz_limits
         )
@@ -371,7 +468,7 @@ class TestMarketVolumeInputResolution(unittest.TestCase):
         """
         self.limit_group("All_Hubs", prd=1)
         self.insert_prd_limits("All_Hubs", 1, [(0, 5000, 6000, 1)])
-        _, tmp_limits, hrz_limits, prd_limits = self.resolve()
+        _, tmp_limits, hrz_limits, prd_limits, _ = self.resolve()
         self.assertListEqual([], tmp_limits)
         self.assertListEqual([], hrz_limits)
         self.assertListEqual([("All_Hubs", "net", PERIOD, 5000, 6000, 1)], prd_limits)
@@ -387,7 +484,7 @@ class TestMarketVolumeInputResolution(unittest.TestCase):
         self.limit_group("Market_Hub_1", tmp=1)
         self.insert_tmp_limits("Market_Hub_1", 1, [(1, 3, 4, None, None)])
 
-        _, tmp_limits, hrz_limits, prd_limits = self.resolve()
+        _, tmp_limits, hrz_limits, prd_limits, _ = self.resolve()
         self.assertListEqual(
             [
                 ("All_Hubs", "net", 1, 10, 5, None, None),
@@ -409,7 +506,7 @@ class TestMarketVolumeInputResolution(unittest.TestCase):
         self.limit_group(
             "All_Hubs", max_market_purchases=5, max_market_purchases_in_prd=5000
         )
-        _, tmp_limits, hrz_limits, prd_limits = self.resolve()
+        _, tmp_limits, hrz_limits, prd_limits, _ = self.resolve()
         self.assertListEqual(
             [
                 ("All_Hubs", "net", 1, None, 5, None, None),
@@ -433,7 +530,7 @@ class TestMarketVolumeInputResolution(unittest.TestCase):
         self.insert_tmp_limits(
             "All_Hubs", 1, [(0, 10, None, None, None), (2, None, 8, None, None)]
         )
-        _, tmp_limits, _, _ = self.resolve()
+        _, tmp_limits, _, _, _ = self.resolve()
         self.assertListEqual(
             [
                 ("All_Hubs", "net", 1, 10, 5, None, None),
@@ -449,7 +546,7 @@ class TestMarketVolumeInputResolution(unittest.TestCase):
         """
         self.limit_group("All_Hubs", tmp=1, max_market_purchases=5)
         self.insert_tmp_limits("All_Hubs", 1, [(2, None, 8, None, None)])
-        _, tmp_limits, _, _ = self.resolve()
+        _, tmp_limits, _, _, _ = self.resolve()
         self.assertListEqual(
             [
                 ("All_Hubs", "net", 1, None, 5, None, None),
@@ -464,7 +561,7 @@ class TestMarketVolumeInputResolution(unittest.TestCase):
         level, and vice versa.
         """
         self.limit_group("All_Hubs", max_market_sales=3)
-        _, tmp_limits, hrz_limits, prd_limits = self.resolve()
+        _, tmp_limits, hrz_limits, prd_limits, _ = self.resolve()
         self.assertEqual(2, len(tmp_limits))
         self.assertListEqual([], hrz_limits)
         self.assertListEqual([], prd_limits)
@@ -486,7 +583,7 @@ class TestMarketVolumeInputResolution(unittest.TestCase):
         self.limit_group("All_Hubs", tmp=1, basis="net")
         self.insert_tmp_limits("All_Hubs", 1, [(0, 10, 5, None, None)])
         self.limit_group("All_Hubs", basis="gross", max_market_sales=3)
-        _, tmp_limits, _, _ = self.resolve()
+        _, tmp_limits, _, _, _ = self.resolve()
         self.assertListEqual(
             [
                 ("All_Hubs", "gross", 1, 3, None, None, None),
@@ -511,10 +608,199 @@ class TestMarketVolumeInputResolution(unittest.TestCase):
         rows at all rather than a row of defaults per index, so no input file
         is written.
         """
-        _, tmp_limits, hrz_limits, prd_limits = self.resolve()
+        _, tmp_limits, hrz_limits, prd_limits, hrz_to_tmp_limits = self.resolve()
         self.assertListEqual([], tmp_limits)
         self.assertListEqual([], hrz_limits)
         self.assertListEqual([], prd_limits)
+        self.assertListEqual([], hrz_to_tmp_limits)
+
+    def test_hrz_to_tmp_limits_are_resolved_per_horizon(self):
+        """
+        Horizon-to-timepoint limits are written per balancing type and
+        horizon for the model to enforce in each of the horizon's
+        timepoints; they do not become timepoint-level or horizon (MWh)
+        limits.
+        """
+        self.limit_group("All_Hubs", hrz_to_tmp=1)
+        self.insert_hrz_to_tmp_limits("All_Hubs", 1, [("day", 202001, 7, 9, None, 3)])
+        _, tmp_limits, hrz_limits, _, hrz_to_tmp_limits = self.resolve()
+        self.assertListEqual(
+            [("All_Hubs", "net", "day", 202001, 7, 9, None, 3)], hrz_to_tmp_limits
+        )
+        self.assertListEqual([], tmp_limits)
+        self.assertListEqual([], hrz_limits)
+
+    def test_hrz_to_tmp_wildcard_row_is_per_balancing_type(self):
+        """
+        A balancing type's wildcard row (horizon 0) sets the
+        horizon-to-timepoint limits of its own horizons, an explicit row's
+        NULL cells fall through to it, and limits of several balancing types
+        are all kept; the group's horizon (MWh) profile resolves on its own.
+        """
+        self.add_month_horizon_timepoints()
+        self.limit_group("All_Hubs", hrz=1, hrz_to_tmp=1)
+        self.insert_hrz_to_tmp_limits(
+            "All_Hubs",
+            1,
+            [
+                ("day", 0, 7, 9, None, None),
+                ("day", 202001, None, 6, None, None),
+                ("month", 202001, 8, 4, 5, None),
+            ],
+        )
+        self.insert_hrz_limits("All_Hubs", 1, [("day", 202001, 100, 50, None)])
+        _, _, hrz_limits, _, hrz_to_tmp_limits = self.resolve()
+        self.assertListEqual(
+            [
+                ("All_Hubs", "net", "day", 202001, 7, 6, None, None),
+                ("All_Hubs", "net", "month", 202001, 8, 4, 5, None),
+            ],
+            hrz_to_tmp_limits,
+        )
+        self.assertListEqual(
+            [("All_Hubs", "net", "day", 202001, 100, 50, None)], hrz_limits
+        )
+
+    def test_flat_limits_do_not_default_hrz_to_tmp_limits(self):
+        """
+        The group's flat limits are timepoint-level limits: they apply in
+        every timepoint, but do not fill a horizon-to-timepoint row's NULL
+        cells.
+        """
+        self.limit_group("All_Hubs", hrz_to_tmp=1, max_market_sales=5)
+        self.insert_hrz_to_tmp_limits(
+            "All_Hubs", 1, [("day", 202001, None, 9, None, None)]
+        )
+        _, tmp_limits, _, _, hrz_to_tmp_limits = self.resolve()
+        self.assertListEqual(
+            [("All_Hubs", "net", "day", 202001, None, 9, None, None)],
+            hrz_to_tmp_limits,
+        )
+        self.assertListEqual(
+            [
+                ("All_Hubs", "net", 1, 5, None, None, None),
+                ("All_Hubs", "net", 2, 5, None, None, None),
+            ],
+            tmp_limits,
+        )
+
+    def test_hrz_to_tmp_month_of_year_rows_apply_in_every_period(self):
+        """
+        On a built-in month balancing type, a month-of-year row (horizon 2)
+        supplies month 2 of every period, between the explicit rows and the
+        balancing type's wildcard row, per column: 203002's NULL sales fall
+        through to the month 2 row, and the month 2 row's NULL purchases to
+        the wildcard row.
+        """
+        self.add_builtin_month_horizons()
+        self.limit_group("All_Hubs", hrz_to_tmp=1)
+        self.insert_hrz_to_tmp_limits(
+            "All_Hubs",
+            1,
+            [
+                (MONTH_BT, 0, 50, 50, None, None),
+                (MONTH_BT, 2, 105, None, None, None),
+                (MONTH_BT, 203002, None, 7, None, None),
+            ],
+        )
+        hrz_to_tmp_limits = self.resolve()[4]
+        self.assertListEqual(
+            [
+                ("All_Hubs", "net", MONTH_BT, 202001, 50, 50, None, None),
+                ("All_Hubs", "net", MONTH_BT, 202002, 105, 50, None, None),
+                ("All_Hubs", "net", MONTH_BT, 203001, 50, 50, None, None),
+                ("All_Hubs", "net", MONTH_BT, 203002, 105, 7, None, None),
+            ],
+            sorted(hrz_to_tmp_limits),
+        )
+
+    def test_hrz_month_of_year_rows_apply_in_every_period(self):
+        """
+        The horizon (MWh) profiles accept month-of-year rows too; with no
+        wildcard row, months without a row get no limit.
+        """
+        self.add_builtin_month_horizons()
+        self.limit_group("All_Hubs", hrz=1)
+        self.insert_hrz_limits("All_Hubs", 1, [(MONTH_BT, 1, 100, None, None)])
+        hrz_limits = self.resolve()[2]
+        self.assertListEqual(
+            [
+                ("All_Hubs", "net", MONTH_BT, 202001, 100, None, None),
+                ("All_Hubs", "net", MONTH_BT, 203001, 100, None, None),
+            ],
+            sorted(hrz_limits),
+        )
+
+    def test_hrz_to_tmp_day_of_year_rows_apply_in_every_period(self):
+        """
+        On a built-in day balancing type, a day-of-year row (month * 100 +
+        day) supplies that date in every period, per column above the
+        wildcard row.
+        """
+        self.add_builtin_month_horizons()
+        day_bt = "subproblem_period_day_linear"
+        c = self.conn.cursor()
+        c.execute("UPDATE inputs_temporal SET day_of_month = 15")
+        c.execute("""INSERT INTO inputs_temporal_horizon_timepoints
+            SELECT temporal_scenario_id, subproblem_id, stage_id, timepoint,
+                'subproblem_period_day_linear',
+                period * 10000 + month * 100 + day_of_month
+            FROM inputs_temporal""")
+        c.execute("""INSERT INTO inputs_temporal_horizons
+            SELECT DISTINCT temporal_scenario_id, 'subproblem_period_day_linear',
+                period * 10000 + month * 100 + day_of_month, 'linear', NULL
+            FROM inputs_temporal""")
+        self.conn.commit()
+        self.limit_group("All_Hubs", hrz_to_tmp=1)
+        self.insert_hrz_to_tmp_limits(
+            "All_Hubs",
+            1,
+            [
+                (day_bt, 0, 50, 50, None, None),
+                (day_bt, 215, 105, None, None, None),
+            ],
+        )
+        hrz_to_tmp_limits = self.resolve()[4]
+        self.assertListEqual(
+            [
+                ("All_Hubs", "net", day_bt, 20200115, 50, 50, None, None),
+                ("All_Hubs", "net", day_bt, 20200215, 105, 50, None, None),
+                ("All_Hubs", "net", day_bt, 20300115, 50, 50, None, None),
+                ("All_Hubs", "net", day_bt, 20300215, 105, 50, None, None),
+            ],
+            sorted(hrz_to_tmp_limits),
+        )
+        self.assertListEqual([], self.validate())
+
+    def test_month_of_year_rows_only_on_builtin_month_balancing_types(self):
+        """
+        On any other balancing type, horizon 1 is just a horizon: a row for
+        it does not apply to the type's horizons (here, the user-defined
+        'month' type's 202001), and validation flags it as unknown, while
+        month-of-year rows on the built-in month types are not flagged.
+        """
+        self.add_builtin_month_horizons()
+        self.add_month_horizon_timepoints()
+        self.limit_group("All_Hubs", hrz_to_tmp=1)
+        self.insert_hrz_to_tmp_limits(
+            "All_Hubs",
+            1,
+            [
+                ("month", 1, 5, 5, None, None),
+                (MONTH_BT, 1, 6, 6, None, None),
+            ],
+        )
+        hrz_to_tmp_limits = self.resolve()[4]
+        self.assertListEqual(
+            [
+                ("All_Hubs", "net", MONTH_BT, 202001, 6, 6, None, None),
+                ("All_Hubs", "net", MONTH_BT, 203001, 6, 6, None, None),
+            ],
+            sorted(hrz_to_tmp_limits),
+        )
+        errors = self.validate()
+        self.assertEqual(1, len(errors), msg=errors)
+        self.assertIn("horizon 1 of balancing type 'month'", errors[0])
 
     def validate(self):
         """

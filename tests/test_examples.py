@@ -442,6 +442,37 @@ class TestExamples(unittest.TestCase):
         scenario_name = "2horizons_w_hydro_w_energy_budget_balancing_type"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
+    def test_example_2horizons_w_hydro_w_day_of_year_inputs(self):
+        """
+        Check validation and objective function value of
+        "2horizons_w_hydro_w_day_of_year_inputs" example: as
+        "2horizons_w_hydro" (same objective), with the days of month in the
+        temporal structure, and the Hydro project on the built-in
+        subproblem_period_day_circular balancing type (whose horizons
+        coincide with the 'day' horizons here) with its inputs given per day
+        of year: 1 January only as a day-of-year row, 1 February as a
+        day-of-year row (with a different value) that the explicit 20200201
+        row overrides.
+        :return:
+        """
+        scenario_name = "2horizons_w_hydro_w_day_of_year_inputs"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_2horizons_w_hydro_w_month_of_year_inputs(self):
+        """
+        Check validation and objective function value of
+        "2horizons_w_hydro_w_month_of_year_inputs" example: as
+        "2horizons_w_hydro" (same objective), but the Hydro project's
+        balancing type is the built-in subproblem_period_month_circular
+        (whose horizons coincide with the 'day' horizons here) and its
+        inputs are given per month of year: month 1 only as a month-of-year
+        row, month 2 as a month-of-year row (with a different value) that the
+        explicit 202002 row overrides.
+        :return:
+        """
+        scenario_name = "2horizons_w_hydro_w_month_of_year_inputs"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
     def test_example_2horizons_w_hydro_and_nuclear_binary_availability(self):
         """
         Check validation and objective function value of
@@ -523,6 +554,18 @@ class TestExamples(unittest.TestCase):
         the objective function value must be identical.
         """
         scenario_name = "2periods_new_build_w_var_profile_tmp_map"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_2periods_new_build_w_var_profile_calendar_hour_map(self):
+        """
+        Check validation and objective function value of
+        "2periods_new_build_w_var_profile_calendar_hour_map" example: same as
+        "2periods_new_build", but Wind's profile is specified once by
+        calendar hour and read in both periods through the built-in
+        calendar-hour timepoint map, so the objective function value must be
+        identical.
+        """
+        scenario_name = "2periods_new_build_w_var_profile_calendar_hour_map"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_2periods_new_build_2zones(self):
@@ -1223,6 +1266,18 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         scenario_name = "multi_stage_prod_cost_linked_subproblems"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_2periods_gen_lin_econ_retirement_w_period_wildcards(self):
+        """
+        Check validation and objective function value of
+        "2periods_gen_lin_econ_retirement_w_period_wildcards" example: as
+        "2periods_gen_lin_econ_retirement" (same objective and inputs), with
+        the specified capacity and Clunky_Old_Gen's fixed cost given as
+        period = 0 rows
+        :return:
+        """
+        scenario_name = "2periods_gen_lin_econ_retirement_w_period_wildcards"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_2periods_gen_lin_econ_retirement(self):
@@ -2012,6 +2067,18 @@ class TestExamples(unittest.TestCase):
         scenario_name = "test_new_solar_w_relative_capacity_instead_of_potential"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
+    def test_example_2periods_new_build_2zones_transmission_w_period_wildcards(self):
+        """
+        Check validation and objective function value of
+        "2periods_new_build_2zones_transmission_w_period_wildcards" example: as
+        "2periods_new_build_2zones_transmission_w_hurdle_rates" (same
+        objective and inputs), with the project and transmission specified
+        capacities and Tx1's hurdle rates given as period = 0 rows
+        :return:
+        """
+        scenario_name = "2periods_new_build_2zones_transmission_w_period_wildcards"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
     def test_example_2periods_new_build_2zones_transmission_w_hurdle_rates(self):
         """
         Check validation and objective function value of
@@ -2523,6 +2590,31 @@ class TestExamples(unittest.TestCase):
         scenario_name = "test_w_bt_hrz_avl"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
+    def test_test_w_bt_hrz_avl_w_day_of_year_rows(self):
+        """
+        Check validation and objective function value of
+        "test_w_bt_hrz_avl_w_day_of_year_rows" example: as
+        "test_w_bt_hrz_avl" (same objective), with the days of month in the
+        temporal structure, and Coal's balancing type - horizon derates on
+        the built-in day balancing types: the weather-dependent derate as a
+        day-of-year row, the independent derate as a day-of-year row (with a
+        different value) that the explicit 20200101 row overrides.
+        :return:
+        """
+        scenario_name = "test_w_bt_hrz_avl_w_day_of_year_rows"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_test_w_bt_hrz_avl_w_default_avl(self):
+        """
+        Check validation and objective function value of
+        "test_w_bt_hrz_avl_w_default_avl" example: as "test_w_bt_hrz_avl"
+        (same objective), with Coal's flat 0.95 timepoint independent derate
+        given once as the project's default_exogenous_availability instead.
+        :return:
+        """
+        scenario_name = "test_w_bt_hrz_avl_w_default_avl"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
     def test_hydro_system_exog_elev_w_gen_ramp_limits(self):
         """ """
         scenario_name = "hydro_system_exog_elev_w_gen_ramp_limits"
@@ -2662,6 +2754,40 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         scenario_name = "test_markets_w_tmp_total_limits"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_markets_w_hrz_to_tmp_limits(self):
+        """
+        Check validation and objective function value of "test" example;
+        the All_Markets timepoint limits of test_markets_w_tmp_total_limits
+        given as one horizon-to-timepoint limit on a built-in month horizon,
+        so the objectives are the same
+        :return:
+        """
+        scenario_name = "test_markets_w_hrz_to_tmp_limits"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_markets_w_hrz_to_tmp_and_looser_tmp_limits(self):
+        """
+        Check validation and objective function value of "test" example;
+        test_markets_w_hrz_to_tmp_limits with a looser timepoint-level limit
+        on All_Markets as well: every limit applies, so the
+        horizon-to-timepoint limit still binds and the objective is the same
+        :return:
+        """
+        scenario_name = "test_markets_w_hrz_to_tmp_and_looser_tmp_limits"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_markets_w_hrz_to_tmp_month_of_year_limits(self):
+        """
+        Check validation and objective function value of
+        "test_markets_w_hrz_to_tmp_month_of_year_limits" example:
+        test_markets_w_hrz_to_tmp_limits with the limit given as a
+        month-of-year row (horizon 1) instead of for horizon 202001; same
+        objective
+        :return:
+        """
+        scenario_name = "test_markets_w_hrz_to_tmp_month_of_year_limits"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_test_markets_w_prd_total_limits(self):

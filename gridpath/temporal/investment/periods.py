@@ -32,6 +32,30 @@ is exclusive. Capacity can either exist or not for the entire duration of a
 period. A discount factor can also be applied to weight costs differently
 depending on when (in which period) they are incurred.
 
+Some period-indexed database inputs don't need a row for every period: a
+series (e.g. a project's rows in one subscenario) can instead be given once
+with :code:`period = 0` rows, which apply to every period. A series has
+either :code:`period = 0` rows only or explicit periods only; mixing the two
+is an error, so to vary an input by period, give every period explicitly.
+The :code:`period = 0` rows are resolved when the model inputs are written
+(see :code:`gridpath.auxiliary.period_wildcards`), so the model's input
+files always list each period. The inputs that accept them are:
+
+* project and transmission specified capacity (a project or line with a
+  :code:`period = 0` capacity row exists in every period, so give the
+  periods explicitly for one that retires or comes online within the study
+  horizon) and project specified fixed costs;
+* project variable O&M costs by period, heat rate curves, and variable O&M
+  curves (a curve's :code:`period = 0` load points apply to every period);
+* project and transmission curtailment costs;
+* transmission hurdle rates;
+* project carbon credit purchase limits;
+* power output group requirements.
+
+The market volume period profiles also take :code:`period = 0` rows, but
+combine them with explicit rows per column (see
+:code:`gridpath.system.markets.volume`).
+
 .. warning:: Support for investment periods that are shorter than 1 year,
     e.g. monthly investment decisions, is largely untested, so be extra careful
     if attempting to use this functionality.

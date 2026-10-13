@@ -50,17 +50,34 @@ weight. Horizon-level limits follow a balancing type the user picks, so a
 limit can be imposed over any horizon defined in the scenario's temporal
 structure (a day, a week, a month, ...).
 
-+------------+------------------------------+------+
-| Resolution | Limits                       | Unit |
-+============+==============================+======+
-| Timepoint  | sales, purchases             | MW   |
-+------------+------------------------------+------+
-| Timepoint  | final sales, final purchases | MW   |
-+------------+------------------------------+------+
-| Horizon    | sales, purchases             | MWh  |
-+------------+------------------------------+------+
-| Period     | sales, purchases             | MWh  |
-+------------+------------------------------+------+
+**Horizon-to-timepoint limits** are timepoint-level limits, in MW, given
+once per horizon in their own profile and enforced in every timepoint of the
+horizon. A seasonal hourly limit, e.g. purchases of at most 105 MW in every
+hour of May and June, then takes one row per month horizon instead of one
+row per timepoint; with the built-in month balancing types
+(``subproblem_period_month_*``) it needs no user-defined horizons either.
+
+Every limit applies: a horizon-to-timepoint limit is enforced in addition to
+the timepoint-level limit of the same timepoint and to the
+horizon-to-timepoint limits of other balancing types whose horizons contain
+the timepoint, so the tightest of them binds. A timepoint-level row can
+therefore tighten a horizon-to-timepoint limit in one timepoint but not
+loosen it.
+
++------------+------------------------------+-----------------------------+
+| Resolution | Limits                       | Unit                        |
++============+==============================+=============================+
+| Timepoint  | sales, purchases             | MW                          |
++------------+------------------------------+-----------------------------+
+| Timepoint  | final sales, final purchases | MW                          |
++------------+------------------------------+-----------------------------+
+| Horizon    | sales, purchases             | MWh                         |
++------------+------------------------------+-----------------------------+
+| Horizon to | sales, purchases, final      | MW, in each timepoint of    |
+| timepoint  | sales, final purchases       | the horizon                 |
++------------+------------------------------+-----------------------------+
+| Period     | sales, purchases             | MWh                         |
++------------+------------------------------+-----------------------------+
 
 A limit that is not specified defaults to infinity, i.e. it is not enforced
 and no constraint is built for it.
@@ -110,6 +127,25 @@ naturally with a profile that lists only the exceptions. To leave a single
 timepoint unlimited when a finite default is in force, give it an explicitly
 large value.
 
+The horizon-to-timepoint profiles resolve the same way per balancing type:
+an explicit row, then the balancing type's wildcard row (``horizon = 0``),
+then infinity. The group's flat limits are timepoint-level limits and do not
+default them.
+
+On the built-in ``subproblem_period_month_circular`` and
+``subproblem_period_month_linear`` balancing types (horizon =
+``period * 100 + month``), the horizon and horizon-to-timepoint profiles
+also accept month-of-year rows: a row with ``horizon`` 1-12 supplies that
+month in every period, between the explicit rows and the balancing type's
+wildcard row. A seasonal limit that repeats every year then needs a row per
+month (or one month-of-year row per exception month and a wildcard row for
+the rest), and years that differ need rows only for their own horizons.
+Likewise, on the built-in ``subproblem_period_day_circular`` and
+``subproblem_period_day_linear`` balancing types (horizon =
+``period * 10000 + month * 100 + day_of_month``), a day-of-year row with
+``horizon`` ``month * 100 + day_of_month`` (101-1231) supplies that date in
+every period.
+
 The layers are resolved when the model inputs are written, so the scenario's
 input files carry the resolved limits and the model itself never sees a
 default.
@@ -130,8 +166,16 @@ from pyomo.environ import (
 )
 
 from gridpath.auxiliary.db_interface import directories_to_db_values, import_csv
-from gridpath.auxiliary.validations import write_validation_to_database
+from gridpath.auxiliary.validations import (
+    write_validation_to_database,
+    warn_on_unknown_balancing_types,
+)
 from gridpath.common_functions import constraint_dual, none_dual_type_error_wrapper
+from gridpath.auxiliary.calendar_rows import (
+    bt_hrz_calendar_index_sql,
+    calendar_join_sql,
+    calendar_row_sql,
+)
 from gridpath.project.operations.operational_types.common_functions import (
     write_tab_file_model_inputs,
 )
@@ -232,6 +276,48 @@ def add_model_components(
         m.MARKET_GROUP_PRDS_W_LIMIT, within=Boolean, default=0
     )
 
+    # Timepoint-level limits given by horizon: each applies in every
+    # timepoint of the horizon, in addition to the timepoint-level limits
+    # and to the horizon-to-timepoint limits of other balancing types
+    m.MARKET_GROUP_BLN_TYPE_HRZS_W_HRZ_TO_TMP_LIMIT = Set(
+        dimen=4, within=m.MARKET_GROUPS * m.MARKET_VOLUME_LIMIT_BASES * m.BLN_TYPE_HRZS
+    )
+    m.max_market_sales_hrz_to_tmp = Param(
+        m.MARKET_GROUP_BLN_TYPE_HRZS_W_HRZ_TO_TMP_LIMIT,
+        within=NonNegativeReals,
+        default=Infinity,
+    )
+    m.max_market_purchases_hrz_to_tmp = Param(
+        m.MARKET_GROUP_BLN_TYPE_HRZS_W_HRZ_TO_TMP_LIMIT,
+        within=NonNegativeReals,
+        default=Infinity,
+    )
+    m.max_final_market_sales_hrz_to_tmp = Param(
+        m.MARKET_GROUP_BLN_TYPE_HRZS_W_HRZ_TO_TMP_LIMIT,
+        within=NonNegativeReals,
+        default=Infinity,
+    )
+    m.max_final_market_purchases_hrz_to_tmp = Param(
+        m.MARKET_GROUP_BLN_TYPE_HRZS_W_HRZ_TO_TMP_LIMIT,
+        within=NonNegativeReals,
+        default=Infinity,
+    )
+
+    # The timepoints each horizon-to-timepoint limit applies in
+    m.MARKET_GROUP_BLN_TYPE_HRZ_TMPS_W_HRZ_TO_TMP_LIMIT = Set(
+        dimen=5,
+        initialize=lambda mod: [
+            (grp, basis, bt, hrz, tmp)
+            for (
+                grp,
+                basis,
+                bt,
+                hrz,
+            ) in mod.MARKET_GROUP_BLN_TYPE_HRZS_W_HRZ_TO_TMP_LIMIT
+            for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
+        ],
+    )
+
     # The groups a limit was specified for at any resolution and basis; the
     # net position expressions are built for these only, so a scenario that
     # defines groups but limits none of them builds nothing
@@ -243,16 +329,35 @@ def add_model_components(
                 grp for (grp, basis, bt, hrz) in mod.MARKET_GROUP_BLN_TYPE_HRZS_W_LIMIT
             )
             | set(grp for (grp, basis, prd) in mod.MARKET_GROUP_PRDS_W_LIMIT)
+            | set(
+                grp
+                for (
+                    grp,
+                    basis,
+                    bt,
+                    hrz,
+                ) in mod.MARKET_GROUP_BLN_TYPE_HRZS_W_HRZ_TO_TMP_LIMIT
+            )
         ),
     )
 
     # The group-timepoints a timepoint-level limit of either basis applies
-    # to; the final position is needed there only
+    # to, directly or by horizon; the final position is needed there only
     m.MARKET_GROUP_TMPS_W_ANY_LIMIT = Set(
         dimen=2,
         within=m.MARKET_GROUPS * m.TMPS,
         initialize=lambda mod: sorted(
             set((grp, tmp) for (grp, basis, tmp) in mod.MARKET_GROUP_TMPS_W_LIMIT)
+            | set(
+                (grp, tmp)
+                for (
+                    grp,
+                    basis,
+                    bt,
+                    hrz,
+                    tmp,
+                ) in mod.MARKET_GROUP_BLN_TYPE_HRZ_TMPS_W_HRZ_TO_TMP_LIMIT
+            )
         ),
     )
 
@@ -280,11 +385,13 @@ def add_model_components(
                     for mrkt in mod.MARKETS_BY_MARKET_GROUP[grp]
                     for tmp in mod.TMPS_IN_PRD[prd]
                 )
+        market_tmps |= gross_hrz_to_tmp_market_tmps(mod)
         return sorted(market_tmps)
 
     m.GROSS_LIMIT_MARKET_TMPS = Set(dimen=2, initialize=gross_market_tmps_init)
 
-    # Only the timepoint-level limits apply to the final position
+    # Only the timepoint-level limits, direct or by horizon, apply to the
+    # final position
     m.GROSS_FINAL_LIMIT_MARKET_TMPS = Set(
         dimen=2,
         initialize=lambda mod: sorted(
@@ -294,6 +401,7 @@ def add_model_components(
                 if basis == GROSS
                 for mrkt in mod.MARKETS_BY_MARKET_GROUP[grp]
             )
+            | gross_hrz_to_tmp_market_tmps(mod)
         ),
     )
 
@@ -424,6 +532,52 @@ def add_model_components(
         m.MARKET_GROUP_TMPS_W_LIMIT, rule=max_final_market_purchases_rule
     )
 
+    # Horizon-to-timepoint limits: the timepoint-level constraints, once per
+    # limit and timepoint of its horizon
+    def max_market_sales_hrz_to_tmp_rule(mod, group, basis, bt, hrz, tmp):
+        limit = mod.max_market_sales_hrz_to_tmp[group, basis, bt, hrz]
+        if limit == Infinity:
+            return Constraint.Skip
+        return sales_position(mod, group, basis, tmp, final=False) >= -limit
+
+    m.Max_Market_Group_Sales_Hrz_to_Tmp_Constraint = Constraint(
+        m.MARKET_GROUP_BLN_TYPE_HRZ_TMPS_W_HRZ_TO_TMP_LIMIT,
+        rule=max_market_sales_hrz_to_tmp_rule,
+    )
+
+    def max_market_purchases_hrz_to_tmp_rule(mod, group, basis, bt, hrz, tmp):
+        limit = mod.max_market_purchases_hrz_to_tmp[group, basis, bt, hrz]
+        if limit == Infinity:
+            return Constraint.Skip
+        return purchases_position(mod, group, basis, tmp, final=False) <= limit
+
+    m.Max_Market_Group_Purchases_Hrz_to_Tmp_Constraint = Constraint(
+        m.MARKET_GROUP_BLN_TYPE_HRZ_TMPS_W_HRZ_TO_TMP_LIMIT,
+        rule=max_market_purchases_hrz_to_tmp_rule,
+    )
+
+    def max_final_market_sales_hrz_to_tmp_rule(mod, group, basis, bt, hrz, tmp):
+        limit = mod.max_final_market_sales_hrz_to_tmp[group, basis, bt, hrz]
+        if limit == Infinity:
+            return Constraint.Skip
+        return sales_position(mod, group, basis, tmp, final=True) >= -limit
+
+    m.Max_Market_Group_Final_Sales_Hrz_to_Tmp_Constraint = Constraint(
+        m.MARKET_GROUP_BLN_TYPE_HRZ_TMPS_W_HRZ_TO_TMP_LIMIT,
+        rule=max_final_market_sales_hrz_to_tmp_rule,
+    )
+
+    def max_final_market_purchases_hrz_to_tmp_rule(mod, group, basis, bt, hrz, tmp):
+        limit = mod.max_final_market_purchases_hrz_to_tmp[group, basis, bt, hrz]
+        if limit == Infinity:
+            return Constraint.Skip
+        return purchases_position(mod, group, basis, tmp, final=True) <= limit
+
+    m.Max_Market_Group_Final_Purchases_Hrz_to_Tmp_Constraint = Constraint(
+        m.MARKET_GROUP_BLN_TYPE_HRZ_TMPS_W_HRZ_TO_TMP_LIMIT,
+        rule=max_final_market_purchases_hrz_to_tmp_rule,
+    )
+
     # Horizon-level limits
     def max_market_sales_in_hrz_rule(mod, group, basis, bt, hrz):
         if mod.max_market_sales_in_hrz[group, basis, bt, hrz] == Infinity:
@@ -486,6 +640,24 @@ def add_model_components(
 
     m.Max_Market_Group_Purchases_in_Prd_Constraint = Constraint(
         m.MARKET_GROUP_PRDS_W_LIMIT, rule=max_market_purchases_in_prd_rule
+    )
+
+
+def gross_hrz_to_tmp_market_tmps(mod):
+    """
+    The market-timepoints a gross horizon-to-timepoint limit covers.
+    """
+    return set(
+        (mrkt, tmp)
+        for (
+            grp,
+            basis,
+            bt,
+            hrz,
+            tmp,
+        ) in mod.MARKET_GROUP_BLN_TYPE_HRZ_TMPS_W_HRZ_TO_TMP_LIMIT
+        if basis == GROSS
+        for mrkt in mod.MARKETS_BY_MARKET_GROUP[grp]
     )
 
 
@@ -661,6 +833,19 @@ def load_model_data(
             ),
         )
 
+    hrz_to_tmp_limits_filename = input_file("market_volume_hrz_to_tmp.tab")
+    if os.path.exists(hrz_to_tmp_limits_filename):
+        data_portal.load(
+            filename=hrz_to_tmp_limits_filename,
+            index=m.MARKET_GROUP_BLN_TYPE_HRZS_W_HRZ_TO_TMP_LIMIT,
+            param=(
+                m.max_market_sales_hrz_to_tmp,
+                m.max_market_purchases_hrz_to_tmp,
+                m.max_final_market_sales_hrz_to_tmp,
+                m.max_final_market_purchases_hrz_to_tmp,
+            ),
+        )
+
     prd_limits_filename = input_file("market_volume_prd.tab")
     if os.path.exists(prd_limits_filename):
         data_portal.load(
@@ -684,6 +869,7 @@ def limits_with_defaults_sql(
     wildcard_column,
     extra_select="",
     flat_values=None,
+    calendar_rows=False,
 ):
     """
     Build the SQL that resolves a limits table against a scenario's temporal
@@ -708,14 +894,19 @@ def limits_with_defaults_sql(
     :param flat_values: the group's flat limits, a value (or None) per entry
         of *value_columns*; the lowest layer of the fall-through, applied to
         every index entry
+    :param calendar_rows: whether to apply calendar rows (month-of-year and
+        day-of-year rows on the built-in month and day balancing types)
+        between the explicit and the wildcard rows; the index must then have
+        balancing_type_horizon and calendar_key columns, see
+        gridpath.auxiliary.calendar_rows
     :return: the SQL string
 
-    An explicit row wins over the wildcard row, the wildcard row wins over
-    the flat limit, and the flat limit wins over the model default of
-    infinity. The COALESCE is per column, so a NULL cell in an explicit row
+    An explicit row wins over the (calendar row over the) wildcard row,
+    the wildcard row wins over the flat limit, and the flat limit wins over
+    the model default of infinity. The COALESCE is per column, so a NULL cell in an explicit row
     falls through to the wildcard row and a NULL there to the flat limit.
 
-    Index entries with neither an explicit nor a wildcard row are dropped,
+    Index entries with no explicit, calendar, or wildcard row are dropped,
     unless the group has a flat limit, in which case every entry gets one; so
     a group with no limits at this resolution contributes no rows and a
     scenario with no limits at all writes no file.
@@ -723,9 +914,10 @@ def limits_with_defaults_sql(
     if flat_values is None:
         flat_values = {}
     select_index = ", ".join(f"idx.{c} AS {c}" for c in index_columns)
+    calendar_value = "calendar.{c}, " if calendar_rows else ""
     select_values = ", ".join(
-        f"COALESCE(explicit.{c}, wildcard.{c}, {sql_literal(flat_values.get(c))})"
-        f" AS {c}"
+        f"COALESCE(explicit.{c}, {calendar_value.format(c=c)}wildcard.{c}, "
+        f"{sql_literal(flat_values.get(c))}) AS {c}"
         for c in value_columns
     )
     has_flat_limit = any(v is not None for v in flat_values.values())
@@ -734,7 +926,9 @@ def limits_with_defaults_sql(
         if has_flat_limit
         else f"explicit.{wildcard_column} IS NOT NULL "
         f"OR wildcard.{wildcard_column} IS NOT NULL"
+        + (f" OR calendar.{wildcard_column} IS NOT NULL" if calendar_rows else "")
     )
+    calendar_join = calendar_join_sql(data_subquery) if calendar_rows else ""
     explicit_join = " AND ".join(f"idx.{c} = explicit.{c}" for c in match_columns)
     wildcard_join = (
         " AND ".join(f"idx.{c} = wildcard.{c}" for c in default_match_columns)
@@ -752,9 +946,19 @@ def limits_with_defaults_sql(
         LEFT OUTER JOIN (
             {data_subquery.format(wildcard_filter=f"{wildcard_column} = 0")}
         ) AS wildcard
-            ON {wildcard_join}
+            ON {wildcard_join}{calendar_join}
         WHERE {gate}
         """
+
+
+# The timepoint-level limits; the horizon-to-timepoint profiles give the same
+# limits by horizon
+TMP_LIMIT_COLUMNS = [
+    "max_market_sales",
+    "max_market_purchases",
+    "max_final_market_sales",
+    "max_final_market_purchases",
+]
 
 
 def sql_literal(value):
@@ -833,6 +1037,7 @@ def get_inputs_from_database(
         basis,
         market_volume_tmp_profile_scenario_id,
         market_volume_hrz_profile_scenario_id,
+        market_volume_hrz_to_tmp_profile_scenario_id,
         market_volume_prd_profile_scenario_id,
         varies_by_weather_iteration,
         varies_by_hydro_iteration,
@@ -852,6 +1057,31 @@ def get_inputs_from_database(
         )
         """).fetchall()
 
+    # Balancing types the temporal scenario lacks are dropped by the horizon
+    # and horizon-to-timepoint limit resolutions below
+    for bt_hrz_table, profile_id_column in [
+        ("inputs_market_volume_hrz_profiles", "market_volume_hrz_profile_scenario_id"),
+        (
+            "inputs_market_volume_hrz_to_tmp_profiles",
+            "market_volume_hrz_to_tmp_profile_scenario_id",
+        ),
+    ]:
+        warn_on_unknown_balancing_types(
+            conn=conn,
+            temporal_scenario_id=subscenarios.TEMPORAL_SCENARIO_ID,
+            table=bt_hrz_table,
+            bt_column="balancing_type_horizon",
+            row_filter=f"""(market_group, {profile_id_column}) IN (
+                SELECT market_group, {profile_id_column}
+                FROM inputs_market_volume
+                WHERE market_volume_scenario_id = {subscenarios.MARKET_VOLUME_SCENARIO_ID}
+                AND market_group IN (
+                    SELECT DISTINCT market_group
+                    FROM ({get_market_groups_sql(subscenarios)})
+                )
+            )""",
+        )
+
     # The three limit resolutions: the temporal index each is resolved
     # against, the table it comes from, and how its wildcard row matches
     resolutions = [
@@ -865,12 +1095,7 @@ def get_inputs_from_database(
                 AND subproblem_id = {subproblem}
                 AND stage_id = {stage}
                 """,
-            "value_columns": [
-                "max_market_sales",
-                "max_market_purchases",
-                "max_final_market_sales",
-                "max_final_market_purchases",
-            ],
+            "value_columns": TMP_LIMIT_COLUMNS,
             "index_columns": ["timepoint"],
             "match_columns": ["stage_id", "timepoint"],
             "default_match_columns": ["stage_id"],
@@ -880,13 +1105,9 @@ def get_inputs_from_database(
         {
             "table": "inputs_market_volume_hrz_profiles",
             "profile_id_column": "market_volume_hrz_profile_scenario_id",
-            "index_subquery": f"""
-                SELECT DISTINCT balancing_type_horizon, horizon
-                FROM inputs_temporal_horizon_timepoints
-                WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
-                AND subproblem_id = {subproblem}
-                AND stage_id = {stage}
-                """,
+            "index_subquery": bt_hrz_calendar_index_sql(
+                subscenarios.TEMPORAL_SCENARIO_ID, subproblem, stage
+            ),
             "value_columns": [
                 "max_market_sales_in_hrz",
                 "max_market_purchases_in_hrz",
@@ -897,6 +1118,7 @@ def get_inputs_from_database(
             "default_match_columns": ["balancing_type_horizon"],
             "wildcard_column": "horizon",
             "data_index_columns": ["balancing_type_horizon", "horizon"],
+            "calendar_rows": True,
         },
         {
             "table": "inputs_market_volume_prd_profiles",
@@ -918,6 +1140,23 @@ def get_inputs_from_database(
             "wildcard_column": "period",
             "data_index_columns": ["period"],
         },
+        {
+            "table": "inputs_market_volume_hrz_to_tmp_profiles",
+            "profile_id_column": "market_volume_hrz_to_tmp_profile_scenario_id",
+            "index_subquery": bt_hrz_calendar_index_sql(
+                subscenarios.TEMPORAL_SCENARIO_ID, subproblem, stage
+            ),
+            "value_columns": TMP_LIMIT_COLUMNS,
+            "index_columns": ["balancing_type_horizon", "horizon"],
+            "match_columns": ["balancing_type_horizon", "horizon"],
+            "default_match_columns": ["balancing_type_horizon"],
+            "wildcard_column": "horizon",
+            "data_index_columns": ["balancing_type_horizon", "horizon"],
+            "calendar_rows": True,
+            # The group's flat limits are timepoint-level limits, not
+            # defaults for these
+            "no_flat_limits": True,
+        },
     ]
 
     # Loop over the group-basis rows for each resolution's query, since
@@ -932,6 +1171,7 @@ def get_inputs_from_database(
         basis,
         tmp_profile_id,
         hrz_profile_id,
+        hrz_to_tmp_profile_id,
         prd_profile_id,
         varies_by_weather_iteration,
         varies_by_hydro_iteration,
@@ -968,19 +1208,20 @@ def get_inputs_from_database(
         profile_ids = {
             "market_volume_tmp_profile_scenario_id": tmp_profile_id,
             "market_volume_hrz_profile_scenario_id": hrz_profile_id,
+            "market_volume_hrz_to_tmp_profile_scenario_id": hrz_to_tmp_profile_id,
             "market_volume_prd_profile_scenario_id": prd_profile_id,
         }
 
-        for i, resolution in enumerate(resolutions):
-            profile_id = profile_ids[resolution["profile_id_column"]]
-            profile_filter = f"""
+        profile_filters = {profile_id_column: f"""
                 market_group = '{market_group}'
-                AND {resolution["profile_id_column"]} =
+                AND {profile_id_column} =
                 {"NULL" if profile_id is None else profile_id}
                 AND hydro_iteration = {hydro_iteration_to_use}
                 AND weather_iteration = {weather_iteration_to_use}
                 AND stage_id = {stage}
-                """
+                """ for profile_id_column, profile_id in profile_ids.items()}
+
+        for i, resolution in enumerate(resolutions):
             data_columns = ", ".join(
                 resolution["data_index_columns"] + resolution["value_columns"]
             )
@@ -990,7 +1231,7 @@ def get_inputs_from_database(
                     data_subquery=f"""
                     SELECT {data_columns}
                     FROM {resolution["table"]}
-                    WHERE {profile_filter}
+                    WHERE {profile_filters[resolution["profile_id_column"]]}
                     AND {{wildcard_filter}}
                     """,
                     value_columns=resolution["value_columns"],
@@ -1001,9 +1242,14 @@ def get_inputs_from_database(
                     extra_select=(
                         f"'{market_group}' AS market_group, '{basis}' AS basis, "
                     ),
-                    flat_values={
-                        c: flat_values.get(c) for c in resolution["value_columns"]
-                    },
+                    calendar_rows=resolution.get("calendar_rows", False),
+                    flat_values=(
+                        {}
+                        if resolution.get("no_flat_limits")
+                        else {
+                            c: flat_values.get(c) for c in resolution["value_columns"]
+                        }
+                    ),
                 )
                 + union_str
             )
@@ -1120,49 +1366,56 @@ def validate_inputs(
             )
             """
 
-    profile_filter = profile_filter_for("market_volume_hrz_profile_scenario_id")
-
     # Balancing types and horizons the temporal structure does not define (a
-    # horizon of 0 is the wildcard row and has no horizon to match)
-    unknown_bts = c.execute(f"""
-        SELECT DISTINCT balancing_type_horizon
-        FROM inputs_market_volume_hrz_profiles
-        WHERE {profile_filter}
-        AND balancing_type_horizon NOT IN (
+    # horizon of 0 is the wildcard row and calendar rows apply to the months
+    # or dates of every period, so neither has a horizon to match)
+    for bt_hrz_table, profile_id_column in [
+        ("inputs_market_volume_hrz_profiles", "market_volume_hrz_profile_scenario_id"),
+        (
+            "inputs_market_volume_hrz_to_tmp_profiles",
+            "market_volume_hrz_to_tmp_profile_scenario_id",
+        ),
+    ]:
+        profile_filter = profile_filter_for(profile_id_column)
+        unknown_bts = c.execute(f"""
             SELECT DISTINCT balancing_type_horizon
-            FROM inputs_temporal_horizons
-            WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
-        )
-        """).fetchall()
-    for (bt,) in unknown_bts:
-        errors.append(
-            f"inputs_market_volume_hrz_profiles: balancing type '{bt}' is "
-            f"not in the scenario's temporal structure, so its limits are "
-            f"ignored."
-        )
+            FROM {bt_hrz_table}
+            WHERE {profile_filter}
+            AND balancing_type_horizon NOT IN (
+                SELECT DISTINCT balancing_type_horizon
+                FROM inputs_temporal_horizons
+                WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+            )
+            """).fetchall()
+        for (bt,) in unknown_bts:
+            errors.append(
+                f"{bt_hrz_table}: balancing type '{bt}' is not in the "
+                f"scenario's temporal structure, so its limits are ignored."
+            )
 
-    unknown_hrzs = c.execute(f"""
-        SELECT DISTINCT balancing_type_horizon, horizon
-        FROM inputs_market_volume_hrz_profiles
-        WHERE {profile_filter}
-        AND horizon != 0
-        AND balancing_type_horizon IN (
-            SELECT DISTINCT balancing_type_horizon
-            FROM inputs_temporal_horizons
-            WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
-        )
-        AND (balancing_type_horizon, horizon) NOT IN (
-            SELECT balancing_type_horizon, horizon
-            FROM inputs_temporal_horizons
-            WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
-        )
-        """).fetchall()
-    for bt, hrz in unknown_hrzs:
-        errors.append(
-            f"inputs_market_volume_hrz_profiles: horizon {hrz} of balancing "
-            f"type '{bt}' is not in the scenario's temporal structure, so "
-            f"its limits are ignored."
-        )
+        unknown_hrzs = c.execute(f"""
+            SELECT DISTINCT balancing_type_horizon, horizon
+            FROM {bt_hrz_table}
+            WHERE {profile_filter}
+            AND horizon != 0
+            AND NOT ({calendar_row_sql()})
+            AND balancing_type_horizon IN (
+                SELECT DISTINCT balancing_type_horizon
+                FROM inputs_temporal_horizons
+                WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+            )
+            AND (balancing_type_horizon, horizon) NOT IN (
+                SELECT balancing_type_horizon, horizon
+                FROM inputs_temporal_horizons
+                WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+            )
+            """).fetchall()
+        for bt, hrz in unknown_hrzs:
+            errors.append(
+                f"{bt_hrz_table}: horizon {hrz} of balancing type '{bt}' is "
+                f"not in the scenario's temporal structure, so its limits are "
+                f"ignored."
+            )
 
     # Negative limits; the model params are non-negative, so these would
     # otherwise fail only at model load
@@ -1181,6 +1434,11 @@ def validate_inputs(
             "inputs_market_volume_hrz_profiles",
             "market_volume_hrz_profile_scenario_id",
             ["max_market_sales_in_hrz", "max_market_purchases_in_hrz"],
+        ),
+        (
+            "inputs_market_volume_hrz_to_tmp_profiles",
+            "market_volume_hrz_to_tmp_profile_scenario_id",
+            TMP_LIMIT_COLUMNS,
         ),
         (
             "inputs_market_volume_prd_profiles",
@@ -1274,6 +1532,7 @@ def write_model_inputs(
         tmp_limits,
         hrz_limits,
         prd_limits,
+        hrz_to_tmp_limits,
     ) = get_inputs_from_database(
         scenario_id,
         subscenarios,
@@ -1290,6 +1549,7 @@ def write_model_inputs(
         ("market_volume_tmp.tab", tmp_limits),
         ("market_volume_hrz.tab", hrz_limits),
         ("market_volume_prd.tab", prd_limits),
+        ("market_volume_hrz_to_tmp.tab", hrz_to_tmp_limits),
     ]:
         write_tab_file_model_inputs(
             scenario_directory=scenario_directory,
@@ -1417,6 +1677,81 @@ def export_results(
                         m.max_market_sales[idx],
                         m.max_final_market_purchases[idx],
                         m.max_final_market_sales[idx],
+                    ]
+                    + duals
+                    + [
+                        none_dual_type_error_wrapper(dual, coefficient)
+                        for dual in duals
+                    ]
+                )
+
+    if len(m.MARKET_GROUP_BLN_TYPE_HRZ_TMPS_W_HRZ_TO_TMP_LIMIT) > 0:
+        f, writer = results_writer(
+            "system_market_volume_hrz_to_tmp.csv",
+            [
+                "market_group",
+                "basis",
+                "balancing_type_horizon",
+                "horizon",
+                "timepoint",
+                "period",
+                "net_market_purchased_power_mw",
+                "final_net_market_purchased_power_mw",
+                "gross_market_sales_mw",
+                "gross_market_purchases_mw",
+                "final_gross_market_sales_mw",
+                "final_gross_market_purchases_mw",
+                "max_market_purchases",
+                "max_market_sales",
+                "max_final_market_purchases",
+                "max_final_market_sales",
+                "max_market_purchases_dual",
+                "max_market_sales_dual",
+                "max_final_market_purchases_dual",
+                "max_final_market_sales_dual",
+                "max_market_purchases_marginal_cost",
+                "max_market_sales_marginal_cost",
+                "max_final_market_purchases_marginal_cost",
+                "max_final_market_sales_marginal_cost",
+            ],
+        )
+        with f:
+            for group, basis, bt, hrz, tmp in sorted(
+                m.MARKET_GROUP_BLN_TYPE_HRZ_TMPS_W_HRZ_TO_TMP_LIMIT
+            ):
+                limit_idx = (group, basis, bt, hrz)
+                duals = [
+                    constraint_dual(m, constraint, limit_idx + (tmp,))
+                    for constraint in [
+                        m.Max_Market_Group_Purchases_Hrz_to_Tmp_Constraint,
+                        m.Max_Market_Group_Sales_Hrz_to_Tmp_Constraint,
+                        m.Max_Market_Group_Final_Purchases_Hrz_to_Tmp_Constraint,
+                        m.Max_Market_Group_Final_Sales_Hrz_to_Tmp_Constraint,
+                    ]
+                ]
+                coefficient = m.tmp_objective_coefficient[tmp]
+                sales, purchases = realized_gross_position(m, group, tmp, final=False)
+                final_sales, final_purchases = realized_gross_position(
+                    m, group, tmp, final=True
+                )
+                writer.writerow(
+                    [
+                        group,
+                        basis,
+                        bt,
+                        hrz,
+                        tmp,
+                        m.period[tmp],
+                        value(m.Group_Net_Market_Purchased_Power[group, tmp]),
+                        value(m.Group_Final_Net_Market_Purchased_Power[group, tmp]),
+                        sales,
+                        purchases,
+                        final_sales,
+                        final_purchases,
+                        m.max_market_purchases_hrz_to_tmp[limit_idx],
+                        m.max_market_sales_hrz_to_tmp[limit_idx],
+                        m.max_final_market_purchases_hrz_to_tmp[limit_idx],
+                        m.max_final_market_sales_hrz_to_tmp[limit_idx],
                     ]
                     + duals
                     + [
@@ -1571,6 +1906,7 @@ def import_results_into_database(
         "system_market_volume_tmp",
         "system_market_volume_hrz",
         "system_market_volume_prd",
+        "system_market_volume_hrz_to_tmp",
     ]:
         import_csv(
             conn=db,
