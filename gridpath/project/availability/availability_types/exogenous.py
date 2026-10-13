@@ -870,18 +870,6 @@ def write_model_inputs(
         availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
-        fname="project_availability_exogenous_weather.tab",
-        data=weather_availabilities,
-        replace_nulls=True,
-    )
-
-    write_tab_file_model_inputs(
-        scenario_directory=scenario_directory,
-        weather_iteration=weather_iteration,
-        hydro_iteration=hydro_iteration,
-        availability_iteration=availability_iteration,
-        subproblem=subproblem,
-        stage=stage,
         fname="project_availability_exogenous_independent_bt_hrz.tab",
         data=independent_availabilities_bt_hrz,
         replace_nulls=True,
