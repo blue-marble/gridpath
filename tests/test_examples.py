@@ -2604,6 +2604,17 @@ class TestExamples(unittest.TestCase):
         scenario_name = "test_w_bt_hrz_avl_w_day_of_year_rows"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
+    def test_test_w_bt_hrz_avl_w_default_avl(self):
+        """
+        Check validation and objective function value of
+        "test_w_bt_hrz_avl_w_default_avl" example: as "test_w_bt_hrz_avl"
+        (same objective), with Coal's flat 0.95 timepoint independent derate
+        given once as the project's default_exogenous_availability instead.
+        :return:
+        """
+        scenario_name = "test_w_bt_hrz_avl_w_default_avl"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
     def test_hydro_system_exog_elev_w_gen_ramp_limits(self):
         """ """
         scenario_name = "hydro_system_exog_elev_w_gen_ramp_limits"

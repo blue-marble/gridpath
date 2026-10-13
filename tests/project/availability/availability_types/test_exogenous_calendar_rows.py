@@ -122,7 +122,7 @@ class TestExogenousCalendarRows(unittest.TestCase):
         )
 
     def get_bt_hrz_derates(self):
-        _, _, bt_hrz_ind, bt_hrz_weather, _ = exogenous.get_inputs_from_database(
+        _, _, bt_hrz_ind, bt_hrz_weather, _, _ = exogenous.get_inputs_from_database(
             scenario_id=1,
             subscenarios=SubScenarios(),
             weather_iteration=0,

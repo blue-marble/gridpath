@@ -132,7 +132,7 @@ class TestBtHrzInputScoping(unittest.TestCase):
         )
 
     def test_exogenous_derates_are_the_stages_own(self):
-        ind, _, bt_hrz_ind, _, _ = self.get_inputs(exogenous, subproblem=1, stage=2)
+        ind, _, bt_hrz_ind, _, _, _ = self.get_inputs(exogenous, subproblem=1, stage=2)
         self.assertEqual(
             sorted(ind.fetchall()), [("Water", 1, 0.9, None), ("Water", 2, 0.9, None)]
         )
