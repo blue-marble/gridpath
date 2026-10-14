@@ -2277,6 +2277,21 @@ class TestExamples(unittest.TestCase):
             scenario_name=scenario_name, skip_validation=True
         )
 
+    def test_example_ra_toolkit_monte_carlo_w_weather_dependent_outages(self):
+        """
+        Check validation and objective function values of
+        "ra_toolkit_monte_carlo_w_weather_dependent_outages" example: Gas's
+        independent availability derates are keyed by weather iteration as
+        well as availability iteration (see
+        tests/test_availability_iteration_examples.py for the proof that
+        each draw reads its own rows)
+        :return:
+        """
+        scenario_name = "ra_toolkit_monte_carlo_w_weather_dependent_outages"
+        self.validate_and_test_example_generic(
+            scenario_name=scenario_name, skip_validation=True
+        )
+
     def test_example_ra_toolkit_sync(self):
         """
         Check validation and objective function values of
