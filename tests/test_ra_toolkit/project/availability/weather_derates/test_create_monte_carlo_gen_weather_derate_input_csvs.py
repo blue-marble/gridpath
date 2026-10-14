@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import filecmp
 import os
+import sqlite3
 import tempfile
 import unittest
 
@@ -112,6 +114,62 @@ class TestCreateMonteCarloGenWeatherDerateInputCsvs(unittest.TestCase):
             "--quiet",
         ]
         create_monte_carlo_gen_weather_derate_input_csvs_main(args)
+
+    def test_csv_loading_flags(self):
+        """The step's --availability_profile_input_csv and --units_input_csv
+        flags load the raw tables (regression: main() read a nonexistent
+        parsed_args.input_csv). The rows are deleted and reloaded from the
+        same fixtures, so the shared class database ends up unchanged, and
+        the derates written must match the committed ones."""
+        conn = sqlite3.connect(self.db_path)
+        conn.execute("DELETE FROM raw_data_availability_profiles;")
+        conn.execute("DELETE FROM raw_data_unit_availability_params;")
+        conn.commit()
+        conn.close()
+
+        with tempfile.TemporaryDirectory() as out_dir:
+            args = [
+                "--database",
+                self.db_path,
+                "--availability_profile_input_csv",
+                "./csvs_test_examples/raw_data_ra_toolkit/project/availability"
+                "/user_defined_weather_derates.csv",
+                "--units_input_csv",
+                "./csvs_test_examples/raw_data_ra_toolkit/project/availability"
+                "/user_defined_unit_availability_params.csv",
+                "--output_directory",
+                out_dir,
+                "--exogenous_availability_weather_scenario_id",
+                "5",
+                "--exogenous_availability_weather_scenario_name",
+                "ra_toolkit_module_tests_mc",
+                "--stage_id",
+                "1",
+                "--overwrite",
+                "--quiet",
+            ]
+            create_monte_carlo_gen_weather_derate_input_csvs_main(args)
+
+            committed_dir = (
+                "./csvs_test_examples/project/availability/exogenous_weather"
+            )
+            written = sorted(f for f in os.listdir(out_dir) if f.endswith(".csv"))
+            self.assertEqual(
+                written,
+                [
+                    f"{prj}-5-ra_toolkit_module_tests_mc.csv"
+                    for prj in ["Batteries", "Gas", "Hybrid", "TestOnes"]
+                ],
+            )
+            for f in written:
+                self.assertTrue(
+                    filecmp.cmp(
+                        os.path.join(out_dir, f),
+                        os.path.join(committed_dir, f),
+                        shallow=False,
+                    ),
+                    f,
+                )
 
     @classmethod
     def tearDownClass(cls):

@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import os
+import pandas as pd
 import tempfile
 import unittest
 
@@ -54,7 +55,7 @@ class TestCreateAvailabilityIterationInputCsvs(unittest.TestCase):
         args = [
             "--database",
             self.db_path,
-            "--input_csv",
+            "--outage_params_input_csv",
             "./csvs_test_examples/raw_data_ra_toolkit/project/availability/user_defined_unit_availability_params.csv",
             "--n_iterations",
             "4",
@@ -71,6 +72,19 @@ class TestCreateAvailabilityIterationInputCsvs(unittest.TestCase):
             "1",
         ]
         create_availability_iteration_input_csvs_main(args)
+
+        # The step is a silent no-op when the raw table is empty (e.g. a
+        # misspelled CSV flag is dropped by parse_known_args), so check that
+        # every project's iterations actually landed
+        for project in ["Batteries", "Gas", "Hybrid", "TestOnes"]:
+            df = pd.read_csv(
+                "./csvs_test_examples/project/availability/exogenous_independent"
+                f"/{project}-3-ra_toolkit_module_tests.csv"
+            )
+            self.assertEqual(
+                sorted(df["availability_iteration"].unique()), [1, 2, 3, 4]
+            )
+            self.assertTrue(df["timepoint"].between(1, 8760).all())
 
     @classmethod
     def tearDownClass(cls):
