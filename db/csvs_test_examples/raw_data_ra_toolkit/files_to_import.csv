@@ -10,3 +10,4 @@ import,filename,table
 1,monte_carlo_weather/user_defined_monte_carlo_weather_bins.csv,user_defined_weather_bins
 1,project/opchar/var_profiles/pudl_ra_toolkit_var_profiles.csv,raw_data_var_profiles
 1,project/opchar/user_defined_var_project_units.csv,raw_data_var_project_units
+1,project/availability/user_defined_forced_outage_rate_profiles.csv,raw_data_unit_forced_outage_rate_profiles

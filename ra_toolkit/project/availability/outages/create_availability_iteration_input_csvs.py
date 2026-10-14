@@ -37,7 +37,8 @@ parameters loaded from ``--outage_params_input_csv`` (into the
 (``n_units``), the unit weight, and the per-unit outage model
 (``unit_fo_model``) -- it simulates ``--n_iterations`` independent outage
 timelines for each project, drawing random forced and (under the sequential
-model) repair/maintenance transitions.
+model) repair/maintenance transitions. Units whose forced outage rate varies
+with the weather are simulated once per weather iteration (see below).
 
 The outage model is selected per unit via the ``unit_fo_model`` column and may
 be one of:
@@ -71,6 +72,45 @@ to). ``--sort`` re-sorts each output file at the end. These outage iterations
 are intended to align with the weather/hydro iterations to form complete Monte
 Carlo draws.
 
+======================================
+Weather-dependent forced outage rates
+======================================
+
+By default (``--weather_mode none``) every unit's forced outage rate is the
+constant ``unit_for`` and the outage timelines are written at
+``weather_iteration`` 0, i.e. they apply whatever the weather iteration of
+the GridPath scenario iteration. A unit's forced outage rate can instead vary
+by hour with the weather: set its ``unit_for_varies_by_weather`` to 1 and
+provide its hourly forced outage rates by historical date (e.g. a
+temperature-dependent forced outage rate curve applied to the historical
+temperature series) in the ``raw_data_unit_forced_outage_rate_profiles``
+table (``--forced_outage_rate_profile_input_csv`` loads them; columns
+``year, month, day_of_month, hour_of_day, unit, value``). The unit's
+``unit_for`` is then ignored. ``--weather_mode`` says which forced outage
+rate series each weather iteration sees:
+
+    * ``sync`` -- a weather iteration is a historical year (as in the sync
+      load, profile and derate steps); the unit's series of that year is
+      used. The weather iterations are the years in the profiles table.
+    * ``monte_carlo`` -- a weather iteration is a synthetic year assembled
+      from historical days by the ``create_monte_carlo_weather_draws`` and
+      ``create_monte_carlo_weather_draw_profiles`` steps; the unit's series
+      is assembled from the same days, taken from the draws of the unit's
+      ``timeseries_name`` for ``--weather_bins_id`` and
+      ``--weather_draws_id`` (every drawn day must have 24 hours of data).
+
+A project with at least one such unit is simulated ``--n_iterations`` times
+per weather iteration (its other units keep their constant ``unit_for``) and
+its rows are keyed by ``weather_iteration`` and ``availability_iteration``;
+the project's file in the ``iterations`` subdirectory of the output directory
+flags it as varying by weather iteration
+(``varies_by_weather_iteration``, the
+``inputs_project_availability_exogenous_outage_iterations`` table in GridPath). A project with no such unit is simulated once and written at
+``weather_iteration`` 0, as under ``--weather_mode none``. GridPath reads a
+scenario iteration's rows at its own weather iteration for the flagged
+projects and at 0 for the others. Flagging a unit under ``--weather_mode
+none`` is an error rather than silently ignored.
+
 =========================
 Reproducibility (seeding)
 =========================
@@ -90,6 +130,15 @@ on:
       n_iterations``. Within a project the per-iteration seed starts at that
       value and is incremented by 1 for each of the ``n_iterations``
       iterations, so the seed ranges of distinct projects do not overlap.
+      Under ``--weather_mode sync`` or ``monte_carlo``, the seeds of the
+      projects whose outages vary by weather repeat this layout once per
+      weather iteration, offset by ``weather_idx * n_projects *
+      n_iterations``: the first weather iteration uses the seeds of
+      ``--weather_mode none``, and each further weather iteration draws its
+      own independent outages from seeds beyond every project's first block.
+      A project whose outages do not vary by weather uses its first block
+      only, so its timelines do not depend on the weather mode or on which
+      other projects vary by weather.
     * **Per-unit seeds within an iteration.** For a given project iteration, the
       per-iteration seed is used to seed NumPy's RNG, which then draws one
       integer seed per unit via ``np.random.randint(1,
@@ -121,7 +170,10 @@ This module assumes the following raw input database table has been populated:
 This table can be populated ahead of time, or loaded at run time by passing
 ``--outage_params_input_csv``. Units that use the ``historical_year`` outage
 model additionally read their derate series from the CSV passed via
-``--historical_availability_csv``.
+``--historical_availability_csv``. Units whose forced outage rate varies by
+weather read ``raw_data_unit_forced_outage_rate_profiles`` (loaded at run
+time by ``--forced_outage_rate_profile_input_csv``) and, under
+``--weather_mode monte_carlo``, ``aux_weather_iterations``.
 
 =========
 Settings
@@ -131,6 +183,10 @@ Settings
     * historical_availability_csv
     * stage_id
     * n_iterations
+    * weather_mode
+    * weather_bins_id
+    * weather_draws_id
+    * forced_outage_rate_profile_input_csv
     * study_year
     * project_availability_scenario_id
     * project_availability_scenario_name
@@ -157,6 +213,10 @@ import sys
 
 from db.common_functions import connect_to_database
 from db.common_functions import read_and_import_csv
+from ra_toolkit.common_methods import create_csv_generic
+
+WEATHER_MODES = ["none", "sync", "monte_carlo"]
+FORCED_OUTAGE_RATE_PROFILES_TABLE = "raw_data_unit_forced_outage_rate_profiles"
 
 
 def parse_arguments(args):
@@ -189,8 +249,50 @@ def parse_arguments(args):
         derate data. If not specified, model will not be able to use historical_year
         outage_model.""",
     )
+    parser.add_argument(
+        "-for_csv",
+        "--forced_outage_rate_profile_input_csv",
+        default=None,
+        help="""Path to the hourly forced outage rate profiles CSV file to load
+        into the raw_data_unit_forced_outage_rate_profiles table (columns: year,
+        month, day_of_month, hour_of_day, unit, value), read for the units with
+        unit_for_varies_by_weather = 1. If not specified, data will be assumed
+        to have been already loaded into the database.""",
+    )
     parser.add_argument("-stage", "--stage_id", default=1, help="Defaults to 1.")
-    parser.add_argument("-n_iter", "--n_iterations")
+    parser.add_argument(
+        "-n_iter",
+        "--n_iterations",
+        help="The number of availability iterations to simulate (per weather "
+        "iteration for the projects whose forced outage rates vary by "
+        "weather).",
+    )
+    parser.add_argument(
+        "-w_mode",
+        "--weather_mode",
+        default="none",
+        choices=WEATHER_MODES,
+        help="How the forced outage rates of the units with "
+        "unit_for_varies_by_weather = 1 follow the weather iterations: 'sync' "
+        "(a weather iteration is a historical year of the profiles) or "
+        "'monte_carlo' (a weather iteration is a synthetic year from the "
+        "weather draws). Defaults to 'none': no unit may vary by weather and "
+        "the outages are written at weather_iteration 0.",
+    )
+    parser.add_argument(
+        "-bins_id",
+        "--weather_bins_id",
+        default=1,
+        help="The weather bins ID of the draws under --weather_mode "
+        "monte_carlo. Defaults to 1.",
+    )
+    parser.add_argument(
+        "-draws_id",
+        "--weather_draws_id",
+        default=1,
+        help="The weather draws ID of the draws under --weather_mode "
+        "monte_carlo. Defaults to 1.",
+    )
     parser.add_argument(
         "-user_seeding",
         "--user_provided_seeding",
@@ -289,9 +391,179 @@ def get_temporal_structure(study_year):
     return stage_tmp_dict
 
 
+def unit_for_varies_by_weather(row):
+    """
+    :param row: a raw_data_unit_availability_params row
+    :return: whether the unit's forced outage rate varies by weather (a NULL
+        flag means it does not)
+    """
+    flag = row["unit_for_varies_by_weather"]
+
+    return pd.notna(flag) and int(flag) == 1
+
+
+def get_weather_iterations(conn, weather_mode, weather_bins_id, weather_draws_id):
+    """
+    :return: the weather iterations to simulate the weather-varying projects
+        for: the years of the forced outage rate profiles under 'sync', the
+        weather iterations of the draws under 'monte_carlo', and [0] under
+        'none'
+    """
+    if weather_mode == "none":
+        return [0]
+    elif weather_mode == "sync":
+        weather_iterations = [
+            year
+            for (year,) in conn.execute(
+                f"""SELECT DISTINCT year FROM {FORCED_OUTAGE_RATE_PROFILES_TABLE}
+                ORDER BY year;"""
+            ).fetchall()
+        ]
+        source = f"the {FORCED_OUTAGE_RATE_PROFILES_TABLE} table has no rows"
+    else:
+        weather_iterations = [
+            weather_iteration
+            for (weather_iteration,) in conn.execute(
+                f"""SELECT DISTINCT weather_iteration FROM aux_weather_iterations
+                WHERE weather_bins_id = {weather_bins_id}
+                AND weather_draws_id = {weather_draws_id}
+                ORDER BY weather_iteration;"""
+            ).fetchall()
+        ]
+        source = (
+            f"aux_weather_iterations has no draws for weather_bins_id "
+            f"{weather_bins_id} and weather_draws_id {weather_draws_id}"
+        )
+
+    if not weather_iterations:
+        raise ValueError(
+            f"No weather iterations to simulate under --weather_mode "
+            f"{weather_mode}: {source}."
+        )
+
+    return weather_iterations
+
+
+def get_unit_for_array(
+    conn,
+    row,
+    n_tmps,
+    weather_mode,
+    weather_iteration,
+    weather_bins_id,
+    weather_draws_id,
+):
+    """
+    :return: (n_tmps, 1) array of the unit's hourly forced outage rate: the
+        constant unit_for, or, for a unit whose forced outage rate varies by
+        weather, the profile of the weather iteration's year ('sync') or of
+        the weather iteration's draw days ('monte_carlo')
+    """
+    unit = row["unit"]
+    if not unit_for_varies_by_weather(row):
+        return np.full((n_tmps, 1), row["unit_for"], dtype=float)
+
+    if weather_mode == "sync":
+        values = [
+            value
+            for (value,) in conn.execute(
+                f"""SELECT value FROM {FORCED_OUTAGE_RATE_PROFILES_TABLE}
+                WHERE unit = '{unit}' AND year = {weather_iteration}
+                ORDER BY month, day_of_month, hour_of_day;"""
+            ).fetchall()
+        ]
+        if len(values) != n_tmps:
+            raise ValueError(
+                f"Unit {unit} has {len(values)} forced outage rate rows for "
+                f"year {weather_iteration} in "
+                f"{FORCED_OUTAGE_RATE_PROFILES_TABLE}; expected {n_tmps} "
+                f"(one per hour of the study year)."
+            )
+    else:
+        timeseries_name = row["timeseries_name"]
+        if pd.isna(timeseries_name):
+            raise ValueError(
+                f"Unit {unit} needs a timeseries_name to find its draw days "
+                f"in aux_weather_iterations under --weather_mode monte_carlo."
+            )
+        draw_days_sql = f"""
+            FROM aux_weather_iterations AS d
+            LEFT JOIN {FORCED_OUTAGE_RATE_PROFILES_TABLE} AS p
+                ON p.year = d.{timeseries_name}_year
+                AND p.month = d.{timeseries_name}_month
+                AND p.day_of_month = d.{timeseries_name}_day_of_month
+                AND p.unit = '{unit}'
+            WHERE d.weather_bins_id = {weather_bins_id}
+            AND d.weather_draws_id = {weather_draws_id}
+            AND d.weather_iteration = {weather_iteration}
+        """
+        incomplete_days = conn.execute(f"""
+            SELECT d.draw_number, d.{timeseries_name}_year,
+            d.{timeseries_name}_month, d.{timeseries_name}_day_of_month,
+            COUNT(p.value)
+            {draw_days_sql}
+            GROUP BY d.draw_number
+            HAVING COUNT(p.value) != 24
+            ORDER BY d.draw_number;""").fetchall()
+        if incomplete_days:
+            raise ValueError(
+                f"Unit {unit} is missing forced outage rate rows in "
+                f"{FORCED_OUTAGE_RATE_PROFILES_TABLE} for "
+                f"{len(incomplete_days)} draw day(s) of weather iteration "
+                f"{weather_iteration} (draw_number, year, month, "
+                f"day_of_month, hours found): {incomplete_days[:10]}"
+                f"{' ...' if len(incomplete_days) > 10 else ''}."
+            )
+        values = [value for (value,) in conn.execute(f"""SELECT p.value {draw_days_sql}
+                ORDER BY d.draw_number, p.hour_of_day;""").fetchall()]
+        if len(values) != n_tmps:
+            raise ValueError(
+                f"The draws of weather iteration {weather_iteration} give "
+                f"{len(values)} hours of forced outage rates for unit {unit}; "
+                f"expected {n_tmps} (one per hour of the study year)."
+            )
+
+    for_array = np.array(values, dtype=float).reshape(n_tmps, 1)
+    if np.isnan(for_array).any() or (for_array < 0).any() or (for_array > 1).any():
+        raise ValueError(
+            f"The forced outage rates of unit {unit} for weather iteration "
+            f"{weather_iteration} must be between 0 and 1 (NULLs not allowed)."
+        )
+
+    return for_array
+
+
+def get_unit_for_arrays(
+    conn,
+    project_df,
+    n_tmps,
+    weather_mode,
+    weather_iteration,
+    weather_bins_id,
+    weather_draws_id,
+):
+    """
+    :return: {unit: (n_tmps, 1) forced outage rate array} for the project's
+        units at this weather iteration
+    """
+    return {
+        row["unit"]: get_unit_for_array(
+            conn=conn,
+            row=row,
+            n_tmps=n_tmps,
+            weather_mode=weather_mode,
+            weather_iteration=weather_iteration,
+            weather_bins_id=weather_bins_id,
+            weather_draws_id=weather_draws_id,
+        )
+        for _, row in project_df.iterrows()
+    }
+
+
 def get_weighted_availability_adjustment(
     project_df,
     tmps,
+    unit_for_arrays,
     user_provided_seeding,
     project_iteration_seed,
     max_integer_for_unit_outage_seeding,
@@ -349,14 +621,15 @@ def get_weighted_availability_adjustment(
         n_units = row["n_units"]
         unit_weight = row["unit_weight"]
         outage_model = row["unit_fo_model"]
-        unit_for = row["unit_for"]
         unit_mttr = row["unit_mttr"]
         hybrid_stor = row["hybrid_stor"]
 
         # This is None if no seed was provided
         unit_seed = unit_seeds[index]
 
-        unit_for_array = np.full((len(tmps), 1), unit_for, dtype=float)
+        # Constant, or hourly for a unit whose forced outage rate varies by
+        # weather
+        unit_for_array = unit_for_arrays[unit]
 
         unit_outage_adjustment = simulate_unit_outages(
             outage_model=outage_model,
@@ -409,7 +682,9 @@ def get_weighted_availability_adjustment(
 def simulate_project_availability(
     project_df,
     project,
+    weather_iteration,
     iteration_n,
+    unit_for_arrays,
     user_provided_seeding,
     project_iteration_seed,
     max_integer_for_unit_outage_seeding,
@@ -430,6 +705,7 @@ def simulate_project_availability(
     availability_derate, hyb_stor_derate = get_weighted_availability_adjustment(
         project_df=project_df,
         tmps=tmps,
+        unit_for_arrays=unit_for_arrays,
         user_provided_seeding=user_provided_seeding,
         project_iteration_seed=project_iteration_seed,
         max_integer_for_unit_outage_seeding=max_integer_for_unit_outage_seeding,
@@ -437,10 +713,9 @@ def simulate_project_availability(
         historical_data=historical_data,
     )
 
-    # The outages do not (yet) vary by weather iteration
     export_df = pd.DataFrame(
         {
-            "weather_iteration": [0] * len(tmps),
+            "weather_iteration": [weather_iteration] * len(tmps),
             "availability_iteration": [iteration_n] * len(tmps),
             "stage_id": [stage_id] * len(tmps),
             "timepoint": tmps,
@@ -542,8 +817,11 @@ def simulate_unit_outages(
         else:
             avail_last = starting_outage_states
 
-        # calculate mean time to failure [MTTR = FOR * (MTTR + MTTF)]
-        MTTF = float(mttr) * (1 / for_array - 1)
+        # calculate mean time to failure [MTTR = FOR * (MTTR + MTTF)]; a
+        # forced outage rate of 0 gives an infinite MTTF (the unit never
+        # fails), so silence the division warning
+        with np.errstate(divide="ignore"):
+            MTTF = float(mttr) * (1 / for_array - 1)
 
         # Randomly draw whether each unit fails or is repaired in each time
         # step using an exponential model
@@ -616,7 +894,12 @@ def simulate_all_project_iterations(pool_datum):
     [
         conn_string,
         project,
+        weather_iterations,
+        weather_mode,
+        weather_bins_id,
+        weather_draws_id,
         n_iterations,
+        weather_iteration_seed_stride,
         user_provided_seeding,
         starting_project_iteration_seed,
         max_integer_for_unit_outage_seeding,
@@ -630,45 +913,108 @@ def simulate_all_project_iterations(pool_datum):
 
     # Reconnect to database in this process
     conn = connect_to_database(conn_string)
-
-    # Loop through all iterations for this project
-    project_iteration_seed = starting_project_iteration_seed
-    for iteration_n in range(1, n_iterations + 1):
-        # ORDER BY unit so each unit maps to the same drawn seed (unit_seeds is
-        # indexed positionally) across runs; required for reproducible draws
-        project_df = pd.read_sql(
-            f"""
-                SELECT * FROM raw_data_unit_availability_params
-                WHERE project = '{project}'
-                ORDER BY unit
-                ;""",
-            conn,
-        )
-
-        simulate_project_availability(
-            project_df=project_df,
+    try:
+        simulate_all_project_iterations_with_conn(
+            conn=conn,
             project=project,
-            iteration_n=iteration_n,
+            weather_iterations=weather_iterations,
+            weather_mode=weather_mode,
+            weather_bins_id=weather_bins_id,
+            weather_draws_id=weather_draws_id,
+            n_iterations=n_iterations,
+            weather_iteration_seed_stride=weather_iteration_seed_stride,
             user_provided_seeding=user_provided_seeding,
-            project_iteration_seed=(
-                project_iteration_seed if user_provided_seeding else None
-            ),
-            max_integer_for_unit_outage_seeding=(
-                max_integer_for_unit_outage_seeding if user_provided_seeding else None
-            ),
-            hyb_stor_seed_unit_increment=(
-                hyb_stor_seed_unit_increment if user_provided_seeding else None
-            ),
+            starting_project_iteration_seed=starting_project_iteration_seed,
+            max_integer_for_unit_outage_seeding=max_integer_for_unit_outage_seeding,
+            hyb_stor_seed_unit_increment=hyb_stor_seed_unit_increment,
             stage_id=stage_id,
             study_year=study_year,
             filepath=filepath,
             print_ones=print_ones,
             historical_data=historical_data,
         )
+    finally:
+        conn.close()
 
-        project_iteration_seed += 1
 
-    conn.close()
+def simulate_all_project_iterations_with_conn(
+    conn,
+    project,
+    weather_iterations,
+    weather_mode,
+    weather_bins_id,
+    weather_draws_id,
+    n_iterations,
+    weather_iteration_seed_stride,
+    user_provided_seeding,
+    starting_project_iteration_seed,
+    max_integer_for_unit_outage_seeding,
+    hyb_stor_seed_unit_increment,
+    stage_id,
+    study_year,
+    filepath,
+    print_ones,
+    historical_data,
+):
+    # ORDER BY unit so each unit maps to the same drawn seed (unit_seeds is
+    # indexed positionally) across runs; required for reproducible draws
+    project_df = pd.read_sql(
+        f"""
+            SELECT * FROM raw_data_unit_availability_params
+            WHERE project = '{project}'
+            ORDER BY unit
+            ;""",
+        conn,
+    )
+    n_tmps = len(get_temporal_structure(study_year)[1])
+
+    # Loop through all weather iterations (a single 0 for a project whose
+    # outages do not vary by weather) and all availability iterations for
+    # this project; the seed increments by 1 per availability iteration and
+    # each weather iteration's block of seeds is offset by the stride (all
+    # projects' first blocks), so the first weather iteration draws what
+    # --weather_mode none would
+    for weather_idx, weather_iteration in enumerate(weather_iterations):
+        project_iteration_seed = (
+            starting_project_iteration_seed
+            + weather_idx * weather_iteration_seed_stride
+        )
+        unit_for_arrays = get_unit_for_arrays(
+            conn=conn,
+            project_df=project_df,
+            n_tmps=n_tmps,
+            weather_mode=weather_mode,
+            weather_iteration=weather_iteration,
+            weather_bins_id=weather_bins_id,
+            weather_draws_id=weather_draws_id,
+        )
+        for iteration_n in range(1, n_iterations + 1):
+            simulate_project_availability(
+                project_df=project_df,
+                project=project,
+                weather_iteration=weather_iteration,
+                iteration_n=iteration_n,
+                unit_for_arrays=unit_for_arrays,
+                user_provided_seeding=user_provided_seeding,
+                project_iteration_seed=(
+                    project_iteration_seed if user_provided_seeding else None
+                ),
+                max_integer_for_unit_outage_seeding=(
+                    max_integer_for_unit_outage_seeding
+                    if user_provided_seeding
+                    else None
+                ),
+                hyb_stor_seed_unit_increment=(
+                    hyb_stor_seed_unit_increment if user_provided_seeding else None
+                ),
+                stage_id=stage_id,
+                study_year=study_year,
+                filepath=filepath,
+                print_ones=print_ones,
+                historical_data=historical_data,
+            )
+
+            project_iteration_seed += 1
 
 
 def sort_csv_file(filepath, columns_to_sort_by, ascending):
@@ -694,123 +1040,182 @@ def main(args=None):
         print("Creating availability iteration CSVs...")
 
     conn = connect_to_database(parsed_args.database)
+    try:
 
-    # ### Load data from CSV
-    if parsed_args.outage_params_input_csv is not None:
-        read_and_import_csv(
-            conn=conn,
-            f_path=parsed_args.outage_params_input_csv,
-            table="raw_data_unit_availability_params",
-        )
-
-    # Load historical availability data if provided
-    # Not loaded into the database for now
-    historical_data = None
-    if parsed_args.historical_availability_csv is not None:
-        # Read the CSV file directly into a DataFrame
-        hist_df = pd.read_csv(parsed_args.historical_availability_csv)
-
-        # Expected columns: year, month, day_of_month, hour_of_day, unit, derate
-        # Create an hour index for ordering (1-8760 or 1-8784 for leap years)
-        # Sort by temporal columns to ensure proper ordering
-        hist_df = hist_df.sort_values(["year", "month", "day_of_month", "hour_of_day"])
-
-        # Group by unit for unit-level access
-        historical_data = {unit: group for unit, group in hist_df.groupby("unit")}
-
-    # Make out directory if it doesn't exist
-    if not os.path.exists(parsed_args.output_directory):
-        os.makedirs(parsed_args.output_directory)
-
-    # Get projects. ORDER BY so that project_idx (and therefore each project's
-    # seed base, starting_project_iteration_seed + project_idx * n_iterations)
-    # is stable across runs -- otherwise seeded results are not reproducible.
-    projects = [i[0] for i in conn.execute("""
-        SELECT DISTINCT project FROM raw_data_unit_availability_params
-        ORDER BY project;
-        """).fetchall()]
-
-    all_files = []
-    pool_data = []
-    project_iteration_seed = int(parsed_args.starting_project_iteration_seed)
-    hyb_stor_seed_unit_increment = int(parsed_args.hybrid_storage_seed_increment)
-    n_iterations = int(parsed_args.n_iterations)
-
-    # Calculate total iterations per project for seed incrementing
-    iterations_per_project = n_iterations
-
-    for project_idx, project in enumerate(projects):
-        # Write header if we are overwriting the file or it doesn't exist
-        overwrite = parsed_args.overwrite
-        header = [
-            "weather_iteration",
-            "availability_iteration",
-            "stage_id",
-            "timepoint",
-            "availability_derate_outage",
-            "hyb_stor_cap_availability_derate_outage",
-        ]
-
-        filepath = os.path.join(
-            parsed_args.output_directory,
-            f"{project}-{parsed_args.project_availability_scenario_id}-{parsed_args.project_availability_scenario_name}.csv",
-        )
-        all_files.append(filepath)
-
-        if not os.path.exists(filepath) or overwrite:
-            with open(filepath, "w", newline="") as f:
-                csvwriter = csv.writer(f, lineterminator="\n")
-                csvwriter.writerow(header)
-
-        # Calculate starting seed for this project
-        starting_seed_for_project = (
-            int(parsed_args.starting_project_iteration_seed)
-            + project_idx * iterations_per_project
-        )
-
-        # Create pool data entry for this project (all iterations)
-        pool_data.append(
-            [
-                parsed_args.database,
-                project,
-                n_iterations,
-                parsed_args.user_provided_seeding,
-                starting_seed_for_project,
-                parsed_args.max_integer_for_unit_outage_seeding,
-                hyb_stor_seed_unit_increment,
-                parsed_args.stage_id,
-                int(parsed_args.study_year),
-                filepath,
-                parsed_args.print_ones,
-                historical_data,
-            ]
-        )
-
-    pool_data = tuple(pool_data)
-
-    # Pool must use spawn to work properly on Linux
-    pool = get_context("spawn").Pool(int(parsed_args.n_parallel_projects))
-
-    pool.map(simulate_all_project_iterations, pool_data)
-    pool.close()
-    pool.join()
-
-    # Sort the resulting CSV file if requested
-    # TODO: could parallelize this
-    if parsed_args.sort:
-        for filepath in all_files:
-            sort_csv_file(
-                filepath=filepath,
-                columns_to_sort_by=[
-                    "weather_iteration",
-                    "availability_iteration",
-                    "stage_id",
-                    "timepoint",
-                ],
-                ascending=[True, True, True, True],
+        # ### Load data from CSV
+        if parsed_args.outage_params_input_csv is not None:
+            read_and_import_csv(
+                conn=conn,
+                f_path=parsed_args.outage_params_input_csv,
+                table="raw_data_unit_availability_params",
             )
 
-    conn.close()
+        if parsed_args.forced_outage_rate_profile_input_csv is not None:
+            read_and_import_csv(
+                conn=conn,
+                f_path=parsed_args.forced_outage_rate_profile_input_csv,
+                table=FORCED_OUTAGE_RATE_PROFILES_TABLE,
+            )
+
+        # Load historical availability data if provided
+        # Not loaded into the database for now
+        historical_data = None
+        if parsed_args.historical_availability_csv is not None:
+            # Read the CSV file directly into a DataFrame
+            hist_df = pd.read_csv(parsed_args.historical_availability_csv)
+
+            # Expected columns: year, month, day_of_month, hour_of_day, unit, derate
+            # Create an hour index for ordering (1-8760 or 1-8784 for leap years)
+            # Sort by temporal columns to ensure proper ordering
+            hist_df = hist_df.sort_values(
+                ["year", "month", "day_of_month", "hour_of_day"]
+            )
+
+            # Group by unit for unit-level access
+            historical_data = {unit: group for unit, group in hist_df.groupby("unit")}
+
+        # Make out directory if it doesn't exist
+        if not os.path.exists(parsed_args.output_directory):
+            os.makedirs(parsed_args.output_directory)
+
+        # Get projects and whether their forced outage rates vary by weather
+        # (any unit's does). ORDER BY so that project_idx (and therefore each
+        # project's seed base, starting_project_iteration_seed + project_idx *
+        # iterations_per_project) is stable across runs -- otherwise seeded
+        # results are not reproducible.
+        projects = conn.execute("""
+            SELECT project, MAX(COALESCE(unit_for_varies_by_weather, 0))
+            FROM raw_data_unit_availability_params
+            GROUP BY project
+            ORDER BY project;
+            """).fetchall()
+        weather_varying_projects = [prj for prj, varies in projects if varies]
+
+        weather_mode = parsed_args.weather_mode
+        if weather_mode == "none" and weather_varying_projects:
+            raise ValueError(
+                f"The forced outage rates of projects {weather_varying_projects} "
+                f"vary by weather (unit_for_varies_by_weather = 1) but "
+                f"--weather_mode is 'none'; set it to 'sync' or 'monte_carlo' or "
+                f"unflag the units."
+            )
+        weather_iterations = get_weather_iterations(
+            conn=conn,
+            weather_mode=weather_mode,
+            weather_bins_id=parsed_args.weather_bins_id,
+            weather_draws_id=parsed_args.weather_draws_id,
+        )
+        if not parsed_args.quiet and weather_mode != "none":
+            print(
+                f"   ...forced outage rates of projects {weather_varying_projects} "
+                f"vary by weather; simulating them for weather iterations "
+                f"{weather_iterations} ({weather_mode})"
+            )
+
+        all_files = []
+        pool_data = []
+        project_iteration_seed = int(parsed_args.starting_project_iteration_seed)
+        hyb_stor_seed_unit_increment = int(parsed_args.hybrid_storage_seed_increment)
+        n_iterations = int(parsed_args.n_iterations)
+
+        # Calculate total iterations per project for seed incrementing; the
+        # weather iterations of the weather-varying projects repeat the layout
+        # of all projects' seed ranges with this stride
+        iterations_per_project = n_iterations
+        weather_iteration_seed_stride = len(projects) * n_iterations
+
+        for project_idx, (project, varies_by_weather) in enumerate(projects):
+            # Write header if we are overwriting the file or it doesn't exist
+            overwrite = parsed_args.overwrite
+            header = [
+                "weather_iteration",
+                "availability_iteration",
+                "stage_id",
+                "timepoint",
+                "availability_derate_outage",
+                "hyb_stor_cap_availability_derate_outage",
+            ]
+
+            filepath = os.path.join(
+                parsed_args.output_directory,
+                f"{project}-{parsed_args.project_availability_scenario_id}-{parsed_args.project_availability_scenario_name}.csv",
+            )
+            all_files.append(filepath)
+
+            if not os.path.exists(filepath) or overwrite:
+                with open(filepath, "w", newline="") as f:
+                    csvwriter = csv.writer(f, lineterminator="\n")
+                    csvwriter.writerow(header)
+
+            # Calculate starting seed for this project
+            starting_seed_for_project = (
+                int(parsed_args.starting_project_iteration_seed)
+                + project_idx * iterations_per_project
+            )
+
+            # Create pool data entry for this project (all iterations)
+            pool_data.append(
+                [
+                    parsed_args.database,
+                    project,
+                    weather_iterations if varies_by_weather else [0],
+                    weather_mode,
+                    parsed_args.weather_bins_id,
+                    parsed_args.weather_draws_id,
+                    n_iterations,
+                    weather_iteration_seed_stride,
+                    parsed_args.user_provided_seeding,
+                    starting_seed_for_project,
+                    parsed_args.max_integer_for_unit_outage_seeding,
+                    hyb_stor_seed_unit_increment,
+                    parsed_args.stage_id,
+                    int(parsed_args.study_year),
+                    filepath,
+                    parsed_args.print_ones,
+                    historical_data,
+                ]
+            )
+
+        pool_data = tuple(pool_data)
+
+        # Pool must use spawn to work properly on Linux; the context manager
+        # terminates the pool if a worker raises
+        with get_context("spawn").Pool(int(parsed_args.n_parallel_projects)) as pool:
+            pool.map(simulate_all_project_iterations, pool_data)
+
+        # Flag the projects whose outages vary by weather iteration (GridPath
+        # reads the others at weather_iteration 0)
+        iterations_directory = os.path.join(parsed_args.output_directory, "iterations")
+        os.makedirs(iterations_directory, exist_ok=True)
+        for project, varies_by_weather in projects:
+            create_csv_generic(
+                filename=os.path.join(
+                    iterations_directory,
+                    f"{project}-{parsed_args.project_availability_scenario_id}-"
+                    f"{parsed_args.project_availability_scenario_name}.csv",
+                ),
+                df=pd.DataFrame(
+                    {"varies_by_weather_iteration": [int(bool(varies_by_weather))]}
+                ),
+                overwrite=True,
+            )
+
+        # Sort the resulting CSV file if requested
+        # TODO: could parallelize this
+        if parsed_args.sort:
+            for filepath in all_files:
+                sort_csv_file(
+                    filepath=filepath,
+                    columns_to_sort_by=[
+                        "weather_iteration",
+                        "availability_iteration",
+                        "stage_id",
+                        "timepoint",
+                    ],
+                    ascending=[True, True, True, True],
+                )
+    finally:
+        conn.close()
 
 
 if __name__ == "__main__":
