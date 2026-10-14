@@ -35,18 +35,17 @@ availability derate for each combination is defined by availability
 iteration, stage and timepoint, and must be between 0 (full derate) and 1
 (no derate).
 
-The rows are also keyed by :code:`weather_iteration` and
-:code:`hydro_iteration`. A project whose derates do not vary by weather or
-hydro iteration (the default) carries them at iteration 0; one whose derates
-do (e.g. forced outages drawn against weather-dependent forced outage rates,
-indexed by both the weather iteration and the availability iteration) says so
-in the :code:`iterations` subdirectory, where the file of the same name
-holds a :code:`varies_by_weather_iteration` and a
-:code:`varies_by_hydro_iteration` flag
+The rows are also keyed by :code:`weather_iteration`. A project whose
+derates do not vary by weather iteration (the default) carries them at
+weather iteration 0; one whose derates do (e.g. forced outages drawn
+against weather-dependent forced outage rates, indexed by both the weather
+iteration and the availability iteration) says so in the :code:`iterations`
+subdirectory, where the file of the same name holds a
+:code:`varies_by_weather_iteration` flag
 (:code:`inputs_project_availability_exogenous_outage_iterations`). Each
-scenario iteration then reads the rows at its own weather and/or hydro
-iteration. Rows at a non-zero iteration of a project not flagged to vary by
-it are never read and fail validation. See the
+scenario iteration then reads the rows at its own weather iteration. Rows
+at a non-zero weather iteration of a project not flagged to vary by it are
+never read and fail validation. See the
 :code:`ra_toolkit_monte_carlo_w_weather_dependent_outages` example.
 
 Derates can also be given by balancing type and horizon (the

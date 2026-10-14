@@ -16,11 +16,12 @@
 Iteration keying of the outage exogenous availability derates.
 
 The rows of inputs_project_availability_exogenous_outage are keyed by
-weather, hydro and availability iteration. A project's derates vary by the
-weather and/or hydro iteration only when its row in
-inputs_project_availability_exogenous_outage_iterations says so (no
-row: by neither); the rows of a project that does not vary by an iteration
-sit at iteration 0 and are read whatever the run's iteration is.
+weather and availability iteration. A project's derates vary by the weather
+iteration only when its row in
+inputs_project_availability_exogenous_outage_iterations says so (no row:
+they do not); the rows of a project that does not vary by weather iteration
+sit at weather_iteration 0 and are read whatever the run's weather
+iteration is.
 """
 
 import os.path
@@ -39,25 +40,23 @@ DB_SCHEMA = os.path.join(
 
 TIMEPOINTS = [1, 2, 3]
 
-# (project, varies_by_weather_iteration, varies_by_hydro_iteration); None =
-# no row in the iterations table
+# project: varies_by_weather_iteration; None = no row in the iterations table
 PROJECTS = {
     "Fixed": None,
-    "WeatherVaries": (1, 0),
-    "HydroVaries": (0, 1),
+    "Unflagged": 0,
+    "WeatherVaries": 1,
 }
 
-# (project, weather_iteration, hydro_iteration, availability_iteration):
-# derate (the same in every timepoint)
+# (project, weather_iteration, availability_iteration): derate (the same in
+# every timepoint)
 DERATES = {
-    ("Fixed", 0, 0, 1): 0.9,
-    ("Fixed", 0, 0, 2): 0.8,
-    ("WeatherVaries", 1, 0, 1): 0.71,
-    ("WeatherVaries", 2, 0, 1): 0.72,
-    ("WeatherVaries", 1, 0, 2): 0.61,
-    ("WeatherVaries", 2, 0, 2): 0.62,
-    ("HydroVaries", 0, 2010, 1): 0.51,
-    ("HydroVaries", 0, 2011, 1): 0.52,
+    ("Fixed", 0, 1): 0.9,
+    ("Fixed", 0, 2): 0.8,
+    ("Unflagged", 0, 1): 0.85,
+    ("WeatherVaries", 1, 1): 0.71,
+    ("WeatherVaries", 2, 1): 0.72,
+    ("WeatherVaries", 1, 2): 0.61,
+    ("WeatherVaries", 2, 2): 0.62,
 }
 
 
@@ -80,7 +79,7 @@ def build_fixture_db():
         "timepoint_weight, spinup_or_lookahead) VALUES (1, 1, 1, ?, 2030, 1, 1, 0);",
         [(tmp,) for tmp in TIMEPOINTS],
     )
-    for project, flags in PROJECTS.items():
+    for project, flag in PROJECTS.items():
         conn.execute(
             "INSERT INTO inputs_project_portfolios (project_portfolio_scenario_id, "
             "project, capacity_type) VALUES (1, ?, 'gen_spec');",
@@ -93,22 +92,20 @@ def build_fixture_db():
             "VALUES (1, ?, 'exogenous', 1);",
             (project,),
         )
-        if flags is not None:
+        if flag is not None:
             conn.execute(
-                "INSERT INTO "
-                "inputs_project_availability_exogenous_outage_iterations "
-                "VALUES (?, 1, ?, ?);",
-                (project, *flags),
+                "INSERT INTO inputs_project_availability_exogenous_outage_iterations "
+                "VALUES (?, 1, ?);",
+                (project, flag),
             )
     conn.executemany(
         "INSERT INTO inputs_project_availability_exogenous_outage "
-        "(project, exogenous_availability_outage_scenario_id, "
-        "weather_iteration, hydro_iteration, availability_iteration, stage_id, "
-        "timepoint, availability_derate_outage) "
-        "VALUES (?, 1, ?, ?, ?, 1, ?, ?);",
+        "(project, exogenous_availability_outage_scenario_id, weather_iteration, "
+        "availability_iteration, stage_id, timepoint, availability_derate_outage) "
+        "VALUES (?, 1, ?, ?, 1, ?, ?);",
         [
-            (prj, w, h, a, tmp, derate)
-            for (prj, w, h, a), derate in DERATES.items()
+            (prj, w, a, tmp, derate)
+            for (prj, w, a), derate in DERATES.items()
             for tmp in TIMEPOINTS
         ],
     )
@@ -117,12 +114,12 @@ def build_fixture_db():
     return conn
 
 
-def get_outage_derates(conn, weather_iteration, hydro_iteration, avl_iteration):
+def get_outage_derates(conn, weather_iteration, avl_iteration):
     outage_availabilities = get_inputs_from_database(
         scenario_id=1,
         subscenarios=SubScenarios(),
         weather_iteration=weather_iteration,
-        hydro_iteration=hydro_iteration,
+        hydro_iteration=0,
         availability_iteration=avl_iteration,
         subproblem=1,
         stage=1,
@@ -140,14 +137,14 @@ class TestExogenousOutageIterations(unittest.TestCase):
         self.conn.close()
 
     def test_each_project_reads_its_own_iteration(self):
-        """Each project's rows come from the run's iteration when the
-        project varies by it and from iteration 0 otherwise."""
-        for weather, hydro, avl, expected in [
-            (1, 2010, 1, {"Fixed": 0.9, "WeatherVaries": 0.71, "HydroVaries": 0.51}),
-            (2, 2010, 1, {"Fixed": 0.9, "WeatherVaries": 0.72, "HydroVaries": 0.51}),
-            (2, 2011, 2, {"Fixed": 0.8, "WeatherVaries": 0.62, "HydroVaries": None}),
+        """Each project's rows come from the run's weather iteration when the
+        project varies by it and from weather_iteration 0 otherwise."""
+        for weather, avl, expected in [
+            (1, 1, {"Fixed": 0.9, "Unflagged": 0.85, "WeatherVaries": 0.71}),
+            (2, 1, {"Fixed": 0.9, "Unflagged": 0.85, "WeatherVaries": 0.72}),
+            (2, 2, {"Fixed": 0.8, "Unflagged": None, "WeatherVaries": 0.62}),
         ]:
-            derates = get_outage_derates(self.conn, weather, hydro, avl)
+            derates = get_outage_derates(self.conn, weather, avl)
             self.assertDictEqual(
                 derates,
                 {
@@ -156,51 +153,43 @@ class TestExogenousOutageIterations(unittest.TestCase):
                     if derate is not None
                     for tmp in TIMEPOINTS
                 },
-                (weather, hydro, avl),
+                (weather, avl),
             )
 
-    def test_run_without_the_iteration_raises(self):
-        """A project cannot vary by an iteration the run does not have."""
+    def test_run_without_weather_iterations_raises(self):
+        """A project cannot vary by weather iteration when the run has none."""
         with self.assertRaises(ValueError) as context:
             check_outage_iteration_config(
-                subscenarios=SubScenarios(),
-                weather_iteration=0,
-                hydro_iteration=2010,
-                conn=self.conn,
+                subscenarios=SubScenarios(), weather_iteration=0, conn=self.conn
             )
         self.assertIn("['WeatherVaries']", str(context.exception))
 
-        with self.assertRaises(ValueError) as context:
-            get_outage_derates(self.conn, 1, 0, 1)
-        self.assertIn("['HydroVaries']", str(context.exception))
+        with self.assertRaises(ValueError):
+            get_outage_derates(self.conn, 0, 1)
 
-        # Fine when the run has both iterations
+        # Fine when the run has weather iterations
         check_outage_iteration_config(
-            subscenarios=SubScenarios(),
-            weather_iteration=1,
-            hydro_iteration=2010,
-            conn=self.conn,
+            subscenarios=SubScenarios(), weather_iteration=1, conn=self.conn
         )
 
-    def test_rows_at_an_iteration_not_varied_by_are_reported(self):
-        """Rows at a non-zero weather or hydro iteration of a project not
-        flagged to vary by it are never read; validation reports them."""
+    def test_rows_at_a_weather_iteration_not_varied_by_are_reported(self):
+        """Rows at a non-zero weather iteration of a project not flagged to
+        vary by it are never read; validation reports them."""
         self.assertEqual(get_unread_outage_rows(SubScenarios(), self.conn), [])
 
         self.conn.execute(
             "INSERT INTO inputs_project_availability_exogenous_outage "
             "(project, exogenous_availability_outage_scenario_id, "
-            "weather_iteration, hydro_iteration, availability_iteration, "
-            "stage_id, timepoint, availability_derate_outage) "
-            "VALUES ('Fixed', 1, 2, 0, 1, 1, 1, 0.5), "
-            "('WeatherVaries', 1, 1, 2010, 1, 1, 1, 0.5);"
+            "weather_iteration, availability_iteration, stage_id, timepoint, "
+            "availability_derate_outage) "
+            "VALUES ('Fixed', 1, 2, 1, 1, 1, 0.5), ('Unflagged', 1, 3, 1, 1, 1, 0.5);"
         )
         self.assertEqual(
             get_unread_outage_rows(SubScenarios(), self.conn),
-            [("Fixed", 2, 0), ("WeatherVaries", 1, 2010)],
+            [("Fixed", 2), ("Unflagged", 3)],
         )
         # ... and the rows are indeed not read
-        self.assertEqual(get_outage_derates(self.conn, 2, 2010, 1)[("Fixed", 1)], 0.9)
+        self.assertEqual(get_outage_derates(self.conn, 2, 1)[("Fixed", 1)], 0.9)
 
 
 if __name__ == "__main__":

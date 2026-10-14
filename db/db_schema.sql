@@ -3660,34 +3660,31 @@ CREATE TABLE inputs_project_availability_exogenous_outage
 (
     project                                        VARCHAR(64),
     exogenous_availability_outage_scenario_id INTEGER,
-    -- 0 unless the project's data varies by the iteration (see the
+    -- 0 unless the project's data varies by the weather iteration (see the
     -- _iterations table below)
     weather_iteration                              INTEGER NOT NULL DEFAULT 0,
-    hydro_iteration                                INTEGER NOT NULL DEFAULT 0,
     availability_iteration                         INTEGER,
     stage_id                                       INTEGER,
     timepoint                                      INTEGER,
     availability_derate_outage                FLOAT, -- for hybrids, this is the gen av
     hyb_stor_cap_availability_derate_outage   FLOAT,
     PRIMARY KEY (project, exogenous_availability_outage_scenario_id,
-                 weather_iteration, hydro_iteration, availability_iteration,
-                 stage_id, timepoint),
+                 weather_iteration, availability_iteration, stage_id,
+                 timepoint),
     FOREIGN KEY (project, exogenous_availability_outage_scenario_id)
         REFERENCES subscenarios_project_availability_exogenous_outage
             (project, exogenous_availability_outage_scenario_id)
 );
 
--- Whether a project's outage derates vary by weather and/or hydro
--- iteration (e.g. outages drawn against weather-dependent forced outage
--- rates); a project without a row varies by neither and its rows sit at
--- weather_iteration 0 and hydro_iteration 0
+-- Whether a project's outage derates vary by weather iteration (e.g.
+-- outages drawn against weather-dependent forced outage rates); a project
+-- without a row does not and its rows sit at weather_iteration 0
 DROP TABLE IF EXISTS inputs_project_availability_exogenous_outage_iterations;
 CREATE TABLE inputs_project_availability_exogenous_outage_iterations
 (
     project                                        TEXT,
     exogenous_availability_outage_scenario_id INTEGER,
     varies_by_weather_iteration                    INTEGER,
-    varies_by_hydro_iteration                      INTEGER,
     PRIMARY KEY (project, exogenous_availability_outage_scenario_id)
 );
 
