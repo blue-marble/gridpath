@@ -103,9 +103,11 @@ def add_model_components(
     | | *Default*: :code:`1`                                                  |
     |                                                                         |
     | The availability derate from planned or forced outages (an outage       |
-    | timeline). Defaults to the project's                                    |
-    | :code:`avl_exog_default_cap_derate` if not specified. Availaibility can |
-    | also be more than 1.                                                    |
+    | timeline) of the availability iteration; in the database, a project's   |
+    | rows can also be keyed by the weather and/or hydro iteration (e.g.      |
+    | outages drawn against weather-dependent forced outage rates). Defaults  |
+    | to the project's :code:`avl_exog_default_cap_derate` if not specified.  |
+    | Availaibility can also be more than 1.                                  |
     +-------------------------------------------------------------------------+
     | | :code:`avl_exog_default_cap_derate`                                   |
     | | *Defined over*: :code:`AVL_EXOG`                                      |
@@ -506,6 +508,94 @@ def load_model_data(
 ###############################################################################
 
 
+def get_outage_iteration_config_sql(subscenarios):
+    """
+    :return: SQL selecting (project, exogenous_availability_outage_scenario_id,
+        varies_by_weather_iteration, varies_by_hydro_iteration) for the
+        portfolio's exogenous-availability projects with an outage
+        derate subscenario
+
+    Whether a project's outage derates vary by weather and hydro
+    iteration comes from
+    inputs_project_availability_exogenous_outage_iterations; a project
+    without a row varies by neither, i.e. its rows sit at iteration 0.
+    """
+    return f"""
+        SELECT av.project,
+        av.exogenous_availability_outage_scenario_id,
+        COALESCE(it.varies_by_weather_iteration, 0)
+            AS varies_by_weather_iteration,
+        COALESCE(it.varies_by_hydro_iteration, 0)
+            AS varies_by_hydro_iteration
+        FROM inputs_project_availability AS av
+        LEFT JOIN inputs_project_availability_exogenous_outage_iterations
+            AS it
+        USING (project, exogenous_availability_outage_scenario_id)
+        WHERE av.project_availability_scenario_id
+            = {subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID}
+        AND av.availability_type = 'exogenous'
+        AND av.exogenous_availability_outage_scenario_id IS NOT NULL
+        -- Portfolio projects only
+        AND av.project IN (
+            SELECT project FROM inputs_project_portfolios
+            WHERE project_portfolio_scenario_id
+                = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
+        )
+    """
+
+
+def check_outage_iteration_config(
+    subscenarios, weather_iteration, hydro_iteration, conn
+):
+    """
+    Raise if a project's outage derates vary by an iteration the run
+    does not have (iteration 0), the same guard the operational
+    characteristics iteration inputs apply.
+    """
+    conditions = []
+    if weather_iteration == 0:
+        conditions.append("varies_by_weather_iteration")
+    if hydro_iteration == 0:
+        conditions.append("varies_by_hydro_iteration")
+    if not conditions:
+        return
+
+    offending = conn.execute(f"""
+        SELECT project, varies_by_weather_iteration, varies_by_hydro_iteration
+        FROM ({get_outage_iteration_config_sql(subscenarios)})
+        WHERE {" OR ".join(conditions)}
+        ORDER BY project
+        ;""").fetchall()
+    if offending:
+        raise ValueError(
+            f"The outage derates of projects "
+            f"{[prj for prj, _, _ in offending]} vary by an iteration "
+            f"(varies_by_weather_iteration, varies_by_hydro_iteration) = "
+            f"{[(w, h) for _, w, h in offending]} but the run has "
+            f"weather_iteration={weather_iteration} and "
+            f"hydro_iteration={hydro_iteration}. Projects should not vary "
+            f"by an iteration the scenario does not have."
+        )
+
+
+def get_unread_outage_rows(subscenarios, conn):
+    """
+    :return: list of (project, weather_iteration, hydro_iteration) of
+        outage derate rows at a non-zero weather or hydro iteration of
+        projects whose derates are not flagged to vary by it; such rows are
+        never read
+    """
+    return conn.execute(f"""
+        SELECT DISTINCT project, weather_iteration, hydro_iteration
+        FROM inputs_project_availability_exogenous_outage
+        JOIN ({get_outage_iteration_config_sql(subscenarios)}) AS cfg
+        USING (project, exogenous_availability_outage_scenario_id)
+        WHERE (NOT cfg.varies_by_weather_iteration AND weather_iteration != 0)
+        OR (NOT cfg.varies_by_hydro_iteration AND hydro_iteration != 0)
+        ORDER BY project, weather_iteration, hydro_iteration
+        ;""").fetchall()
+
+
 def get_bt_hrz_derate_sql(
     subscenarios,
     subproblem,
@@ -588,39 +678,33 @@ def get_inputs_from_database(
     :return:
     """
 
-    # Derate by timepoint
+    # Derate by timepoint, read at the run's weather and hydro iteration for
+    # the projects whose data varies by them and at iteration 0 otherwise
+    check_outage_iteration_config(
+        subscenarios=subscenarios,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        conn=conn,
+    )
     ind_sql = f"""
         SELECT project, timepoint, availability_derate_outage, 
         hyb_stor_cap_availability_derate_outage
         FROM inputs_project_availability_exogenous_outage
-        -- Portfolio projects only
-        WHERE project IN (
-            SELECT project FROM inputs_project_portfolios
-            WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
-        )
-        -- Projects from this availability ID and type only
-        AND project IN (
-            SELECT project
-            FROM inputs_project_availability
-            WHERE project_availability_scenario_id = {subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID}
-            AND availability_type = 'exogenous'
-            AND exogenous_availability_outage_scenario_id IS NOT NULL
-        )
-        -- Relevant optype opchar ID
-        AND (project, exogenous_availability_outage_scenario_id) IN (
-            SELECT project, exogenous_availability_outage_scenario_id
-            FROM inputs_project_availability
-            WHERE project_availability_scenario_id = {subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID}
-        )
+        JOIN ({get_outage_iteration_config_sql(subscenarios)}) AS cfg
+        USING (project, exogenous_availability_outage_scenario_id)
         -- Relevant temporal index
-        AND timepoint IN (
+        WHERE timepoint IN (
             SELECT timepoint
             FROM inputs_temporal
             WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
             AND subproblem_id = {subproblem}
             AND stage_id = {stage}
         )
-        -- Get the correct availability iteration
+        -- Get the correct iterations
+        AND weather_iteration = CASE WHEN cfg.varies_by_weather_iteration
+            THEN {weather_iteration} ELSE 0 END
+        AND hydro_iteration = CASE WHEN cfg.varies_by_hydro_iteration
+            THEN {hydro_iteration} ELSE 0 END
         AND availability_iteration = {availability_iteration}
         -- Get the stage's data
         AND stage_id = {stage}
@@ -1013,6 +1097,28 @@ def validate_inputs(
             severity="High",
             errors=validate_values(df, value_cols, min=0, max=1),
         )
+
+    # Rows at an iteration the project's derates are not flagged to vary by
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_availability_exogenous_outage",
+        severity="High",
+        errors=[
+            f"Project {prj} has rows at weather_iteration {w} and "
+            f"hydro_iteration {h} but is not flagged to vary by that "
+            f"iteration in "
+            f"inputs_project_availability_exogenous_outage_iterations, "
+            f"so they are never read."
+            for prj, w, h in get_unread_outage_rows(subscenarios, conn)
+        ],
+    )
 
     # Project defaults for the outage derate
     default_df = cursor_to_df(default_availabilities)
