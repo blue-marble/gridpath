@@ -442,7 +442,7 @@ def simulate_project_availability(
             "availability_iteration": [iteration_n] * len(tmps),
             "stage_id": [stage_id] * len(tmps),
             "timepoint": tmps,
-            "availability_derate_independent": availability_derate,
+            "availability_derate_outage": availability_derate,
             "hyb_stor_cap_availability_derate": hyb_stor_derate,
         }
     )
@@ -452,7 +452,7 @@ def simulate_project_availability(
         # For non-hybrids, find rows with (!=1, None)
         export_df_non_hyb = export_df[
             (
-                (export_df["availability_derate_independent"] != 1)
+                (export_df["availability_derate_outage"] != 1)
                 & (export_df["hyb_stor_cap_availability_derate"].isna())
             )
         ]
@@ -464,7 +464,7 @@ def simulate_project_availability(
             (
                 (export_df["hyb_stor_cap_availability_derate"].notna())
                 & (
-                    (export_df["availability_derate_independent"] != 1)
+                    (export_df["availability_derate_outage"] != 1)
                     | ((export_df["hyb_stor_cap_availability_derate"] != 1))
                 )
             )
@@ -744,8 +744,8 @@ def main(args=None):
             "availability_iteration",
             "stage_id",
             "timepoint",
-            "availability_derate_independent",
-            "hyb_stor_cap_availability_derate_independent",
+            "availability_derate_outage",
+            "hyb_stor_cap_availability_derate_outage",
         ]
 
         filepath = os.path.join(

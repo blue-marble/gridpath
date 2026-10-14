@@ -21,8 +21,8 @@ operational decision variables will therefore also be constrained to 0 in the
 optimization.
 
 A project-level :code:`default_exogenous_availability` (in the
-:code:`inputs_project_availability` table) replaces 1 as the independent
-timepoint derate wherever the project has no timepoint-level independent
+:code:`inputs_project_availability` table) replaces 1 as the outage
+timepoint derate wherever the project has no timepoint-level outage
 derate, so a single value can apply to all timepoints; the other derates
 (weather, balancing type - horizon, monthly) still multiply it. It does not
 apply to the hybrid storage capacity derate.
@@ -92,18 +92,18 @@ def add_model_components(
     +-------------------------------------------------------------------------+
 
 
-    |
+                                                                              |
 
     +-------------------------------------------------------------------------+
     | Optional Input Params                                                   |
     +=========================================================================+
-    | | :code:`avl_exog_cap_derate_independent`                               |
+    | | :code:`avl_exog_cap_derate_outage`                                    |
     | | *Defined over*: :code:`AVL_EXOG_OPR_TMPS`                             |
     | | *Within*: :code:`NonNegativeReals`                                    |
     | | *Default*: :code:`1`                                                  |
     |                                                                         |
-    | The pre-specified availability derate (e.g. for maintenance/planned     |
-    | outages) that does not depend on weather. Defaults to the project's     |
+    | The availability derate from planned or forced outages (an outage       |
+    | timeline). Defaults to the project's                                    |
     | :code:`avl_exog_default_cap_derate` if not specified. Availaibility can |
     | also be more than 1.                                                    |
     +-------------------------------------------------------------------------+
@@ -112,16 +112,16 @@ def add_model_components(
     | | *Within*: :code:`NonNegativeReals`                                    |
     | | *Default*: :code:`1`                                                  |
     |                                                                         |
-    | The project's independent availability derate in the timepoints         |
-    | without a timepoint-level :code:`avl_exog_cap_derate_independent`.      |
+    | The project's outage derate in the timepoints                           |
+    | without a timepoint-level :code:`avl_exog_cap_derate_outage`.           |
     +-------------------------------------------------------------------------+
     | | :code:`avl_exog_cap_derate_weather`                                   |
     | | *Defined over*: :code:`AVL_EXOG_OPR_TMPS`                             |
     | | *Within*: :code:`NonNegativeReals`                                    |
     | | *Default*: :code:`1`                                                  |
     |                                                                         |
-    | The pre-specified availability derate (e.g. for maintenance/planned     |
-    | outages) that depends on weather. Defaults to 1 if not specified.       |
+    | The availability derate that follows the weather, e.g. reduced          |
+    | capability at high ambient temperature. Defaults to 1 if not specified. |
     | Availaibility can also be more than 1.                                  |
     +-------------------------------------------------------------------------+
     | | :code:`avl_exog_mnth_derate`                                          |
@@ -171,7 +171,7 @@ def add_model_components(
         dimen=3, within=m.PROJECTS * m.BLN_TYPE_HRZS
     )
 
-    m.AVL_EXOG_PRJ_BT_HRZ_W_INDEPENDENT_DERATES = Set(
+    m.AVL_EXOG_PRJ_BT_HRZ_W_OUTAGE_DERATES = Set(
         dimen=3, within=m.PROJECTS * m.BLN_TYPE_HRZS
     )
 
@@ -185,7 +185,7 @@ def add_model_components(
     # For hybrids, this is the derate applied to the generator component
     # The default is replaced with the project defaults in load_model_data
     # if any are specified
-    m.avl_exog_cap_derate_independent = Param(
+    m.avl_exog_cap_derate_outage = Param(
         m.AVL_EXOG_OPR_TMPS, within=NonNegativeReals, default=1
     )
 
@@ -193,7 +193,7 @@ def add_model_components(
         m.AVL_EXOG_OPR_TMPS, within=NonNegativeReals, default=1
     )
 
-    m.avl_exog_hyb_stor_cap_derate_independent = Param(
+    m.avl_exog_hyb_stor_cap_derate_outage = Param(
         m.AVL_EXOG_OPR_TMPS, within=NonNegativeReals, default=1
     )
 
@@ -201,8 +201,8 @@ def add_model_components(
         m.AVL_EXOG_PRJ_BT_HRZ_W_WEATHER_DERATES, within=NonNegativeReals, default=1
     )
 
-    m.avl_exog_cap_derate_independent_bt_hrz = Param(
-        m.AVL_EXOG_PRJ_BT_HRZ_W_INDEPENDENT_DERATES, within=NonNegativeReals, default=1
+    m.avl_exog_cap_derate_outage_bt_hrz = Param(
+        m.AVL_EXOG_PRJ_BT_HRZ_W_OUTAGE_DERATES, within=NonNegativeReals, default=1
     )
 
     m.avl_exog_mnth_derate = Param(
@@ -243,21 +243,21 @@ def add_model_components(
         default=1,
     )
 
-    def hrz_cap_derate_independent_by_tmp_init(mod):
+    def hrz_cap_derate_outage_by_tmp_init(mod):
         """
         Note that if timepoints fall within multiple bt-hrz with derates,
         the bt-hrz derates will be additive.
         """
         availability_reduction_dict = {}
-        for prj, bt, hrz in mod.AVL_EXOG_PRJ_BT_HRZ_W_INDEPENDENT_DERATES:
+        for prj, bt, hrz in mod.AVL_EXOG_PRJ_BT_HRZ_W_OUTAGE_DERATES:
             for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]:
                 if (prj, tmp) not in availability_reduction_dict.keys():
                     availability_reduction_dict[(prj, tmp)] = (
-                        1 - mod.avl_exog_cap_derate_independent_bt_hrz[prj, bt, hrz]
+                        1 - mod.avl_exog_cap_derate_outage_bt_hrz[prj, bt, hrz]
                     )
                 else:
                     availability_reduction_dict[(prj, tmp)] += (
-                        1 - mod.avl_exog_cap_derate_independent_bt_hrz[prj, bt, hrz]
+                        1 - mod.avl_exog_cap_derate_outage_bt_hrz[prj, bt, hrz]
                     )
 
         availability_dict = {
@@ -267,10 +267,10 @@ def add_model_components(
 
         return availability_dict
 
-    m.avl_exog_cap_derate_independent_bt_hrz_by_tmp = Param(
+    m.avl_exog_cap_derate_outage_bt_hrz_by_tmp = Param(
         m.AVL_EXOG_OPR_TMPS,
         within=NonNegativeReals,
-        initialize=hrz_cap_derate_independent_by_tmp_init,
+        initialize=hrz_cap_derate_outage_by_tmp_init,
         default=1,
     )
 
@@ -280,10 +280,10 @@ def add_model_components(
 
 
 _TMP_INDEXED_CAP_DERATE_PARAMS = [
-    "avl_exog_cap_derate_independent",
+    "avl_exog_cap_derate_outage",
     "avl_exog_cap_derate_weather",
     "avl_exog_cap_derate_weather_bt_hrz_by_tmp",
-    "avl_exog_cap_derate_independent_bt_hrz_by_tmp",
+    "avl_exog_cap_derate_outage_bt_hrz_by_tmp",
 ]
 
 
@@ -306,9 +306,9 @@ def _active_cap_derate_params(mod):
                 getattr(mod, p)
                 for p in _TMP_INDEXED_CAP_DERATE_PARAMS
                 if any(True for _ in getattr(mod, p).sparse_keys())
-                # The independent derate defaults to the project defaults
+                # The outage derate defaults to the project defaults
                 or (
-                    p == "avl_exog_cap_derate_independent"
+                    p == "avl_exog_cap_derate_outage"
                     and any(True for _ in mod.avl_exog_default_cap_derate.sparse_keys())
                 )
             ],
@@ -324,10 +324,10 @@ def availability_derate_cap_rule(mod, g, tmp):
     The final availability is the product of all derates applied.
 
     derate =
-        mod.avl_exog_cap_derate_independent[g, tmp]
+        mod.avl_exog_cap_derate_outage[g, tmp]
         * mod.avl_exog_cap_derate_weather[g, tmp]
         * mod.avl_exog_cap_derate_weather_bt_hrz_by_tmp[g, tmp]
-        * mod.avl_exog_cap_derate_independent_bt_hrz_by_tmp[g, tmp]
+        * mod.avl_exog_cap_derate_outage_bt_hrz_by_tmp[g, tmp]
         * mod.avl_exog_mnth_derate[g, mod.month[tmp]]
 
 
@@ -345,7 +345,7 @@ def availability_derate_cap_rule(mod, g, tmp):
 
 def availability_derate_hyb_stor_cap_rule(mod, g, tmp):
     """ """
-    return mod.avl_exog_hyb_stor_cap_derate_independent[g, tmp]
+    return mod.avl_exog_hyb_stor_cap_derate_outage[g, tmp]
 
 
 # Input-Output
@@ -424,17 +424,17 @@ def load_model_data(
         "inputs",
     )
 
-    availability_independent_file = os.path.join(
+    availability_outage_file = os.path.join(
         input_directory,
-        "project_availability_exogenous_independent.tab",
+        "project_availability_exogenous_outage.tab",
     )
 
-    if os.path.exists(availability_independent_file):
+    if os.path.exists(availability_outage_file):
         data_portal.load(
-            filename=availability_independent_file,
+            filename=availability_outage_file,
             param=(
-                m.avl_exog_cap_derate_independent,
-                m.avl_exog_hyb_stor_cap_derate_independent,
+                m.avl_exog_cap_derate_outage,
+                m.avl_exog_hyb_stor_cap_derate_outage,
             ),
         )
 
@@ -450,16 +450,16 @@ def load_model_data(
         )
 
     # Balancing type - horizon inputs
-    availability_independent_bt_hrz_file = os.path.join(
+    availability_outage_bt_hrz_file = os.path.join(
         input_directory,
-        "project_availability_exogenous_independent_bt_hrz.tab",
+        "project_availability_exogenous_outage_bt_hrz.tab",
     )
 
-    if os.path.exists(availability_independent_bt_hrz_file):
+    if os.path.exists(availability_outage_bt_hrz_file):
         data_portal.load(
-            filename=availability_independent_bt_hrz_file,
-            index=m.AVL_EXOG_PRJ_BT_HRZ_W_INDEPENDENT_DERATES,
-            param=m.avl_exog_cap_derate_independent_bt_hrz,
+            filename=availability_outage_bt_hrz_file,
+            index=m.AVL_EXOG_PRJ_BT_HRZ_W_OUTAGE_DERATES,
+            param=m.avl_exog_cap_derate_outage_bt_hrz,
         )
 
     availability_weather_bt_hrz_file = os.path.join(
@@ -497,7 +497,7 @@ def load_model_data(
         data_portal.load(
             filename=default_derate_file, param=m.avl_exog_default_cap_derate
         )
-        m.avl_exog_cap_derate_independent.set_default(
+        m.avl_exog_cap_derate_outage.set_default(
             lambda mod, prj, tmp: mod.avl_exog_default_cap_derate[prj]
         )
 
@@ -590,9 +590,9 @@ def get_inputs_from_database(
 
     # Derate by timepoint
     ind_sql = f"""
-        SELECT project, timepoint, availability_derate_independent, 
-        hyb_stor_cap_availability_derate_independent
-        FROM inputs_project_availability_exogenous_independent
+        SELECT project, timepoint, availability_derate_outage, 
+        hyb_stor_cap_availability_derate_outage
+        FROM inputs_project_availability_exogenous_outage
         -- Portfolio projects only
         WHERE project IN (
             SELECT project FROM inputs_project_portfolios
@@ -604,11 +604,11 @@ def get_inputs_from_database(
             FROM inputs_project_availability
             WHERE project_availability_scenario_id = {subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID}
             AND availability_type = 'exogenous'
-            AND exogenous_availability_independent_scenario_id IS NOT NULL
+            AND exogenous_availability_outage_scenario_id IS NOT NULL
         )
         -- Relevant optype opchar ID
-        AND (project, exogenous_availability_independent_scenario_id) IN (
-            SELECT project, exogenous_availability_independent_scenario_id
+        AND (project, exogenous_availability_outage_scenario_id) IN (
+            SELECT project, exogenous_availability_outage_scenario_id
             FROM inputs_project_availability
             WHERE project_availability_scenario_id = {subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID}
         )
@@ -628,7 +628,7 @@ def get_inputs_from_database(
     """
 
     c1 = conn.cursor()
-    independent_availabilities = c1.execute(ind_sql)
+    outage_availabilities = c1.execute(ind_sql)
 
     # Derate by timepoint and weather
     weather_sql = f"""
@@ -675,8 +675,8 @@ def get_inputs_from_database(
     # balancing type - horizon queries below
     for bt_hrz_table, bt_hrz_scenario_id_column in [
         (
-            "inputs_project_availability_exogenous_independent_bt_hrz",
-            "exogenous_availability_independent_bt_hrz_scenario_id",
+            "inputs_project_availability_exogenous_outage_bt_hrz",
+            "exogenous_availability_outage_bt_hrz_scenario_id",
         ),
         (
             "inputs_project_availability_exogenous_weather_bt_hrz",
@@ -700,19 +700,19 @@ def get_inputs_from_database(
             )""",
         )
 
-    # Derates by balancing type - horizon, independent and weather-dependent
+    # Derates by balancing type - horizon, outage and weather-dependent
     bt_hrz_ind_sql = get_bt_hrz_derate_sql(
         subscenarios=subscenarios,
         subproblem=subproblem,
         stage=stage,
-        table="inputs_project_availability_exogenous_independent_bt_hrz",
-        scenario_id_column="exogenous_availability_independent_bt_hrz_scenario_id",
-        derate_column="availability_derate_independent_bt_hrz",
+        table="inputs_project_availability_exogenous_outage_bt_hrz",
+        scenario_id_column="exogenous_availability_outage_bt_hrz_scenario_id",
+        derate_column="availability_derate_outage_bt_hrz",
         iteration_column="availability_iteration",
         iteration=availability_iteration,
     )
     c3 = conn.cursor()
-    bt_hrz_independent_availabilities = c3.execute(bt_hrz_ind_sql)
+    bt_hrz_outage_availabilities = c3.execute(bt_hrz_ind_sql)
 
     bt_hrz_weather_sql = get_bt_hrz_derate_sql(
         subscenarios=subscenarios,
@@ -763,7 +763,7 @@ def get_inputs_from_database(
     c5 = conn.cursor()
     monthly_availabilities = c5.execute(mnth_sql)
 
-    # Project defaults for the independent derate
+    # Project defaults for the outage derate
     default_sql = f"""
         SELECT project, default_exogenous_availability
         FROM inputs_project_availability
@@ -782,9 +782,9 @@ def get_inputs_from_database(
     default_availabilities = c6.execute(default_sql)
 
     return (
-        independent_availabilities,
+        outage_availabilities,
         weather_availabilities,
-        bt_hrz_independent_availabilities,
+        bt_hrz_outage_availabilities,
         bt_hrz_weather_availabilities,
         monthly_availabilities,
         default_availabilities,
@@ -822,9 +822,9 @@ def write_model_inputs(
     )
 
     (
-        independent_availabilities,
+        outage_availabilities,
         weather_availabilities,
-        independent_availabilities_bt_hrz,
+        outage_availabilities_bt_hrz,
         weather_availabilities_bt_hrz,
         monthly_availabilities,
         default_availabilities,
@@ -858,8 +858,8 @@ def write_model_inputs(
         availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
-        fname="project_availability_exogenous_independent.tab",
-        data=independent_availabilities,
+        fname="project_availability_exogenous_outage.tab",
+        data=outage_availabilities,
         replace_nulls=True,
     )
 
@@ -870,8 +870,8 @@ def write_model_inputs(
         availability_iteration=availability_iteration,
         subproblem=subproblem,
         stage=stage,
-        fname="project_availability_exogenous_independent_bt_hrz.tab",
-        data=independent_availabilities_bt_hrz,
+        fname="project_availability_exogenous_outage_bt_hrz.tab",
+        data=outage_availabilities_bt_hrz,
         replace_nulls=True,
     )
 
@@ -933,9 +933,9 @@ def validate_inputs(
     :return:
     """
     (
-        independent_availabilities,
+        outage_availabilities,
         weather_availabilities,
-        independent_availabilities_bt_hrz,
+        outage_availabilities_bt_hrz,
         weather_availabilities_bt_hrz,
         monthly_availabilities,
         default_availabilities,
@@ -950,16 +950,16 @@ def validate_inputs(
         conn,
     )
 
-    df = cursor_to_df(independent_availabilities)
+    df = cursor_to_df(outage_availabilities)
     idx_cols = ["project", "timepoint"]
-    value_cols = ["availability_derate_independent"]
+    value_cols = ["availability_derate_outage"]
 
     # Check data types availability
     expected_dtypes = get_expected_dtypes(
         conn,
         [
             "inputs_project_availability",
-            "inputs_project_availability_exogenous_independent",
+            "inputs_project_availability_exogenous_outage",
         ],
     )
     dtype_errors, error_columns = validate_dtypes(df, expected_dtypes)
@@ -972,7 +972,7 @@ def validate_inputs(
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
-        db_table="inputs_project_availability_exogenous_independent",
+        db_table="inputs_project_availability_exogenous_outage",
         severity="High",
         errors=dtype_errors,
     )
@@ -993,7 +993,7 @@ def validate_inputs(
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
-        db_table="inputs_project_availability_exogenous_independent",
+        db_table="inputs_project_availability_exogenous_outage",
         severity="Low",
         errors=validate_missing_inputs(df, value_cols, idx_cols, msg),
     )
@@ -1009,12 +1009,12 @@ def validate_inputs(
             subproblem_id=subproblem,
             stage_id=stage,
             gridpath_module=__name__,
-            db_table="inputs_project_availability_exogenous_independent",
+            db_table="inputs_project_availability_exogenous_outage",
             severity="High",
             errors=validate_values(df, value_cols, min=0, max=1),
         )
 
-    # Project defaults for the independent derate
+    # Project defaults for the outage derate
     default_df = cursor_to_df(default_availabilities)
     default_dtype_errors, default_error_columns = validate_dtypes(
         default_df, expected_dtypes

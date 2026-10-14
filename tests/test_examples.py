@@ -2597,7 +2597,7 @@ class TestExamples(unittest.TestCase):
         "test_w_bt_hrz_avl" (same objective), with the days of month in the
         temporal structure, and Coal's balancing type - horizon derates on
         the built-in day balancing types: the weather-dependent derate as a
-        day-of-year row, the independent derate as a day-of-year row (with a
+        day-of-year row, the outage derate as a day-of-year row (with a
         different value) that the explicit 20200101 row overrides.
         :return:
         """
@@ -2608,7 +2608,7 @@ class TestExamples(unittest.TestCase):
         """
         Check validation and objective function value of
         "test_w_bt_hrz_avl_w_default_avl" example: as "test_w_bt_hrz_avl"
-        (same objective), with Coal's flat 0.95 timepoint independent derate
+        (same objective), with Coal's flat 0.95 timepoint outage derate
         given once as the project's default_exogenous_availability instead.
         :return:
         """

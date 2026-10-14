@@ -14,8 +14,8 @@
 
 """
 The project-level default_exogenous_availability: it replaces 1 as the
-independent timepoint derate where the project has no timepoint-level
-independent derate, explicit timepoint rows take precedence, and the other
+outage timepoint derate where the project has no timepoint-level
+outage derate, explicit timepoint rows take precedence, and the other
 derates still multiply it.
 """
 
@@ -43,7 +43,7 @@ DB_SCHEMA_FILE = os.path.join(
 class TestExogenousDefaultModel(unittest.TestCase):
     """
     Copies the unit-test fixture and adds project defaults for Coal (which
-    has timepoint-level independent derates) and Wind (which has none).
+    has timepoint-level outage derates) and Wind (which has none).
     """
 
     def setUp(self):
@@ -74,13 +74,13 @@ class TestExogenousDefaultModel(unittest.TestCase):
         )
         return m.create_instance(data)
 
-    def test_independent_derate_falls_back_to_default(self):
+    def test_outage_derate_falls_back_to_default(self):
         instance = self.get_instance()
         explicit = pd.read_csv(
             os.path.join(
                 self.test_data_dir,
                 "inputs",
-                "project_availability_exogenous_independent.tab",
+                "project_availability_exogenous_outage.tab",
             ),
             sep="\t",
         )
@@ -89,7 +89,7 @@ class TestExogenousDefaultModel(unittest.TestCase):
             for p, tmp, d in zip(
                 explicit.project,
                 explicit.timepoint,
-                explicit.availability_derate_independent,
+                explicit.availability_derate_outage,
             )
         }
         defaults = {"Coal": 0.8, "Wind": 0.9}
@@ -99,7 +99,7 @@ class TestExogenousDefaultModel(unittest.TestCase):
             for (p, tmp) in instance.AVL_EXOG_OPR_TMPS
         }
         actual = {
-            (p, tmp): instance.avl_exog_cap_derate_independent[p, tmp]
+            (p, tmp): instance.avl_exog_cap_derate_outage[p, tmp]
             for (p, tmp) in instance.AVL_EXOG_OPR_TMPS
         }
         self.assertDictEqual(expected, actual)
@@ -116,10 +116,10 @@ class TestExogenousDefaultModel(unittest.TestCase):
         instance = self.get_instance()
         for p, tmp in instance.AVL_EXOG_OPR_TMPS:
             expected = (
-                instance.avl_exog_cap_derate_independent[p, tmp]
+                instance.avl_exog_cap_derate_outage[p, tmp]
                 * instance.avl_exog_cap_derate_weather[p, tmp]
                 * instance.avl_exog_cap_derate_weather_bt_hrz_by_tmp[p, tmp]
-                * instance.avl_exog_cap_derate_independent_bt_hrz_by_tmp[p, tmp]
+                * instance.avl_exog_cap_derate_outage_bt_hrz_by_tmp[p, tmp]
                 * instance.avl_exog_mnth_derate[p, instance.month[tmp]]
             )
             self.assertAlmostEqual(
@@ -131,9 +131,7 @@ class TestExogenousDefaultModel(unittest.TestCase):
             / (
                 instance.avl_exog_cap_derate_weather["Wind", wind_tmp]
                 * instance.avl_exog_cap_derate_weather_bt_hrz_by_tmp["Wind", wind_tmp]
-                * instance.avl_exog_cap_derate_independent_bt_hrz_by_tmp[
-                    "Wind", wind_tmp
-                ]
+                * instance.avl_exog_cap_derate_outage_bt_hrz_by_tmp["Wind", wind_tmp]
                 * instance.avl_exog_mnth_derate["Wind", instance.month[wind_tmp]]
             ),
             0.9,
@@ -145,12 +143,10 @@ class TestExogenousDefaultModel(unittest.TestCase):
             if p in ("Coal", "Wind"):
                 self.assertNotIn(
                     (p, tmp),
-                    list(
-                        instance.avl_exog_hyb_stor_cap_derate_independent.sparse_keys()
-                    ),
+                    list(instance.avl_exog_hyb_stor_cap_derate_outage.sparse_keys()),
                 )
                 self.assertEqual(
-                    instance.avl_exog_hyb_stor_cap_derate_independent[p, tmp], 1
+                    instance.avl_exog_hyb_stor_cap_derate_outage[p, tmp], 1
                 )
 
 
