@@ -437,8 +437,11 @@ def simulate_project_availability(
         historical_data=historical_data,
     )
 
+    # The outages do not (yet) vary by weather or hydro iteration
     export_df = pd.DataFrame(
         {
+            "weather_iteration": [0] * len(tmps),
+            "hydro_iteration": [0] * len(tmps),
             "availability_iteration": [iteration_n] * len(tmps),
             "stage_id": [stage_id] * len(tmps),
             "timepoint": tmps,
@@ -741,6 +744,8 @@ def main(args=None):
         # Write header if we are overwriting the file or it doesn't exist
         overwrite = parsed_args.overwrite
         header = [
+            "weather_iteration",
+            "hydro_iteration",
             "availability_iteration",
             "stage_id",
             "timepoint",
@@ -799,11 +804,13 @@ def main(args=None):
             sort_csv_file(
                 filepath=filepath,
                 columns_to_sort_by=[
+                    "weather_iteration",
+                    "hydro_iteration",
                     "availability_iteration",
                     "stage_id",
                     "timepoint",
                 ],
-                ascending=[True, True, True],
+                ascending=[True, True, True, True, True],
             )
 
     conn.close()
