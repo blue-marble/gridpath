@@ -96,25 +96,25 @@ class TestBtHrzInputScoping(unittest.TestCase):
 
             INSERT INTO inputs_project_availability
             (project_availability_scenario_id, project, availability_type,
-             exogenous_availability_independent_scenario_id,
-             exogenous_availability_independent_bt_hrz_scenario_id)
+             exogenous_availability_outage_scenario_id,
+             exogenous_availability_outage_bt_hrz_scenario_id)
             VALUES (1, 'Water', 'exogenous', 1, 1);
             """)
         # Stage-specific derates
         for stage, derate in [(1, 0.7), (2, 0.9)]:
             for tmp in [1, 2, 3, 4]:
                 self.conn.execute(
-                    """INSERT INTO inputs_project_availability_exogenous_independent
-                    (project, exogenous_availability_independent_scenario_id,
+                    """INSERT INTO inputs_project_availability_exogenous_outage
+                    (project, exogenous_availability_outage_scenario_id,
                      availability_iteration, stage_id, timepoint,
-                     availability_derate_independent)
+                     availability_derate_outage)
                     VALUES ('Water', 1, 0, ?, ?, ?)""",
                     (stage, tmp, derate),
                 )
             for hrz in [1, 2]:
                 self.conn.execute(
                     """INSERT INTO
-                    inputs_project_availability_exogenous_independent_bt_hrz
+                    inputs_project_availability_exogenous_outage_bt_hrz
                     VALUES ('Water', 1, 0, ?, 'day', ?, ?)""",
                     (stage, hrz, derate),
                 )

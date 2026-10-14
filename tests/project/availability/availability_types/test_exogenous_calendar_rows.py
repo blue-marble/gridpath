@@ -96,7 +96,7 @@ class TestExogenousCalendarRows(unittest.TestCase):
 
             INSERT INTO inputs_project_availability
             (project_availability_scenario_id, project, availability_type,
-             exogenous_availability_independent_bt_hrz_scenario_id,
+             exogenous_availability_outage_bt_hrz_scenario_id,
              exogenous_availability_weather_bt_hrz_scenario_id)
             VALUES (1, 'Coal', 'exogenous', 1, NULL),
                    (1, 'Gas', 'exogenous', NULL, 1);
@@ -105,7 +105,7 @@ class TestExogenousCalendarRows(unittest.TestCase):
         # a partial derate; a 0.9 derate in June (month-of-year row) on the
         # month balancing type; a row for another stage that doesn't apply
         self.conn.executemany(
-            """INSERT INTO inputs_project_availability_exogenous_independent_bt_hrz
+            """INSERT INTO inputs_project_availability_exogenous_outage_bt_hrz
             VALUES ('Coal', 1, 0, ?, ?, ?, ?)""",
             [
                 (1, DAY_BT, 603, 0.0),
@@ -135,7 +135,7 @@ class TestExogenousCalendarRows(unittest.TestCase):
         return sorted(bt_hrz_ind.fetchall()), sorted(bt_hrz_weather.fetchall())
 
     def test_calendar_rows_apply_in_every_period(self):
-        independent, weather = self.get_bt_hrz_derates()
+        outage, weather = self.get_bt_hrz_derates()
         self.assertListEqual(
             [
                 ("Coal", DAY_BT, 20200603, 0.0),
@@ -145,7 +145,7 @@ class TestExogenousCalendarRows(unittest.TestCase):
                 ("Coal", MONTH_BT, 202006, 0.9),
                 ("Coal", MONTH_BT, 203006, 0.9),
             ],
-            independent,
+            outage,
         )
         self.assertListEqual(
             [("Gas", DAY_BT, 20200603, 0.8), ("Gas", DAY_BT, 20300603, 0.8)],
@@ -157,9 +157,9 @@ class TestExogenousCalendarRows(unittest.TestCase):
         Stage 2's explicit 20200603 row isn't read in stage 1 and doesn't
         block stage 1's day-of-year row.
         """
-        independent, _ = self.get_bt_hrz_derates()
-        self.assertIn(("Coal", DAY_BT, 20200603, 0.0), independent)
-        self.assertNotIn(("Coal", DAY_BT, 20200603, 0.3), independent)
+        outage, _ = self.get_bt_hrz_derates()
+        self.assertIn(("Coal", DAY_BT, 20200603, 0.0), outage)
+        self.assertNotIn(("Coal", DAY_BT, 20200603, 0.3), outage)
 
 
 if __name__ == "__main__":

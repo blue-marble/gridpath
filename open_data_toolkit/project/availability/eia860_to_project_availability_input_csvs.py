@@ -415,9 +415,9 @@ def get_project_availability(
     SELECT {project_name_str} AS project,
     'exogenous' AS availability_type,
     NULL AS default_exogenous_availability,
-    NULL AS exogenous_availability_independent_scenario_id,
+    NULL AS exogenous_availability_outage_scenario_id,
     NULL AS exogenous_availability_weather_scenario_id,
-    NULL AS exogenous_availability_independent_bt_hrz_scenario_id,
+    NULL AS exogenous_availability_outage_bt_hrz_scenario_id,
     NULL AS exogenous_availability_weather_bt_hrz_scenario_id,
     NULL AS exogenous_availability_monthly_scenario_id,
     NULL AS endogenous_availability_scenario_id

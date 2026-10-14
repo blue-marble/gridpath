@@ -60,7 +60,7 @@ create_availability_iteration_input_csvs,n_iterations,4,,
 create_availability_iteration_input_csvs,user_provided_seeding,,1,1
 create_availability_iteration_input_csvs,project_availability_scenario_id,1,,
 create_availability_iteration_input_csvs,project_availability_scenario_name,ra_toolkit,,
-create_availability_iteration_input_csvs,output_directory,./csvs_test_examples/project/availability/exogenous_independent,,
+create_availability_iteration_input_csvs,output_directory,./csvs_test_examples/project/availability/exogenous_outage,,
 create_availability_iteration_input_csvs,overwrite,,1,1
 create_availability_iteration_input_csvs,n_parallel_projects,4,,
 create_availability_iteration_input_csvs,sort,,1,1

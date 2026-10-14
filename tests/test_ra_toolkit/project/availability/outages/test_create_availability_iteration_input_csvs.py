@@ -64,7 +64,7 @@ class TestCreateAvailabilityIterationInputCsvs(unittest.TestCase):
             "--project_availability_scenario_name",
             "ra_toolkit_module_tests",
             "--output_directory",
-            "./csvs_test_examples/project/availability/exogenous_independent",
+            "./csvs_test_examples/project/availability/exogenous_outage",
             "--quiet",
             "--overwrite",
             "--user_provided_seeding",
@@ -78,7 +78,7 @@ class TestCreateAvailabilityIterationInputCsvs(unittest.TestCase):
         # every project's iterations actually landed
         for project in ["Batteries", "Gas", "Hybrid", "TestOnes"]:
             df = pd.read_csv(
-                "./csvs_test_examples/project/availability/exogenous_independent"
+                "./csvs_test_examples/project/availability/exogenous_outage"
                 f"/{project}-3-ra_toolkit_module_tests.csv"
             )
             self.assertEqual(

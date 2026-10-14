@@ -3636,40 +3636,40 @@ CREATE TABLE inputs_project_availability
     project                                               VARCHAR(64),
     availability_type                                     VARCHAR(32),
     default_exogenous_availability                        FLOAT,
-    exogenous_availability_independent_scenario_id        INTEGER,
+    exogenous_availability_outage_scenario_id        INTEGER,
     exogenous_availability_weather_scenario_id            INTEGER,
-    exogenous_availability_independent_bt_hrz_scenario_id INTEGER,
+    exogenous_availability_outage_bt_hrz_scenario_id INTEGER,
     exogenous_availability_weather_bt_hrz_scenario_id     INTEGER,
     exogenous_availability_monthly_scenario_id            INTEGER,
     endogenous_availability_scenario_id                   INTEGER,
     PRIMARY KEY (project_availability_scenario_id, project, availability_type)
 );
 
-DROP TABLE IF EXISTS subscenarios_project_availability_exogenous_independent;
-CREATE TABLE subscenarios_project_availability_exogenous_independent
+DROP TABLE IF EXISTS subscenarios_project_availability_exogenous_outage;
+CREATE TABLE subscenarios_project_availability_exogenous_outage
 (
     project                                        VARCHAR(64),
-    exogenous_availability_independent_scenario_id INTEGER,
+    exogenous_availability_outage_scenario_id INTEGER,
     name                                           VARCHAR(32),
     description                                    VARCHAR(128),
-    PRIMARY KEY (project, exogenous_availability_independent_scenario_id)
+    PRIMARY KEY (project, exogenous_availability_outage_scenario_id)
 );
 
-DROP TABLE IF EXISTS inputs_project_availability_exogenous_independent;
-CREATE TABLE inputs_project_availability_exogenous_independent
+DROP TABLE IF EXISTS inputs_project_availability_exogenous_outage;
+CREATE TABLE inputs_project_availability_exogenous_outage
 (
     project                                        VARCHAR(64),
-    exogenous_availability_independent_scenario_id INTEGER,
+    exogenous_availability_outage_scenario_id INTEGER,
     availability_iteration                         INTEGER,
     stage_id                                       INTEGER,
     timepoint                                      INTEGER,
-    availability_derate_independent                FLOAT, -- for hybrids, this is the gen av
-    hyb_stor_cap_availability_derate_independent   FLOAT,
-    PRIMARY KEY (project, exogenous_availability_independent_scenario_id,
+    availability_derate_outage                FLOAT, -- for hybrids, this is the gen av
+    hyb_stor_cap_availability_derate_outage   FLOAT,
+    PRIMARY KEY (project, exogenous_availability_outage_scenario_id,
                  availability_iteration, stage_id, timepoint),
-    FOREIGN KEY (project, exogenous_availability_independent_scenario_id)
-        REFERENCES subscenarios_project_availability_exogenous_independent
-            (project, exogenous_availability_independent_scenario_id)
+    FOREIGN KEY (project, exogenous_availability_outage_scenario_id)
+        REFERENCES subscenarios_project_availability_exogenous_outage
+            (project, exogenous_availability_outage_scenario_id)
 );
 
 DROP TABLE IF EXISTS subscenarios_project_availability_exogenous_weather;
@@ -3699,32 +3699,32 @@ CREATE TABLE inputs_project_availability_exogenous_weather
 );
 
 
-DROP TABLE IF EXISTS subscenarios_project_availability_exogenous_independent_bt_hrz;
-CREATE TABLE subscenarios_project_availability_exogenous_independent_bt_hrz
+DROP TABLE IF EXISTS subscenarios_project_availability_exogenous_outage_bt_hrz;
+CREATE TABLE subscenarios_project_availability_exogenous_outage_bt_hrz
 (
     project                                               VARCHAR(64),
-    exogenous_availability_independent_bt_hrz_scenario_id INTEGER,
+    exogenous_availability_outage_bt_hrz_scenario_id INTEGER,
     name                                                  VARCHAR(32),
     description                                           VARCHAR(128),
-    PRIMARY KEY (project, exogenous_availability_independent_bt_hrz_scenario_id)
+    PRIMARY KEY (project, exogenous_availability_outage_bt_hrz_scenario_id)
 );
 
-DROP TABLE IF EXISTS inputs_project_availability_exogenous_independent_bt_hrz;
-CREATE TABLE inputs_project_availability_exogenous_independent_bt_hrz
+DROP TABLE IF EXISTS inputs_project_availability_exogenous_outage_bt_hrz;
+CREATE TABLE inputs_project_availability_exogenous_outage_bt_hrz
 (
     project                                               VARCHAR(64),
-    exogenous_availability_independent_bt_hrz_scenario_id INTEGER,
+    exogenous_availability_outage_bt_hrz_scenario_id INTEGER,
     availability_iteration                                INTEGER,
     stage_id                                              INTEGER,
     balancing_type_project                                TEXT,
     horizon                                               INTEGER,
-    availability_derate_independent_bt_hrz                FLOAT,
-    PRIMARY KEY (project, exogenous_availability_independent_bt_hrz_scenario_id,
+    availability_derate_outage_bt_hrz                FLOAT,
+    PRIMARY KEY (project, exogenous_availability_outage_bt_hrz_scenario_id,
                  availability_iteration, stage_id, balancing_type_project,
                  horizon),
-    FOREIGN KEY (project, exogenous_availability_independent_bt_hrz_scenario_id)
-        REFERENCES subscenarios_project_availability_exogenous_independent_bt_hrz
-            (project, exogenous_availability_independent_bt_hrz_scenario_id)
+    FOREIGN KEY (project, exogenous_availability_outage_bt_hrz_scenario_id)
+        REFERENCES subscenarios_project_availability_exogenous_outage_bt_hrz
+            (project, exogenous_availability_outage_bt_hrz_scenario_id)
 );
 
 DROP TABLE IF EXISTS subscenarios_project_availability_exogenous_weather_bt_hrz;

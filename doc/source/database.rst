@@ -167,7 +167,7 @@ Project Availability
 Exogenous
 =========
 
-.. automodule:: db.csvs_test_examples.project.availability.exogenous_independent.doc
+.. automodule:: db.csvs_test_examples.project.availability.exogenous_outage.doc
 
 ==========
 Endogenous
