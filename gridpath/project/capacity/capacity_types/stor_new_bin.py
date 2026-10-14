@@ -1,4 +1,5 @@
 # Copyright 2016-2023 Blue Marble Analytics LLC.
+# Copyright 2026 Sylvan Energy Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -54,9 +55,8 @@ from gridpath.auxiliary.validations import (
 )
 from gridpath.common_functions import create_results_df
 from gridpath.project.capacity.capacity_types.common_methods import (
-    relevant_periods_by_project_vintage,
-    project_relevant_periods,
-    project_vintages_relevant_in_period,
+    add_vintage_period_sets,
+    new_build_vintage_rows_sql,
     read_results_file_generic,
     write_summary_results_generic,
     get_units,
@@ -273,24 +273,12 @@ def add_model_components(
     # Derived Sets
     ###########################################################################
 
-    m.OPR_PRDS_BY_STOR_NEW_BIN_VINTAGE = Set(
-        m.STOR_NEW_BIN_VNTS, initialize=operational_periods_by_storage_vintage
-    )
-
-    m.STOR_NEW_BIN_OPR_PRDS = Set(dimen=2, initialize=stor_new_bin_operational_periods)
-
-    m.STOR_NEW_BIN_VNTS_OPR_IN_PRD = Set(
-        m.PERIODS, dimen=2, initialize=stor_new_bin_vintages_operational_in_period
-    )
-
-    m.FIN_PRDS_BY_STOR_NEW_BIN_VINTAGE = Set(
-        m.STOR_NEW_BIN_VNTS, initialize=financial_periods_by_storage_vintage
-    )
-
-    m.STOR_NEW_BIN_FIN_PRDS = Set(dimen=2, initialize=stor_new_bin_financial_periods)
-
-    m.STOR_NEW_BIN_VNTS_FIN_IN_PRD = Set(
-        m.PERIODS, dimen=2, initialize=stor_new_bin_vintages_financial_in_period
+    add_vintage_period_sets(
+        m,
+        prefix="STOR_NEW_BIN",
+        operational_lifetime="stor_new_bin_operational_lifetime_yrs",
+        financial_lifetime="stor_new_bin_financial_lifetime_yrs_by_vintage",
+        in_period_suffix="PRD",
     )
 
     # Variables
@@ -318,60 +306,6 @@ def add_model_components(
     # PRJ_FIN_PRDS set
     getattr(d, capacity_type_financial_period_sets).append(
         "STOR_NEW_BIN_FIN_PRDS",
-    )
-
-
-# Set Rules
-###############################################################################
-
-
-def operational_periods_by_storage_vintage(mod, prj, v):
-    return relevant_periods_by_project_vintage(
-        future_trajectory_periods=getattr(mod, "PERIOD_FUTURE_TRAJECTORY")[v],
-        period_start_year=getattr(mod, "period_start_year"),
-        period_end_year=getattr(mod, "period_end_year"),
-        vintage=v,
-        lifetime_yrs=mod.stor_new_bin_operational_lifetime_yrs[prj, v],
-    )
-
-
-def stor_new_bin_operational_periods(mod):
-    return project_relevant_periods(
-        project_vintages_set=mod.STOR_NEW_BIN_VNTS,
-        relevant_periods_by_project_vintage_set=mod.OPR_PRDS_BY_STOR_NEW_BIN_VINTAGE,
-    )
-
-
-def stor_new_bin_vintages_operational_in_period(mod, p):
-    return project_vintages_relevant_in_period(
-        project_vintage_set=mod.STOR_NEW_BIN_VNTS,
-        relevant_periods_by_project_vintage_set=mod.OPR_PRDS_BY_STOR_NEW_BIN_VINTAGE,
-        period=p,
-    )
-
-
-def financial_periods_by_storage_vintage(mod, prj, v):
-    return relevant_periods_by_project_vintage(
-        future_trajectory_periods=getattr(mod, "PERIOD_FUTURE_TRAJECTORY")[v],
-        period_start_year=getattr(mod, "period_start_year"),
-        period_end_year=getattr(mod, "period_end_year"),
-        vintage=v,
-        lifetime_yrs=mod.stor_new_bin_financial_lifetime_yrs_by_vintage[prj, v],
-    )
-
-
-def stor_new_bin_financial_periods(mod):
-    return project_relevant_periods(
-        project_vintages_set=mod.STOR_NEW_BIN_VNTS,
-        relevant_periods_by_project_vintage_set=mod.FIN_PRDS_BY_STOR_NEW_BIN_VINTAGE,
-    )
-
-
-def stor_new_bin_vintages_financial_in_period(mod, p):
-    return project_vintages_relevant_in_period(
-        project_vintage_set=mod.STOR_NEW_BIN_VNTS,
-        relevant_periods_by_project_vintage_set=mod.FIN_PRDS_BY_STOR_NEW_BIN_VINTAGE,
-        period=p,
     )
 
 
@@ -651,32 +585,17 @@ def get_model_inputs_from_database(
 
     c1 = conn.cursor()
     new_stor_costs = c1.execute(
-        """
-        SELECT project, vintage, operational_lifetime_yrs,
-        fixed_cost_per_mw_yr, fixed_cost_per_stor_mwh_yr, financial_lifetime_yrs,
-        annualized_real_cost_per_mw_yr,
-        annualized_real_cost_per_stor_mwh_yr
-        FROM inputs_project_portfolios
-        
-        CROSS JOIN
-            (SELECT period AS vintage
-            FROM inputs_temporal_periods
-            WHERE temporal_scenario_id = {}) as relevant_vintages
-        
-        INNER JOIN
-            (SELECT project, vintage, operational_lifetime_yrs, 
-            fixed_cost_per_mw_yr, fixed_cost_per_stor_mwh_yr, financial_lifetime_yrs,
-            annualized_real_cost_per_mw_yr, annualized_real_cost_per_stor_mwh_yr
-            FROM inputs_project_new_cost
-            WHERE project_new_cost_scenario_id = {}) as cost
-        USING (project, vintage)
-        
-        WHERE project_portfolio_scenario_id = {}
-        AND capacity_type = 'stor_new_bin'
-        ;""".format(
-            subscenarios.TEMPORAL_SCENARIO_ID,
-            subscenarios.PROJECT_NEW_COST_SCENARIO_ID,
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+        new_build_vintage_rows_sql(
+            subscenarios=subscenarios,
+            capacity_types=["stor_new_bin"],
+            columns=[
+                "operational_lifetime_yrs",
+                "fixed_cost_per_mw_yr",
+                "fixed_cost_per_stor_mwh_yr",
+                "financial_lifetime_yrs",
+                "annualized_real_cost_per_mw_yr",
+                "annualized_real_cost_per_stor_mwh_yr",
+            ],
         )
     )
 

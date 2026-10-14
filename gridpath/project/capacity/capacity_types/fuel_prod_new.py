@@ -1,4 +1,5 @@
 # Copyright 2016-2023 Blue Marble Analytics LLC.
+# Copyright 2026 Sylvan Energy Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -52,9 +53,8 @@ from gridpath.auxiliary.validations import (
 )
 from gridpath.common_functions import create_results_df
 from gridpath.project.capacity.capacity_types.common_methods import (
-    relevant_periods_by_project_vintage,
-    project_relevant_periods,
-    project_vintages_relevant_in_period,
+    add_vintage_period_sets,
+    new_build_vintage_rows_sql,
     read_results_file_generic,
     write_summary_results_generic,
     get_units,
@@ -294,26 +294,12 @@ def add_model_components(
     # Derived Sets
     ###########################################################################
 
-    m.OPR_PRDS_BY_FUEL_PROD_NEW_VINTAGE = Set(
-        m.FUEL_PROD_NEW_VNTS, initialize=operational_periods_by_vintage
-    )
-
-    m.FUEL_PROD_NEW_OPR_PRDS = Set(
-        dimen=2, initialize=fuel_prod_new_operational_periods
-    )
-
-    m.FUEL_PROD_NEW_VNTS_OPR_IN_PRD = Set(
-        m.PERIODS, dimen=2, initialize=fuel_prod_new_vintages_operational_in_period
-    )
-
-    m.FIN_PRDS_BY_FUEL_PROD_NEW_VINTAGE = Set(
-        m.FUEL_PROD_NEW_VNTS, initialize=financial_periods_by_vintage
-    )
-
-    m.FUEL_PROD_NEW_FIN_PRDS = Set(dimen=2, initialize=fuel_prod_new_financial_periods)
-
-    m.FUEL_PROD_NEW_VNTS_FIN_IN_PRD = Set(
-        m.PERIODS, dimen=2, initialize=fuel_prod_new_vintages_financial_in_period
+    add_vintage_period_sets(
+        m,
+        prefix="FUEL_PROD_NEW",
+        operational_lifetime="fuel_prod_new_operational_lifetime_yrs",
+        financial_lifetime="fuel_prod_new_financial_lifetime_yrs",
+        in_period_suffix="PRD",
     )
 
     # Variable
@@ -359,60 +345,6 @@ def add_model_components(
     # PRJ_FIN_PRDS set
     getattr(d, capacity_type_financial_period_sets).append(
         "FUEL_PROD_NEW_FIN_PRDS",
-    )
-
-
-# Set Rules
-###############################################################################
-
-
-def operational_periods_by_vintage(mod, prj, v):
-    return relevant_periods_by_project_vintage(
-        future_trajectory_periods=getattr(mod, "PERIOD_FUTURE_TRAJECTORY")[v],
-        period_start_year=getattr(mod, "period_start_year"),
-        period_end_year=getattr(mod, "period_end_year"),
-        vintage=v,
-        lifetime_yrs=mod.fuel_prod_new_operational_lifetime_yrs[prj, v],
-    )
-
-
-def fuel_prod_new_operational_periods(mod):
-    return project_relevant_periods(
-        project_vintages_set=mod.FUEL_PROD_NEW_VNTS,
-        relevant_periods_by_project_vintage_set=mod.OPR_PRDS_BY_FUEL_PROD_NEW_VINTAGE,
-    )
-
-
-def fuel_prod_new_vintages_operational_in_period(mod, p):
-    return project_vintages_relevant_in_period(
-        project_vintage_set=mod.FUEL_PROD_NEW_VNTS,
-        relevant_periods_by_project_vintage_set=mod.OPR_PRDS_BY_FUEL_PROD_NEW_VINTAGE,
-        period=p,
-    )
-
-
-def financial_periods_by_vintage(mod, prj, v):
-    return relevant_periods_by_project_vintage(
-        future_trajectory_periods=getattr(mod, "PERIOD_FUTURE_TRAJECTORY")[v],
-        period_start_year=getattr(mod, "period_start_year"),
-        period_end_year=getattr(mod, "period_end_year"),
-        vintage=v,
-        lifetime_yrs=mod.fuel_prod_new_financial_lifetime_yrs[prj, v],
-    )
-
-
-def fuel_prod_new_financial_periods(mod):
-    return project_relevant_periods(
-        project_vintages_set=mod.FUEL_PROD_NEW_VNTS,
-        relevant_periods_by_project_vintage_set=mod.FIN_PRDS_BY_FUEL_PROD_NEW_VINTAGE,
-    )
-
-
-def fuel_prod_new_vintages_financial_in_period(mod, p):
-    return project_vintages_relevant_in_period(
-        project_vintage_set=mod.FUEL_PROD_NEW_VNTS,
-        relevant_periods_by_project_vintage_set=mod.FIN_PRDS_BY_FUEL_PROD_NEW_VINTAGE,
-        period=p,
     )
 
 
@@ -696,36 +628,19 @@ def get_model_inputs_from_database(
     c = conn.cursor()
 
     costs = c.execute(
-        """SELECT project, vintage, operational_lifetime_yrs,
-        fuel_production_capacity_fixed_cost_per_fuelunitperhour_yr,
-        fuel_release_capacity_fixed_cost_per_fuelunitperhour_yr,
-        fuel_storage_capacity_fixed_cost_per_fuelunit_yr,
-        financial_lifetime_yrs,
-        fuel_production_capacity_cost_per_fuelunitperhour_yr,
-        fuel_release_capacity_cost_per_fuelunitperhour_yr,
-        fuel_storage_capacity_cost_per_fuelunit_yr
-        FROM inputs_project_portfolios
-        CROSS JOIN
-        (SELECT period AS vintage
-        FROM inputs_temporal_periods
-        WHERE temporal_scenario_id = {temporal_scenario_id}) as relevant_vintages
-        INNER JOIN
-        (SELECT project, vintage, operational_lifetime_yrs,
-        fuel_production_capacity_fixed_cost_per_fuelunitperhour_yr,
-        fuel_release_capacity_fixed_cost_per_fuelunitperhour_yr,
-        fuel_storage_capacity_fixed_cost_per_fuelunit_yr,
-        financial_lifetime_yrs,
-        fuel_production_capacity_cost_per_fuelunitperhour_yr,
-        fuel_release_capacity_cost_per_fuelunitperhour_yr,
-        fuel_storage_capacity_cost_per_fuelunit_yr
-        FROM inputs_project_new_cost
-        WHERE project_new_cost_scenario_id = {project_new_cost_scenario_id}) as cost
-        USING (project, vintage)
-        WHERE project_portfolio_scenario_id = {project_portfolio_scenario_id}
-        AND capacity_type = 'fuel_prod_new';""".format(
-            temporal_scenario_id=subscenarios.TEMPORAL_SCENARIO_ID,
-            project_new_cost_scenario_id=subscenarios.PROJECT_NEW_COST_SCENARIO_ID,
-            project_portfolio_scenario_id=subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+        new_build_vintage_rows_sql(
+            subscenarios=subscenarios,
+            capacity_types=["fuel_prod_new"],
+            columns=[
+                "operational_lifetime_yrs",
+                "fuel_production_capacity_fixed_cost_per_fuelunitperhour_yr",
+                "fuel_release_capacity_fixed_cost_per_fuelunitperhour_yr",
+                "fuel_storage_capacity_fixed_cost_per_fuelunit_yr",
+                "financial_lifetime_yrs",
+                "fuel_production_capacity_cost_per_fuelunitperhour_yr",
+                "fuel_release_capacity_cost_per_fuelunitperhour_yr",
+                "fuel_storage_capacity_cost_per_fuelunit_yr",
+            ],
         )
     )
 

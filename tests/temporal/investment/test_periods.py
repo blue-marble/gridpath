@@ -364,6 +364,67 @@ class TestPeriods(unittest.TestCase):
                 instance.probability_weighted_discount_factor[period],
             )
 
+    def test_period_tree_functions(self):
+        """
+        The plain period tree functions, which the model sets use, give the
+        trajectories of test_period_tree_sets from dictionaries, without a
+        model.
+        """
+        periods = [2020, 2030, 20302, 20401, 20402, 20403]
+        prev_period = {
+            2030: 2020,
+            20302: 2020,
+            20401: 2030,
+            20402: 2030,
+            20403: 20302,
+        }
+        back_to_first = {
+            p: MODULE_BEING_TESTED.periods_back_to_first_period(
+                period=p, first_period=2020, prev_period=prev_period
+            )
+            for p in periods
+        }
+        self.assertDictEqual(
+            {
+                2020: [2020],
+                2030: [2030, 2020],
+                20302: [20302, 2020],
+                20401: [20401, 2030, 2020],
+                20402: [20402, 2030, 2020],
+                20403: [20403, 20302, 2020],
+            },
+            back_to_first,
+        )
+        self.assertDictEqual(
+            {
+                2020: [2020, 2030, 20302, 20401, 20402, 20403],
+                2030: [2030, 20401, 20402],
+                20302: [20302, 20403],
+                20401: [20401],
+                20402: [20402],
+                20403: [20403],
+            },
+            {
+                p: MODULE_BEING_TESTED.periods_on_future_trajectory(
+                    period=p,
+                    periods=periods,
+                    periods_back_to_first_period_by_period=back_to_first,
+                )
+                for p in periods
+            },
+        )
+
+        # Without a tree, the previous period is the one before in order
+        self.assertEqual(
+            2030, MODULE_BEING_TESTED.default_prev_period([2020, 2030, 2040], 2040)
+        )
+
+        # A cycle of previous periods is an error, not an endless loop
+        with self.assertRaises(ValueError):
+            MODULE_BEING_TESTED.periods_back_to_first_period(
+                period=2040, first_period=2020, prev_period={2030: 2040, 2040: 2030}
+            )
+
     def test_validate_period_tree(self):
         """
         Check the prev_period validation on valid and invalid period trees

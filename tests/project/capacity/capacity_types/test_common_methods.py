@@ -17,7 +17,9 @@
 from importlib import import_module
 import unittest
 
-NAME_OF_MODULE_BEING_TESTED = "project.capacity.capacity_types.gen_new_lin"
+from pyomo.environ import ConcreteModel, Param, Set
+
+NAME_OF_MODULE_BEING_TESTED = "project.capacity.capacity_types.common_methods"
 # Import the module we'll test
 try:
     MODULE_BEING_TESTED = import_module(
@@ -203,6 +205,66 @@ class TestCapacityTypeCommonMethods(unittest.TestCase):
                 )
             )
             self.assertListEqual(expected_project_vintages, actual_project_vintages)
+
+    def test_add_vintage_period_sets(self):
+        """
+        The derived sets of a new-build capacity type use the operational
+        lifetime for the operational periods and the financial lifetime for
+        the financial periods. Project A's vintages operate for 20 years and
+        incur capital costs for 10.
+        """
+        m = ConcreteModel()
+        m.PERIODS = Set(initialize=[2020, 2030, 2040], ordered=True)
+        m.period_start_year = Param(
+            m.PERIODS, initialize={2020: 2020, 2030: 2030, 2040: 2040}
+        )
+        m.period_end_year = Param(
+            m.PERIODS, initialize={2020: 2030, 2030: 2040, 2040: 2050}
+        )
+        m.PERIOD_FUTURE_TRAJECTORY = Set(
+            m.PERIODS,
+            initialize={
+                2020: [2020, 2030, 2040],
+                2030: [2030, 2040],
+                2040: [2040],
+            },
+        )
+        m.X_VNTS = Set(dimen=2, initialize=[("A", 2020), ("A", 2030)])
+        m.x_opr_lifetime = Param(m.X_VNTS, initialize=20)
+        m.x_fin_lifetime = Param(m.X_VNTS, initialize=10)
+
+        MODULE_BEING_TESTED.add_vintage_period_sets(
+            m,
+            prefix="X",
+            operational_lifetime="x_opr_lifetime",
+            financial_lifetime="x_fin_lifetime",
+            in_period_suffix="PRD",
+        )
+
+        self.assertDictEqual(
+            {("A", 2020): [2020, 2030], ("A", 2030): [2030, 2040]},
+            {i: list(m.OPR_PRDS_BY_X_VINTAGE[i]) for i in m.X_VNTS},
+        )
+        self.assertDictEqual(
+            {("A", 2020): [2020], ("A", 2030): [2030]},
+            {i: list(m.FIN_PRDS_BY_X_VINTAGE[i]) for i in m.X_VNTS},
+        )
+        self.assertListEqual(
+            [("A", 2020), ("A", 2030), ("A", 2040)], sorted(m.X_OPR_PRDS)
+        )
+        self.assertListEqual([("A", 2020), ("A", 2030)], sorted(m.X_FIN_PRDS))
+        self.assertDictEqual(
+            {
+                2020: [("A", 2020)],
+                2030: [("A", 2020), ("A", 2030)],
+                2040: [("A", 2030)],
+            },
+            {p: list(m.X_VNTS_OPR_IN_PRD[p]) for p in m.PERIODS},
+        )
+        self.assertDictEqual(
+            {2020: [("A", 2020)], 2030: [("A", 2030)], 2040: []},
+            {p: list(m.X_VNTS_FIN_IN_PRD[p]) for p in m.PERIODS},
+        )
 
 
 if __name__ == "__main__":

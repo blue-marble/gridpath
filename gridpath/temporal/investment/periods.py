@@ -72,6 +72,7 @@ from pyomo.environ import (
     NonNegativeIntegers,
     NonNegativeReals,
     PercentFraction,
+    value,
 )
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
@@ -291,7 +292,7 @@ def add_model_components(
     m.prev_period = Param(
         m.NOT_FIRST_PRDS,
         within=NonNegativeIntegers,
-        default=lambda mod, p: list(mod.PERIODS)[list(mod.PERIODS).index(p) - 1],
+        default=lambda mod, p: default_prev_period(list(mod.PERIODS), p),
     )
 
     m.probability = Param(m.PERIODS, within=PercentFraction, default=1)
@@ -341,65 +342,85 @@ def add_model_components(
     # This includes previous periods and the current period
     m.FUTURE_TRAJECTORY_PREV_PERIODS_BY_PERIOD = Set(
         m.PERIODS,
-        initialize=lambda mod, prd: recursively_find_list_of_previous_periods(
-            mod, prd=prd, prev_periods_future_trajectory_list=[prd]
+        initialize=lambda mod, prd: periods_back_to_first_period(
+            period=prd,
+            first_period=value(mod.first_period),
+            prev_period=mod.prev_period,
         ),
     )
 
-    def recursively_find_list_of_previous_periods(
-        mod, prd, prev_periods_future_trajectory_list
-    ):
-        """
-        Recursive function to find the list of previous periods for a given
-        period. We'll use these lists to determine the future
-        trajectories of periods that each period belongs to.
-        """
-        # If we have reached the first period, there are no more periods to add
-        if prd == mod.first_period:
-            pass
-        # Otherwise, check the prevoius period and add it to the list,
-        # then recursively call this function
-        else:
-            prev_period = mod.prev_period[prd]
-            prev_periods_future_trajectory_list.append(prev_period)
-            recursively_find_list_of_previous_periods(
-                mod, prev_period, prev_periods_future_trajectory_list
-            )
-
-        return prev_periods_future_trajectory_list
-
-    def find_all_periods_on_future_trajectory_of_period(mod, period):
-        """
-        Find all periods that are on the future trajectory of the given period,
-        i.e. the period itself and all of its descendants in the period tree
-        (the periods whose list of previous periods includes this period).
-        This list will be used as the relevant study periods when determining
-        operational vintages. In other words, a vintage can only be
-        operational in a period if that period is on the vintage's
-        (period of interest's) future trajectory.
-        """
-        list_of_periods_on_period_future_trajectory = list()
-
-        # Iterate over all study periods (prd)
-        for prd in mod.PERIODS:
-            # For each study period, check if the period of interest is on its
-            # list of past periods
-            # If yes, add this study period to the list of periods belonging to
-            # a future trajectory that the period of interest is on
-            if period in mod.FUTURE_TRAJECTORY_PREV_PERIODS_BY_PERIOD[prd]:
-                list_of_periods_on_period_future_trajectory.append(prd)
-
-        # Return a sorted list of periods on trajectories that the period of
-        # interest is on; we take the set() to remove duplicates, as we may
-        # have added periods more than once by iterating over all study
-        # periods above
-        return sorted(list(set(list_of_periods_on_period_future_trajectory)))
-
     m.PERIOD_FUTURE_TRAJECTORY = Set(
         m.PERIODS,
-        initialize=lambda mod, prd: find_all_periods_on_future_trajectory_of_period(
-            mod, prd
+        initialize=lambda mod, prd: periods_on_future_trajectory(
+            period=prd,
+            periods=mod.PERIODS,
+            periods_back_to_first_period_by_period=(
+                mod.FUTURE_TRAJECTORY_PREV_PERIODS_BY_PERIOD
+            ),
         ),
+    )
+
+
+# Period Tree
+###############################################################################
+# Plain functions (no model needed), so that the model inputs can be
+# derived the same way the model derives them
+
+
+def default_prev_period(periods, period):
+    """
+    :param periods: the periods, in model order
+    :param period: a period other than the first
+    :return: the period before *period* in *periods*, which is the previous
+        period of a period whose previous period isn't specified
+    """
+    return periods[periods.index(period) - 1]
+
+
+def periods_back_to_first_period(period, first_period, prev_period):
+    """
+    :param period: a period
+    :param first_period: the first period
+    :param prev_period: the previous period of each period other than the
+        first (e.g. the :code:`prev_period` param, or a dictionary)
+    :return: *period* and its ancestors in the period tree, i.e. the list
+        of previous periods followed back to the first period, starting with
+        *period* itself. We use these lists to determine the future
+        trajectories of periods that each period belongs to.
+    """
+    periods_list = [period]
+    while period != first_period:
+        period = prev_period[period]
+        if period in periods_list:
+            raise ValueError(
+                f"The previous periods of period {periods_list[0]} form a "
+                f"cycle: {periods_list + [period]}."
+            )
+        periods_list.append(period)
+    return periods_list
+
+
+def periods_on_future_trajectory(
+    period, periods, periods_back_to_first_period_by_period
+):
+    """
+    :param period: a period
+    :param periods: all periods
+    :param periods_back_to_first_period_by_period: each period's list from
+        :code:`periods_back_to_first_period`
+    :return: the sorted periods on the future trajectory of *period*, i.e.
+        *period* itself and all of its descendants in the period tree (the
+        periods whose list of previous periods includes *period*). These are
+        the relevant study periods when determining operational vintages: a
+        vintage can only be operational in a period if that period is on the
+        vintage's future trajectory.
+    """
+    return sorted(
+        set(
+            prd
+            for prd in periods
+            if period in periods_back_to_first_period_by_period[prd]
+        )
     )
 
 
