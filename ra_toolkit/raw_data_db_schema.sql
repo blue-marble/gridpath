@@ -114,15 +114,34 @@ CREATE TABLE raw_data_hydro_years
 DROP TABLE IF EXISTS raw_data_unit_availability_params;
 CREATE TABLE raw_data_unit_availability_params
 (
-    unit            TEXT PRIMARY KEY,
-    project         TEXT,
-    unit_weight     DECIMAL,
-    n_units         INTEGER,
-    unit_fo_model   TEXT,
-    unit_for        DECIMAL,
-    unit_mttr       DECIMAL,
-    timeseries_name VARCHAR(32),
-    hybrid_stor     INTEGER
+    unit                       TEXT PRIMARY KEY,
+    project                    TEXT,
+    unit_weight                DECIMAL,
+    n_units                    INTEGER,
+    unit_fo_model              TEXT,
+    unit_for                   DECIMAL,
+    unit_mttr                  DECIMAL,
+    timeseries_name            VARCHAR(32),
+    hybrid_stor                INTEGER,
+    -- 1 to draw the unit's outages against the hourly forced outage rates
+    -- in raw_data_unit_forced_outage_rate_profiles instead of unit_for
+    unit_for_varies_by_weather INTEGER
+);
+
+-- Hourly forced outage rates by historical date (e.g. derived from a
+-- temperature-dependent forced outage rate curve), read for the units with
+-- unit_for_varies_by_weather = 1
+DROP TABLE IF EXISTS raw_data_unit_forced_outage_rate_profiles;
+CREATE TABLE raw_data_unit_forced_outage_rate_profiles
+(
+    year         INTEGER,
+    month        INTEGER,
+    day_of_month INTEGER,
+    day_type     INTEGER,
+    hour_of_day  INTEGER,
+    unit         VARCHAR(64),
+    value        FLOAT,
+    PRIMARY KEY (year, month, day_of_month, hour_of_day, unit)
 );
 
 --------------------------------------------------------------------------------
