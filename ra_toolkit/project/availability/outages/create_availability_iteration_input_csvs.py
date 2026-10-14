@@ -756,7 +756,7 @@ def main(args=None):
 
         if not os.path.exists(filepath) or overwrite:
             with open(filepath, "w", newline="") as f:
-                csvwriter = csv.writer(f)
+                csvwriter = csv.writer(f, lineterminator="\n")
                 csvwriter.writerow(header)
 
         # Calculate starting seed for this project

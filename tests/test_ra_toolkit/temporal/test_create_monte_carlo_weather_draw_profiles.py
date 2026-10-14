@@ -13,10 +13,12 @@
 # limitations under the License.
 
 import os
+import sqlite3
 import tempfile
 import unittest
 
 from db.create_database import main as create_database_main
+from ra_toolkit.load_raw_data import main as load_raw_data_main
 from ra_toolkit.temporal.create_monte_carlo_weather_draws import (
     main as create_monte_carlo_weather_draws_main,
 )
@@ -50,13 +52,22 @@ class TestCreateMonteCarloWeatherDrawProfiles(unittest.TestCase):
         ]
         create_database_main(create_db_args)
 
+        # Load the raw data (weather bins, the Monte Carlo timeseries
+        # definitions and the load, variable-profile and availability data
+        # the draw profiles are matched against)
+        load_raw_data_args = [
+            "--database",
+            cls.db_path,
+            "--csv_location",
+            "./csvs_test_examples/raw_data_ra_toolkit/",
+            "--quiet",
+        ]
+        load_raw_data_main(load_raw_data_args)
+
         # Create monte carlo weather draws (prerequisite for this test)
         weather_draws_args = [
             "--database",
             cls.db_path,
-            "--input_csv",
-            "./csvs_test_examples/raw_data_ra_toolkit/monte_carlo_weather"
-            "/user_defined_monte_carlo_weather_bins.csv",
             "--weather_draws_seed",
             "0",
             "--n_iterations",
@@ -72,9 +83,6 @@ class TestCreateMonteCarloWeatherDrawProfiles(unittest.TestCase):
         args = [
             "--database",
             self.db_path,
-            "--input_csv",
-            "./csvs_test_examples/raw_data_ra_toolkit/monte_carlo_weather"
-            "/user_defined_monte_carlo_timeseries.csv",
             "--study_year",
             "2026",
             "--timeseries_iteration_draw_initial_seed",
@@ -82,6 +90,18 @@ class TestCreateMonteCarloWeatherDrawProfiles(unittest.TestCase):
             "--quiet",
         ]
         create_monte_carlo_weather_draw_profiles_main(args)
+
+        # Every draw of every timeseries in user_defined_monte_carlo_timeseries
+        # (load, solar, wind, thermal) must have been matched to a historical
+        # day; the step is a silent no-op when no timeseries are loaded
+        conn = sqlite3.connect(self.db_path)
+        n_draws, n_unmatched = conn.execute("""SELECT COUNT(*),
+            SUM(load_year IS NULL OR solar_year IS NULL
+                OR wind_year IS NULL OR thermal_year IS NULL)
+            FROM aux_weather_iterations;""").fetchone()
+        conn.close()
+        self.assertEqual(n_draws, 2 * 365)
+        self.assertEqual(n_unmatched, 0)
 
     @classmethod
     def tearDownClass(cls):
