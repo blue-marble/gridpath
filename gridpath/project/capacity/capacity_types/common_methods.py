@@ -213,14 +213,32 @@ SPEC_FIXED_COST_COLUMNS = [
 ]
 
 
-def spec_get_inputs_from_database(conn, subscenarios, subproblem, capacity_type):
-    """
-    Get the various capacity and fixed cost parameters for projects with
-    "specified" capacity types.
-    """
-    db_subproblem = subproblem if subproblem != "" else 1
+# The capacity types whose capacity is given in the specified capacity
+# inputs (see spec_get_inputs_from_database); a project of these types is
+# operational only in the periods with a specified capacity row
+SPEC_CAPACITY_TYPES = [
+    "energy_spec",
+    "fuel_prod_spec",
+    "gen_ret_bin",
+    "gen_ret_lin",
+    "gen_spec",
+    "gen_stor_hyb_spec",
+    "stor_spec",
+]
 
-    # Capacity and fixed costs with period = 0 rows applying to every period
+
+def spec_capacity_rows_sql(subscenarios, subproblem, capacity_types):
+    """
+    :param subproblem: the subproblem ID in the database
+    :param capacity_types: the specified capacity types to select
+    :return: SQL selecting the project, period, and capacity columns
+        (:code:`SPEC_CAPACITY_COLUMNS`) of the portfolio projects of
+        *capacity_types* in the subproblem's periods, with period = 0 rows
+        applying to every period. These rows are the projects' operational
+        periods in the model, so the operational characteristics inputs are
+        written for these periods only (see
+        :code:`spec_non_operational_periods_sql`).
+    """
     capacity_sql = period_wildcard_rows_sql(
         table="inputs_project_specified_capacity",
         columns=["project", "period"] + SPEC_CAPACITY_COLUMNS,
@@ -228,8 +246,94 @@ def spec_get_inputs_from_database(conn, subscenarios, subproblem, capacity_type)
         row_filter=f"project_specified_capacity_scenario_id = "
         f"{subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID}",
         periods_sql=subproblem_periods_sql(
-            subscenarios.TEMPORAL_SCENARIO_ID, db_subproblem
+            subscenarios.TEMPORAL_SCENARIO_ID, subproblem
         ),
+    )
+    capacity_types_sql = ", ".join(f"'{t}'" for t in capacity_types)
+    return f"""
+        SELECT project, period, {", ".join(SPEC_CAPACITY_COLUMNS)}
+        FROM inputs_project_portfolios
+        CROSS JOIN
+        (SELECT period
+        FROM inputs_temporal_periods
+        WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}) as relevant_periods
+        INNER JOIN
+        ({capacity_sql}) as capacity
+        USING (project, period)
+        WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
+        AND capacity_type IN ({capacity_types_sql})
+        AND period in (
+                  SELECT DISTINCT period
+                  FROM inputs_temporal
+                  WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+                  AND subproblem_id = {subproblem}
+               )
+        """
+
+
+def spec_non_operational_periods_sql(subscenarios, subproblem):
+    """
+    :param subproblem: the subproblem ID in the database
+    :return: SQL selecting the (project, period)s of the subproblem's
+        periods in which a portfolio project of a specified capacity type is
+        not operational, i.e. has no row in :code:`spec_capacity_rows_sql`
+    """
+    capacity_types_sql = ", ".join(f"'{t}'" for t in SPEC_CAPACITY_TYPES)
+    periods_sql = subproblem_periods_sql(subscenarios.TEMPORAL_SCENARIO_ID, subproblem)
+    capacity_sql = spec_capacity_rows_sql(
+        subscenarios=subscenarios,
+        subproblem=subproblem,
+        capacity_types=SPEC_CAPACITY_TYPES,
+    )
+    return f"""
+        SELECT project, period
+        FROM inputs_project_portfolios
+        CROSS JOIN ({periods_sql}) AS subproblem_periods
+        WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
+        AND capacity_type IN ({capacity_types_sql})
+        EXCEPT
+        SELECT project, period
+        FROM ({capacity_sql})
+        """
+
+
+def spec_projects_not_operational_sql(subscenarios, subproblem):
+    """
+    :param subproblem: the subproblem ID in the database
+    :return: SQL selecting the portfolio projects of the specified capacity
+        types that aren't operational in any of the subproblem's periods,
+        i.e. have no row in :code:`spec_capacity_rows_sql`
+    """
+    capacity_types_sql = ", ".join(f"'{t}'" for t in SPEC_CAPACITY_TYPES)
+    capacity_sql = spec_capacity_rows_sql(
+        subscenarios=subscenarios,
+        subproblem=subproblem,
+        capacity_types=SPEC_CAPACITY_TYPES,
+    )
+    return f"""
+        SELECT project
+        FROM inputs_project_portfolios
+        WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
+        AND capacity_type IN ({capacity_types_sql})
+        EXCEPT
+        SELECT project FROM ({capacity_sql})
+        """
+
+
+def spec_get_inputs_from_database(conn, subscenarios, subproblem, capacity_type):
+    """
+    Get the various capacity and fixed cost parameters for projects with
+    "specified" capacity types.
+    """
+    db_subproblem = subproblem if subproblem != "" else 1
+
+    # Capacity rows (see spec_capacity_rows_sql), which define the projects'
+    # operational periods, and fixed costs with period = 0 rows applying to
+    # every period
+    capacity_sql = spec_capacity_rows_sql(
+        subscenarios=subscenarios,
+        subproblem=db_subproblem,
+        capacity_types=[capacity_type],
     )
     fixed_cost_sql = period_wildcard_rows_sql(
         table="inputs_project_specified_fixed_cost",
@@ -264,25 +368,10 @@ def spec_get_inputs_from_database(conn, subscenarios, subproblem, capacity_type)
         fuel_release_capacity_fixed_cost_per_fuelunitperhour_yr,
         fuel_production_capacity_fixed_cost_per_fuelunitperhour_yr,
         fuel_storage_capacity_fixed_cost_per_fuelunit_yr
-        FROM inputs_project_portfolios
-        CROSS JOIN
-        (SELECT period
-        FROM inputs_temporal_periods
-        WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}) as relevant_periods
-        INNER JOIN
-        ({capacity_sql}) as capacity
-        USING (project, period)
+        FROM ({capacity_sql}) as capacity
         LEFT JOIN -- operational periods are based on capacity; fixed costs are optional
         ({fixed_cost_sql}) as fixed_om
         USING (project, period)
-        WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
-        AND capacity_type = '{capacity_type}'
-        AND period in (
-                  SELECT DISTINCT period
-                  FROM inputs_temporal
-                  WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
-                  AND subproblem_id = {db_subproblem}
-               )
         ;""")
 
     return spec_project_params

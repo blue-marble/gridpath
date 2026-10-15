@@ -507,7 +507,22 @@ class TestEnergyBudgetBalancingTypeConstructionGuard(unittest.TestCase):
 class SubScenariosStub:
     PROJECT_PORTFOLIO_SCENARIO_ID = 1
     PROJECT_OPERATIONAL_CHARS_SCENARIO_ID = 1
+    PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID = 1
     TEMPORAL_SCENARIO_ID = 1
+
+
+def add_specified_capacity(c, project):
+    """
+    Give a specified-capacity project capacity in every period, so it is
+    operational (and needs its operational inputs).
+    """
+    c.execute(
+        """INSERT INTO inputs_project_specified_capacity
+        (project_specified_capacity_scenario_id, project, period,
+        specified_capacity_mw)
+        VALUES (1, ?, 0, 1)""",
+        (project,),
+    )
 
 
 class TestEnergyBudgetBalancingTypeValidation(unittest.TestCase):
@@ -542,6 +557,9 @@ class TestEnergyBudgetBalancingTypeValidation(unittest.TestCase):
         c.execute("""INSERT INTO inputs_project_portfolios
             (project_portfolio_scenario_id, project, capacity_type)
             VALUES (1, 'Hydro', 'gen_spec')""")
+        c.execute("""INSERT INTO inputs_temporal_periods
+            (temporal_scenario_id, period) VALUES (1, 2020)""")
+        add_specified_capacity(c, "Hydro")
         c.execute("""INSERT INTO inputs_project_hydro_operational_chars_iterations
             (project, hydro_operational_chars_scenario_id,
             varies_by_weather_iteration, varies_by_hydro_iteration)
@@ -582,6 +600,7 @@ class TestEnergyBudgetBalancingTypeValidation(unittest.TestCase):
             c.execute("""INSERT INTO inputs_project_portfolios
                 (project_portfolio_scenario_id, project, capacity_type)
                 VALUES (1, 'Other', 'gen_spec')""")
+            add_specified_capacity(c, "Other")
         c.execute(
             """INSERT INTO inputs_project_operational_chars
             (project_operational_chars_scenario_id, project, operational_type,
@@ -612,6 +631,7 @@ class TestEnergyBudgetBalancingTypeValidation(unittest.TestCase):
         c.execute("""INSERT INTO inputs_project_portfolios
             (project_portfolio_scenario_id, project, capacity_type)
             VALUES (1, 'Shaped', 'energy_spec')""")
+        add_specified_capacity(c, "Shaped")
         c.execute(
             """INSERT INTO inputs_project_operational_chars
             (project_operational_chars_scenario_id, project, operational_type,

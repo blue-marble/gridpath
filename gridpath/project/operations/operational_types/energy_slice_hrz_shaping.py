@@ -435,25 +435,28 @@ def load_model_data(
         op_type="energy_slice_hrz_shaping",
     )
 
-    # Load data
-    data_portal.load(
-        filename=os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "inputs",
-            "energy_slice_hrz_shaping_params.tab",
-        ),
-        index=m.ENERGY_SLICE_HRZ_SHAPING_OPR_BT_HRZS,
-        param=(
-            m.energy_slice_hrz_shaping_hrz_energy,
-            m.energy_slice_hrz_shaping_min_power,
-            m.energy_slice_hrz_shaping_max_power,
-        ),
+    # Load data; there is no file if none of the projects are operational
+    # in the subproblem's periods
+    params_file = os.path.join(
+        scenario_directory,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        "inputs",
+        "energy_slice_hrz_shaping_params.tab",
     )
+    if os.path.exists(params_file):
+        data_portal.load(
+            filename=params_file,
+            index=m.ENERGY_SLICE_HRZ_SHAPING_OPR_BT_HRZS,
+            param=(
+                m.energy_slice_hrz_shaping_hrz_energy,
+                m.energy_slice_hrz_shaping_min_power,
+                m.energy_slice_hrz_shaping_max_power,
+            ),
+        )
 
     # # Linked timepoint params
     # linked_inputs_filename = os.path.join(
@@ -666,6 +669,7 @@ def write_model_inputs(
         check_rows=require_bt_hrz_rows_for_every_project(
             conn=conn,
             subscenarios=subscenarios,
+            subproblem=subproblem,
             op_type="energy_slice_hrz_shaping",
             db_table="inputs_project_energy_slice_hrz_shaping",
         ),

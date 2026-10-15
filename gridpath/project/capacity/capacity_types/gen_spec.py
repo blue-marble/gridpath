@@ -28,7 +28,10 @@ row for a period determines whether it is in the model in that period:
   budgets, timepoint-varying costs) are required.
 * **No row**: the project is not in the model in that period. No variables,
   constraints or results are created for it and none of its operational
-  inputs for the period are needed.
+  inputs for the period are needed: data for the period (e.g. a profile
+  shared by scenarios with different operational periods, or read through a
+  timepoint map) is left out when the model inputs are written. This applies
+  to all the specified capacity types.
 
 Leaving a period out is the way to model a project that retires or comes
 online within the study horizon. A row with every capacity column blank is
