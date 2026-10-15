@@ -22,10 +22,10 @@ whose capital costs we want to ignore (in the objective function).
 
 It is not required to specify a capacity for all periods, i.e. a project can
 be operational in some periods but not in others with no restriction on the
-order and combination of periods. A period with no row, or with a row whose
-capacity columns are all blank, keeps the project out of the model in that
-period entirely, whereas a row with zero capacity keeps it in the model at
-zero capacity; see *gen_spec* for the full description of the three cases
+order and combination of periods. A period with no row keeps the project out
+of the model in that period entirely, whereas a row with zero capacity keeps
+it in the model at zero capacity, and a row with every capacity column blank
+is a validation error; see *gen_spec* for the full description of the cases
 and the validation checks. The user may specify a fixed O&M cost for
 specified-storage projects, but this cost will be a fixed number in the
 objective function and will therefore not affect any of the optimization

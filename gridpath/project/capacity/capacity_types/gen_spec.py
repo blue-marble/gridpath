@@ -26,20 +26,22 @@ row for a period determines whether it is in the model in that period:
   period at that capacity, appears in the results at that capacity, and all
   of its operational inputs for the period (e.g. variable profiles, hydro
   budgets, timepoint-varying costs) are required.
-* **A row with every capacity column blank**: the project is not in the
-  model in that period. No variables, constraints or results are created for
-  it and none of its operational inputs for the period are needed.
-* **No row**: the same as a blank row.
+* **No row**: the project is not in the model in that period. No variables,
+  constraints or results are created for it and none of its operational
+  inputs for the period are needed.
 
-Leaving a period out, or blank, is the way to model a project that retires
-or comes online within the study horizon; which of the three to use is the
-user's choice. Two validation checks apply. A project with no capacity in any
-period of the subscenario (no rows, or only blank rows) is a High-severity
-finding, as it is most likely a naming mismatch between the portfolio and
-the capacity inputs; a row with some of the capacity type's columns filled in
-and others blank is a High-severity missing input. A project with capacity in
-none of the subproblem's periods, or with a period left out between two
-periods with capacity, is reported at Low severity.
+Leaving a period out is the way to model a project that retires or comes
+online within the study horizon. A row with every capacity column blank is
+not allowed (High severity): it carries no capacity of any kind, and a blank
+is not how a project is made absent, so that a NULL means one thing across
+the capacity tables (in the transmission capacity table it means "no flow
+limit"). Three further validation checks apply. A project with no capacity
+row in any period of the subscenario is a High-severity finding, as it is
+most likely a naming mismatch between the portfolio and the capacity inputs;
+a row with some of the capacity type's columns filled in and others blank is
+a High-severity missing input. A project with capacity in none of the
+subproblem's periods, or with a period left out between two periods with
+capacity, is reported at Low severity.
 
 The user may specify a fixed O&M cost for these generators, but this cost will
 be a fixed number in the objective function and will therefore not affect any
