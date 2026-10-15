@@ -19,6 +19,7 @@ import warnings
 import numpy as np
 import os.path
 import pandas as pd
+from pyomo.environ import Set
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.period_wildcards import (
@@ -197,6 +198,109 @@ def project_vintages_relevant_in_period(
             project_vintages.append((prj, v))
 
     return project_vintages
+
+
+# New-build projects common functions
+def add_vintage_period_sets(
+    m, prefix, operational_lifetime, financial_lifetime, in_period_suffix
+):
+    """
+    :param m: the Pyomo abstract model
+    :param prefix: the prefix of the capacity type's set names, e.g.
+        GEN_NEW_LIN; the project-vintages set is :code:`{prefix}_VNTS`
+    :param operational_lifetime: the name of the capacity type's operational
+        lifetime param, indexed by project-vintage
+    :param financial_lifetime: the name of the capacity type's financial
+        lifetime param, indexed by project-vintage
+    :param in_period_suffix: the suffix of the names of the period-indexed
+        sets of vintages (PERIOD or PRD)
+
+    Add the derived operational and financial period sets of a new-build
+    capacity type: by project-vintage (:code:`OPR_PRDS_BY_{prefix}_VINTAGE`,
+    :code:`FIN_PRDS_BY_{prefix}_VINTAGE`), by project
+    (:code:`{prefix}_OPR_PRDS`, :code:`{prefix}_FIN_PRDS`), and the
+    project-vintages operational (incurring capital costs) in each period
+    (:code:`{prefix}_VNTS_OPR_IN_{in_period_suffix}`,
+    :code:`{prefix}_VNTS_FIN_IN_{in_period_suffix}`). The periods of a
+    vintage are determined by :code:`relevant_periods_by_project_vintage`
+    with the operational and the financial lifetime respectively.
+    """
+    add_relevant_period_sets(m, prefix, "OPR", operational_lifetime, in_period_suffix)
+    add_relevant_period_sets(m, prefix, "FIN", financial_lifetime, in_period_suffix)
+
+
+def add_relevant_period_sets(m, prefix, kind, lifetime, in_period_suffix):
+    """
+    Add the operational (*kind* OPR) or financial (*kind* FIN) period sets
+    of a new-build capacity type, determined with the *lifetime* param; see
+    :code:`add_vintage_period_sets`.
+    """
+    vintages = f"{prefix}_VNTS"
+    by_vintage = f"{kind}_PRDS_BY_{prefix}_VINTAGE"
+
+    def periods_by_vintage(mod, prj, v):
+        return relevant_periods_by_project_vintage(
+            future_trajectory_periods=mod.PERIOD_FUTURE_TRAJECTORY[v],
+            period_start_year=mod.period_start_year,
+            period_end_year=mod.period_end_year,
+            vintage=v,
+            lifetime_yrs=getattr(mod, lifetime)[prj, v],
+        )
+
+    def periods_by_project(mod):
+        return project_relevant_periods(
+            project_vintages_set=getattr(mod, vintages),
+            relevant_periods_by_project_vintage_set=getattr(mod, by_vintage),
+        )
+
+    def vintages_in_period(mod, p):
+        return project_vintages_relevant_in_period(
+            project_vintage_set=getattr(mod, vintages),
+            relevant_periods_by_project_vintage_set=getattr(mod, by_vintage),
+            period=p,
+        )
+
+    m.add_component(
+        by_vintage, Set(getattr(m, vintages), initialize=periods_by_vintage)
+    )
+    m.add_component(
+        f"{prefix}_{kind}_PRDS", Set(dimen=2, initialize=periods_by_project)
+    )
+    m.add_component(
+        f"{prefix}_VNTS_{kind}_IN_{in_period_suffix}",
+        Set(m.PERIODS, dimen=2, initialize=vintages_in_period),
+    )
+
+
+def new_build_vintage_rows_sql(subscenarios, capacity_types, columns):
+    """
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param capacity_types: the new-build capacity types
+    :param columns: the columns of inputs_project_new_cost to select, in
+        order, after project and vintage
+    :return: SQL selecting project, vintage and *columns* of the
+        inputs_project_new_cost rows of the portfolio's projects of
+        *capacity_types*, for the vintages that are periods of the
+        temporal scenario
+    """
+    column_list = ",\n        ".join(columns)
+    capacity_type_list = ", ".join(f"'{c}'" for c in capacity_types)
+    return f"""SELECT project, vintage, {column_list}
+        FROM inputs_project_portfolios
+        CROSS JOIN
+        (SELECT period AS vintage
+        FROM inputs_temporal_periods
+        WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+        ) as relevant_vintages
+        INNER JOIN
+        (SELECT project, vintage, {column_list}
+        FROM inputs_project_new_cost
+        WHERE project_new_cost_scenario_id =
+        {subscenarios.PROJECT_NEW_COST_SCENARIO_ID}) as cost
+        USING (project, vintage)
+        WHERE project_portfolio_scenario_id =
+        {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
+        AND capacity_type IN ({capacity_type_list})"""
 
 
 # Specified projects common functions
