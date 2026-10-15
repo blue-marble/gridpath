@@ -524,20 +524,60 @@ def add_model_components(
     )
 
     # Reserves
+    # For a project with no reserve variables, each reserve constraint
+    # reduces to a bound on charging, discharging or ending energy that
+    # the project's other constraints already imply in most timepoints;
+    # the constraint is skipped there (see each rule for the exact
+    # conditions). Half of a storage project's per-timepoint constraints
+    # are reserve constraints, so this roughly halves the storage rows of
+    # a model without reserves.
+    def max_headroom_power_constraint_rule(mod, s, tmp):
+        if (
+            not getattr(d, headroom_variables)[s]
+            and mod.stor_discharging_capacity_multiplier[s] <= 1
+        ):
+            return Constraint.Skip
+        return max_headroom_power_rule(mod, s, tmp)
+
     m.Stor_Max_Headroom_Power_Constraint = Constraint(
-        m.STOR_OPR_TMPS, rule=max_headroom_power_rule
+        m.STOR_OPR_TMPS, rule=max_headroom_power_constraint_rule
     )
+
+    def max_footroom_power_constraint_rule(mod, s, tmp):
+        if (
+            not getattr(d, footroom_variables)[s]
+            and mod.stor_charging_capacity_multiplier[s] <= 1
+        ):
+            return Constraint.Skip
+        return max_footroom_power_rule(mod, s, tmp)
 
     m.Stor_Max_Footroom_Power_Constraint = Constraint(
-        m.STOR_OPR_TMPS, rule=max_footroom_power_rule
+        m.STOR_OPR_TMPS, rule=max_footroom_power_constraint_rule
     )
+
+    def max_headroom_energy_constraint_rule(mod, s, tmp):
+        if not getattr(d, headroom_variables)[s] and next_tmp_tracks_energy(
+            mod, s, tmp
+        ):
+            return Constraint.Skip
+        return max_headroom_energy_rule(mod, s, tmp)
 
     m.Stor_Max_Headroom_Energy_Constraint = Constraint(
-        m.STOR_OPR_TMPS, rule=max_headroom_energy_rule
+        m.STOR_OPR_TMPS, rule=max_headroom_energy_constraint_rule
     )
 
+    def max_footroom_energy_constraint_rule(mod, s, tmp):
+        if (
+            not getattr(d, footroom_variables)[s]
+            and mod.stor_storage_efficiency[s] == 1
+            and next_tmp_tracks_energy(mod, s, tmp)
+            and next_tmp_derate_is_no_higher(mod, s, tmp)
+        ):
+            return Constraint.Skip
+        return max_footroom_energy_rule(mod, s, tmp)
+
     m.Stor_Max_Footroom_Energy_Constraint = Constraint(
-        m.STOR_OPR_TMPS, rule=max_footroom_energy_rule
+        m.STOR_OPR_TMPS, rule=max_footroom_energy_constraint_rule
     )
 
 
@@ -705,6 +745,34 @@ def max_losses_in_hrz_rule(mod, prj, bt, hrz):
 
 
 # Reserves
+def next_tmp_tracks_energy(mod, s, tmp):
+    """
+    Whether the timepoint after *tmp* (in the project's balancing type)
+    has an energy tracking constraint that sets its starting energy from
+    *tmp*'s charging and discharging: the last timepoint of a linear or
+    linked horizon has no next timepoint in this subproblem, and a next
+    timepoint with an exogenous state of charge does not look back.
+    """
+    next_tmp = mod.next_tmp[tmp, mod.balancing_type_project[s]]
+    if next_tmp == ".":
+        return False
+    return (s, next_tmp) not in mod.STOR_EXOG_SOC_TMPS
+
+
+def next_tmp_derate_is_no_higher(mod, s, tmp):
+    """
+    Whether the project's availability derate is a known constant (no
+    endogenous availability in the model) and is no higher in the next
+    timepoint than in *tmp*, so that the next timepoint's maximum energy
+    in storage bounds *tmp*'s ending energy at least as tightly as the
+    footroom energy constraint would.
+    """
+    if mod.Availability_Derate.ctype is not Param:
+        return False
+    next_tmp = mod.next_tmp[tmp, mod.balancing_type_project[s]]
+    return mod.Availability_Derate[s, next_tmp] <= mod.Availability_Derate[s, tmp]
+
+
 def max_headroom_power_rule(mod, s, tmp):
     """
     **Constraint Name**: Stor_Max_Headroom_Power_Constraint
@@ -713,6 +781,11 @@ def max_headroom_power_rule(mod, s, tmp):
     The project's upward reserves cannot exceed the available headroom.
     Going from charging to non-charging also counts as headroom, doubling
     the maximum amount of potential headroom.
+
+    Skipped for a project with no upward reserve variables whose
+    discharging capacity multiplier is at most 1: the constraint then
+    reduces to a discharge limit that the maximum discharge constraint
+    implies.
     """
     return (
         mod.Stor_Upward_Reserves_MW[s, tmp]
@@ -730,6 +803,10 @@ def max_footroom_power_rule(mod, s, tmp):
     The project's downward reserves cannot exceed the available footroom.
     Going from non-charging to charging also counts as footroom, doubling
     the the maximum amount of potential footroom.
+
+    Skipped for a project with no downward reserve variables whose
+    charging capacity multiplier is at most 1: the constraint then
+    reduces to a charge limit that the maximum charge constraint implies.
     """
     return (
         mod.Stor_Downward_Reserves_MW[s, tmp]
@@ -773,6 +850,14 @@ def max_headroom_energy_rule(mod, s, tmp):
     available energy in storage in that timepoint. Said differently,
     must have enough energy available to be at the new set point for the
     required setpoint duration (the timepoint duration by default).
+
+    Skipped for a project with no upward reserve variables when the next
+    timepoint's energy tracking constraint looks back to this one: the
+    constraint then reduces to a non-negative ending energy, which the
+    next timepoint's non-negative starting energy implies. It is kept in
+    the last timepoint of a linear or linked horizon and before a
+    timepoint with an exogenous state of charge, where it is the only
+    bound on the ending energy.
     """
     hrs_in_tmp = mod.hrs_in_tmp[tmp]
     return (
@@ -797,6 +882,14 @@ def max_footroom_energy_rule(mod, s, tmp):
     must have enough 'room left in the tank' (remaining energy capacity)
     to be at the new set point for the required setpoint duration (the
     timepoint duration by default).
+
+    Skipped for a project with no downward reserve variables when the
+    constraint reduces to an ending-energy cap that the next timepoint's
+    maximum energy in storage implies: the next timepoint's energy
+    tracking constraint looks back to this one, the storage efficiency is
+    1 and the availability derate is a constant no higher in the next
+    timepoint. Otherwise (e.g. in the last timepoint of a linear horizon)
+    it is kept, as it is then the only cap on the ending energy.
     """
     hrs_in_tmp = mod.hrs_in_tmp[tmp]
     return (

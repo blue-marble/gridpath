@@ -1496,6 +1496,30 @@ HIPO_SOLVER_OPTION_VALUE = "hipo"
 HIGHS_EXTRAS_LOADED_STATUS_PREFIX = "Extras: Successfully loaded"
 
 
+def reset_highs_global_scheduler(solver_name, solver_options):
+    """
+    :param solver_name: the name of the solver GridPath was asked to use
+    :param solver_options: dict of the scenario's solver options
+
+    HiGHS initializes a process-wide thread scheduler on the first solve
+    and then refuses any solve that sets the *threads* option to a
+    different value ("Option 'threads' is set to 4 but global scheduler has
+    already been initialized to use 10 threads"), which leaves the solve
+    without a solution; this happens whenever scenarios with different
+    solver options are solved in one process (e.g. the test suite). Destroy
+    the scheduler before a HiGHS solve that sets *threads*, so that it is
+    re-initialized with the requested value.
+    """
+    if solver_name is None or solver_name.lower() not in HIGHS_SOLVER_NAMES:
+        return
+    if "threads" not in solver_options:
+        return
+
+    import highspy
+
+    highspy.Highs().resetGlobalScheduler(True)
+
+
 def check_hipo_availability(solver_name, solver_options):
     """
     :param solver_name: the name of the solver GridPath was asked to use
@@ -1597,6 +1621,7 @@ def solve(instance, parsed_arguments):
     # If HiPO was requested, fail loudly if it is not actually available
     # (HiGHS would otherwise silently use its default algorithm)
     check_hipo_availability(solver_name=solver_name, solver_options=solver_options)
+    reset_highs_global_scheduler(solver_name=solver_name, solver_options=solver_options)
 
     # Get solver
     # If a solver executable is specified, pass it to Pyomo
