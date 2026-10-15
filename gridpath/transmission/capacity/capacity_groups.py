@@ -185,7 +185,7 @@ def add_model_components(
 ###############################################################################
 def new_capacity_max_rule(mod, grp, prd):
     if mod.tx_capacity_group_new_capacity_max[grp, prd] == float("inf"):
-        return Constraint.Feasible
+        return Constraint.Skip
     else:
         return (
             mod.Tx_Group_New_Capacity_in_Period[grp, prd]
@@ -195,7 +195,7 @@ def new_capacity_max_rule(mod, grp, prd):
 
 def new_capacity_min_rule(mod, grp, prd):
     if mod.tx_capacity_group_new_capacity_min[grp, prd] == 0:
-        return Constraint.Feasible
+        return Constraint.Skip
     else:
         return (
             mod.Tx_Group_New_Capacity_in_Period[grp, prd]

@@ -39,8 +39,14 @@ The three lanes touch disjoint sets of files, so they run concurrently —
 except under --coverage, where they run sequentially because they would
 otherwise race on the .coverage data file.
 
+Once the lanes have passed (and so regenerated every example under
+examples/), tests/scan_unbounded_constraint_rows.py builds each
+single-subproblem example model and fails the run if any constraint row has
+an infinite bound or a constant body — rows a rule should have skipped (see
+that module). --skip_row_scan omits this step.
+
 Usage:
-    python scripts/run_tests_parallel.py [--coverage]
+    python scripts/run_tests_parallel.py [--coverage] [--skip_row_scan]
 
 Requires the "parallel_tests" extra (pip install -e .[parallel_tests]);
 --coverage additionally requires the "coverage" extra and leaves a
@@ -127,6 +133,12 @@ def main(args=None):
     if args is None:
         args = sys.argv[1:]
     parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--skip_row_scan",
+        action="store_true",
+        help="skip the post-lane scan of the example models for constraint rows "
+        "with an infinite bound or a constant body",
+    )
     parser.add_argument(
         "--coverage",
         action="store_true",
@@ -227,6 +239,25 @@ def main(args=None):
             run_concurrently(lanes, env=env)
     finally:
         remove_template_files()
+
+    if not parsed_args.skip_row_scan:
+        # The lanes have just regenerated every example, so the scan sees
+        # inputs written by the code under test
+        run_sequentially(
+            [
+                (
+                    "Scanning the example models for unbounded constraint rows",
+                    [
+                        sys.executable,
+                        "-m",
+                        "tests.scan_unbounded_constraint_rows",
+                        "--quiet",
+                        "--fail_on_unbounded",
+                    ],
+                )
+            ],
+            env=None,
+        )
     print("=== All tests passed ===")
 
 

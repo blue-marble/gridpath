@@ -22,9 +22,10 @@ alone, with some projects having capacity in only one of the two. Until
 October 2026 a project with no row in any period of the subproblem failed
 validation at High severity and raised at model load, which forced either
 zero-capacity rows (every project in every model) or a portfolio per horizon.
-A row with every capacity column blank, as a dense project-by-period grid
-naturally produces, counts as absent; a row with some but not all of a
-type's capacity columns filled in is still a missing-input error.
+A row with every capacity column blank is an error rather than a way to make
+the project absent, so that a NULL has one meaning across the capacity
+tables; a row with some but not all of a type's capacity columns filled in
+is a missing-input error.
 """
 
 import os.path
@@ -59,13 +60,12 @@ PERIODS_BY_TEMPORAL_SCENARIO_AND_SUBPROBLEM = {
 }
 
 # Capacity (MW) by project and period; Gap skips 2035 between two periods
-# with capacity, and Blank has a 2035 row with no capacity in it
+# with capacity
 CAPACITY_ROWS = {
     "Retiring": {2030: 10},
     "Coming_Online": {2035: 10},
     "Always": {2030: 10, 2035: 10, 2040: 10},
     "Gap": {2030: 10, 2040: 10},
-    "Blank": {2030: 10, 2035: None},
 }
 
 PORTFOLIO_SCENARIO_ID = 1
@@ -187,11 +187,10 @@ class TestSpecCapacityCoverageValidation(unittest.TestCase):
         self.assertEqual(self.findings(temporal_scenario_id=2, subproblem=1), [])
 
     def test_a_project_with_no_capacity_in_the_subproblem_is_a_low_note(self):
-        # Gap has no 2035 row and Blank's 2035 row has no capacity, so both
-        # sit out the 2035 subproblem
+        # Gap has no 2035 row, so it sits out the 2035 subproblem
         for subproblem, absent in [
             (1, "['Coming_Online']"),
-            (2, "['Blank', 'Gap', 'Retiring']"),
+            (2, "['Gap', 'Retiring']"),
         ]:
             with self.subTest(subproblem=subproblem):
                 findings = self.findings(temporal_scenario_id=1, subproblem=subproblem)
@@ -223,20 +222,38 @@ class TestSpecCapacityCoverageValidation(unittest.TestCase):
                 self.assertIn("['Misnamed']", high[0])
                 self.assertIn("at least one period", high[0])
 
-    def test_a_blank_row_is_not_written_to_the_model_inputs(self):
+    def test_a_blank_row_is_an_error_not_an_absence(self):
+        # Blank has capacity in 2030 and a 2035 row with no capacity in it
+        self.add_projects(["Blank"])
+        self.add_capacity_rows([("Blank", 2030, 10), ("Blank", 2035, None)])
+        findings = self.findings(temporal_scenario_id=2, subproblem=1)
+        blank_errors = [
+            d for s, d in findings if s == "High" and "every capacity column blank" in d
+        ]
+        self.assertEqual(len(blank_errors), 1, findings)
+        self.assertIn("[('Blank', 2035)]", blank_errors[0])
+        self.assertIn("omit the row", blank_errors[0])
+        # Not reported as absent: the row is there, it is just invalid
+        self.assertEqual([d for s, d in findings if s == "Low"], [])
+        # The row reaches the model inputs (where a blank capacity fails at
+        # load) rather than being dropped on the way
         rows = spec_get_inputs_from_database(
             self.conn, SubScenarios(temporal_scenario_id=2), 1, "gen_spec"
         ).fetchall()
-        blank_rows = [(r[0], r[1]) for r in rows if r[0] == "Blank"]
-        self.assertEqual(blank_rows, [("Blank", 2030)])
+        self.assertEqual(
+            sorted((r[0], r[1]) for r in rows if r[0] == "Blank"),
+            [("Blank", 2030), ("Blank", 2035)],
+        )
 
     def test_a_project_with_only_blank_rows_is_an_error(self):
         self.add_projects(["All_Blank"])
         self.add_capacity_rows([("All_Blank", 2030, None), ("All_Blank", 2035, None)])
         findings = self.findings(temporal_scenario_id=2, subproblem=1)
-        high = [d for s, d in findings if s == "High"]
-        self.assertEqual(len(high), 1, findings)
-        self.assertIn("['All_Blank']", high[0])
+        blank_errors = [
+            d for s, d in findings if s == "High" and "every capacity column blank" in d
+        ]
+        self.assertEqual(len(blank_errors), 1, findings)
+        self.assertIn("('All_Blank', 2030), ('All_Blank', 2035)", blank_errors[0])
 
     def test_a_partly_blank_row_is_still_a_missing_input(self):
         # Storage needs both a power and an energy capacity; a row with one
@@ -267,8 +284,58 @@ class TestSpecCapacityCoverageValidation(unittest.TestCase):
 class TestSpecCapacityCoverageModelLoad(unittest.TestCase):
     """
     A specified project with no capacity row in any of the subproblem's
-    periods loads as a project with no operational periods.
+    periods loads as a project with no operational periods; a row with a
+    blank capacity fails at load.
     """
+
+    def stage_test_data(self, edit_params):
+        """
+        Copy the test data to a temporary directory, apply *edit_params* to
+        the specified capacity parameters frame and write it back; return
+        the staged directory.
+        """
+        tmp_dir = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp_dir.cleanup)
+        test_data_dir = os.path.join(tmp_dir.name, "test_data")
+        shutil.copytree(TEST_DATA_DIRECTORY, test_data_dir)
+
+        params_file = os.path.join(
+            test_data_dir, "inputs", "spec_capacity_period_params.tab"
+        )
+        params = pd.read_csv(params_file, sep="\t", dtype=str, keep_default_na=False)
+        edit_params(params).to_csv(params_file, sep="\t", index=False)
+        return test_data_dir
+
+    def load(self, test_data_dir):
+        m, data = add_components_and_load_data(
+            prereq_modules=IMPORTED_PREREQ_MODULES,
+            module_to_test=MODULE_BEING_TESTED,
+            test_data_dir=test_data_dir,
+            weather_iteration="",
+            hydro_iteration="",
+            availability_iteration="",
+            subproblem="",
+            stage="",
+        )
+        return m.create_instance(data)
+
+    def test_a_blank_capacity_row_fails_at_load(self):
+        """
+        A blank row is not silently dropped on the way to the model: a run
+        that skipped validation fails here rather than solving without the
+        project.
+        """
+
+        def blank_nuclear_2020(params):
+            is_row = (params["project"] == "Nuclear") & (params["period"] == "2020")
+            params.loc[is_row, "specified_capacity_mw"] = "."
+            return params
+
+        test_data_dir = self.stage_test_data(blank_nuclear_2020)
+        with self.assertRaises(RuntimeError) as raised:
+            self.load(test_data_dir)
+        self.assertIn("gen_spec_capacity_mw", str(raised.exception))
+        self.assertIn("Nuclear", str(raised.exception))
 
     def test_project_without_capacity_rows_has_no_operational_periods(self):
         tmp_dir = tempfile.TemporaryDirectory()

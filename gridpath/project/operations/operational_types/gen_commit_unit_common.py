@@ -1965,7 +1965,7 @@ def add_model_components(
             )
             or (
                 mod.availability_type[g] == "exogenous"
-                and mod.avl_exog_cap_derate_independent[g, tmp]
+                and mod.avl_exog_cap_derate_outage[g, tmp]
                 * mod.avl_exog_cap_derate_weather[g, tmp]
                 == 0
             )

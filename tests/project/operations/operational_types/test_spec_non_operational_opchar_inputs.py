@@ -67,10 +67,12 @@ class TestSpecNonOperationalOpcharInputs(unittest.TestCase):
 
     * Wind_Retired (gen_spec): a capacity row for 2020 only
     * Wind_Blank (gen_spec): a 2030 row with every capacity column blank
+      (a validation error, not a way to make the project absent)
     * Wind_Every (gen_spec): a period = 0 row
     * Wind_New (gen_new_lin): no specified capacity rows
-    * Wind_Mapped (gen_spec): like Wind_Blank, reading its profile through
-      a timepoint map whose 2030 data timepoints have no data
+    * Wind_Mapped (gen_spec): a capacity row for 2020 only, reading its
+      profile through a timepoint map whose 2030 data timepoints have no
+      data
     * Hydro_Retired (gen_spec): a capacity row for 2020 only
     * Hydro_Gone (gen_spec): no capacity rows and no hydro rows
 
@@ -130,7 +132,6 @@ class TestSpecNonOperationalOpcharInputs(unittest.TestCase):
                 ("Wind_Blank", 2030, None),
                 ("Wind_Every", 0, 1),
                 ("Wind_Mapped", 2020, 1),
-                ("Wind_Mapped", 2030, None),
                 ("Hydro_Retired", 2020, 1),
             ],
         )
@@ -232,11 +233,12 @@ class TestSpecNonOperationalOpcharInputs(unittest.TestCase):
 
     def test_timepoints_of_operational_periods_only(self):
         """
-        Wind_Retired and Wind_Blank (blank 2030 row) get their 2020
-        timepoints only; Wind_Every (period = 0) and Wind_New (not a
-        specified capacity type) get every timepoint. Wind_Mapped's 2030
-        timepoints, whose data timepoints have no data, are neither written
-        nor reported as gaps.
+        Wind_Retired gets its 2020 timepoints only; Wind_Every (period = 0)
+        and Wind_New (not a specified capacity type) get every timepoint.
+        Wind_Blank's blank 2030 row is a row, so its 2030 timepoints are
+        written too (the model then fails to load, as validation reports).
+        Wind_Mapped's 2030 timepoints, whose data timepoints have no data,
+        are neither written nor reported as gaps.
         """
         tmps_by_prj = {}
         for prj, tmp, _ in self.var_profile_rows():
@@ -244,7 +246,7 @@ class TestSpecNonOperationalOpcharInputs(unittest.TestCase):
         all_tmps = TMPS_BY_PERIOD[2020] + TMPS_BY_PERIOD[2030]
         self.assertDictEqual(
             {
-                "Wind_Blank": TMPS_BY_PERIOD[2020],
+                "Wind_Blank": all_tmps,
                 "Wind_Every": all_tmps,
                 "Wind_Mapped": TMPS_BY_PERIOD[2020],
                 "Wind_New": all_tmps,

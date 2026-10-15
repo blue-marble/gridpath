@@ -217,7 +217,7 @@ def add_model_components(
 
 def power_output_max_rule(mod, grp, tmp):
     if mod.power_output_group_power_output_max[grp, mod.period[tmp]] == float("inf"):
-        return Constraint.Feasible
+        return Constraint.Skip
     else:
         return (
             mod.Group_Total_Power_in_Tmp[grp, tmp]
@@ -227,7 +227,7 @@ def power_output_max_rule(mod, grp, tmp):
 
 def power_output_min_rule(mod, grp, tmp):
     if mod.power_output_group_power_output_min[grp, mod.period[tmp]] == float("-inf"):
-        return Constraint.Feasible
+        return Constraint.Skip
     else:
         return (
             mod.Group_Total_Power_in_Tmp[grp, tmp]

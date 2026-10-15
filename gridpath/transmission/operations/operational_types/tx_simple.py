@@ -19,6 +19,12 @@ less than or equal to the line capacity. Line capacity can be defined for
 both transmission flow directions. The user can define losses as a fraction
 of line flow.
 
+A line whose capacity in a direction is unspecified (see
+:code:`gridpath.transmission.capacity.capacity_types.tx_spec`) has no flow
+constraint in that direction and therefore also no upper bound on its
+losses there; since losses are only constrained from below, a nonzero loss
+factor on such a line lets the model incur losses that are not real.
+
 """
 
 import os
@@ -68,6 +74,21 @@ def add_model_components(
     | Two-dimensional set with transmission lines of the :code:`tx_simple`    |
     | operational type and their operational timepoints.                      |
     +-------------------------------------------------------------------------+
+    | | :code:`TX_SIMPLE_OPR_TMPS_W_MIN_LIMIT`                                |
+    |                                                                         |
+    | Subset of :code:`TX_SIMPLE_OPR_TMPS` restricted to line-timepoints      |
+    | whose line-period has a lower flow limit (i.e. is in the transmission   |
+    | capacity module's :code:`TX_OPR_PRDS_W_MIN_LIMIT`). The minimum-flow    |
+    | and "from"-direction loss constraints are built over this subset, so a  |
+    | line left unconstrained by its capacity type gets no such constraint.   |
+    +-------------------------------------------------------------------------+
+    | | :code:`TX_SIMPLE_OPR_TMPS_W_MAX_LIMIT`                                |
+    |                                                                         |
+    | Subset of :code:`TX_SIMPLE_OPR_TMPS` restricted to line-timepoints      |
+    | whose line-period has an upper flow limit (analogous to                 |
+    | :code:`TX_SIMPLE_OPR_TMPS_W_MIN_LIMIT`); scopes the maximum-flow and    |
+    | "to"-direction loss constraints.                                        |
+    +-------------------------------------------------------------------------+
 
     +-------------------------------------------------------------------------+
     | Params                                                                  |
@@ -80,7 +101,7 @@ def add_model_components(
     | The fraction of power that is lost when transmitted over this line.     |
     +-------------------------------------------------------------------------+
 
-    |
+                                                                              |
 
     +-------------------------------------------------------------------------+
     | Variables                                                               |
@@ -110,7 +131,7 @@ def add_model_components(
     | when power is flowing to the "to" zone.                                 |
     +-------------------------------------------------------------------------+
 
-    |
+                                                                              |
 
     +-------------------------------------------------------------------------+
     | Constraints                                                             |
@@ -180,6 +201,36 @@ def add_model_components(
         ),
     )
 
+    # Operational timepoints whose line-period has a lower / upper flow limit.
+    # Lines left unconstrained by their capacity type (e.g. a tx_spec line with
+    # a blank min or max) are excluded, so no min/max flow constraint is built
+    # for them. TX_OPR_PRDS_W_MIN_LIMIT / _W_MAX_LIMIT come from the
+    # transmission capacity module.
+    # Note: distinct from the identically-purposed but separately-fed
+    # TX_SIMPLE_OPR_TMPS_W_{MIN,MAX}_CONSTRAINT sets in
+    # transmission/operations/transmission_flow_limits.py (which come from the
+    # optional transmission_flow_limits inputs). These "_LIMIT" sets come from
+    # the line's *capacity* and gate the capacity-based transmit constraints.
+    m.TX_SIMPLE_OPR_TMPS_W_MIN_LIMIT = Set(
+        dimen=2,
+        within=m.TX_SIMPLE_OPR_TMPS,
+        initialize=lambda mod: [
+            (tx, tmp)
+            for (tx, tmp) in mod.TX_SIMPLE_OPR_TMPS
+            if (tx, mod.period[tmp]) in mod.TX_OPR_PRDS_W_MIN_LIMIT
+        ],
+    )
+
+    m.TX_SIMPLE_OPR_TMPS_W_MAX_LIMIT = Set(
+        dimen=2,
+        within=m.TX_SIMPLE_OPR_TMPS,
+        initialize=lambda mod: [
+            (tx, tmp)
+            for (tx, tmp) in mod.TX_SIMPLE_OPR_TMPS
+            if (tx, mod.period[tmp]) in mod.TX_OPR_PRDS_W_MAX_LIMIT
+        ],
+    )
+
     # Params
     ###########################################################################
     m.tx_simple_loss_factor = Param(m.TX_SIMPLE, within=PercentFraction, default=0)
@@ -196,11 +247,11 @@ def add_model_components(
     ###########################################################################
 
     m.TxSimple_Min_Transmit_Constraint = Constraint(
-        m.TX_SIMPLE_OPR_TMPS, rule=min_transmit_rule
+        m.TX_SIMPLE_OPR_TMPS_W_MIN_LIMIT, rule=min_transmit_rule
     )
 
     m.TxSimple_Max_Transmit_Constraint = Constraint(
-        m.TX_SIMPLE_OPR_TMPS, rule=max_transmit_rule
+        m.TX_SIMPLE_OPR_TMPS_W_MAX_LIMIT, rule=max_transmit_rule
     )
 
     m.TxSimple_Losses_LZ_From_Constraint = Constraint(
@@ -211,12 +262,15 @@ def add_model_components(
         m.TX_SIMPLE_OPR_TMPS, rule=losses_lz_to_rule
     )
 
+    # The loss upper bounds are the flow capacity times the loss factor, so
+    # they only apply where that capacity is finite (min for the "from"
+    # direction, max for the "to" direction).
     m.TxSimple_Max_Losses_From_Constraint = Constraint(
-        m.TX_SIMPLE_OPR_TMPS, rule=max_losses_from_rule
+        m.TX_SIMPLE_OPR_TMPS_W_MIN_LIMIT, rule=max_losses_from_rule
     )
 
     m.TxSimple_Max_Losses_To_Constraint = Constraint(
-        m.TX_SIMPLE_OPR_TMPS, rule=max_losses_to_rule
+        m.TX_SIMPLE_OPR_TMPS_W_MAX_LIMIT, rule=max_losses_to_rule
     )
 
 

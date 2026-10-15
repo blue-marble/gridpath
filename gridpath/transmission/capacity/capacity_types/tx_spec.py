@@ -26,6 +26,14 @@ Zone 1 to Zone 2 with a minimum flow capacity of -1,000 MW and a maximum flow
 capacity of 1,200 MW can transmit up to 1,000 MW from Zone 2 to Zone 1 and
 up to 1,200 MW from Zone 1 to Zone 2.
 
+A minimum or maximum capacity left unspecified (NULL in the database) means
+the line has no flow limit in that direction: no flow constraint is built
+for it, which is preferable to a very large number, whose only effect is to
+hurt the solver's scaling. A line with an unspecified capacity cannot carry
+a fixed cost (there is no capacity to cost), and lines of the
+:code:`tx_simple_binary` operational type must specify both capacities (its
+direction constraints use them as big-M coefficients).
+
 """
 
 import csv
@@ -50,9 +58,16 @@ from gridpath.auxiliary.validations import (
     write_validation_to_database,
     validate_dtypes,
     validate_idxs,
-    validate_missing_inputs,
     validate_column_monotonicity,
 )
+
+# A specified transmission line whose min (max) capacity is left blank in the
+# inputs is treated as having no lower (upper) flow limit. The capacity params
+# default to these sentinels, and the operational types skip the corresponding
+# flow-limit constraint when the capacity is infinite (see
+# min/max_limit_is_unconstrained_rule below).
+Negative_Infinity = float("-inf")
+Infinity = float("inf")
 
 
 def add_model_components(
@@ -80,7 +95,7 @@ def add_model_components(
     | **gridpath.transmission.capacity.capacity**.                            |
     +-------------------------------------------------------------------------+
 
-    |
+                                                                              |
 
     +-------------------------------------------------------------------------+
     | Required Input Params                                                   |
@@ -124,8 +139,13 @@ def add_model_components(
     # Required Params
     ###########################################################################
 
-    m.tx_spec_min_cap_mw = Param(m.TX_SPEC_OPR_PRDS, within=Reals)
-    m.tx_spec_max_cap_mw = Param(m.TX_SPEC_OPR_PRDS, within=Reals)
+    # Optional caps: a blank min (max) in the inputs leaves the param at
+    # -inf (+inf), which the operational type reads as "no lower (upper)
+    # flow limit" and skips the corresponding constraint.
+    m.tx_spec_min_cap_mw = Param(
+        m.TX_SPEC_OPR_PRDS, within=Reals, default=Negative_Infinity
+    )
+    m.tx_spec_max_cap_mw = Param(m.TX_SPEC_OPR_PRDS, within=Reals, default=Infinity)
     m.tx_spec_fixed_cost_per_mw_yr = Param(
         m.TX_SPEC_OPR_PRDS, within=NonNegativeReals, default=0
     )
@@ -148,12 +168,30 @@ def max_transmission_capacity_rule(mod, tx, p):
     return mod.tx_spec_max_cap_mw[tx, p]
 
 
+def min_limit_is_unconstrained_rule(mod, tx, p):
+    """Whether this line-period has no lower flow limit (blank min in inputs)."""
+    return mod.tx_spec_min_cap_mw[tx, p] == Negative_Infinity
+
+
+def max_limit_is_unconstrained_rule(mod, tx, p):
+    """Whether this line-period has no upper flow limit (blank max in inputs)."""
+    return mod.tx_spec_max_cap_mw[tx, p] == Infinity
+
+
 def fixed_cost_rule(mod, g, p):
     """
     The fixed cost of Tx lines of the *tx_spec* capacity type is a
     pre-specified number equal to the average capacity times the per-mw fixed
     cost for each of the project's operational periods.
+
+    A line with no flow limit (infinite min or max capacity) has no
+    meaningful capacity to cost, so its fixed cost is zero.
     """
+    if (
+        mod.tx_spec_min_cap_mw[g, p] == Negative_Infinity
+        or mod.tx_spec_max_cap_mw[g, p] == Infinity
+    ):
+        return 0
     return (
         mean([abs(mod.tx_spec_min_cap_mw[g, p]), abs(mod.tx_spec_max_cap_mw[g, p])])
         * mod.tx_spec_fixed_cost_per_mw_yr[g, p]
@@ -175,6 +213,8 @@ def load_model_data(
     subproblem,
     stage,
 ):
+    # A "." (unspecified) min or max capacity leaves the param at its
+    # -inf / +inf default: no flow limit in that direction
     data_portal.load(
         filename=os.path.join(
             scenario_directory,
@@ -453,7 +493,10 @@ def validate_inputs(
         ),
     )
 
-    # Check for missing values (vs. missing row entries above)
+    # A NULL min_mw or max_mw is a valid input meaning "no flow limit in
+    # that direction", so missing values are not flagged; min <= max is
+    # checked where both are specified (validate_column_monotonicity drops
+    # rows with a NULL)
     cols = ["min_mw", "max_mw"]
     write_validation_to_database(
         conn=conn,
@@ -464,12 +507,14 @@ def validate_inputs(
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
-        db_table="inputs_transmission_specified_capacity",
+        db_table=TABLE,
         severity="High",
-        errors=validate_missing_inputs(df, cols),
+        errors=validate_column_monotonicity(
+            df=df, cols=cols, idx_col=["transmission_line", "period"]
+        ),
     )
 
-    # check that min <= max
+    # A line with no flow limit in a direction has no capacity to cost
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
@@ -479,9 +524,67 @@ def validate_inputs(
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
-        db_table="inputs_project_new_potential",
+        db_table=TABLE,
         severity="High",
-        errors=validate_column_monotonicity(
-            df=df, cols=cols, idx_col=["project", "period"]
+        errors=validate_no_fixed_cost_without_capacity(df),
+    )
+
+    # The tx_simple_binary direction constraints use the capacities as
+    # big-M coefficients, so its lines must specify both
+    binary_tx_lines = get_tx_lines(
+        conn, scenario_id, subscenarios, "operational_type", "tx_simple_binary"
+    )
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table=TABLE,
+        severity="High",
+        errors=validate_capacities_specified_for_lines(
+            df, binary_tx_lines, "tx_simple_binary"
         ),
     )
+
+
+def validate_no_fixed_cost_without_capacity(df):
+    """
+    :param df: the specified capacity rows (transmission_line, period, min_mw,
+        max_mw, fixed_cost_per_mw_yr)
+    :return: list of error messages, one per row with a nonzero fixed cost
+        and an unspecified (NULL) min_mw or max_mw
+    """
+    unspecified = df["min_mw"].isna() | df["max_mw"].isna()
+    costed = df["fixed_cost_per_mw_yr"].fillna(0) != 0
+    bad = df.loc[unspecified & costed, ["transmission_line", "period"]]
+    return [
+        "transmission_line {}, period {}: fixed_cost_per_mw_yr requires both "
+        "min_mw and max_mw to be specified (an unspecified capacity means no "
+        "flow limit, which has no capacity to cost)".format(tx, prd)
+        for tx, prd in bad.itertuples(index=False)
+    ]
+
+
+def validate_capacities_specified_for_lines(df, tx_lines, operational_type):
+    """
+    :param df: the specified capacity rows
+    :param tx_lines: the lines whose rows must specify both min_mw and max_mw
+    :param operational_type: the operational type of those lines (for the
+        message)
+    :return: list of error messages, one per row of those lines with an
+        unspecified (NULL) min_mw or max_mw
+    """
+    rows = df[df["transmission_line"].isin(tx_lines)]
+    bad = rows.loc[
+        rows["min_mw"].isna() | rows["max_mw"].isna(),
+        ["transmission_line", "period"],
+    ]
+    return [
+        "transmission_line {}, period {}: lines of the {} operational type "
+        "must specify both min_mw and max_mw".format(tx, prd, operational_type)
+        for tx, prd in bad.itertuples(index=False)
+    ]

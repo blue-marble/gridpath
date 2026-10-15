@@ -995,7 +995,7 @@ class SolverOptions(object):
             None
             if self.SOLVER_OPTIONS_ID is None
             else {
-                row[0]: row[1]
+                row[0]: format_solver_option_value(row[1])
                 for row in cursor.execute("""
                     SELECT solver_option_name, solver_option_value
                     FROM inputs_options_solver
@@ -1004,6 +1004,18 @@ class SolverOptions(object):
                 if row[0] is not None and row[0] != ""
             }
         )
+
+
+def format_solver_option_value(value):
+    """
+    Solver option values are stored in a FLOAT column, so integer-valued
+    options (e.g. HiGHS's threads or simplex_dual_edge_weight_strategy) come
+    back as floats; solvers reject or silently ignore "4.0" for an integer
+    option, so integral values are written as integers.
+    """
+    if isinstance(value, float) and value.is_integer():
+        return int(value)
+    return value
 
 
 def db_column_to_self(column, conn, scenario_id):

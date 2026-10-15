@@ -244,3 +244,46 @@ class TestCapacityGroups(unittest.TestCase):
             for (g, p) in instance.CAPACITY_GROUP_PERIODS
         }
         self.assertDictEqual(expected_total_emax, actual_total_emax)
+
+    def test_limit_constraints_built_only_where_limits_are_specified(self):
+        """
+        A group-period whose limit is left at its default (0 for a minimum,
+        infinity for a maximum) gets no constraint row at all: the energy
+        maxima of the fixture are all unspecified, so the energy-build
+        maximum has no indices, while the capacity constraints exist only
+        for the group with capacity limits.
+        """
+        m, data = add_components_and_load_data(
+            prereq_modules=IMPORTED_PREREQ_MODULES,
+            module_to_test=MODULE_BEING_TESTED,
+            test_data_dir=TEST_DATA_DIRECTORY,
+            weather_iteration="",
+            hydro_iteration="",
+            availability_iteration="",
+            subproblem="",
+            stage="",
+        )
+        instance = m.create_instance(data)
+
+        capacity_group_periods = [("Capacity_Group1", 2020), ("Capacity_Group1", 2030)]
+        energy_group_periods = [("Energy_Group", 2020), ("Energy_Group", 2030)]
+        for constraint in [
+            instance.Max_Group_Capacity_Build_in_Period_Constraint,
+            instance.Min_Group_Capacity_Build_in_Period_Constraint,
+            instance.Max_Group_Total_Capacity_in_Period_Constraint,
+            instance.Min_Group_Total_Capacity_in_Period_Constraint,
+        ]:
+            self.assertListEqual(sorted(constraint.keys()), capacity_group_periods)
+        # Energy_Group specifies only a total-energy maximum; Capacity_Group1
+        # specifies no energy limits (the new-energy maximum used to be
+        # gated on the capacity maximum and built rows with an infinite RHS)
+        self.assertListEqual(
+            sorted(instance.Max_Group_Total_Energy_in_Period_Constraint.keys()),
+            energy_group_periods,
+        )
+        for constraint in [
+            instance.Max_Group_Energy_Build_in_Period_Constraint,
+            instance.Min_Group_Energy__Build_in_Period_Constraint,
+            instance.Min_Group_Total_Energy_in_Period_Constraint,
+        ]:
+            self.assertEqual(len(constraint), 0)

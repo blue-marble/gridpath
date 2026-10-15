@@ -1,2 +1,3 @@
 solver_name,highs
 presolve,off
+simplex_dual_edge_weight_strategy,0
