@@ -189,6 +189,43 @@ class TestGenVarStorHybOpType(unittest.TestCase):
             expected_reserves_setpoint_duration, actual_reserves_setpoint_duration
         )
 
+    def test_stor_headroom_constraints_skipped_without_reserves(self):
+        """
+        With no reserve module loaded, the storage headroom power constraint
+        is skipped everywhere and the energy one only in timepoints with a
+        next timepoint; the total reserves constraint that pins the reserve
+        variables to zero is kept.
+        """
+        m, data = add_components_and_load_data(
+            prereq_modules=IMPORTED_PREREQ_MODULES,
+            module_to_test=MODULE_BEING_TESTED,
+            test_data_dir=TEST_DATA_DIRECTORY,
+            weather_iteration="",
+            hydro_iteration="",
+            availability_iteration="",
+            subproblem="",
+            stage="",
+        )
+        instance = m.create_instance(data)
+
+        self.assertEqual(
+            len(instance.GenVarStorHyb_Max_Stor_Headroom_Power_Constraint), 0
+        )
+        chain_ends = {
+            (s, tmp)
+            for (s, tmp) in instance.GEN_VAR_STOR_HYB_OPR_TMPS
+            if instance.next_tmp[tmp, instance.balancing_type_project[s]] == "."
+        }
+        self.assertTrue(chain_ends)
+        self.assertEqual(
+            set(instance.GenVarStorHyb_Max_Stor_Headroom_Energy_Constraint.keys()),
+            chain_ends,
+        )
+        self.assertEqual(
+            set(instance.GenVarStorHyb_Total_Upward_Reserves_Constraint.keys()),
+            set(instance.GEN_VAR_STOR_HYB_OPR_TMPS),
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

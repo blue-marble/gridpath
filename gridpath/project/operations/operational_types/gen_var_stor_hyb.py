@@ -477,12 +477,30 @@ def add_model_components(
         m.GEN_VAR_STOR_HYB_OPR_TMPS, rule=max_energy_in_storage_rule
     )
 
+    # For a project with no upward reserve variables, the total reserves
+    # constraint pins the storage reserve variable to zero and the storage
+    # headroom constraints reduce to bounds that the maximum discharge
+    # constraint and the next timepoint's energy tracking constraint
+    # already imply, so they are skipped (see the rules)
+    def max_stor_headroom_power_constraint_rule(mod, s, tmp):
+        if not getattr(d, headroom_variables)[s]:
+            return Constraint.Skip
+        return max_stor_headroom_power_rule(mod, s, tmp)
+
     m.GenVarStorHyb_Max_Stor_Headroom_Power_Constraint = Constraint(
-        m.GEN_VAR_STOR_HYB_OPR_TMPS, rule=max_stor_headroom_power_rule
+        m.GEN_VAR_STOR_HYB_OPR_TMPS, rule=max_stor_headroom_power_constraint_rule
     )
 
+    def max_stor_headroom_energy_constraint_rule(mod, s, tmp):
+        if (
+            not getattr(d, headroom_variables)[s]
+            and mod.next_tmp[tmp, mod.balancing_type_project[s]] != "."
+        ):
+            return Constraint.Skip
+        return max_stor_headroom_energy_rule(mod, s, tmp)
+
     m.GenVarStorHyb_Max_Stor_Headroom_Energy_Constraint = Constraint(
-        m.GEN_VAR_STOR_HYB_OPR_TMPS, rule=max_stor_headroom_energy_rule
+        m.GEN_VAR_STOR_HYB_OPR_TMPS, rule=max_stor_headroom_energy_constraint_rule
     )
 
     m.GenVarStorHyb_Total_Upward_Reserves_Constraint = Constraint(
@@ -745,6 +763,10 @@ def max_stor_headroom_power_rule(mod, s, tmp):
     The storage upward reserves cannot exceed the available headroom.
     Going from charging to non-charging also counts as headroom, doubling
     the maximum amount of potential headroom.
+
+    Skipped for a project with no upward reserve variables: the constraint
+    then reduces to a discharge limit that the maximum discharge
+    constraint implies.
     """
     return (
         mod.GenVarStorHyb_Upward_Reserves_from_Stor_MW[s, tmp]
@@ -776,6 +798,12 @@ def max_stor_headroom_energy_rule(mod, s, tmp):
     available energy in storage in that timepoint. Said differently,
     must have enough energy available to be at the new set point for the
     required setpoint duration (the timepoint duration by default).
+
+    Skipped for a project with no upward reserve variables when the
+    timepoint has a next timepoint in this subproblem: the constraint then
+    reduces to a non-negative ending energy, which the next timepoint's
+    non-negative starting energy implies. It is kept in the last timepoint
+    of a linear or linked horizon, where it is the only such bound.
     """
     return (
         mod.GenVarStorHyb_Upward_Reserves_from_Stor_MW[s, tmp]

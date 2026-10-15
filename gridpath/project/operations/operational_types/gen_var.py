@@ -297,8 +297,17 @@ def add_model_components(
 
     m.GenVar_Max_Power_Constraint = Constraint(m.GEN_VAR_OPR_TMPS, rule=max_power_rule)
 
+    def max_upward_reserves_constraint_rule(mod, g, tmp):
+        # Without upward reserve variables, the constraint reduces to
+        # 0 <= GenVar_Scheduled_Curtailment_MW, which the variable's
+        # domain already enforces; the downward one is kept, as it is what
+        # keeps GenVar_Provide_Power_MW non-negative
+        if not getattr(d, headroom_variables)[g]:
+            return Constraint.Skip
+        return max_upward_reserves_rule(mod, g, tmp)
+
     m.GenVar_Max_Upward_Reserves_Constraint = Constraint(
-        m.GEN_VAR_OPR_TMPS, rule=max_upward_reserves_rule
+        m.GEN_VAR_OPR_TMPS, rule=max_upward_reserves_constraint_rule
     )
 
     m.GenVar_Max_Downward_Reserves_Constraint = Constraint(
@@ -360,7 +369,8 @@ def max_power_rule(mod, g, tmp):
 
 def max_upward_reserves_rule(mod, g, tmp):
     """
-    Upward reserves can't exceed curtailment
+    Upward reserves can't exceed curtailment. Skipped for projects with no
+    upward reserve variables.
     """
     return (
         mod.GenVar_Upwards_Reserves_MW[g, tmp]

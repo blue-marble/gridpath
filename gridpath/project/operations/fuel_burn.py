@@ -413,6 +413,10 @@ def add_model_components(
         In each timepoint, enforce a minimum on the proportion in the blend of each
         fuel.
         """
+        # A fraction of 0 is no restriction (the by-fuel variables are
+        # non-negative and sum to the total), so skip the constraint
+        if mod.min_fraction_in_fuel_blend[prj, f] == 0:
+            return Constraint.Skip
         return (
             mod.Project_Opr_Fuel_Burn_by_Fuel[prj, f, tmp]
             >= mod.min_fraction_in_fuel_blend[prj, f]
@@ -428,6 +432,8 @@ def add_model_components(
         In each timepoint, enforce a maximum on the proportion in the blend of each
         fuel.
         """
+        if mod.max_fraction_in_fuel_blend[prj, f] == 1:
+            return Constraint.Skip
         return (
             mod.Project_Opr_Fuel_Burn_by_Fuel[prj, f, tmp]
             <= mod.max_fraction_in_fuel_blend[prj, f]
@@ -460,6 +466,8 @@ def add_model_components(
         In each timepoint, enforce a minimum on the proportion in the blend of each
         fuel.
         """
+        if mod.min_fraction_in_fuel_blend[prj, f] == 0:
+            return Constraint.Skip
         return (
             mod.Project_Startup_Fuel_Burn_by_Fuel[prj, f, tmp]
             >= mod.min_fraction_in_fuel_blend[prj, f]
@@ -475,6 +483,8 @@ def add_model_components(
         In each timepoint, enforce a maximum on the proportion in the blend of each
         fuel.
         """
+        if mod.max_fraction_in_fuel_blend[prj, f] == 1:
+            return Constraint.Skip
         return (
             mod.Project_Startup_Fuel_Burn_by_Fuel[prj, f, tmp]
             <= mod.max_fraction_in_fuel_blend[prj, f]
@@ -508,6 +518,8 @@ def add_model_components(
         In each timepoint, enforce a minimum on the proportion in the blend of each
         fuel.
         """
+        if mod.min_fraction_in_fuel_blend[prj, f] == 0:
+            return Constraint.Skip
         return (
             mod.Project_Fuel_Contribution_by_Fuel[prj, f, tmp]
             >= mod.min_fraction_in_fuel_blend[prj, f]
@@ -523,6 +535,8 @@ def add_model_components(
         In each timepoint, enforce a maximum on the proportion in the blend of each
         fuel.
         """
+        if mod.max_fraction_in_fuel_blend[prj, f] == 1:
+            return Constraint.Skip
         return (
             mod.Project_Fuel_Contribution_by_Fuel[prj, f, tmp]
             <= mod.max_fraction_in_fuel_blend[prj, f]

@@ -155,6 +155,34 @@ class TestGenVar(unittest.TestCase):
 
         self.assertDictEqual(expected_cap_factor, actual_cap_factor)
 
+    def test_upward_reserves_constraint_skipped_without_reserves(self):
+        """
+        With no reserve module loaded, the upward reserves constraint (which
+        reduces to a non-negative curtailment) is skipped; the downward one,
+        which keeps power provision non-negative, is kept.
+        """
+        m, data = add_components_and_load_data(
+            prereq_modules=IMPORTED_PREREQ_MODULES,
+            module_to_test=MODULE_BEING_TESTED,
+            test_data_dir=TEST_DATA_DIRECTORY,
+            weather_iteration="",
+            hydro_iteration="",
+            availability_iteration="",
+            subproblem="",
+            stage="",
+        )
+        instance = m.create_instance(data)
+
+        self.assertEqual(len(instance.GenVar_Max_Upward_Reserves_Constraint), 0)
+        self.assertEqual(
+            set(instance.GenVar_Max_Downward_Reserves_Constraint.keys()),
+            {
+                (g, tmp)
+                for (g, tmp) in instance.GEN_VAR_OPR_TMPS
+                if instance.gen_var_cap_factor[g, tmp] >= 0
+            },
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
