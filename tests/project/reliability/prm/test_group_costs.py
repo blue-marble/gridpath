@@ -19,7 +19,11 @@ import os.path
 import sys
 import unittest
 
-from tests.common_functions import create_abstract_model, add_components_and_load_data
+from tests.common_functions import (
+    create_abstract_model,
+    add_components_and_load_data,
+    stage_test_data_with_blanked_cells,
+)
 
 TEST_DATA_DIRECTORY = os.path.join(
     os.path.dirname(__file__), "..", "..", "..", "test_data"
@@ -373,6 +377,41 @@ class TestDeliverabilityGroupCosts(unittest.TestCase):
         )
 
         self.assertDictEqual(expected_prj_by_grp, actual_prj_by_grp)
+
+    def test_deliverable_capacity_limit_skipped_without_limit(self):
+        """
+        The deliverable-capacity limit is built where a limit is specified
+        and skipped (no row with an infinite RHS) where it is left blank.
+        """
+        staged_dir = stage_test_data_with_blanked_cells(
+            self,
+            TEST_DATA_DIRECTORY,
+            "deliverability_group_potential.tab",
+            where={"deliverability_group": "Threshold_Group_1"},
+            blank=["deliverable_capacity_limit_mw"],
+        )
+        m, data = add_components_and_load_data(
+            prereq_modules=IMPORTED_PREREQ_MODULES,
+            module_to_test=MODULE_BEING_TESTED,
+            test_data_dir=staged_dir,
+            weather_iteration="",
+            hydro_iteration="",
+            availability_iteration="",
+            subproblem="",
+            stage="",
+        )
+        instance = m.create_instance(data)
+
+        self.assertEqual(
+            instance.deliverable_capacity_limit_mw["Threshold_Group_1", 2020],
+            float("inf"),
+        )
+        # Threshold_Group_1 has no limit in either period now; Threshold_Group_2
+        # keeps its 2030 limit and is unspecified (infinite) in 2020
+        self.assertListEqual(
+            sorted(instance.Group_Deliverable_Capacity_Limit_Constraint.keys()),
+            [("Threshold_Group_2", 2030)],
+        )
 
 
 if __name__ == "__main__":

@@ -12,6 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import csv
+import os
+import shutil
+import tempfile
+
 from pyomo.environ import AbstractModel, DataPortal
 from gridpath.auxiliary.dynamic_components import DynamicComponents
 
@@ -154,3 +159,37 @@ def add_components_and_load_data(
         )
 
     return m, data
+
+
+def stage_test_data_with_blanked_cells(
+    test_case, test_data_dir, tab_file, where, blank
+):
+    """
+    Copy *test_data_dir* to a temporary directory (removed when *test_case*
+    finishes) and, in its inputs/*tab_file*, set the *blank* columns to "."
+    (Pyomo's "no value", so the param falls back to its default) in every row
+    whose values match the column -> value pairs in *where*. Returns the
+    staged directory.
+
+    Lets a test exercise "input left unspecified" behavior (e.g. a limit at
+    its infinite default) without a second fixture tree.
+    """
+    staged = tempfile.mkdtemp()
+    test_case.addCleanup(shutil.rmtree, staged, ignore_errors=True)
+    staged_dir = os.path.join(staged, "test_data")
+    shutil.copytree(test_data_dir, staged_dir)
+
+    path = os.path.join(staged_dir, "inputs", tab_file)
+    with open(path, newline="") as f:
+        raw = f.read()
+    terminator = "\r\n" if "\r\n" in raw else "\n"
+    rows = list(csv.reader(raw.splitlines(), delimiter="\t"))
+    header = rows[0]
+    for row in rows[1:]:
+        if all(row[header.index(col)] == str(val) for col, val in where.items()):
+            for col in blank:
+                row[header.index(col)] = "."
+    with open(path, "w", newline="") as f:
+        csv.writer(f, delimiter="\t", lineterminator=terminator).writerows(rows)
+
+    return staged_dir

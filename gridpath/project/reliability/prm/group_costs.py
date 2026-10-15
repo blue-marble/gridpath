@@ -396,6 +396,10 @@ def add_model_components(
         :param p:
         :return:
         """
+        # No limit specified (the default is infinity): skip rather than
+        # build a row with an infinite right-hand side
+        if mod.deliverable_capacity_limit_mw[g, p] == float("inf"):
+            return Constraint.Skip
         return (
             mod.Cumulative_Added_Deliverability_Capacity_MW[g, p]
             <= mod.deliverable_capacity_limit_mw[g, p]

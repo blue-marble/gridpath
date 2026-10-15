@@ -323,7 +323,7 @@ def add_model_components(
 ###############################################################################
 def new_capacity_max_rule(mod, grp, prd):
     if mod.capacity_group_new_capacity_max[grp, prd] == float("inf"):
-        return Constraint.Feasible
+        return Constraint.Skip
     else:
         return (
             mod.Group_New_Capacity_in_Period[grp, prd]
@@ -333,7 +333,7 @@ def new_capacity_max_rule(mod, grp, prd):
 
 def new_capacity_min_rule(mod, grp, prd):
     if mod.capacity_group_new_capacity_min[grp, prd] == 0:
-        return Constraint.Feasible
+        return Constraint.Skip
     else:
         return (
             mod.Group_New_Capacity_in_Period[grp, prd]
@@ -343,7 +343,7 @@ def new_capacity_min_rule(mod, grp, prd):
 
 def total_capacity_max_rule(mod, grp, prd):
     if mod.capacity_group_total_capacity_max[grp, prd] == float("inf"):
-        return Constraint.Feasible
+        return Constraint.Skip
     else:
         return (
             mod.Group_Total_Capacity_in_Period[grp, prd]
@@ -353,7 +353,7 @@ def total_capacity_max_rule(mod, grp, prd):
 
 def total_capacity_min_rule(mod, grp, prd):
     if mod.capacity_group_total_capacity_min[grp, prd] == 0:
-        return Constraint.Feasible
+        return Constraint.Skip
     else:
         return (
             mod.Group_Total_Capacity_in_Period[grp, prd]
@@ -366,8 +366,8 @@ def total_capacity_min_rule(mod, grp, prd):
 
 
 def new_energy_max_rule(mod, grp, prd):
-    if mod.capacity_group_new_capacity_max[grp, prd] == float("inf"):
-        return Constraint.Feasible
+    if mod.energy_group_new_energy_max[grp, prd] == float("inf"):
+        return Constraint.Skip
     else:
         return (
             mod.Group_New_Energy_in_Period[grp, prd]
@@ -377,7 +377,7 @@ def new_energy_max_rule(mod, grp, prd):
 
 def new_energy_min_rule(mod, grp, prd):
     if mod.energy_group_new_energy_min[grp, prd] == 0:
-        return Constraint.Feasible
+        return Constraint.Skip
     else:
         return (
             mod.Group_New_Energy_in_Period[grp, prd]
@@ -387,7 +387,7 @@ def new_energy_min_rule(mod, grp, prd):
 
 def total_energy_max_rule(mod, grp, prd):
     if mod.energy_group_total_energy_max[grp, prd] == float("inf"):
-        return Constraint.Feasible
+        return Constraint.Skip
     else:
         return (
             mod.Group_Total_Energy_in_Period[grp, prd]
@@ -397,7 +397,7 @@ def total_energy_max_rule(mod, grp, prd):
 
 def total_energy_min_rule(mod, grp, prd):
     if mod.energy_group_total_energy_min[grp, prd] == 0:
-        return Constraint.Feasible
+        return Constraint.Skip
     else:
         return (
             mod.Group_Total_Energy_in_Period[grp, prd]

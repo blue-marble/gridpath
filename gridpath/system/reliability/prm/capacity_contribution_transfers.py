@@ -160,6 +160,10 @@ def add_model_components(
     )
 
     def max_transfer_constraint_rule(mod, prm_z_from, prm_z_to, prd):
+        # No limit specified (the default is infinity): skip rather than
+        # build a row with an infinite right-hand side
+        if mod.max_transfer_powerunit[prm_z_from, prm_z_to, prd] == float("inf"):
+            return Constraint.Skip
         return (
             mod.Transfer_Capacity_Contribution[prm_z_from, prm_z_to, prd]
             <= mod.max_transfer_powerunit[prm_z_from, prm_z_to, prd]
