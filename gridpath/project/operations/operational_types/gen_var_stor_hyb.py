@@ -61,6 +61,10 @@ from gridpath.auxiliary.dynamic_components import (
     headroom_variables,
     reserve_variable_derate_params,
 )
+from gridpath.project.operations.reserves.reserve_aggregation import (
+    derated_headroom_provision_rule,
+    derated_footroom_provision_rule,
+)
 from gridpath.project.operations.operational_types.stor import (
     check_for_soc_infeasibilities,
 )
@@ -147,6 +151,16 @@ def add_model_components(
     |                                                                         |
     | Optional default value for gen_var_stor_hyb_cap_factor. Use with        |
     | caution.                                                                |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_var_stor_hyb_reserves_setpoint_duration_hours`             |
+    | | *Defined over*: :code:`GEN_VAR_STOR_HYB`                              |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The number of hours for which the storage component must be able to     |
+    | sustain the new setpoint if its upward reserves are called, i.e., the   |
+    | duration over which the storage upward reserves must be backed by       |
+    | energy in storage in the headroom energy constraint. If not specified,  |
+    | the timepoint duration is used.                                         |
     +-------------------------------------------------------------------------+
 
     |
@@ -290,7 +304,6 @@ def add_model_components(
 
     m.GEN_VAR_STOR_HYB_OPR_TMPS = Set(
         dimen=2,
-        within=m.PRJ_OPR_TMPS,
         initialize=lambda mod: subset_init_by_set_membership(
             mod=mod,
             superset="PRJ_OPR_TMPS",
@@ -330,6 +343,12 @@ def add_model_components(
 
     m.gen_var_stor_hyb_upward_reserves_to_soc_depletion = Param(
         m.GEN_VAR_STOR_HYB, default=0
+    )
+
+    # No default: when not specified for a project, the headroom energy rule
+    # falls back to the timepoint duration (see reserves_setpoint_duration_hours)
+    m.gen_var_stor_hyb_reserves_setpoint_duration_hours = Param(
+        m.GEN_VAR_STOR_HYB, within=NonNegativeReals
     )
 
     # Variables
@@ -382,11 +401,7 @@ def add_model_components(
         Gather all headroom variables, and de-rate the total reserves offered
         to account for the fact that gen_var_stor_hyb output is uncertain.
         """
-        return sum(
-            getattr(mod, c)[prj, tmp]
-            / getattr(mod, getattr(d, reserve_variable_derate_params)[c])[prj]
-            for c in getattr(d, headroom_variables)[prj]
-        )
+        return derated_headroom_provision_rule(d, mod, prj, tmp)
 
     m.GenVarStorHyb_Upward_Reserves_MW = Expression(
         m.GEN_VAR_STOR_HYB_OPR_TMPS, rule=upwards_reserve_rule
@@ -397,11 +412,7 @@ def add_model_components(
         Gather all footroom variables, and de-rate the total reserves offered
         to account for the fact that gen_var_stor_hyb output is uncertain.
         """
-        return sum(
-            getattr(mod, c)[prj, tmp]
-            / getattr(mod, getattr(d, reserve_variable_derate_params)[c])[prj]
-            for c in getattr(d, footroom_variables)[prj]
-        )
+        return derated_footroom_provision_rule(d, mod, prj, tmp)
 
     m.GenVarStorHyb_Downward_Reserves_MW = Expression(
         m.GEN_VAR_STOR_HYB_OPR_TMPS, rule=downwards_reserve_rule
@@ -466,12 +477,30 @@ def add_model_components(
         m.GEN_VAR_STOR_HYB_OPR_TMPS, rule=max_energy_in_storage_rule
     )
 
+    # For a project with no upward reserve variables, the total reserves
+    # constraint pins the storage reserve variable to zero and the storage
+    # headroom constraints reduce to bounds that the maximum discharge
+    # constraint and the next timepoint's energy tracking constraint
+    # already imply, so they are skipped (see the rules)
+    def max_stor_headroom_power_constraint_rule(mod, s, tmp):
+        if not getattr(d, headroom_variables)[s]:
+            return Constraint.Skip
+        return max_stor_headroom_power_rule(mod, s, tmp)
+
     m.GenVarStorHyb_Max_Stor_Headroom_Power_Constraint = Constraint(
-        m.GEN_VAR_STOR_HYB_OPR_TMPS, rule=max_stor_headroom_power_rule
+        m.GEN_VAR_STOR_HYB_OPR_TMPS, rule=max_stor_headroom_power_constraint_rule
     )
 
+    def max_stor_headroom_energy_constraint_rule(mod, s, tmp):
+        if (
+            not getattr(d, headroom_variables)[s]
+            and mod.next_tmp[tmp, mod.balancing_type_project[s]] != "."
+        ):
+            return Constraint.Skip
+        return max_stor_headroom_energy_rule(mod, s, tmp)
+
     m.GenVarStorHyb_Max_Stor_Headroom_Energy_Constraint = Constraint(
-        m.GEN_VAR_STOR_HYB_OPR_TMPS, rule=max_stor_headroom_energy_rule
+        m.GEN_VAR_STOR_HYB_OPR_TMPS, rule=max_stor_headroom_energy_constraint_rule
     )
 
     m.GenVarStorHyb_Total_Upward_Reserves_Constraint = Constraint(
@@ -734,6 +763,10 @@ def max_stor_headroom_power_rule(mod, s, tmp):
     The storage upward reserves cannot exceed the available headroom.
     Going from charging to non-charging also counts as headroom, doubling
     the maximum amount of potential headroom.
+
+    Skipped for a project with no upward reserve variables: the constraint
+    then reduces to a discharge limit that the maximum discharge
+    constraint implies.
     """
     return (
         mod.GenVarStorHyb_Upward_Reserves_from_Stor_MW[s, tmp]
@@ -744,16 +777,37 @@ def max_stor_headroom_power_rule(mod, s, tmp):
     )
 
 
+def reserves_setpoint_duration_hours(mod, s, tmp):
+    """
+    The number of hours for which the new setpoint must be sustainable if
+    reserves are called: the project's
+    :code:`gen_var_stor_hyb_reserves_setpoint_duration_hours` if specified,
+    otherwise the duration of the timepoint.
+    """
+    # Sparse membership check: the param has no default, so a project is
+    # only "in" it when a value was loaded
+    if s in mod.gen_var_stor_hyb_reserves_setpoint_duration_hours:
+        return mod.gen_var_stor_hyb_reserves_setpoint_duration_hours[s]
+    else:
+        return mod.hrs_in_tmp[tmp]
+
+
 def max_stor_headroom_energy_rule(mod, s, tmp):
     """
     Can't provide more reserves (times sustained duration required) than
     available energy in storage in that timepoint. Said differently,
-    must have enough energy available to be at the new set point (for
-    the full duration of the timepoint).
+    must have enough energy available to be at the new set point for the
+    required setpoint duration (the timepoint duration by default).
+
+    Skipped for a project with no upward reserve variables when the
+    timepoint has a next timepoint in this subproblem: the constraint then
+    reduces to a non-negative ending energy, which the next timepoint's
+    non-negative starting energy implies. It is kept in the last timepoint
+    of a linear or linked horizon, where it is the only such bound.
     """
     return (
         mod.GenVarStorHyb_Upward_Reserves_from_Stor_MW[s, tmp]
-        * mod.hrs_in_tmp[tmp]
+        * reserves_setpoint_duration_hours(mod, s, tmp)
         / mod.gen_var_stor_hyb_discharging_efficiency[s]
         <= mod.GenVarStorHyb_Starting_Energy_in_Storage_MWh[s, tmp]
         + mod.GenVarStorHyb_Charge_MW[s, tmp]

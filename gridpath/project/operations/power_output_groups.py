@@ -14,6 +14,11 @@
 
 """
 Minimum and maximum total power output by period and project group.
+
+The requirements are written for the subproblem's periods only, so one
+requirement subscenario can cover periods that some of the scenarios using it
+don't model. A group's requirements can also be given once for every period
+with a :code:`period = 0` row (see :code:`gridpath.auxiliary.period_wildcards`).
 """
 
 import csv
@@ -22,7 +27,13 @@ import pandas as pd
 from pyomo.environ import Set, Param, Constraint, NonNegativeReals, Expression, value
 
 from gridpath.auxiliary.auxiliary import get_required_subtype_modules
-from gridpath.common_functions import duals_wrapper, none_dual_type_error_wrapper
+from gridpath.auxiliary.period_wildcards import (
+    period_wildcard_rows_sql,
+    require_period_wildcard_only_rows,
+    subproblem_periods_sql,
+)
+from gridpath.auxiliary.validations import validate_period_wildcard_rows
+from gridpath.common_functions import constraint_dual, none_dual_type_error_wrapper
 from gridpath.project.operations.common_functions import (
     load_operational_type_modules,
 )
@@ -288,6 +299,143 @@ def load_model_data(
 ###############################################################################
 
 
+def export_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
+):
+    """
+    Export the group power output in each timepoint, the limits, and the
+    duals of the constraints enforcing them (a limit left at its default of
+    0 or infinity is not enforced and so has no dual).
+
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :param m:
+    :param d:
+    :return:
+    """
+    # This module is always loaded, but most scenarios define no groups;
+    # write nothing rather than a header-only file in every results
+    # directory (a Monte Carlo run has one per draw per subproblem)
+    if len(m.POWER_OUTPUT_GROUP_TMPS) == 0:
+        return
+
+    with open(
+        os.path.join(
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "results",
+            "project_group_power.csv",
+        ),
+        "w",
+        newline="",
+    ) as f:
+        writer = csv.writer(f)
+        writer.writerow(
+            [
+                "power_output_group",
+                "timepoint",
+                "period",
+                "group_power_mw",
+                "power_output_group_power_output_min",
+                "power_output_group_power_output_max",
+                "power_output_group_max_dual",
+                "power_output_group_min_dual",
+                "power_output_group_max_marginal_cost",
+                "power_output_group_min_marginal_cost",
+            ]
+        )
+        for grp, tmp in sorted(m.POWER_OUTPUT_GROUP_TMPS):
+            prd = m.period[tmp]
+            max_dual = constraint_dual(
+                m, m.Max_Group_Total_Power_in_Tmp_Constraint, (grp, tmp)
+            )
+            min_dual = constraint_dual(
+                m, m.Min_Group_Total_Power_in_Tmp_Constraint, (grp, tmp)
+            )
+            # The duals are in the objective's NPV terms; normalize by the
+            # timepoint's objective coefficient to get a marginal cost per
+            # MW in the timepoint, as the load balance and reserve balance
+            # marginal costs do
+            coefficient = m.tmp_objective_coefficient[tmp]
+            writer.writerow(
+                [
+                    grp,
+                    tmp,
+                    prd,
+                    value(m.Group_Total_Power_in_Tmp[grp, tmp]),
+                    m.power_output_group_power_output_min[grp, prd],
+                    m.power_output_group_power_output_max[grp, prd],
+                    max_dual,
+                    min_dual,
+                    none_dual_type_error_wrapper(max_dual, coefficient),
+                    none_dual_type_error_wrapper(min_dual, coefficient),
+                ]
+            )
+
+
+def import_results_into_database(
+    scenario_id,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    c,
+    db,
+    results_directory,
+    quiet,
+):
+    """
+    :param scenario_id:
+    :param c:
+    :param db:
+    :param results_directory:
+    :param quiet:
+    :return:
+    """
+    import_csv(
+        conn=db,
+        cursor=c,
+        scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        quiet=quiet,
+        results_directory=results_directory,
+        which_results="project_group_power",
+    )
+
+
+REQUIREMENTS_TABLE = "inputs_project_power_output_group_requirements"
+REQUIREMENTS_KEY_COLUMNS = [
+    "power_output_group",
+    "project_power_output_group_requirement_scenario_id",
+]
+
+
+def get_requirements_row_filter(subscenarios):
+    """
+    :return: SQL condition selecting the rows of the power output group
+        requirement subscenario
+    """
+    return f"""project_power_output_group_requirement_scenario_id =
+        {subscenarios.PROJECT_POWER_OUTPUT_GROUP_REQUIREMENT_SCENARIO_ID}"""
+
+
 def get_inputs_from_database(
     scenario_id,
     subscenarios,
@@ -307,12 +455,23 @@ def get_inputs_from_database(
     """
 
     c1 = conn.cursor()
-    pwr_grp_reqs = c1.execute("""
-        SELECT power_output_group, period,
-        power_output_group_total_power_min, power_output_group_total_power_max
-        FROM inputs_project_power_output_group_requirements
-        WHERE project_power_output_group_requirement_scenario_id = {}
-        """.format(subscenarios.PROJECT_POWER_OUTPUT_GROUP_REQUIREMENT_SCENARIO_ID))
+    # The subproblem's periods only, with period = 0 rows applying to each
+    pwr_grp_reqs = c1.execute(
+        period_wildcard_rows_sql(
+            table=REQUIREMENTS_TABLE,
+            columns=[
+                "power_output_group",
+                "period",
+                "power_output_group_total_power_min",
+                "power_output_group_total_power_max",
+            ],
+            key_columns=REQUIREMENTS_KEY_COLUMNS,
+            row_filter=get_requirements_row_filter(subscenarios),
+            periods_sql=subproblem_periods_sql(
+                subscenarios.TEMPORAL_SCENARIO_ID, subproblem
+            ),
+        )
+    )
 
     c2 = conn.cursor()
     pwr_grp_prj = c2.execute(
@@ -372,6 +531,12 @@ def write_model_inputs(
 
     # Write the input files only if a subscenario is specified
     if subscenarios.PROJECT_POWER_OUTPUT_GROUP_REQUIREMENT_SCENARIO_ID != "NULL":
+        require_period_wildcard_only_rows(
+            conn=conn,
+            table=REQUIREMENTS_TABLE,
+            key_columns=REQUIREMENTS_KEY_COLUMNS,
+            row_filter=get_requirements_row_filter(subscenarios),
+        )
         write_tab_file_model_inputs(
             scenario_directory=scenario_directory,
             weather_iteration=weather_iteration,
@@ -397,24 +562,35 @@ def write_model_inputs(
         )
 
 
-def save_duals(
-    scenario_directory,
+# Validation
+###############################################################################
+
+
+def validate_inputs(
+    scenario_id,
+    subscenarios,
     weather_iteration,
     hydro_iteration,
     availability_iteration,
     subproblem,
     stage,
-    instance,
-    dynamic_components,
+    conn,
 ):
-    instance.constraint_indices["Max_Group_Total_Power_in_Tmp_Constraint"] = [
-        "power_output_group",
-        "period",
-        "dual",
-    ]
-
-    instance.constraint_indices["Min_Group_Total_Power_in_Tmp_Constraint"] = [
-        "power_output_group",
-        "period",
-        "dual",
-    ]
+    """
+    Validate the power output group inputs.
+    """
+    # Series mixing period wildcard rows and explicit rows
+    validate_period_wildcard_rows(
+        conn=conn,
+        scenario_id=scenario_id,
+        subscenarios=subscenarios,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        gridpath_module=__name__,
+        table=REQUIREMENTS_TABLE,
+        key_columns=REQUIREMENTS_KEY_COLUMNS,
+        row_filter=get_requirements_row_filter(subscenarios),
+    )

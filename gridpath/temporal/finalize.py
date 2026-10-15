@@ -32,14 +32,16 @@ def add_model_components(
     m.period_objective_coefficient = Param(
         m.PERIODS,
         within=NonNegativeReals,
-        initialize=lambda mod, prd: mod.discount_factor[prd]
+        initialize=lambda mod, prd: mod.probability_weighted_discount_factor[prd]
         * mod.number_years_represented[prd],
     )
 
     m.tmp_objective_coefficient = Param(
         m.TMPS,
         within=NonNegativeReals,
-        initialize=lambda mod, tmp: mod.discount_factor[mod.period[tmp]]
+        initialize=lambda mod, tmp: mod.probability_weighted_discount_factor[
+            mod.period[tmp]
+        ]
         * mod.number_years_represented[mod.period[tmp]]
         * mod.tmp_weight[tmp]
         * mod.hrs_in_tmp[tmp],
@@ -50,22 +52,27 @@ def add_model_components(
     # horizon spans; if in a single period, simply use the period coefficient
     # WARNING: thread carefully, this is difficult to interpret if periods
     # have a vastly different number of years for example
+    def fraction_of_horizon_in_period_init(mod):
+        frac = {}
+        for bt, h in mod.BLN_TYPE_HRZS:
+            weight_by_prd = {}
+            total_weight = 0
+            for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, h]:
+                weight = mod.hrs_in_tmp[tmp] * mod.tmp_weight[tmp]
+                prd = mod.period[tmp]
+                weight_by_prd[prd] = weight_by_prd.get(prd, 0) + weight
+                total_weight += weight
+            for prd, weight in weight_by_prd.items():
+                frac[bt, h, prd] = weight / total_weight
+
+        return frac
+
     m.fraction_of_horizon_in_period = Param(
         m.BLN_TYPE_HRZS,
         m.PERIODS,
         within=PercentFraction,
         default=0,
-        initialize=lambda mod, bt, h, prd: (
-            sum(
-                mod.hrs_in_tmp[tmp] * mod.tmp_weight[tmp]
-                for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, h]
-                if mod.period[tmp] == prd
-            )
-        )
-        / sum(
-            mod.hrs_in_tmp[tmp] * mod.tmp_weight[tmp]
-            for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, h]
-        ),
+        initialize=fraction_of_horizon_in_period_init,
     )
 
     m.hrz_objective_coefficient = Param(

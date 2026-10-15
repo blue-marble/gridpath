@@ -27,12 +27,17 @@ the database, specify the scenario name with the *--scenario* flag and use the
 """
 
 from argparse import ArgumentParser
+from gridpath.common_functions import get_version_parser
 import os.path
 import pandas as pd
 import sys
 import warnings
 
-from db.common_functions import connect_to_database, spin_on_database_lock
+from db.common_functions import (
+    connect_to_database,
+    spin_on_database_lock,
+    update_db_last_modified,
+)
 from db.utilities.common_functions import confirm
 
 
@@ -44,7 +49,7 @@ def parse_arguments(args):
 
     Parse the known arguments.
     """
-    parser = ArgumentParser(add_help=True)
+    parser = ArgumentParser(add_help=True, parents=[get_version_parser()])
 
     # Database name and location options
     parser.add_argument(
@@ -76,6 +81,15 @@ def parse_arguments(args):
     )
     parser.add_argument(
         "--quiet", default=False, action="store_true", help="Don't print output."
+    )
+    parser.add_argument(
+        "--yes",
+        default=False,
+        action="store_true",
+        help="Don't ask for confirmation before deleting a scenario's data "
+        "(with --delete, or when re-loading a scenario that already exists). "
+        "For non-interactive use; the prompts otherwise hang or raise "
+        "EOFError when there is no stdin.",
     )
 
     parsed_arguments = parser.parse_known_args(args=args)[0]
@@ -272,6 +286,81 @@ def delete_scenario_results(conn, scenario_id):
         )
 
 
+def delete_scenario_results_for_draw(
+    conn,
+    scenario_id,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    weather_iteration_str,
+    hydro_iteration_str,
+    availability_iteration_str,
+):
+    """
+    :param conn:
+    :param scenario_id:
+    :param weather_iteration: integer iteration values (0 for levels the
+        scenario doesn't use)
+    :param hydro_iteration:
+    :param availability_iteration:
+    :param weather_iteration_str: directory-name-string iteration values
+        (e.g. "weather_iteration_1"; "" for levels the scenario doesn't use)
+    :param hydro_iteration_str:
+    :param availability_iteration_str:
+    :return:
+
+    Delete prior results for a single iteration draw of this scenario from
+    all results tables. Tables without the iteration columns (the
+    cross-iteration summary tables written by process_results) are skipped:
+    they are whole-scenario aggregates, not per-draw imports.
+
+    The results tables key the iteration columns inconsistently:
+    results_scenario stores the integer iteration values (0 for absent
+    levels) while the module results tables store the directory-name
+    strings (NULL/'' for absent levels) -- so both representations are
+    matched here.
+    """
+    c = conn.cursor()
+    all_tables = c.execute(
+        "SELECT name FROM sqlite_master WHERE type='table';"
+    ).fetchall()
+
+    results_tables = [tbl[0] for tbl in all_tables if tbl[0].startswith("results")]
+
+    iteration_columns = (
+        "weather_iteration",
+        "hydro_iteration",
+        "availability_iteration",
+    )
+    for tbl in results_tables:
+        table_columns = {
+            column_row[1] for column_row in c.execute(f"PRAGMA table_info({tbl});")
+        }
+        if not all(column in table_columns for column in iteration_columns):
+            continue
+        sql = """
+            DELETE FROM {} WHERE scenario_id = ?
+            AND COALESCE(CAST(weather_iteration AS TEXT), '') IN (?, ?)
+            AND COALESCE(CAST(hydro_iteration AS TEXT), '') IN (?, ?)
+            AND COALESCE(CAST(availability_iteration AS TEXT), '') IN (?, ?);
+            """.format(tbl)
+        spin_on_database_lock(
+            conn=conn,
+            cursor=c,
+            sql=sql,
+            data=(
+                scenario_id,
+                str(weather_iteration),
+                weather_iteration_str,
+                str(hydro_iteration),
+                hydro_iteration_str,
+                str(availability_iteration),
+                availability_iteration_str,
+            ),
+            many=False,
+        )
+
+
 def check_if_scenario_name_exists(conn, scenario_name):
     """
     :param conn: the database connection
@@ -351,6 +440,7 @@ def main(args=None):
     scenario = parsed_args.scenario
     delete_flag = parsed_args.delete
     quiet = parsed_args.quiet
+    skip_confirmation = parsed_args.yes
 
     # Check if database exists
     if not os.path.isfile(db_path):
@@ -370,7 +460,7 @@ def main(args=None):
                 "delete with the '--delete' flag."
             )
         else:
-            proceed = confirm(
+            proceed = skip_confirmation or confirm(
                 prompt="""WARNING: Would you like to delete all data associated 
                 with scenario '{}'? If you select 'yes' all prior results 
                 associated with scenario '{}' will be deleted.""".format(
@@ -411,7 +501,7 @@ def main(args=None):
             # prior data associated with this scenario and re-load the scenario
             # info
             else:
-                proceed = confirm(
+                proceed = skip_confirmation or confirm(
                     prompt="""There is already a scenario named '{}' in the 
                     database. Would you like to delete all data associated 
                     with this scenario and re-load the scenario definition info? 
@@ -425,6 +515,8 @@ def main(args=None):
                     load_scenario_from_df(
                         conn=conn, scenarios_df=csv_to_df, scenario_name=scenario
                     )
+
+    update_db_last_modified(conn=conn, modification_type="scenarios")
 
     conn.commit()
     conn.close()

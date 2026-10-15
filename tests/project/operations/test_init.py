@@ -365,6 +365,8 @@ class TestOperationsInit(unittest.TestCase):
                 ("Nuclear_Flexible", 2030, 0),
                 ("DAC", 2020, 0),
                 ("DAC", 2030, 0),
+                ("Gen_Strike_Price", 2020, 0),
+                ("Gen_Strike_Price", 2030, 0),
             ]
         )
 
@@ -730,6 +732,8 @@ class TestOperationsInit(unittest.TestCase):
                     ("Nuclear_z2", 2030, 0): 1666.67,
                     ("DAC", 2020, 0): 1000.0,
                     ("DAC", 2030, 0): 1000.0,
+                    ("Gen_Strike_Price", 2020, 0): 1.1,
+                    ("Gen_Strike_Price", 2030, 0): 1.1,
                 }.items()
             )
         )
@@ -786,6 +790,8 @@ class TestOperationsInit(unittest.TestCase):
                     ("Nuclear_z2", 2030, 0): 0,
                     ("DAC", 2020, 0): 0,
                     ("DAC", 2030, 0): 0,
+                    ("Gen_Strike_Price", 2020, 0): 0,
+                    ("Gen_Strike_Price", 2030, 0): 0,
                 }.items()
             )
         )
@@ -884,7 +890,7 @@ class TestOperationsInit(unittest.TestCase):
         ramp_tuning_cost_df.loc[
             ramp_tuning_cost_df["ramp_tuning_cost_per_mw"] == ".",
             "ramp_tuning_cost_per_mw",
-        ] = 0
+        ] = "0"
 
         expected_ramp_tuning_cost_by_prj = OrderedDict(
             sorted(
@@ -1128,14 +1134,17 @@ class TestOperationsInit(unittest.TestCase):
                     ("coal_plant", 2020, 0): 0,
                 },
             },
-            # Check that "0" input for period results in same inputs for all
+            # Check a curve for each of several periods
             3: {
                 "df": pd.DataFrame(
                     columns=hr_columns,
                     data=[
-                        ["gas_ct", 0, 0.5, 10],
-                        ["gas_ct", 0, 1, 7],
-                        ["coal_plant", 0, 1, 10],
+                        ["gas_ct", 2020, 0.5, 10],
+                        ["gas_ct", 2020, 1, 7],
+                        ["gas_ct", 2030, 0.5, 9],
+                        ["gas_ct", 2030, 1, 7],
+                        ["coal_plant", 2020, 1, 10],
+                        ["coal_plant", 2030, 1, 10],
                     ],
                 ),
                 "input_col": "average_heat_rate_mmbtu_per_mwh",
@@ -1143,13 +1152,13 @@ class TestOperationsInit(unittest.TestCase):
                 "periods": {2020, 2030},
                 "slope_dict": {
                     ("gas_ct", 2020, 0): 4,
-                    ("gas_ct", 2030, 0): 4,
+                    ("gas_ct", 2030, 0): 5,
                     ("coal_plant", 2020, 0): 10,
                     ("coal_plant", 2030, 0): 10,
                 },
                 "intercept_dict": {
                     ("gas_ct", 2020, 0): 3,
-                    ("gas_ct", 2030, 0): 3,
+                    ("gas_ct", 2030, 0): 2,
                     ("coal_plant", 2020, 0): 0,
                     ("coal_plant", 2030, 0): 0,
                 },
@@ -1170,6 +1179,16 @@ class TestOperationsInit(unittest.TestCase):
 
             self.assertDictEqual(expected_slope_dict, actual_slope_dict)
             self.assertDictEqual(expected_intercept_dict, actual_intercept_dict)
+
+        # The input files give curves by modeled period (period 0 rows are
+        # resolved when the inputs are written from the database)
+        with self.assertRaisesRegex(ValueError, "isn't specified for all"):
+            get_slopes_intercept_by_project_period_segment(
+                df=pd.DataFrame(columns=hr_columns, data=[["gas_ct", 0, 1, 7]]),
+                input_col="average_heat_rate_mmbtu_per_mwh",
+                projects=["gas_ct"],
+                periods={2020},
+            )
 
     # TODO: re-scale load points to fractions
     def test_calculate_slope_intercept(self):

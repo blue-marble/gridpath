@@ -28,11 +28,13 @@ from pyomo.environ import (
 from gridpath.auxiliary.db_interface import directories_to_db_values, import_csv
 from gridpath.common_functions import (
     create_results_df,
+    update_results_df,
 )
 from gridpath.project.common_functions import (
     check_if_first_timepoint,
     check_boundary_type,
 )
+from gridpath.system.water import WATER_NODE_TMP_DF
 
 
 def add_model_components(
@@ -62,9 +64,10 @@ def add_model_components(
         """
         endogenous_flows = 0
         for wl in mod.WATER_LINKS_TO_BY_WATER_NODE[wn]:
-            if mod.departure_timepoint[wl, tmp] != "tmp_outside_horizon":
+            dep_tmp = mod.departure_timepoint[wl, tmp]
+            if dep_tmp != "tmp_outside_horizon":
                 endogenous_flows += mod.Water_Link_Flow_Rate_Vol_per_Sec[
-                    wl, mod.departure_timepoint[wl, tmp], tmp
+                    wl, dep_tmp, tmp
                 ]
 
         return endogenous_flows
@@ -82,7 +85,7 @@ def add_model_components(
         """
 
         return (
-            mod.exogenous_water_inflow_rate_vol_per_sec[wn, tmp]
+            mod.total_exogenous_water_inflow_rate_vol_per_sec[wn, tmp]
             + mod.Endogenous_Water_Node_Inflow_Rate_Vol_Per_Sec[wn, tmp]
         )
 
@@ -105,3 +108,42 @@ def add_model_components(
         m.TMPS,
         initialize=node_outflow_rate_init,
     )
+
+
+def export_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
+):
+    """
+    Add the node inflow and outflow expression values to the consolidated
+    water node-timepoint results dataframe.
+    """
+    results_columns = [
+        "endogenous_water_inflow_rate_vol_per_sec",
+        "gross_water_inflow_rate_vol_per_sec",
+        "gross_water_outflow_rate_vol_per_sec",
+    ]
+    data = [
+        [
+            wn,
+            tmp,
+            value(m.Endogenous_Water_Node_Inflow_Rate_Vol_Per_Sec[wn, tmp]),
+            value(m.Gross_Water_Node_Inflow_Rate_Vol_Per_Sec[wn, tmp]),
+            value(m.Gross_Water_Node_Outflow_Rate_Vol_per_Sec[wn, tmp]),
+        ]
+        for wn in m.WATER_NODES
+        for tmp in m.TMPS
+    ]
+    results_df = create_results_df(
+        index_columns=["water_node", "timepoint"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    update_results_df(getattr(d, WATER_NODE_TMP_DF), results_df)

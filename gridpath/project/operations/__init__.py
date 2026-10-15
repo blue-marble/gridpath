@@ -1,4 +1,5 @@
 # Copyright 2016-2025 Blue Marble Analytics LLC.
+# Copyright 2026 Sylvan Energy Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -44,13 +45,24 @@ from pyomo.environ import Set, Param, NonNegativeReals, Reals, PositiveReals
 from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.db_interface import import_csv, directories_to_db_values
 from gridpath.auxiliary.dynamic_components import headroom_variables, footroom_variables
+from gridpath.auxiliary.calendar_rows import (
+    CALENDAR_HOUR_TIMEPOINT_MAP_ID,
+    timepoints_without_calendar_hour_sql,
+)
+from gridpath.auxiliary.period_wildcards import (
+    period_wildcard_rows_sql,
+    require_period_wildcard_only_rows,
+    subproblem_periods_sql,
+)
 from gridpath.auxiliary.validations import (
+    validate_period_wildcard_rows,
     write_validation_to_database,
     validate_values,
     get_expected_dtypes,
     validate_dtypes,
     validate_piecewise_curves,
     validate_startup_shutdown_rate_inputs,
+    warn_on_unknown_balancing_types,
 )
 from gridpath.project.common_functions import append_to_input_file
 from gridpath.project.operations.operational_types.common_functions import (
@@ -202,15 +214,13 @@ def add_model_components(
     | | :code:`variable_om_cost_per_mwh`                                      |
     | | *Defined over*: :code:`VAR_OM_COST_SIMPLE_PRJS`                       |
     | | *Within*: :code:`NonNegativeReals`                                    |
-    | | *Default*: :code:`0`                                                  |
     |                                                                         |
     | The project's variable operations and maintenance cost per MWh of       |
-    | power production.                                                       |
+    | power production. Do not specify if zero for memory efficiency.         |                                                      |
     +-------------------------------------------------------------------------+
     | | :code:`variable_om_cost_per_mwh_by_period`                            |
     | | *Defined over*: :code:`VAR_OM_COST_BY_PRD_PRJ_PRDS`                   |
     | | *Within*: :code:`NonNegativeReals`                                    |
-    | | *Default*: :code:`0`                                                  |
     |                                                                         |
     | The project's variable operations and maintenance cost per MWh of       |
     | power production (by period).                                           |
@@ -218,7 +228,6 @@ def add_model_components(
     | | :code:`variable_om_cost_per_mwh_by_timepoint`                         |
     | | *Defined over*: :code:`VAR_OM_COST_BY_TMP_PRJ_TMPS`                   |
     | | *Within*: :code:`Reals`                                               |
-    | | *Default*: :code:`0`                                                  |
     |                                                                         |
     | The project's variable operations and maintenance cost per MWh of       |
     | power production (by timepoint).                                        |
@@ -487,15 +496,15 @@ def add_model_components(
     # Optional Params
     ###########################################################################
     m.variable_om_cost_per_mwh = Param(
-        m.VAR_OM_COST_SIMPLE_PRJS, within=NonNegativeReals, default=0
+        m.VAR_OM_COST_SIMPLE_PRJS, within=NonNegativeReals
     )
 
     m.variable_om_cost_per_mwh_by_period = Param(
-        m.VAR_OM_COST_BY_PRD_PRJ_PRDS, within=NonNegativeReals, default=0
+        m.VAR_OM_COST_BY_PRD_PRJ_PRDS, within=NonNegativeReals
     )
 
     m.variable_om_cost_per_mwh_by_timepoint = Param(
-        m.VAR_OM_COST_BY_TMP_PRJ_TMPS, within=Reals, default=0
+        m.VAR_OM_COST_BY_TMP_PRJ_TMPS, within=Reals
     )
 
     m.vom_slope_cost_per_mwh = Param(
@@ -728,20 +737,15 @@ def load_model_data(
             f"project_variable_om_by_{prd_or_tmp_str}.tab",
         )
         if os.path.exists(project_var_om_file):
-            var_om_df = pd.read_csv(project_var_om_file, sep="\t").set_index(
-                ["project", prd_or_tmp_str]
-            )
+            var_om_df = pd.read_csv(project_var_om_file, sep="\t")
+            var_om_df = var_om_df.set_index(["project", prd_or_tmp_str])
             var_om_prj_idx_list = []
             var_om_by_idx_dict = {}
 
             for idx, val in var_om_df.iterrows():
                 prj, prd_or_tmp = idx
-                if prd_or_tmp == 0:
-                    if prd_or_tmp_str == "period":
-                        set_to_use = prd_set
-                    else:
-                        set_to_use = tmp_set
-                    for _prd_or_tmp in sorted(list(set_to_use)):
+                if prd_or_tmp == 0 and prd_or_tmp_str == "timepoint":
+                    for _prd_or_tmp in sorted(list(tmp_set)):
                         var_om_prj_idx_list.append((prj, _prd_or_tmp))
                         var_om_by_idx_dict[prj, _prd_or_tmp] = var_om_df.loc[
                             prj, prd_or_tmp
@@ -830,17 +834,10 @@ def load_model_data(
 
         for idx, val in curtailment_df.iterrows():
             prj, prd = idx
-            if prd == 0:
-                for _prd in sorted(list(prd_set)):
-                    curtailment_prj_idx_list.append((prj, _prd))
-                    curtailment_by_idx_dict[prj, _prd] = curtailment_df.loc[prj, prd][
-                        "curtailment_cost_per_powerunithour"
-                    ]
-            else:
-                curtailment_prj_idx_list.append((prj, prd))
-                curtailment_by_idx_dict[prj, prd] = curtailment_df.loc[prj, prd][
-                    "curtailment_cost_per_powerunithour"
-                ]
+            curtailment_prj_idx_list.append((prj, prd))
+            curtailment_by_idx_dict[prj, prd] = val[
+                "curtailment_cost_per_powerunithour"
+            ]
         data_portal.data()[f"CURTAILMENT_COST_PRJ_PRDS"] = {
             None: curtailment_prj_idx_list
         }
@@ -974,6 +971,53 @@ def load_model_data(
 ###############################################################################
 
 
+# The period-indexed opchar tables supporting period wildcard rows, with their
+# subscenario ID columns
+OPCHAR_PERIOD_WILDCARD_TABLES = [
+    (
+        "inputs_project_variable_om_cost_by_period",
+        "variable_om_cost_by_period_scenario_id",
+    ),
+    ("inputs_project_heat_rate_curves", "heat_rate_curves_scenario_id"),
+    ("inputs_project_variable_om_curves", "variable_om_curves_scenario_id"),
+    ("inputs_project_curtailment_cost", "curtailment_cost_scenario_id"),
+]
+
+
+def get_opchar_period_wildcard_rows_sql(
+    subscenarios, subproblem, table, scenario_id_column, columns
+):
+    """
+    SQL for the period-indexed operating characteristics in *table* of the
+    portfolio projects with a *scenario_id_column* subscenario, for the
+    subproblem's periods, with period = 0 rows applying to every period (see
+    gridpath.auxiliary.period_wildcards).
+    """
+    return period_wildcard_rows_sql(
+        table=table,
+        columns=columns,
+        key_columns=["project", scenario_id_column],
+        row_filter=get_opchar_period_wildcard_row_filter(
+            subscenarios, scenario_id_column
+        ),
+        periods_sql=subproblem_periods_sql(
+            subscenarios.TEMPORAL_SCENARIO_ID, subproblem
+        ),
+    )
+
+
+def get_opchar_period_wildcard_row_filter(subscenarios, scenario_id_column):
+    return f"""(project, {scenario_id_column}) IN (
+            SELECT project, {scenario_id_column}
+            FROM inputs_project_operational_chars
+            WHERE project_operational_chars_scenario_id = {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
+            AND project IN (
+                SELECT project FROM inputs_project_portfolios
+                WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
+            )
+        )"""
+
+
 def get_inputs_from_database(
     scenario_id,
     subscenarios,
@@ -1021,7 +1065,8 @@ def get_inputs_from_database(
         powerhouse, generator_efficiency, linked_load_component,
         efficiency_factor, energy_requirement_factor, 
         losses_factor_in_energy_target, losses_factor_curtailment, 	
-        upward_reserves_to_soc_depletion
+        upward_reserves_to_soc_depletion, reserves_setpoint_duration_hours,
+        energy_budget_balancing_type, market, dispatch_at_equal_cost
         -- Get only the subset of projects in the portfolio with their 
         -- capacity types based on the project_portfolio_scenario_id 
         FROM
@@ -1042,32 +1087,15 @@ def get_inputs_from_database(
     )
 
     var_om_by_prd_c = conn.cursor()
-    var_om_by_prd = var_om_by_prd_c.execute(f"""
-        SELECT project, period, variable_om_cost_by_period
-        FROM inputs_project_portfolios
-        -- select the correct operational characteristics subscenario
-        INNER JOIN
-        (SELECT project, variable_om_cost_by_period_scenario_id
-        FROM inputs_project_operational_chars
-        WHERE project_operational_chars_scenario_id = {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
-        ) AS op_char
-        USING(project)
-        -- select only heat curves of matching projects
-        INNER JOIN
-        inputs_project_variable_om_cost_by_period
-        USING(project, variable_om_cost_by_period_scenario_id)
-        -- Get only the subset of projects in the portfolio based on the 
-        -- project_portfolio_scenario_id 
-        WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
-        AND (
-            period in (
-            SELECT DISTINCT period
-            FROM inputs_temporal_periods
-            WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
-            )
-            OR period = 0 -- for all periods
-            )
-        """)
+    var_om_by_prd = var_om_by_prd_c.execute(
+        get_opchar_period_wildcard_rows_sql(
+            subscenarios=subscenarios,
+            subproblem=subproblem,
+            table="inputs_project_variable_om_cost_by_period",
+            scenario_id_column="variable_om_cost_by_period_scenario_id",
+            columns=["project", "period", "variable_om_cost_by_period"],
+        )
+    )
 
     var_om_by_tmp = get_prj_temporal_index_opr_inputs_from_db(
         subscenarios=subscenarios,
@@ -1111,54 +1139,33 @@ def get_inputs_from_database(
 
     c2 = conn.cursor()
     heat_rates = c2.execute(
-        """
-        SELECT project, period,
-        load_point_fraction, average_heat_rate_mmbtu_per_mwh
-        FROM inputs_project_portfolios
-        -- select the correct operational characteristics subscenario
-        INNER JOIN
-        (SELECT project, heat_rate_curves_scenario_id
-        FROM inputs_project_operational_chars
-        WHERE project_operational_chars_scenario_id = {}
-        ) AS op_char
-        USING(project)
-        -- select only heat curves of matching projects
-        INNER JOIN
-        inputs_project_heat_rate_curves
-        USING(project, heat_rate_curves_scenario_id)
-        -- Get only the subset of projects in the portfolio based on the 
-        -- project_portfolio_scenario_id 
-        WHERE project_portfolio_scenario_id = {}
-        """.format(
-            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+        get_opchar_period_wildcard_rows_sql(
+            subscenarios=subscenarios,
+            subproblem=subproblem,
+            table="inputs_project_heat_rate_curves",
+            scenario_id_column="heat_rate_curves_scenario_id",
+            columns=[
+                "project",
+                "period",
+                "load_point_fraction",
+                "average_heat_rate_mmbtu_per_mwh",
+            ],
         )
     )
 
     c3 = conn.cursor()
     vom_curves = c3.execute(
-        """
-        SELECT project, period,  
-        load_point_fraction, average_variable_om_cost_per_mwh
-        FROM inputs_project_portfolios
-        -- select the correct operational characteristics subscenario
-        INNER JOIN
-        (SELECT project, variable_om_curves_scenario_id
-        FROM inputs_project_operational_chars
-        WHERE project_operational_chars_scenario_id = {}
-        ) AS op_char
-        USING(project)
-        -- select only variable OM curves inputs with matching projects
-        INNER JOIN
-        inputs_project_variable_om_curves
-        USING(project, variable_om_curves_scenario_id)
-        WHERE project_portfolio_scenario_id = {}
-        -- Get only the subset of projects in the portfolio based on the 
-        -- project_portfolio_scenario_id 
-        AND variable_om_curves_scenario_id is not Null
-        """.format(
-            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+        get_opchar_period_wildcard_rows_sql(
+            subscenarios=subscenarios,
+            subproblem=subproblem,
+            table="inputs_project_variable_om_curves",
+            scenario_id_column="variable_om_curves_scenario_id",
+            columns=[
+                "project",
+                "period",
+                "load_point_fraction",
+                "average_variable_om_cost_per_mwh",
+            ],
         )
     )
 
@@ -1207,6 +1214,28 @@ def get_inputs_from_database(
         )
     )
 
+    # Balancing types the temporal scenario lacks are dropped by the queries
+    # below
+    for bt_hrz_table, bt_hrz_scenario_id_column in [
+        ("inputs_project_cap_factor_limits", "cap_factor_limits_scenario_id"),
+        ("inputs_project_n_startup_limits", "n_startup_limit_scenario_id"),
+    ]:
+        warn_on_unknown_balancing_types(
+            conn=conn,
+            temporal_scenario_id=subscenarios.TEMPORAL_SCENARIO_ID,
+            table=bt_hrz_table,
+            bt_column="balancing_type_horizon",
+            row_filter=f"""(project, {bt_hrz_scenario_id_column}) IN (
+                SELECT project, {bt_hrz_scenario_id_column}
+                FROM inputs_project_operational_chars
+                WHERE project_operational_chars_scenario_id = {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
+                AND project IN (
+                    SELECT project FROM inputs_project_portfolios
+                    WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
+                )
+            )""",
+        )
+
     c7 = conn.cursor()
     cap_factor_limits = c7.execute(
         """
@@ -1224,12 +1253,21 @@ def get_inputs_from_database(
         JOIN
         (SELECT balancing_type_horizon, horizon
         FROM inputs_temporal_horizons
-        WHERE temporal_scenario_id = {temporal_scenario_id}) as relevant_horizons
+        WHERE temporal_scenario_id = {temporal_scenario_id}
+        AND (balancing_type_horizon, horizon) in (
+            SELECT DISTINCT balancing_type_horizon, horizon
+            FROM inputs_temporal_horizon_timepoints
+            WHERE temporal_scenario_id = {temporal_scenario_id}
+            AND subproblem_id = {subproblem}
+            AND stage_id = {stage}
+        )) as relevant_horizons
         USING (balancing_type_horizon, horizon)
         WHERE project_portfolio_scenario_id = {project_portfolio_scenario_id}
         AND cap_factor_limits_scenario_id IS NOT NULL
         """.format(
             temporal_scenario_id=subscenarios.TEMPORAL_SCENARIO_ID,
+            subproblem=subproblem,
+            stage=stage,
             project_opchar_scenario_id=subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
             project_portfolio_scenario_id=subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
         )
@@ -1258,39 +1296,15 @@ def get_inputs_from_database(
     )
 
     curtailment_c = conn.cursor()
-    curtailment_cost = curtailment_c.execute(f"""
-        SELECT project, period, curtailment_cost_per_powerunithour
-        FROM inputs_project_portfolios
-        -- select the correct operational characteristics subscenario
-        INNER JOIN
-        (SELECT project, curtailment_cost_scenario_id
-        FROM inputs_project_operational_chars
-        WHERE project_operational_chars_scenario_id = {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
-        ) AS op_char
-        USING(project)
-        -- select only matching projects
-        INNER JOIN
-        inputs_project_curtailment_cost
-        USING (project, curtailment_cost_scenario_id)
-        -- Get only the subset of projects in the portfolio based on the 
-        -- project_portfolio_scenario_id 
-        WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
-        AND ((
-            period in (
-            SELECT DISTINCT period
-            FROM inputs_temporal_periods
-            WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
-            )
-            AND period in (
-                  SELECT DISTINCT period
-                  FROM inputs_temporal
-                  WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
-                  AND subproblem_id = {subproblem}
-               )
-            )
-            OR period = 0 -- for all periods
-            )
-        """)
+    curtailment_cost = curtailment_c.execute(
+        get_opchar_period_wildcard_rows_sql(
+            subscenarios=subscenarios,
+            subproblem=subproblem,
+            table="inputs_project_curtailment_cost",
+            scenario_id_column="curtailment_cost_scenario_id",
+            columns=["project", "period", "curtailment_cost_per_powerunithour"],
+        )
+    )
 
     n_startup_c = conn.cursor()
     n_startup_limits = n_startup_c.execute(f"""
@@ -1392,6 +1406,22 @@ def write_model_inputs(
         conn,
     )
 
+    for table, scenario_id_column in OPCHAR_PERIOD_WILDCARD_TABLES:
+        require_period_wildcard_only_rows(
+            conn=conn,
+            table=table,
+            key_columns=["project", scenario_id_column],
+            row_filter=get_opchar_period_wildcard_row_filter(
+                subscenarios, scenario_id_column
+            ),
+        )
+
+    calendar_hour_errors = calendar_hour_map_errors(
+        conn, subscenarios, db_subproblem, db_stage
+    )
+    if calendar_hour_errors:
+        raise ValueError(calendar_hour_errors[0])
+
     inputs_directory = os.path.join(
         scenario_directory,
         weather_iteration,
@@ -1447,6 +1477,10 @@ def write_model_inputs(
         "losses_factor_in_energy_target",
         "losses_factor_curtailment",
         "upward_reserves_to_soc_depletion",
+        "reserves_setpoint_duration_hours",
+        "energy_budget_balancing_type",
+        "market",
+        "dispatch_at_equal_cost",
     ]
 
     append_to_input_file(
@@ -1584,6 +1618,141 @@ def import_results_into_database(
 ###############################################################################
 
 
+def validate_opchar_temporal_map_references(
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    conn,
+):
+    """
+    Check that any opchar timepoint/horizon maps referenced by projects via
+    the *_tmp_map_scenario_id / *_hrz_map_scenario_id columns of
+    inputs_project_operational_chars actually have data in the respective
+    map inputs table (inputs_project_opchar_timepoint_map /
+    inputs_project_opchar_horizon_map). A dangling reference would
+    otherwise silently behave as if no map were assigned. Projects using the
+    built-in calendar-hour timepoint map need a calendar hour for every
+    timepoint (see :code:`calendar_hour_map_errors`).
+    """
+    c = conn.cursor()
+    map_columns = [
+        row[1]
+        for row in c.execute("PRAGMA table_info(inputs_project_operational_chars)")
+        if row[1].endswith("_tmp_map_scenario_id")
+        or row[1].endswith("_hrz_map_scenario_id")
+    ]
+
+    errors = []
+    for map_column in map_columns:
+        map_table = (
+            "inputs_project_opchar_timepoint_map"
+            if map_column.endswith("_tmp_map_scenario_id")
+            else "inputs_project_opchar_horizon_map"
+        )
+        map_id_column = (
+            "opchar_timepoint_map_scenario_id"
+            if map_column.endswith("_tmp_map_scenario_id")
+            else "opchar_horizon_map_scenario_id"
+        )
+        # The built-in calendar-hour map has no rows
+        builtin_map_filter = (
+            f"AND {map_column} != {CALENDAR_HOUR_TIMEPOINT_MAP_ID}"
+            if map_column.endswith("_tmp_map_scenario_id")
+            else ""
+        )
+        dangling = c.execute(f"""
+            SELECT project, {map_column}
+            FROM inputs_project_operational_chars
+            WHERE project_operational_chars_scenario_id =
+                {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
+            AND project IN (
+                SELECT project FROM inputs_project_portfolios
+                WHERE project_portfolio_scenario_id =
+                    {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
+            )
+            AND {map_column} IS NOT NULL
+            AND {map_column} NOT IN (
+                SELECT {map_id_column} FROM {map_table}
+            )
+            {builtin_map_filter}
+        """).fetchall()
+        for project, map_id in dangling:
+            errors.append(
+                f"Project '{project}': {map_column} is {int(map_id)}, but "
+                f"{map_table} has no rows for {map_id_column} "
+                f"{int(map_id)}."
+            )
+
+    errors += calendar_hour_map_errors(conn, subscenarios, subproblem, stage)
+
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_operational_chars",
+        severity="High",
+        errors=errors,
+    )
+
+
+def calendar_hour_map_errors(conn, subscenarios, subproblem, stage):
+    """
+    :param subproblem: the subproblem ID in the database
+    :param stage: the stage ID in the database
+    :return: an error message (in a list) if a portfolio project reads an
+        input through the built-in calendar-hour timepoint map while some
+        timepoints of the subproblem and stage have no calendar hour (see
+        gridpath.auxiliary.calendar_rows), as their data couldn't be found
+    """
+    c = conn.cursor()
+    map_columns = [
+        row[1]
+        for row in c.execute("PRAGMA table_info(inputs_project_operational_chars)")
+        if row[1].endswith("_tmp_map_scenario_id")
+    ]
+    users = c.execute(f"""SELECT DISTINCT project
+        FROM inputs_project_operational_chars
+        WHERE project_operational_chars_scenario_id =
+            {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
+        AND project IN (
+            SELECT project FROM inputs_project_portfolios
+            WHERE project_portfolio_scenario_id =
+                {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
+        )
+        AND {CALENDAR_HOUR_TIMEPOINT_MAP_ID} IN ({", ".join(map_columns)})
+        ORDER BY project
+        """).fetchall()
+    if not users:
+        return []
+    timepoints = [
+        tmp
+        for (tmp,) in c.execute(
+            timepoints_without_calendar_hour_sql(
+                subscenarios.TEMPORAL_SCENARIO_ID, subproblem, stage
+            )
+        ).fetchall()
+    ]
+    if not timepoints:
+        return []
+    return [
+        f"Project(s) {[prj for (prj,) in users]} use the calendar-hour "
+        f"timepoint map ({CALENDAR_HOUR_TIMEPOINT_MAP_ID}), but "
+        f"{len(timepoints)} timepoint(s) of the temporal scenario have no "
+        f"calendar hour (e.g. {timepoints[:5]}): the map needs month, "
+        f"day_of_month (1-31) and a whole-hour hour_of_day (0-24) for every "
+        f"timepoint."
+    ]
+
+
 def validate_inputs(
     scenario_id,
     subscenarios,
@@ -1630,6 +1799,25 @@ def validate_inputs(
 
     # Convert input data into DataFrame
     prj_df = cursor_to_df(proj_opchar)
+
+    # Series mixing period wildcard rows and explicit rows
+    for table, scenario_id_column in OPCHAR_PERIOD_WILDCARD_TABLES:
+        validate_period_wildcard_rows(
+            conn=conn,
+            scenario_id=scenario_id,
+            subscenarios=subscenarios,
+            weather_iteration=weather_iteration,
+            hydro_iteration=hydro_iteration,
+            availability_iteration=availability_iteration,
+            subproblem=subproblem,
+            stage=stage,
+            gridpath_module=__name__,
+            table=table,
+            key_columns=["project", scenario_id_column],
+            row_filter=get_opchar_period_wildcard_row_filter(
+                subscenarios, scenario_id_column
+            ),
+        )
 
     # Check data types operational chars:
     expected_dtypes = get_expected_dtypes(conn, ["inputs_project_operational_chars"])
@@ -1683,6 +1871,18 @@ def validate_inputs(
                 prj_df, ["min_stable_level_fraction"], min=0, max=1, strict_min=True
             ),
         )
+
+    # Check that referenced opchar timepoint/horizon maps have data
+    validate_opchar_temporal_map_references(
+        scenario_id=scenario_id,
+        subscenarios=subscenarios,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        conn=conn,
+    )
 
     # Convert input data into DataFrame
     hr_df = cursor_to_df(heat_rates)
@@ -1879,6 +2079,10 @@ def validate_inputs(
         "losses_factor_in_energy_target",
         "losses_factor_curtailment",
         "upward_reserves_to_soc_depletion",
+        "reserves_setpoint_duration_hours",
+        "energy_budget_balancing_type",
+        "market",
+        "dispatch_at_equal_cost",
     ]
 
     sql = """SELECT {}
@@ -1897,6 +2101,23 @@ def validate_inputs(
     opchar_df = pd.read_sql(sql, conn)
 
     su_errors = validate_startup_shutdown_rate_inputs(opchar_df, su_df, hrs_in_tmp)
+
+    # Balancing types must exist in the temporal scenario
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_operational_chars",
+        severity="High",
+        errors=validate_project_balancing_types(
+            conn=conn, subscenarios=subscenarios, subproblem=subproblem, stage=stage
+        ),
+    )
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
@@ -1921,15 +2142,62 @@ def validate_inputs(
     #  startup cost
 
 
+def validate_project_balancing_types(conn, subscenarios, subproblem, stage):
+    """
+    Each portfolio project's balancing_type_project and, where specified,
+    energy_budget_balancing_type must be balancing types of the temporal
+    scenario (for this subproblem and stage); the model otherwise fails when
+    loading projects.tab.
+
+    :return: list of error strings (empty if all balancing types are valid)
+    """
+    c = conn.cursor()
+    temporal_bts = {bt for (bt,) in c.execute(f"""SELECT DISTINCT balancing_type_horizon
+            FROM inputs_temporal_horizon_timepoints
+            WHERE temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+            AND subproblem_id = {subproblem}
+            AND stage_id = {stage};""").fetchall()}
+    project_bts = c.execute(
+        f"""SELECT project, balancing_type_project, energy_budget_balancing_type
+        FROM inputs_project_operational_chars
+        WHERE project_operational_chars_scenario_id =
+        {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
+        AND project IN (
+            SELECT project FROM inputs_project_portfolios
+            WHERE project_portfolio_scenario_id =
+            {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
+        );"""
+    ).fetchall()
+
+    errors = []
+    for column, idx in [
+        ("balancing_type_project", 1),
+        ("energy_budget_balancing_type", 2),
+    ]:
+        unknown = {
+            row[0]: row[idx]
+            for row in project_bts
+            if row[idx] is not None and row[idx] not in temporal_bts
+        }
+        if unknown:
+            errors.append(
+                f"project(s) {sorted(unknown)}: {column} "
+                f"{sorted(set(unknown.values()))} is not a balancing type of "
+                f"the temporal scenario {sorted(temporal_bts)}."
+            )
+
+    return errors
+
+
 def get_slopes_intercept_by_project_period_segment(df, input_col, projects, periods):
     """
     Given a DataFrame with the average heat rates or variable O&M curves by
     load point fraction for each project in each period, calculate the slope
     and intercept for the fuel burn or variable O&M cost curves for the
-    segments defined by the load points (for each project and period). If the
-    period in the DataFrame is zero, set the same slope and intercept for each
-    of the modeling periods.
-    fractions.
+    segments defined by the load points (for each project and period). The
+    input files give the curves by modeled period (period 0 rows in the
+    database are resolved when the inputs are written; see
+    gridpath.auxiliary.period_wildcards).
 
     :param df: DataFrame with columns [project, period, load_point_fraction,
         input_col]
@@ -1950,17 +2218,14 @@ def get_slopes_intercept_by_project_period_segment(df, input_col, projects, peri
         df_slice = df[df["project"] == project]
         slice_periods = set(df_slice["period"])
 
-        if slice_periods == {0}:
-            p_iterable = [0]
-        elif periods.issubset(slice_periods):
-            p_iterable = periods
-        else:
-            raise ValueError("""{} for project '{}' isn't specified for all 
-                modeled periods. Set period to 0 if inputs are the 
-                same for each period or make sure all modelled periods 
-                are included.""".format(input_col, project))
+        if not periods.issubset(slice_periods):
+            raise ValueError(
+                f"{input_col} for project '{project}' isn't specified for all "
+                f"modeled periods. Give a curve for every modeled period (in "
+                f"the database, a period 0 curve applies to every period)."
+            )
 
-        for period in p_iterable:
+        for period in periods:
             df_slice_p = df_slice[df_slice["period"] == period]
             df_slice_p = df_slice_p.sort_values(by=["load_point_fraction"])
             load_points = df_slice_p["load_point_fraction"].values
@@ -1971,36 +2236,15 @@ def get_slopes_intercept_by_project_period_segment(df, input_col, projects, peri
             )
             sgms = range(len(slopes))
 
-            # If period is 0, create same inputs for all periods
-            if period == 0:
-                slope_dict.update(
-                    {
-                        (project, p, sgms[i]): slope
-                        for i, slope in enumerate(slopes)
-                        for p in periods
-                    }
-                )
-                intercept_dict.update(
-                    {
-                        (project, p, sgms[i]): intercept
-                        for i, intercept in enumerate(intercepts)
-                        for p in periods
-                    }
-                )
-            # If not, create inputs for just this period
-            else:
-                slope_dict.update(
-                    {
-                        (project, period, sgms[i]): slope
-                        for i, slope in enumerate(slopes)
-                    }
-                )
-                intercept_dict.update(
-                    {
-                        (project, period, sgms[i]): intercept
-                        for i, intercept in enumerate(intercepts)
-                    }
-                )
+            slope_dict.update(
+                {(project, period, sgms[i]): slope for i, slope in enumerate(slopes)}
+            )
+            intercept_dict.update(
+                {
+                    (project, period, sgms[i]): intercept
+                    for i, intercept in enumerate(intercepts)
+                }
+            )
 
     return slope_dict, intercept_dict
 

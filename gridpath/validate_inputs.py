@@ -28,7 +28,7 @@ from gridpath.auxiliary.db_interface import (
     get_scenario_id_and_name,
 )
 from gridpath.auxiliary.validations import write_validation_to_database
-from gridpath.common_functions import get_db_parser
+from gridpath.common_functions import get_db_parser, get_version_parser
 from gridpath.auxiliary.module_list import determine_modules, load_modules
 from gridpath.auxiliary.scenario_chars import (
     OptionalFeatures,
@@ -41,14 +41,19 @@ def validate_inputs(
     scenario_structure,
     loaded_modules,
     scenario_id,
-    weather_iteration,
-    hydro_iteration,
-    availability_iteration,
     subscenarios,
     conn,
 ):
     """ "
-    For each module, load the inputs from the database and validate them
+    For each iteration, subproblem and stage in the scenario structure, and
+    for each module, load the inputs from the database and validate them.
+
+    Call this ONCE per scenario: it iterates over every weather / hydro /
+    availability iteration itself. (Until September 2026 main() also looped
+    over the iterations and called this function once per iteration, so
+    every module validator ran N times per iteration for N iterations --
+    N-squared work; a 15-iteration production-cost ensemble took two hours
+    to validate.)
 
     :param scenario_structure: ScenarioStructure object with info on the
         iteration and subproblem/stage structure
@@ -336,6 +341,12 @@ def update_validation_status(conn, scenario_id):
         conn=conn, cursor=c, sql=sql, data=(status, scenario_id), many=False
     )
 
+    # Nothing in the validation flow commits before this point, so this
+    # single commit persists the validation reset, every status_validation
+    # row the modules wrote, and the status update (or, if anything raised
+    # before we got here, none of them -- closing without a commit rolls
+    # the open transaction back)
+    conn.commit()
     conn.close()
 
 
@@ -347,7 +358,9 @@ def parse_arguments(args):
 
     Parse the known arguments.
     """
-    parser = ArgumentParser(add_help=True, parents=[get_db_parser()])
+    parser = ArgumentParser(
+        add_help=True, parents=[get_db_parser(), get_version_parser()]
+    )
 
     # Add quiet flag which can suppress run output
     parser.add_argument(
@@ -438,32 +451,17 @@ def main(args=None):
         )
         loaded_modules = load_modules(modules_to_use=modules_to_use)
 
-        # Read in inputs from db and validate inputs for loaded modules
-        for (
-            weather_iteration
-        ) in scenario_structure.WEATHER_HYDRO_AVAIL_SUBPROBLEM_STAGE_DICT.keys():
-            for (
-                hydro_iteration
-            ) in scenario_structure.WEATHER_HYDRO_AVAIL_SUBPROBLEM_STAGE_DICT[
-                weather_iteration
-            ].keys():
-                for (
-                    availability_iteration
-                ) in scenario_structure.WEATHER_HYDRO_AVAIL_SUBPROBLEM_STAGE_DICT[
-                    weather_iteration
-                ][
-                    hydro_iteration
-                ]:
-                    validate_inputs(
-                        scenario_structure,
-                        loaded_modules,
-                        scenario_id,
-                        weather_iteration,
-                        hydro_iteration,
-                        availability_iteration,
-                        subscenarios,
-                        conn,
-                    )
+        # Read in inputs from db and validate inputs for loaded modules, for
+        # every iteration, subproblem and stage (validate_inputs loops over
+        # the scenario structure itself -- do not wrap it in another loop
+        # over the iterations)
+        validate_inputs(
+            scenario_structure,
+            loaded_modules,
+            scenario_id,
+            subscenarios,
+            conn,
+        )
 
     else:
         if not parsed_arguments.quiet:

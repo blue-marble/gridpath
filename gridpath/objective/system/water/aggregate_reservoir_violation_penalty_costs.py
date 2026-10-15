@@ -44,9 +44,11 @@ def add_model_components(
         """
         return sum(
             mod.Target_Release_Violation_VolUnit[r, bt, h]
-            * mod.max_volume_violation_cost[r]
+            * mod.target_release_violation_cost[r]
             * mod.number_years_represented[mod.period[mod.last_hrz_tmp[bt, h]]]
-            * mod.discount_factor[mod.period[mod.last_hrz_tmp[bt, h]]]
+            * mod.probability_weighted_discount_factor[
+                mod.period[mod.last_hrz_tmp[bt, h]]
+            ]
             for (
                 r,
                 bt,
@@ -69,7 +71,7 @@ def add_model_components(
             * mod.hrs_in_tmp[tmp]
             * mod.tmp_weight[tmp]
             * mod.number_years_represented[mod.period[tmp]]
-            * mod.discount_factor[mod.period[tmp]]
+            * mod.probability_weighted_discount_factor[mod.period[tmp]]
             for r in mod.WATER_NODES_W_RESERVOIRS
             for tmp in mod.TMPS
         )
@@ -89,7 +91,7 @@ def add_model_components(
             * mod.hrs_in_tmp[tmp]
             * mod.tmp_weight[tmp]
             * mod.number_years_represented[mod.period[tmp]]
-            * mod.discount_factor[mod.period[tmp]]
+            * mod.probability_weighted_discount_factor[mod.period[tmp]]
             for r in mod.WATER_NODES_W_RESERVOIRS
             for tmp in mod.TMPS
         )

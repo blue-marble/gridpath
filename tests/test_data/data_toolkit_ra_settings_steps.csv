@@ -1,6 +1,6 @@
 ﻿script,setting,value,script_true_false_arg,reverse_default_behavior
 create_database,database,../db/ra_toolkit_test_steps_temp.db,,
-create_database,db_schema,../data_toolkit/raw_data_db_schema.sql,,
+create_database,db_schema,../ra_toolkit/raw_data_db_schema.sql,,
 create_database,omit_data,,1,1
 load_raw_data,database,./ra_toolkit_test_steps_temp.db,,
 load_raw_data,csv_location,./csvs_test_examples/raw_data_ra_toolkit/,,
@@ -12,6 +12,7 @@ create_sync_load_input_csvs,load_components_scenario_id,5,,
 create_sync_load_input_csvs,load_components_scenario_name,ra_toolkit_step_tests_sync,,
 create_sync_load_input_csvs,load_levels_scenario_id,11,,
 create_sync_load_input_csvs,load_levels_scenario_name,ra_toolkit_step_tests_sync,,
+create_sync_load_input_csvs,study_year,0,,
 create_sync_load_input_csvs,load_scenario_overwrite,,1,1
 create_sync_load_input_csvs,load_components_overwrite,,1,1
 create_sync_load_input_csvs,load_levels_overwrite,,1,1
@@ -19,6 +20,7 @@ create_sync_var_gen_input_csvs,database,./ra_toolkit_test_steps_temp.db,,
 create_sync_var_gen_input_csvs,output_directory,./csvs_test_examples/project/opchar/variable_generator_profiles,,
 create_sync_var_gen_input_csvs,variable_generator_profile_scenario_id,6,,
 create_sync_var_gen_input_csvs,variable_generator_profile_scenario_name,ra_toolkit_step_tests_sync,,
+create_sync_var_gen_input_csvs,study_year,0,,
 create_sync_var_gen_input_csvs,overwrite,,1,1
 create_sync_var_gen_input_csvs,n_parallel_projects,4,,
 create_monte_carlo_weather_draws,database,./ra_toolkit_test_steps_temp.db,,
@@ -58,7 +60,7 @@ create_availability_iteration_input_csvs,n_iterations,4,,
 create_availability_iteration_input_csvs,user_provided_seeding,,1,1
 create_availability_iteration_input_csvs,project_availability_scenario_id,2,,
 create_availability_iteration_input_csvs,project_availability_scenario_name,ra_toolkit_step_tests,,
-create_availability_iteration_input_csvs,output_directory,./csvs_test_examples/project/availability/exogenous_independent,,
+create_availability_iteration_input_csvs,output_directory,./csvs_test_examples/project/availability/exogenous_outage,,
 create_availability_iteration_input_csvs,overwrite,,1,1
 create_availability_iteration_input_csvs,n_parallel_projects,4,,
 create_availability_iteration_input_csvs,sort,,1,1
@@ -66,6 +68,7 @@ create_sync_gen_weather_derate_input_csvs,database,./ra_toolkit_test_steps_temp.
 create_sync_gen_weather_derate_input_csvs,output_directory,./csvs_test_examples/project/availability/exogenous_weather,,
 create_sync_gen_weather_derate_input_csvs,exogenous_availability_weather_scenario_id,2,,
 create_sync_gen_weather_derate_input_csvs,exogenous_availability_weather_scenario_name,ra_toolkit_step_tests_sync,,
+create_sync_gen_weather_derate_input_csvs,study_year,0,,
 create_sync_gen_weather_derate_input_csvs,overwrite,,1,1
 create_sync_gen_weather_derate_input_csvs,n_parallel_projects,4,,
 create_monte_carlo_gen_weather_derate_input_csvs,database,./ra_toolkit_test_steps_temp.db,,

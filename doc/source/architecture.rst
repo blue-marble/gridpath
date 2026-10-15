@@ -24,6 +24,20 @@ gridpath.auxiliary.dynamic_components
 .. automodule:: gridpath.auxiliary.dynamic_components
     :members: DynamicComponents
 
+gridpath.auxiliary.calendar_rows
+********************************
+.. automodule:: gridpath.auxiliary.calendar_rows
+    :members: calendar_row_sql, bt_hrz_calendar_index_sql,
+        calendar_join_sql, calendar_rows_sql, calendar_index_cte_sql,
+        calendar_hour_sql, timepoints_without_calendar_hour_sql
+
+gridpath.auxiliary.period_wildcards
+***********************************
+.. automodule:: gridpath.auxiliary.period_wildcards
+    :members: period_wildcard_rows_sql, mixed_period_wildcard_series_sql,
+        require_period_wildcard_only_rows, subproblem_periods_sql,
+        temporal_periods_sql
+
 
 ================
 Running GridPath
@@ -62,6 +76,14 @@ Running End-to-End
 gridpath.run_end_to_end
 =======================
 .. automodule:: gridpath.run_end_to_end
+
+gridpath.run_end_to_end_per_draw
+================================
+.. automodule:: gridpath.run_end_to_end_per_draw
+
+gridpath.scenario_directory_cleanup
+===================================
+.. automodule:: gridpath.scenario_directory_cleanup
 
 
 Input Validation

@@ -17,11 +17,16 @@ Various input validation functions used in other modules
 """
 
 import datetime
+import warnings
 import numpy as np
 import pandas as pd
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import cursor_to_df
+from gridpath.auxiliary.period_wildcards import (
+    mixed_period_wildcard_series_sql,
+    mixed_period_wildcards_error,
+)
 
 
 def _get_idx_col(df):
@@ -353,8 +358,16 @@ def validate_values(
         max_invalids = (df[c] >= max) if strict_max else (df[c] > max)
         invalids = min_invalids | max_invalids
         if invalids.any():
-            bad_idxs = df[idx_col][invalids].astype(str).values
-            print_bad_idxs = ", ".join(bad_idxs)
+            bad_idxs = df[idx_col][invalids].astype(str)
+            # A list-valued idx_col (a multi-column index) yields a
+            # DataFrame; join each row's parts so the message stays a flat,
+            # readable string. A single idx_col is a Series and formats
+            # exactly as before.
+            print_bad_idxs = ", ".join(
+                bad_idxs.to_list()
+                if isinstance(bad_idxs, pd.Series)
+                else ["-".join(row) for row in bad_idxs.to_numpy()]
+            )
             exp_min = "{} <".format(min) if strict_min else "{} <=".format(min)
             exp_max = "< {}".format(max) if strict_max else "<= {}".format(max)
 
@@ -519,7 +532,9 @@ def validate_missing_inputs(df, col, idx_col="project", msg=""):
     for c in cols:
         invalids = df[c].isnull()
         if invalids.any():
-            bad_idxs = df[idx_col][invalids].values
+            # to_numpy() for consistent message formatting: with pandas 3's
+            # str dtype, .values returns a verbose-repr StringArray
+            bad_idxs = df[idx_col][invalids].to_numpy()
             results.append(
                 "Missing {} inputs for {}(s): {}. {}".format(c, idx_col, bad_idxs, msg)
             )
@@ -616,7 +631,9 @@ def validate_column_monotonicity(df, cols, idx_col="project", msg=""):
     df = df.dropna(subset=cols)
     invalids = ~df[cols].apply(lambda x: x.is_monotonic_increasing, axis=1)
     if invalids.any():
-        bad_idxs = df[idx_col][invalids].values
+        # to_numpy() for consistent message formatting: with pandas 3's
+        # str dtype, .values returns a verbose-repr StringArray
+        bad_idxs = df[idx_col][invalids].to_numpy()
         results.append(
             "{}(s) {}: Values cannot decrease between {}. {}".format(
                 idx_col, bad_idxs, cols, msg
@@ -969,3 +986,94 @@ def validate_startup_shutdown_rate_inputs(prj_df, su_df, hrs_in_tmp):
     #  for a fast-start unit might not need this input).
 
     return results
+
+
+def warn_on_unknown_balancing_types(
+    conn, temporal_scenario_id, table, bt_column, row_filter
+):
+    """
+    Warn when rows of a horizon-indexed input table use a balancing type
+    that the temporal scenario does not define at all: get_inputs scopes
+    these inputs to the temporal structure's horizons, so such rows are
+    silently left out of the model inputs (e.g. a typo or a built-in
+    balancing type missing from the database). Horizons the temporal
+    scenario lacks for balancing types it does define are not reported, as
+    subscenarios are routinely shared across temporal structures.
+
+    :param conn: database connection
+    :param temporal_scenario_id: the scenario's temporal_scenario_id
+    :param table: the input table
+    :param bt_column: the table's balancing type column
+    :param row_filter: SQL condition selecting the table rows the scenario
+        uses (subscenario IDs, portfolio, etc.)
+    """
+    unknown_bts = [bt for (bt,) in conn.execute(f"""
+            SELECT DISTINCT {bt_column}
+            FROM {table}
+            WHERE ({row_filter})
+            AND {bt_column} NOT IN (
+                SELECT balancing_type_horizon
+                FROM inputs_temporal_horizons
+                WHERE temporal_scenario_id = {temporal_scenario_id}
+            )
+            ORDER BY {bt_column}
+            """).fetchall()]
+    if unknown_bts:
+        warnings.warn(
+            f"{table}: rows on balancing type(s) "
+            f"{', '.join(repr(bt) for bt in unknown_bts)} are ignored, as "
+            f"temporal scenario {temporal_scenario_id} does not define "
+            f"them.",
+            stacklevel=2,
+        )
+
+
+def validate_period_wildcard_rows(
+    conn,
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    gridpath_module,
+    table,
+    key_columns,
+    row_filter,
+):
+    """
+    Flag (High severity) series of *table* (identified by *key_columns*,
+    selected by *row_filter*) with both period = 0 rows and rows for
+    explicit periods (see gridpath.auxiliary.period_wildcards).
+    """
+    mixed = (
+        conn.cursor()
+        .execute(
+            mixed_period_wildcard_series_sql(
+                table=table, key_columns=key_columns, row_filter=row_filter
+            )
+        )
+        .fetchall()
+    )
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=gridpath_module,
+        db_table=table,
+        severity="High",
+        errors=(
+            [
+                mixed_period_wildcards_error(
+                    table, [dict(zip(key_columns, series)) for series in mixed]
+                )
+            ]
+            if mixed
+            else []
+        ),
+    )

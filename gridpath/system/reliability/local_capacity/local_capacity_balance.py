@@ -30,6 +30,7 @@ from gridpath.common_functions import (
     create_results_df,
     duals_wrapper,
     none_dual_type_error_wrapper,
+    update_results_df,
 )
 from gridpath.system.reliability.local_capacity import LOCAL_CAPACITY_ZONE_PRD_DF
 
@@ -148,23 +149,4 @@ def export_results(
         data=data,
     )
 
-    for c in results_columns:
-        getattr(d, LOCAL_CAPACITY_ZONE_PRD_DF)[c] = None
-    getattr(d, LOCAL_CAPACITY_ZONE_PRD_DF).update(results_df)
-
-
-def save_duals(
-    scenario_directory,
-    weather_iteration,
-    hydro_iteration,
-    availability_iteration,
-    subproblem,
-    stage,
-    instance,
-    dynamic_components,
-):
-    instance.constraint_indices["Local_Capacity_Constraint"] = [
-        "local_capacity_zone",
-        "period",
-        "dual",
-    ]
+    update_results_df(getattr(d, LOCAL_CAPACITY_ZONE_PRD_DF), results_df)

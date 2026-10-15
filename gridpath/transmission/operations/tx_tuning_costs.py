@@ -20,7 +20,7 @@ stor operational type) in order to force smoother dispatch.
 """
 
 import os
-from pyomo.environ import Var, NonNegativeReals, Constraint, Expression
+from pyomo.environ import Var, NonNegativeReals, Constraint, Expression, Set
 
 
 def add_model_components(
@@ -34,8 +34,19 @@ def add_model_components(
     stage,
 ):
     # Tuning cost can be applied on exports from a load zone to prioritize
-    # meeting local load first
-    m.LZ_Exports = Var(m.LOAD_ZONES, m.TMPS, within=NonNegativeReals)
+    # meeting local load first; the exports variable and its constraint are
+    # only created for load zones with a (non-zero) export penalty
+    m.EXPORT_PENALTY_LZ_TMPS = Set(
+        dimen=2,
+        initialize=lambda mod: [
+            (lz, tmp)
+            for lz in mod.LOAD_ZONES
+            if mod.export_penalty_cost_per_mwh[lz] > 0
+            for tmp in mod.TMPS
+        ],
+    )
+
+    m.LZ_Exports = Var(m.EXPORT_PENALTY_LZ_TMPS, within=NonNegativeReals)
 
     def exports_tuning_cost_constraint_rule(mod, lz, tmp):
         return (
@@ -45,10 +56,12 @@ def add_model_components(
         )
 
     m.Positive_Exports_Tuning_Cost_Constraint = Constraint(
-        m.LOAD_ZONES, m.TMPS, rule=exports_tuning_cost_constraint_rule
+        m.EXPORT_PENALTY_LZ_TMPS, rule=exports_tuning_cost_constraint_rule
     )
 
     def export_penalty_cost_rule(mod, lz, tmp):
+        if mod.export_penalty_cost_per_mwh[lz] == 0:
+            return 0
         return mod.LZ_Exports[lz, tmp] * mod.export_penalty_cost_per_mwh[lz]
 
     m.Export_Penalty_Cost = Expression(
@@ -57,12 +70,10 @@ def add_model_components(
 
     # Losses
     def losses_tuning_cost_rule(mod, line, tmp):
-        # TODO: implement for binary also
+        # TODO: implement for binary also (the losses_tuning_cost_per_mw
+        #  param is currently defined for the tx_simple operational type only)
         if mod.tx_operational_type[line] in ["tx_simple"]:
-            return (
-                mod.TxSimple_Losses_LZ_From_MW[line, tmp]
-                + mod.TxSimple_Losses_LZ_To_MW[line, tmp]
-            ) * mod.losses_tuning_cost_per_mw[line]
+            return mod.Tx_Losses_MW[line, tmp] * mod.losses_tuning_cost_per_mw[line]
         else:
             return 0
 

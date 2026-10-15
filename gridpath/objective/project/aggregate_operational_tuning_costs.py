@@ -53,8 +53,8 @@ def add_model_components(
             * mod.hrs_in_tmp[tmp]
             * mod.tmp_weight[tmp]
             * mod.number_years_represented[mod.period[tmp]]
-            * mod.discount_factor[mod.period[tmp]]
-            for (g, tmp) in mod.PRJ_OPR_TMPS
+            * mod.probability_weighted_discount_factor[mod.period[tmp]]
+            for (g, tmp) in mod.TUNING_COST_PRJ_OPR_TMPS
         )
 
     m.Total_Ramp_Tuning_Cost = Expression(rule=total_ramp_tuning_cost_rule)

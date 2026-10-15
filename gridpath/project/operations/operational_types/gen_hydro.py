@@ -47,10 +47,15 @@ from gridpath.auxiliary.auxiliary import (
 )
 from gridpath.auxiliary.db_interface import directories_to_db_values
 from gridpath.auxiliary.dynamic_components import headroom_variables, footroom_variables
+from gridpath.project.operations.reserves.reserve_aggregation import (
+    headroom_provision_rule,
+    footroom_provision_rule,
+)
 from gridpath.project.common_functions import (
     check_if_boundary_type_and_first_timepoint,
     check_if_first_timepoint,
     check_boundary_type,
+    get_energy_budget_balancing_type,
 )
 from gridpath.project.operations.operational_types.common_functions import (
     load_optype_model_data,
@@ -61,6 +66,15 @@ from gridpath.project.operations.operational_types.common_functions import (
     validate_hydro_opchars,
     get_prj_temporal_index_opr_inputs_from_db,
     BT_HRZ_INDEX_QUERY_PARAMS,
+    require_bt_hrz_rows_for_every_project,
+)
+from gridpath.project.operations.operational_types.gen_hydro_common import (
+    add_hydro_budget_allocation_components,
+    load_hydro_budget_allocation,
+    write_hydro_budget_allocation_inputs,
+    validate_hydro_budget_allocation,
+    export_hydro_budget_allocation_results,
+    import_hydro_budget_allocation_results_into_database,
 )
 from gridpath.common_functions import create_results_df
 
@@ -87,8 +101,12 @@ def add_model_components(
     +-------------------------------------------------------------------------+
     | | :code:`GEN_HYDRO_OPR_BT_HRZS`                                         |
     |                                                                         |
-    | Two-dimensional set with generators of the :code:`gen_hydro`            |
-    | operational type and their operational horizons.                        |
+    | Three-dimensional set with generators of the                            |
+    | :code:`gen_hydro` operational type and their                            |
+    | operational (balancing type, horizon)s, i.e. the horizons of their      |
+    | energy-budget balancing type (see the                                   |
+    | :code:`gen_hydro_energy_budget_balancing_type` param) over              |
+    | which their energy budgets apply.                                       |
     +-------------------------------------------------------------------------+
     | | :code:`GEN_HYDRO_OPR_TMPS`                                            |
     |                                                                         |
@@ -99,6 +117,18 @@ def add_model_components(
     |                                                                         |
     | Two-dimensional set with generators of the :code:`gen_hydro`            |
     | operational type and their linked timepoints.                           |
+    +-------------------------------------------------------------------------+
+    | | :code:`GEN_HYDRO_BUDGET_ALLOC_BT_HRZS`                                |
+    |                                                                         |
+    | Three-dimensional set with generators of the :code:`gen_hydro`          |
+    | operational type and the (balancing type, horizon) sub-horizons of      |
+    | their operational horizons for which energy-budget allocation           |
+    | limits are specified.                                                   |
+    +-------------------------------------------------------------------------+
+    | | :code:`GEN_HYDRO_BUDGET_ALLOC_PARENT_BT_HRZS`                         |
+    |                                                                         |
+    | The horizons of the project's energy-budget balancing type that the     |
+    | energy-budget allocation limits above refer to.                         |
     +-------------------------------------------------------------------------+
 
     |
@@ -150,6 +180,17 @@ def add_model_components(
     | The project's downward ramp rate limit during operations, defined as a  |
     | fraction of its capacity per minute.                                    |
     +-------------------------------------------------------------------------+
+    | | :code:`gen_hydro_energy_budget_balancing_type`                        |
+    | | *Defined over*: :code:`GEN_HYDRO`                                     |
+    | | *Within*: :code:`BLN_TYPES`                                           |
+    | | *Default*: the project's :code:`balancing_type_project`               |
+    |                                                                         |
+    | The balancing type of the horizons over which the project's energy      |
+    | budgets and per-horizon min/max power fractions apply. The project's    |
+    | :code:`balancing_type_project` continues to govern chronology (ramps    |
+    | and horizon-boundary handling), so a project can e.g. be budgeted by    |
+    | month while ramping continuously across month boundaries.               |
+    +-------------------------------------------------------------------------+
     | | :code:`gen_hydro_aux_consumption_frac_capacity`                       |
     | | *Defined over*: :code:`GEN_HYDRO`                                     |
     | | *Within*: :code:`PercentFraction`                                     |
@@ -164,6 +205,34 @@ def add_model_components(
     | | *Default*: :code:`0`                                                  |
     |                                                                         |
     | Auxiliary consumption as a fraction of gross power output.              |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_hydro_budget_alloc_min_fraction`                           |
+    | | *Defined over*: :code:`GEN_HYDRO_BUDGET_ALLOC_BT_HRZS`                |
+    | | *Within*: :code:`PercentFraction`                                     |
+    |                                                                         |
+    | The minimum share of the parent horizon's energy budget that must be    |
+    | produced in the sub-horizon. Not enforced if not specified.             |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_hydro_budget_alloc_max_fraction`                           |
+    | | *Defined over*: :code:`GEN_HYDRO_BUDGET_ALLOC_BT_HRZS`                |
+    | | *Within*: :code:`PercentFraction`                                     |
+    |                                                                         |
+    | The maximum share of the parent horizon's energy budget that may be     |
+    | produced in the sub-horizon. Not enforced if not specified.             |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Derived Params                                                          |
+    +=========================================================================+
+    | | :code:`gen_hydro_budget_alloc_parent_hrz`                             |
+    | | *Defined over*: :code:`GEN_HYDRO_BUDGET_ALLOC_BT_HRZS`                |
+    | | *Within*: :code:`PositiveIntegers`                                    |
+    |                                                                         |
+    | The horizon of the project's energy-budget balancing type within which  |
+    | the sub-horizon is nested; construction fails if a sub-horizon          |
+    | straddles horizons of that balancing type.                              |
     +-------------------------------------------------------------------------+
 
     |
@@ -229,6 +298,19 @@ def add_model_components(
     | The project's auxiliary consumption (power consumed on-site and not     |
     | sent to the grid) in each timepoint.                                    |
     +-------------------------------------------------------------------------+
+    | | :code:`GenHydro_Parent_Hrz_Energy_Budget_MWh`                         |
+    | | *Defined over*: :code:`GEN_HYDRO_BUDGET_ALLOC_PARENT_BT_HRZS`         |
+    |                                                                         |
+    | The energy budget of the horizons that allocation limits refer          |
+    | to, built as the energy budget constraint's right-hand side is.         |
+    | Indexed over only those horizons.                                       |
+    +-------------------------------------------------------------------------+
+    | | :code:`GenHydro_Budget_Alloc_Energy_MWh`                              |
+    | | *Defined over*: :code:`GEN_HYDRO_BUDGET_ALLOC_BT_HRZS`                |
+    |                                                                         |
+    | The project's gross energy in each sub-horizon with allocation          |
+    | limits.                                                                 |
+    +-------------------------------------------------------------------------+
 
     |
 
@@ -256,6 +338,20 @@ def add_model_components(
     | The project's average capacity factor in each operational horizon,      |
     | including curtailment, should match the specified                       |
     | :code:`gen_hydro_average_power_fraction`.                               |
+    +-------------------------------------------------------------------------+
+    | | :code:`GenHydro_Budget_Alloc_Min_Constraint`                          |
+    | | *Defined over*: :code:`GEN_HYDRO_BUDGET_ALLOC_BT_HRZS`                |
+    |                                                                         |
+    | The project's energy in the sub-horizon must be at least the            |
+    | specified :code:`gen_hydro_budget_alloc_min_fraction`                   |
+    | of the parent horizon's energy budget.                                  |
+    +-------------------------------------------------------------------------+
+    | | :code:`GenHydro_Budget_Alloc_Max_Constraint`                          |
+    | | *Defined over*: :code:`GEN_HYDRO_BUDGET_ALLOC_BT_HRZS`                |
+    |                                                                         |
+    | The project's energy in the sub-horizon must be at most the             |
+    | specified :code:`gen_hydro_budget_alloc_max_fraction`                   |
+    | of the parent horizon's energy budget.                                  |
     +-------------------------------------------------------------------------+
     | Ramps                                                                   |
     +-------------------------------------------------------------------------+
@@ -290,11 +386,17 @@ def add_model_components(
         ),
     )
 
+    # Declared right after the project set: the budget-allocation components'
+    # initializers read it, and Pyomo constructs components in declaration
+    # order (sparse membership in a not-yet-constructed Param is silently
+    # False). No default: unspecified means the project's
+    # balancing_type_project (see get_energy_budget_balancing_type).
+    m.gen_hydro_energy_budget_balancing_type = Param(m.GEN_HYDRO, within=m.BLN_TYPES)
+
     m.GEN_HYDRO_OPR_BT_HRZS = Set(dimen=3)
 
     m.GEN_HYDRO_OPR_TMPS = Set(
         dimen=2,
-        within=m.PRJ_OPR_TMPS,
         initialize=lambda mod: subset_init_by_set_membership(
             mod=mod, superset="PRJ_OPR_TMPS", index=0, membership_set=mod.GEN_HYDRO
         ),
@@ -358,14 +460,14 @@ def add_model_components(
     ###########################################################################
 
     def upwards_reserve_rule(mod, g, tmp):
-        return sum(getattr(mod, c)[g, tmp] for c in getattr(d, headroom_variables)[g])
+        return headroom_provision_rule(d, mod, g, tmp)
 
     m.GenHydro_Upwards_Reserves_MW = Expression(
         m.GEN_HYDRO_OPR_TMPS, rule=upwards_reserve_rule
     )
 
     def downwards_reserve_rule(mod, g, tmp):
-        return sum(getattr(mod, c)[g, tmp] for c in getattr(d, footroom_variables)[g])
+        return footroom_provision_rule(d, mod, g, tmp)
 
     m.GenHydro_Downwards_Reserves_MW = Expression(
         m.GEN_HYDRO_OPR_TMPS, rule=downwards_reserve_rule
@@ -403,6 +505,15 @@ def add_model_components(
         m.GEN_HYDRO_OPR_BT_HRZS, rule=energy_budget_rule
     )
 
+    # Optional limits on the allocation of the energy budget among
+    # sub-horizons of the project's horizons
+    add_hydro_budget_allocation_components(
+        m,
+        op_type="gen_hydro",
+        component_prefix="GenHydro",
+        power_var="GenHydro_Gross_Power_MW",
+    )
+
     m.GenHydro_Ramp_Up_Constraint = Constraint(m.GEN_HYDRO_OPR_TMPS, rule=ramp_up_rule)
 
     m.GenHydro_Ramp_Down_Constraint = Constraint(
@@ -421,7 +532,7 @@ def add_model_components(
 def max_power_rule(mod, g, tmp):
     """
     **Constraint Name**: GenHydro_Max_Power_Constraint
-    **Enforced Over**: GEN_HYDRO_OPR_BT_HRZS
+    **Enforced Over**: GEN_HYDRO_OPR_TMPS
 
     Power plus upward reserves shall not exceed the maximum power output.
     The maximum power output (fraction) is a user input that is specified
@@ -433,15 +544,14 @@ def max_power_rule(mod, g, tmp):
     variable, depending on the capacity type) is 1,000 MW and the project is
     fully available, the project's maximum power output is 900 MW.
     """
+    bt = get_energy_budget_balancing_type(
+        mod, g, mod.gen_hydro_energy_budget_balancing_type
+    )
     return (
         mod.GenHydro_Gross_Power_MW[g, tmp]
         - mod.GenHydro_Curtail_MW[g, tmp]
         + mod.GenHydro_Upwards_Reserves_MW[g, tmp]
-        <= mod.gen_hydro_max_power_fraction[
-            g,
-            mod.balancing_type_project[g],
-            mod.horizon[tmp, mod.balancing_type_project[g]],
-        ]
+        <= mod.gen_hydro_max_power_fraction[g, bt, mod.horizon[tmp, bt]]
         * mod.Capacity_MW[g, mod.period[tmp]]
         * mod.Availability_Derate[g, tmp]
     )
@@ -450,7 +560,7 @@ def max_power_rule(mod, g, tmp):
 def min_power_rule(mod, g, tmp):
     """
     **Constraint Name**: GenHydro_Min_Power_Constraint
-    **Enforced Over**: GEN_HYDRO_OPR_BT_HRZS
+    **Enforced Over**: GEN_HYDRO_OPR_TMPS
 
     Power minus downward reserves must exceed the minimum power output.
     The minimum power output (fraction) is a user input that is specified
@@ -462,15 +572,14 @@ def min_power_rule(mod, g, tmp):
     variable, depending on the capacity type) is 1,000 MW and the project is
     fully available, the project's minimum power output is 300 MW.
     """
+    bt = get_energy_budget_balancing_type(
+        mod, g, mod.gen_hydro_energy_budget_balancing_type
+    )
     return (
         mod.GenHydro_Gross_Power_MW[g, tmp]
         - mod.GenHydro_Curtail_MW[g, tmp]
         - mod.GenHydro_Downwards_Reserves_MW[g, tmp]
-        >= mod.gen_hydro_min_power_fraction[
-            g,
-            mod.balancing_type_project[g],
-            mod.horizon[tmp, mod.balancing_type_project[g]],
-        ]
+        >= mod.gen_hydro_min_power_fraction[g, bt, mod.horizon[tmp, bt]]
         * mod.Capacity_MW[g, mod.period[tmp]]
         * mod.Availability_Derate[g, tmp]
     )
@@ -795,6 +904,19 @@ def load_model_data(
         projects=projects,
     )
 
+    # Optional energy-budget allocation limits
+    load_hydro_budget_allocation(
+        data_portal=data_portal,
+        scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        op_type="gen_hydro",
+        projects=projects,
+    )
+
     # Linked timepoint params
     linked_inputs_filename = os.path.join(
         scenario_directory,
@@ -866,6 +988,18 @@ def export_results(
     """
 
     # Dispatch results added to project_timepoint.csv via add_to_prj_tmp_results()
+
+    export_hydro_budget_allocation_results(
+        mod=mod,
+        scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        op_type="gen_hydro",
+        component_prefix="GenHydro",
+    )
 
     # If there's a linked_subproblems_map CSV file, check which of the
     # current subproblem TMPS we should export results for to link to the
@@ -1009,6 +1143,63 @@ def write_model_inputs(
         stage,
         fname,
         data,
+        check_rows=require_bt_hrz_rows_for_every_project(
+            conn=conn,
+            subscenarios=subscenarios,
+            op_type="gen_hydro",
+            db_table="inputs_project_hydro_operational_chars",
+        ),
+    )
+
+    write_hydro_budget_allocation_inputs(
+        scenario_directory=scenario_directory,
+        subscenarios=subscenarios,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        conn=conn,
+        op_type="gen_hydro",
+    )
+
+
+def import_results_into_database(
+    scenario_id,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    c,
+    db,
+    results_directory,
+    quiet,
+):
+    """
+    Import the energy-budget allocation results (the shared
+    results_project_hydro_budget_allocation table); the dispatch results are
+    imported with the consolidated project-timepoint results.
+
+    :param scenario_id:
+    :param c:
+    :param db:
+    :param results_directory:
+    :param quiet:
+    :return:
+    """
+    import_hydro_budget_allocation_results_into_database(
+        scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        conn=db,
+        cursor=c,
+        results_directory=results_directory,
+        quiet=quiet,
+        op_type="gen_hydro",
     )
 
 
@@ -1124,3 +1315,15 @@ def validate_inputs(
             Found hydro min, max, or average that are <0 or >1. This is 
             allowed but this warning is here to make sure it is intended.
             """)
+
+    validate_hydro_budget_allocation(
+        scenario_id,
+        subscenarios,
+        weather_iteration,
+        hydro_iteration,
+        availability_iteration,
+        subproblem,
+        stage,
+        conn,
+        "gen_hydro",
+    )

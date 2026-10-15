@@ -18,6 +18,8 @@ import os.path
 import sys
 import unittest
 
+from pyomo.environ import Param
+
 from tests.common_functions import create_abstract_model, add_components_and_load_data
 from tests.project.operations.common_functions import get_project_operational_timepoints
 
@@ -161,6 +163,112 @@ class TestStor(unittest.TestCase):
             for (prj, tmp) in instance.STOR_EXOG_SOC_TMPS
         }
         self.assertDictEqual(expected_exog_soc, actual_exog_soc)
+
+        # Param: stor_reserves_setpoint_duration_hours (sparse: no default, so
+        # only projects with a specified value are "in" the param)
+        expected_reserves_setpoint_duration = {"Battery": 0.5}
+        actual_reserves_setpoint_duration = {
+            prj: instance.stor_reserves_setpoint_duration_hours[prj]
+            for prj in instance.STOR
+            if prj in instance.stor_reserves_setpoint_duration_hours
+        }
+        self.assertDictEqual(
+            expected_reserves_setpoint_duration, actual_reserves_setpoint_duration
+        )
+
+
+class TestStorReserveConstraintSkips(unittest.TestCase):
+    """
+    The headroom/footroom constraints are skipped for projects without
+    reserve variables wherever the project's other constraints imply them.
+    """
+
+    def build_instance(self, extra_prereq_modules=()):
+        prereq_modules = IMPORTED_PREREQ_MODULES + [
+            import_module("." + mdl, package="gridpath") for mdl in extra_prereq_modules
+        ]
+        m, data = add_components_and_load_data(
+            prereq_modules=prereq_modules,
+            module_to_test=MODULE_BEING_TESTED,
+            test_data_dir=TEST_DATA_DIRECTORY,
+            weather_iteration="",
+            hydro_iteration="",
+            availability_iteration="",
+            subproblem="",
+            stage="",
+        )
+        return m.create_instance(data)
+
+    def test_reserve_constraints_skipped_without_reserves(self):
+        """
+        With no reserve module loaded, no project has reserve variables (and
+        the fixture's capacity multipliers are the default 1), so the power
+        constraints are skipped everywhere and the energy constraints are
+        kept only where they are the only bound on the ending energy.
+        """
+        instance = self.build_instance()
+
+        self.assertEqual(len(instance.Stor_Max_Headroom_Power_Constraint), 0)
+        self.assertEqual(len(instance.Stor_Max_Footroom_Power_Constraint), 0)
+
+        # Timepoints after which no energy tracking constraint looks back:
+        # the last timepoint of a linear horizon and the timepoint before
+        # an exogenous state of charge
+        chain_ends = set()
+        for s, tmp in instance.STOR_OPR_TMPS:
+            next_tmp = instance.next_tmp[tmp, instance.balancing_type_project[s]]
+            if next_tmp == "." or (s, next_tmp) in instance.STOR_EXOG_SOC_TMPS:
+                chain_ends.add((s, tmp))
+        linear_horizon_last_tmps = {
+            (s, instance.last_hrz_tmp[bt, hrz])
+            for s in instance.STOR
+            for (bt, hrz) in instance.BLN_TYPE_HRZS
+            if bt == instance.balancing_type_project[s]
+            and instance.boundary[bt, hrz] == "linear"
+            and (s, instance.last_hrz_tmp[bt, hrz]) in instance.STOR_OPR_TMPS
+        }
+        # The fixture has linear horizons for every storage project
+        self.assertEqual(len(linear_horizon_last_tmps), len(instance.STOR))
+        self.assertTrue(linear_horizon_last_tmps <= chain_ends)
+        self.assertEqual(
+            set(instance.Stor_Max_Headroom_Energy_Constraint.keys()), chain_ends
+        )
+
+        # The fixture has endogenous availability, so the derate is not a
+        # constant and the footroom energy constraint, whose skip needs the
+        # next timepoint's derate to be known, is kept everywhere
+        self.assertIsNot(instance.Availability_Derate.ctype, Param)
+        self.assertEqual(
+            set(instance.Stor_Max_Footroom_Energy_Constraint.keys()),
+            set(instance.STOR_OPR_TMPS),
+        )
+
+    def test_reserve_constraints_kept_with_reserves(self):
+        """
+        With an upward reserve module loaded, the headroom constraints are
+        kept in every timepoint of every project that can provide the
+        reserve; the footroom power constraint (no downward reserve module)
+        is still skipped.
+        """
+        instance = self.build_instance(
+            extra_prereq_modules=[
+                "geography.load_following_up_balancing_areas",
+                "project.operations.reserves.lf_reserves_up",
+            ]
+        )
+        reserve_prj_tmps = {
+            (s, tmp)
+            for (s, tmp) in instance.STOR_OPR_TMPS
+            if s in instance.LF_RESERVES_UP_PROJECTS
+        }
+        self.assertTrue(reserve_prj_tmps)
+        self.assertEqual(
+            set(instance.Stor_Max_Headroom_Power_Constraint.keys()), reserve_prj_tmps
+        )
+        self.assertEqual(
+            set(instance.Stor_Max_Headroom_Energy_Constraint.keys()), reserve_prj_tmps
+        )
+        self.assertEqual(len(instance.Stor_Max_Footroom_Power_Constraint), 0)
 
 
 if __name__ == "__main__":

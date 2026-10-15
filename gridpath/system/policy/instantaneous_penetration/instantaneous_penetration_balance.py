@@ -155,6 +155,8 @@ def export_results(
                 "period",
                 "timepoint",
                 "discount_factor",
+                "probability",
+                "probability_weighted_discount_factor",
                 "number_years_represented",
                 "timepoint_weight",
                 "number_of_hours_in_timepoint",
@@ -177,6 +179,8 @@ def export_results(
                     m.period[tmp],
                     tmp,
                     m.discount_factor[m.period[tmp]],
+                    m.probability[m.period[tmp]],
+                    m.probability_weighted_discount_factor[m.period[tmp]],
                     m.number_years_represented[m.period[tmp]],
                     m.tmp_weight[tmp],
                     m.hrs_in_tmp[tmp],
@@ -216,33 +220,6 @@ def export_results(
                     # ),
                 ]
             )
-
-
-def save_duals(
-    scenario_directory,
-    weather_iteration,
-    hydro_iteration,
-    availability_iteration,
-    subproblem,
-    stage,
-    instance,
-    dynamic_components,
-):
-    """
-
-    :param m:
-    :return:
-    """
-    instance.constraint_indices["Meet_Instantaneous_Penetration_min_Constraint"] = [
-        "zone",
-        "timepoint",
-        "dual_instantaneous_penetration_min",
-    ]
-    instance.constraint_indices["Meet_Instantaneous_Penetration_max_Constraint"] = [
-        "zone",
-        "timepoint",
-        "dual_instantaneous_penetration_min",
-    ]
 
 
 def import_results_into_database(

@@ -1,0 +1,867 @@
+# Copyright 2026 Sylvan Energy Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""
+Resolution of the market volume limits against a scenario's market groups and
+temporal structure, including the wildcard (default) rows.
+
+Covers what an example scenario cannot easily express: the implicit
+singleton group every market gets, a wildcard row on its own, a wildcard row
+overridden for one index, a NULL cell in an explicit row falling through to
+the wildcard row, the group's flat limit as the layer beneath both, a group
+that narrows to none of the scenario's markets, and a group limited at one
+resolution only.
+"""
+
+import os.path
+import sqlite3
+import unittest
+
+from gridpath.system.markets.volume import (
+    get_inputs_from_database,
+    get_market_groups_sql,
+    validate_inputs,
+)
+
+DB_SCHEMA = os.path.join(
+    os.path.dirname(__file__), "..", "..", "..", "db", "db_schema.sql"
+)
+
+TEMPORAL_SCENARIO_ID = 1
+MARKET_SCENARIO_ID = 1
+# A second market subscenario that models both markets, so the one this
+# scenario uses is a strict subset
+OTHER_MARKET_SCENARIO_ID = 2
+MARKET_GROUP_SCENARIO_ID = 1
+MARKET_VOLUME_SCENARIO_ID = 1
+
+# Two timepoints in one period, spanned by one 'day' horizon; a 'month'
+# balancing type the scenario also defines checks that a wildcard row of one
+# balancing type does not leak into another
+TIMEPOINTS = [1, 2]
+PERIOD = 2020
+SUBPROBLEM = 1
+STAGE = 1
+
+# Market_Hub_2 is deliberately not one of the scenario's markets, so the
+# group containing it narrows to Market_Hub_1 and the group containing only
+# it narrows to nothing
+SCENARIO_MARKETS = ["Market_Hub_1"]
+
+# A built-in balancing type whose horizons (period * 100 + month) accept
+# month-of-year rows
+MONTH_BT = "subproblem_period_month_circular"
+ALL_MARKETS = ["Market_Hub_1", "Market_Hub_2"]
+
+
+class SubScenarios(object):
+    """Stand-in for the SubScenarios object the module reads IDs from."""
+
+    def __init__(self, **ids):
+        self.TEMPORAL_SCENARIO_ID = TEMPORAL_SCENARIO_ID
+        self.MARKET_SCENARIO_ID = MARKET_SCENARIO_ID
+        self.MARKET_GROUP_SCENARIO_ID = MARKET_GROUP_SCENARIO_ID
+        self.MARKET_VOLUME_SCENARIO_ID = MARKET_VOLUME_SCENARIO_ID
+        for key, value in ids.items():
+            setattr(self, key, value)
+
+
+class TestMarketVolumeInputResolution(unittest.TestCase):
+    """ """
+
+    def setUp(self):
+        self.conn = sqlite3.connect(":memory:")
+        with open(DB_SCHEMA) as f:
+            self.conn.executescript(f.read())
+
+        c = self.conn.cursor()
+        c.execute(
+            "INSERT INTO inputs_temporal_periods (temporal_scenario_id, period) "
+            "VALUES (?, ?)",
+            (TEMPORAL_SCENARIO_ID, PERIOD),
+        )
+        for tmp in TIMEPOINTS:
+            c.execute(
+                """INSERT INTO inputs_temporal
+                (temporal_scenario_id, subproblem_id, stage_id, timepoint, period,
+                 number_of_hours_in_timepoint, timepoint_weight,
+                 spinup_or_lookahead)
+                VALUES (?, ?, ?, ?, ?, 1, 1, 0)""",
+                (TEMPORAL_SCENARIO_ID, SUBPROBLEM, STAGE, tmp, PERIOD),
+            )
+            c.execute(
+                """INSERT INTO inputs_temporal_horizon_timepoints
+                (temporal_scenario_id, subproblem_id, stage_id, timepoint,
+                 balancing_type_horizon, horizon)
+                VALUES (?, ?, ?, ?, ?, ?)""",
+                (TEMPORAL_SCENARIO_ID, SUBPROBLEM, STAGE, tmp, "day", 202001),
+            )
+        for bt, hrz in [("day", 202001), ("month", 202001)]:
+            c.execute(
+                """INSERT INTO inputs_temporal_horizons
+                (temporal_scenario_id, balancing_type_horizon, horizon, boundary)
+                VALUES (?, ?, ?, ?)""",
+                (TEMPORAL_SCENARIO_ID, bt, hrz, "circular"),
+            )
+
+        for market in SCENARIO_MARKETS:
+            c.execute(
+                "INSERT INTO inputs_geography_markets (market_scenario_id, market) "
+                "VALUES (?, ?)",
+                (MARKET_SCENARIO_ID, market),
+            )
+        # Market_Hub_2 is a real market, just not one this scenario models;
+        # that is how one volume subscenario serves scenarios with different
+        # market sets
+        for market in ALL_MARKETS:
+            c.execute(
+                "INSERT INTO inputs_geography_markets (market_scenario_id, market) "
+                "VALUES (?, ?)",
+                (OTHER_MARKET_SCENARIO_ID, market),
+            )
+
+        # Only groups of more than one market are defined; every market is
+        # implicitly a group of its own. All_Hubs spans both markets and so
+        # narrows to Market_Hub_1, and Nowhere narrows to nothing.
+        self.define_group("All_Hubs", ALL_MARKETS)
+        self.define_group("Nowhere", ["Market_Hub_2"])
+        self.conn.commit()
+
+    def define_group(self, group, markets):
+        c = self.conn.cursor()
+        for market in markets:
+            c.execute(
+                """INSERT INTO inputs_market_groups
+                (market_group_scenario_id, market_group, market)
+                VALUES (?, ?, ?)""",
+                (MARKET_GROUP_SCENARIO_ID, group, market),
+            )
+        self.conn.commit()
+
+    def tearDown(self):
+        self.conn.close()
+
+    def limit_group(
+        self,
+        group,
+        tmp=None,
+        hrz=None,
+        prd=None,
+        hrz_to_tmp=None,
+        basis="net",
+        **flat,
+    ):
+        """
+        Give *group* a volume profile, at the resolutions whose profile ID is
+        passed, and the flat limits in *flat* (keyed by the profile column
+        they default). Creates the profile subscenario rows the limits hang
+        off.
+        """
+        c = self.conn.cursor()
+        for profile_id, table, column in [
+            (
+                tmp,
+                "subscenarios_market_volume_tmp_profiles",
+                "market_volume_tmp_profile_scenario_id",
+            ),
+            (
+                hrz,
+                "subscenarios_market_volume_hrz_profiles",
+                "market_volume_hrz_profile_scenario_id",
+            ),
+            (
+                prd,
+                "subscenarios_market_volume_prd_profiles",
+                "market_volume_prd_profile_scenario_id",
+            ),
+            (
+                hrz_to_tmp,
+                "subscenarios_market_volume_hrz_to_tmp_profiles",
+                "market_volume_hrz_to_tmp_profile_scenario_id",
+            ),
+        ]:
+            if profile_id is not None:
+                c.execute(
+                    f"INSERT OR IGNORE INTO {table} (market_group, {column}, name) "
+                    f"VALUES (?, ?, 'test')",
+                    (group, profile_id),
+                )
+        flat_columns = [
+            "max_market_sales",
+            "max_market_purchases",
+            "max_final_market_sales",
+            "max_final_market_purchases",
+            "max_market_sales_in_prd",
+            "max_market_purchases_in_prd",
+            "max_market_sales_in_prd_include_storage_losses",
+        ]
+        assert set(flat) <= set(flat_columns), flat
+        c.execute(
+            f"""INSERT INTO inputs_market_volume
+            (market_volume_scenario_id, market_group, basis,
+             market_volume_tmp_profile_scenario_id,
+             market_volume_hrz_profile_scenario_id,
+             market_volume_prd_profile_scenario_id,
+             market_volume_hrz_to_tmp_profile_scenario_id,
+             varies_by_weather_iteration, varies_by_hydro_iteration,
+             {", ".join("default_" + col for col in flat_columns)})
+            VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, {", ".join("?" * len(flat_columns))})""",
+            (MARKET_VOLUME_SCENARIO_ID, group, basis, tmp, hrz, prd, hrz_to_tmp)
+            + tuple(flat.get(col) for col in flat_columns),
+        )
+        self.conn.commit()
+
+    def insert_tmp_limits(self, group, profile_id, rows):
+        self.conn.cursor().executemany(
+            """INSERT INTO inputs_market_volume_tmp_profiles
+            (market_group, market_volume_tmp_profile_scenario_id, weather_iteration,
+             hydro_iteration, stage_id, timepoint, max_market_sales,
+             max_market_purchases, max_final_market_sales,
+             max_final_market_purchases)
+            VALUES (?, ?, 0, 0, ?, ?, ?, ?, ?, ?)""",
+            [(group, profile_id, STAGE) + r for r in rows],
+        )
+        self.conn.commit()
+
+    def insert_hrz_limits(self, group, profile_id, rows):
+        self.conn.cursor().executemany(
+            """INSERT INTO inputs_market_volume_hrz_profiles
+            (market_group, market_volume_hrz_profile_scenario_id,
+             weather_iteration, hydro_iteration, stage_id,
+             balancing_type_horizon, horizon, max_market_sales_in_hrz,
+             max_market_purchases_in_hrz,
+             max_market_sales_in_hrz_include_storage_losses)
+            VALUES (?, ?, 0, 0, ?, ?, ?, ?, ?, ?)""",
+            [(group, profile_id, STAGE) + r for r in rows],
+        )
+        self.conn.commit()
+
+    def insert_hrz_to_tmp_limits(self, group, profile_id, rows):
+        """
+        Horizon-to-timepoint limits: rows of (balancing type, horizon, sales,
+        purchases, final sales, final purchases).
+        """
+        self.conn.cursor().executemany(
+            """INSERT INTO inputs_market_volume_hrz_to_tmp_profiles
+            (market_group, market_volume_hrz_to_tmp_profile_scenario_id,
+             weather_iteration, hydro_iteration, stage_id,
+             balancing_type_horizon, horizon, max_market_sales,
+             max_market_purchases, max_final_market_sales,
+             max_final_market_purchases)
+            VALUES (?, ?, 0, 0, ?, ?, ?, ?, ?, ?, ?)""",
+            [(group, profile_id, STAGE) + r for r in rows],
+        )
+        self.conn.commit()
+
+    def add_month_horizon_timepoints(self):
+        """Put both timepoints in 'month' horizon 202001 too."""
+        self.conn.cursor().executemany(
+            """INSERT INTO inputs_temporal_horizon_timepoints
+            (temporal_scenario_id, subproblem_id, stage_id, timepoint,
+             balancing_type_horizon, horizon)
+            VALUES (?, ?, ?, ?, 'month', 202001)""",
+            [(TEMPORAL_SCENARIO_ID, SUBPROBLEM, STAGE, tmp) for tmp in TIMEPOINTS],
+        )
+        self.conn.commit()
+
+    def add_builtin_month_horizons(self):
+        """
+        Give timepoints 1 and 2 months 1 and 2, add period 2030 with
+        timepoints 3 (month 1) and 4 (month 2), and put all four in the
+        built-in month horizons (202001, 202002, 203001, 203002).
+        """
+        c = self.conn.cursor()
+        c.execute(
+            "INSERT INTO inputs_temporal_periods (temporal_scenario_id, period) "
+            "VALUES (?, 2030)",
+            (TEMPORAL_SCENARIO_ID,),
+        )
+        for tmp, period, month in [
+            (1, 2020, 1),
+            (2, 2020, 2),
+            (3, 2030, 1),
+            (4, 2030, 2),
+        ]:
+            c.execute(
+                """INSERT INTO inputs_temporal
+                (temporal_scenario_id, subproblem_id, stage_id, timepoint, period,
+                 number_of_hours_in_timepoint, timepoint_weight,
+                 spinup_or_lookahead, month)
+                VALUES (?, ?, ?, ?, ?, 1, 1, 0, ?)
+                ON CONFLICT DO UPDATE SET month = excluded.month""",
+                (TEMPORAL_SCENARIO_ID, SUBPROBLEM, STAGE, tmp, period, month),
+            )
+            c.execute(
+                """INSERT INTO inputs_temporal_horizon_timepoints
+                (temporal_scenario_id, subproblem_id, stage_id, timepoint,
+                 balancing_type_horizon, horizon)
+                VALUES (?, ?, ?, ?, ?, ?)""",
+                (
+                    TEMPORAL_SCENARIO_ID,
+                    SUBPROBLEM,
+                    STAGE,
+                    tmp,
+                    MONTH_BT,
+                    period * 100 + month,
+                ),
+            )
+            c.execute(
+                """INSERT INTO inputs_temporal_horizons
+                (temporal_scenario_id, balancing_type_horizon, horizon, boundary)
+                VALUES (?, ?, ?, 'circular')""",
+                (TEMPORAL_SCENARIO_ID, MONTH_BT, period * 100 + month),
+            )
+        self.conn.commit()
+
+    def insert_prd_limits(self, group, profile_id, rows):
+        self.conn.cursor().executemany(
+            """INSERT INTO inputs_market_volume_prd_profiles
+            (market_group, market_volume_prd_profile_scenario_id,
+             weather_iteration, hydro_iteration, stage_id, period,
+             max_market_sales_in_prd, max_market_purchases_in_prd,
+             max_market_sales_in_prd_include_storage_losses)
+            VALUES (?, ?, 0, 0, ?, ?, ?, ?, ?)""",
+            [(group, profile_id, STAGE) + r for r in rows],
+        )
+        self.conn.commit()
+
+    def resolve(self):
+        """
+        Run the module's input queries and return the five results (groups,
+        timepoint, horizon, period and horizon-to-timepoint limits) as lists
+        of rows.
+        """
+        return [
+            cursor.fetchall()
+            for cursor in get_inputs_from_database(
+                scenario_id=1,
+                subscenarios=SubScenarios(),
+                weather_iteration=0,
+                hydro_iteration=0,
+                availability_iteration=0,
+                subproblem=SUBPROBLEM,
+                stage=STAGE,
+                conn=self.conn,
+            )
+        ]
+
+    def test_every_market_is_implicitly_a_group_of_its_own(self):
+        """
+        A market needs no group definition to be limited on its own: it is
+        a group named after itself. A group keeps the members the scenario
+        models, and one left with none of them does not appear at all.
+        """
+        groups, _, _, _, _ = self.resolve()
+        self.assertListEqual(
+            [("All_Hubs", "Market_Hub_1"), ("Market_Hub_1", "Market_Hub_1")], groups
+        )
+
+    def test_implicit_singletons_need_no_group_subscenario(self):
+        """
+        With no market group subscenario at all, every market is still a
+        group of its own and can be limited.
+        """
+        subscenarios = SubScenarios(MARKET_GROUP_SCENARIO_ID="NULL")
+        groups = self.conn.cursor().execute(f"""SELECT market_group, market
+            FROM ({get_market_groups_sql(subscenarios)})
+            ORDER BY market_group, market""").fetchall()
+        self.assertListEqual([("Market_Hub_1", "Market_Hub_1")], groups)
+
+    def test_a_market_may_be_limited_without_a_group_definition(self):
+        """
+        Naming a market in the volume subscenario limits that market alone.
+        """
+        self.limit_group("Market_Hub_1", tmp=1)
+        self.insert_tmp_limits("Market_Hub_1", 1, [(0, 10, 5, None, None)])
+        _, tmp_limits, _, _, _ = self.resolve()
+        self.assertListEqual(
+            [
+                ("Market_Hub_1", "net", 1, 10, 5, None, None),
+                ("Market_Hub_1", "net", 2, 10, 5, None, None),
+            ],
+            tmp_limits,
+        )
+
+    def test_limits_of_a_group_with_no_market_are_dropped(self):
+        """
+        A group that narrows to none of the scenario's markets contributes no
+        limits, so a scenario-wide group definition can be shared.
+        """
+        self.limit_group("Nowhere", tmp=1)
+        self.insert_tmp_limits("Nowhere", 1, [(0, 10, 5, None, None)])
+        groups, tmp_limits, _, _, _ = self.resolve()
+        self.assertNotIn("Nowhere", [grp for grp, mrkt in groups])
+        self.assertListEqual([], tmp_limits)
+
+    def test_timepoint_wildcard_row_applies_to_every_timepoint(self):
+        """
+        A wildcard row (timepoint 0) supplies the limits for the timepoints
+        without their own row.
+        """
+        self.limit_group("All_Hubs", tmp=1)
+        self.insert_tmp_limits("All_Hubs", 1, [(0, 10, 5, None, None)])
+        _, tmp_limits, _, _, _ = self.resolve()
+        self.assertListEqual(
+            [
+                ("All_Hubs", "net", 1, 10, 5, None, None),
+                ("All_Hubs", "net", 2, 10, 5, None, None),
+            ],
+            tmp_limits,
+        )
+
+    def test_explicit_row_overrides_the_wildcard_per_column(self):
+        """
+        An explicit row wins column by column; the columns it leaves NULL
+        fall through to the wildcard row.
+        """
+        self.limit_group("All_Hubs", tmp=1)
+        self.insert_tmp_limits(
+            "All_Hubs",
+            1,
+            [(0, 10, 5, None, 99), (2, None, 7, None, None)],
+        )
+        _, tmp_limits, _, _, _ = self.resolve()
+        self.assertListEqual(
+            [
+                ("All_Hubs", "net", 1, 10, 5, None, 99),
+                ("All_Hubs", "net", 2, 10, 7, None, 99),
+            ],
+            tmp_limits,
+        )
+
+    def test_horizon_wildcard_is_per_balancing_type(self):
+        """
+        A wildcard row (horizon 0) applies to the horizons of its own
+        balancing type only, and an explicit row still wins.
+        """
+        self.limit_group("All_Hubs", hrz=1)
+        self.insert_hrz_limits(
+            "All_Hubs", 1, [("day", 0, 100, 200, 1), ("month", 0, 300, 400, None)]
+        )
+        _, _, hrz_limits, _, _ = self.resolve()
+        # Only 'day' 202001 is in this subproblem and stage
+        self.assertListEqual(
+            [("All_Hubs", "net", "day", 202001, 100, 200, 1)], hrz_limits
+        )
+
+        self.insert_hrz_limits("All_Hubs", 1, [("day", 202001, None, 250, None)])
+        _, _, hrz_limits, _, _ = self.resolve()
+        self.assertListEqual(
+            [("All_Hubs", "net", "day", 202001, 100, 250, 1)], hrz_limits
+        )
+
+    def test_a_group_may_be_limited_at_one_resolution_only(self):
+        """
+        The three resolutions have their own profile subscenarios, so a group
+        limited only by period needs no timepoint or horizon profile.
+        """
+        self.limit_group("All_Hubs", prd=1)
+        self.insert_prd_limits("All_Hubs", 1, [(0, 5000, 6000, 1)])
+        _, tmp_limits, hrz_limits, prd_limits, _ = self.resolve()
+        self.assertListEqual([], tmp_limits)
+        self.assertListEqual([], hrz_limits)
+        self.assertListEqual([("All_Hubs", "net", PERIOD, 5000, 6000, 1)], prd_limits)
+
+    def test_groups_are_resolved_independently(self):
+        """
+        Two groups limited at different resolutions each get their own
+        limits, and nothing leaks between them.
+        """
+        self.limit_group("All_Hubs", tmp=1, prd=1)
+        self.insert_tmp_limits("All_Hubs", 1, [(0, 10, 5, None, None)])
+        self.insert_prd_limits("All_Hubs", 1, [(0, 5000, None, None)])
+        self.limit_group("Market_Hub_1", tmp=1)
+        self.insert_tmp_limits("Market_Hub_1", 1, [(1, 3, 4, None, None)])
+
+        _, tmp_limits, hrz_limits, prd_limits, _ = self.resolve()
+        self.assertListEqual(
+            [
+                ("All_Hubs", "net", 1, 10, 5, None, None),
+                ("All_Hubs", "net", 2, 10, 5, None, None),
+                ("Market_Hub_1", "net", 1, 3, 4, None, None),
+            ],
+            tmp_limits,
+        )
+        self.assertListEqual([], hrz_limits)
+        self.assertListEqual(
+            [("All_Hubs", "net", PERIOD, 5000, None, None)], prd_limits
+        )
+
+    def test_flat_limit_needs_no_profile(self):
+        """
+        A flat limit on the group's row applies in every timepoint (or
+        period) with no profile at all.
+        """
+        self.limit_group(
+            "All_Hubs", max_market_purchases=5, max_market_purchases_in_prd=5000
+        )
+        _, tmp_limits, hrz_limits, prd_limits, _ = self.resolve()
+        self.assertListEqual(
+            [
+                ("All_Hubs", "net", 1, None, 5, None, None),
+                ("All_Hubs", "net", 2, None, 5, None, None),
+            ],
+            tmp_limits,
+        )
+        self.assertListEqual([], hrz_limits)
+        self.assertListEqual(
+            [("All_Hubs", "net", PERIOD, None, 5000, None)], prd_limits
+        )
+
+    def test_layers_fall_through_explicit_wildcard_flat(self):
+        """
+        Per column, an explicit row wins over the profile's wildcard row,
+        which wins over the group's flat limit: flat purchases 5, a wildcard
+        setting only sales 10, and an explicit row for timepoint 2 setting
+        only purchases 8.
+        """
+        self.limit_group("All_Hubs", tmp=1, max_market_purchases=5)
+        self.insert_tmp_limits(
+            "All_Hubs", 1, [(0, 10, None, None, None), (2, None, 8, None, None)]
+        )
+        _, tmp_limits, _, _, _ = self.resolve()
+        self.assertListEqual(
+            [
+                ("All_Hubs", "net", 1, 10, 5, None, None),
+                ("All_Hubs", "net", 2, 10, 8, None, None),
+            ],
+            tmp_limits,
+        )
+
+    def test_flat_limit_with_a_profile_of_exceptions_only(self):
+        """
+        The natural way to write "5 except in timepoint 2": a flat limit and
+        a profile listing only the exception, with no wildcard row.
+        """
+        self.limit_group("All_Hubs", tmp=1, max_market_purchases=5)
+        self.insert_tmp_limits("All_Hubs", 1, [(2, None, 8, None, None)])
+        _, tmp_limits, _, _, _ = self.resolve()
+        self.assertListEqual(
+            [
+                ("All_Hubs", "net", 1, None, 5, None, None),
+                ("All_Hubs", "net", 2, None, 8, None, None),
+            ],
+            tmp_limits,
+        )
+
+    def test_flat_limit_is_scoped_to_its_resolution(self):
+        """
+        A flat timepoint limit does not make the group appear at the period
+        level, and vice versa.
+        """
+        self.limit_group("All_Hubs", max_market_sales=3)
+        _, tmp_limits, hrz_limits, prd_limits, _ = self.resolve()
+        self.assertEqual(2, len(tmp_limits))
+        self.assertListEqual([], hrz_limits)
+        self.assertListEqual([], prd_limits)
+
+    def test_negative_flat_limit_is_flagged(self):
+        """
+        Flat limits are validated like the profile rows.
+        """
+        self.limit_group("All_Hubs", max_market_purchases=-1)
+        errors = self.validate()
+        self.assertEqual(1, len(errors), msg=errors)
+        self.assertIn("default_max_market_purchases", errors[0])
+
+    def test_a_group_may_carry_a_net_and_a_gross_row(self):
+        """
+        A group's net and gross rows resolve independently, each with its own
+        profile and flat limits, into rows keyed by their basis.
+        """
+        self.limit_group("All_Hubs", tmp=1, basis="net")
+        self.insert_tmp_limits("All_Hubs", 1, [(0, 10, 5, None, None)])
+        self.limit_group("All_Hubs", basis="gross", max_market_sales=3)
+        _, tmp_limits, _, _, _ = self.resolve()
+        self.assertListEqual(
+            [
+                ("All_Hubs", "gross", 1, 3, None, None, None),
+                ("All_Hubs", "gross", 2, 3, None, None, None),
+                ("All_Hubs", "net", 1, 10, 5, None, None),
+                ("All_Hubs", "net", 2, 10, 5, None, None),
+            ],
+            tmp_limits,
+        )
+
+    def test_a_basis_other_than_net_or_gross_is_rejected(self):
+        """
+        The basis is checked by the database, so a typo fails on insert
+        rather than silently producing a limit of neither kind.
+        """
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.limit_group("All_Hubs", basis="both", max_market_sales=3)
+
+    def test_no_limits_resolve_to_no_rows(self):
+        """
+        With no group in the volume subscenario, the limit queries return no
+        rows at all rather than a row of defaults per index, so no input file
+        is written.
+        """
+        _, tmp_limits, hrz_limits, prd_limits, hrz_to_tmp_limits = self.resolve()
+        self.assertListEqual([], tmp_limits)
+        self.assertListEqual([], hrz_limits)
+        self.assertListEqual([], prd_limits)
+        self.assertListEqual([], hrz_to_tmp_limits)
+
+    def test_hrz_to_tmp_limits_are_resolved_per_horizon(self):
+        """
+        Horizon-to-timepoint limits are written per balancing type and
+        horizon for the model to enforce in each of the horizon's
+        timepoints; they do not become timepoint-level or horizon (MWh)
+        limits.
+        """
+        self.limit_group("All_Hubs", hrz_to_tmp=1)
+        self.insert_hrz_to_tmp_limits("All_Hubs", 1, [("day", 202001, 7, 9, None, 3)])
+        _, tmp_limits, hrz_limits, _, hrz_to_tmp_limits = self.resolve()
+        self.assertListEqual(
+            [("All_Hubs", "net", "day", 202001, 7, 9, None, 3)], hrz_to_tmp_limits
+        )
+        self.assertListEqual([], tmp_limits)
+        self.assertListEqual([], hrz_limits)
+
+    def test_hrz_to_tmp_wildcard_row_is_per_balancing_type(self):
+        """
+        A balancing type's wildcard row (horizon 0) sets the
+        horizon-to-timepoint limits of its own horizons, an explicit row's
+        NULL cells fall through to it, and limits of several balancing types
+        are all kept; the group's horizon (MWh) profile resolves on its own.
+        """
+        self.add_month_horizon_timepoints()
+        self.limit_group("All_Hubs", hrz=1, hrz_to_tmp=1)
+        self.insert_hrz_to_tmp_limits(
+            "All_Hubs",
+            1,
+            [
+                ("day", 0, 7, 9, None, None),
+                ("day", 202001, None, 6, None, None),
+                ("month", 202001, 8, 4, 5, None),
+            ],
+        )
+        self.insert_hrz_limits("All_Hubs", 1, [("day", 202001, 100, 50, None)])
+        _, _, hrz_limits, _, hrz_to_tmp_limits = self.resolve()
+        self.assertListEqual(
+            [
+                ("All_Hubs", "net", "day", 202001, 7, 6, None, None),
+                ("All_Hubs", "net", "month", 202001, 8, 4, 5, None),
+            ],
+            hrz_to_tmp_limits,
+        )
+        self.assertListEqual(
+            [("All_Hubs", "net", "day", 202001, 100, 50, None)], hrz_limits
+        )
+
+    def test_flat_limits_do_not_default_hrz_to_tmp_limits(self):
+        """
+        The group's flat limits are timepoint-level limits: they apply in
+        every timepoint, but do not fill a horizon-to-timepoint row's NULL
+        cells.
+        """
+        self.limit_group("All_Hubs", hrz_to_tmp=1, max_market_sales=5)
+        self.insert_hrz_to_tmp_limits(
+            "All_Hubs", 1, [("day", 202001, None, 9, None, None)]
+        )
+        _, tmp_limits, _, _, hrz_to_tmp_limits = self.resolve()
+        self.assertListEqual(
+            [("All_Hubs", "net", "day", 202001, None, 9, None, None)],
+            hrz_to_tmp_limits,
+        )
+        self.assertListEqual(
+            [
+                ("All_Hubs", "net", 1, 5, None, None, None),
+                ("All_Hubs", "net", 2, 5, None, None, None),
+            ],
+            tmp_limits,
+        )
+
+    def test_hrz_to_tmp_month_of_year_rows_apply_in_every_period(self):
+        """
+        On a built-in month balancing type, a month-of-year row (horizon 2)
+        supplies month 2 of every period, between the explicit rows and the
+        balancing type's wildcard row, per column: 203002's NULL sales fall
+        through to the month 2 row, and the month 2 row's NULL purchases to
+        the wildcard row.
+        """
+        self.add_builtin_month_horizons()
+        self.limit_group("All_Hubs", hrz_to_tmp=1)
+        self.insert_hrz_to_tmp_limits(
+            "All_Hubs",
+            1,
+            [
+                (MONTH_BT, 0, 50, 50, None, None),
+                (MONTH_BT, 2, 105, None, None, None),
+                (MONTH_BT, 203002, None, 7, None, None),
+            ],
+        )
+        hrz_to_tmp_limits = self.resolve()[4]
+        self.assertListEqual(
+            [
+                ("All_Hubs", "net", MONTH_BT, 202001, 50, 50, None, None),
+                ("All_Hubs", "net", MONTH_BT, 202002, 105, 50, None, None),
+                ("All_Hubs", "net", MONTH_BT, 203001, 50, 50, None, None),
+                ("All_Hubs", "net", MONTH_BT, 203002, 105, 7, None, None),
+            ],
+            sorted(hrz_to_tmp_limits),
+        )
+
+    def test_hrz_month_of_year_rows_apply_in_every_period(self):
+        """
+        The horizon (MWh) profiles accept month-of-year rows too; with no
+        wildcard row, months without a row get no limit.
+        """
+        self.add_builtin_month_horizons()
+        self.limit_group("All_Hubs", hrz=1)
+        self.insert_hrz_limits("All_Hubs", 1, [(MONTH_BT, 1, 100, None, None)])
+        hrz_limits = self.resolve()[2]
+        self.assertListEqual(
+            [
+                ("All_Hubs", "net", MONTH_BT, 202001, 100, None, None),
+                ("All_Hubs", "net", MONTH_BT, 203001, 100, None, None),
+            ],
+            sorted(hrz_limits),
+        )
+
+    def test_hrz_to_tmp_day_of_year_rows_apply_in_every_period(self):
+        """
+        On a built-in day balancing type, a day-of-year row (month * 100 +
+        day) supplies that date in every period, per column above the
+        wildcard row.
+        """
+        self.add_builtin_month_horizons()
+        day_bt = "subproblem_period_day_linear"
+        c = self.conn.cursor()
+        c.execute("UPDATE inputs_temporal SET day_of_month = 15")
+        c.execute("""INSERT INTO inputs_temporal_horizon_timepoints
+            SELECT temporal_scenario_id, subproblem_id, stage_id, timepoint,
+                'subproblem_period_day_linear',
+                period * 10000 + month * 100 + day_of_month
+            FROM inputs_temporal""")
+        c.execute("""INSERT INTO inputs_temporal_horizons
+            SELECT DISTINCT temporal_scenario_id, 'subproblem_period_day_linear',
+                period * 10000 + month * 100 + day_of_month, 'linear', NULL
+            FROM inputs_temporal""")
+        self.conn.commit()
+        self.limit_group("All_Hubs", hrz_to_tmp=1)
+        self.insert_hrz_to_tmp_limits(
+            "All_Hubs",
+            1,
+            [
+                (day_bt, 0, 50, 50, None, None),
+                (day_bt, 215, 105, None, None, None),
+            ],
+        )
+        hrz_to_tmp_limits = self.resolve()[4]
+        self.assertListEqual(
+            [
+                ("All_Hubs", "net", day_bt, 20200115, 50, 50, None, None),
+                ("All_Hubs", "net", day_bt, 20200215, 105, 50, None, None),
+                ("All_Hubs", "net", day_bt, 20300115, 50, 50, None, None),
+                ("All_Hubs", "net", day_bt, 20300215, 105, 50, None, None),
+            ],
+            sorted(hrz_to_tmp_limits),
+        )
+        self.assertListEqual([], self.validate())
+
+    def test_month_of_year_rows_only_on_builtin_month_balancing_types(self):
+        """
+        On any other balancing type, horizon 1 is just a horizon: a row for
+        it does not apply to the type's horizons (here, the user-defined
+        'month' type's 202001), and validation flags it as unknown, while
+        month-of-year rows on the built-in month types are not flagged.
+        """
+        self.add_builtin_month_horizons()
+        self.add_month_horizon_timepoints()
+        self.limit_group("All_Hubs", hrz_to_tmp=1)
+        self.insert_hrz_to_tmp_limits(
+            "All_Hubs",
+            1,
+            [
+                ("month", 1, 5, 5, None, None),
+                (MONTH_BT, 1, 6, 6, None, None),
+            ],
+        )
+        hrz_to_tmp_limits = self.resolve()[4]
+        self.assertListEqual(
+            [
+                ("All_Hubs", "net", MONTH_BT, 202001, 6, 6, None, None),
+                ("All_Hubs", "net", MONTH_BT, 203001, 6, 6, None, None),
+            ],
+            sorted(hrz_to_tmp_limits),
+        )
+        errors = self.validate()
+        self.assertEqual(1, len(errors), msg=errors)
+        self.assertIn("horizon 1 of balancing type 'month'", errors[0])
+
+    def validate(self):
+        """
+        Run the module's validation and return the messages it recorded.
+        """
+        validate_inputs(
+            scenario_id=1,
+            subscenarios=SubScenarios(),
+            weather_iteration=0,
+            hydro_iteration=0,
+            availability_iteration=0,
+            subproblem=SUBPROBLEM,
+            stage=STAGE,
+            conn=self.conn,
+        )
+        return [
+            row[0]
+            for row in self.conn.cursor().execute(
+                "SELECT description FROM status_validation"
+            )
+        ]
+
+    def test_a_group_named_after_a_market_is_flagged(self):
+        """
+        A market is implicitly a group of its own, so a group named after one
+        but containing another would silently merge with it.
+        """
+        self.define_group("Market_Hub_1", ["Market_Hub_1", "Market_Hub_2"])
+        errors = self.validate()
+        self.assertEqual(1, len(errors), msg=errors)
+        self.assertIn("named after a market", errors[0])
+        self.assertIn("Market_Hub_1", errors[0])
+
+    def test_a_group_duplicating_an_implicit_singleton_is_not_flagged(self):
+        """
+        Spelling out the singleton a market already has is redundant but
+        harmless, since the two resolve to the same group.
+        """
+        self.define_group("Market_Hub_1", ["Market_Hub_1"])
+        self.assertListEqual([], self.validate())
+
+    def test_a_group_that_is_neither_market_nor_group_is_flagged(self):
+        """
+        A name in the volume subscenario that is neither a market nor a
+        defined group is a typo, and its limits would be ignored.
+        """
+        self.limit_group("Market_Hubb", tmp=1)
+        errors = self.validate()
+        self.assertEqual(1, len(errors), msg=errors)
+        self.assertIn("Market_Hubb", errors[0])
+
+    def test_limiting_a_market_directly_is_not_flagged(self):
+        """
+        Naming a market the scenario does not model is how one volume
+        subscenario serves scenarios with different market sets, so neither
+        that nor naming one it does model is an error.
+        """
+        self.limit_group("Market_Hub_1", tmp=1)
+        self.limit_group("Market_Hub_2", tmp=1)
+        self.assertListEqual([], self.validate())
+
+
+if __name__ == "__main__":
+    unittest.main()

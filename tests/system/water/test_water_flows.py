@@ -202,6 +202,28 @@ class TestWaterFlows(unittest.TestCase):
         }
         self.assertDictEqual(expected_max_bound, actual_max_bound)
 
+        # Param: threshold_side_stream_vol_per_second
+        df = pd.read_csv(
+            os.path.join(TEST_DATA_DIRECTORY, "inputs", "water_flow_tmp_bounds.tab"),
+            sep="\t",
+        )
+
+        # Unspecified values get the default value of infinity
+        df = df.replace(".", float("inf"))
+        df["threshold_side_stream_vol_per_second"] = pd.to_numeric(
+            df["threshold_side_stream_vol_per_second"]
+        )
+
+        expected_threshold = df.set_index(["water_link", "timepoint"]).to_dict()[
+            "threshold_side_stream_vol_per_second"
+        ]
+        actual_threshold = {
+            (wl, tmp): instance.threshold_side_stream_vol_per_second[wl, tmp]
+            for wl in instance.WATER_LINKS
+            for tmp in instance.TMPS
+        }
+        self.assertDictEqual(expected_threshold, actual_threshold)
+
         # Set: WATER_LINK_DEPARTURE_ARRIVAL_TMPS
         expected_wl_dp_arr_tmp = sorted(
             [
@@ -819,7 +841,7 @@ class TestWaterFlows(unittest.TestCase):
         self.assertDictEqual(expected_arr_tmp, actual_arr_tmp)
 
         # Min hrz flows
-        expected_min_hrz_flow = {}
+        expected_min_hrz_flow = {("Water_Link_23", "day", 202001): 10}
         actual_min_hrz_flow = {
             (wl, bt, hrz): instance.min_bt_hrz_flow_avg_vol_per_second[wl, bt, hrz]
             for (wl, bt, hrz) in instance.WATER_LINKS_W_BT_HRZ_MIN_FLOW_CONSTRAINT

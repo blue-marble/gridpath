@@ -20,7 +20,11 @@ on local weather. Curtailment (dispatch down) is allowed. GridPath includes
 experimental features to allow these generators to provide upward and/or
 downward reserves.
 
-Costs for this operational type include variable O&M costs.
+Costs for this operational type include variable O&M costs, which are
+incurred on all available power (including what's curtailed). Capacity
+factors may be negative (e.g. profiles that are net of onsite load), in
+which case power provision is negative in those timepoints and the variable
+O&M cost accrues negatively, i.e. as a cost credit.
 
 """
 
@@ -46,6 +50,10 @@ from gridpath.auxiliary.dynamic_components import (
     footroom_variables,
     headroom_variables,
     reserve_variable_derate_params,
+)
+from gridpath.project.operations.reserves.reserve_aggregation import (
+    derated_headroom_provision_rule,
+    derated_footroom_provision_rule,
 )
 from gridpath.project.operations.reserves.subhourly_energy_adjustment import (
     footroom_subhourly_energy_adjustment_rule,
@@ -126,10 +134,12 @@ def add_model_components(
     +=========================================================================+
     | | :code:`GenVar_Provide_Power_MW`                                       |
     | | *Defined over*: :code:`GEN_VAR_OPR_TMPS`                              |
-    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Within*: :code:`Reals`                                               |
     |                                                                         |
     | Power provision in MW from this project in each timepoint in which the  |
     | project is operational (capacity exists and the project is available).  |
+    | Negative in timepoints with a negative capacity factor (e.g. profiles   |
+    | net of onsite load), in which case the project acts as load.            |
     +-------------------------------------------------------------------------+
     | | :code:`GenVar_Scheduled_Curtailment_MW`                               |
     | | *Defined over*: :code:`GEN_VAR_OPR_TMPS`                              |
@@ -204,7 +214,6 @@ def add_model_components(
 
     m.GEN_VAR_OPR_TMPS = Set(
         dimen=2,
-        within=m.PRJ_OPR_TMPS,
         initialize=lambda mod: subset_init_by_set_membership(
             mod=mod, superset="PRJ_OPR_TMPS", index=0, membership_set=mod.GEN_VAR
         ),
@@ -242,11 +251,7 @@ def add_model_components(
         Gather all headroom variables, and de-rate the total reserves offered
         to account for the fact that gen_var output is uncertain.
         """
-        return sum(
-            getattr(mod, c)[g, tmp]
-            / getattr(mod, getattr(d, reserve_variable_derate_params)[c])[g]
-            for c in getattr(d, headroom_variables)[g]
-        )
+        return derated_headroom_provision_rule(d, mod, g, tmp)
 
     m.GenVar_Upwards_Reserves_MW = Expression(
         m.GEN_VAR_OPR_TMPS, rule=upwards_reserve_rule
@@ -257,11 +262,7 @@ def add_model_components(
         Gather all footroom variables, and de-rate the total reserves offered
         to account for the fact that gen_var output is uncertain.
         """
-        return sum(
-            getattr(mod, c)[g, tmp]
-            / getattr(mod, getattr(d, reserve_variable_derate_params)[c])[g]
-            for c in getattr(d, footroom_variables)[g]
-        )
+        return derated_footroom_provision_rule(d, mod, g, tmp)
 
     m.GenVar_Downwards_Reserves_MW = Expression(
         m.GEN_VAR_OPR_TMPS, rule=downwards_reserve_rule
@@ -296,8 +297,17 @@ def add_model_components(
 
     m.GenVar_Max_Power_Constraint = Constraint(m.GEN_VAR_OPR_TMPS, rule=max_power_rule)
 
+    def max_upward_reserves_constraint_rule(mod, g, tmp):
+        # Without upward reserve variables, the constraint reduces to
+        # 0 <= GenVar_Scheduled_Curtailment_MW, which the variable's
+        # domain already enforces; the downward one is kept, as it is what
+        # keeps GenVar_Provide_Power_MW non-negative
+        if not getattr(d, headroom_variables)[g]:
+            return Constraint.Skip
+        return max_upward_reserves_rule(mod, g, tmp)
+
     m.GenVar_Max_Upward_Reserves_Constraint = Constraint(
-        m.GEN_VAR_OPR_TMPS, rule=max_upward_reserves_rule
+        m.GEN_VAR_OPR_TMPS, rule=max_upward_reserves_constraint_rule
     )
 
     m.GenVar_Max_Downward_Reserves_Constraint = Constraint(
@@ -359,7 +369,8 @@ def max_power_rule(mod, g, tmp):
 
 def max_upward_reserves_rule(mod, g, tmp):
     """
-    Upward reserves can't exceed curtailment
+    Upward reserves can't exceed curtailment. Skipped for projects with no
+    upward reserve variables.
     """
     return (
         mod.GenVar_Upwards_Reserves_MW[g, tmp]
@@ -399,7 +410,8 @@ def power_provision_rule(mod, g, tmp):
 def variable_om_cost_rule(mod, g, tmp):
     """
     Variable cost is incurred on all power produced (including what's
-    curtailed).
+    curtailed). In timepoints with a negative capacity factor, this cost
+    is negative, i.e. a credit.
     """
     return (
         mod.Capacity_MW[g, mod.period[tmp]]

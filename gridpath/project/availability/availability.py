@@ -1,4 +1,5 @@
 # Copyright 2016-2023 Blue Marble Analytics LLC.
+# Copyright 2026 Sylvan Energy Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,13 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pyomo.environ import Expression, value
+from pyomo.environ import Expression, NonNegativeReals, Param, Set, value
 
 from gridpath.auxiliary.auxiliary import (
     get_required_subtype_modules,
     load_subtype_modules,
+    UNSPECIFIED,
 )
-from gridpath.common_functions import create_results_df
+from gridpath.common_functions import create_results_df, update_results_df
 from gridpath.project import PROJECT_TIMEPOINT_DF, DEFAULT_AVAILABILITY_TYPE
 
 
@@ -81,6 +83,33 @@ def add_model_components(
                 stage,
             )
 
+    # TODO: make the no_availability type module, which will be the
+    #  default for the availability type param (it will just return 1 as
+    #  the derate)
+    derate_cap_rule_by_type = {
+        avl_type: imported_availability_modules[avl_type].availability_derate_cap_rule
+        for avl_type in required_availability_modules
+    }
+
+    derate_hyb_stor_cap_rule_by_type = {
+        avl_type: imported_availability_modules[
+            avl_type
+        ].availability_derate_hyb_stor_cap_rule
+        for avl_type in required_availability_modules
+    }
+
+    # If every required availability type produces a constant derate (no
+    # variables in the derate, e.g. all-exogenous), make the derate
+    # components Params rather than Expressions: an immutable Param value
+    # is inlined as a plain number in the (many) consuming expressions and
+    # constraints, which makes them smaller and faster to build than
+    # storing a reference into an Expression component
+    # This is almost always the case unless we have endogenous availability
+    all_derates_constant = all(
+        getattr(imported_availability_modules[avl_type], "DERATE_IS_CONSTANT", False)
+        for avl_type in required_availability_modules
+    )
+
     def availability_derate_cap_rule(mod, g, tmp):
         """
 
@@ -89,20 +118,31 @@ def add_model_components(
         :param tmp:
         :return:
         """
-        # TODO: make the no_availability type module, which will be the
-        #  default for the availability type param (it will just return 1 as
-        #  the derate)
-        availability_type = mod.availability_type[g]
-        return imported_availability_modules[
-            availability_type
-        ].availability_derate_cap_rule(mod, g, tmp)
+        return derate_cap_rule_by_type[mod.availability_type[g]](mod, g, tmp)
 
-    m.Availability_Derate = Expression(
-        m.PRJ_OPR_TMPS, rule=availability_derate_cap_rule
+    if all_derates_constant:
+        m.Availability_Derate = Param(
+            m.PRJ_OPR_TMPS,
+            within=NonNegativeReals,
+            initialize=availability_derate_cap_rule,
+        )
+    else:
+        m.Availability_Derate = Expression(
+            m.PRJ_OPR_TMPS, rule=availability_derate_cap_rule
+        )
+
+    # The hybrid storage capacity derate is only used by the
+    # gen_var_stor_hyb operational type, so define it over the operational
+    # timepoints of those projects only, not all of PRJ_OPR_TMPS
+    m.HYB_STOR_PRJ_OPR_TMPS = Set(
+        dimen=2,
+        initialize=lambda mod: [
+            (g, tmp)
+            for (g, tmp) in mod.PRJ_OPR_TMPS
+            if mod.operational_type[g] == "gen_var_stor_hyb"
+        ],
     )
 
-    # TODO: can we define this only for hybrid projects, so defined over
-    #  AVL_EXOG_OPR_TMPS, not PRJ_OPR_TMPS
     def availability_derate_hyb_stor_cap_rule(mod, g, tmp):
         """
 
@@ -111,17 +151,18 @@ def add_model_components(
         :param tmp:
         :return:
         """
-        # TODO: make the no_availability type module, which will be the
-        #  default for the availability type param (it will just return 1 as
-        #  the derate)
-        availability_type = mod.availability_type[g]
-        return imported_availability_modules[
-            availability_type
-        ].availability_derate_hyb_stor_cap_rule(mod, g, tmp)
+        return derate_hyb_stor_cap_rule_by_type[mod.availability_type[g]](mod, g, tmp)
 
-    m.Availability_Hyb_Stor_Cap_Derate = Expression(
-        m.PRJ_OPR_TMPS, rule=availability_derate_hyb_stor_cap_rule
-    )
+    if all_derates_constant:
+        m.Availability_Hyb_Stor_Cap_Derate = Param(
+            m.HYB_STOR_PRJ_OPR_TMPS,
+            within=NonNegativeReals,
+            initialize=availability_derate_hyb_stor_cap_rule,
+        )
+    else:
+        m.Availability_Hyb_Stor_Cap_Derate = Expression(
+            m.HYB_STOR_PRJ_OPR_TMPS, rule=availability_derate_hyb_stor_cap_rule
+        )
 
 
 def write_model_inputs(
@@ -268,9 +309,7 @@ def export_results(
         data=data,
     )
 
-    for c in results_columns:
-        getattr(d, PROJECT_TIMEPOINT_DF)[c] = None
-    getattr(d, PROJECT_TIMEPOINT_DF).update(results_df)
+    update_results_df(getattr(d, PROJECT_TIMEPOINT_DF), results_df)
 
     # Module-specific availability results
     required_availability_modules = list(
@@ -312,10 +351,7 @@ def export_results(
                 m,
                 d,
             )
-            for c in op_m_results_columns:
-                getattr(d, PROJECT_TIMEPOINT_DF)[c] = None
-
-            getattr(d, PROJECT_TIMEPOINT_DF).update(op_m_results_df)
+            update_results_df(getattr(d, PROJECT_TIMEPOINT_DF), op_m_results_df)
 
 
 def validate_inputs(
@@ -368,8 +404,12 @@ def load_availability_type_modules(required_availability_types):
     :param required_availability_types:
     :return:
     """
+    # "." means the type is not specified, so the default (which the
+    # callers add to the list) applies; it is not a module to load
     return load_subtype_modules(
-        required_subtype_modules=required_availability_types,
+        required_subtype_modules=[
+            t for t in required_availability_types if t != UNSPECIFIED
+        ],
         package="gridpath.project.availability.availability_types",
         required_attributes=["availability_derate_cap_rule"],
     )

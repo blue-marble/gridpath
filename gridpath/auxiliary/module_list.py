@@ -73,6 +73,7 @@ def all_modules_list():
         "system.water.reservoirs",
         "system.water.water_node_balance",
         "system.water.powerhouses",
+        "system.water.consolidate_results",
         "system.load_balance",
         "system.load_balance.static_load_requirement",
         "project",
@@ -143,15 +144,20 @@ def all_modules_list():
         "transmission.operations.hurdle_costs_by_timepoint",
         "transmission.operations.simultaneous_flow_limits",
         "transmission.operations.carbon_emissions",
+        "transmission.operations.carbon_tax_emissions",
         "transmission.reliability.capacity_transfer_links",
         "transmission.operations.transmission_target_contributions",
+        "transmission.operations.energy_target_contributions",
         "system.load_balance.aggregate_project_power",
         "system.load_balance.aggregate_load_modifier_power",
         "system.load_balance.load_following",
         "system.load_balance.aggregate_transmission_power",
         "transmission.operations.tx_tuning_costs",
+        "transmission.operations.tx_curtailment_costs",
         "system.markets.market_participation",
         "system.markets.fix_market_participation",
+        "system.markets.carbon_emissions",
+        "system.markets.carbon_tax_emissions",
         "system.load_balance.aggregate_market_participation",
         "system.load_balance.load_balance",
         "system.load_balance.consolidate_results",
@@ -172,6 +178,7 @@ def all_modules_list():
         "system.policy.generic_policy",
         "system.policy.generic_policy.generic_policy_requirements",
         "project.policy.policy_contribution",
+        "transmission.policy.policy_contribution",
         "system.reliability.prm",
         "system.reliability.prm.prm_requirement",
         "system.reliability.local_capacity",
@@ -200,6 +207,8 @@ def all_modules_list():
         "system.reserves.balance.inertia_reserves",
         "system.policy.energy_targets.aggregate_period_energy_target_contributions",
         "system.policy.energy_targets.aggregate_horizon_energy_target_contributions",
+        "system.policy.energy_targets.aggregate_period_energy_target_tx_losses",
+        "system.policy.energy_targets.aggregate_horizon_energy_target_tx_losses",
         "system.policy.energy_targets.period_energy_target_balance",
         "system.policy.energy_targets.horizon_energy_target_balance",
         "system.policy.energy_targets.consolidate_results",
@@ -212,10 +221,15 @@ def all_modules_list():
         "system.policy.carbon_cap.aggregate_project_carbon_emissions",
         "system.policy.carbon_cap.aggregate_project_carbon_credits",
         "system.policy.carbon_cap.aggregate_transmission_carbon_emissions",
+        "system.policy.carbon_cap.aggregate_market_carbon_emissions",
+        "system.policy.carbon_cap.aggregate_import_carbon_emissions",
         "system.policy.carbon_cap.carbon_balance",
         "system.policy.carbon_cap.consolidate_results",
         "system.policy.carbon_tax.aggregate_project_carbon_emissions",
         "system.policy.carbon_tax.aggregate_project_carbon_credits",
+        "system.policy.carbon_tax.aggregate_transmission_carbon_emissions",
+        "system.policy.carbon_tax.aggregate_market_carbon_emissions",
+        "system.policy.carbon_tax.aggregate_import_carbon_emissions",
         "system.policy.carbon_tax.carbon_tax_costs",
         "system.policy.carbon_tax.consolidate_results",
         "system.policy.subsidies",
@@ -232,6 +246,7 @@ def all_modules_list():
         "system.policy.fuel_burn_limits.fuel_burn_limit_balance",
         "system.policy.fuel_burn_limits.consolidate_results",
         "system.policy.generic_policy.aggregate_project_policy_contributions",
+        "system.policy.generic_policy.aggregate_transmission_policy_contributions",
         "system.policy.generic_policy.policy_target_balance",
         "system.policy.generic_policy.consolidate_results",
         "system.reliability.prm.aggregate_project_simple_prm_contribution",
@@ -250,6 +265,7 @@ def all_modules_list():
         "objective.transmission.aggregate_capacity_costs",
         "objective.transmission.aggregate_hurdle_costs",
         "objective.transmission.aggregate_tx_tuning_costs",
+        "objective.transmission.aggregate_tx_curtailment_costs",
         "objective.system.aggregate_load_balance_penalties",
         "objective.system.reserve_violation_penalties.lf_reserves_up",
         "objective.system.reserve_violation_penalties.lf_reserves_down",
@@ -307,8 +323,10 @@ def optional_modules_list():
             "transmission.operations.consolidate_results",
             "system.load_balance.aggregate_transmission_power",
             "transmission.operations.tx_tuning_costs",
+            "transmission.operations.tx_curtailment_costs",
             "objective.transmission.aggregate_capacity_costs",
             "objective.transmission.aggregate_tx_tuning_costs",
+            "objective.transmission.aggregate_tx_curtailment_costs",
         ],
         "lf_reserves_up": [
             "geography.load_following_up_balancing_areas",
@@ -514,6 +532,7 @@ def optional_modules_list():
             "system.water.powerhouses",
             "objective.system.water.aggregate_reservoir_violation_penalty_costs",
             "objective.system.water.aggregate_flow_violation_penalty_costs",
+            "system.water.consolidate_results",
         ],
     }
     return optional_modules
@@ -536,11 +555,39 @@ def cross_feature_modules_list():
             "transmission.operations.hurdle_costs_by_timepoint",
         ],
         ("transmission", "carbon_cap", "track_carbon_imports"): [
-            "system.policy.carbon_cap" ".aggregate_transmission_carbon_emissions",
             "transmission.operations.carbon_emissions",
+            "system.policy.carbon_cap.aggregate_transmission_carbon_emissions",
+            "system.policy.carbon_cap.aggregate_import_carbon_emissions",
+        ],
+        ("markets", "carbon_cap", "track_carbon_imports"): [
+            "system.markets.carbon_emissions",
+            "system.policy.carbon_cap.aggregate_market_carbon_emissions",
+            "system.policy.carbon_cap.aggregate_import_carbon_emissions",
+        ],
+        ("transmission", "carbon_tax", "track_carbon_imports"): [
+            "transmission.operations.carbon_tax_emissions",
+            "system.policy.carbon_tax.aggregate_transmission_carbon_emissions",
+            "system.policy.carbon_tax.aggregate_import_carbon_emissions",
+        ],
+        ("markets", "carbon_tax", "track_carbon_imports"): [
+            "system.markets.carbon_tax_emissions",
+            "system.policy.carbon_tax.aggregate_market_carbon_emissions",
+            "system.policy.carbon_tax.aggregate_import_carbon_emissions",
         ],
         ("transmission", "simultaneous_flow_limits"): [
             "transmission.operations.simultaneous_flow_limits"
+        ],
+        ("transmission", "policy"): [
+            "transmission.policy.policy_contribution",
+            "system.policy.generic_policy.aggregate_transmission_policy_contributions",
+        ],
+        ("transmission", "period_energy_target"): [
+            "transmission.operations.energy_target_contributions",
+            "system.policy.energy_targets.aggregate_period_energy_target_tx_losses",
+        ],
+        ("transmission", "horizon_energy_target"): [
+            "transmission.operations.energy_target_contributions",
+            "system.policy.energy_targets.aggregate_horizon_energy_target_tx_losses",
         ],
         ("transmission", "prm", "capacity_transfers"): [
             "transmission.reliability.capacity_transfer_links",
@@ -724,11 +771,18 @@ def determine_modules(
     # Some modules depend on more than one feature
     # We have to check if all features that the module depends on are
     # specified before removing it
+    # A module may belong to more than one feature group (e.g. it is needed
+    # when either of two feature combinations is requested); it is kept if
+    # ANY of its groups has all of its features requested
     cross_feature_modules = cross_feature_modules_list()
+    cross_modules_all = set()
+    cross_modules_to_keep = set()
     for feature_group in list(cross_feature_modules.keys()):
-        if not all(feature in requested_features for feature in feature_group):
-            for m in cross_feature_modules[feature_group]:
-                modules_to_use.remove(m)
+        cross_modules_all.update(cross_feature_modules[feature_group])
+        if all(feature in requested_features for feature in feature_group):
+            cross_modules_to_keep.update(cross_feature_modules[feature_group])
+    for m in cross_modules_all - cross_modules_to_keep:
+        modules_to_use.remove(m)
 
     # Remove "fix variables" modules, which should not be included when the feature is
     # not included even when there are stages

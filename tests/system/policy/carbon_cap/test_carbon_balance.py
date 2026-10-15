@@ -31,6 +31,8 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.investment.periods",
     "temporal.operations.horizons",
     "geography.load_zones",
+    "geography.markets",
+    "system.markets.prices",
     "geography.carbon_cap_zones",
     "system.policy.carbon_cap.carbon_cap",
     "geography.water_network",
@@ -63,6 +65,7 @@ PREREQUISITE_MODULE_NAMES = [
     "transmission.operations.carbon_emissions",
     "system.policy.carbon_cap.aggregate_project_carbon_emissions",
     "system.policy.carbon_cap.aggregate_transmission_carbon_emissions",
+    "system.policy.carbon_cap.aggregate_import_carbon_emissions",
 ]
 NAME_OF_MODULE_BEING_TESTED = "system.policy.carbon_cap.carbon_balance"
 IMPORTED_PREREQ_MODULES = list()

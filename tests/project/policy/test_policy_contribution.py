@@ -30,6 +30,8 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.investment.periods",
     "temporal.operations.horizons",
     "geography.load_zones",
+    "geography.markets",
+    "system.markets.prices",
     "system.load_balance.static_load_requirement",
     "geography.generic_policy",
     "system.policy.generic_policy.generic_policy_requirements",
@@ -131,6 +133,7 @@ class TestRECs(unittest.TestCase):
                 ("Wind", "SLICE_OF_DAY", "SODZone1"),
                 ("Gas_CCGT", "SLICE_OF_DAY", "SODZone1"),
                 ("Battery", "SLICE_OF_DAY", "SODZone1"),
+                ("Nuclear_Flexible", "SLICE_OF_DAY", "SODZone1"),
             ]
         )
         actual_prj_policy_zones = sorted(
@@ -153,6 +156,7 @@ class TestRECs(unittest.TestCase):
                     ("Wind", "SLICE_OF_DAY", "SODZone1"): "sod_exceedance",
                     ("Gas_CCGT", "SLICE_OF_DAY", "SODZone1"): "sod_flat_block",
                     ("Battery", "SLICE_OF_DAY", "SODZone1"): "sod_stor",
+                    ("Nuclear_Flexible", "SLICE_OF_DAY", "SODZone1"): "sod_flat_block",
                 }.items()
             )
         )
@@ -165,6 +169,51 @@ class TestRECs(unittest.TestCase):
             )
         )
         self.assertDictEqual(expected_compliance_type, actual_compliance_type)
+
+        # Set: PRJ_POLICY_ZONE_PRDS_MONTH_HOURS
+        # Every mapped project gets the month-hour requirement indices of its
+        # policy-zone, but only for the periods in which it is operational:
+        # Nuclear_Flexible has specified capacity in 2030 only, so its 2020
+        # slices must be excluded (its Capacity_MW is undefined there).
+        month_hours_with_req = sorted(
+            (p, z, prd, mn, hr)
+            for (p, z, prd, mn, hr) in instance.POLICIES_ZONE_PRDS_MONTH_HOURS_WITH_REQ
+        )
+        self.assertListEqual(
+            [
+                ("SLICE_OF_DAY", "SODZone1", 2020, 1, 7),
+                ("SLICE_OF_DAY", "SODZone1", 2020, 1, 8),
+                ("SLICE_OF_DAY", "SODZone1", 2030, 1, 7),
+                ("SLICE_OF_DAY", "SODZone1", 2030, 1, 8),
+            ],
+            month_hours_with_req,
+        )
+        expected_prj_month_hours = sorted(
+            [
+                (prj, "SLICE_OF_DAY", "SODZone1", prd, 1, hr)
+                for prj in ["Wind", "Gas_CCGT", "Battery"]
+                for prd in [2020, 2030]
+                for hr in [7, 8]
+            ]
+            + [
+                ("Nuclear_Flexible", "SLICE_OF_DAY", "SODZone1", 2030, 1, hr)
+                for hr in [7, 8]
+            ]
+        )
+        actual_prj_month_hours = sorted(
+            (prj, policy, zone, prd, mn, hr)
+            for (
+                prj,
+                policy,
+                zone,
+                prd,
+                mn,
+                hr,
+            ) in instance.PRJ_POLICY_ZONE_PRDS_MONTH_HOURS
+        )
+        self.assertListEqual(expected_prj_month_hours, actual_prj_month_hours)
+        self.assertIn(("Nuclear_Flexible", 2030), instance.PRJ_OPR_PRDS)
+        self.assertNotIn(("Nuclear_Flexible", 2020), instance.PRJ_OPR_PRDS)
 
 
 if __name__ == "__main__":

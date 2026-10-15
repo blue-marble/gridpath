@@ -1,4 +1,5 @@
 # Copyright 2016-2024 Blue Marble Analytics LLC.
+# Copyright 2026 Sylvan Energy Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,6 +24,12 @@ from gridpath.project.common_functions import (
     check_boundary_type,
 )
 from gridpath.auxiliary.auxiliary import cursor_to_df
+from gridpath.auxiliary.calendar_rows import (
+    CALENDAR_HOUR_TIMEPOINT_MAP_ID,
+    calendar_hour_sql,
+    calendar_index_cte_sql,
+    calendar_rows_sql,
+)
 from gridpath.auxiliary.validations import (
     write_validation_to_database,
     validate_req_cols,
@@ -413,6 +420,7 @@ def write_tab_file_model_inputs(
     fname,
     data,
     replace_nulls=False,
+    check_rows=None,
 ):
     """
     Write inputs to tab-delimited file in appropriate directory
@@ -427,6 +435,8 @@ def write_tab_file_model_inputs(
     :param fname: the filename (with the .tab file extension)
     :param data: cursor object with query results
     :param replace_nulls: Booolean, whether the replace Nulls with "."
+    :param check_rows: optional function called with the list of data rows
+        before anything is written (e.g. to raise on missing inputs)
     :return:
     """
 
@@ -445,6 +455,8 @@ def write_tab_file_model_inputs(
 
     # Only write if we have data
     data_list = [row for row in data.fetchall()]
+    if check_rows is not None:
+        check_rows(data_list)
     if data_list:
         with open(out_file, append_mode, newline="") as f:
             writer = csv.writer(f, delimiter="\t", lineterminator="\n")
@@ -561,19 +573,89 @@ def load_var_profile_inputs(
 
 
 # TODO: consolidate with horizon equivalent methods below
+# The map_* keys describe the optional opchar temporal maps
+# (inputs_project_opchar_timepoint_map / inputs_project_opchar_horizon_map):
+# a project may point its data subscenario at data stored under other
+# timepoints/horizons via the corresponding *_tmp_map_scenario_id /
+# *_hrz_map_scenario_id column of inputs_project_operational_chars (derived
+# from the data subscenario column name via map_column_suffix). The
+# map_resolved_index_cte resolves each model timepoint (bt-horizon) to the
+# timepoint (horizon) to read data at -- itself if not listed in the map --
+# and map_select_columns/map_join_condition relabel the data rows with the
+# model timepoint (horizon) when joining the data table through the map.
+# Built-in maps have no rows in the map table: builtin_map_resolved_index_ctes
+# resolves them instead (the calendar-hour timepoint map reads each
+# timepoint's data at its calendar hour; see gridpath.auxiliary.calendar_rows).
 TIMEPOINT_INDEX_QUERY_PARAMS = {
     "select_columns": "timepoint",
     "index_columns": "timepoint",
     "index_join_table": "inputs_temporal",
     "index_columns_join_table": "timepoint",
+    "map_column_suffix": "_tmp_map_scenario_id",
+    "map_resolved_index_cte": """,
+        resolved_index_{map_id} AS (
+            SELECT rt.timepoint AS timepoint,
+                COALESCE(m.data_timepoint, rt.timepoint) AS data_timepoint
+            FROM relevant_temporal rt
+            LEFT JOIN inputs_project_opchar_timepoint_map m
+                ON m.opchar_timepoint_map_scenario_id = {map_id}
+                AND m.timepoint = rt.timepoint
+        )""",
+    "builtin_map_resolved_index_ctes": {
+        CALENDAR_HOUR_TIMEPOINT_MAP_ID: """,
+        resolved_index_{map_id} AS (
+            SELECT t.timepoint AS timepoint,
+                """
+        + calendar_hour_sql("t")
+        + """ AS data_timepoint
+            FROM inputs_temporal AS t
+            WHERE t.temporal_scenario_id = {temporal_scenario_id}
+            AND t.subproblem_id = {subproblem}
+            AND t.stage_id = {stage}
+        )"""
+    },
+    "map_select_columns": "resolved_index.timepoint AS timepoint",
+    "map_join_condition": "{table}.timepoint = resolved_index.data_timepoint",
 }
 
-BT_HRZ_INDEX_QUERY_PARAMS = {
-    "select_columns": "balancing_type_project, horizon",
-    "index_columns": "balancing_type_project, horizon",
-    "index_join_table": "inputs_temporal_horizon_timepoints",
-    "index_columns_join_table": "balancing_type_horizon, horizon",
-}
+
+def get_bt_hrz_index_query_params(bt_column):
+    """
+    Build the opr_index_dict for balancing-type/horizon-indexed opchar
+    inputs whose data table stores the balancing type in column
+    *bt_column*: the hydro opchars tables use the (historical) column name
+    balancing_type_project, as the horizons are the project's own; tables
+    indexed by horizons of OTHER balancing types (e.g. the hydro budget
+    allocation limits) use the canonical balancing_type_horizon.
+    """
+    return {
+        "bt_column": bt_column,
+        "select_columns": f"{bt_column}, horizon",
+        "index_columns": f"{bt_column}, horizon",
+        "index_join_table": "inputs_temporal_horizon_timepoints",
+        "index_columns_join_table": "balancing_type_horizon, horizon",
+        "map_column_suffix": "_hrz_map_scenario_id",
+        # DISTINCT, as relevant_temporal has one row per timepoint here
+        "map_resolved_index_cte": """,
+        resolved_index_{map_id} AS (
+            SELECT DISTINCT rt.balancing_type_horizon AS balancing_type_horizon,
+                rt.horizon AS horizon,
+                COALESCE(m.data_horizon, rt.horizon) AS data_horizon
+            FROM relevant_temporal rt
+            LEFT JOIN inputs_project_opchar_horizon_map m
+                ON m.opchar_horizon_map_scenario_id = {map_id}
+                AND m.balancing_type_horizon = rt.balancing_type_horizon
+                AND m.horizon = rt.horizon
+        )""",
+        "map_select_columns": f"resolved_index.balancing_type_horizon AS "
+        f"{bt_column}, resolved_index.horizon AS horizon",
+        "map_join_condition": f"{{table}}.{bt_column} = "
+        f"resolved_index.balancing_type_horizon "
+        f"AND {{table}}.horizon = resolved_index.data_horizon",
+    }
+
+
+BT_HRZ_INDEX_QUERY_PARAMS = get_bt_hrz_index_query_params("balancing_type_project")
 
 
 def get_prj_temporal_index_opr_inputs_from_db(
@@ -590,9 +672,17 @@ def get_prj_temporal_index_opr_inputs_from_db(
     data_column,
     opr_index_dict=None,
     exclude_stage=False,
+    map_data_gaps_handler=None,
 ):
     """
     Determine appropriate iterations for projects and get those inputs
+
+    For projects reading timepoint-indexed data through a timepoint map,
+    every operational timepoint must find data at its resolved data
+    timepoint (mapped timepoints don't fall back to their own data): the
+    (project, timepoint, data_timepoint)s without data are passed to
+    *map_data_gaps_handler*, by default raising a ValueError (validation
+    passes a handler recording them instead).
     """
     if opr_index_dict is None:
         opr_index_dict = TIMEPOINT_INDEX_QUERY_PARAMS
@@ -601,6 +691,12 @@ def get_prj_temporal_index_opr_inputs_from_db(
     index_columns = opr_index_dict["index_columns"]
     index_join_table = opr_index_dict["index_join_table"]
     index_columns_join_table = opr_index_dict["index_columns_join_table"]
+    # The opchar column with the project's (optional) timepoint/horizon map
+    # for this input type, e.g. variable_generator_profile_scenario_id -->
+    # variable_generator_profile_tmp_map_scenario_id
+    map_column = subscenario_id_column.replace(
+        "_scenario_id", opr_index_dict["map_column_suffix"]
+    )
 
     optype_filter = (
         f"""AND operational_type = '{op_type}'""" if op_type != "all" else ""
@@ -613,7 +709,7 @@ def get_prj_temporal_index_opr_inputs_from_db(
             WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
         ),
         optype_projects AS (
-            SELECT project, {subscenario_id_column}
+            SELECT project, {subscenario_id_column}, {map_column}
             FROM inputs_project_operational_chars
             WHERE project_operational_chars_scenario_id = {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
             {optype_filter}
@@ -633,18 +729,48 @@ def get_prj_temporal_index_opr_inputs_from_db(
             FROM {table}_iterations
         )
     """
-    cte_sql = cte_prj_sql + cte_tmp_sql
 
-    # Query iteration configuration once to see which combinations actually exist
-    # We'll only iterate over those to make the UNION ALL queries
+    # Query iteration and map configuration once to see which combinations
+    # actually exist; we'll only iterate over those to make the UNION ALL
+    # queries
     c = conn.cursor()
     iteration_configs = c.execute(f"""
         {cte_prj_sql}
-        SELECT DISTINCT varies_by_weather_iteration, varies_by_hydro_iteration
+        SELECT DISTINCT varies_by_weather_iteration, varies_by_hydro_iteration,
+            {map_column}
         FROM {table}_iterations
+        JOIN optype_projects USING (project, {subscenario_id_column})
         WHERE project IN portfolio_projects
-        AND (project, {subscenario_id_column}) IN optype_projects
     """).fetchall()
+
+    # Add a resolved-index CTE for each distinct temporal map in use; if no
+    # projects use a map, the query is unchanged
+    map_ids = sorted(
+        {config[2] for config in iteration_configs if config[2] is not None}
+    )
+    builtin_map_ctes = opr_index_dict.get("builtin_map_resolved_index_ctes", {})
+    map_cte_sql = "".join(
+        builtin_map_ctes.get(map_id, opr_index_dict["map_resolved_index_cte"]).format(
+            map_id=map_id,
+            temporal_scenario_id=subscenarios.TEMPORAL_SCENARIO_ID,
+            subproblem=subproblem,
+            stage=stage,
+        )
+        for map_id in map_ids
+    )
+    # Calendar rows (see gridpath.auxiliary.calendar_rows) apply to
+    # horizon-indexed inputs only
+    bt_column = opr_index_dict.get("bt_column")
+    calendar_cte_sql = (
+        calendar_index_cte_sql(
+            temporal_scenario_id=subscenarios.TEMPORAL_SCENARIO_ID,
+            subproblem=subproblem,
+            stage=stage,
+        )
+        if bt_column is not None
+        else ""
+    )
+    cte_sql = cte_prj_sql + cte_tmp_sql + map_cte_sql + calendar_cte_sql
 
     # If no iteration configs exist, return empty result
     if not iteration_configs:
@@ -653,15 +779,22 @@ def get_prj_temporal_index_opr_inputs_from_db(
     # If weather_iteration and hydro_iteration are both 0, we should only have (0,0) config
     if weather_iteration == 0 and hydro_iteration == 0:
         # Check if any projects vary by iteration when they shouldn't
-        non_zero_configs = [config for config in iteration_configs if config != (0, 0)]
+        non_zero_configs = [
+            config for config in iteration_configs if config[:2] != (0, 0)
+        ]
         if non_zero_configs:
             raise ValueError(
                 f"Table {table} has iteration configurations {non_zero_configs} "
                 f"but weather_iteration=0 and hydro_iteration=0. "
                 f"Projects should not vary by iteration when iterations are set to 0."
             )
-        # Force iteration_configs to only (0,0)
-        iteration_configs = [(0, 0)]
+        # Force iteration_configs to only (0,0) (preserving the distinct
+        # temporal maps in use)
+        forced_configs = []
+        if any(config[2] is None for config in iteration_configs):
+            forced_configs.append((0, 0, None))
+        forced_configs += [(0, 0, map_id) for map_id in map_ids]
+        iteration_configs = forced_configs
 
     # Check if weather_iteration is 0 but projects vary by weather
     if weather_iteration == 0:
@@ -683,15 +816,28 @@ def get_prj_temporal_index_opr_inputs_from_db(
                 f"Projects should not vary by hydro iteration when hydro_iteration is set to 0."
             )
 
-    # Build UNION ALL queries only for iteration configs that actually exist
+    # Build UNION ALL queries only for iteration/map configs that actually
+    # exist
     union_parts = []
     stage_subquery = "" if exclude_stage else f"AND stage_id = {stage}"
 
-    for varies_weather, varies_hydro in iteration_configs:
+    for varies_weather, varies_hydro, map_id in iteration_configs:
         weather_iter = weather_iteration if varies_weather else 0
         hydro_iter = hydro_iteration if varies_hydro else 0
 
-        union_parts.append(f"""
+        if map_id is None:
+            # If any projects use a temporal map for this input, keep them
+            # out of the no-map branch; with no maps in use, the query is
+            # unchanged
+            map_filter = (
+                f"""AND (project, {subscenario_id_column}) IN (
+                SELECT project, {subscenario_id_column} FROM optype_projects
+                WHERE {map_column} IS NULL
+            )"""
+                if map_ids
+                else ""
+            )
+            union_parts.append(f"""
             SELECT project, {select_columns}, {data_column}
             FROM {table}
             WHERE project IN (SELECT project FROM portfolio_projects)
@@ -706,7 +852,100 @@ def get_prj_temporal_index_opr_inputs_from_db(
             AND weather_iteration = {weather_iter}
             AND hydro_iteration = {hydro_iter}
             {stage_subquery}
+            {map_filter}
         """)
+            if bt_column is not None:
+                # Calendar (month-of-year and day-of-year) rows for the
+                # calendar horizons without an explicit row, relabeled with the model horizon (projects
+                # with a temporal map read only what the map points to)
+                explicit_stage = (
+                    "" if exclude_stage else f"AND explicit.stage_id = {stage}"
+                )
+                union_parts.append(
+                    calendar_rows_sql(
+                        table=table,
+                        bt_column=bt_column,
+                        select_columns=("project", data_column),
+                        row_filter=f"""project IN (SELECT project FROM portfolio_projects)
+            AND (project, {subscenario_id_column}) IN (SELECT project, {subscenario_id_column} FROM optype_projects)
+            AND (project, {subscenario_id_column}) IN (
+                SELECT project, {subscenario_id_column}
+                FROM iteration_config
+                WHERE varies_by_weather_iteration = {varies_weather}
+                AND varies_by_hydro_iteration = {varies_hydro}
+            )
+            AND weather_iteration = {weather_iter}
+            AND hydro_iteration = {hydro_iter}
+            {stage_subquery}
+            {map_filter}""",
+                        key_columns=["project", subscenario_id_column],
+                        explicit_filter=f"""AND explicit.weather_iteration = {weather_iter}
+                AND explicit.hydro_iteration = {hydro_iter}
+                {explicit_stage}""",
+                    )
+                )
+        else:
+            # Projects with a temporal map read their data at the resolved
+            # (mapped) timepoints/horizons instead, relabeled with the
+            # model's timepoints/horizons. The resolved index goes first and
+            # CROSS JOIN makes SQLite keep that loop order, so each resolved
+            # timepoint/horizon is a primary-key lookup into the data table;
+            # with the data table outer, SQLite re-evaluates the map CTE per
+            # data row (minutes for 8760-hour profiles)
+            map_select_columns = opr_index_dict["map_select_columns"]
+            map_join_condition = opr_index_dict["map_join_condition"].format(
+                table=table
+            )
+            union_parts.append(f"""
+            SELECT project, {map_select_columns}, {data_column}
+            FROM resolved_index_{map_id} AS resolved_index
+            CROSS JOIN {table}
+                ON {map_join_condition}
+            WHERE project IN (SELECT project FROM portfolio_projects)
+            AND (project, {subscenario_id_column}) IN (
+                SELECT project, {subscenario_id_column} FROM optype_projects
+                WHERE {map_column} = {map_id}
+            )
+            AND (project, {subscenario_id_column}) IN (
+                SELECT project, {subscenario_id_column}
+                FROM iteration_config
+                WHERE varies_by_weather_iteration = {varies_weather}
+                AND varies_by_hydro_iteration = {varies_hydro}
+            )
+            AND weather_iteration = {weather_iter}
+            AND hydro_iteration = {hydro_iter}
+            {stage_subquery}
+        """)
+
+    # Mapped timepoints without data
+    if map_ids and bt_column is None:
+        gaps = c.execute(
+            cte_sql
+            + mapped_timepoint_data_gaps_sql(
+                subscenarios=subscenarios,
+                subproblem=subproblem,
+                stage=stage,
+                table=table,
+                subscenario_id_column=subscenario_id_column,
+                map_column=map_column,
+                iteration_configs=[
+                    (
+                        varies_weather,
+                        varies_hydro,
+                        map_id,
+                        weather_iteration if varies_weather else 0,
+                        hydro_iteration if varies_hydro else 0,
+                    )
+                    for varies_weather, varies_hydro, map_id in iteration_configs
+                    if map_id is not None
+                ],
+                stage_subquery=stage_subquery,
+            )
+        ).fetchall()
+        if gaps:
+            if map_data_gaps_handler is None:
+                raise ValueError(mapped_timepoint_data_gaps_error(table, gaps))
+            map_data_gaps_handler(gaps)
 
     # Combine CTE with UNION ALL
     all_projects_sql = cte_sql + "\nUNION ALL\n".join(union_parts)
@@ -714,6 +953,85 @@ def get_prj_temporal_index_opr_inputs_from_db(
     prj_tmp_data = c.execute(all_projects_sql)
 
     return prj_tmp_data
+
+
+def mapped_timepoint_data_gaps_sql(
+    subscenarios,
+    subproblem,
+    stage,
+    table,
+    subscenario_id_column,
+    map_column,
+    iteration_configs,
+    stage_subquery,
+):
+    """
+    :param iteration_configs: (varies_by_weather_iteration,
+        varies_by_hydro_iteration, map_id, weather_iteration,
+        hydro_iteration) of the mapped project groups
+    :return: SQL (following the CTEs of
+        :code:`get_prj_temporal_index_opr_inputs_from_db`) selecting the
+        (project, timepoint, data_timepoint)s of the mapped projects'
+        operational timepoints whose resolved data timepoint has no data
+    """
+    parts = []
+    for (
+        varies_weather,
+        varies_hydro,
+        map_id,
+        weather_iter,
+        hydro_iter,
+    ) in iteration_configs:
+        parts.append(f"""
+            SELECT op.project AS project, op.timepoint AS timepoint,
+                resolved_index.data_timepoint AS data_timepoint
+            FROM project_operational_timepoints AS op
+            JOIN resolved_index_{map_id} AS resolved_index
+                ON resolved_index.timepoint = op.timepoint
+            JOIN optype_projects AS prj ON prj.project = op.project
+            WHERE op.project_portfolio_scenario_id =
+                {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
+            AND op.project_operational_chars_scenario_id =
+                {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
+            AND op.temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+            AND (op.project_specified_capacity_scenario_id =
+                    {subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID}
+                OR op.project_new_cost_scenario_id =
+                    {subscenarios.PROJECT_NEW_COST_SCENARIO_ID})
+            AND op.subproblem_id = {subproblem}
+            AND op.stage_id = {stage}
+            AND prj.{map_column} = {map_id}
+            AND (prj.project, prj.{subscenario_id_column}) IN (
+                SELECT project, {subscenario_id_column}
+                FROM iteration_config
+                WHERE varies_by_weather_iteration = {varies_weather}
+                AND varies_by_hydro_iteration = {varies_hydro}
+            )
+            AND NOT EXISTS (
+                SELECT 1 FROM {table}
+                WHERE {table}.project = prj.project
+                AND {table}.{subscenario_id_column} = prj.{subscenario_id_column}
+                AND {table}.timepoint = resolved_index.data_timepoint
+                AND weather_iteration = {weather_iter}
+                AND hydro_iteration = {hydro_iter}
+                {stage_subquery}
+            )""")
+    return "\nUNION\n".join(parts) + "\nORDER BY project, timepoint"
+
+
+def mapped_timepoint_data_gaps_error(table, gaps):
+    """
+    :param gaps: (project, timepoint, data_timepoint)s without data
+    :return: the error message
+    """
+    return (
+        f"{table}: {len(gaps)} operational timepoint(s) of projects reading "
+        f"their data through a timepoint map have no data at the data "
+        f"timepoint the map points them to, e.g. (project, timepoint, "
+        f"data_timepoint) {gaps[:5]}. Mapped timepoints don't read their "
+        f"own data instead; with the calendar-hour map, e.g. a February 29 "
+        f"timepoint reads the data at 229HH."
+    )
 
 
 def make_project_str(projects_list):
@@ -757,6 +1075,7 @@ def validate_var_profiles(
     :param op_type:
     :return:
     """
+    map_data_gaps = []
     var_profiles = get_prj_temporal_index_opr_inputs_from_db(
         subscenarios=subscenarios,
         weather_iteration=weather_iteration,
@@ -769,6 +1088,7 @@ def validate_var_profiles(
         table=table,
         subscenario_id_column=subscenario_id_column,
         data_column=data_column,
+        map_data_gaps_handler=map_data_gaps.extend,
     )
 
     # Convert input data into pandas DataFrame
@@ -789,6 +1109,25 @@ def validate_var_profiles(
         db_table=table,
         severity="High",
         errors=validate_missing_inputs(df, value_cols, ["project", "timepoint"]),
+    )
+
+    # Check for mapped timepoints without data
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table=table,
+        severity="High",
+        errors=(
+            [mapped_timepoint_data_gaps_error(table, map_data_gaps)]
+            if map_data_gaps
+            else []
+        ),
     )
 
     # We now allow negative values and values > 1, so commenting this out
@@ -883,6 +1222,118 @@ def load_hydro_opchars(
     data_portal.data()["{}_max_power_fraction".format(op_type)] = max
 
 
+def get_energy_budget_bt_by_prj(conn, subscenarios, op_type):
+    """
+    :return: dict of each *op_type* portfolio project's energy-budget
+        balancing type (energy_budget_balancing_type if specified, else
+        balancing_type_project)
+    """
+    c = conn.cursor()
+    return dict(c.execute(f"""SELECT project,
+            COALESCE(energy_budget_balancing_type, balancing_type_project)
+            FROM inputs_project_operational_chars
+            WHERE project_operational_chars_scenario_id =
+            {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
+            AND operational_type = '{op_type}'
+            AND project IN (
+                SELECT project FROM inputs_project_portfolios
+                WHERE project_portfolio_scenario_id =
+                {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
+            );""").fetchall())
+
+
+def projects_without_bt_hrz_rows_error(projects, db_table):
+    return (
+        f"project(s) {projects}: no {db_table} rows for any horizon of "
+        f"the temporal scenario (of the project's energy-budget balancing "
+        f"type); the per-horizon parameters are required for every "
+        f"operational timepoint and the model would fail to build. On the "
+        f"built-in subproblem_period_month_* and subproblem_period_day_* "
+        f"balancing types, rows may also be given per month of year "
+        f"(horizon 1-12) or day of year (horizon month * 100 + day, 101-1231)."
+    )
+
+
+def require_bt_hrz_rows_for_every_project(conn, subscenarios, op_type, db_table):
+    """
+    :return: a check_rows function for write_tab_file_model_inputs that
+        raises a ValueError if any *op_type* portfolio project has no
+        (project, balancing type, horizon)-indexed rows (project in the
+        first column), as the model would fail to build (the same check as
+        validate_energy_budget_balancing_type_rows)
+    """
+
+    def check_rows(rows):
+        projects = get_energy_budget_bt_by_prj(conn, subscenarios, op_type)
+        without_rows = sorted(set(projects) - {row[0] for row in rows})
+        if without_rows:
+            raise ValueError(projects_without_bt_hrz_rows_error(without_rows, db_table))
+
+    return check_rows
+
+
+def validate_energy_budget_balancing_type_rows(
+    conn,
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    op_type,
+    db_table,
+    df,
+):
+    """
+    Each *op_type* portfolio project's (balancing type, horizon)-indexed
+    opchar rows in *df* (columns include project and balancing_type_project)
+    must be for horizons of the project's energy-budget balancing type
+    (energy_budget_balancing_type if specified, else balancing_type_project):
+    rows for any other balancing type are never looked up by the per-horizon
+    constraints. Every such project must also have at least one row for the
+    temporal scenario's horizons (in this subproblem, stage, and iteration):
+    the per-horizon parameters are looked up for each of the project's
+    operational timepoints, so a project without rows fails at model
+    construction (a KeyError), not here. Writes High-severity validation
+    errors to the database. (That the balancing types exist in the temporal
+    scenario is validated in gridpath.project.operations.)
+    """
+    budget_bt_by_prj = get_energy_budget_bt_by_prj(conn, subscenarios, op_type)
+    mismatched = df[df["balancing_type_project"] != df["project"].map(budget_bt_by_prj)]
+    errors = (
+        [
+            f"project(s) {sorted(mismatched['project'].unique())}: {db_table} "
+            f"rows are specified for horizons of balancing type(s) "
+            f"{sorted(mismatched['balancing_type_project'].unique())}, which "
+            f"is not the project's energy-budget balancing type "
+            f"(energy_budget_balancing_type if specified, else "
+            f"balancing_type_project)."
+        ]
+        if not mismatched.empty
+        else []
+    )
+    # Only rows for (balancing type, horizon)s of the temporal scenario are
+    # returned, so this also catches rows that exist but are all for
+    # horizons outside it (e.g. of an unknown balancing type)
+    without_rows = sorted(set(budget_bt_by_prj) - set(df["project"]))
+    if without_rows:
+        errors.append(projects_without_bt_hrz_rows_error(without_rows, db_table))
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table=db_table,
+        severity="High",
+        errors=errors,
+    )
+
+
 def validate_hydro_opchars(
     scenario_id,
     subscenarios,
@@ -922,6 +1373,20 @@ def validate_hydro_opchars(
     # Convert input data into pandas DataFrame
     df = cursor_to_df(hydro_chars)
     value_cols = ["min_power_fraction", "average_power_fraction", "max_power_fraction"]
+
+    validate_energy_budget_balancing_type_rows(
+        conn=conn,
+        scenario_id=scenario_id,
+        subscenarios=subscenarios,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        op_type=op_type,
+        db_table="inputs_project_hydro_operational_chars",
+        df=df,
+    )
 
     # Check for missing inputs
     write_validation_to_database(
@@ -1131,6 +1596,10 @@ def get_optype_inputs_from_db(scenario_id, subscenarios, conn, op_type):
         "losses_factor_in_energy_target",
         "losses_factor_curtailment",
         "upward_reserves_to_soc_depletion",
+        "reserves_setpoint_duration_hours",
+        "energy_budget_balancing_type",
+        "market",
+        "dispatch_at_equal_cost",
     ]
 
     sql = """SELECT {}

@@ -44,6 +44,19 @@ carbon_cap_balance_credit_components = "carbon_cap_balance_credit_components"
 
 carbon_tax_cost_components = "carbon_tax_cost_components"
 
+# Emissions imported over transmission lines and purchased from markets; each
+# source contributes a zone-period expression of its gross import emissions
+# and one of its signed (imports less export credits) emissions, which the
+# policy's import-emissions module combines per the zone's basis
+carbon_cap_import_emission_components = "carbon_cap_import_emission_components"
+carbon_cap_signed_import_emission_components = (
+    "carbon_cap_signed_import_emission_components"
+)
+carbon_tax_import_emission_components = "carbon_tax_import_emission_components"
+carbon_tax_signed_import_emission_components = (
+    "carbon_tax_signed_import_emission_components"
+)
+
 performance_standard_balance_emission_components = (
     "performance_standard_balance_emission_components"
 )
@@ -64,6 +77,15 @@ local_capacity_balance_provision_components = (
 )
 
 fuel_burn_balance_components = "fuel_burn_balance_components"
+
+policy_balance_contribution_components = "policy_balance_contribution_components"
+
+period_energy_target_balance_contribution_components = (
+    "period_energy_target_balance_contribution_components"
+)
+horizon_energy_target_balance_contribution_components = (
+    "horizon_energy_target_balance_contribution_components"
+)
 
 cost_components = "cost_components"
 revenue_components = "revenue_components"
@@ -137,6 +159,12 @@ class DynamicComponents(object):
         # Carbon tax cost constraint
         setattr(self, carbon_tax_cost_components, list())
 
+        # Import emissions (transmission, markets) per policy
+        setattr(self, carbon_cap_import_emission_components, list())
+        setattr(self, carbon_cap_signed_import_emission_components, list())
+        setattr(self, carbon_tax_import_emission_components, list())
+        setattr(self, carbon_tax_signed_import_emission_components, list())
+
         # Performance standard constraint
         setattr(self, performance_standard_balance_emission_components, list())
         setattr(self, performance_standard_balance_credit_components, list())
@@ -157,6 +185,15 @@ class DynamicComponents(object):
         # Fuel burn limit constraint
         # Modules will add component names to this list
         setattr(self, fuel_burn_balance_components, list())
+
+        # Generic policy constraint
+        # Modules will add component names to this list
+        setattr(self, policy_balance_contribution_components, list())
+
+        # Energy target constraints
+        # Modules will add component names to these lists
+        setattr(self, period_energy_target_balance_contribution_components, list())
+        setattr(self, horizon_energy_target_balance_contribution_components, list())
 
         # Objective functions
         # Modules will add component names to this list

@@ -35,6 +35,7 @@ import numpy as np
 import pandas as pd
 
 from gridpath.common_functions import create_directory_if_not_exists
+from version import __version__
 
 
 def show_hide_legend(plot):
@@ -129,6 +130,9 @@ def get_parent_parser():
         default=False,
         action="store_true",
         help="Return plot as a json file.",
+    )
+    parser.add_argument(
+        "--version", action="version", version=f"GridPath {__version__}"
     )
 
     return parser
@@ -307,7 +311,7 @@ def process_stacked_plot_data(df, y_col, x_col, category_col, column_mapper={}):
     #   pd.pivot_table doesn't work with empty table without aggfunc="first"
     df = (
         pd.pivot_table(
-            data=df.infer_objects(copy=False).fillna(0),
+            data=df.infer_objects().fillna(0),
             index=x_col_reordered,  # can be multi-level index!
             columns=category_col,
             values=y_col,

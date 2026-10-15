@@ -149,6 +149,8 @@ def generic_export_results(
                 "period",
                 "timepoint",
                 "discount_factor",
+                "probability",
+                "probability_weighted_discount_factor",
                 "number_years_represented",
                 "timepoint_weight",
                 "number_of_hours_in_timepoint",
@@ -166,6 +168,8 @@ def generic_export_results(
                     m.period[tmp],
                     tmp,
                     m.discount_factor[m.period[tmp]],
+                    m.probability[m.period[tmp]],
+                    m.probability_weighted_discount_factor[m.period[tmp]],
                     m.number_years_represented[m.period[tmp]],
                     m.tmp_weight[tmp],
                     m.hrs_in_tmp[tmp],
@@ -191,16 +195,6 @@ def generic_export_results(
                     ),
                 ]
             )
-
-
-def generic_save_duals(m, reserve_constraint_name):
-    """
-
-    :param m:
-    :param reserve_constraint_name:
-    :return:
-    """
-    m.constraint_indices[reserve_constraint_name] = ["zone", "timepoint", "dual"]
 
 
 def generic_import_results_to_database(

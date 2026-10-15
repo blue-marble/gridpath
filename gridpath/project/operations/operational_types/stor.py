@@ -35,6 +35,33 @@ Costs for this operational type include variable O&M costs.
     capacity battery with discharging losses of 5% (discharging_loss_factor = 95%) would
     have a duration of 1 MWh / (1 MW/0.95) or 0.95 hours rather than 1 hour.
 
+.. note:: Model construction performance: most components in this module are
+    indexed by project-timepoint, so their initialization and constraint/
+    expression rules are called once per index -- millions of times in
+    production-scale scenarios. Per-index work that only depends on the
+    project (or can be looked up once) is therefore deliberately hoisted:
+
+    * :code:`STOR_OPR_BT_HRZ` checks horizon-timepoint membership
+      element-by-element with O(1) lookups against :code:`PRJ_OPR_TMPS` and
+      iterates only the horizons of the project's energy-budget balancing
+      type. (Testing
+      with :code:`set(...).issubset(mod.PRJ_OPR_TMPS)` would materialize the
+      entire multi-million-element superset into a temporary Python set on
+      every check.)
+    * The reserve expressions delegate to
+      :code:`gridpath.project.operations.reserves.reserve_aggregation`,
+      which resolves reserve variable names to component objects once per
+      model instance instead of calling :code:`getattr` per index.
+    * The tracking/ramp-style rules look up
+      :code:`mod.balancing_type_project[prj]` and :code:`mod.prev_tmp[...]`
+      once per call and reuse the local, rather than re-indexing the params
+      for every term of the returned expression.
+    * Derived sets initialized by filtering a superset do not re-declare
+      that superset as :code:`within` -- the domain check is redundant with
+      the initializer and roughly doubles set construction time. (Sets
+      loaded from input data, like :code:`STOR_EXOG_SOC_TMPS`, keep
+      :code:`within` since there it validates user input.)
+
 """
 
 import csv
@@ -57,10 +84,15 @@ from gridpath.auxiliary.auxiliary import (
 )
 from gridpath.auxiliary.db_interface import directories_to_db_values
 from gridpath.auxiliary.dynamic_components import headroom_variables, footroom_variables
+from gridpath.project.operations.reserves.reserve_aggregation import (
+    headroom_provision_rule,
+    footroom_provision_rule,
+)
 from gridpath.project.common_functions import (
     check_if_first_timepoint,
     check_if_last_timepoint,
     check_boundary_type,
+    get_energy_budget_balancing_type,
 )
 from gridpath.project.operations.operational_types.common_functions import (
     load_optype_model_data,
@@ -102,6 +134,14 @@ def add_model_components(
     | Two-dimensional set with generators of the :code:`stor`                 |
     | operational type and their linked timepoints.                           |
     +-------------------------------------------------------------------------+
+    | | :code:`STOR_OPR_BT_HRZ`                                               |
+    |                                                                         |
+    | Three-dimensional set with projects of the :code:`stor` operational     |
+    | type and the (balancing type, horizon)s of their energy-budget          |
+    | balancing type (see :code:`stor_energy_budget_balancing_type`) that     |
+    | lie entirely within their operational timepoints; the max-losses        |
+    | limit is enforced over these horizons.                                  |
+    +-------------------------------------------------------------------------+
 
     |
 
@@ -140,6 +180,25 @@ def add_model_components(
     |                                                                         |
     | The fraction of storage losses that count against the energy target.    |
     +-------------------------------------------------------------------------+
+    | | :code:`stor_max_losses_in_hrz_frac_stor_energy_capacity`              |
+    | | *Defined over*: :code:`STOR`                                          |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`inf`                                                |
+    |                                                                         |
+    | The maximum losses (charging minus discharging energy) in each          |
+    | horizon of the project's energy-budget balancing type, as a fraction    |
+    | of the project's energy capacity.                                       |
+    +-------------------------------------------------------------------------+
+    | | :code:`stor_energy_budget_balancing_type`                             |
+    | | *Defined over*: :code:`STOR`                                          |
+    | | *Within*: :code:`BLN_TYPES`                                           |
+    | | *Default*: the project's :code:`balancing_type_project`               |
+    |                                                                         |
+    | The balancing type of the horizons over which the max-losses limit      |
+    | applies. The project's :code:`balancing_type_project` continues to      |
+    | govern chronology (state-of-charge tracking and horizon-boundary        |
+    | handling).                                                              |
+    +-------------------------------------------------------------------------+
     | | :code:`stor_losses_factor_curtailment`                                |
     | | *Defined over*: :code:`STOR`                                          |
     | | *Within*: :code:`PercentFraction`                                     |
@@ -170,6 +229,17 @@ def add_model_components(
     | The storage project's exogenously specified starting state of charge.   |
     | If not specified, the state of charge is endogenously determined by the |
     | optimization subject to the rest of the constraints.                    |
+    +-------------------------------------------------------------------------+
+    | | :code:`stor_reserves_setpoint_duration_hours`                         |
+    | | *Defined over*: :code:`STOR`                                          |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The number of hours for which the project must be able to sustain the   |
+    | new setpoint if its reserves are called, i.e., the duration over which  |
+    | the upward (downward) reserves must be backed by energy (room) in       |
+    | storage in the headroom (footroom) energy constraints. If not           |
+    | specified, the timepoint duration is used, i.e., the new setpoint must  |
+    | be sustainable for the full timepoint.                                  |
     +-------------------------------------------------------------------------+
 
     |
@@ -272,14 +342,16 @@ def add_model_components(
     | | :code:`Stor_Max_Headroom_Energy_Constraint`                           |
     | | *Defined over*: :code:`STOR_OPR_TMPS`                                 |
     |                                                                         |
-    | Can't provide more upward reserves (times sustained duration required)  |
-    | than available energy in storage in that timepoint.                     |
+    | Can't provide more upward reserves (times the reserves setpoint         |
+    | duration, the timepoint duration by default) than available energy in   |
+    | storage in that timepoint.                                              |
     +-------------------------------------------------------------------------+
     | | :code:`Stor_Max_Footroom_Energy_Constraint`                           |
     | | *Defined over*: :code:`STOR_OPR_TMPS`                                 |
     |                                                                         |
-    | Can't provide more downard reserves (times sustained duration required) |
-    | than available capacity to store energy in that timepoint.              |
+    | Can't provide more downward reserves (times the reserves setpoint       |
+    | duration, the timepoint duration by default) than available capacity to |
+    | store energy in that timepoint.                                         |
     +-------------------------------------------------------------------------+
 
     """
@@ -296,7 +368,6 @@ def add_model_components(
 
     m.STOR_OPR_TMPS = Set(
         dimen=2,
-        within=m.PRJ_OPR_TMPS,
         initialize=lambda mod: subset_init_by_set_membership(
             mod=mod, superset="PRJ_OPR_TMPS", index=0, membership_set=mod.STOR
         ),
@@ -306,21 +377,32 @@ def add_model_components(
 
     m.STOR_EXOG_SOC_TMPS = Set(within=m.STOR_OPR_TMPS)
 
+    # Declared before STOR_OPR_BT_HRZ, whose initializer reads it: Pyomo
+    # constructs components in declaration order, and sparse membership in a
+    # not-yet-constructed Param is silently False. No default: unspecified
+    # means the project's balancing_type_project (see
+    # get_energy_budget_balancing_type).
+    m.stor_energy_budget_balancing_type = Param(m.STOR, within=m.BLN_TYPES)
+
     def stor_opr_bt_hrz_set_init(mod):
         prj_bt_hrz = []
         for prj in mod.STOR:
-            for bt, hrz in mod.BLN_TYPE_HRZS:
-                # Only take balancing types matching the project's
-                if bt == mod.balancing_type_project[prj]:
-                    # Add to the set if the timepoints in the horizon are in
-                    # the project's operational timepoints
-                    if set(
-                        [
-                            (prj, hrz_tmp)
-                            for hrz_tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
-                        ]
-                    ).issubset(mod.PRJ_OPR_TMPS):
-                        prj_bt_hrz.append((prj, bt, hrz))
+            # The horizons over which the max-losses limit applies
+            bt = get_energy_budget_balancing_type(
+                mod, prj, mod.stor_energy_budget_balancing_type
+            )
+            for hrz in mod.HRZS_BY_BLN_TYPE[bt]:
+                # Add to the set if all timepoints in the horizon are in
+                # the project's operational timepoints
+                # Keep the element-by-element membership checks: they are
+                # O(1) each and short-circuit, whereas an issubset() test
+                # against PRJ_OPR_TMPS would copy that entire set per
+                # project-horizon
+                if all(
+                    (prj, tmp) in mod.PRJ_OPR_TMPS
+                    for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
+                ):
+                    prj_bt_hrz.append((prj, bt, hrz))
 
         return prj_bt_hrz
 
@@ -357,6 +439,11 @@ def add_model_components(
     m.stor_exogenous_starting_state_of_charge = Param(
         m.STOR_EXOG_SOC_TMPS, within=NonNegativeReals
     )
+
+    # No default: when not specified for a project, the headroom/footroom
+    # energy rules fall back to the timepoint duration (see
+    # reserves_setpoint_duration_hours below)
+    m.stor_reserves_setpoint_duration_hours = Param(m.STOR, within=NonNegativeReals)
 
     m.stor_max_losses_in_hrz_frac_stor_energy_capacity = Param(
         m.STOR, within=NonNegativeReals, default=float("inf")
@@ -403,12 +490,12 @@ def add_model_components(
     )
 
     def upward_reserve_rule(mod, g, tmp):
-        return sum(getattr(mod, c)[g, tmp] for c in getattr(d, headroom_variables)[g])
+        return headroom_provision_rule(d, mod, g, tmp)
 
     m.Stor_Upward_Reserves_MW = Expression(m.STOR_OPR_TMPS, rule=upward_reserve_rule)
 
     def downward_reserve_rule(mod, g, tmp):
-        return sum(getattr(mod, c)[g, tmp] for c in getattr(d, footroom_variables)[g])
+        return footroom_provision_rule(d, mod, g, tmp)
 
     m.Stor_Downward_Reserves_MW = Expression(
         m.STOR_OPR_TMPS, rule=downward_reserve_rule
@@ -437,20 +524,60 @@ def add_model_components(
     )
 
     # Reserves
+    # For a project with no reserve variables, each reserve constraint
+    # reduces to a bound on charging, discharging or ending energy that
+    # the project's other constraints already imply in most timepoints;
+    # the constraint is skipped there (see each rule for the exact
+    # conditions). Half of a storage project's per-timepoint constraints
+    # are reserve constraints, so this roughly halves the storage rows of
+    # a model without reserves.
+    def max_headroom_power_constraint_rule(mod, s, tmp):
+        if (
+            not getattr(d, headroom_variables)[s]
+            and mod.stor_discharging_capacity_multiplier[s] <= 1
+        ):
+            return Constraint.Skip
+        return max_headroom_power_rule(mod, s, tmp)
+
     m.Stor_Max_Headroom_Power_Constraint = Constraint(
-        m.STOR_OPR_TMPS, rule=max_headroom_power_rule
+        m.STOR_OPR_TMPS, rule=max_headroom_power_constraint_rule
     )
+
+    def max_footroom_power_constraint_rule(mod, s, tmp):
+        if (
+            not getattr(d, footroom_variables)[s]
+            and mod.stor_charging_capacity_multiplier[s] <= 1
+        ):
+            return Constraint.Skip
+        return max_footroom_power_rule(mod, s, tmp)
 
     m.Stor_Max_Footroom_Power_Constraint = Constraint(
-        m.STOR_OPR_TMPS, rule=max_footroom_power_rule
+        m.STOR_OPR_TMPS, rule=max_footroom_power_constraint_rule
     )
+
+    def max_headroom_energy_constraint_rule(mod, s, tmp):
+        if not getattr(d, headroom_variables)[s] and next_tmp_tracks_energy(
+            mod, s, tmp
+        ):
+            return Constraint.Skip
+        return max_headroom_energy_rule(mod, s, tmp)
 
     m.Stor_Max_Headroom_Energy_Constraint = Constraint(
-        m.STOR_OPR_TMPS, rule=max_headroom_energy_rule
+        m.STOR_OPR_TMPS, rule=max_headroom_energy_constraint_rule
     )
 
+    def max_footroom_energy_constraint_rule(mod, s, tmp):
+        if (
+            not getattr(d, footroom_variables)[s]
+            and mod.stor_storage_efficiency[s] == 1
+            and next_tmp_tracks_energy(mod, s, tmp)
+            and next_tmp_derate_is_no_higher(mod, s, tmp)
+        ):
+            return Constraint.Skip
+        return max_footroom_energy_rule(mod, s, tmp)
+
     m.Stor_Max_Footroom_Energy_Constraint = Constraint(
-        m.STOR_OPR_TMPS, rule=max_footroom_energy_rule
+        m.STOR_OPR_TMPS, rule=max_footroom_energy_constraint_rule
     )
 
 
@@ -508,22 +635,20 @@ def energy_tracking_rule(mod, s, tmp):
             starting_soc=mod.stor_exogenous_starting_state_of_charge[s, tmp],
         )
     else:
-        if check_if_first_timepoint(
-            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[s]
-        ) and check_boundary_type(
+        bt = mod.balancing_type_project[s]
+        is_first_tmp = check_if_first_timepoint(mod=mod, tmp=tmp, balancing_type=bt)
+        if is_first_tmp and check_boundary_type(
             mod=mod,
             tmp=tmp,
-            balancing_type=mod.balancing_type_project[s],
+            balancing_type=bt,
             boundary_type="linear",
         ):
             return Constraint.Skip
         else:
-            if check_if_first_timepoint(
-                mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[s]
-            ) and check_boundary_type(
+            if is_first_tmp and check_boundary_type(
                 mod=mod,
                 tmp=tmp,
-                balancing_type=mod.balancing_type_project[s],
+                balancing_type=bt,
                 boundary_type="linked",
             ):
                 prev_tmp_hrs_in_tmp = mod.hrs_in_linked_tmp[0]
@@ -555,23 +680,15 @@ def energy_tracking_rule(mod, s, tmp):
                 )
 
             else:
-                prev_tmp_hrs_in_tmp = mod.hrs_in_tmp[
-                    mod.prev_tmp[tmp, mod.balancing_type_project[s]]
-                ]
+                # Look up the previous timepoint once for all the terms below
+                prev = mod.prev_tmp[tmp, bt]
+                prev_tmp_hrs_in_tmp = mod.hrs_in_tmp[prev]
                 prev_tmp_starting_energy_in_storage = (
-                    mod.Stor_Starting_Energy_in_Storage_MWh[
-                        s, mod.prev_tmp[tmp, mod.balancing_type_project[s]]
-                    ]
+                    mod.Stor_Starting_Energy_in_Storage_MWh[s, prev]
                 )
-                prev_tmp_discharge = mod.Stor_Discharge_MW[
-                    s, mod.prev_tmp[tmp, mod.balancing_type_project[s]]
-                ]
-                prev_tmp_charge = mod.Stor_Charge_MW[
-                    s, mod.prev_tmp[tmp, mod.balancing_type_project[s]]
-                ]
-                prev_tmp_upward_reserves = mod.Stor_Upward_Reserves_MW[
-                    s, mod.prev_tmp[tmp, mod.balancing_type_project[s]]
-                ]
+                prev_tmp_discharge = mod.Stor_Discharge_MW[s, prev]
+                prev_tmp_charge = mod.Stor_Charge_MW[s, prev]
+                prev_tmp_upward_reserves = mod.Stor_Upward_Reserves_MW[s, prev]
 
                 starting_soc = (
                     prev_tmp_starting_energy_in_storage * mod.stor_storage_efficiency[s]
@@ -628,6 +745,34 @@ def max_losses_in_hrz_rule(mod, prj, bt, hrz):
 
 
 # Reserves
+def next_tmp_tracks_energy(mod, s, tmp):
+    """
+    Whether the timepoint after *tmp* (in the project's balancing type)
+    has an energy tracking constraint that sets its starting energy from
+    *tmp*'s charging and discharging: the last timepoint of a linear or
+    linked horizon has no next timepoint in this subproblem, and a next
+    timepoint with an exogenous state of charge does not look back.
+    """
+    next_tmp = mod.next_tmp[tmp, mod.balancing_type_project[s]]
+    if next_tmp == ".":
+        return False
+    return (s, next_tmp) not in mod.STOR_EXOG_SOC_TMPS
+
+
+def next_tmp_derate_is_no_higher(mod, s, tmp):
+    """
+    Whether the project's availability derate is a known constant (no
+    endogenous availability in the model) and is no higher in the next
+    timepoint than in *tmp*, so that the next timepoint's maximum energy
+    in storage bounds *tmp*'s ending energy at least as tightly as the
+    footroom energy constraint would.
+    """
+    if mod.Availability_Derate.ctype is not Param:
+        return False
+    next_tmp = mod.next_tmp[tmp, mod.balancing_type_project[s]]
+    return mod.Availability_Derate[s, next_tmp] <= mod.Availability_Derate[s, tmp]
+
+
 def max_headroom_power_rule(mod, s, tmp):
     """
     **Constraint Name**: Stor_Max_Headroom_Power_Constraint
@@ -636,6 +781,11 @@ def max_headroom_power_rule(mod, s, tmp):
     The project's upward reserves cannot exceed the available headroom.
     Going from charging to non-charging also counts as headroom, doubling
     the maximum amount of potential headroom.
+
+    Skipped for a project with no upward reserve variables whose
+    discharging capacity multiplier is at most 1: the constraint then
+    reduces to a discharge limit that the maximum discharge constraint
+    implies.
     """
     return (
         mod.Stor_Upward_Reserves_MW[s, tmp]
@@ -653,6 +803,10 @@ def max_footroom_power_rule(mod, s, tmp):
     The project's downward reserves cannot exceed the available footroom.
     Going from non-charging to charging also counts as footroom, doubling
     the the maximum amount of potential footroom.
+
+    Skipped for a project with no downward reserve variables whose
+    charging capacity multiplier is at most 1: the constraint then
+    reduces to a charge limit that the maximum charge constraint implies.
     """
     return (
         mod.Stor_Downward_Reserves_MW[s, tmp]
@@ -663,8 +817,6 @@ def max_footroom_power_rule(mod, s, tmp):
 
 
 # Headroom and footroom energy constraints
-# TODO: allow different sustained duration requirements; assumption here is
-#  that if reserves are called, new setpoint must be sustained for 1 hour
 # TODO: allow derate of the net energy in the current timepoint in the
 #  headroom and footroom energy rules; in reality, reserves could be
 #  called at the very beginning or the very end of the timepoint (e.g.
@@ -674,6 +826,21 @@ def max_footroom_power_rule(mod, s, tmp):
 #  none of it would be available
 
 
+def reserves_setpoint_duration_hours(mod, s, tmp):
+    """
+    The number of hours for which the new setpoint must be sustainable if
+    reserves are called: the project's
+    :code:`stor_reserves_setpoint_duration_hours` if specified, otherwise
+    the duration of the timepoint.
+    """
+    # Sparse membership check: the param has no default, so a project is
+    # only "in" it when a value was loaded
+    if s in mod.stor_reserves_setpoint_duration_hours:
+        return mod.stor_reserves_setpoint_duration_hours[s]
+    else:
+        return mod.hrs_in_tmp[tmp]
+
+
 def max_headroom_energy_rule(mod, s, tmp):
     """
     **Constraint Name**: Stor_Max_Headroom_Energy_Constraint
@@ -681,19 +848,26 @@ def max_headroom_energy_rule(mod, s, tmp):
 
     Can't provide more reserves (times sustained duration required) than
     available energy in storage in that timepoint. Said differently,
-    must have enough energy available to be at the new set point (for
-    the full duration of the timepoint).
+    must have enough energy available to be at the new set point for the
+    required setpoint duration (the timepoint duration by default).
+
+    Skipped for a project with no upward reserve variables when the next
+    timepoint's energy tracking constraint looks back to this one: the
+    constraint then reduces to a non-negative ending energy, which the
+    next timepoint's non-negative starting energy implies. It is kept in
+    the last timepoint of a linear or linked horizon and before a
+    timepoint with an exogenous state of charge, where it is the only
+    bound on the ending energy.
     """
+    hrs_in_tmp = mod.hrs_in_tmp[tmp]
     return (
         mod.Stor_Upward_Reserves_MW[s, tmp]
-        * mod.hrs_in_tmp[tmp]
+        * reserves_setpoint_duration_hours(mod, s, tmp)
         / mod.stor_discharging_efficiency[s]
         <= mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp]
-        + mod.Stor_Charge_MW[s, tmp]
-        * mod.hrs_in_tmp[tmp]
-        * mod.stor_charging_efficiency[s]
+        + mod.Stor_Charge_MW[s, tmp] * hrs_in_tmp * mod.stor_charging_efficiency[s]
         - mod.Stor_Discharge_MW[s, tmp]
-        * mod.hrs_in_tmp[tmp]
+        * hrs_in_tmp
         / mod.stor_discharging_efficiency[s]
     )
 
@@ -706,20 +880,28 @@ def max_footroom_energy_rule(mod, s, tmp):
     Can't provide more reserves (times sustained duration required) than
     available capacity to store energy in that timepoint. Said differently,
     must have enough 'room left in the tank' (remaining energy capacity)
-    to be at the new set point (for the full duration of the timepoint).
+    to be at the new set point for the required setpoint duration (the
+    timepoint duration by default).
+
+    Skipped for a project with no downward reserve variables when the
+    constraint reduces to an ending-energy cap that the next timepoint's
+    maximum energy in storage implies: the next timepoint's energy
+    tracking constraint looks back to this one, the storage efficiency is
+    1 and the availability derate is a constant no higher in the next
+    timepoint. Otherwise (e.g. in the last timepoint of a linear horizon)
+    it is kept, as it is then the only cap on the ending energy.
     """
+    hrs_in_tmp = mod.hrs_in_tmp[tmp]
     return (
         mod.Stor_Downward_Reserves_MW[s, tmp]
-        * mod.hrs_in_tmp[tmp]
+        * reserves_setpoint_duration_hours(mod, s, tmp)
         * mod.stor_charging_efficiency[s]
         <= mod.Energy_Storage_Capacity_MWh[s, mod.period[tmp]]
         * mod.Availability_Derate[s, tmp]
         - mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp]
-        - mod.Stor_Charge_MW[s, tmp]
-        * mod.hrs_in_tmp[tmp]
-        * mod.stor_charging_efficiency[s]
+        - mod.Stor_Charge_MW[s, tmp] * hrs_in_tmp * mod.stor_charging_efficiency[s]
         + mod.Stor_Discharge_MW[s, tmp]
-        * mod.hrs_in_tmp[tmp]
+        * hrs_in_tmp
         / mod.stor_discharging_efficiency[s]
     )
 
@@ -1182,7 +1364,7 @@ def check_for_soc_infeasibilities(mod, s, tmp, starting_soc):
         return 0
     elif mod.capacity_type[s] == "stor_spec" and starting_soc > (
         mod.stor_spec_energy_capacity_mwh[s, mod.period[tmp]]
-        * mod.avl_exog_cap_derate_independent[s, tmp]
+        * mod.avl_exog_cap_derate_outage[s, tmp]
         * mod.avl_exog_cap_derate_weather[s, tmp]
     ):
         warnings.warn(

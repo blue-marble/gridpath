@@ -220,6 +220,219 @@ specifying a map between timepoints in each stage (see
 indexed by timepoint and stage, allowing for different forecasts (and,
 optionally, timepoint resolutions) in each stage.
 
+.. _scenario-trees-sub-section-ref:
+
+Scenario Trees (Stochastic Planning)
+------------------------------------
+
+Investment periods can be arranged into a *scenario tree* to formulate a
+multi-stage stochastic capacity-expansion problem with recourse. Instead of a
+single deterministic sequence of periods, the user defines alternative
+futures (*branches*) for a period. Investment decisions made in a period are
+shared by every branch descending from it, while each branch carries its own
+operational and investment decisions from that point on. Non-anticipativity is
+built into the period structure, so a tree with two branches is roughly the
+size of a deterministic problem with one extra period.
+
+**Defining the tree.** Each period may name its previous period in the
+:code:`prev_period` column of the :code:`inputs_temporal_periods` table (the
+:code:`period_params.csv` file of a temporal scenario). A year with several
+possible futures is entered as several periods with the same start and end
+years and the same previous period. For example, a 2020 root with two 2030
+branches::
+
+    period,discount_factor,period_start_year,period_end_year,prev_period,probability
+    2020,1,2020,2030,,
+    20301,1,2030,2040,2020,0.5
+    20302,1,2030,2040,2020,0.5
+
+Deterministic problems leave :code:`prev_period` empty; the previous period
+then defaults to the preceding period in order. If :code:`prev_period` is
+specified for any period, it must be specified for every period but the
+root, which must be the first period; the tree must have no cycles and a
+period must start no earlier than its previous period ends. Timepoint and
+horizon IDs must be unique within the temporal scenario, so each branch needs
+its own IDs (e.g. 203010101 and 203020101 for the first hour of the two 2030
+branches above).
+
+**Branch-specific data.** Because branches are distinct periods, any input
+indexed by period or timepoint can differ across them: load, fuel prices,
+capital and fixed costs, resource potentials, policy targets, variable
+generation profiles, and so on.
+
+**Shared decisions where the tree is shared.** Capacity built in a period is
+available in exactly the periods on that period's *trajectory*, i.e. the
+period itself and its descendants, for as long as its lifetime lasts. New
+build made at the root serves all branches; new build made within a branch
+serves only that branch. This holds for all new-build project capacity types,
+new transmission, and economic retirement decisions, which are chained along
+the tree.
+
+**Probabilities.** The :code:`probability` column gives the probability of
+reaching a period: the root has probability 1 (the default), and the
+probabilities of the periods sharing a previous period sum to that previous
+period's probability. In the model, every objective-function term is weighted
+by :code:`probability_weighted_discount_factor`, the period's
+:code:`discount_factor` times its :code:`probability`, so costs incurred on a
+branch enter the objective at their expected value. The two inputs are kept
+separate: :code:`discount_factor` remains a pure discount factor, and
+timepoint- and period-level results carry :code:`discount_factor`,
+:code:`probability` and :code:`probability_weighted_discount_factor` side by
+side for post-processing (e.g. converting duals to marginal costs).
+
+**Results by branch.** The per-period cost results are conditional on the
+branch being realized. The :code:`results_costs_by_period_w_weights` view
+attaches each period's previous period, discount factor, probability,
+probability-weighted discount factor and :code:`period_objective_weight`
+(the probability-weighted discount factor times the number of years
+represented) to the :code:`results_costs_by_period` view, so a cost times its
+weight is its contribution to the objective function and summing that product
+over periods gives the expected discounted cost.
+
+**Caveats.** A superperiod (see :code:`inputs_temporal_superperiods`) may not
+include periods from different branches, as quantities aggregated over it
+would double-count alternative futures; validation reports this. Aggregated
+results are indexed by period, so branch periods appear as separate entries
+alongside the deterministic ones.
+
+The :code:`2periods_new_build_2zones_new_build_transmission_stochastic`
+example is a two-branch tree with different loads in each branch;
+:code:`3stage_new_build_2zones_new_build_transmission_stochastic_tree` is a
+three-stage tree with four leaves. The
+:code:`..._stochastic_identical_branches` example and its
+:code:`..._deterministic_twin` carry identical data in both branches and
+reproduce each other's objective and decisions.
+
+.. _inputs-once-sub-section-ref:
+
+Specifying Inputs Once for Many Periods, Horizons, or Timepoints
+----------------------------------------------------------------
+
+Most temporal inputs are indexed by period, horizon, or timepoint, and would
+need a row for every period, horizon, or timepoint of a scenario. Several
+mechanisms let data that repeats be stored once instead. Except for the
+built-in balancing types, which the model builds from the timepoints, they
+are resolved when the model inputs are written from the database, so the
+model's input files list every period, horizon, or timepoint as if each row
+were explicit.
+
+.. list-table::
+    :header-rows: 1
+    :widths: 20 25 30 25
+
+    * - Mechanism
+      - Stores
+      - Inputs
+      - Combines with explicit rows
+    * - :code:`period = 0` rows
+      - one row (or set of rows) for every period
+      - specified capacity and fixed costs, variable O&M by period, heat
+        rate and variable O&M curves, curtailment costs, hurdle rates,
+        carbon credit purchase limits, power output group requirements
+      - not at all: a series is either all :code:`period = 0` or all
+        explicit
+    * - Built-in month and day balancing types
+      - horizons from the timepoints' calendar columns, with no horizon
+        inputs
+      - any input or constraint that takes a balancing type
+      - n/a
+    * - Month-of-year and day-of-year rows
+      - one row per month (horizon 1-12) or date (horizon 101-1231) for
+        every period, on the built-in month and day types
+      - horizon-indexed operating characteristics, exogenous availability
+        by horizon, market volume horizon and horizon-to-timepoint limits
+      - an explicit row for the horizon wins (per column in the market
+        volume limits)
+    * - Opchar timepoint maps
+      - each timepoint reads its data at another timepoint
+      - variable generator and energy profiles, variable O&M by timepoint,
+        storage exogenous state of charge, load modifier profiles
+      - the map always wins for mapped timepoints
+    * - Built-in calendar-hour map
+      - one year of data by calendar hour for every period
+      - same as opchar timepoint maps
+      - same as opchar timepoint maps
+    * - Opchar horizon maps
+      - each horizon reads its data at another horizon
+      - hydro operational characteristics, hydro budget allocation,
+        energy (slice) horizon shaping, load component shift bounds
+      - the map always wins for mapped horizons
+    * - Market volume wildcard rows and flat limits
+      - :code:`timepoint`, :code:`horizon`, or :code:`period` 0 rows and
+        flat limits on the market group
+      - market volume limit profiles
+      - per column: an explicit value, then the wildcard row, then the
+        flat limit
+
+**Period = 0 rows.** Data that doesn't change across periods can be given
+once with :code:`period = 0` rows instead of one row per period. A series
+(e.g. a project's rows in one subscenario) can't mix :code:`period = 0`
+rows with explicit periods, so a wildcard never quietly fills a period that
+was left out on purpose, such as a retired project's periods in the
+specified capacity inputs. See :ref:`periods-sub-section-ref` for the full
+list of inputs.
+
+**Built-in balancing types.** The :code:`subproblem_*`,
+:code:`subproblem_period_*`, :code:`subproblem_period_month_*`, and
+:code:`subproblem_period_day_*` balancing types are built from the
+timepoints' subproblem, period, month, and day of month, so they need no
+horizon inputs (see :ref:`horizons-sub-section-ref`). The month and day types
+need the :code:`month` and :code:`day_of_month` columns of the temporal
+inputs.
+
+**Month-of-year and day-of-year rows.** On the built-in month and day
+balancing types, a horizon-indexed input row whose horizon is the month
+(1-12) or :code:`month * 100 + day_of_month` (101-1231) supplies that month
+or date in every period that doesn't have an explicit row for its own
+horizon, e.g. a monthly hydro budget for every year, or a maintenance outage
+on the same dates every year. In the operating characteristics and
+exogenous availability inputs, an explicit row wins as a whole; in the
+market volume profiles, whose blank cells fall through to defaults, they
+combine per column. Projects that use a horizon map for an input don't read
+its calendar rows. See :ref:`hydro-opchar-section-ref` and
+:ref:`exogenous-availability-section-ref`.
+
+**Opchar timepoint and horizon maps.** A named map points a project's
+timepoint- or horizon-indexed input at the data stored under other
+timepoints or horizons, e.g. to repeat the first period's profiles in later
+periods, or one representative day's hydro characteristics for every day.
+Projects opt in per input through the :code:`*_tmp_map_scenario_id` and
+:code:`*_hrz_map_scenario_id` columns of the operating characteristics.
+Mapped timepoints and horizons always read the data they are mapped to, and
+every operational timepoint of a project using a timepoint map must find
+data there. See :ref:`opchar-timepoint-maps-section-ref` and
+:ref:`opchar-horizon-maps-section-ref`.
+
+**Built-in calendar-hour map.** The timepoint map with the reserved ID 0
+needs no map rows: each timepoint reads its data at its calendar hour,
+:code:`month * 10000 + day_of_month * 100 + hour_of_day`, so one year of
+hourly data (stored with the calendar hours as its timepoints) serves every
+period of any temporal scenario, whatever its timepoint numbering. Every
+timepoint needs a month, day of month, and hour of day, and February 29
+timepoints need data at :code:`229HH`. See
+:ref:`opchar-timepoint-maps-section-ref`.
+
+**Market volume limits.** A market group's limit profiles each accept a
+wildcard row (:code:`timepoint = 0`, :code:`horizon = 0` per balancing
+type, or :code:`period = 0`), and the group can carry flat limits; see :code:`gridpath.system.markets.volume` in
+:doc:`advanced_docs`.
+
+**Which to use.**
+
+* The same value in every period: :code:`period = 0` rows.
+* One year of hourly data for a multi-year study: the calendar-hour map.
+* Monthly or daily values that repeat every year: the built-in month or day
+  balancing types with month-of-year or day-of-year rows.
+* Representative periods, days, or other horizons repeated across the
+  study: a named timepoint or horizon map.
+
+.. note:: Databases created with GridPath v2026.13.1 or earlier need to be
+    recreated to use :code:`period = 0` specified capacity rows (which
+    changed the :code:`project_operational_periods` and
+    :code:`transmission_operational_periods` views) and the calendar-hour map
+    (whose row the schema seeds in
+    :code:`subscenarios_project_opchar_timepoint_map`).
+
 Examples
 --------
 
@@ -372,6 +585,10 @@ Simple Generation (*gen_simple*)
 Must-Run Generation (*gen_must_run*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: gridpath.project.operations.operational_types.gen_must_run
+
+Strike-Price Generation (*gen_simple_strike_price*)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. automodule:: gridpath.project.operations.operational_types.gen_simple_strike_price
 
 Always-On Generation (*gen_always_on*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -560,7 +777,17 @@ Markets
 
 GridPath can allow a resource or a set of resources to participate in markets with
 pre-specified price streams, assuming resources are price-takers and subject to
-market volume limits.
+market volume limits. A volume limit applies to a group of markets: every market
+is implicitly a group of its own, so limiting a single market takes no group
+definition, while a group of all of them is a system-wide limit and a group of
+some of them limits a region's transactions. Groups may overlap. A limit caps
+either the group's net position, where a purchase in one market offsets a sale in
+another, or its gross sales and purchases, each counted without offsetting; a
+group can carry both. A limit is
+imposed on the group's position in a timepoint, over a horizon of any balancing
+type in the scenario's temporal structure, or over a period. A limit that does
+not vary can be entered once, as a flat limit on the group or as a default row of
+its profile, rather than repeated.
 
 Policy
 ======
@@ -609,17 +836,25 @@ operational type and fuel. The model aggregates all projects' contributions
 for each period and ensures that the total emissions stay below the cap in
 each *carbon cap zone* and *period*.
 
-GridPath can also optionally apply an emissions factor to energy imports
-into an emissions zone. For the purpose, the relevant transmission lines
-(i.e. transmission lines that connect the emissions zone to other zones)
-must be assigned an emissions zone and an emissions intensity per unit
-energy. These emissions are then added to the emissions cap constraint.
+GridPath can also optionally count the emissions of energy imported into an
+emissions zone, both over transmission lines and through market purchases.
+The relevant transmission lines (i.e. transmission lines that connect the
+emissions zone to other zones) and (load zone, market) pairs are assigned an
+emissions zone, an import intensity per unit energy and, optionally, an export
+intensity; a line or pair may be assigned to several zones, e.g. a line
+importing into the zone at one end and exporting from the zone at the other.
+How the imports count is set per zone by its *import-emissions basis*: on the
+``gross`` basis every imported MWh counts at the import intensity and exports
+earn nothing; on the ``net_prd`` basis exports earn a credit at the export
+intensity and the zone's net import emissions are floored at zero over each
+period. These emissions are then added to the emissions cap constraint.
 
 The emissions cap could be applied to carbon emissions or to other types of
 emissions.
 
 Alternatively, GridPath can model a cost on carbon emissions and optimize the amount
-of emissions.
+of emissions. The cost can likewise apply to the emissions of transmission
+imports and market purchases, with the same per-zone choice of basis.
 
 Fuel Use Limits
 ---------------

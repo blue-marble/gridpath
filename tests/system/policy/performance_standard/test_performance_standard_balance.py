@@ -31,6 +31,8 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.investment.periods",
     "temporal.operations.horizons",
     "geography.load_zones",
+    "geography.markets",
+    "system.markets.prices",
     "geography.performance_standard_zones",
     "system.policy.performance_standard.performance_standard",
     "geography.water_network",
@@ -53,15 +55,7 @@ PREREQUISITE_MODULE_NAMES = [
     "project.operations.fuel_burn",
     "project.operations.performance_standard",
     "project.operations.carbon_emissions",
-    "transmission",
-    "transmission.capacity",
-    "transmission.capacity.capacity",
-    "transmission.availability.availability",
-    "transmission.operations.operational_types",
-    "transmission.operations.operations",
-    "transmission.operations.carbon_emissions",
     "system.policy.performance_standard.aggregate_project_performance_standard",
-    "system.policy.carbon_cap.aggregate_transmission_carbon_emissions",
 ]
 NAME_OF_MODULE_BEING_TESTED = (
     "system.policy.performance_standard.performance_standard_balance"

@@ -37,6 +37,13 @@ from gridpath.auxiliary.auxiliary import (
     load_subtype_modules,
 )
 from gridpath.auxiliary.db_interface import directories_to_db_values
+from gridpath.auxiliary.validations import warn_on_unknown_balancing_types
+from gridpath.common_functions import (
+    create_results_df,
+    duals_wrapper,
+    none_dual_type_error_wrapper,
+    update_results_df,
+)
 from gridpath.project.common_functions import (
     check_if_first_timepoint,
     check_boundary_type,
@@ -44,6 +51,39 @@ from gridpath.project.common_functions import (
 from gridpath.project.operations.operational_types.common_functions import (
     write_tab_file_model_inputs,
 )
+from gridpath.system.water import WATER_NODE_TMP_DF
+
+
+def get_imported_elevation_modules(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+):
+    """
+    Determine the elevation types used in the scenario and import the
+    respective elevation-type modules.
+    """
+    required_elevation_modules = get_required_subtype_modules(
+        scenario_directory=scenario_directory,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        which_type="elevation_type",
+        filename="water_node_reservoirs",
+    )
+
+    imported_elevation_modules = load_subtype_modules(
+        required_subtype_modules=required_elevation_modules,
+        package="gridpath.system.water.elevation_types",
+        required_attributes=[],
+    )
+
+    return required_elevation_modules, imported_elevation_modules
 
 
 def add_model_components(
@@ -165,34 +205,51 @@ def add_model_components(
         m.WATER_NODE_RESERVOIR_BT_HRZS_WITH_MIN_VOL_REQUIRMENTS, within=NonNegativeReals
     )
 
-    def max_volume_by_tmp_init(mod, r, tmp):
-        vals = [mod.maximum_volume_volumeunit[r]]
+    # Build the timepoint-level bounds in one pass over the horizon
+    # requirements (rather than rescanning them for every reservoir-timepoint)
+    # and store values only where a horizon requirement tightens the static
+    # bound; everywhere else the default returns the static bound. If
+    # multiple bt-hrzs include a timepoint, the most binding value applies.
+    def max_volume_by_tmp_init(mod):
+        max_vol_by_tmp = {}
+        for r, bt, hrz in mod.WATER_NODE_RESERVOIR_BT_HRZS_WITH_MAX_VOL_REQUIRMENTS:
+            hrz_max = mod.hrz_maximum_volume_volumeunit[r, bt, hrz]
+            for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]:
+                if (r, tmp) in max_vol_by_tmp:
+                    max_vol_by_tmp[r, tmp] = min(max_vol_by_tmp[r, tmp], hrz_max)
+                else:
+                    max_vol_by_tmp[r, tmp] = min(
+                        mod.maximum_volume_volumeunit[r], hrz_max
+                    )
 
-        for _r, bt, hrz in mod.WATER_NODE_RESERVOIR_BT_HRZS_WITH_MAX_VOL_REQUIRMENTS:
-            if _r == r and tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]:
-                vals.append(mod.hrz_maximum_volume_volumeunit[_r, bt, hrz])
-
-        tmp_val = min(vals)
-
-        return tmp_val
+        return max_vol_by_tmp
 
     m.maximum_volume_volumeunit_by_tmp = Param(
-        m.WATER_NODES_W_RESERVOIRS, m.TMPS, initialize=max_volume_by_tmp_init
+        m.WATER_NODES_W_RESERVOIRS,
+        m.TMPS,
+        initialize=max_volume_by_tmp_init,
+        default=lambda mod, r, tmp: mod.maximum_volume_volumeunit[r],
     )
 
-    def min_volume_by_tmp_init(mod, r, tmp):
-        vals = [mod.minimum_volume_volumeunit[r]]
+    def min_volume_by_tmp_init(mod):
+        min_vol_by_tmp = {}
+        for r, bt, hrz in mod.WATER_NODE_RESERVOIR_BT_HRZS_WITH_MIN_VOL_REQUIRMENTS:
+            hrz_min = mod.hrz_minimum_volume_volumeunit[r, bt, hrz]
+            for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]:
+                if (r, tmp) in min_vol_by_tmp:
+                    min_vol_by_tmp[r, tmp] = max(min_vol_by_tmp[r, tmp], hrz_min)
+                else:
+                    min_vol_by_tmp[r, tmp] = max(
+                        mod.minimum_volume_volumeunit[r], hrz_min
+                    )
 
-        for _r, bt, hrz in mod.WATER_NODE_RESERVOIR_BT_HRZS_WITH_MIN_VOL_REQUIRMENTS:
-            if _r == r and tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]:
-                vals.append(mod.hrz_minimum_volume_volumeunit[_r, bt, hrz])
-
-        tmp_val = max(vals)
-
-        return tmp_val
+        return min_vol_by_tmp
 
     m.minimum_volume_volumeunit_by_tmp = Param(
-        m.WATER_NODES_W_RESERVOIRS, m.TMPS, initialize=min_volume_by_tmp_init
+        m.WATER_NODES_W_RESERVOIRS,
+        m.TMPS,
+        initialize=min_volume_by_tmp_init,
+        default=lambda mod, r, tmp: mod.minimum_volume_volumeunit[r],
     )
 
     # Release targets
@@ -241,16 +298,6 @@ def add_model_components(
         m.WATER_NODES_W_RESERVOIRS,
         m.TMPS,
         within=NonNegativeReals,
-    )
-
-    # Expressions
-    # TODO: implement the correct calculation; depends on area, which depends
-    #  on elevation
-    # Losses
-    m.Evaporative_Losses = Expression(
-        m.WATER_NODES_W_RESERVOIRS,
-        m.TMPS,
-        initialize=lambda mod, r, tmp: mod.evaporation_coefficient[r],
     )
 
     # Slack variables
@@ -360,10 +407,12 @@ def add_model_components(
     )
 
     def reservoir_storage_min_bound_constraint_rule(mod, r, tmp):
+        if mod.allow_min_volume_violation[r]:
+            violation = mod.Min_Reservoir_Storage_Violation[r, tmp]
+        else:
+            violation = 0
         return (
-            mod.Reservoir_Starting_Volume_WaterVolumeUnit[r, tmp]
-            + mod.Min_Reservoir_Storage_Violation[r, tmp]
-            * mod.allow_max_volume_violation[r]
+            mod.Reservoir_Starting_Volume_WaterVolumeUnit[r, tmp] + violation
             >= mod.minimum_volume_volumeunit_by_tmp[r, tmp]
         )
 
@@ -374,11 +423,13 @@ def add_model_components(
     )
 
     def reservoir_storage_max_bound_constraint_rule(mod, r, tmp):
+        if mod.allow_max_volume_violation[r]:
+            violation = mod.Max_Reservoir_Storage_Violation[r, tmp]
+        else:
+            violation = 0
         return (
             mod.Reservoir_Starting_Volume_WaterVolumeUnit[r, tmp]
-            <= mod.maximum_volume_volumeunit_by_tmp[r, tmp]
-            + mod.Max_Reservoir_Storage_Violation[r, tmp]
-            * mod.allow_min_volume_violation[r]
+            <= mod.maximum_volume_volumeunit_by_tmp[r, tmp] + violation
         )
 
     m.Maximum_Water_Storage_Constraint = Constraint(
@@ -390,6 +441,10 @@ def add_model_components(
     # Target releases
     def reservoir_target_release_constraint_rule(mod, wn, bt, hrz):
         """ """
+        if mod.allow_target_release_violation[wn]:
+            violation = mod.Target_Release_Violation_VolUnit[wn, bt, hrz]
+        else:
+            violation = 0
         return (
             sum(
                 mod.Gross_Reservoir_Release_Rate_Vol_Per_Sec[wn, tmp]
@@ -403,8 +458,7 @@ def add_model_components(
                 * mod.hrs_in_tmp[tmp]
                 for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
             )
-            - mod.Target_Release_Violation_VolUnit[wn, bt, hrz]
-            * mod.allow_target_release_violation[wn]
+            - violation
         )
 
     m.Water_Node_Target_Release_Constraint = Constraint(
@@ -418,21 +472,15 @@ def add_model_components(
     )
 
     # Import needed elevation modules
-    required_elevation_modules = get_required_subtype_modules(
-        scenario_directory=scenario_directory,
-        weather_iteration=weather_iteration,
-        hydro_iteration=hydro_iteration,
-        availability_iteration=availability_iteration,
-        subproblem=subproblem,
-        stage=stage,
-        which_type="elevation_type",
-        filename="water_node_reservoirs",
-    )
-
-    imported_elevation_modules = load_subtype_modules(
-        required_subtype_modules=required_elevation_modules,
-        package="gridpath.system.water.elevation_types",
-        required_attributes=[],
+    required_elevation_modules, imported_elevation_modules = (
+        get_imported_elevation_modules(
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+        )
     )
 
     # Add any components specific to the operational modules
@@ -473,57 +521,46 @@ def add_model_components(
 
     def reservoir_storage_tracking_rule(mod, wn, tmp):
         """ """
-        # No constraint in the first timepoint of a linear horizon (no
-        # previous timepoints for tracking reservoir levels)
-        if check_if_first_timepoint(
-            mod=mod, tmp=tmp, balancing_type=mod.water_system_balancing_type
-        ) and check_boundary_type(
-            mod=mod,
-            tmp=tmp,
-            balancing_type=mod.water_system_balancing_type,
-            boundary_type="linear",
-        ):
-            return Constraint.Skip
-        # TODO: add linked horizons
-        elif check_if_first_timepoint(
-            mod=mod, tmp=tmp, balancing_type=mod.water_system_balancing_type
-        ) and check_boundary_type(
-            mod=mod,
-            tmp=tmp,
-            balancing_type=mod.water_system_balancing_type,
-            boundary_type="linked",
-        ):
-            current_tmp_starting_water_volume = None
-            prev_tmp_starting_water_volume = None
-
-            # Inflows and releases
-            prev_tmp_inflow = None
-            prev_tmp_outflow = None
-            raise (
-                UserWarning(
-                    "Linked horizons have not been implemented for "
-                    "water system feature."
+        balancing_type = mod.water_system_balancing_type
+        if check_if_first_timepoint(mod=mod, tmp=tmp, balancing_type=balancing_type):
+            # No constraint in the first timepoint of a linear horizon (no
+            # previous timepoints for tracking reservoir levels)
+            if check_boundary_type(
+                mod=mod,
+                tmp=tmp,
+                balancing_type=balancing_type,
+                boundary_type="linear",
+            ):
+                return Constraint.Skip
+            # TODO: add linked horizons
+            elif check_boundary_type(
+                mod=mod,
+                tmp=tmp,
+                balancing_type=balancing_type,
+                boundary_type="linked",
+            ):
+                raise (
+                    UserWarning(
+                        "Linked horizons have not been implemented for "
+                        "water system feature."
+                    )
                 )
-            )
-        else:
-            current_tmp_starting_water_volume = (
-                mod.Reservoir_Starting_Volume_WaterVolumeUnit[wn, tmp]
-            )
-            prev_tmp_starting_water_volume = (
-                mod.Reservoir_Starting_Volume_WaterVolumeUnit[
-                    wn, mod.prev_tmp[tmp, mod.water_system_balancing_type]
-                ]
-            )
 
-            # Inflows and releases; these are already calculated
-            # based on per sec flows and hours in the timepoint
-            prev_tmp_inflow = get_total_inflow_for_reservoir_tracking_volunit(
-                mod, wn, mod.prev_tmp[tmp, mod.water_system_balancing_type]
-            )
+        prev_tmp = mod.prev_tmp[tmp, balancing_type]
+        current_tmp_starting_water_volume = (
+            mod.Reservoir_Starting_Volume_WaterVolumeUnit[wn, tmp]
+        )
+        prev_tmp_starting_water_volume = mod.Reservoir_Starting_Volume_WaterVolumeUnit[
+            wn, prev_tmp
+        ]
 
-            prev_tmp_outflow = get_total_reservoir_release_volunit(
-                mod, wn, mod.prev_tmp[tmp, mod.water_system_balancing_type]
-            )
+        # Inflows and releases; these are already calculated
+        # based on per sec flows and hours in the timepoint
+        prev_tmp_inflow = get_total_inflow_for_reservoir_tracking_volunit(
+            mod, wn, prev_tmp
+        )
+
+        prev_tmp_outflow = get_total_reservoir_release_volunit(mod, wn, prev_tmp)
 
         return current_tmp_starting_water_volume == (
             prev_tmp_starting_water_volume + prev_tmp_inflow - prev_tmp_outflow
@@ -663,23 +700,16 @@ def load_model_data(
             param=m.reservoir_target_release_avg_flow_volunit_per_sec,
         )
 
-    # TODO: refactor
     # Import needed elevation modules
-    required_elevation_modules = get_required_subtype_modules(
-        scenario_directory=scenario_directory,
-        weather_iteration=weather_iteration,
-        hydro_iteration=hydro_iteration,
-        availability_iteration=availability_iteration,
-        subproblem=subproblem,
-        stage=stage,
-        which_type="elevation_type",
-        filename="water_node_reservoirs",
-    )
-
-    imported_elevation_modules = load_subtype_modules(
-        required_subtype_modules=required_elevation_modules,
-        package="gridpath.system.water.elevation_types",
-        required_attributes=[],
+    required_elevation_modules, imported_elevation_modules = (
+        get_imported_elevation_modules(
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+        )
     )
 
     # Add any components specific to the operational modules
@@ -748,6 +778,30 @@ def get_inputs_from_database(
                 )
         ;
         """)
+
+    # Balancing types the temporal scenario lacks are dropped by the
+    # balancing type - horizon queries below
+    for bt_hrz_table, bt_hrz_scenario_id_column in [
+        (
+            "inputs_system_water_node_reservoirs_volume_horizon_bounds",
+            "volume_hrz_bounds_scenario_id",
+        ),
+        (
+            "inputs_system_water_node_reservoirs_target_releases",
+            "target_release_scenario_id",
+        ),
+    ]:
+        warn_on_unknown_balancing_types(
+            conn=conn,
+            temporal_scenario_id=subscenarios.TEMPORAL_SCENARIO_ID,
+            table=bt_hrz_table,
+            bt_column="balancing_type",
+            row_filter=f"""(water_node, {bt_hrz_scenario_id_column}) IN (
+                SELECT water_node, {bt_hrz_scenario_id_column}
+                FROM inputs_system_water_node_reservoirs
+                WHERE water_node_reservoir_scenario_id = {subscenarios.WATER_NODE_RESERVOIR_SCENARIO_ID}
+            )""",
+        )
 
     c4 = conn.cursor()
     hrz_max_volumes = c4.execute(
@@ -1010,23 +1064,16 @@ def write_model_inputs(
         data=target_releases,
     )
 
-    # TODO: refactor
     # Import needed elevation modules
-    required_elevation_modules = get_required_subtype_modules(
-        scenario_directory=scenario_directory,
-        weather_iteration=weather_iteration,
-        hydro_iteration=hydro_iteration,
-        availability_iteration=availability_iteration,
-        subproblem=subproblem,
-        stage=stage,
-        which_type="elevation_type",
-        filename="water_node_reservoirs",
-    )
-
-    imported_elevation_modules = load_subtype_modules(
-        required_subtype_modules=required_elevation_modules,
-        package="gridpath.system.water.elevation_types",
-        required_attributes=[],
+    required_elevation_modules, imported_elevation_modules = (
+        get_imported_elevation_modules(
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+        )
     )
 
     # Add any components specific to the operational modules
@@ -1043,6 +1090,189 @@ def write_model_inputs(
                 subproblem,
                 stage,
                 conn,
+            )
+
+
+def export_results(
+    scenario_directory,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    m,
+    d,
+):
+    """
+    Add the reservoir-level results (and this module's constraint duals) to
+    the consolidated water node-timepoint results dataframe, export the
+    target-release results by balancing type-horizon, and dispatch to the
+    elevation-type modules.
+    """
+    results_columns = [
+        "starting_elevation",
+        "starting_volume",
+        "min_volume_violation",
+        "max_volume_violation",
+        "discharge_water_to_powerhouse_rate_vol_per_sec",
+        "spill_water_rate_vol_per_sec",
+        "evap_losses_NOT_IMPLEMENTED",
+        "max_discharge_to_powerhouse_constraint_dual",
+        "max_discharge_to_powerhouse_constraint_marginal_cost_per_vol_per_sec",
+        "max_spill_constraint_dual",
+        "max_spill_constraint_marginal_cost_per_vol_per_sec",
+        "max_gross_outflow_constraint_dual",
+        "max_gross_outflow_constraint_marginal_cost_per_vol_per_sec",
+        "reservoir_target_starting_volume_constraint_dual",
+        "reservoir_target_starting_volume_constraint_marginal_cost_per_volumeunit",
+        "reservoir_target_ending_volume_constraint_dual",
+        "reservoir_target_ending_volume_constraint_marginal_cost_per_volumeunit",
+        "min_water_storage_constraint_dual",
+        "min_water_storage_constraint_marginal_cost_per_volumeunit",
+        "max_water_storage_constraint_dual",
+        "max_water_storage_constraint_marginal_cost_per_volumeunit",
+        "reservoir_storage_tracking_constraint_dual",
+        "reservoir_storage_tracking_constraint_marginal_cost_per_volumeunit",
+    ]
+
+    def constraint_dual_and_marginal_cost(constraint, wn, tmp):
+        # Constraints may not be defined for all reservoir-timepoints
+        # (subset index sets, Constraint.Skip), so check membership first
+        dual = (
+            duals_wrapper(m, constraint[wn, tmp]) if (wn, tmp) in constraint else None
+        )
+        return [
+            dual,
+            none_dual_type_error_wrapper(dual, m.tmp_objective_coefficient[tmp]),
+        ]
+
+    data = [
+        [
+            wn,
+            tmp,
+            value(m.Reservoir_Starting_Elevation_ElevationUnit[wn, tmp]),
+            value(m.Reservoir_Starting_Volume_WaterVolumeUnit[wn, tmp]),
+            value(m.Min_Reservoir_Storage_Violation[wn, tmp]),
+            value(m.Max_Reservoir_Storage_Violation[wn, tmp]),
+            value(m.Discharge_Water_to_Powerhouse_Rate_Vol_Per_Sec[wn, tmp]),
+            value(m.Spill_Water_Rate_Vol_Per_Sec[wn, tmp]),
+            # TODO: implement the correct evaporative-loss calculation;
+            #  depends on area, which depends on elevation
+            None,
+            *constraint_dual_and_marginal_cost(
+                m.Max_Discharge_Water_to_Powerhouse_Constraint, wn, tmp
+            ),
+            *constraint_dual_and_marginal_cost(m.Max_Spill_Constraint, wn, tmp),
+            *constraint_dual_and_marginal_cost(m.Max_Gross_Outflow_Constraint, wn, tmp),
+            *constraint_dual_and_marginal_cost(
+                m.Reservoir_Target_Starting_Volume_Constraint, wn, tmp
+            ),
+            *constraint_dual_and_marginal_cost(
+                m.Reservoir_Target_Ending_Volume_Constraint, wn, tmp
+            ),
+            *constraint_dual_and_marginal_cost(
+                m.Minimum_Water_Storage_Constraint, wn, tmp
+            ),
+            *constraint_dual_and_marginal_cost(
+                m.Maximum_Water_Storage_Constraint, wn, tmp
+            ),
+            *constraint_dual_and_marginal_cost(
+                m.Reservoir_Storage_Tracking_Constraint, wn, tmp
+            ),
+        ]
+        for wn in m.WATER_NODES_W_RESERVOIRS
+        for tmp in m.TMPS
+    ]
+    results_df = create_results_df(
+        index_columns=["water_node", "timepoint"],
+        results_columns=results_columns,
+        data=data,
+    )
+
+    # Rows for nodes without reservoirs are left empty
+    update_results_df(getattr(d, WATER_NODE_TMP_DF), results_df)
+
+    # Target-release results by balancing type-horizon
+    bt_hrz_results_columns = [
+        "reservoir_target_release_avg_flow_volunit_per_sec",
+        "total_target_release_violation_volunit",
+        "avg_target_release_violation_flow_volunit_per_sec",
+        "target_release_constraint_dual",
+        "target_release_constraint_marginal_cost_per_volumeunit",
+    ]
+
+    def target_release_dual(wn, bt, hrz):
+        return (
+            duals_wrapper(m, m.Water_Node_Target_Release_Constraint[wn, bt, hrz])
+            if (wn, bt, hrz) in m.Water_Node_Target_Release_Constraint
+            else None
+        )
+
+    bt_hrz_data = [
+        [
+            wn,
+            bt,
+            hrz,
+            m.reservoir_target_release_avg_flow_volunit_per_sec[wn, bt, hrz],
+            value(m.Target_Release_Violation_VolUnit[wn, bt, hrz]),
+            value(m.Target_Release_Violation_VolUnit[wn, bt, hrz])
+            / sum(3600 * m.hrs_in_tmp[tmp] for tmp in m.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]),
+            target_release_dual(wn, bt, hrz),
+            none_dual_type_error_wrapper(
+                target_release_dual(wn, bt, hrz),
+                m.hrz_objective_coefficient[bt, hrz],
+            ),
+        ]
+        for (
+            wn,
+            bt,
+            hrz,
+        ) in m.WATER_NODE_RESERVOIR_BT_HRZS_WITH_TOTAL_RELEASE_REQUIREMENTS
+    ]
+    bt_hrz_results_df = create_results_df(
+        index_columns=["water_node", "balancing_type", "horizon"],
+        results_columns=bt_hrz_results_columns,
+        data=bt_hrz_data,
+    )
+
+    bt_hrz_results_df.to_csv(
+        os.path.join(
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "results",
+            "system_water_node_bt_hrz.csv",
+        ),
+        sep=",",
+        index=True,
+    )
+
+    required_elevation_modules, imported_elevation_modules = (
+        get_imported_elevation_modules(
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+        )
+    )
+
+    for op_m in required_elevation_modules:
+        imp_op_m = imported_elevation_modules[op_m]
+        if hasattr(imp_op_m, "export_results"):
+            imp_op_m.export_results(
+                scenario_directory,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
+                m,
+                d,
             )
 
 

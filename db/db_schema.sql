@@ -16,6 +16,25 @@
 
 -- A description of the database schema structure is in db.__init__
 
+--------------------
+-- -- METADATA -- --
+--------------------
+
+-- Database metadata: the GridPath version used to create the database, the
+-- datetime when the database was created, and the datetimes when each type
+-- of data was last modified by GridPath utilities (single-row table); the
+-- last-modified datetimes are NULL until the respective utility first runs
+DROP TABLE IF EXISTS db_metadata;
+CREATE TABLE db_metadata
+(
+    gridpath_version                 VARCHAR(64),
+    created_datetime                 DATETIME,
+    inputs_last_modified_datetime    DATETIME,
+    scenarios_last_modified_datetime DATETIME,
+    results_last_imported_datetime   DATETIME,
+    results_last_processed_datetime  DATETIME
+);
+
 -----------------
 -- -- MODEL -- --
 -----------------
@@ -191,6 +210,23 @@ CREATE TABLE status_validation
     FOREIGN KEY (scenario_id) REFERENCES scenarios (scenario_id)
 );
 
+-- End-to-end run step timings: the start/end time and duration of each E2E
+-- step from the scenario's most recent gridpath_run_e2e invocation (rows
+-- are cleared at the start of each invocation and written as each step
+-- finishes)
+DROP TABLE IF EXISTS status_e2e_step_timings;
+CREATE TABLE status_e2e_step_timings
+(
+    scenario_id      INTEGER,
+    run_process_id   INTEGER,
+    e2e_step         VARCHAR(32),
+    step_start_time  TIME,
+    step_end_time    TIME,
+    duration_seconds FLOAT,
+    PRIMARY KEY (scenario_id, e2e_step),
+    FOREIGN KEY (scenario_id) REFERENCES scenarios (scenario_id)
+);
+
 -- Scenario results: objective function, solver status
 DROP TABLE IF EXISTS results_scenario;
 CREATE TABLE results_scenario
@@ -280,6 +316,9 @@ CREATE TABLE inputs_temporal_periods
     period_start_year    FLOAT,
     period_end_year      FLOAT, -- exclusive, i.e. if 2030, last day is 2029-12-31
     prev_period          INTEGER,
+    -- probability of reaching this period in the scenario tree (the root is
+    -- 1; the periods sharing a prev_period sum to its probability); NULL = 1
+    probability          FLOAT,
     PRIMARY KEY (temporal_scenario_id, period),
     FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
         (temporal_scenario_id)
@@ -368,6 +407,12 @@ CREATE TABLE inputs_temporal_horizons
     balancing_type_horizon VARCHAR(32) NOT NULL,
     horizon                INTEGER     NOT NULL,
     boundary               VARCHAR(16) NOT NULL,
+    -- Horizon designation for projects of the stor_stress_hrz operational
+    -- type: 'average' (average-condition horizon, the default when NULL) or
+    -- 'stress'; ignored by all other operational types
+    stor_stress_hrz_type   VARCHAR(16) CHECK (
+        stor_stress_hrz_type IN ('average', 'stress')
+        ),
     PRIMARY KEY (temporal_scenario_id, balancing_type_horizon, horizon),
     FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
         (temporal_scenario_id),
@@ -737,6 +782,13 @@ CREATE TABLE inputs_geography_carbon_cap_zones
     carbon_cap_zone                VARCHAR(32),
     allow_violation                INTEGER DEFAULT 0, -- constraint is hard by default
     violation_penalty_per_emission FLOAT   DEFAULT 0,
+    -- How emissions imported over transmission lines and purchased from
+    -- markets count toward the zone: 'gross' counts every imported MWh and
+    -- credits nothing for exports; 'net_prd' credits exports at their export
+    -- intensity and floors the zone's net import emissions at zero over each
+    -- period. NULL means 'gross'.
+    import_emissions_basis         VARCHAR(8) DEFAULT 'gross'
+        CHECK (import_emissions_basis IN ('gross', 'net_prd')),
     PRIMARY KEY (carbon_cap_zone_scenario_id, carbon_cap_zone),
     FOREIGN KEY (carbon_cap_zone_scenario_id) REFERENCES
         subscenarios_geography_carbon_cap_zones (carbon_cap_zone_scenario_id)
@@ -758,6 +810,9 @@ CREATE TABLE inputs_geography_carbon_tax_zones
 (
     carbon_tax_zone_scenario_id INTEGER,
     carbon_tax_zone             VARCHAR(32),
+    -- See inputs_geography_carbon_cap_zones.import_emissions_basis
+    import_emissions_basis      VARCHAR(8) DEFAULT 'gross'
+        CHECK (import_emissions_basis IN ('gross', 'net_prd')),
     PRIMARY KEY (carbon_tax_zone_scenario_id, carbon_tax_zone),
     FOREIGN KEY (carbon_tax_zone_scenario_id) REFERENCES
         subscenarios_geography_carbon_tax_zones (carbon_tax_zone_scenario_id)
@@ -1046,6 +1101,54 @@ CREATE TABLE inputs_market_price_profiles
                  hydro_iteration, stage_id, timepoint)
 );
 
+-- Market groups
+-- A limit on market transactions applies to a group of markets: a group of
+-- all the scenario's markets is a system-wide limit and anything in between
+-- (e.g. all the hubs of one region) is expressible too. Groups may overlap.
+-- Every market is implicitly a group of its own, named after it, so only
+-- groups of more than one market are listed here and a scenario needing none
+-- can leave market_group_scenario_id unset. A group may not be named after a
+-- market unless it contains that market alone.
+-- A group is narrowed to the markets of the scenario's market_scenario_id,
+-- so one group definition serves scenarios with different market sets; a
+-- group left with none of them contributes no constraints.
+-- Group names may not contain a dash, as the input CSV file names are
+-- <market_group>-<id>-<name>.csv
+DROP TABLE IF EXISTS subscenarios_market_groups;
+CREATE TABLE subscenarios_market_groups
+(
+    market_group_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name                     VARCHAR(32),
+    description              VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_market_groups;
+CREATE TABLE inputs_market_groups
+(
+    market_group_scenario_id INTEGER,
+    market_group             VARCHAR(32),
+    market                   VARCHAR(32),
+    PRIMARY KEY (market_group_scenario_id, market_group, market),
+    FOREIGN KEY (market_group_scenario_id) REFERENCES
+        subscenarios_market_groups (market_group_scenario_id)
+);
+
+-- Market volume limits
+-- Each market group gets a volume profile at each temporal resolution it is
+-- limited at; a resolution left unset means the group has no profile there.
+-- The iteration flags say whether the group's limits vary by weather and by
+-- hydro iteration.
+-- The default_* columns are the group's flat limits, applied in every
+-- timepoint (or period), stage and iteration, so a limit that does not vary
+-- needs no profile at all. A profile's rows override them column by column:
+-- an explicit row first, then the profile's wildcard row, then these. A
+-- horizon-level limit needs a balancing type and so has no flat form.
+-- The basis says what a row's limits apply to: 'net' caps the group's net
+-- position, so a purchase in one of its markets offsets a sale in another;
+-- 'gross' caps the group's total sales and total purchases separately, each
+-- market's sales and purchases counted without offsetting. A group may carry
+-- a row of each basis, with their own profiles and flat limits. For a group
+-- of one market the two are the same.
 DROP TABLE IF EXISTS subscenarios_market_volume;
 CREATE TABLE subscenarios_market_volume
 (
@@ -1057,33 +1160,60 @@ CREATE TABLE subscenarios_market_volume
 DROP TABLE IF EXISTS inputs_market_volume;
 CREATE TABLE inputs_market_volume
 (
-    market_volume_scenario_id         INTEGER,
-    market                            TEXT,
-    market_volume_profile_scenario_id INTEGER,
-    varies_by_weather_iteration       INTEGER,
-    varies_by_hydro_iteration         INTEGER,
-    PRIMARY KEY (market_volume_scenario_id, market,
-                 market_volume_profile_scenario_id),
+    market_volume_scenario_id                              INTEGER,
+    market_group                                           TEXT,
+    basis                                                  VARCHAR(8) NOT NULL
+        CHECK (basis IN ('net', 'gross')),
+    market_volume_tmp_profile_scenario_id                  INTEGER,
+    market_volume_hrz_profile_scenario_id                  INTEGER,
+    market_volume_hrz_to_tmp_profile_scenario_id           INTEGER,
+    market_volume_prd_profile_scenario_id                  INTEGER,
+    varies_by_weather_iteration                            INTEGER,
+    varies_by_hydro_iteration                              INTEGER,
+    default_max_market_sales                               FLOAT,
+    default_max_market_purchases                           FLOAT,
+    default_max_final_market_sales                         FLOAT,
+    default_max_final_market_purchases                     FLOAT,
+    default_max_market_sales_in_prd                        FLOAT,
+    default_max_market_purchases_in_prd                    FLOAT,
+    default_max_market_sales_in_prd_include_storage_losses INTEGER, -- Based on 'stor' operational type
+    PRIMARY KEY (market_volume_scenario_id, market_group, basis),
     FOREIGN KEY (market_volume_scenario_id) REFERENCES
-        subscenarios_market_volume (market_volume_scenario_id)
+        subscenarios_market_volume (market_volume_scenario_id),
+    FOREIGN KEY (market_group, market_volume_tmp_profile_scenario_id) REFERENCES
+        subscenarios_market_volume_tmp_profiles
+            (market_group, market_volume_tmp_profile_scenario_id),
+    FOREIGN KEY (market_group, market_volume_hrz_profile_scenario_id) REFERENCES
+        subscenarios_market_volume_hrz_profiles
+            (market_group, market_volume_hrz_profile_scenario_id),
+    FOREIGN KEY (market_group, market_volume_hrz_to_tmp_profile_scenario_id)
+        REFERENCES subscenarios_market_volume_hrz_to_tmp_profiles
+            (market_group, market_volume_hrz_to_tmp_profile_scenario_id),
+    FOREIGN KEY (market_group, market_volume_prd_profile_scenario_id) REFERENCES
+        subscenarios_market_volume_prd_profiles
+            (market_group, market_volume_prd_profile_scenario_id)
 );
 
-
-DROP TABLE IF EXISTS subscenarios_market_volume_profiles;
-CREATE TABLE subscenarios_market_volume_profiles
+-- Timepoint-level limits, in MW, on the group's net position in the
+-- timepoint; the 'final' limits apply to the position including the
+-- transactions carried over from the previous stages
+-- A row with timepoint = 0 sets the default for every timepoint that has no
+-- explicit row (and for every NULL cell in an explicit row)
+DROP TABLE IF EXISTS subscenarios_market_volume_tmp_profiles;
+CREATE TABLE subscenarios_market_volume_tmp_profiles
 (
-    market                            TEXT,
-    market_volume_profile_scenario_id INTEGER,
+    market_group                      TEXT,
+    market_volume_tmp_profile_scenario_id INTEGER,
     name                              VARCHAR(32),
     description                       VARCHAR(128),
-    PRIMARY KEY (market, market_volume_profile_scenario_id)
+    PRIMARY KEY (market_group, market_volume_tmp_profile_scenario_id)
 );
 
-DROP TABLE IF EXISTS inputs_market_volume_profiles;
-CREATE TABLE inputs_market_volume_profiles
+DROP TABLE IF EXISTS inputs_market_volume_tmp_profiles;
+CREATE TABLE inputs_market_volume_tmp_profiles
 (
-    market                            VARCHAR(32),
-    market_volume_profile_scenario_id INTEGER,
+    market_group                      VARCHAR(32),
+    market_volume_tmp_profile_scenario_id INTEGER,
     weather_iteration                 INTEGER,
     hydro_iteration                   INTEGER,
     stage_id                          INTEGER,
@@ -1092,63 +1222,235 @@ CREATE TABLE inputs_market_volume_profiles
     max_market_purchases              FLOAT,
     max_final_market_sales            FLOAT,
     max_final_market_purchases        FLOAT,
-    PRIMARY KEY (market, market_volume_profile_scenario_id,
+    PRIMARY KEY (market_group, market_volume_tmp_profile_scenario_id,
                  weather_iteration, hydro_iteration, stage_id,
                  timepoint),
-    FOREIGN KEY (market, market_volume_profile_scenario_id) REFERENCES
-        subscenarios_market_volume_profiles
-            (market, market_volume_profile_scenario_id)
+    FOREIGN KEY (market_group, market_volume_tmp_profile_scenario_id) REFERENCES
+        subscenarios_market_volume_tmp_profiles
+            (market_group, market_volume_tmp_profile_scenario_id)
 );
 
--- Total limits over all markets
--- By tmp
-DROP TABLE IF EXISTS subscenarios_market_volume_totals_in_tmp;
-CREATE TABLE subscenarios_market_volume_totals_in_tmp
+-- Horizon-level limits, in MWh, on the group's net position summed over the
+-- timepoints of the horizon
+-- A row with horizon = 0 sets the default for every horizon of the
+-- respective balancing type that has no explicit row (and for every NULL
+-- cell in an explicit row)
+DROP TABLE IF EXISTS subscenarios_market_volume_hrz_profiles;
+CREATE TABLE subscenarios_market_volume_hrz_profiles
 (
-    market_volume_total_in_tmp_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name                                   VARCHAR(32),
-    description                            VARCHAR(128)
+    market_group                          TEXT,
+    market_volume_hrz_profile_scenario_id INTEGER,
+    name                                  VARCHAR(32),
+    description                           VARCHAR(128),
+    PRIMARY KEY (market_group, market_volume_hrz_profile_scenario_id)
 );
 
--- These are limits applied to the sum of participation all markets in
--- the respective timepoint
--- Totals in tmp are assumed to vary by weather iteration
-DROP TABLE IF EXISTS inputs_market_volume_totals_in_tmp;
-CREATE TABLE inputs_market_volume_totals_in_tmp
+DROP TABLE IF EXISTS inputs_market_volume_hrz_profiles;
+CREATE TABLE inputs_market_volume_hrz_profiles
 (
-    market_volume_total_in_tmp_scenario_id INTEGER,
-    weather_iteration                      INTEGER,
-    timepoint                              FLOAT,
-    max_total_net_market_purchases_in_tmp  FLOAT,
-    max_total_net_market_sales_in_tmp      FLOAT,
-    PRIMARY KEY (market_volume_total_in_tmp_scenario_id, weather_iteration,
-                 timepoint),
-    FOREIGN KEY (market_volume_total_in_tmp_scenario_id) REFERENCES
-        subscenarios_market_volume_totals_in_tmp (market_volume_total_in_tmp_scenario_id)
+    market_group                                  VARCHAR(32),
+    market_volume_hrz_profile_scenario_id         INTEGER,
+    weather_iteration                             INTEGER,
+    hydro_iteration                               INTEGER,
+    stage_id                                      INTEGER,
+    balancing_type_horizon                        VARCHAR(32),
+    horizon                                       INTEGER,
+    max_market_sales_in_hrz                       FLOAT,
+    max_market_purchases_in_hrz                   FLOAT,
+    max_market_sales_in_hrz_include_storage_losses INTEGER, -- Based on 'stor' operational type
+    PRIMARY KEY (market_group, market_volume_hrz_profile_scenario_id,
+                 weather_iteration, hydro_iteration, stage_id,
+                 balancing_type_horizon, horizon),
+    FOREIGN KEY (market_group, market_volume_hrz_profile_scenario_id) REFERENCES
+        subscenarios_market_volume_hrz_profiles
+            (market_group, market_volume_hrz_profile_scenario_id)
 );
 
--- By prd
-DROP TABLE IF EXISTS subscenarios_market_volume_totals_in_prd;
-CREATE TABLE subscenarios_market_volume_totals_in_prd
+-- Timepoint-level limits, in MW, given by horizon: each applies in every
+-- timepoint of the horizon, between the explicit timepoint rows and the
+-- timepoint wildcard row of the timepoint-level resolution
+-- A row with horizon = 0 sets the default for every horizon of the
+-- respective balancing type that has no explicit row (and for every NULL
+-- cell in an explicit row)
+DROP TABLE IF EXISTS subscenarios_market_volume_hrz_to_tmp_profiles;
+CREATE TABLE subscenarios_market_volume_hrz_to_tmp_profiles
 (
-    market_volume_total_in_prd_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name                                   VARCHAR(32),
-    description                            VARCHAR(128)
+    market_group                                 TEXT,
+    market_volume_hrz_to_tmp_profile_scenario_id INTEGER,
+    name                                         VARCHAR(32),
+    description                                  VARCHAR(128),
+    PRIMARY KEY (market_group, market_volume_hrz_to_tmp_profile_scenario_id)
 );
 
--- These are limits applied to the sum of participation all markets in
--- the respective timepoint
-DROP TABLE IF EXISTS inputs_market_volume_totals_in_prd;
-CREATE TABLE inputs_market_volume_totals_in_prd
+DROP TABLE IF EXISTS inputs_market_volume_hrz_to_tmp_profiles;
+CREATE TABLE inputs_market_volume_hrz_to_tmp_profiles
 (
-    market_volume_total_in_prd_scenario_id                   INTEGER,
-    period                                                   FLOAT,
-    max_total_net_market_purchases_in_prd                    FLOAT,
-    max_total_net_market_sales_in_prd                        FLOAT,
-    max_total_net_market_sales_in_prd_include_storage_losses INTEGER, -- Based on 'stor' operational type
-    PRIMARY KEY (market_volume_total_in_prd_scenario_id, period),
-    FOREIGN KEY (market_volume_total_in_prd_scenario_id) REFERENCES
-        subscenarios_market_volume_totals_in_prd (market_volume_total_in_prd_scenario_id)
+    market_group                                 VARCHAR(32),
+    market_volume_hrz_to_tmp_profile_scenario_id INTEGER,
+    weather_iteration                            INTEGER,
+    hydro_iteration                              INTEGER,
+    stage_id                                     INTEGER,
+    balancing_type_horizon                       VARCHAR(32),
+    horizon                                      INTEGER,
+    max_market_sales                             FLOAT,
+    max_market_purchases                         FLOAT,
+    max_final_market_sales                       FLOAT,
+    max_final_market_purchases                   FLOAT,
+    PRIMARY KEY (market_group, market_volume_hrz_to_tmp_profile_scenario_id,
+                 weather_iteration, hydro_iteration, stage_id,
+                 balancing_type_horizon, horizon),
+    FOREIGN KEY (market_group, market_volume_hrz_to_tmp_profile_scenario_id)
+        REFERENCES subscenarios_market_volume_hrz_to_tmp_profiles
+            (market_group, market_volume_hrz_to_tmp_profile_scenario_id)
+);
+
+-- Period-level limits, in MWh, on the group's net position summed over the
+-- timepoints of the period
+-- A row with period = 0 sets the default for every period that has no
+-- explicit row (and for every NULL cell in an explicit row)
+DROP TABLE IF EXISTS subscenarios_market_volume_prd_profiles;
+CREATE TABLE subscenarios_market_volume_prd_profiles
+(
+    market_group                          TEXT,
+    market_volume_prd_profile_scenario_id INTEGER,
+    name                                  VARCHAR(32),
+    description                           VARCHAR(128),
+    PRIMARY KEY (market_group, market_volume_prd_profile_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_market_volume_prd_profiles;
+CREATE TABLE inputs_market_volume_prd_profiles
+(
+    market_group                                   VARCHAR(32),
+    market_volume_prd_profile_scenario_id          INTEGER,
+    weather_iteration                              INTEGER,
+    hydro_iteration                                INTEGER,
+    stage_id                                       INTEGER,
+    period                                         INTEGER,
+    max_market_sales_in_prd                        FLOAT,
+    max_market_purchases_in_prd                    FLOAT,
+    max_market_sales_in_prd_include_storage_losses INTEGER, -- Based on 'stor' operational type
+    PRIMARY KEY (market_group, market_volume_prd_profile_scenario_id,
+                 weather_iteration, hydro_iteration, stage_id, period),
+    FOREIGN KEY (market_group, market_volume_prd_profile_scenario_id) REFERENCES
+        subscenarios_market_volume_prd_profiles
+            (market_group, market_volume_prd_profile_scenario_id)
+);
+
+-- Market purchases counted toward a carbon cap zone
+-- Keyed by (load zone, market, zone): the same hub may count toward different
+-- zones depending on which load zone trades at it, and a (load zone, market)
+-- pair may count toward several zones. Purchases count at the import
+-- intensity; sales earn a credit at the export intensity only in zones with
+-- the 'net_prd' import-emissions basis (see inputs_geography_carbon_cap_zones);
+-- NULL export intensity means 0. The export intensity may not exceed the
+-- import intensity.
+DROP TABLE IF EXISTS subscenarios_market_carbon_cap_zones;
+CREATE TABLE subscenarios_market_carbon_cap_zones
+(
+    market_carbon_cap_zone_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name                               VARCHAR(32),
+    description                        VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_market_carbon_cap_zones;
+CREATE TABLE inputs_market_carbon_cap_zones
+(
+    market_carbon_cap_zone_scenario_id INTEGER,
+    load_zone                          VARCHAR(32),
+    market                             VARCHAR(32),
+    carbon_cap_zone                    VARCHAR(32),
+    tmp_import_emissions_scenario_id   INTEGER, -- determines timepoint emissions scenario
+    co2_intensity_tons_per_mwh         FLOAT,
+    export_co2_intensity_tons_per_mwh  FLOAT,
+    PRIMARY KEY (market_carbon_cap_zone_scenario_id, load_zone, market,
+                 carbon_cap_zone),
+    FOREIGN KEY (market_carbon_cap_zone_scenario_id) REFERENCES
+        subscenarios_market_carbon_cap_zones (market_carbon_cap_zone_scenario_id)
+);
+
+-- Timepoint-varying intensity adders for a market, added to the flat
+-- intensities of every zone row of the market that references the profile
+DROP TABLE IF EXISTS subscenarios_market_carbon_cap_timepoint_emissions;
+CREATE TABLE subscenarios_market_carbon_cap_timepoint_emissions
+(
+    market                           VARCHAR(32),
+    tmp_import_emissions_scenario_id INTEGER,
+    name                             VARCHAR(32),
+    description                      VARCHAR(128),
+    PRIMARY KEY (market, tmp_import_emissions_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_market_carbon_cap_timepoint_emissions;
+CREATE TABLE inputs_market_carbon_cap_timepoint_emissions
+(
+    market                                   VARCHAR(32),
+    tmp_import_emissions_scenario_id         INTEGER,
+    timepoint                                INTEGER,
+    co2_intensity_tons_per_mwh_hourly        FLOAT,
+    export_co2_intensity_tons_per_mwh_hourly FLOAT,
+    PRIMARY KEY (market, tmp_import_emissions_scenario_id, timepoint),
+    FOREIGN KEY (market, tmp_import_emissions_scenario_id) REFERENCES
+        subscenarios_market_carbon_cap_timepoint_emissions
+            (market, tmp_import_emissions_scenario_id)
+);
+
+-- Market purchases counted toward a carbon tax zone
+-- Keyed by (load zone, market, zone): the same hub may count toward different
+-- zones depending on which load zone trades at it, and a (load zone, market)
+-- pair may count toward several zones. Purchases count at the import
+-- intensity; sales earn a credit at the export intensity only in zones with
+-- the 'net_prd' import-emissions basis (see inputs_geography_carbon_tax_zones);
+-- NULL export intensity means 0. The export intensity may not exceed the
+-- import intensity.
+DROP TABLE IF EXISTS subscenarios_market_carbon_tax_zones;
+CREATE TABLE subscenarios_market_carbon_tax_zones
+(
+    market_carbon_tax_zone_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name                               VARCHAR(32),
+    description                        VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_market_carbon_tax_zones;
+CREATE TABLE inputs_market_carbon_tax_zones
+(
+    market_carbon_tax_zone_scenario_id INTEGER,
+    load_zone                          VARCHAR(32),
+    market                             VARCHAR(32),
+    carbon_tax_zone                    VARCHAR(32),
+    tmp_import_emissions_scenario_id   INTEGER, -- determines timepoint emissions scenario
+    co2_intensity_tons_per_mwh         FLOAT,
+    export_co2_intensity_tons_per_mwh  FLOAT,
+    PRIMARY KEY (market_carbon_tax_zone_scenario_id, load_zone, market,
+                 carbon_tax_zone),
+    FOREIGN KEY (market_carbon_tax_zone_scenario_id) REFERENCES
+        subscenarios_market_carbon_tax_zones (market_carbon_tax_zone_scenario_id)
+);
+
+-- Timepoint-varying intensity adders for a market, added to the flat
+-- intensities of every zone row of the market that references the profile
+DROP TABLE IF EXISTS subscenarios_market_carbon_tax_timepoint_emissions;
+CREATE TABLE subscenarios_market_carbon_tax_timepoint_emissions
+(
+    market                           VARCHAR(32),
+    tmp_import_emissions_scenario_id INTEGER,
+    name                             VARCHAR(32),
+    description                      VARCHAR(128),
+    PRIMARY KEY (market, tmp_import_emissions_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_market_carbon_tax_timepoint_emissions;
+CREATE TABLE inputs_market_carbon_tax_timepoint_emissions
+(
+    market                                   VARCHAR(32),
+    tmp_import_emissions_scenario_id         INTEGER,
+    timepoint                                INTEGER,
+    co2_intensity_tons_per_mwh_hourly        FLOAT,
+    export_co2_intensity_tons_per_mwh_hourly FLOAT,
+    PRIMARY KEY (market, tmp_import_emissions_scenario_id, timepoint),
+    FOREIGN KEY (market, tmp_import_emissions_scenario_id) REFERENCES
+        subscenarios_market_carbon_tax_timepoint_emissions
+            (market, tmp_import_emissions_scenario_id)
 );
 
 -- Fuel balancing areas
@@ -1467,6 +1769,7 @@ CREATE TABLE inputs_system_water_flows
     hrz_max_flow_violation_penalty_cost_per_hour FLOAT,
     water_flow_timepoint_bounds_scenario_id      INTEGER,
     water_flow_horizon_bounds_scenario_id        INTEGER,
+    water_flow_upstream_node_map_scenario_id     INTEGER,
     water_flow_ramp_limit_scenario_id            INTEGER,
     PRIMARY KEY (water_flow_scenario_id, water_link),
     FOREIGN KEY (water_flow_scenario_id) REFERENCES
@@ -1492,6 +1795,7 @@ CREATE TABLE inputs_system_water_flows_timepoint_bounds
     timepoint                               FLOAT,
     min_tmp_flow_vol_per_second             FLOAT,
     max_tmp_flow_vol_per_second             FLOAT,
+    threshold_side_stream_vol_per_second    FLOAT,
     PRIMARY KEY (water_link, water_flow_timepoint_bounds_scenario_id,
                  timepoint),
     FOREIGN KEY (water_link, water_flow_timepoint_bounds_scenario_id) REFERENCES
@@ -1527,27 +1831,29 @@ CREATE TABLE inputs_system_water_flows_horizon_bounds
             (water_link, water_flow_horizon_bounds_scenario_id)
 );
 
-DROP TABLE IF EXISTS subscenarios_system_water_flows_horizon_bounds_upstream_node_map;
-CREATE TABLE subscenarios_system_water_flows_horizon_bounds_upstream_node_map
+-- Water nodes upstream of a water link whose exogenous inflows count
+-- toward the side stream thresholds (both by-timepoint and by-horizon)
+DROP TABLE IF EXISTS subscenarios_system_water_flows_upstream_node_map;
+CREATE TABLE subscenarios_system_water_flows_upstream_node_map
 (
-    water_link                            TEXT,
-    water_flow_horizon_bounds_scenario_id INTEGER,
-    name                                  VARCHAR(32),
-    description                           VARCHAR(128),
-    PRIMARY KEY (water_link, water_flow_horizon_bounds_scenario_id)
+    water_link                               TEXT,
+    water_flow_upstream_node_map_scenario_id INTEGER,
+    name                                     VARCHAR(32),
+    description                              VARCHAR(128),
+    PRIMARY KEY (water_link, water_flow_upstream_node_map_scenario_id)
 );
 
-DROP TABLE IF EXISTS inputs_system_water_flows_horizon_bounds_upstream_node_map;
-CREATE TABLE inputs_system_water_flows_horizon_bounds_upstream_node_map
+DROP TABLE IF EXISTS inputs_system_water_flows_upstream_node_map;
+CREATE TABLE inputs_system_water_flows_upstream_node_map
 (
-    water_link                            TEXT,
-    water_flow_horizon_bounds_scenario_id INTEGER,
-    upstream_water_node                   TEXT,
-    PRIMARY KEY (water_link, water_flow_horizon_bounds_scenario_id,
+    water_link                               TEXT,
+    water_flow_upstream_node_map_scenario_id INTEGER,
+    upstream_water_node                      TEXT,
+    PRIMARY KEY (water_link, water_flow_upstream_node_map_scenario_id,
                  upstream_water_node),
-    FOREIGN KEY (water_link, water_flow_horizon_bounds_scenario_id) REFERENCES
-        subscenarios_system_water_flows_horizon_bounds
-            (water_link, water_flow_horizon_bounds_scenario_id)
+    FOREIGN KEY (water_link, water_flow_upstream_node_map_scenario_id) REFERENCES
+        subscenarios_system_water_flows_upstream_node_map
+            (water_link, water_flow_upstream_node_map_scenario_id)
 );
 
 -- Water flow ramp limits
@@ -1606,7 +1912,7 @@ CREATE TABLE inputs_system_water_flow_ramp_limit_bt_hrz_values
 DROP TABLE IF EXISTS subscenarios_system_water_inflows;
 CREATE TABLE subscenarios_system_water_inflows
 (
-    water_inflow_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    water_inflow_tmp_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
     name                     VARCHAR(32),
     description              VARCHAR(128)
 );
@@ -1614,15 +1920,41 @@ CREATE TABLE subscenarios_system_water_inflows
 DROP TABLE IF EXISTS inputs_system_water_inflows;
 CREATE TABLE inputs_system_water_inflows
 (
-    water_inflow_scenario_id                INTEGER,
+    water_inflow_tmp_scenario_id                INTEGER,
     water_node                              TEXT,
     hydro_iteration                         INTEGER DEFAULT 0 NOT NULL,
     timepoint                               FLOAT,
     exogenous_water_inflow_rate_vol_per_sec TEXT,
-    PRIMARY KEY (water_inflow_scenario_id, water_node, timepoint,
+    PRIMARY KEY (water_inflow_tmp_scenario_id, water_node, timepoint,
                  hydro_iteration),
-    FOREIGN KEY (water_inflow_scenario_id) REFERENCES
-        subscenarios_system_water_inflows (water_inflow_scenario_id)
+    FOREIGN KEY (water_inflow_tmp_scenario_id) REFERENCES
+        subscenarios_system_water_inflows (water_inflow_tmp_scenario_id)
+);
+
+-- Average inflows by horizon; these are spread uniformly across the
+-- horizon's timepoints in the model and are additive with the
+-- timepoint-level inflows from inputs_system_water_inflows
+DROP TABLE IF EXISTS subscenarios_system_water_inflows_bt_hrz;
+CREATE TABLE subscenarios_system_water_inflows_bt_hrz
+(
+    water_inflow_bt_hrz_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name                            VARCHAR(32),
+    description                     VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_system_water_inflows_bt_hrz;
+CREATE TABLE inputs_system_water_inflows_bt_hrz
+(
+    water_inflow_bt_hrz_scenario_id             INTEGER,
+    water_node                                  TEXT,
+    hydro_iteration                             INTEGER DEFAULT 0 NOT NULL,
+    balancing_type                              TEXT,
+    horizon                                     INTEGER,
+    exogenous_water_inflow_rate_avg_vol_per_sec FLOAT,
+    PRIMARY KEY (water_inflow_bt_hrz_scenario_id, water_node, balancing_type,
+                 horizon, hydro_iteration),
+    FOREIGN KEY (water_inflow_bt_hrz_scenario_id) REFERENCES
+        subscenarios_system_water_inflows_bt_hrz (water_inflow_bt_hrz_scenario_id)
 );
 
 -- water_powerhouses
@@ -1961,6 +2293,71 @@ CREATE TABLE inputs_project_capacity_groups
 
 -- -- Operations -- --
 
+-- Operating characteristics temporal maps
+-- Optional, reusable maps for pointing timepoint-/horizon-indexed operating
+-- characteristics inputs (e.g., variable generator profiles, hydro
+-- operational characteristics) at data stored under other timepoints /
+-- horizons, so that repeating data does not need to be specified more than
+-- once (e.g., profiles specified for one period and repeated in all future
+-- periods, or a representative day repeated within a period).
+-- Maps are project-agnostic relations from the model's timepoint (horizon)
+-- to the timepoint (horizon) under which the data is stored in the
+-- respective inputs table; a timepoint (horizon) not listed in a map reads
+-- data at the timepoint (horizon) itself. Projects opt in per input type
+-- via the *_tmp_map_scenario_id / *_hrz_map_scenario_id columns of
+-- inputs_project_operational_chars below; a NULL map means the data must
+-- cover all model timepoints (horizons) directly.
+DROP TABLE IF EXISTS subscenarios_project_opchar_timepoint_map;
+CREATE TABLE subscenarios_project_opchar_timepoint_map
+(
+    opchar_timepoint_map_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name                             VARCHAR(32),
+    description                      VARCHAR(128)
+);
+
+-- The built-in calendar-hour map (reserved ID 0) has no rows in
+-- inputs_project_opchar_timepoint_map: it reads each timepoint's data at
+-- month * 10000 + day_of_month * 100 + hour_of_day (see
+-- gridpath.auxiliary.calendar_rows)
+INSERT INTO subscenarios_project_opchar_timepoint_map
+    (opchar_timepoint_map_scenario_id, name, description)
+VALUES (0, 'calendar_hour',
+        'Built-in: month * 10000 + day_of_month * 100 + hour_of_day');
+
+DROP TABLE IF EXISTS inputs_project_opchar_timepoint_map;
+CREATE TABLE inputs_project_opchar_timepoint_map
+(
+    opchar_timepoint_map_scenario_id INTEGER,
+    timepoint                        INTEGER,
+    data_timepoint                   INTEGER,
+    PRIMARY KEY (opchar_timepoint_map_scenario_id, timepoint),
+    FOREIGN KEY (opchar_timepoint_map_scenario_id) REFERENCES
+        subscenarios_project_opchar_timepoint_map
+            (opchar_timepoint_map_scenario_id)
+);
+
+DROP TABLE IF EXISTS subscenarios_project_opchar_horizon_map;
+CREATE TABLE subscenarios_project_opchar_horizon_map
+(
+    opchar_horizon_map_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name                           VARCHAR(32),
+    description                    VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_project_opchar_horizon_map;
+CREATE TABLE inputs_project_opchar_horizon_map
+(
+    opchar_horizon_map_scenario_id INTEGER,
+    balancing_type_horizon         VARCHAR(32),
+    horizon                        INTEGER,
+    data_horizon                   INTEGER,
+    PRIMARY KEY (opchar_horizon_map_scenario_id, balancing_type_horizon,
+                 horizon),
+    FOREIGN KEY (opchar_horizon_map_scenario_id) REFERENCES
+        subscenarios_project_opchar_horizon_map
+            (opchar_horizon_map_scenario_id)
+);
+
 -- Project operational characteristics
 -- These vary by operational type
 -- Generators that do not have certain characteristics (e.g. hydro does not
@@ -1989,6 +2386,7 @@ CREATE TABLE inputs_project_operational_chars
     variable_om_cost_per_mwh                              FLOAT,   -- simple variable O&M
     variable_om_cost_by_period_scenario_id                INTEGER, -- determines by period simple variable O&M
     variable_om_cost_by_timepoint_scenario_id             INTEGER, -- determines by tmp simple variable O&M
+    variable_om_cost_by_timepoint_tmp_map_scenario_id     INTEGER, -- optional timepoint map for by-tmp variable O&M
     project_fuel_scenario_id                              INTEGER,
     heat_rate_curves_scenario_id                          INTEGER, -- determined heat rate curve
     variable_om_curves_scenario_id                        INTEGER, -- determined variable O&M curve
@@ -2034,12 +2432,19 @@ CREATE TABLE inputs_project_operational_chars
     last_commitment_stage                                 INTEGER,
     n_startup_limit_scenario_id                           INTEGER,
     variable_generator_profile_scenario_id                INTEGER, -- determines var profiles
+    variable_generator_profile_tmp_map_scenario_id        INTEGER, -- optional timepoint map for var profiles
     cap_factor_default                                    FLOAT,
     curtailment_cost_scenario_id                          INTEGER,
     hydro_operational_chars_scenario_id                   INTEGER, -- determines hydro MWa, min, max
+    hydro_operational_chars_hrz_map_scenario_id           INTEGER, -- optional horizon map for hydro opchars
+    hydro_budget_allocation_scenario_id                   INTEGER, -- optional sub-horizon shares of the hydro energy budget
+    hydro_budget_allocation_hrz_map_scenario_id           INTEGER, -- optional horizon map for hydro budget allocation
     energy_profile_scenario_id                            INTEGER,
+    energy_profile_tmp_map_scenario_id                    INTEGER, -- optional timepoint map for energy profiles
     energy_hrz_shaping_scenario_id                        INTEGER,
+    energy_hrz_shaping_hrz_map_scenario_id                INTEGER, -- optional horizon map for energy hrz shaping
     energy_slice_hrz_shaping_scenario_id                  INTEGER,
+    energy_slice_hrz_shaping_hrz_map_scenario_id          INTEGER, -- optional horizon map for energy slice hrz shaping
     base_net_requirement_scenario_id                      INTEGER,
     peak_deviation_demand_charge_scenario_id              INTEGER,
     lf_reserves_up_derate                                 FLOAT,
@@ -2060,17 +2465,24 @@ CREATE TABLE inputs_project_operational_chars
     cap_factor_limits_scenario_id                         INTEGER,
     partial_availability_threshold                        FLOAT,
     stor_exog_state_of_charge_scenario_id                 INTEGER, -- determines storage SOC
+    stor_exog_state_of_charge_tmp_map_scenario_id         INTEGER, -- optional timepoint map for storage exog SOC
     nonfuel_carbon_emissions_per_mwh                      FLOAT,
     powerhouse                                            TEXT,
     generator_efficiency                                  FLOAT,
     linked_load_component                                 TEXT,
     load_modifier_profile_scenario_id                     INTEGER,
+    load_modifier_profile_tmp_map_scenario_id             INTEGER, -- optional timepoint map for load modifier profiles
     load_component_shift_bounds_scenario_id               INTEGER,
+    load_component_shift_bounds_hrz_map_scenario_id       INTEGER, -- optional horizon map for load component shift bounds
     efficiency_factor                                     FLOAT,
     energy_requirement_factor                             FLOAT,
     losses_factor_in_energy_target                        FLOAT,
     losses_factor_curtailment                             FLOAT,
     upward_reserves_to_soc_depletion                      FLOAT,
+    reserves_setpoint_duration_hours                      FLOAT,   -- hours the new setpoint must be sustainable if reserves are called; default: timepoint duration
+    energy_budget_balancing_type                          VARCHAR(32),  -- balancing type of the horizons over which energy budgets (e.g. hydro) apply; default in model: balancing_type_project
+    market                                                VARCHAR(32),  -- market whose price the marginal cost is compared to (gen_simple_strike_price)
+    dispatch_at_equal_cost                                INTEGER,      -- generate when the marginal cost equals the market price (gen_simple_strike_price); default in model: 0
     PRIMARY KEY (project_operational_chars_scenario_id, project),
     FOREIGN KEY (project_operational_chars_scenario_id) REFERENCES
         subscenarios_project_operational_chars (project_operational_chars_scenario_id),
@@ -2114,6 +2526,9 @@ CREATE TABLE inputs_project_operational_chars
     FOREIGN KEY (project, hydro_operational_chars_scenario_id) REFERENCES
         subscenarios_project_hydro_operational_chars
             (project, hydro_operational_chars_scenario_id),
+    FOREIGN KEY (project, hydro_budget_allocation_scenario_id) REFERENCES
+        subscenarios_project_hydro_budget_allocation
+            (project, hydro_budget_allocation_scenario_id),
     FOREIGN KEY (project, energy_profile_scenario_id) REFERENCES
         subscenarios_project_energy_profiles
             (project, energy_profile_scenario_id),
@@ -2149,6 +2564,37 @@ CREATE TABLE inputs_project_operational_chars
     FOREIGN KEY (project, load_modifier_profile_scenario_id) REFERENCES
         subscenarios_project_load_modifier_profiles (project,
                                                      load_modifier_profile_scenario_id),
+-- Ensure the referenced opchar timepoint/horizon maps exist
+    FOREIGN KEY (variable_om_cost_by_timepoint_tmp_map_scenario_id) REFERENCES
+        subscenarios_project_opchar_timepoint_map
+            (opchar_timepoint_map_scenario_id),
+    FOREIGN KEY (variable_generator_profile_tmp_map_scenario_id) REFERENCES
+        subscenarios_project_opchar_timepoint_map
+            (opchar_timepoint_map_scenario_id),
+    FOREIGN KEY (energy_profile_tmp_map_scenario_id) REFERENCES
+        subscenarios_project_opchar_timepoint_map
+            (opchar_timepoint_map_scenario_id),
+    FOREIGN KEY (stor_exog_state_of_charge_tmp_map_scenario_id) REFERENCES
+        subscenarios_project_opchar_timepoint_map
+            (opchar_timepoint_map_scenario_id),
+    FOREIGN KEY (load_modifier_profile_tmp_map_scenario_id) REFERENCES
+        subscenarios_project_opchar_timepoint_map
+            (opchar_timepoint_map_scenario_id),
+    FOREIGN KEY (hydro_operational_chars_hrz_map_scenario_id) REFERENCES
+        subscenarios_project_opchar_horizon_map
+            (opchar_horizon_map_scenario_id),
+    FOREIGN KEY (hydro_budget_allocation_hrz_map_scenario_id) REFERENCES
+        subscenarios_project_opchar_horizon_map
+            (opchar_horizon_map_scenario_id),
+    FOREIGN KEY (energy_hrz_shaping_hrz_map_scenario_id) REFERENCES
+        subscenarios_project_opchar_horizon_map
+            (opchar_horizon_map_scenario_id),
+    FOREIGN KEY (energy_slice_hrz_shaping_hrz_map_scenario_id) REFERENCES
+        subscenarios_project_opchar_horizon_map
+            (opchar_horizon_map_scenario_id),
+    FOREIGN KEY (load_component_shift_bounds_hrz_map_scenario_id) REFERENCES
+        subscenarios_project_opchar_horizon_map
+            (opchar_horizon_map_scenario_id),
     FOREIGN KEY (operational_type) REFERENCES mod_operational_types
         (operational_type)
 );
@@ -2199,8 +2645,8 @@ CREATE TABLE inputs_project_variable_om_cost_by_timepoint
 (
     project                                   VARCHAR(64),
     variable_om_cost_by_timepoint_scenario_id INTEGER,
-    weather_iteration                         INTEGER,
-    hydro_iteration                           INTEGER,
+    weather_iteration                         INTEGER NOT NULL,
+    hydro_iteration                           INTEGER NOT NULL,
     timepoint                                 INTEGER,
     variable_om_cost_by_timepoint             FLOAT,
     PRIMARY KEY (project, variable_om_cost_by_timepoint_scenario_id,
@@ -2450,9 +2896,9 @@ CREATE TABLE inputs_project_variable_generator_profiles
 (
     project                                VARCHAR(64),
     variable_generator_profile_scenario_id INTEGER,
-    weather_iteration                      INTEGER,
-    hydro_iteration                        INTEGER,
-    stage_id                               INTEGER,
+    weather_iteration                      INTEGER NOT NULL,
+    hydro_iteration                        INTEGER NOT NULL,
+    stage_id                               INTEGER NOT NULL,
     timepoint                              INTEGER,
     cap_factor                             FLOAT,
     PRIMARY KEY (project, variable_generator_profile_scenario_id,
@@ -2511,9 +2957,9 @@ CREATE TABLE inputs_project_hydro_operational_chars
 (
     project                             VARCHAR(64),
     hydro_operational_chars_scenario_id INTEGER,
-    weather_iteration                   INTEGER,
+    weather_iteration                   INTEGER NOT NULL,
     hydro_iteration                     INTEGER DEFAULT 0 NOT NULL,
-    stage_id                            INTEGER,
+    stage_id                            INTEGER NOT NULL,
     balancing_type_project              VARCHAR(64),
     horizon                             INTEGER,
     average_power_fraction              FLOAT,
@@ -2537,6 +2983,52 @@ CREATE TABLE inputs_project_hydro_operational_chars_iterations
     PRIMARY KEY (project, hydro_operational_chars_scenario_id)
 );
 
+-- Hydro energy-budget allocation limits: the minimum/maximum share of a
+-- project's horizon energy budget (see the hydro operational chars) that
+-- must/may be produced in each sub-horizon of that horizon. Sub-horizons are
+-- horizons of another balancing type in the temporal scenario, nested
+-- within the project's balancing-type horizons (e.g. each half of a month
+-- for a project with monthly budgets). NULL = limit not enforced.
+DROP TABLE IF EXISTS subscenarios_project_hydro_budget_allocation;
+CREATE TABLE subscenarios_project_hydro_budget_allocation
+(
+    project                             VARCHAR(64),
+    hydro_budget_allocation_scenario_id INTEGER,
+    name                                VARCHAR(32),
+    description                         VARCHAR(128),
+    PRIMARY KEY (project, hydro_budget_allocation_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_hydro_budget_allocation;
+CREATE TABLE inputs_project_hydro_budget_allocation
+(
+    project                             VARCHAR(64),
+    hydro_budget_allocation_scenario_id INTEGER,
+    weather_iteration                   INTEGER NOT NULL,
+    hydro_iteration                     INTEGER DEFAULT 0 NOT NULL,
+    stage_id                            INTEGER NOT NULL,
+    balancing_type_horizon              VARCHAR(64), -- the SUB-horizon's balancing type
+    horizon                             INTEGER,
+    min_budget_fraction                 FLOAT,
+    max_budget_fraction                 FLOAT,
+    PRIMARY KEY (project, hydro_budget_allocation_scenario_id,
+                 weather_iteration, hydro_iteration, stage_id,
+                 balancing_type_horizon, horizon),
+    FOREIGN KEY (project, hydro_budget_allocation_scenario_id) REFERENCES
+        subscenarios_project_hydro_budget_allocation
+            (project, hydro_budget_allocation_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_hydro_budget_allocation_iterations;
+CREATE TABLE inputs_project_hydro_budget_allocation_iterations
+(
+    project                             TEXT,
+    hydro_budget_allocation_scenario_id INTEGER,
+    varies_by_weather_iteration         INTEGER,
+    varies_by_hydro_iteration           INTEGER,
+    PRIMARY KEY (project, hydro_budget_allocation_scenario_id)
+);
+
 -- Energy profiles
 DROP TABLE IF EXISTS subscenarios_project_energy_profiles;
 CREATE TABLE subscenarios_project_energy_profiles
@@ -2557,9 +3049,9 @@ CREATE TABLE inputs_project_energy_profiles
 (
     project                    VARCHAR(64),
     energy_profile_scenario_id INTEGER,
-    weather_iteration          INTEGER,
-    hydro_iteration            INTEGER,
-    stage_id                   INTEGER,
+    weather_iteration          INTEGER NOT NULL,
+    hydro_iteration            INTEGER NOT NULL,
+    stage_id                   INTEGER NOT NULL,
     timepoint                  INTEGER,
     energy_fraction            FLOAT,
     PRIMARY KEY (project, energy_profile_scenario_id,
@@ -2607,9 +3099,9 @@ CREATE TABLE inputs_project_energy_hrz_shaping
 (
     project                        VARCHAR(64),
     energy_hrz_shaping_scenario_id INTEGER,
-    weather_iteration              INTEGER,
-    hydro_iteration                INTEGER,
-    stage_id                       INTEGER,
+    weather_iteration              INTEGER NOT NULL,
+    hydro_iteration                INTEGER NOT NULL,
+    stage_id                       INTEGER NOT NULL,
     balancing_type_project         TEXT,
     horizon                        INTEGER,
     hrz_energy_fraction            FLOAT,
@@ -2661,9 +3153,9 @@ CREATE TABLE inputs_project_energy_slice_hrz_shaping
 (
     project                              VARCHAR(64),
     energy_slice_hrz_shaping_scenario_id INTEGER,
-    weather_iteration                    INTEGER,
-    hydro_iteration                      INTEGER,
-    stage_id                             INTEGER,
+    weather_iteration                    INTEGER NOT NULL,
+    hydro_iteration                      INTEGER NOT NULL,
+    stage_id                             INTEGER NOT NULL,
     balancing_type_project               TEXT,
     horizon                              INTEGER,
     hrz_energy                           FLOAT,
@@ -2769,9 +3261,9 @@ CREATE TABLE inputs_project_load_modifier_profiles
 (
     project                           VARCHAR(64),
     load_modifier_profile_scenario_id INTEGER,
-    weather_iteration                 INTEGER,
-    hydro_iteration                   INTEGER,
-    stage_id                          INTEGER,
+    weather_iteration                 INTEGER NOT NULL,
+    hydro_iteration                   INTEGER NOT NULL,
+    stage_id                          INTEGER NOT NULL,
     timepoint                         INTEGER,
     fraction                          FLOAT,
     PRIMARY KEY (project, load_modifier_profile_scenario_id,
@@ -2809,8 +3301,8 @@ CREATE TABLE inputs_project_load_component_shift_bounds
 (
     project                                 VARCHAR(64),
     load_component_shift_bounds_scenario_id INTEGER,
-    weather_iteration                       INTEGER,
-    hydro_iteration                         INTEGER,
+    weather_iteration                       INTEGER NOT NULL,
+    hydro_iteration                         INTEGER NOT NULL,
     balancing_type_project                  VARCHAR(64), -- does not need to
     -- match project balancing type; column like this for legacy reasons
     horizon                                 INTEGER,
@@ -2852,9 +3344,9 @@ CREATE TABLE inputs_project_stor_exog_state_of_charge
 (
     project                               VARCHAR(64),
     stor_exog_state_of_charge_scenario_id INTEGER,
-    weather_iteration                     INTEGER,
-    hydro_iteration                       INTEGER,
-    stage_id                              INTEGER,
+    weather_iteration                     INTEGER NOT NULL,
+    hydro_iteration                       INTEGER NOT NULL,
+    stage_id                              INTEGER NOT NULL,
     timepoint                             INTEGER,
     exog_state_of_charge_mwh              FLOAT,
     PRIMARY KEY (project, stor_exog_state_of_charge_scenario_id,
@@ -3143,40 +3635,57 @@ CREATE TABLE inputs_project_availability
     project_availability_scenario_id                      INTEGER,
     project                                               VARCHAR(64),
     availability_type                                     VARCHAR(32),
-    exogenous_availability_independent_scenario_id        INTEGER,
+    default_exogenous_availability                        FLOAT,
+    exogenous_availability_outage_scenario_id        INTEGER,
     exogenous_availability_weather_scenario_id            INTEGER,
-    exogenous_availability_independent_bt_hrz_scenario_id INTEGER,
+    exogenous_availability_outage_bt_hrz_scenario_id INTEGER,
     exogenous_availability_weather_bt_hrz_scenario_id     INTEGER,
     exogenous_availability_monthly_scenario_id            INTEGER,
     endogenous_availability_scenario_id                   INTEGER,
     PRIMARY KEY (project_availability_scenario_id, project, availability_type)
 );
 
-DROP TABLE IF EXISTS subscenarios_project_availability_exogenous_independent;
-CREATE TABLE subscenarios_project_availability_exogenous_independent
+DROP TABLE IF EXISTS subscenarios_project_availability_exogenous_outage;
+CREATE TABLE subscenarios_project_availability_exogenous_outage
 (
     project                                        VARCHAR(64),
-    exogenous_availability_independent_scenario_id INTEGER,
+    exogenous_availability_outage_scenario_id INTEGER,
     name                                           VARCHAR(32),
     description                                    VARCHAR(128),
-    PRIMARY KEY (project, exogenous_availability_independent_scenario_id)
+    PRIMARY KEY (project, exogenous_availability_outage_scenario_id)
 );
 
-DROP TABLE IF EXISTS inputs_project_availability_exogenous_independent;
-CREATE TABLE inputs_project_availability_exogenous_independent
+DROP TABLE IF EXISTS inputs_project_availability_exogenous_outage;
+CREATE TABLE inputs_project_availability_exogenous_outage
 (
     project                                        VARCHAR(64),
-    exogenous_availability_independent_scenario_id INTEGER,
+    exogenous_availability_outage_scenario_id INTEGER,
+    -- 0 unless the project's data varies by the weather iteration (see the
+    -- _iterations table below)
+    weather_iteration                              INTEGER NOT NULL DEFAULT 0,
     availability_iteration                         INTEGER,
     stage_id                                       INTEGER,
     timepoint                                      INTEGER,
-    availability_derate_independent                FLOAT, -- for hybrids, this is the gen av
-    hyb_stor_cap_availability_derate_independent   FLOAT,
-    PRIMARY KEY (project, exogenous_availability_independent_scenario_id,
-                 availability_iteration, stage_id, timepoint),
-    FOREIGN KEY (project, exogenous_availability_independent_scenario_id)
-        REFERENCES subscenarios_project_availability_exogenous_independent
-            (project, exogenous_availability_independent_scenario_id)
+    availability_derate_outage                FLOAT, -- for hybrids, this is the gen av
+    hyb_stor_cap_availability_derate_outage   FLOAT,
+    PRIMARY KEY (project, exogenous_availability_outage_scenario_id,
+                 weather_iteration, availability_iteration, stage_id,
+                 timepoint),
+    FOREIGN KEY (project, exogenous_availability_outage_scenario_id)
+        REFERENCES subscenarios_project_availability_exogenous_outage
+            (project, exogenous_availability_outage_scenario_id)
+);
+
+-- Whether a project's outage derates vary by weather iteration (e.g.
+-- outages drawn against weather-dependent forced outage rates); a project
+-- without a row does not and its rows sit at weather_iteration 0
+DROP TABLE IF EXISTS inputs_project_availability_exogenous_outage_iterations;
+CREATE TABLE inputs_project_availability_exogenous_outage_iterations
+(
+    project                                        TEXT,
+    exogenous_availability_outage_scenario_id INTEGER,
+    varies_by_weather_iteration                    INTEGER,
+    PRIMARY KEY (project, exogenous_availability_outage_scenario_id)
 );
 
 DROP TABLE IF EXISTS subscenarios_project_availability_exogenous_weather;
@@ -3206,32 +3715,32 @@ CREATE TABLE inputs_project_availability_exogenous_weather
 );
 
 
-DROP TABLE IF EXISTS subscenarios_project_availability_exogenous_independent_bt_hrz;
-CREATE TABLE subscenarios_project_availability_exogenous_independent_bt_hrz
+DROP TABLE IF EXISTS subscenarios_project_availability_exogenous_outage_bt_hrz;
+CREATE TABLE subscenarios_project_availability_exogenous_outage_bt_hrz
 (
     project                                               VARCHAR(64),
-    exogenous_availability_independent_bt_hrz_scenario_id INTEGER,
+    exogenous_availability_outage_bt_hrz_scenario_id INTEGER,
     name                                                  VARCHAR(32),
     description                                           VARCHAR(128),
-    PRIMARY KEY (project, exogenous_availability_independent_bt_hrz_scenario_id)
+    PRIMARY KEY (project, exogenous_availability_outage_bt_hrz_scenario_id)
 );
 
-DROP TABLE IF EXISTS inputs_project_availability_exogenous_independent_bt_hrz;
-CREATE TABLE inputs_project_availability_exogenous_independent_bt_hrz
+DROP TABLE IF EXISTS inputs_project_availability_exogenous_outage_bt_hrz;
+CREATE TABLE inputs_project_availability_exogenous_outage_bt_hrz
 (
     project                                               VARCHAR(64),
-    exogenous_availability_independent_bt_hrz_scenario_id INTEGER,
+    exogenous_availability_outage_bt_hrz_scenario_id INTEGER,
     availability_iteration                                INTEGER,
     stage_id                                              INTEGER,
     balancing_type_project                                TEXT,
     horizon                                               INTEGER,
-    availability_derate_independent_bt_hrz                FLOAT,
-    PRIMARY KEY (project, exogenous_availability_independent_bt_hrz_scenario_id,
+    availability_derate_outage_bt_hrz                FLOAT,
+    PRIMARY KEY (project, exogenous_availability_outage_bt_hrz_scenario_id,
                  availability_iteration, stage_id, balancing_type_project,
                  horizon),
-    FOREIGN KEY (project, exogenous_availability_independent_bt_hrz_scenario_id)
-        REFERENCES subscenarios_project_availability_exogenous_independent_bt_hrz
-            (project, exogenous_availability_independent_bt_hrz_scenario_id)
+    FOREIGN KEY (project, exogenous_availability_outage_bt_hrz_scenario_id)
+        REFERENCES subscenarios_project_availability_exogenous_outage_bt_hrz
+            (project, exogenous_availability_outage_bt_hrz_scenario_id)
 );
 
 DROP TABLE IF EXISTS subscenarios_project_availability_exogenous_weather_bt_hrz;
@@ -3505,6 +4014,31 @@ CREATE TABLE inputs_project_energy_target_zones
     PRIMARY KEY (project_energy_target_zone_scenario_id, project),
     FOREIGN KEY (project_energy_target_zone_scenario_id) REFERENCES
         subscenarios_project_energy_target_zones (project_energy_target_zone_scenario_id)
+);
+
+-- Transmission energy target zones
+-- Which transmission lines' losses count against the energy target
+-- This table can include all tx lines with NULLs for tx lines not
+-- contributing or just the contributing tx lines
+DROP TABLE IF EXISTS subscenarios_transmission_energy_target_zones;
+CREATE TABLE subscenarios_transmission_energy_target_zones
+(
+    transmission_energy_target_zone_scenario_id INTEGER PRIMARY KEY,
+    name                                        VARCHAR(32),
+    description                                 VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_transmission_energy_target_zones;
+CREATE TABLE inputs_transmission_energy_target_zones
+(
+    transmission_energy_target_zone_scenario_id INTEGER,
+    transmission_line                           VARCHAR(64),
+    energy_target_zone                          VARCHAR(32),
+    PRIMARY KEY (transmission_energy_target_zone_scenario_id,
+                 transmission_line),
+    FOREIGN KEY (transmission_energy_target_zone_scenario_id) REFERENCES
+        subscenarios_transmission_energy_target_zones
+            (transmission_energy_target_zone_scenario_id)
 );
 
 -- Project instantaneous penetration zones
@@ -4282,9 +4816,17 @@ CREATE TABLE inputs_transmission_load_zones
         subscenarios_transmission_load_zones (transmission_load_zone_scenario_id)
 );
 
--- Carbon cap zones
--- This is needed if the carbon cap module is enabled and we want to track
--- emission imports
+-- Carbon Cap zones
+-- This is needed if the carbon cap module is enabled and we
+-- want to track emission imports. A line may appear in several zones, e.g.
+-- importing into the zone at one end and exporting from the zone at the other
+-- end, each row with its own import direction and intensities.
+-- The 'import_direction' says which flow direction is an import into the
+-- zone: 'positive' or 'negative' line flow.
+-- Imports count at the import intensity. Exports earn a credit at the export
+-- intensity only in zones with the 'net_prd' import-emissions basis (see
+-- inputs_geography_carbon_cap_zones); NULL export intensity means 0. The
+-- export intensity may not exceed the import intensity.
 DROP TABLE IF EXISTS subscenarios_transmission_carbon_cap_zones;
 CREATE TABLE subscenarios_transmission_carbon_cap_zones
 (
@@ -4302,13 +4844,16 @@ CREATE TABLE inputs_transmission_carbon_cap_zones
     import_direction                         VARCHAR(8),
     tmp_import_emissions_scenario_id         INTEGER, -- determines timepoint emissions scenario
     tx_co2_intensity_tons_per_mwh            FLOAT,
-    PRIMARY KEY (transmission_carbon_cap_zone_scenario_id, transmission_line),
+    tx_export_co2_intensity_tons_per_mwh     FLOAT,
+    PRIMARY KEY (transmission_carbon_cap_zone_scenario_id, transmission_line,
+                 carbon_cap_zone),
     FOREIGN KEY (transmission_carbon_cap_zone_scenario_id) REFERENCES
         subscenarios_transmission_carbon_cap_zones
             (transmission_carbon_cap_zone_scenario_id)
-
 );
 
+-- Timepoint-varying intensity adders for a line, added to the flat
+-- intensities of every zone row of the line that references the profile
 DROP TABLE IF EXISTS subscenarios_transmission_carbon_cap_timepoint_emissions;
 CREATE TABLE subscenarios_transmission_carbon_cap_timepoint_emissions
 (
@@ -4322,14 +4867,78 @@ CREATE TABLE subscenarios_transmission_carbon_cap_timepoint_emissions
 DROP TABLE IF EXISTS inputs_transmission_carbon_cap_timepoint_emissions;
 CREATE TABLE inputs_transmission_carbon_cap_timepoint_emissions
 (
-    transmission_line                    VARCHAR(64),
-    tmp_import_emissions_scenario_id     INTEGER,
-    timepoint                            INTEGER,
-    tx_co2_intensity_tons_per_mwh_hourly FLOAT,
+    transmission_line                           VARCHAR(64),
+    tmp_import_emissions_scenario_id            INTEGER,
+    timepoint                                   INTEGER,
+    tx_co2_intensity_tons_per_mwh_hourly        FLOAT,
+    tx_export_co2_intensity_tons_per_mwh_hourly FLOAT,
     PRIMARY KEY (transmission_line, tmp_import_emissions_scenario_id,
                  timepoint),
     FOREIGN KEY (transmission_line, tmp_import_emissions_scenario_id) REFERENCES
         subscenarios_transmission_carbon_cap_timepoint_emissions
+            (transmission_line, tmp_import_emissions_scenario_id)
+);
+
+-- Carbon Tax zones
+-- This is needed if the carbon tax module is enabled and we
+-- want to track emission imports. A line may appear in several zones, e.g.
+-- importing into the zone at one end and exporting from the zone at the other
+-- end, each row with its own import direction and intensities.
+-- The 'import_direction' says which flow direction is an import into the
+-- zone: 'positive' or 'negative' line flow.
+-- Imports count at the import intensity. Exports earn a credit at the export
+-- intensity only in zones with the 'net_prd' import-emissions basis (see
+-- inputs_geography_carbon_tax_zones); NULL export intensity means 0. The
+-- export intensity may not exceed the import intensity.
+DROP TABLE IF EXISTS subscenarios_transmission_carbon_tax_zones;
+CREATE TABLE subscenarios_transmission_carbon_tax_zones
+(
+    transmission_carbon_tax_zone_scenario_id INTEGER PRIMARY KEY,
+    name                                     VARCHAR(32),
+    description                              VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_transmission_carbon_tax_zones;
+CREATE TABLE inputs_transmission_carbon_tax_zones
+(
+    transmission_carbon_tax_zone_scenario_id INTEGER,
+    transmission_line                        VARCHAR(64),
+    carbon_tax_zone                          VARCHAR(32),
+    import_direction                         VARCHAR(8),
+    tmp_import_emissions_scenario_id         INTEGER, -- determines timepoint emissions scenario
+    tx_co2_intensity_tons_per_mwh            FLOAT,
+    tx_export_co2_intensity_tons_per_mwh     FLOAT,
+    PRIMARY KEY (transmission_carbon_tax_zone_scenario_id, transmission_line,
+                 carbon_tax_zone),
+    FOREIGN KEY (transmission_carbon_tax_zone_scenario_id) REFERENCES
+        subscenarios_transmission_carbon_tax_zones
+            (transmission_carbon_tax_zone_scenario_id)
+);
+
+-- Timepoint-varying intensity adders for a line, added to the flat
+-- intensities of every zone row of the line that references the profile
+DROP TABLE IF EXISTS subscenarios_transmission_carbon_tax_timepoint_emissions;
+CREATE TABLE subscenarios_transmission_carbon_tax_timepoint_emissions
+(
+    transmission_line                VARCHAR(64),
+    tmp_import_emissions_scenario_id INTEGER,
+    name                             VARCHAR(32),
+    description                      VARCHAR(128),
+    PRIMARY KEY (transmission_line, tmp_import_emissions_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_transmission_carbon_tax_timepoint_emissions;
+CREATE TABLE inputs_transmission_carbon_tax_timepoint_emissions
+(
+    transmission_line                           VARCHAR(64),
+    tmp_import_emissions_scenario_id            INTEGER,
+    timepoint                                   INTEGER,
+    tx_co2_intensity_tons_per_mwh_hourly        FLOAT,
+    tx_export_co2_intensity_tons_per_mwh_hourly FLOAT,
+    PRIMARY KEY (transmission_line, tmp_import_emissions_scenario_id,
+                 timepoint),
+    FOREIGN KEY (transmission_line, tmp_import_emissions_scenario_id) REFERENCES
+        subscenarios_transmission_carbon_tax_timepoint_emissions
             (transmission_line, tmp_import_emissions_scenario_id)
 );
 
@@ -4511,12 +5120,41 @@ CREATE TABLE inputs_transmission_operational_chars
     tx_simple_loss_factor                      FLOAT,
     losses_tuning_cost_per_mw                  FLOAT,
     reactance_ohms                             FLOAT,
+    tx_curtailment_cost_scenario_id            INTEGER,
+    tx_losses_factor_curtailment               FLOAT,
     PRIMARY KEY (transmission_operational_chars_scenario_id, transmission_line),
     FOREIGN KEY (transmission_operational_chars_scenario_id) REFERENCES
         subscenarios_transmission_operational_chars
             (transmission_operational_chars_scenario_id),
     FOREIGN KEY (operational_type) REFERENCES mod_tx_operational_types
-        (operational_type)
+        (operational_type),
+    FOREIGN KEY (transmission_line, tx_curtailment_cost_scenario_id) REFERENCES
+        subscenarios_transmission_curtailment_cost
+            (transmission_line, tx_curtailment_cost_scenario_id)
+);
+
+-- Curtailment cost (applied to transmission losses)
+DROP TABLE IF EXISTS subscenarios_transmission_curtailment_cost;
+CREATE TABLE subscenarios_transmission_curtailment_cost
+(
+    transmission_line               VARCHAR(64),
+    tx_curtailment_cost_scenario_id INTEGER,
+    name                             VARCHAR(32),
+    description                      VARCHAR(128),
+    PRIMARY KEY (transmission_line, tx_curtailment_cost_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_transmission_curtailment_cost;
+CREATE TABLE inputs_transmission_curtailment_cost
+(
+    transmission_line                     VARCHAR(64),
+    tx_curtailment_cost_scenario_id       INTEGER,
+    period                                 INTEGER, -- 0 means it's the same for all periods
+    tx_curtailment_cost_per_powerunithour FLOAT,
+    PRIMARY KEY (transmission_line, tx_curtailment_cost_scenario_id, period),
+    FOREIGN KEY (transmission_line, tx_curtailment_cost_scenario_id) REFERENCES
+        subscenarios_transmission_curtailment_cost
+            (transmission_line, tx_curtailment_cost_scenario_id)
 );
 
 -- Hurdle rates
@@ -5593,6 +6231,32 @@ CREATE TABLE inputs_project_policy_zones
         subscenarios_project_policy_zones (project_policy_zone_scenario_id)
 );
 
+-- Transmission lines, policy, policy_zones
+-- Which transmission lines count toward which policies and "zones" (e.g.
+-- via their losses to avoid "delivering" policy-eligible energy via Tx losses)
+DROP TABLE IF EXISTS subscenarios_transmission_policy_zones;
+CREATE TABLE subscenarios_transmission_policy_zones
+(
+    transmission_policy_zone_scenario_id INTEGER PRIMARY KEY,
+    name                                 VARCHAR(32),
+    description                          VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_transmission_policy_zones;
+CREATE TABLE inputs_transmission_policy_zones
+(
+    transmission_policy_zone_scenario_id INTEGER,
+    transmission_line                    TEXT,
+    policy_name                          TEXT,
+    policy_zone                          TEXT,
+    compliance_type                      TEXT,
+    PRIMARY KEY (transmission_policy_zone_scenario_id, transmission_line,
+                 policy_name, policy_zone),
+    FOREIGN KEY (transmission_policy_zone_scenario_id) REFERENCES
+        subscenarios_transmission_policy_zones
+            (transmission_policy_zone_scenario_id)
+);
+
 DROP TABLE IF EXISTS subscenarios_project_policy_exceedance_values;
 CREATE TABLE subscenarios_project_policy_exceedance_values
 (
@@ -5849,6 +6513,7 @@ CREATE TABLE scenarios
     project_spinning_reserves_ba_scenario_id                    INTEGER,
     project_inertia_reserves_ba_scenario_id                     INTEGER,
     project_energy_target_zone_scenario_id                      INTEGER,
+    transmission_energy_target_zone_scenario_id                 INTEGER,
     project_instantaneous_penetration_zone_scenario_id          INTEGER,
     tx_line_transmission_target_zone_scenario_id                INTEGER,
     project_carbon_cap_zone_scenario_id                         INTEGER,
@@ -5862,6 +6527,7 @@ CREATE TABLE scenarios
     project_fuel_burn_limit_ba_scenario_id                      INTEGER,
     fuel_fuel_burn_limit_ba_scenario_id                         INTEGER,
     project_policy_zone_scenario_id                             INTEGER,
+    transmission_policy_zone_scenario_id                        INTEGER,
     project_prm_zone_scenario_id                                INTEGER,
     prm_capacity_transfer_scenario_id                           INTEGER,
     prm_capacity_transfer_params_scenario_id                    INTEGER,
@@ -5922,12 +6588,15 @@ CREATE TABLE scenarios
     local_capacity_requirement_scenario_id                      INTEGER,
     elcc_surface_scenario_id                                    INTEGER,
     market_price_scenario_id                                    INTEGER,
+    market_group_scenario_id                                    INTEGER,
     market_volume_scenario_id                                   INTEGER,
-    market_volume_total_in_tmp_scenario_id                      INTEGER,
-    market_volume_total_in_prd_scenario_id                      INTEGER,
+    market_carbon_cap_zone_scenario_id                          INTEGER,
+    transmission_carbon_tax_zone_scenario_id                    INTEGER,
+    market_carbon_tax_zone_scenario_id                          INTEGER,
     water_node_reservoir_scenario_id                            INTEGER,
     water_flow_scenario_id                                      INTEGER,
-    water_inflow_scenario_id                                    INTEGER,
+    water_inflow_tmp_scenario_id                                    INTEGER,
+    water_inflow_bt_hrz_scenario_id                             INTEGER,
     water_powerhouse_scenario_id                                INTEGER,
     tuning_scenario_id                                          INTEGER,
     solver_options_id                                           INTEGER,
@@ -6032,6 +6701,9 @@ CREATE TABLE scenarios
     FOREIGN KEY (project_energy_target_zone_scenario_id) REFERENCES
         subscenarios_project_energy_target_zones
             (project_energy_target_zone_scenario_id),
+    FOREIGN KEY (transmission_energy_target_zone_scenario_id) REFERENCES
+        subscenarios_transmission_energy_target_zones
+            (transmission_energy_target_zone_scenario_id),
     FOREIGN KEY (project_instantaneous_penetration_zone_scenario_id) REFERENCES
         subscenarios_project_instantaneous_penetration_zones
             (project_instantaneous_penetration_zone_scenario_id),
@@ -6070,6 +6742,9 @@ CREATE TABLE scenarios
             (fuel_fuel_burn_limit_ba_scenario_id),
     FOREIGN KEY (project_policy_zone_scenario_id) REFERENCES
         subscenarios_project_policy_zones (project_policy_zone_scenario_id),
+    FOREIGN KEY (transmission_policy_zone_scenario_id) REFERENCES
+        subscenarios_transmission_policy_zones
+            (transmission_policy_zone_scenario_id),
     FOREIGN KEY (project_prm_zone_scenario_id) REFERENCES
         subscenarios_project_prm_zones (project_prm_zone_scenario_id),
     FOREIGN KEY (transmission_prm_zone_scenario_id) REFERENCES
@@ -6218,20 +6893,25 @@ CREATE TABLE scenarios
             (local_capacity_requirement_scenario_id),
     FOREIGN KEY (market_price_scenario_id) REFERENCES
         subscenarios_market_prices (market_price_scenario_id),
+    FOREIGN KEY (market_group_scenario_id) REFERENCES
+        subscenarios_market_groups (market_group_scenario_id),
     FOREIGN KEY (market_volume_scenario_id) REFERENCES
         subscenarios_market_volume (market_volume_scenario_id),
-    FOREIGN KEY (market_volume_total_in_tmp_scenario_id) REFERENCES
-        subscenarios_market_volume_totals_in_tmp
-            (market_volume_total_in_tmp_scenario_id),
-    FOREIGN KEY (market_volume_total_in_prd_scenario_id) REFERENCES
-        subscenarios_market_volume_totals_in_prd
-            (market_volume_total_in_prd_scenario_id),
+    FOREIGN KEY (market_carbon_cap_zone_scenario_id) REFERENCES
+        subscenarios_market_carbon_cap_zones (market_carbon_cap_zone_scenario_id),
+    FOREIGN KEY (transmission_carbon_tax_zone_scenario_id) REFERENCES
+        subscenarios_transmission_carbon_tax_zones
+            (transmission_carbon_tax_zone_scenario_id),
+    FOREIGN KEY (market_carbon_tax_zone_scenario_id) REFERENCES
+        subscenarios_market_carbon_tax_zones (market_carbon_tax_zone_scenario_id),
     FOREIGN KEY (water_node_reservoir_scenario_id) REFERENCES
         subscenarios_system_water_node_reservoirs (water_node_reservoir_scenario_id),
     FOREIGN KEY (water_flow_scenario_id) REFERENCES
         subscenarios_system_water_flows (water_flow_scenario_id),
-    FOREIGN KEY (water_inflow_scenario_id) REFERENCES
-        subscenarios_system_water_inflows (water_inflow_scenario_id),
+    FOREIGN KEY (water_inflow_tmp_scenario_id) REFERENCES
+        subscenarios_system_water_inflows (water_inflow_tmp_scenario_id),
+    FOREIGN KEY (water_inflow_bt_hrz_scenario_id) REFERENCES
+        subscenarios_system_water_inflows_bt_hrz (water_inflow_bt_hrz_scenario_id),
     FOREIGN KEY (water_powerhouse_scenario_id) REFERENCES
         subscenarios_system_water_powerhouses (water_powerhouse_scenario_id),
     FOREIGN KEY (tuning_scenario_id) REFERENCES
@@ -6307,6 +6987,18 @@ CREATE TABLE results_project_period
     capacity_cost                          FLOAT,
     capacity_cost_wo_spinup_or_lookahead   FLOAT,
     fixed_cost                             FLOAT,
+    min_new_build_power                    FLOAT,
+    max_new_build_power                    FLOAT,
+    min_capacity_power                     FLOAT,
+    max_capacity_power                     FLOAT,
+    min_new_build_stor_energy              FLOAT,
+    max_new_build_stor_energy              FLOAT,
+    min_capacity_stor_energy               FLOAT,
+    max_capacity_stor_energy               FLOAT,
+    min_new_procured_energy                FLOAT,
+    max_new_procured_energy                FLOAT,
+    min_total_procured_energy              FLOAT,
+    max_total_procured_energy              FLOAT,
     min_build_power_dual                   FLOAT,
     max_build_power_dual                   FLOAT,
     min_total_power_dual                   FLOAT,
@@ -6319,11 +7011,50 @@ CREATE TABLE results_project_period
     max_build_energy_dual                  FLOAT,
     min_total_energy_dual                  FLOAT,
     max_total_energy_dual                  FLOAT,
+    min_build_power_marginal_cost_per_mw   FLOAT,
+    max_build_power_marginal_cost_per_mw   FLOAT,
+    min_total_power_marginal_cost_per_mw   FLOAT,
+    max_total_power_marginal_cost_per_mw   FLOAT,
+    min_build_stor_energy_marginal_cost_per_mwh FLOAT,
+    max_build_stor_energy_marginal_cost_per_mwh FLOAT,
+    min_total_stor_energy_marginal_cost_per_mwh FLOAT,
+    max_total_stor_energy_marginal_cost_per_mwh FLOAT,
+    min_build_energy_marginal_cost_per_mwh FLOAT,
+    max_build_energy_marginal_cost_per_mwh FLOAT,
+    min_total_energy_marginal_cost_per_mwh FLOAT,
+    max_total_energy_marginal_cost_per_mwh FLOAT,
     carbon_credits_zone                    VARCHAR(32),
     carbon_credits_generated_tCO2          FLOAT,
     carbon_credits_purchased_tCO2          FLOAT,
+    stor_stress_hrz_avg_hrz_stored_energy_mwh     FLOAT,
     PRIMARY KEY (scenario_id, project, weather_iteration, hydro_iteration,
                  availability_iteration, period, subproblem_id, stage_id)
+);
+
+-- Total power output of a group of projects in each timepoint, with the
+-- limits and the duals of the constraints enforcing them
+DROP TABLE IF EXISTS results_project_group_power;
+CREATE TABLE results_project_group_power
+(
+    scenario_id                          INTEGER,
+    weather_iteration                    INTEGER,
+    hydro_iteration                      INTEGER,
+    availability_iteration               INTEGER,
+    subproblem_id                        INTEGER,
+    stage_id                             INTEGER,
+    power_output_group                   VARCHAR(64),
+    timepoint                            INTEGER,
+    period                               INTEGER,
+    group_power_mw                       FLOAT,
+    power_output_group_power_output_min  FLOAT,
+    power_output_group_power_output_max  FLOAT,
+    power_output_group_max_dual          FLOAT,
+    power_output_group_min_dual          FLOAT,
+    power_output_group_max_marginal_cost FLOAT,
+    power_output_group_min_marginal_cost FLOAT,
+    PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
+                 availability_iteration, subproblem_id, stage_id,
+                 power_output_group, timepoint)
 );
 
 DROP TABLE IF EXISTS results_project_group_capacity;
@@ -6431,6 +7162,9 @@ CREATE TABLE results_project_timepoint
     produce_fuel_fuelunitperhour                    FLOAT,
     release_fuel_fuelunitperhour                    FLOAT,
     fuel_prod_power_consumption_powerunit           FLOAT,
+    strike_price_marginal_cost_per_mwh              FLOAT,
+    strike_price_market_price_per_mwh               FLOAT,
+    strike_price_online                             FLOAT,
     variable_om_cost                                FLOAT,
     fuel_cost                                       FLOAT,
     startup_cost                                    FLOAT,
@@ -6489,6 +7223,28 @@ CREATE TABLE results_project_policy_zone_timepoint
     PRIMARY KEY (scenario_id, project, weather_iteration, hydro_iteration,
                  availability_iteration, subproblem_id, stage_id,
                  policy_name, policy_zone, timepoint)
+);
+
+DROP TABLE IF EXISTS results_transmission_policy_zone_timepoint;
+CREATE TABLE results_transmission_policy_zone_timepoint
+(
+    scenario_id            INTEGER,
+    transmission_line      VARCHAR(64),
+    weather_iteration      INTEGER,
+    hydro_iteration        INTEGER,
+    availability_iteration INTEGER,
+    policy_name            TEXT,
+    policy_zone            TEXT,
+    timepoint              INTEGER,
+    timepoint_weight       FLOAT,
+    hours_in_timepoint     FLOAT,
+    period                 INTEGER,
+    subproblem_id          INTEGER,
+    stage_id               INTEGER,
+    policy_contribution    FLOAT,
+    PRIMARY KEY (scenario_id, transmission_line, weather_iteration,
+                 hydro_iteration, availability_iteration, subproblem_id,
+                 stage_id, policy_name, policy_zone, timepoint)
 );
 
 DROP TABLE IF EXISTS results_project_curtailment_variable_periodagg;
@@ -6553,6 +7309,37 @@ CREATE TABLE results_project_cap_factor_limits
     max_cap_factor         FLOAT,
     actual_power_provision_mwh,
     possible_power_provision_mwh,
+    PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
+                 availability_iteration, subproblem_id, stage_id, project,
+                 balancing_type_horizon, horizon)
+);
+
+-- Hydro energy-budget allocation: the realized share of each parent
+-- horizon's energy budget in each sub-horizon with allocation limits, with
+-- the limits themselves and the duals of the constraints enforcing them (a
+-- limit that was not specified has no constraint and therefore no dual).
+-- Both hydro operational types write into this table.
+DROP TABLE IF EXISTS results_project_hydro_budget_allocation;
+CREATE TABLE results_project_hydro_budget_allocation
+(
+    scenario_id                   INTEGER,
+    weather_iteration             INTEGER,
+    hydro_iteration               INTEGER,
+    availability_iteration        INTEGER,
+    subproblem_id                 INTEGER,
+    stage_id                      INTEGER,
+    project                       VARCHAR(64),
+    balancing_type_horizon        VARCHAR(64),
+    horizon                       INTEGER,
+    parent_balancing_type_horizon VARCHAR(64),
+    parent_horizon                INTEGER,
+    min_budget_fraction           FLOAT,
+    max_budget_fraction           FLOAT,
+    energy_mwh                    FLOAT,
+    parent_budget_mwh             FLOAT,
+    budget_share                  FLOAT,
+    min_constraint_dual           FLOAT,
+    max_constraint_dual           FLOAT,
     PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
                  availability_iteration, subproblem_id, stage_id, project,
                  balancing_type_horizon, horizon)
@@ -6910,11 +7697,17 @@ CREATE TABLE results_transmission_period
     min_mw                               FLOAT,
     max_mw                               FLOAT,
     new_build_capacity_mw                FLOAT,
+    min_cumulative_new_build_mw          FLOAT,
+    max_cumulative_new_build_mw          FLOAT,
     hours_in_period_timepoints           FLOAT,
     hours_in_subproblem_period           FLOAT,
     capacity_cost                        FLOAT,
     fixed_cost                           FLOAT,
     capacity_cost_wo_spinup_or_lookahead FLOAT,
+    min_cum_build_dual                   FLOAT,
+    max_cum_build_dual                   FLOAT,
+    min_cum_build_marginal_cost_per_mw   FLOAT,
+    max_cum_build_marginal_cost_per_mw   FLOAT,
     PRIMARY KEY (scenario_id, transmission_line, period, weather_iteration,
                  hydro_iteration, availability_iteration, subproblem_id,
                  stage_id)
@@ -6935,6 +7728,8 @@ CREATE TABLE results_transmission_group_capacity
     group_new_capacity                           FLOAT,
     transmission_capacity_group_new_capacity_min FLOAT,
     transmission_capacity_group_new_capacity_max FLOAT,
+    transmission_capacity_group_new_max_dual     FLOAT,
+    transmission_capacity_group_new_min_dual     FLOAT,
     PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
                  availability_iteration, subproblem_id, stage_id,
                  transmission_capacity_group, period)
@@ -6992,8 +7787,6 @@ CREATE TABLE results_transmission_timepoint
     transmission_target_zone                         VARCHAR(32),
     transmission_target_energy_positive_direction_mw FLOAT,
     transmission_target_energy_negative_direction_mw FLOAT,
-    carbon_emission_imports_tons                     FLOAT,
-    carbon_emission_imports_tons_degen               FLOAT,
     PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
                  availability_iteration, subproblem_id, stage_id,
                  transmission_line, timepoint)
@@ -7088,6 +7881,8 @@ CREATE TABLE results_system_load_zone_timepoint
     timepoint                         INTEGER,
     period                            INTEGER,
     discount_factor                   FLOAT,
+    probability                       FLOAT,
+    probability_weighted_discount_factor FLOAT,
     number_years_represented          FLOAT,
     timepoint_weight                  FLOAT,
     number_of_hours_in_timepoint      FLOAT,
@@ -7243,6 +8038,8 @@ CREATE TABLE results_system_market_participation
     timepoint                    INTEGER,
     period                       INTEGER,
     discount_factor              FLOAT,
+    probability                  FLOAT,
+    probability_weighted_discount_factor FLOAT,
     number_years_represented     FLOAT,
     timepoint_weight             FLOAT,
     number_of_hours_in_timepoint FLOAT,
@@ -7281,6 +8078,137 @@ CREATE TABLE results_system_market_summary
                  stage_id, period, month)
 );
 
+-- Market volume limits by market group, the quantity they constrain, and
+-- the duals of the constraints enforcing them (a limit left at its default
+-- of infinity is not enforced and so has no dual)
+DROP TABLE IF EXISTS results_system_market_volume_tmp;
+CREATE TABLE results_system_market_volume_tmp
+(
+    scenario_id                                    INTEGER,
+    weather_iteration                              INTEGER,
+    hydro_iteration                                INTEGER,
+    availability_iteration                         INTEGER,
+    subproblem_id                                  INTEGER,
+    stage_id                                       INTEGER,
+    market_group                                   VARCHAR(32),
+    basis                                          VARCHAR(8),
+    timepoint                                      INTEGER,
+    period                                         INTEGER,
+    net_market_purchased_power_mw                  FLOAT,
+    final_net_market_purchased_power_mw            FLOAT,
+    gross_market_sales_mw                          FLOAT,
+    gross_market_purchases_mw                      FLOAT,
+    final_gross_market_sales_mw                    FLOAT,
+    final_gross_market_purchases_mw                FLOAT,
+    max_market_purchases                           FLOAT,
+    max_market_sales                               FLOAT,
+    max_final_market_purchases                     FLOAT,
+    max_final_market_sales                         FLOAT,
+    max_market_purchases_dual                      FLOAT,
+    max_market_sales_dual                          FLOAT,
+    max_final_market_purchases_dual                FLOAT,
+    max_final_market_sales_dual                    FLOAT,
+    max_market_purchases_marginal_cost             FLOAT,
+    max_market_sales_marginal_cost                 FLOAT,
+    max_final_market_purchases_marginal_cost       FLOAT,
+    max_final_market_sales_marginal_cost           FLOAT,
+    PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
+                 availability_iteration, subproblem_id, stage_id,
+                 market_group, basis, timepoint)
+);
+
+DROP TABLE IF EXISTS results_system_market_volume_hrz_to_tmp;
+CREATE TABLE results_system_market_volume_hrz_to_tmp
+(
+    scenario_id                                    INTEGER,
+    weather_iteration                              INTEGER,
+    hydro_iteration                                INTEGER,
+    availability_iteration                         INTEGER,
+    subproblem_id                                  INTEGER,
+    stage_id                                       INTEGER,
+    market_group                                   VARCHAR(32),
+    basis                                          VARCHAR(8),
+    balancing_type_horizon                         VARCHAR(32),
+    horizon                                        INTEGER,
+    timepoint                                      INTEGER,
+    period                                         INTEGER,
+    net_market_purchased_power_mw                  FLOAT,
+    final_net_market_purchased_power_mw            FLOAT,
+    gross_market_sales_mw                          FLOAT,
+    gross_market_purchases_mw                      FLOAT,
+    final_gross_market_sales_mw                    FLOAT,
+    final_gross_market_purchases_mw                FLOAT,
+    max_market_purchases                           FLOAT,
+    max_market_sales                               FLOAT,
+    max_final_market_purchases                     FLOAT,
+    max_final_market_sales                         FLOAT,
+    max_market_purchases_dual                      FLOAT,
+    max_market_sales_dual                          FLOAT,
+    max_final_market_purchases_dual                FLOAT,
+    max_final_market_sales_dual                    FLOAT,
+    max_market_purchases_marginal_cost             FLOAT,
+    max_market_sales_marginal_cost                 FLOAT,
+    max_final_market_purchases_marginal_cost       FLOAT,
+    max_final_market_sales_marginal_cost           FLOAT,
+    PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
+                 availability_iteration, subproblem_id, stage_id,
+                 market_group, basis, balancing_type_horizon, horizon,
+                 timepoint)
+);
+
+DROP TABLE IF EXISTS results_system_market_volume_hrz;
+CREATE TABLE results_system_market_volume_hrz
+(
+    scenario_id                                    INTEGER,
+    weather_iteration                              INTEGER,
+    hydro_iteration                                INTEGER,
+    availability_iteration                         INTEGER,
+    subproblem_id                                  INTEGER,
+    stage_id                                       INTEGER,
+    market_group                                   VARCHAR(32),
+    basis                                          VARCHAR(8),
+    balancing_type_horizon                         VARCHAR(32),
+    horizon                                        INTEGER,
+    net_market_purchased_power_mwh                 FLOAT,
+    gross_market_sales_mwh                         FLOAT,
+    gross_market_purchases_mwh                     FLOAT,
+    max_market_purchases_in_hrz                    FLOAT,
+    max_market_sales_in_hrz                        FLOAT,
+    max_market_purchases_in_hrz_dual               FLOAT,
+    max_market_sales_in_hrz_dual                   FLOAT,
+    max_market_purchases_in_hrz_marginal_cost      FLOAT,
+    max_market_sales_in_hrz_marginal_cost          FLOAT,
+    PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
+                 availability_iteration, subproblem_id, stage_id,
+                 market_group, basis, balancing_type_horizon, horizon)
+);
+
+DROP TABLE IF EXISTS results_system_market_volume_prd;
+CREATE TABLE results_system_market_volume_prd
+(
+    scenario_id                                    INTEGER,
+    weather_iteration                              INTEGER,
+    hydro_iteration                                INTEGER,
+    availability_iteration                         INTEGER,
+    subproblem_id                                  INTEGER,
+    stage_id                                       INTEGER,
+    market_group                                   VARCHAR(32),
+    basis                                          VARCHAR(8),
+    period                                         INTEGER,
+    net_market_purchased_power_mwh                 FLOAT,
+    gross_market_sales_mwh                         FLOAT,
+    gross_market_purchases_mwh                     FLOAT,
+    max_market_purchases_in_prd                    FLOAT,
+    max_market_sales_in_prd                        FLOAT,
+    max_market_purchases_in_prd_dual               FLOAT,
+    max_market_sales_in_prd_dual                   FLOAT,
+    max_market_purchases_in_prd_marginal_cost      FLOAT,
+    max_market_sales_in_prd_marginal_cost          FLOAT,
+    PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
+                 availability_iteration, subproblem_id, stage_id,
+                 market_group, basis, period)
+);
+
 DROP TABLE IF EXISTS results_system_lf_reserves_up;
 CREATE TABLE results_system_lf_reserves_up
 (
@@ -7294,6 +8222,8 @@ CREATE TABLE results_system_lf_reserves_up
     stage_id                     INTEGER,
     timepoint                    INTEGER,
     discount_factor              FLOAT,
+    probability                  FLOAT,
+    probability_weighted_discount_factor FLOAT,
     number_years_represented     FLOAT,
     timepoint_weight             FLOAT,
     number_of_hours_in_timepoint FLOAT,
@@ -7321,6 +8251,8 @@ CREATE TABLE results_system_lf_reserves_down
     stage_id                     INTEGER,
     timepoint                    INTEGER,
     discount_factor              FLOAT,
+    probability                  FLOAT,
+    probability_weighted_discount_factor FLOAT,
     number_years_represented     FLOAT,
     timepoint_weight             FLOAT,
     number_of_hours_in_timepoint FLOAT,
@@ -7348,6 +8280,8 @@ CREATE TABLE results_system_regulation_up
     stage_id                     INTEGER,
     timepoint                    INTEGER,
     discount_factor              FLOAT,
+    probability                  FLOAT,
+    probability_weighted_discount_factor FLOAT,
     number_years_represented     FLOAT,
     timepoint_weight             FLOAT,
     number_of_hours_in_timepoint FLOAT,
@@ -7375,6 +8309,8 @@ CREATE TABLE results_system_regulation_down
     stage_id                     INTEGER,
     timepoint                    INTEGER,
     discount_factor              FLOAT,
+    probability                  FLOAT,
+    probability_weighted_discount_factor FLOAT,
     number_years_represented     FLOAT,
     timepoint_weight             FLOAT,
     number_of_hours_in_timepoint FLOAT,
@@ -7402,6 +8338,8 @@ CREATE TABLE results_system_frequency_response
     stage_id                     INTEGER,
     timepoint                    INTEGER,
     discount_factor              FLOAT,
+    probability                  FLOAT,
+    probability_weighted_discount_factor FLOAT,
     number_years_represented     FLOAT,
     timepoint_weight             FLOAT,
     number_of_hours_in_timepoint FLOAT,
@@ -7431,6 +8369,8 @@ CREATE TABLE results_system_frequency_response_partial
     stage_id                      INTEGER,
     timepoint                     INTEGER,
     discount_factor               FLOAT,
+    probability                   FLOAT,
+    probability_weighted_discount_factor FLOAT,
     number_years_represented      FLOAT,
     timepoint_weight              FLOAT,
     number_of_hours_in_timepoint  FLOAT,
@@ -7458,6 +8398,8 @@ CREATE TABLE results_system_spinning_reserves
     stage_id                     INTEGER,
     timepoint                    INTEGER,
     discount_factor              FLOAT,
+    probability                  FLOAT,
+    probability_weighted_discount_factor FLOAT,
     number_years_represented     FLOAT,
     timepoint_weight             FLOAT,
     number_of_hours_in_timepoint FLOAT,
@@ -7485,6 +8427,8 @@ CREATE TABLE results_system_inertia_reserves
     stage_id                     INTEGER,
     timepoint                    INTEGER,
     discount_factor              FLOAT,
+    probability                  FLOAT,
+    probability_weighted_discount_factor FLOAT,
     number_years_represented     FLOAT,
     timepoint_weight             FLOAT,
     number_of_hours_in_timepoint FLOAT,
@@ -7497,6 +8441,130 @@ CREATE TABLE results_system_inertia_reserves
     PRIMARY KEY (scenario_id, inertia_reserves_ba, weather_iteration,
                  hydro_iteration, availability_iteration,
                  subproblem_id, stage_id, timepoint)
+);
+
+-- Import emissions per line, carbon cap zone and
+-- timepoint. The '_degen' columns recompute from the solved flows; the model
+-- value may exceed them where nothing pushes the import variables down.
+DROP TABLE IF EXISTS results_transmission_carbon_cap_imports;
+CREATE TABLE results_transmission_carbon_cap_imports
+(
+    scenario_id                              INTEGER,
+    weather_iteration                        INTEGER,
+    hydro_iteration                          INTEGER,
+    availability_iteration                   INTEGER,
+    subproblem_id                            INTEGER,
+    stage_id                                 INTEGER,
+    transmission_line                        VARCHAR(64),
+    carbon_cap_zone                          VARCHAR(32),
+    timepoint                                INTEGER,
+    period                                   INTEGER,
+    timepoint_weight                         FLOAT,
+    number_of_hours_in_timepoint             FLOAT,
+    import_direction                         VARCHAR(8),
+    import_co2_intensity_tons_per_mwh        FLOAT,
+    export_co2_intensity_tons_per_mwh        FLOAT,
+    import_mw                                FLOAT,
+    export_mw                                FLOAT,
+    import_emissions_tons                    FLOAT,
+    import_emissions_tons_degen              FLOAT,
+    export_credits_tons                      FLOAT,
+    PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
+                 availability_iteration, subproblem_id, stage_id,
+                 transmission_line, carbon_cap_zone, timepoint)
+);
+
+-- Import emissions per line, carbon tax zone and
+-- timepoint. The '_degen' columns recompute from the solved flows; the model
+-- value may exceed them where nothing pushes the import variables down.
+DROP TABLE IF EXISTS results_transmission_carbon_tax_imports;
+CREATE TABLE results_transmission_carbon_tax_imports
+(
+    scenario_id                              INTEGER,
+    weather_iteration                        INTEGER,
+    hydro_iteration                          INTEGER,
+    availability_iteration                   INTEGER,
+    subproblem_id                            INTEGER,
+    stage_id                                 INTEGER,
+    transmission_line                        VARCHAR(64),
+    carbon_tax_zone                          VARCHAR(32),
+    timepoint                                INTEGER,
+    period                                   INTEGER,
+    timepoint_weight                         FLOAT,
+    number_of_hours_in_timepoint             FLOAT,
+    import_direction                         VARCHAR(8),
+    import_co2_intensity_tons_per_mwh        FLOAT,
+    export_co2_intensity_tons_per_mwh        FLOAT,
+    import_mw                                FLOAT,
+    export_mw                                FLOAT,
+    import_emissions_tons                    FLOAT,
+    import_emissions_tons_degen              FLOAT,
+    export_credits_tons                      FLOAT,
+    PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
+                 availability_iteration, subproblem_id, stage_id,
+                 transmission_line, carbon_tax_zone, timepoint)
+);
+
+-- Market import emissions per load zone, market, carbon cap
+-- zone and timepoint; positions are final positions (including previous
+-- stages). See results_transmission_carbon_cap_imports for the '_degen' columns.
+DROP TABLE IF EXISTS results_system_market_carbon_cap_imports;
+CREATE TABLE results_system_market_carbon_cap_imports
+(
+    scenario_id                              INTEGER,
+    weather_iteration                        INTEGER,
+    hydro_iteration                          INTEGER,
+    availability_iteration                   INTEGER,
+    subproblem_id                            INTEGER,
+    stage_id                                 INTEGER,
+    load_zone                                VARCHAR(32),
+    market                                   VARCHAR(32),
+    carbon_cap_zone                          VARCHAR(32),
+    timepoint                                INTEGER,
+    period                                   INTEGER,
+    timepoint_weight                         FLOAT,
+    number_of_hours_in_timepoint             FLOAT,
+    import_co2_intensity_tons_per_mwh        FLOAT,
+    export_co2_intensity_tons_per_mwh        FLOAT,
+    purchase_mw                              FLOAT,
+    sale_mw                                  FLOAT,
+    import_emissions_tons                    FLOAT,
+    import_emissions_tons_degen              FLOAT,
+    export_credits_tons                      FLOAT,
+    PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
+                 availability_iteration, subproblem_id, stage_id,
+                 load_zone, market, carbon_cap_zone, timepoint)
+);
+
+-- Market import emissions per load zone, market, carbon tax
+-- zone and timepoint; positions are final positions (including previous
+-- stages). See results_transmission_carbon_tax_imports for the '_degen' columns.
+DROP TABLE IF EXISTS results_system_market_carbon_tax_imports;
+CREATE TABLE results_system_market_carbon_tax_imports
+(
+    scenario_id                              INTEGER,
+    weather_iteration                        INTEGER,
+    hydro_iteration                          INTEGER,
+    availability_iteration                   INTEGER,
+    subproblem_id                            INTEGER,
+    stage_id                                 INTEGER,
+    load_zone                                VARCHAR(32),
+    market                                   VARCHAR(32),
+    carbon_tax_zone                          VARCHAR(32),
+    timepoint                                INTEGER,
+    period                                   INTEGER,
+    timepoint_weight                         FLOAT,
+    number_of_hours_in_timepoint             FLOAT,
+    import_co2_intensity_tons_per_mwh        FLOAT,
+    export_co2_intensity_tons_per_mwh        FLOAT,
+    purchase_mw                              FLOAT,
+    sale_mw                                  FLOAT,
+    import_emissions_tons                    FLOAT,
+    import_emissions_tons_degen              FLOAT,
+    export_credits_tons                      FLOAT,
+    PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
+                 availability_iteration, subproblem_id, stage_id,
+                 load_zone, market, carbon_tax_zone, timepoint)
 );
 
 -- Carbon emissions
@@ -7512,6 +8580,8 @@ CREATE TABLE results_system_carbon_cap
     subproblem_id                         INTEGER,
     stage_id                              INTEGER,
     discount_factor                       FLOAT,
+    probability                           FLOAT,
+    probability_weighted_discount_factor  FLOAT,
     number_years_represented              FLOAT,
     carbon_cap_target                     FLOAT,
     project_emissions                     FLOAT,
@@ -7522,6 +8592,13 @@ CREATE TABLE results_system_carbon_cap
     total_credits                         FLOAT,
     carbon_cap_overage                    FLOAT,
     import_emissions_degen                FLOAT,
+    export_credits                        FLOAT,
+    market_import_emissions               FLOAT,
+    market_import_emissions_degen         FLOAT,
+    market_export_credits                 FLOAT,
+    import_emissions_basis                VARCHAR(8),
+    total_import_emissions                FLOAT,
+    total_import_emissions_degen          FLOAT,
     total_emissions_degen                 FLOAT,
     dual                                  FLOAT,
     carbon_cap_marginal_cost_per_emission FLOAT,
@@ -7543,12 +8620,24 @@ CREATE TABLE results_system_carbon_tax
     subproblem_id                   INTEGER,
     stage_id                        INTEGER,
     discount_factor                 FLOAT,
+    probability                     FLOAT,
+    probability_weighted_discount_factor FLOAT,
     number_years_represented        FLOAT,
     project_emissions               FLOAT,
     project_credits                 FLOAT,
     carbon_tax_per_ton              FLOAT,
     total_carbon_emissions_tons     FLOAT,
     total_carbon_tax_allowance_tons FLOAT,
+    import_emissions                FLOAT,
+    import_emissions_degen          FLOAT,
+    export_credits                  FLOAT,
+    market_import_emissions         FLOAT,
+    market_import_emissions_degen   FLOAT,
+    market_export_credits           FLOAT,
+    import_emissions_basis          VARCHAR(8),
+    total_import_emissions          FLOAT,
+    total_import_emissions_degen    FLOAT,
+    total_import_carbon_tax_cost    FLOAT,
     total_carbon_tax_cost           FLOAT,
     dual                            FLOAT,
     PRIMARY KEY (scenario_id, carbon_tax_zone, weather_iteration,
@@ -7569,6 +8658,8 @@ CREATE TABLE results_system_performance_standard
     subproblem_id                               INTEGER,
     stage_id                                    INTEGER,
     discount_factor                             FLOAT,
+    probability                                 FLOAT,
+    probability_weighted_discount_factor        FLOAT,
     number_years_represented                    FLOAT,
     performance_standard_tco2_per_mwh           FLOAT,
     performance_standard_tco2_per_mw            FLOAT,
@@ -7578,6 +8669,8 @@ CREATE TABLE results_system_performance_standard
     performance_standard_project_capacity_mw    FLOAT,
     performance_standard_energy_overage_tco2    FLOAT,
     performance_standard_power_overage_tco2     FLOAT,
+    performance_standard_energy_unit_dual       FLOAT,
+    performance_standard_power_unit_dual        FLOAT,
     PRIMARY KEY (scenario_id, performance_standard_zone,
                  weather_iteration, hydro_iteration, availability_iteration,
                  subproblem_id, stage_id, period)
@@ -7596,6 +8689,8 @@ CREATE TABLE results_system_carbon_credits
     subproblem_id                  INTEGER,
     stage_id                       INTEGER,
     discount_factor                FLOAT,
+    probability                    FLOAT,
+    probability_weighted_discount_factor FLOAT,
     number_years_represented       FLOAT,
     project_generated_credits      FLOAT,
     project_purchased_credits      FLOAT,
@@ -7621,6 +8716,8 @@ CREATE TABLE results_system_period_energy_target
     stage_id                                   INTEGER,
     period                                     INTEGER,
     discount_factor                            FLOAT,
+    probability                                FLOAT,
+    probability_weighted_discount_factor       FLOAT,
     number_years_represented                   FLOAT,
     energy_target_mwh                          FLOAT,
     delivered_energy_target_energy_mwh         FLOAT,
@@ -7656,6 +8753,7 @@ CREATE TABLE results_system_horizon_energy_target
     fraction_of_energy_target_energy_curtailed FLOAT,
     energy_target_shortage_mwh                 FLOAT,
     dual                                       FLOAT,
+    energy_target_marginal_cost_per_mwh        FLOAT,
     PRIMARY KEY (scenario_id, energy_target_zone, weather_iteration,
                  hydro_iteration, availability_iteration, subproblem_id,
                  stage_id, balancing_type_horizon, horizon)
@@ -7675,6 +8773,8 @@ CREATE TABLE results_system_instantaneous_penetration
     subproblem_id                                       INTEGER,
     stage_id                                            INTEGER,
     discount_factor                                     FLOAT,
+    probability                                         FLOAT,
+    probability_weighted_discount_factor                FLOAT,
     number_years_represented                            FLOAT,
     timepoint_weight                                    FLOAT,
     number_of_hours_in_timepoint                        FLOAT,
@@ -7741,6 +8841,8 @@ CREATE TABLE results_system_fuel_burn_limits
     horizon                                        INTEGER,
     number_years_represented                       FLOAT, -- based on period of last horizon timepoint
     discount_factor                                FLOAT, -- based on period of last horizon timepoint
+    probability                                    FLOAT,
+    probability_weighted_discount_factor           FLOAT,
     fuel_burn_limit_ba                             VARCHAR(32),
     fuel_burn_min_unit                             FLOAT,
     fuel_burn_max_unit                             FLOAT,
@@ -7825,6 +8927,9 @@ CREATE TABLE results_system_month_hour_policy_requirements
     policy_month                  INTEGER,
     policy_hour                   INTEGER,
     policy_month_hour_requirement FLOAT,
+    policy_month_hour_requirement_shortage FLOAT,
+    dual FLOAT,
+    policy_month_hour_requirement_marginal_cost_per_unit FLOAT,
     PRIMARY KEY (scenario_id, policy_name, policy_zone, weather_iteration,
                  hydro_iteration, availability_iteration, subproblem_id,
                  stage_id, period, policy_month, policy_hour)
@@ -7843,6 +8948,8 @@ CREATE TABLE results_system_prm
     subproblem_id                             INTEGER,
     stage_id                                  INTEGER,
     discount_factor                           FLOAT,
+    probability                               FLOAT,
+    probability_weighted_discount_factor      FLOAT,
     number_years_represented                  FLOAT,
     prm_requirement_mw                        FLOAT,
     elcc_simple_mw                            FLOAT,
@@ -7909,6 +9016,8 @@ CREATE TABLE results_system_local_capacity
     subproblem_id                       INTEGER,
     stage_id                            INTEGER,
     discount_factor                     FLOAT,
+    probability                         FLOAT,
+    probability_weighted_discount_factor FLOAT,
     number_years_represented            FLOAT,
     local_capacity_requirement_mw       FLOAT,
     project_contribution_mw             FLOAT,
@@ -7941,6 +9050,14 @@ CREATE TABLE results_system_water_link_timepoint
     water_flow_vol_per_sec               FLOAT,
     water_flow_min_violation_vol_per_sec FLOAT,
     water_flow_max_violation_vol_per_sec FLOAT,
+    max_tmp_flow_vol_per_second          FLOAT,
+    threshold_side_stream_vol_per_second FLOAT,
+    upstream_exogenous_inflow_vol_per_sec FLOAT,
+    adjusted_max_tmp_flow_vol_per_second FLOAT,
+    water_link_min_flow_constraint_dual  FLOAT,
+    water_link_min_flow_constraint_marginal_cost_per_vol_per_sec FLOAT,
+    water_link_max_flow_constraint_dual  FLOAT,
+    water_link_max_flow_constraint_marginal_cost_per_vol_per_sec FLOAT,
     PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
                  availability_iteration, subproblem_id, stage_id, water_link,
                  departure_timepoint)
@@ -7957,17 +9074,35 @@ CREATE TABLE results_system_water_node_timepoint
     stage_id                                       INTEGER,
     water_node                                     VARCHAR(32),
     timepoint                                      INTEGER,
+    exogenous_water_inflow_rate_vol_per_sec        FLOAT,
+    endogenous_water_inflow_rate_vol_per_sec       FLOAT,
+    gross_water_inflow_rate_vol_per_sec            FLOAT,
+    gross_water_outflow_rate_vol_per_sec           FLOAT,
     starting_elevation                             FLOAT,
     starting_volume                                FLOAT,
     min_volume_violation                           FLOAT,
     max_volume_violation                           FLOAT,
-    exogenous_water_inflow_rate_vol_per_sec        FLOAT,
-    endogenous_water_inflow_rate_vol_per_sec       FLOAT,
-    gross_water_inflow_rate_vol_per_sec            FLOAT,
     discharge_water_to_powerhouse_rate_vol_per_sec FLOAT,
     spill_water_rate_vol_per_sec                   FLOAT,
     evap_losses_NOT_IMPLEMENTED                    FLOAT,
-    gross_water_outflow_rate_vol_per_sec           FLOAT,
+    max_discharge_to_powerhouse_constraint_dual    FLOAT,
+    max_discharge_to_powerhouse_constraint_marginal_cost_per_vol_per_sec FLOAT,
+    max_spill_constraint_dual                      FLOAT,
+    max_spill_constraint_marginal_cost_per_vol_per_sec FLOAT,
+    max_gross_outflow_constraint_dual              FLOAT,
+    max_gross_outflow_constraint_marginal_cost_per_vol_per_sec FLOAT,
+    reservoir_target_starting_volume_constraint_dual FLOAT,
+    reservoir_target_starting_volume_constraint_marginal_cost_per_volumeunit FLOAT,
+    reservoir_target_ending_volume_constraint_dual FLOAT,
+    reservoir_target_ending_volume_constraint_marginal_cost_per_volumeunit FLOAT,
+    min_water_storage_constraint_dual              FLOAT,
+    min_water_storage_constraint_marginal_cost_per_volumeunit FLOAT,
+    max_water_storage_constraint_dual              FLOAT,
+    max_water_storage_constraint_marginal_cost_per_volumeunit FLOAT,
+    reservoir_storage_tracking_constraint_dual     FLOAT,
+    reservoir_storage_tracking_constraint_marginal_cost_per_volumeunit FLOAT,
+    water_node_outflow_constraint_dual             FLOAT,
+    water_node_outflow_constraint_marginal_cost_per_vol_per_sec FLOAT,
     PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
                  availability_iteration, subproblem_id, stage_id, water_node,
                  timepoint)
@@ -7988,6 +9123,8 @@ CREATE TABLE results_system_water_powerhouse_timepoint
     gross_head                                     FLOAT,
     net_head                                       FLOAT,
     water_discharge_to_powerhouse_rate_vol_per_sec FLOAT,
+    generator_water_allocation_constraint_dual     FLOAT,
+    generator_water_allocation_constraint_marginal_cost_per_vol_per_sec FLOAT,
     PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
                  availability_iteration, subproblem_id, stage_id, powerhouse,
                  timepoint)
@@ -8041,6 +9178,7 @@ CREATE TABLE results_system_costs
     Total_Market_Net_Cost                                   FLOAT,
     Total_Export_Penalty_Cost                               FLOAT,
     Total_Tx_Simple_Losses_Penalty_Cost                     FLOAT,
+    Total_Tx_Curtailment_Cost                               FLOAT,
     Total_Horizon_Fuel_Burn_Min_Abs_Penalty_Costs           FLOAT,
     Total_Horizon_Fuel_Burn_Max_Abs_Penalty_Costs           FLOAT,
     Total_Horizon_Fuel_Burn_Max_Rel_Penalty_Costs           FLOAT,
@@ -8363,6 +9501,10 @@ SELECT scenario_id,
         WHERE project_policy_zone_scenario_id =
               scenarios.project_policy_zone_scenario_id)                             AS project_policy_zones,
        (SELECT name
+        FROM subscenarios_transmission_policy_zones
+        WHERE transmission_policy_zone_scenario_id =
+              scenarios.transmission_policy_zone_scenario_id)                        AS transmission_policy_zones,
+       (SELECT name
         FROM subscenarios_project_prm_zones
         WHERE project_prm_zone_scenario_id =
               scenarios.project_prm_zone_scenario_id)                                AS project_prm_areas,
@@ -8598,17 +9740,25 @@ SELECT scenario_id,
         WHERE market_price_scenario_id =
               scenarios.market_price_scenario_id)                                    AS market_prices,
        (SELECT name
+        FROM subscenarios_market_groups
+        WHERE market_group_scenario_id =
+              scenarios.market_group_scenario_id)                                    AS market_groups,
+       (SELECT name
         FROM subscenarios_market_volume
         WHERE market_volume_scenario_id =
               scenarios.market_volume_scenario_id)                                   AS market_volume,
        (SELECT name
-        FROM subscenarios_market_volume_totals_in_tmp
-        WHERE market_volume_total_in_tmp_scenario_id =
-              scenarios.market_volume_total_in_tmp_scenario_id)                      AS market_volume_totals_in_tmp,
+        FROM subscenarios_market_carbon_cap_zones
+        WHERE market_carbon_cap_zone_scenario_id =
+              scenarios.market_carbon_cap_zone_scenario_id)                          AS market_carbon_cap_zones,
        (SELECT name
-        FROM subscenarios_market_volume_totals_in_prd
-        WHERE market_volume_total_in_prd_scenario_id =
-              scenarios.market_volume_total_in_prd_scenario_id)                      AS market_volume_totals_in_prd,
+        FROM subscenarios_transmission_carbon_tax_zones
+        WHERE transmission_carbon_tax_zone_scenario_id =
+              scenarios.transmission_carbon_tax_zone_scenario_id)                    AS transmission_carbon_tax_zones,
+       (SELECT name
+        FROM subscenarios_market_carbon_tax_zones
+        WHERE market_carbon_tax_zone_scenario_id =
+              scenarios.market_carbon_tax_zone_scenario_id)                          AS market_carbon_tax_zones,
        (SELECT name
         FROM subscenarios_system_water_node_reservoirs
         WHERE water_node_reservoir_scenario_id =
@@ -8619,8 +9769,12 @@ SELECT scenario_id,
               scenarios.water_flow_scenario_id)                                      AS water_flows,
        (SELECT name
         FROM subscenarios_system_water_inflows
-        WHERE water_inflow_scenario_id =
-              scenarios.water_inflow_scenario_id)                                    AS water_inflows,
+        WHERE water_inflow_tmp_scenario_id =
+              scenarios.water_inflow_tmp_scenario_id)                                    AS water_inflows,
+       (SELECT name
+        FROM subscenarios_system_water_inflows_bt_hrz
+        WHERE water_inflow_bt_hrz_scenario_id =
+              scenarios.water_inflow_bt_hrz_scenario_id)                             AS water_inflows_bt_hrz,
        (SELECT name
         FROM subscenarios_system_water_powerhouses
         WHERE water_powerhouse_scenario_id =
@@ -8724,6 +9878,18 @@ FROM (
                 project,
                 period
          FROM inputs_project_specified_capacity
+         WHERE period != 0
+         -- A period 0 row applies to every period
+         UNION ALL
+         SELECT project_specified_capacity_scenario_id,
+                NULL AS project_new_cost_scenario_id,
+                project,
+                all_periods.period
+         FROM inputs_project_specified_capacity
+                  CROSS JOIN
+              (SELECT DISTINCT period
+               FROM inputs_temporal_periods) AS all_periods
+         WHERE inputs_project_specified_capacity.period = 0
          -- Add operational periods of new projects
          UNION ALL
          SELECT NULL AS project_specified_capacity_scenario_id,
@@ -8756,6 +9922,18 @@ FROM (
                 transmission_line,
                 period
          FROM inputs_transmission_specified_capacity
+         WHERE period != 0
+         -- A period 0 row applies to every period
+         UNION ALL
+         SELECT transmission_specified_capacity_scenario_id,
+                NULL AS transmission_new_cost_scenario_id,
+                transmission_line,
+                all_periods.period
+         FROM inputs_transmission_specified_capacity
+                  CROSS JOIN
+              (SELECT DISTINCT period
+               FROM inputs_temporal_periods) AS all_periods
+         WHERE inputs_transmission_specified_capacity.period = 0
          -- Add operational periods of new projects
          UNION ALL
          SELECT NULL AS transmission_specified_capacity_scenario_id,
@@ -8783,7 +9961,13 @@ SELECT DISTINCT temporal_scenario_id,
 FROM inputs_temporal
          INNER JOIN
      inputs_temporal_horizon_timepoints
-     USING (temporal_scenario_id, stage_id, timepoint)
+-- subproblem_id is part of both tables' keys: joining on it keeps a
+-- timepoint's horizons within its own subproblem and, because it is the
+-- second column of inputs_temporal_horizon_timepoints' primary key, lets
+-- SQLite use that index (without it the join scanned every horizon-timepoint
+-- row of the temporal scenario for every timepoint: ~30 s for one 8760-hour
+-- subproblem, 0.05 s with it, identical rows)
+     USING (temporal_scenario_id, subproblem_id, stage_id, timepoint)
 ;
 
 -- This view shows the possible operational horizons for each project based
@@ -9021,6 +10205,45 @@ FROM (SELECT scenario_id,
          AND a.period = b.period
          AND a.spinup_or_lookahead = b.spinup_or_lookahead
          )
+;
+
+-- Period weights: the probability of reaching each period and the resulting
+-- objective-function weight of a cost incurred in the period. Deterministic
+-- temporal scenarios (no prev_period, NULL probability) get a probability
+-- of 1 for every period.
+DROP VIEW IF EXISTS inputs_temporal_periods_w_weights;
+CREATE VIEW inputs_temporal_periods_w_weights AS
+SELECT temporal_scenario_id,
+       period,
+       prev_period,
+       discount_factor,
+       COALESCE(probability, 1.0)                        AS probability,
+       discount_factor * COALESCE(probability, 1.0)      AS probability_weighted_discount_factor,
+       period_end_year - period_start_year               AS number_years_represented,
+       discount_factor * COALESCE(probability, 1.0) *
+       (period_end_year - period_start_year)             AS period_objective_weight
+FROM inputs_temporal_periods
+;
+
+-- Costs by period with the period's scenario-tree weights. Costs are
+-- conditional on the period's branch being realized; a cost times
+-- period_objective_weight is its contribution to the objective function,
+-- so summing that product over periods gives the expected discounted cost.
+DROP VIEW IF EXISTS results_costs_by_period_w_weights;
+CREATE VIEW results_costs_by_period_w_weights AS
+SELECT r.*,
+       w.prev_period,
+       w.discount_factor,
+       w.probability,
+       w.probability_weighted_discount_factor,
+       w.number_years_represented,
+       w.period_objective_weight
+FROM results_costs_by_period AS r
+         JOIN scenarios AS s
+              ON r.scenario_id = s.scenario_id
+         JOIN inputs_temporal_periods_w_weights AS w
+              ON w.temporal_scenario_id = s.temporal_scenario_id
+                  AND w.period = r.period
 ;
 
 -------------------------------------------------------------------------------

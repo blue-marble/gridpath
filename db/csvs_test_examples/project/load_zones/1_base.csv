@@ -50,3 +50,7 @@ synch_condenser,Zone1
 Month_Block,Zone1
 Hybrid_Wind,Zone1
 Hybrid_Battery,Zone1
+Battery_Stress_Hrz,Zone1
+Geothermal_Late,Zone1
+Gas_Strike_Price,Zone1
+Gas_Strike_Price_Tie,Zone1

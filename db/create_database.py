@@ -21,23 +21,28 @@ The user may specify the name and location of the GridPath database path using t
 >>> gridpath_create_database --database PATH/DO/DB
 
 The default schema for the GridPath SQLite database is in db/db_schema.sql.
+A custom schema may be specified with the *--db_schema* flag; relative paths
+are resolved against the current working directory.
 
 .. _database-structure-section-ref:
 
-To create a database for GridPath raw data, point to the schema in
-../data_toolkit/raw_data_db_schema.sql instead and also specify the
---omit_data flag.
+To create a database for GridPath raw data, point *--db_schema* to the
+raw_data_db_schema.sql file in the open_data_toolkit package directory instead
+and also specify the --omit_data flag.
 
 """
 
 from argparse import ArgumentParser
+from gridpath.common_functions import get_version_parser
 import csv
+import datetime
 import os.path
 import pandas as pd
 import sqlite3
 import sys
 
 from db.common_functions import spin_on_database_lock, spin_on_database_lock_generic
+from version import __version__
 
 
 def parse_arguments(arguments):
@@ -45,7 +50,7 @@ def parse_arguments(arguments):
 
     :return:
     """
-    parser = ArgumentParser(add_help=True)
+    parser = ArgumentParser(add_help=True, parents=[get_version_parser()])
 
     # Scenario name and location options
     parser.add_argument(
@@ -56,10 +61,11 @@ def parse_arguments(arguments):
     )
     parser.add_argument(
         "--db_schema",
-        default="./db_schema.sql",
-        help="Name of the SQL file containing the database "
-        "schema. Assumed to be in same directory as"
-        "create_database.py",
+        default=os.path.join(os.path.dirname(__file__), "db_schema.sql"),
+        help="Path to the SQL file containing the database "
+        "schema. Relative paths are resolved against the "
+        "current working directory. Defaults to the "
+        "db_schema.sql file that ships with GridPath.",
     )
     parser.add_argument(
         "--in_memory",
@@ -84,6 +90,17 @@ def parse_arguments(arguments):
         action="store_true",
         help="Ask the user for custom units.",
     )
+    parser.add_argument(
+        "--yes",
+        default=False,
+        action="store_true",
+        help="Delete and recreate an existing database file without asking "
+        "for confirmation. For non-interactive use; the prompt otherwise "
+        "hangs or raises EOFError when there is no stdin.",
+    )
+    parser.add_argument(
+        "--quiet", default=False, action="store_true", help="Don't print output."
+    )
 
     # Parse arguments
     parsed_arguments = parser.parse_known_args(args=arguments)[0]
@@ -97,11 +114,40 @@ def create_database_schema(conn, parsed_arguments):
     :param parsed_arguments:
 
     """
-    schema_path = os.path.join(os.path.dirname(__file__), parsed_arguments.db_schema)
-
-    with open(schema_path, "r") as db_schema_script:
+    with open(parsed_arguments.db_schema, "r") as db_schema_script:
         schema = db_schema_script.read()
         conn.executescript(schema)
+
+
+def write_db_metadata(conn):
+    """
+    :param conn: database connection
+
+    Record the GridPath version used to create the database and, if the
+    schema tracks it (the raw-data database schema does not), the database
+    creation datetime.
+    """
+    columns = [
+        row[1] for row in conn.execute("PRAGMA table_info(db_metadata);").fetchall()
+    ]
+    if "created_datetime" in columns:
+        sql = """INSERT INTO db_metadata (gridpath_version, created_datetime)
+            VALUES (?, ?);"""
+        data = (
+            __version__,
+            datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        )
+    else:
+        sql = "INSERT INTO db_metadata (gridpath_version) VALUES (?);"
+        data = (__version__,)
+
+    spin_on_database_lock(
+        conn=conn,
+        cursor=conn.cursor(),
+        sql=sql,
+        data=data,
+        many=False,
+    )
 
 
 def load_data(conn, data_directory, custom_units):
@@ -277,17 +323,21 @@ def main(args=None):
     else:
         db_path = parsed_args.database
         if os.path.isfile(db_path):
-            response = (
-                input(
-                    f"Database file {os.path.abspath(db_path)} already exists. "
-                    "Delete and recreate? [y/N]: "
+            if parsed_args.yes:
+                response = "y"
+            else:
+                response = (
+                    input(
+                        f"Database file {os.path.abspath(db_path)} already "
+                        "exists. Delete and recreate? [y/N]: "
+                    )
+                    .strip()
+                    .lower()
                 )
-                .strip()
-                .lower()
-            )
             if response == "y" or response == "yes":
                 os.remove(db_path)
-                print(f"Deleted existing database: {os.path.abspath(db_path)}")
+                if not parsed_args.quiet:
+                    print(f"Deleted existing database: {os.path.abspath(db_path)}")
             else:
                 print("Database creation cancelled.")
                 sys.exit()
@@ -300,6 +350,8 @@ def main(args=None):
     conn.execute("PRAGMA foreign_keys=ON;")
     # Create schema
     create_database_schema(conn=conn, parsed_arguments=parsed_args)
+    # Record version and creation datetime
+    write_db_metadata(conn=conn)
     # Load data
     if not parsed_args.omit_data:
         load_data(

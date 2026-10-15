@@ -17,12 +17,20 @@ from collections import OrderedDict
 from importlib import import_module
 import os.path
 import pandas as pd
+import shutil
+import sqlite3
 import sys
+import tempfile
 import unittest
+import warnings
 
+from db.utilities.custom_functions import temporal
 from tests.common_functions import create_abstract_model, add_components_and_load_data
 
 TEST_DATA_DIRECTORY = os.path.join(os.path.dirname(__file__), "..", "..", "test_data")
+DB_SCHEMA_FILE = os.path.join(
+    os.path.dirname(__file__), "..", "..", "..", "db", "db_schema.sql"
+)
 
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
@@ -47,8 +55,37 @@ except ImportError:
     print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED + " to test.")
 
 
+def copy_test_data_referencing_builtin_types(tmp_dir, balancing_types=None):
+    """
+    Copy the test data inputs to *tmp_dir* and add an input file referencing
+    *balancing_types* (default: every built-in balancing type) in a
+    balancing_type column, so that they are built.
+
+    :return: the test data directory
+    """
+    if balancing_types is None:
+        balancing_types = MODULE_BEING_TESTED.BUILTIN_HORIZON_TYPES
+    test_data_dir = os.path.join(tmp_dir, "test_data")
+    shutil.copytree(
+        os.path.join(TEST_DATA_DIRECTORY, "inputs"),
+        os.path.join(test_data_dir, "inputs"),
+    )
+    with open(
+        os.path.join(test_data_dir, "inputs", "builtin_balancing_type_references.tab"),
+        "w",
+    ) as f:
+        f.write("balancing_type\n" + "".join(f"{bt}\n" for bt in balancing_types))
+    return test_data_dir
+
+
 class TestHorizons(unittest.TestCase):
     """ """
+
+    def setUp(self):
+        tmp_dir = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp_dir.cleanup)
+        # The test data with every built-in balancing type referenced
+        self.test_data_dir = copy_test_data_referencing_builtin_types(tmp_dir.name)
 
     def test_add_model_components(self):
         """
@@ -83,11 +120,12 @@ class TestHorizons(unittest.TestCase):
     def test_initialized_components(self):
         """
         Create components; check they are initialized with data as expected
+        (with every built-in balancing type referenced)
         """
         m, data = add_components_and_load_data(
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
-            test_data_dir=TEST_DATA_DIRECTORY,
+            test_data_dir=self.test_data_dir,
             weather_iteration="",
             hydro_iteration="",
             availability_iteration="",
@@ -471,6 +509,236 @@ class TestHorizons(unittest.TestCase):
             actual_next_tmp_ordered,
             msg="Data for param next_tmp do not match " "expected.",
         )
+
+    def _create_instance_and_record_span_warnings(self, test_data_dir):
+        """
+        Create an instance from the given test data directory and return it
+        along with any warnings about horizons spanning periods
+        """
+        m, data = add_components_and_load_data(
+            prereq_modules=IMPORTED_PREREQ_MODULES,
+            module_to_test=MODULE_BEING_TESTED,
+            test_data_dir=test_data_dir,
+            weather_iteration="",
+            hydro_iteration="",
+            availability_iteration="",
+            subproblem="",
+            stage="",
+        )
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            instance = m.create_instance(data)
+        span_warnings = [
+            w for w in caught if "Horizon found that spans periods" in str(w.message)
+        ]
+        return instance, span_warnings
+
+    def test_hrz_period(self):
+        """
+        Horizons get the period of their first timepoint; the built-in
+        subproblem horizons span both test periods without warning
+        """
+        instance, span_warnings = self._create_instance_and_record_span_warnings(
+            self.test_data_dir
+        )
+
+        self.assertEqual(span_warnings, [])
+        self.assertEqual(instance.hrz_period["day", 202001], 2020)
+        self.assertEqual(instance.hrz_period["subproblem_circular", 1], 2020)
+        self.assertEqual(instance.hrz_period["subproblem_period_circular", 2030], 2030)
+
+    def test_hrz_period_warns_on_user_defined_horizon_spanning_periods(self):
+        """
+        A user-defined horizon whose timepoints belong to more than one period
+        triggers a warning and is assigned the period of its first timepoint
+        """
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            test_data_dir = os.path.join(tmp_dir, "test_data")
+            shutil.copytree(
+                os.path.join(TEST_DATA_DIRECTORY, "inputs"),
+                os.path.join(test_data_dir, "inputs"),
+            )
+            tmps_file = os.path.join(test_data_dir, "inputs", "timepoints.tab")
+            tmps_df = pd.read_csv(tmps_file, sep="\t", dtype=str, keep_default_na=False)
+            # Move the last timepoint of day horizon 202001 into period 2030
+            tmps_df.loc[tmps_df["timepoint"] == "20200124", "period"] = "2030"
+            tmps_df.to_csv(tmps_file, sep="\t", index=False)
+
+            instance, span_warnings = self._create_instance_and_record_span_warnings(
+                test_data_dir
+            )
+
+        # The moved timepoint belongs to both the day and the year horizon
+        warned_horizons = sorted(
+            hrz
+            for hrz in ["day, horizon 202001", "year, horizon 2020"]
+            for w in span_warnings
+            if hrz in str(w.message)
+        )
+        self.assertEqual(len(span_warnings), 2)
+        self.assertEqual(warned_horizons, ["day, horizon 202001", "year, horizon 2020"])
+        self.assertEqual(instance.hrz_period["day", 202001], 2020)
+        self.assertEqual(instance.hrz_period["year", 2020], 2020)
+
+    def test_db_builtin_horizons_match_model(self):
+        """
+        The built-in horizons the database temporal loader writes match the
+        model's built-in horizons, boundaries, and timepoints for every
+        built-in balancing type, so horizon-indexed inputs on built-in
+        horizons reach the model; one month's timepoints are not contiguous,
+        days of month cycle so that days' timepoints are not contiguous
+        either, and one timepoint has no day of month (so is in no day
+        horizon)
+        """
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            test_data_dir = copy_test_data_referencing_builtin_types(tmp_dir)
+            tmps_file = os.path.join(test_data_dir, "inputs", "timepoints.tab")
+            tmps_df = pd.read_csv(tmps_file, sep="\t", dtype=str, keep_default_na=False)
+            # Put a timepoint in the middle of May 2020 in September 2020
+            tmps_df.loc[tmps_df["timepoint"] == "20200112", "month"] = "9"
+            tmps_df["day_of_month"] = [str(i % 3 + 1) for i in range(len(tmps_df))]
+            tmps_df.loc[tmps_df["timepoint"] == "20200105", "day_of_month"] = "."
+            tmps_df.to_csv(tmps_file, sep="\t", index=False)
+
+            m, data = add_components_and_load_data(
+                prereq_modules=IMPORTED_PREREQ_MODULES,
+                module_to_test=MODULE_BEING_TESTED,
+                test_data_dir=test_data_dir,
+                weather_iteration="",
+                hydro_iteration="",
+                availability_iteration="",
+                subproblem="",
+                stage="",
+            )
+            instance = m.create_instance(data)
+
+        conn = sqlite3.connect(":memory:")
+        self.addCleanup(conn.close)
+        with open(DB_SCHEMA_FILE) as f:
+            conn.executescript(f.read())
+        conn.executemany(
+            """INSERT INTO inputs_temporal (temporal_scenario_id, subproblem_id,
+            stage_id, timepoint, period, number_of_hours_in_timepoint,
+            timepoint_weight, spinup_or_lookahead, month, day_of_month)
+            VALUES (1, 1, 1, ?, ?, ?, ?, 0, ?, ?)""",
+            tmps_df[
+                [
+                    "timepoint",
+                    "period",
+                    "number_of_hours_in_timepoint",
+                    "timepoint_weight",
+                    "month",
+                    "day_of_month",
+                ]
+            ]
+            .replace(".", None)
+            .astype(float)
+            .values.tolist(),
+        )
+        temporal(conn=conn, subscenario_id=1)
+
+        db_boundaries = {
+            (bt, hrz): boundary
+            for bt, hrz, boundary in conn.execute(
+                """SELECT balancing_type_horizon, horizon, boundary
+                FROM inputs_temporal_horizons"""
+            )
+        }
+        db_tmps = {}
+        for bt, hrz, tmp in conn.execute(
+            """SELECT balancing_type_horizon, horizon, timepoint
+            FROM inputs_temporal_horizon_timepoints"""
+        ):
+            db_tmps.setdefault((bt, hrz), set()).add(tmp)
+
+        model_tmps = {
+            (bt, hrz): set(instance.TMPS_BY_BLN_TYPE_HRZ_BUILTIN[bt, hrz])
+            for bt, hrz in instance.BLN_TYPE_HRZS_BUILTIN
+        }
+        model_boundaries = {
+            (bt, hrz): instance.boundary_builtin[bt, hrz]
+            for bt, hrz in instance.BLN_TYPE_HRZS_BUILTIN
+        }
+
+        self.assertEqual(
+            sorted({bt for bt, _ in model_tmps}),
+            sorted(MODULE_BEING_TESTED.BUILTIN_HORIZON_TYPES),
+        )
+        self.assertIn(("subproblem_period_month_linear", 202009), model_tmps)
+        self.assertIn(20200112, model_tmps["subproblem_period_month_linear", 202009])
+        self.assertIn(("subproblem_period_day_circular", 20200502), model_tmps)
+        self.assertNotIn(
+            20200105,
+            set().union(
+                *(
+                    tmps
+                    for (bt, _), tmps in model_tmps.items()
+                    if bt.startswith("subproblem_period_day")
+                )
+            ),
+        )
+        self.assertEqual(db_tmps, model_tmps)
+        self.assertEqual(db_boundaries, model_boundaries)
+
+    def test_referenced_builtin_balancing_types(self):
+        """
+        Built-in balancing types are referenced by the balancing_type
+        columns of the .tab and .csv input files only; the test data
+        reference none
+        """
+        self.assertListEqual(
+            [],
+            MODULE_BEING_TESTED.referenced_builtin_balancing_types(
+                os.path.join(TEST_DATA_DIRECTORY, "inputs")
+            ),
+        )
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            with open(os.path.join(tmp_dir, "a.tab"), "w") as f:
+                f.write(
+                    "project\tbalancing_type_project\tnote\n"
+                    "Wind\tsubproblem_period_linear\tsubproblem_linear\n"
+                    "Hydro\tday\t.\n"
+                )
+            with open(os.path.join(tmp_dir, "b.csv"), "w") as f:
+                f.write(
+                    "project,energy_budget_balancing_type\n"
+                    "Hydro,subproblem_period_month_circular\n"
+                )
+            with open(os.path.join(tmp_dir, "c.txt"), "w") as f:
+                f.write("balancing_type\nsubproblem_circular\n")
+            self.assertListEqual(
+                ["subproblem_period_linear", "subproblem_period_month_circular"],
+                MODULE_BEING_TESTED.referenced_builtin_balancing_types(tmp_dir),
+            )
+
+    def test_only_referenced_builtin_types_are_built(self):
+        for referenced in [[], ["subproblem_period_month_linear"]]:
+            with tempfile.TemporaryDirectory() as tmp_dir:
+                m, data = add_components_and_load_data(
+                    prereq_modules=IMPORTED_PREREQ_MODULES,
+                    module_to_test=MODULE_BEING_TESTED,
+                    test_data_dir=copy_test_data_referencing_builtin_types(
+                        tmp_dir, referenced
+                    ),
+                    weather_iteration="",
+                    hydro_iteration="",
+                    availability_iteration="",
+                    subproblem="",
+                    stage="",
+                )
+                instance = m.create_instance(data)
+            self.assertListEqual(
+                sorted(
+                    ("subproblem_period_month_linear", hrz)
+                    for hrz in [202005, 202009, 203004, 203007]
+                    if referenced
+                ),
+                sorted(instance.BLN_TYPE_HRZS_BUILTIN),
+            )
+            self.assertListEqual(
+                sorted({"day", "year"} | set(referenced)),
+                sorted(instance.BLN_TYPES),
+            )
 
 
 if __name__ == "__main__":

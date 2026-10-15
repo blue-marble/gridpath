@@ -97,24 +97,34 @@ def add_model_components(
             )
 
     def prj_policy_zone_opr_tmps_init(mod):
-        opr_tmps = list()
-        for prj, policy, zone in mod.PROJECT_POLICY_ZONES:
-            for _prj, tmp in mod.PRJ_OPR_TMPS:
-                if prj == _prj:
-                    opr_tmps.append((prj, policy, zone, tmp))
+        tmps_by_prj = {}
+        for prj, tmp in mod.PRJ_OPR_TMPS:
+            tmps_by_prj.setdefault(prj, []).append(tmp)
 
-        return opr_tmps
+        return [
+            (prj, policy, zone, tmp)
+            for (prj, policy, zone) in mod.PROJECT_POLICY_ZONES
+            for tmp in tmps_by_prj.get(prj, [])
+        ]
 
     m.PRJ_POLICY_ZONE_OPR_TMPS = Set(dimen=4, initialize=prj_policy_zone_opr_tmps_init)
 
     # (project, policy, zone, period, month, hour) for month-hour requirements.
     # Completely decoupled from timepoints — SOD-type compliance types use this.
+    # Only periods in which the project is operational are included: a
+    # project mapped to a policy but not yet built or already retired in a
+    # requirement period has no capacity there, so it cannot contribute (and
+    # compliance-type rules that look up Capacity_MW would fail on the index).
     def prj_policy_zone_prds_month_hours_init(mod):
+        prds_month_hours_by_policy_zone = {}
+        for p, z, prd, mn, hr in mod.POLICIES_ZONE_PRDS_MONTH_HOURS_WITH_REQ:
+            prds_month_hours_by_policy_zone.setdefault((p, z), []).append((prd, mn, hr))
+
         return [
             (prj, policy, zone, prd, mn, hr)
             for (prj, policy, zone) in mod.PROJECT_POLICY_ZONES
-            for (p, z, prd, mn, hr) in mod.POLICIES_ZONE_PRDS_MONTH_HOURS_WITH_REQ
-            if p == policy and z == zone
+            for (prd, mn, hr) in prds_month_hours_by_policy_zone.get((policy, zone), [])
+            if (prj, prd) in mod.PRJ_OPR_PRDS
         ]
 
     m.PRJ_POLICY_ZONE_PRDS_MONTH_HOURS = Set(

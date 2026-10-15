@@ -30,7 +30,8 @@ GridPath Documentation
    usage
    database
    functionality
-   data_toolkit
+   open_data_toolkit
+   ra_toolkit
    visualization
    ui
    architecture

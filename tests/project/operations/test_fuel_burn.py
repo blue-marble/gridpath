@@ -30,6 +30,8 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.investment.periods",
     "temporal.operations.horizons",
     "geography.load_zones",
+    "geography.markets",
+    "system.markets.prices",
     "geography.water_network",
     "system.water.water_system_params",
     "system.water.water_nodes",
@@ -249,6 +251,8 @@ class TestFuelBurn(unittest.TestCase):
             ("Nuclear_Flexible", 2030): [0],
             ("DAC", 2020): [0],
             ("DAC", 2030): [0],
+            ("Gen_Strike_Price", 2020): [0],
+            ("Gen_Strike_Price", 2030): [0],
         }
         expected_hr_curve_prj_tmp_sgms = list()
         for prj, tmp in expected_hr_curve_prj_tmps:
@@ -347,6 +351,77 @@ class TestFuelBurn(unittest.TestCase):
         self.assertDictEqual(
             expected_max_fraction_in_fuel_blend, actual_max_fraction_in_fuel_blend
         )
+
+    def test_blend_fraction_constraints_skipped_at_default_fractions(self):
+        """
+        A minimum fraction of 0 or a maximum of 1 restricts nothing, so the
+        fraction constraints are only built for project-fuels with another
+        value; the blending equalities are always built.
+        """
+        m, data = add_components_and_load_data(
+            prereq_modules=IMPORTED_PREREQ_MODULES,
+            module_to_test=MODULE_BEING_TESTED,
+            test_data_dir=TEST_DATA_DIRECTORY,
+            weather_iteration="",
+            hydro_iteration="",
+            availability_iteration="",
+            subproblem="",
+            stage="",
+        )
+        fraction_constraints = [
+            "Min_Fuel_Fraction_of_Blend_Opr_Constraint",
+            "Max_Fuel_Fraction_of_Blend_Opr_Constraint",
+            "Min_Fuel_Fraction_of_Blend_Startup_Constraint",
+            "Max_Fuel_Fraction_of_Blend_Startup_Constraint",
+            "Min_Fuel_Fraction_of_Blend_Contribution_Constraint",
+            "Max_Fuel_Fraction_of_Blend_Contribution_Constraint",
+        ]
+
+        # The fixture's fractions are all 0/1
+        instance = m.create_instance(data)
+        for c in fraction_constraints:
+            self.assertEqual(len(getattr(instance, c)), 0, c)
+        self.assertEqual(
+            set(instance.Fuel_Blending_Opr_Fuel_Burn_Constraint.keys()),
+            set(instance.FUEL_PRJ_OPR_TMPS),
+        )
+
+        # With restricting fractions on one project's two fuels
+        data["min_fraction_in_fuel_blend"][("Gas_CCGT", "Gas")] = 0.4
+        data["max_fraction_in_fuel_blend"][("Gas_CCGT", "Blend_Fuel")] = 0.6
+        instance = m.create_instance(data)
+        for c, prj_fuel in [
+            ("Min_Fuel_Fraction_of_Blend_Opr_Constraint", ("Gas_CCGT", "Gas")),
+            ("Max_Fuel_Fraction_of_Blend_Opr_Constraint", ("Gas_CCGT", "Blend_Fuel")),
+            (
+                "Min_Fuel_Fraction_of_Blend_Contribution_Constraint",
+                ("Gas_CCGT", "Gas"),
+            ),
+            (
+                "Max_Fuel_Fraction_of_Blend_Contribution_Constraint",
+                ("Gas_CCGT", "Blend_Fuel"),
+            ),
+        ]:
+            expected = {
+                (prj, f, tmp)
+                for (prj, f, tmp) in instance.FUEL_PRJS_FUEL_OPR_TMPS
+                if (prj, f) == prj_fuel
+            }
+            self.assertTrue(expected, c)
+            self.assertEqual(set(getattr(instance, c).keys()), expected, c)
+        for c, prj_fuel in [
+            ("Min_Fuel_Fraction_of_Blend_Startup_Constraint", ("Gas_CCGT", "Gas")),
+            (
+                "Max_Fuel_Fraction_of_Blend_Startup_Constraint",
+                ("Gas_CCGT", "Blend_Fuel"),
+            ),
+        ]:
+            expected = {
+                (prj, f, tmp)
+                for (prj, f, tmp) in instance.STARTUP_FUEL_PRJS_FUEL_OPR_TMPS
+                if (prj, f) == prj_fuel
+            }
+            self.assertEqual(set(getattr(instance, c).keys()), expected, c)
 
 
 if __name__ == "__main__":

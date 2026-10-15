@@ -121,6 +121,7 @@ class TestExogenousAvailabilityType(unittest.TestCase):
                 "Wind_z2",
                 "Battery",
                 "Battery_Binary",
+                "Battery_Stress_Hrz",
                 "Battery_Specified",
                 "Hydro",
                 "Hydro_NonCurtailable",
@@ -145,6 +146,8 @@ class TestExogenousAvailabilityType(unittest.TestCase):
                 "DSM_Load_Component_Modifier",
                 "DSM_Load_Component_Shift",
                 "Gen_Simple_No_Load_Balance_Power",
+                "Gen_Strike_Price",
+                "Gen_Strike_Price_Tie",
             ]
         )
         actual_project_subset = sorted([prj for prj in instance.AVL_EXOG])
@@ -162,12 +165,12 @@ class TestExogenousAvailabilityType(unittest.TestCase):
             actual_operational_timepoints_by_project,
         )
 
-        # Param: availability_derate_independent
+        # Param: availability_derate_outage
         availability_df = pd.read_csv(
             os.path.join(
                 TEST_DATA_DIRECTORY,
                 "inputs",
-                "project_availability_exogenous_independent.tab",
+                "project_availability_exogenous_outage.tab",
             ),
             sep="\t",
         )
@@ -177,7 +180,7 @@ class TestExogenousAvailabilityType(unittest.TestCase):
             for p, tmp, avail in zip(
                 availability_df.project,
                 availability_df.timepoint,
-                availability_df.availability_derate_independent,
+                availability_df.availability_derate_outage,
             )
         }
         expected_availability_derate = dict()
@@ -187,7 +190,7 @@ class TestExogenousAvailabilityType(unittest.TestCase):
             else:
                 expected_availability_derate[p, tmp] = defaults[p, tmp]
         actual_availability_derate = {
-            (prj, tmp): instance.avl_exog_cap_derate_independent[prj, tmp]
+            (prj, tmp): instance.avl_exog_cap_derate_outage[prj, tmp]
             for (prj, tmp) in instance.AVL_EXOG_OPR_TMPS
         }
 
@@ -226,33 +229,31 @@ class TestExogenousAvailabilityType(unittest.TestCase):
             expected_availability_derate_w, actual_availability_derate_w
         )
 
-        # Set: AVL_EXOG_PRJ_BT_HRZ_W_INDEPENDENT_DERATES
+        # Set: AVL_EXOG_PRJ_BT_HRZ_W_OUTAGE_DERATES
         expected_bt_hrz_ind_derates_set = [
             ("Coal", "day", 202001),
             ("Nuclear", "day", 203001),
         ]
         actual_bt_hrz_ind_derates_set = [
             (prj, bt, hrz)
-            for (prj, bt, hrz) in instance.AVL_EXOG_PRJ_BT_HRZ_W_INDEPENDENT_DERATES
+            for (prj, bt, hrz) in instance.AVL_EXOG_PRJ_BT_HRZ_W_OUTAGE_DERATES
         ]
         self.assertListEqual(
             expected_bt_hrz_ind_derates_set, actual_bt_hrz_ind_derates_set
         )
 
-        # Param: avl_exog_cap_derate_independent_bt_hrz
-        expected_avl_exog_cap_derate_independent_bt_hrz = {
+        # Param: avl_exog_cap_derate_outage_bt_hrz
+        expected_avl_exog_cap_derate_outage_bt_hrz = {
             ("Coal", "day", 202001): 0.3,
             ("Nuclear", "day", 203001): 0.5,
         }
-        actual_avl_exog_cap_derate_independent_bt_hrz = {
-            (prj, bt, hrz): instance.avl_exog_cap_derate_independent_bt_hrz[
-                prj, bt, hrz
-            ]
-            for (prj, bt, hrz) in instance.AVL_EXOG_PRJ_BT_HRZ_W_INDEPENDENT_DERATES
+        actual_avl_exog_cap_derate_outage_bt_hrz = {
+            (prj, bt, hrz): instance.avl_exog_cap_derate_outage_bt_hrz[prj, bt, hrz]
+            for (prj, bt, hrz) in instance.AVL_EXOG_PRJ_BT_HRZ_W_OUTAGE_DERATES
         }
         self.assertDictEqual(
-            expected_avl_exog_cap_derate_independent_bt_hrz,
-            actual_avl_exog_cap_derate_independent_bt_hrz,
+            expected_avl_exog_cap_derate_outage_bt_hrz,
+            actual_avl_exog_cap_derate_outage_bt_hrz,
         )
 
         # Set: AVL_EXOG_PRJ_BT_HRZ_W_WEATHER_DERATES
@@ -282,7 +283,7 @@ class TestExogenousAvailabilityType(unittest.TestCase):
             actual_avl_exog_cap_derate_weather_bt_hrz,
         )
 
-        # Param: avl_exog_cap_derate_independent_bt_hrz_by_tmp
+        # Param: avl_exog_cap_derate_outage_bt_hrz_by_tmp
         expected_avl_exog_cap_derate_ind_bt_hrz_by_tmp = defaults
 
         for tmp in range(20200101, 20200125):
@@ -292,7 +293,7 @@ class TestExogenousAvailabilityType(unittest.TestCase):
 
         actual_avl_exog_cap_derate_ind_bt_hrz_by_tmp = {
             (prj, tmp): round(
-                instance.avl_exog_cap_derate_independent_bt_hrz_by_tmp[prj, tmp], 2
+                instance.avl_exog_cap_derate_outage_bt_hrz_by_tmp[prj, tmp], 2
             )
             for (prj, tmp) in instance.AVL_EXOG_OPR_TMPS
         }

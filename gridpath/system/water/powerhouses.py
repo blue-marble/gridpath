@@ -33,7 +33,11 @@ from pyomo.environ import (
 )
 
 from gridpath.auxiliary.db_interface import directories_to_db_values, import_csv
-from gridpath.common_functions import create_results_df
+from gridpath.common_functions import (
+    create_results_df,
+    duals_wrapper,
+    none_dual_type_error_wrapper,
+)
 from gridpath.project.operations.operational_types.common_functions import (
     get_optype_inputs_as_df,
 )
@@ -60,13 +64,12 @@ def add_model_components(
     m.POWERHOUSES = Set(within=Any)
     m.POWERHOUSE_GENERATORS = Set(dimen=2)
 
-    def generators_by_powerhouse_set_init(mod, pwrh):
-        pwrh_g_list = list()
+    def generators_by_powerhouse_set_init(mod):
+        generators_by_powerhouse = {pwrh: [] for pwrh in mod.POWERHOUSES}
         for p, g in mod.POWERHOUSE_GENERATORS:
-            if p == pwrh:
-                pwrh_g_list.append(g)
+            generators_by_powerhouse[p].append(g)
 
-        return pwrh_g_list
+        return generators_by_powerhouse
 
     m.GENERATORS_BY_POWERHOUSE = Set(
         m.POWERHOUSES,
@@ -371,7 +374,17 @@ def export_results(
         "gross_head",
         "net_head",
         "water_discharge_to_powerhouse_rate_vol_per_sec",
+        "generator_water_allocation_constraint_dual",
+        "generator_water_allocation_constraint_marginal_cost_per_vol_per_sec",
     ]
+
+    def allocation_constraint_dual(p, tmp):
+        return (
+            duals_wrapper(m, m.Generator_Water_Allocation_Constraint[p, tmp])
+            if (p, tmp) in m.Generator_Water_Allocation_Constraint
+            else None
+        )
+
     data = [
         [
             p,
@@ -383,6 +396,11 @@ def export_results(
                 m.Discharge_Water_to_Powerhouse_Rate_Vol_Per_Sec[
                     m.powerhouse_water_node[p], tmp
                 ]
+            ),
+            allocation_constraint_dual(p, tmp),
+            none_dual_type_error_wrapper(
+                allocation_constraint_dual(p, tmp),
+                m.tmp_objective_coefficient[tmp],
             ),
         ]
         for p in m.POWERHOUSES

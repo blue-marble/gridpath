@@ -1,4 +1,5 @@
 # Copyright 2016-2023 Blue Marble Analytics LLC.
+# Copyright 2026 Sylvan Energy Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,11 +14,27 @@
 # limitations under the License.
 
 
+import datetime
 import os.path
 import sqlite3
 import sys
 import time
 import traceback
+
+import pandas as pd
+
+# Python 3.12 deprecated sqlite3's implicit datetime/date adapters and the
+# TIMESTAMP/DATE converters used with detect_types=PARSE_DECLTYPES;
+# register equivalents that preserve the storage format the implicit ones
+# used ("YYYY-MM-DD HH:MM:SS[.ffffff]", with a space separator)
+sqlite3.register_adapter(datetime.date, lambda val: val.isoformat())
+sqlite3.register_adapter(datetime.datetime, lambda val: val.isoformat(" "))
+sqlite3.register_converter(
+    "date", lambda val: datetime.date.fromisoformat(val.decode())
+)
+sqlite3.register_converter(
+    "timestamp", lambda val: datetime.datetime.fromisoformat(val.decode())
+)
 
 
 def connect_to_database(db_path="../db/io.db", timeout=5, detect_types=0):
@@ -44,6 +61,45 @@ def connect_to_database(db_path="../db/io.db", timeout=5, detect_types=0):
     conn.execute("PRAGMA foreign_keys=ON;")
 
     return conn
+
+
+# Maps the type of database modification to the db_metadata column tracking
+# when that modification last happened
+DB_LAST_MODIFIED_COLUMNS = {
+    "inputs": "inputs_last_modified_datetime",
+    "scenarios": "scenarios_last_modified_datetime",
+    "results_import": "results_last_imported_datetime",
+    "results_process": "results_last_processed_datetime",
+}
+
+
+def update_db_last_modified(conn, modification_type):
+    """
+    :param conn: the database connection object
+    :param modification_type: str, one of the keys of
+        DB_LAST_MODIFIED_COLUMNS ("inputs", "scenarios", "results_import",
+        or "results_process")
+
+    Set the last-modified datetime for the respective type of database
+    modification in the db_metadata table to the current time. Call this
+    from utilities that modify the database. Databases created before the
+    db_metadata table was added are left unchanged.
+    """
+    column = DB_LAST_MODIFIED_COLUMNS[modification_type]
+
+    c = conn.cursor()
+    table_exists = c.execute(
+        "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'db_metadata';"
+    ).fetchone()
+    if table_exists:
+        spin_on_database_lock(
+            conn=conn,
+            cursor=c,
+            sql=f"UPDATE db_metadata SET {column} = ?;",
+            data=(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),),
+            many=False,
+            commit_immediately=True,
+        )
 
 
 # TODO: move to spin_database_lock_generic
@@ -169,3 +225,25 @@ def spin_on_database_lock_generic(
         else:
             # print("...done.")
             break
+
+
+def read_and_import_csv(conn, f_path, table):
+    """
+    Read the CSV at *f_path* and APPEND its contents to *table* (existing
+    rows are preserved). The CSV's column names must be a subset of the
+    table's columns. Shared by the Data Toolkit's and the RA Toolkit's
+    raw-data loaders and by the steps that write their generated data back
+    into a raw database.
+    """
+    # Set low_memory to False to avoid dtype warning
+    # TODO: actually specify dtypes instead
+    df = pd.read_csv(f_path, delimiter=",", low_memory=False, on_bad_lines="warn")
+
+    spin_on_database_lock_generic(
+        command=df.to_sql(
+            name=table,
+            con=conn,
+            if_exists="append",
+            index=False,
+        )
+    )

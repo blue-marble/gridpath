@@ -25,7 +25,7 @@ from pyomo.environ import Set, Expression, value
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import join_sets
-from gridpath.common_functions import create_results_df
+from gridpath.common_functions import create_results_df, update_results_df
 from gridpath.transmission.capacity.common_functions import (
     load_tx_capacity_type_modules,
 )
@@ -287,9 +287,7 @@ def export_results(
         data=data1,
     )
 
-    for c in results_columns1:
-        getattr(d, TX_PERIOD_DF)[c] = None
-    getattr(d, TX_PERIOD_DF).update(cost_df1)
+    update_results_df(getattr(d, TX_PERIOD_DF), cost_df1)
 
     results_columns2 = [
         "hours_in_period_timepoints",
@@ -313,60 +311,7 @@ def export_results(
         data=data2,
     )
 
-    for c in results_columns2:
-        getattr(d, TX_PERIOD_DF)[c] = None
-    getattr(d, TX_PERIOD_DF).update(cost_df2)
-
-
-def save_duals(
-    scenario_directory,
-    weather_iteration,
-    hydro_iteration,
-    availability_iteration,
-    subproblem,
-    stage,
-    instance,
-    dynamic_components,
-):
-    # Save module-specific duals
-    # Capacity type modules
-    df = pd.read_csv(
-        os.path.join(
-            scenario_directory,
-            weather_iteration,
-            hydro_iteration,
-            availability_iteration,
-            subproblem,
-            stage,
-            "inputs",
-            "transmission_lines.tab",
-        ),
-        sep="\t",
-        usecols=["transmission_line", "tx_capacity_type", "tx_operational_type"],
-    )
-
-    # Required capacity modules are the unique set of tx capacity types
-    # This list will be used to know which capacity modules to load
-    required_tx_capacity_modules = df.tx_capacity_type.unique()
-
-    # Import needed transmission capacity type modules for expression rules
-    imported_tx_capacity_modules = load_tx_capacity_type_modules(
-        required_tx_capacity_modules
-    )
-
-    # Add any components specific to the operational modules
-    for op_m in required_tx_capacity_modules:
-        if hasattr(imported_tx_capacity_modules[op_m], "save_duals"):
-            imported_tx_capacity_modules[op_m].save_duals(
-                scenario_directory,
-                weather_iteration,
-                hydro_iteration,
-                availability_iteration,
-                subproblem,
-                stage,
-                instance,
-                dynamic_components,
-            )
+    update_results_df(getattr(d, TX_PERIOD_DF), cost_df2)
 
 
 # Database

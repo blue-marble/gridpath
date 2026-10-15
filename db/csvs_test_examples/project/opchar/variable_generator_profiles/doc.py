@@ -26,6 +26,13 @@ for projects and timepoints that are not included in a particular GridPath
 scenario: GridPath will select the subset of projects and timepoints based
 on the scenarios project portfolio and temporal subscenarios.
 
+A project's profile doesn't need to be stored for every model timepoint: with
+an opchar timepoint map (the project's
+:code:`variable_generator_profile_tmp_map_scenario_id`), each timepoint can
+read its profile at another timepoint, e.g. the same timepoint of the first
+period, or, with the built-in calendar-hour map, a single year of hourly data
+for every period (see :ref:`opchar-timepoint-maps-section-ref`).
+
 """
 
 if __name__ == "__main__":

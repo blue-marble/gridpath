@@ -46,6 +46,8 @@ def export_results(
                 "energy_target_zone",
                 "period",
                 "discount_factor",
+                "probability",
+                "probability_weighted_discount_factor",
                 "number_years_represented",
             ],
             "data": (
@@ -54,6 +56,8 @@ def export_results(
                         z,
                         p,
                         m.discount_factor[p],
+                        m.probability[p],
+                        m.probability_weighted_discount_factor[p],
                         m.number_years_represented[p],
                     ]
                     for (z, p) in getattr(
@@ -71,7 +75,7 @@ def export_results(
             "exists": hasattr(m, "ENERGY_TARGET_ZONE_BLN_TYPE_HRZS_WITH_ENERGY_TARGET"),
             "columns": [
                 "energy_target_zone",
-                "balancing_type",
+                "balancing_type_horizon",
                 "horizon",
             ],
             "data": (
@@ -88,7 +92,7 @@ def export_results(
                 if hasattr(m, "ENERGY_TARGET_ZONE_BLN_TYPE_HRZS_WITH_ENERGY_TARGET")
                 else []
             ),
-            "index": ["energy_target_zone", "balancing_type", "horizon"],
+            "index": ["energy_target_zone", "balancing_type_horizon", "horizon"],
         },
     }
     for target_type in target_types.keys():
@@ -128,22 +132,12 @@ def import_results_into_database(
     which_results_list = ["system_period_energy_target", "system_horizon_energy_target"]
 
     for which_results in which_results_list:
-        if os.path.exists(
-            os.path.join(
-                results_directory,
-                weather_iteration,
-                hydro_iteration,
-                availability_iteration,
-                subproblem,
-                stage,
-                "results",
-                f"{which_results}.csv",
-            )
-        ):
+        if os.path.exists(os.path.join(results_directory, f"{which_results}.csv")):
             import_csv(
                 conn=db,
                 cursor=c,
                 scenario_id=scenario_id,
+                weather_iteration=weather_iteration,
                 hydro_iteration=hydro_iteration,
                 availability_iteration=availability_iteration,
                 subproblem=subproblem,

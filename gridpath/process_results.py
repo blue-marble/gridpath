@@ -22,13 +22,15 @@ The main() function of this script can also be called with the
 """
 
 from argparse import ArgumentParser
+import datetime
 import sys
 
-from db.common_functions import connect_to_database
+from db.common_functions import connect_to_database, update_db_last_modified
 from gridpath.common_functions import (
     determine_scenario_directory,
     get_db_parser,
     get_required_e2e_arguments_parser,
+    get_version_parser,
 )
 from gridpath.auxiliary.db_interface import get_scenario_id_and_name
 from gridpath.auxiliary.module_list import determine_modules, load_modules
@@ -59,7 +61,12 @@ def parse_arguments(args):
     Parse the known arguments.
     """
     parser = ArgumentParser(
-        add_help=True, parents=[get_db_parser(), get_required_e2e_arguments_parser()]
+        add_help=True,
+        parents=[
+            get_db_parser(),
+            get_required_e2e_arguments_parser(),
+            get_version_parser(),
+        ],
     )
     parsed_arguments = parser.parse_known_args(args=args)[0]
 
@@ -81,43 +88,52 @@ def main(args=None):
     scenario_name_arg = parsed_arguments.scenario
     scenario_location = parsed_arguments.scenario_location
 
+    # Close the connection on any raise: a connection left open by an error
+    # keeps the database file locked on Windows
     conn = connect_to_database(db_path=db_path)
-    c = conn.cursor()
+    try:
+        c = conn.cursor()
 
-    if not parsed_arguments.quiet:
-        print("Processing results... (connected to database {})".format(db_path))
+        if not parsed_arguments.quiet:
+            print(
+                "Processing results, started on {}... (connected to database {})".format(
+                    datetime.datetime.now(), db_path
+                )
+            )
 
-    scenario_id, scenario_name = get_scenario_id_and_name(
-        scenario_id_arg=scenario_id_arg,
-        scenario_name_arg=scenario_name_arg,
-        c=c,
-        script="process_results",
-    )
+        scenario_id, scenario_name = get_scenario_id_and_name(
+            scenario_id_arg=scenario_id_arg,
+            scenario_name_arg=scenario_name_arg,
+            c=c,
+            script="process_results",
+        )
 
-    # Determine scenario directory
-    scenario_directory = determine_scenario_directory(
-        scenario_location=scenario_location, scenario_name=scenario_name
-    )
+        # Determine scenario directory
+        scenario_directory = determine_scenario_directory(
+            scenario_location=scenario_location, scenario_name=scenario_name
+        )
 
-    # Go through modules
-    modules_to_use = determine_modules(scenario_directory=scenario_directory)
-    loaded_modules = load_modules(modules_to_use)
+        # Go through modules
+        modules_to_use = determine_modules(scenario_directory=scenario_directory)
+        loaded_modules = load_modules(modules_to_use)
 
-    # Subscenarios
-    subscenarios = SubScenarios(conn=conn, scenario_id=scenario_id)
+        # Subscenarios
+        subscenarios = SubScenarios(conn=conn, scenario_id=scenario_id)
 
-    process_results(
-        loaded_modules=loaded_modules,
-        db=conn,
-        cursor=c,
-        scenario_id=scenario_id,
-        subscenarios=subscenarios,
-        quiet=parsed_arguments.quiet,
-    )
+        process_results(
+            loaded_modules=loaded_modules,
+            db=conn,
+            cursor=c,
+            scenario_id=scenario_id,
+            subscenarios=subscenarios,
+            quiet=parsed_arguments.quiet,
+        )
 
-    # Close the database connection
-    conn.commit()
-    conn.close()
+        update_db_last_modified(conn=conn, modification_type="results_process")
+
+        conn.commit()
+    finally:
+        conn.close()
 
 
 if __name__ == "__main__":

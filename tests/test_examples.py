@@ -19,10 +19,22 @@ import multiprocessing
 import os
 import pandas as pd
 import platform
+import shutil
 import sqlite3
+import subprocess
+import sys
+import tempfile
 import unittest
+import warnings
 
-from gridpath import run_end_to_end, run_scenario, validate_inputs
+from gridpath import (
+    get_scenario_inputs,
+    import_scenario_results,
+    run_end_to_end,
+    run_scenario,
+    validate_inputs,
+)
+from gridpath.scenario_directory_cleanup import CLEANUP_MARKER_FILENAME
 from db import create_database
 from db.common_functions import connect_to_database
 from db.utilities import port_csvs_to_db, scenario
@@ -31,7 +43,10 @@ from db.utilities import port_csvs_to_db, scenario
 # expects; the rest of the global variables are relative paths from there
 os.chdir(os.path.join(os.path.dirname(__file__), "..", "gridpath"))
 EXAMPLES_DIRECTORY = os.path.join("..", "examples")
-DB_NAME = "unittest_examples"
+# When running in parallel via pytest-xdist, give each worker process its
+# own database (PYTEST_XDIST_WORKER is e.g. "gw0"; unset in serial runs)
+XDIST_WORKER = os.environ.get("PYTEST_XDIST_WORKER", "")
+DB_NAME = f"unittest_examples{XDIST_WORKER}"
 DB_PATH = f"../db/{DB_NAME}.db"
 DB_SCHEMA = f"../db/db_schema.sql"
 DATA_DIRECTORY = "../db/data"
@@ -46,6 +61,77 @@ WINDOWS = True if platform.system() == "Windows" else False
 
 # Python version
 PYTHON_VERSION = platform.python_version()
+
+
+# Relative tolerance for comparing objective function values: some example
+# objective function values are very large (1e14+ when constraint-violation
+# penalties are incurred), where floating-point differences across platforms
+# and Python versions exceed any fixed absolute tolerance (one ULP at 1e15
+# is ~0.125), so we also allow a relative difference
+OBJECTIVE_REL_TOL = 1e-9
+
+# A pre-built database to copy instead of building the testing database
+# from the CSVs; set by scripts/run_tests_parallel.py, which builds the
+# template once rather than once per pytest-xdist worker
+DB_TEMPLATE_ENV_VAR = "GRIDPATH_TEST_EXAMPLES_DB_TEMPLATE"
+
+
+def create_test_database(db_path):
+    """
+    Build the testing database at db_path from the test-examples CSVs.
+    """
+    if os.path.exists(db_path):
+        os.remove(db_path)
+
+    create_database.main(
+        [
+            "--database",
+            db_path,
+            "--db_schema",
+            DB_SCHEMA,
+            "--data_directory",
+            DATA_DIRECTORY,
+        ]
+    )
+
+    try:
+        port_csvs_to_db.main(
+            ["--database", db_path, "--csv_location", CSV_PATH, "--quiet"]
+        )
+    except Exception as e:
+        print(
+            "Error encountered during population of testing database "
+            "{}. Deleting database ...".format(db_path)
+        )
+        logging.exception(e)
+        os.remove(db_path)
+
+    try:
+        scenario.main(["--database", db_path, "--csv_path", SCENARIOS_CSV, "--quiet"])
+    except Exception as e:
+        print(
+            "Error encountered during population of testing database "
+            "{}. Deleting database ...".format(db_path)
+        )
+        logging.exception(e)
+        os.remove(db_path)
+
+
+def set_up_test_database(db_path):
+    """
+    Copy the pre-built template database to db_path if one has been provided
+    (parallel runs); otherwise build the database from the CSVs.
+    """
+    template_path = os.environ.get(DB_TEMPLATE_ENV_VAR)
+    if template_path and os.path.exists(template_path):
+        # Clear any stale database files first: copying a fresh .db file
+        # next to a leftover -wal/-shm from an aborted run would corrupt it
+        for stale in [db_path, f"{db_path}-shm", f"{db_path}-wal"]:
+            if os.path.exists(stale):
+                os.remove(stale)
+        shutil.copyfile(template_path, db_path)
+    else:
+        create_test_database(db_path)
 
 
 class TestExamples(unittest.TestCase):
@@ -67,7 +153,17 @@ class TestExamples(unittest.TestCase):
             if isinstance(value, dict):
                 self.assertDictAlmostEqual(d1[key], d2[key], places=places, msg=msg)
             else:
-                self.assertAlmostEqual(d1[key], d2[key], places=places, msg=msg)
+                # A None value means no objective function value was
+                # obtained, e.g. because the solve failed
+                self.assertIsNotNone(
+                    d2[key],
+                    msg=f"No objective function value for {key} (the solve "
+                    f"may have failed; expected {d1[key]})",
+                )
+                # Use the absolute tolerance implied by *places* or the
+                # relative tolerance, whichever is looser
+                delta = max(0.5 * 10**-places, OBJECTIVE_REL_TOL * abs(d1[key]))
+                self.assertAlmostEqual(d1[key], d2[key], delta=delta, msg=msg)
 
     def check_validation(self, test):
         """
@@ -94,9 +190,15 @@ class TestExamples(unittest.TestCase):
             WHERE scenario_name = '{}'
             """.format(test))
         actual_validations = validations.fetchall()
+        # The validation run must also have committed its status update
+        # (1 = valid); this is a fresh connection, so a run that rolls its
+        # writes back on close would still show 0 = not_validated here
+        validation_status_id = c.execute("""SELECT validation_status_id FROM scenarios
+            WHERE scenario_name = '{}'""".format(test)).fetchone()[0]
         conn.close()
 
         self.assertListEqual(expected_validations, actual_validations)
+        self.assertEqual(1, validation_status_id)
 
     def run_and_check_objective(
         self,
@@ -166,24 +268,24 @@ class TestExamples(unittest.TestCase):
                 # Reset the objective to the new dictionary object
                 actual_objective = actual_objective_copy
 
-        # Uncomment this to save new objective function values
-        df = pd.read_csv(TEST_SCENARIOS_CSV, delimiter=",")
-        df.set_index("test_scenario", inplace=True)
-        # Set dtype to 'object' so that we can have floats and dictionaries
-        # in the column
-        df["actual_objective"] = df["actual_objective"].astype("object")
-        df.at[scenario_name, "actual_objective"] = actual_objective
-        df.to_csv(TEST_SCENARIOS_CSV, index=True)
+        # Convert any numpy floats to plain Python floats, so that the
+        # values written to the CSV can be read back with ast.literal_eval
+        # (numpy floats are written as, e.g., 'np.float64(42.0)')
+        actual_objective = objective_values_to_float(actual_objective)
 
-        if scenario_name == "test_new_solar_carbon_cap_dac":
-            # This test is particularly sensitive to platform and
-            # Python version, so we relax the precision of the test a bit
-            # more
-            places = -1
-        else:
-            places = 1
+        # Record the actual objective in the test-scenarios CSV; skip when
+        # running in parallel via pytest-xdist, as concurrent whole-file
+        # rewrites from multiple workers would lose each other's updates
+        if not XDIST_WORKER:
+            df = pd.read_csv(TEST_SCENARIOS_CSV, delimiter=",")
+            df.set_index("test_scenario", inplace=True)
+            # Set dtype to 'object' so that we can have floats and
+            # dictionaries in the column
+            df["actual_objective"] = df["actual_objective"].astype("object")
+            df.at[scenario_name, "actual_objective"] = actual_objective
+            df.to_csv(TEST_SCENARIOS_CSV, index=True)
 
-        self.assertDictAlmostEqual(expected_objective, actual_objective, places=places)
+        self.assertDictAlmostEqual(expected_objective, actual_objective, places=1)
 
     @classmethod
     def setUpClass(cls):
@@ -191,44 +293,7 @@ class TestExamples(unittest.TestCase):
         Set up the testing database
         :return:
         """
-
-        if os.path.exists(DB_PATH):
-            os.remove(DB_PATH)
-
-        create_database.main(
-            [
-                "--database",
-                DB_PATH,
-                "--db_schema",
-                DB_SCHEMA,
-                "--data_directory",
-                DATA_DIRECTORY,
-            ]
-        )
-
-        try:
-            port_csvs_to_db.main(
-                ["--database", DB_PATH, "--csv_location", CSV_PATH, "--quiet"]
-            )
-        except Exception as e:
-            print(
-                "Error encountered during population of testing database "
-                "{}.db. Deleting database ...".format(DB_NAME)
-            )
-            logging.exception(e)
-            os.remove(DB_PATH)
-
-        try:
-            scenario.main(
-                ["--database", DB_PATH, "--csv_path", SCENARIOS_CSV, "--quiet"]
-            )
-        except Exception as e:
-            print(
-                "Error encountered during population of testing database "
-                "{}.db. Deleting database ...".format(DB_NAME)
-            )
-            logging.exception(e)
-            os.remove(DB_PATH)
+        set_up_test_database(DB_PATH)
 
     def validate_and_test_example_generic(
         self, scenario_name, solver=None, skip_validation=False, additional_args=[]
@@ -336,6 +401,17 @@ class TestExamples(unittest.TestCase):
         scenario_name = "test_w_storage"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
+    def test_example_test_w_storage_w_reserves_setpoint_duration(self):
+        """
+        Check validation and objective function value of
+        "test_w_storage_w_reserves_setpoint_duration" example: the battery's
+        reserves must be sustainable for a 4-hour setpoint duration instead
+        of the (1-hour) timepoint duration
+        :return:
+        """
+        scenario_name = "test_w_storage_w_reserves_setpoint_duration"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
     def test_example_2horizons(self):
         """
         Check validation and objective function value of "2horizons" example
@@ -351,6 +427,50 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         scenario_name = "2horizons_w_hydro"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_2horizons_w_hydro_w_energy_budget_balancing_type(self):
+        """
+        Check validation and objective function value of
+        "2horizons_w_hydro_w_energy_budget_balancing_type" example: as
+        "2horizons_w_hydro", but the Hydro project's balancing type is the
+        circular 'year' (so its ramp limits, added here, apply across the
+        day boundaries) while its energy budgets are specified by 'day' via
+        energy_budget_balancing_type.
+        :return:
+        """
+        scenario_name = "2horizons_w_hydro_w_energy_budget_balancing_type"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_2horizons_w_hydro_w_day_of_year_inputs(self):
+        """
+        Check validation and objective function value of
+        "2horizons_w_hydro_w_day_of_year_inputs" example: as
+        "2horizons_w_hydro" (same objective), with the days of month in the
+        temporal structure, and the Hydro project on the built-in
+        subproblem_period_day_circular balancing type (whose horizons
+        coincide with the 'day' horizons here) with its inputs given per day
+        of year: 1 January only as a day-of-year row, 1 February as a
+        day-of-year row (with a different value) that the explicit 20200201
+        row overrides.
+        :return:
+        """
+        scenario_name = "2horizons_w_hydro_w_day_of_year_inputs"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_2horizons_w_hydro_w_month_of_year_inputs(self):
+        """
+        Check validation and objective function value of
+        "2horizons_w_hydro_w_month_of_year_inputs" example: as
+        "2horizons_w_hydro" (same objective), but the Hydro project's
+        balancing type is the built-in subproblem_period_month_circular
+        (whose horizons coincide with the 'day' horizons here) and its
+        inputs are given per month of year: month 1 only as a month-of-year
+        row, month 2 as a month-of-year row (with a different value) that the
+        explicit 202002 row overrides.
+        :return:
+        """
+        scenario_name = "2horizons_w_hydro_w_month_of_year_inputs"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_2horizons_w_hydro_and_nuclear_binary_availability(self):
@@ -384,6 +504,32 @@ class TestExamples(unittest.TestCase):
         scenario_name = "2horizons_w_hydro_w_balancing_types"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
+    def test_example_2horizons_w_hydro_w_budget_allocation(self):
+        """
+        Check validation and objective function value of
+        "2horizons_w_hydro_w_budget_allocation" example: the
+        '2horizons_w_hydro_w_balancing_types' example (yearly hydro budget)
+        with the allocation of the budget between the two days limited to
+        30-40% and 60-70% respectively; the unconstrained solution puts ~58%
+        in the first day, so the limits bind and the objective is worse
+        than the base example's.
+        :return:
+        """
+        scenario_name = "2horizons_w_hydro_w_budget_allocation"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_2horizons_w_stor_stress_hrz(self):
+        """
+        Check validation and objective function value of
+        "2horizons_w_stor_stress_hrz" example. A stor_stress_hrz storage
+        project builds up its state of charge over the first
+        (average-condition) horizon and enters the second (stress) horizon,
+        which has higher load, with the accumulated energy.
+        :return:
+        """
+        scenario_name = "2horizons_w_stor_stress_hrz"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
     def test_example_2periods(self):
         """
         Check validation and objective function value of "2periods" example
@@ -397,6 +543,29 @@ class TestExamples(unittest.TestCase):
         Check validation and objective function value of "2periods_new_build" example
         """
         scenario_name = "2periods_new_build"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_2periods_new_build_w_var_profile_tmp_map(self):
+        """
+        Check validation and objective function value of
+        "2periods_new_build_w_var_profile_tmp_map" example: same as
+        "2periods_new_build", but Wind's profile is specified for the 2020
+        timepoints only and repeated in 2030 via an opchar timepoint map, so
+        the objective function value must be identical.
+        """
+        scenario_name = "2periods_new_build_w_var_profile_tmp_map"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_2periods_new_build_w_var_profile_calendar_hour_map(self):
+        """
+        Check validation and objective function value of
+        "2periods_new_build_w_var_profile_calendar_hour_map" example: same as
+        "2periods_new_build", but Wind's profile is specified once by
+        calendar hour and read in both periods through the built-in
+        calendar-hour timepoint map, so the objective function value must be
+        identical.
+        """
+        scenario_name = "2periods_new_build_w_var_profile_calendar_hour_map"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_2periods_new_build_2zones(self):
@@ -445,6 +614,25 @@ class TestExamples(unittest.TestCase):
         scenario_name = "2periods_new_build_2zones_transmission_w_losses"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
+    def test_example_2periods_new_build_2zones_transmission_w_losses_curtailment_cost(
+        self,
+    ):
+        """
+        Check validation and objective function value of
+        "2periods_new_build_2zones_transmission_w_losses_curtailment_cost"
+        example, in which a curtailment cost is applied to transmission
+        losses
+
+        Note: the objective function should differ from that of
+        2periods_new_build_2zones_transmission_w_losses by exactly the total
+        transmission curtailment cost
+        :return:
+        """
+        scenario_name = (
+            "2periods_new_build_2zones_transmission_w_losses_curtailment_cost"
+        )
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
     def test_example_2periods_new_build_2zones_transmission_w_losses_opp_dir(self):
         """
         Check validation and objective function value of
@@ -464,6 +652,16 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         scenario_name = "2periods_new_build_rps"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_2periods_new_build_rps_w_tx_losses(self):
+        """
+        Check validation and objective function value of
+        "2periods_new_build_rps_w_tx_losses" example, in which transmission
+        losses count against the period energy target
+        :return:
+        """
+        scenario_name = "2periods_new_build_rps_w_tx_losses"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_2periods_new_build_rps_percent_target(self):
@@ -514,6 +712,21 @@ class TestExamples(unittest.TestCase):
         scenario_name = "single_stage_prod_cost_linked_subproblems_w_hydro"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
+    def test_example_single_stage_prod_cost_linked_subproblems_w_hydro_w_hrz_map(
+        self,
+    ):
+        """
+        Check objective function values of
+        "single_stage_prod_cost_linked_subproblems_w_hydro_w_hrz_map"
+        example: same as "single_stage_prod_cost_linked_subproblems_w_hydro",
+        but Hydro's operational characteristics are specified for the first
+        day horizon only and repeated for the other horizons via an opchar
+        horizon map, so the objective function values must be identical.
+        :return:
+        """
+        scenario_name = "single_stage_prod_cost_linked_subproblems_w_hydro_w_hrz_map"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
     def test_example_multi_stage_prod_cost(self):
         """
         Check validation and objective function values of
@@ -536,30 +749,505 @@ class TestExamples(unittest.TestCase):
     def test_example_multi_stage_prod_cost_parallel(self):
         """
         Check "multi_stage_prod_cost" example running subproblems in parallel
-        (getting inputs and optimization)
+        (getting inputs and optimization); run in a temporary scenario location (inputs are generated
+        there from the database; examples/ is left alone), so that this test doesn't write into the
+        examples/ directory that test_example_multi_stage_prod_cost may be
+        using concurrently
         :return:
         """
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            run_end_to_end.main(
+                [
+                    "--database",
+                    DB_PATH,
+                    "--scenario",
+                    "multi_stage_prod_cost",
+                    "--scenario_location",
+                    tmp_dir,
+                    # "--log",
+                    # "--write_solver_files_to_logs_dir",
+                    # "--keepfiles",
+                    # "--symbolic",
+                    "--n_parallel_get_inputs",
+                    "3",
+                    "--n_parallel_solve",
+                    "3",
+                    "--quiet",
+                    "--mute_solver_output",
+                    "--testing",
+                ]
+            )
+
+    def test_example_multi_stage_prod_cost_parallel_cli_subprocess(self):
+        """
+        Check the parallel flags through the installed gridpath_run_e2e
+        console script in a subprocess (falling back to
+        `python -m gridpath.run_end_to_end` if the script isn't installed).
+
+        The in-process parallel test above can't catch entry-point-specific
+        multiprocessing problems: spawn pool workers re-import the parent
+        process's __main__ module, so whether the parallel flags are safe
+        depends on what that module is — here it is the real CLI entry
+        point rather than the test runner. On Windows (no fork), a broken
+        entry point fails with "An attempt has been made to start a new
+        process before the current process has finished its bootstrapping
+        phase".
+
+        Run in a temporary scenario location (inputs are generated there from
+        the database) so this test leaves examples/ alone. No --testing flag:
+        main() must return None so that the console script's sys.exit(main())
+        exits 0 on success.
+        """
+        exe_name = "gridpath_run_e2e" + (".exe" if WINDOWS else "")
+        exe_path = os.path.join(os.path.dirname(sys.executable), exe_name)
+        if os.path.exists(exe_path):
+            base_cmd = [exe_path]
+        else:
+            base_cmd = [sys.executable, "-m", "gridpath.run_end_to_end"]
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            result = subprocess.run(
+                base_cmd
+                + [
+                    "--database",
+                    os.path.abspath(DB_PATH),
+                    "--scenario",
+                    "multi_stage_prod_cost",
+                    "--scenario_location",
+                    tmp_dir,
+                    "--n_parallel_get_inputs",
+                    "3",
+                    "--n_parallel_solve",
+                    "3",
+                    "--quiet",
+                    "--mute_solver_output",
+                ],
+                capture_output=True,
+                text=True,
+                # Bound the run: a spawn-bootstrapping failure can manifest
+                # as a hang (the pool keeps respawning dying workers)
+                timeout=1200,
+            )
+
+        self.assertEqual(
+            result.returncode,
+            0,
+            msg="CLI subprocess {} failed.\nSTDOUT:\n{}\nSTDERR:\n{}".format(
+                base_cmd, result.stdout, result.stderr
+            ),
+        )
+        self.assertNotIn("bootstrapping phase", result.stdout + result.stderr)
+
+        # Confirm the run was marked as finished (run_status_id = 2) in the
+        # database, i.e. all e2e steps actually completed
+        conn = sqlite3.connect(os.path.abspath(DB_PATH))
+        try:
+            run_status_id = conn.execute(
+                "SELECT run_status_id FROM scenarios WHERE scenario_name = ?;",
+                ("multi_stage_prod_cost",),
+            ).fetchone()[0]
+        finally:
+            conn.close()
+        self.assertEqual(run_status_id, 2)
+
+    def run_e2e_in(self, scenario_name, scenario_location, additional_args):
         run_end_to_end.main(
             [
                 "--database",
                 DB_PATH,
                 "--scenario",
-                "multi_stage_prod_cost",
+                scenario_name,
                 "--scenario_location",
-                EXAMPLES_DIRECTORY,
-                # "--log",
-                # "--write_solver_files_to_logs_dir",
-                # "--keepfiles",
-                # "--symbolic",
-                "--n_parallel_get_inputs",
-                "3",
-                "--n_parallel_solve",
-                "3",
+                scenario_location,
                 "--quiet",
                 "--mute_solver_output",
                 "--testing",
             ]
+            + additional_args
         )
+
+    def get_scenario_results_rows(self, scenario_name):
+        conn = sqlite3.connect(DB_PATH)
+        try:
+            scenario_id = conn.execute(
+                "SELECT scenario_id FROM scenarios WHERE scenario_name = ?;",
+                (scenario_name,),
+            ).fetchone()[0]
+            results_scenario_rows = conn.execute(
+                "SELECT * FROM results_scenario WHERE scenario_id = ?;",
+                (scenario_id,),
+            ).fetchall()
+            system_costs_rows = conn.execute(
+                "SELECT * FROM results_system_costs WHERE scenario_id = ?;",
+                (scenario_id,),
+            ).fetchall()
+        finally:
+            conn.close()
+
+        return (
+            sorted(results_scenario_rows, key=str),
+            sorted(system_costs_rows, key=str),
+        )
+
+    def test_per_draw_lifecycle_differential(self):
+        """
+        A --per_draw_lifecycle run with per-draw cleanup must import
+        identical rows to a classic whole-scenario run, end with a cleaned
+        directory, and a re-run must recognize the completed draws (from
+        the cleanup marker) and finish without re-solving or altering the
+        database results. Run in temporary copies of the scenario
+        directory, so this test doesn't write into the examples/ directory
+        that test_example_ra_toolkit_monte_carlo may be using concurrently.
+        """
+        scenario_name = "ra_toolkit_monte_carlo"
+
+        # Classic whole-scenario baseline
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            self.run_e2e_in(scenario_name, tmp_dir, [])
+            baseline_rows = self.get_scenario_results_rows(scenario_name)
+        self.assertTrue(len(baseline_rows[0]) > 0)
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            scenario_directory = os.path.join(tmp_dir, scenario_name)
+            # Strip the results CSVs (keeping the termination/status files),
+            # mimicking the committed example state a fresh checkout has:
+            # the per-draw mode must re-solve rather than trust and import
+            # pre-existing results files, which may be incomplete
+            for dirpath, dirnames, filenames in os.walk(scenario_directory):
+                if os.path.basename(dirpath) == "results":
+                    for fname in filenames:
+                        if fname.endswith(".csv"):
+                            os.remove(os.path.join(dirpath, fname))
+
+            per_draw_args = ["--per_draw_lifecycle", "--cleanup_after_import"]
+            self.run_e2e_in(scenario_name, tmp_dir, per_draw_args)
+
+            # Identical database rows to the classic run
+            self.assertEqual(
+                baseline_rows, self.get_scenario_results_rows(scenario_name)
+            )
+            # The draws' directories were cleaned as they were imported
+            remaining = sorted(os.listdir(scenario_directory))
+            self.assertNotIn("weather_iteration_1", remaining)
+            self.assertNotIn("weather_iteration_2", remaining)
+            self.assertIn(CLEANUP_MARKER_FILENAME, remaining)
+            self.assertIn("features.csv", remaining)
+
+            # Re-run: completed draws are recognized from the marker; the
+            # run finishes without re-solving and the results are unchanged
+            self.run_e2e_in(scenario_name, tmp_dir, per_draw_args)
+            self.assertEqual(
+                baseline_rows, self.get_scenario_results_rows(scenario_name)
+            )
+            self.assertNotIn(
+                "weather_iteration_1", sorted(os.listdir(scenario_directory))
+            )
+
+        # Batched per-draw run: both draws solved in ONE run_scenario call
+        # (--n_parallel_solve parallelizes across the batch's draws), with
+        # the same database rows and the same cleaned end-state
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            scenario_directory = os.path.join(tmp_dir, scenario_name)
+            self.run_e2e_in(
+                scenario_name,
+                tmp_dir,
+                [
+                    "--per_draw_lifecycle",
+                    "--cleanup_after_import",
+                    "--n_draws_per_solve_batch",
+                    "2",
+                    "--n_parallel_solve",
+                    "2",
+                ],
+            )
+            self.assertEqual(
+                baseline_rows, self.get_scenario_results_rows(scenario_name)
+            )
+            remaining = sorted(os.listdir(scenario_directory))
+            self.assertNotIn("weather_iteration_1", remaining)
+            self.assertNotIn("weather_iteration_2", remaining)
+            self.assertIn(CLEANUP_MARKER_FILENAME, remaining)
+
+    def test_single_draw_regeneration_debug_workflow(self):
+        """
+        The debugging workflow for a cleaned scenario: re-materialize ONE
+        draw's inputs with gridpath_get_inputs' iteration options (the
+        cleanup marker must stay in place, since the rest of the tree is
+        still cleaned), then solve just that draw with run_scenario's
+        --ignore_cleanup_marker. Run in a temporary scenario location (the inputs are
+        generated there from the database; examples/ is left alone).
+        """
+        scenario_name = "ra_toolkit_monte_carlo"
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            scenario_directory = os.path.join(tmp_dir, scenario_name)
+            self.run_e2e_in(
+                scenario_name,
+                tmp_dir,
+                ["--per_draw_lifecycle", "--cleanup_after_import"],
+            )
+            results_rows = self.get_scenario_results_rows(scenario_name)
+
+            # Re-materialize one draw's inputs
+            get_scenario_inputs.main(
+                [
+                    "--database",
+                    DB_PATH,
+                    "--scenario",
+                    scenario_name,
+                    "--scenario_location",
+                    tmp_dir,
+                    "--single_draw",
+                    "1",
+                    "2010",
+                    "1",
+                    "--quiet",
+                ]
+            )
+            draw_directory = os.path.join(
+                scenario_directory,
+                "weather_iteration_1",
+                "hydro_iteration_2010",
+                "availability_iteration_1",
+            )
+            self.assertTrue(os.path.exists(draw_directory))
+            # Only the requested draw was regenerated, and the marker stays
+            self.assertFalse(
+                os.path.exists(os.path.join(scenario_directory, "weather_iteration_2"))
+            )
+            self.assertTrue(
+                os.path.exists(
+                    os.path.join(scenario_directory, CLEANUP_MARKER_FILENAME)
+                )
+            )
+
+            # The temporal-structure-CSV overwrite is the other way to
+            # regenerate part of the tree; it too must leave the cleanup
+            # marker in place (only a full regeneration clears it)
+            csv_path = os.path.join(tmp_dir, "structure_subset.csv")
+            with open(csv_path, "w", newline="") as f:
+                f.write(
+                    "weather_iteration,hydro_iteration,availability_iteration,"
+                    "subproblem,stage\n"
+                    "1,2010,1,1,1\n"
+                    "1,2010,1,2,1\n"
+                )
+            get_scenario_inputs.main(
+                [
+                    "--database",
+                    DB_PATH,
+                    "--scenario",
+                    scenario_name,
+                    "--scenario_location",
+                    tmp_dir,
+                    "--temporal_structure_csv_overwrite",
+                    "--temporal_structure_csv_path",
+                    csv_path,
+                    "--quiet",
+                ]
+            )
+            self.assertTrue(
+                os.path.exists(
+                    os.path.join(scenario_directory, CLEANUP_MARKER_FILENAME)
+                )
+            )
+
+            # A CSV listing combinations that don't exist in the scenario's
+            # structure is refused up front (they'd otherwise fail late,
+            # with no input data behind them)
+            bogus_csv_path = os.path.join(tmp_dir, "structure_bogus.csv")
+            with open(bogus_csv_path, "w", newline="") as f:
+                f.write(
+                    "weather_iteration,hydro_iteration,availability_iteration,"
+                    "subproblem,stage\n"
+                    "1,2010,7,1,1\n"
+                )
+            with self.assertRaisesRegex(ValueError, "don't exist"):
+                get_scenario_inputs.main(
+                    [
+                        "--database",
+                        DB_PATH,
+                        "--scenario",
+                        scenario_name,
+                        "--scenario_location",
+                        tmp_dir,
+                        "--temporal_structure_csv_overwrite",
+                        "--temporal_structure_csv_path",
+                        bogus_csv_path,
+                        "--quiet",
+                    ]
+                )
+
+            # A CSV whose derived directory layout differs from the
+            # scenario's (here: narrowed to only subproblem 1, so no
+            # subproblem directories) is refused on a cleaned/archived
+            # directory: the regenerated files would not line up with the
+            # original layout or the archive tarballs
+            divergent_csv_path = os.path.join(tmp_dir, "structure_divergent.csv")
+            with open(divergent_csv_path, "w", newline="") as f:
+                f.write(
+                    "weather_iteration,hydro_iteration,availability_iteration,"
+                    "subproblem,stage\n"
+                    "1,2010,1,1,1\n"
+                )
+            with self.assertRaisesRegex(ValueError, "different directory layout"):
+                get_scenario_inputs.main(
+                    [
+                        "--database",
+                        DB_PATH,
+                        "--scenario",
+                        scenario_name,
+                        "--scenario_location",
+                        tmp_dir,
+                        "--temporal_structure_csv_overwrite",
+                        "--temporal_structure_csv_path",
+                        divergent_csv_path,
+                        "--quiet",
+                    ]
+                )
+
+            run_scenario_args = [
+                "--scenario",
+                scenario_name,
+                "--scenario_location",
+                tmp_dir,
+                "--quiet",
+                "--mute_solver_output",
+            ]
+            # Solving is still guarded by the marker...
+            with self.assertRaises(RuntimeError):
+                run_scenario.main(run_scenario_args)
+            # ...and proceeds with the explicit override, solving only the
+            # regenerated draw
+            run_scenario.main(run_scenario_args + ["--ignore_cleanup_marker"])
+            self.assertTrue(
+                os.path.exists(
+                    os.path.join(
+                        draw_directory, "1", "results", "termination_condition.txt"
+                    )
+                )
+            )
+
+            # Nothing in this workflow touches the database results
+            self.assertEqual(
+                results_rows, self.get_scenario_results_rows(scenario_name)
+            )
+
+            # The one-command alternative: gridpath_run_e2e
+            # --per_draw_lifecycle --single_draw re-runs the full pipeline
+            # for that draw. The draw's marker row must NOT skip it (it was
+            # requested explicitly), only its own database rows are
+            # re-imported (differential: rows identical to the full run's),
+            # and, with no cleanup flag, its directory remains on disk
+            self.run_e2e_in(
+                scenario_name,
+                tmp_dir,
+                ["--per_draw_lifecycle", "--single_draw", "1", "2010", "1"],
+            )
+            self.assertEqual(
+                results_rows, self.get_scenario_results_rows(scenario_name)
+            )
+            self.assertTrue(
+                os.path.exists(
+                    os.path.join(
+                        draw_directory, "1", "results", "termination_condition.txt"
+                    )
+                )
+            )
+            # The other draw is still cleaned, and the marker still guards
+            self.assertFalse(
+                os.path.exists(os.path.join(scenario_directory, "weather_iteration_2"))
+            )
+            self.assertTrue(
+                os.path.exists(
+                    os.path.join(scenario_directory, CLEANUP_MARKER_FILENAME)
+                )
+            )
+
+    def test_cleanup_after_import_differential(self):
+        """
+        An E2E run with --cleanup_after_import must import the same rows into
+        the database as a run without it, end with only the scenario-level
+        files and logs on disk, refuse a re-import while the cleanup marker
+        is present (without touching the database results), and become
+        usable again after get_scenario_inputs regenerates the directory.
+        Run in temporary copies of the scenario directory, so this test
+        doesn't write into the examples/ directory that
+        test_example_ra_toolkit_monte_carlo may be using concurrently.
+        """
+        scenario_name = "ra_toolkit_monte_carlo"
+
+        def run_e2e(scenario_location, additional_args):
+            self.run_e2e_in(scenario_name, scenario_location, additional_args)
+
+        def get_results_rows():
+            return self.get_scenario_results_rows(scenario_name)
+
+        # Baseline run without cleanup
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            run_e2e(tmp_dir, [])
+            baseline_rows = get_results_rows()
+        self.assertTrue(len(baseline_rows[0]) > 0)
+
+        # Run with cleanup: identical database rows, cleaned directory
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            scenario_directory = os.path.join(tmp_dir, scenario_name)
+            # --log so the run writes the scenario-root logs directory,
+            # which cleanup must leave alone (the e2e log is still open)
+            run_e2e(tmp_dir, ["--cleanup_after_import", "--log"])
+            self.assertEqual(baseline_rows, get_results_rows())
+
+            # The iteration draws are gone; scenario-level files, logs, and
+            # the cleanup marker remain
+            remaining = sorted(os.listdir(scenario_directory))
+            self.assertNotIn("weather_iteration_1", remaining)
+            self.assertNotIn("weather_iteration_2", remaining)
+            for retained in [
+                "scenario_description.csv",
+                "features.csv",
+                "units.csv",
+                "logs",
+                CLEANUP_MARKER_FILENAME,
+            ]:
+                self.assertIn(retained, remaining)
+
+            # Re-import on the cleaned directory must refuse without
+            # touching the database results
+            with self.assertRaises(RuntimeError):
+                import_scenario_results.main(
+                    [
+                        "--database",
+                        DB_PATH,
+                        "--scenario",
+                        scenario_name,
+                        "--scenario_location",
+                        tmp_dir,
+                        "--quiet",
+                    ]
+                )
+            self.assertEqual(baseline_rows, get_results_rows())
+
+            # Regenerating the inputs removes the marker and makes the
+            # directory usable again
+            get_scenario_inputs.main(
+                [
+                    "--database",
+                    DB_PATH,
+                    "--scenario",
+                    scenario_name,
+                    "--scenario_location",
+                    tmp_dir,
+                    "--quiet",
+                ]
+            )
+            self.assertFalse(
+                os.path.exists(
+                    os.path.join(scenario_directory, CLEANUP_MARKER_FILENAME)
+                )
+            )
+            self.assertTrue(
+                os.path.exists(os.path.join(scenario_directory, "weather_iteration_1"))
+            )
 
     def test_example_multi_stage_prod_cost_w_hydro(self):
         """
@@ -578,6 +1266,18 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         scenario_name = "multi_stage_prod_cost_linked_subproblems"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_2periods_gen_lin_econ_retirement_w_period_wildcards(self):
+        """
+        Check validation and objective function value of
+        "2periods_gen_lin_econ_retirement_w_period_wildcards" example: as
+        "2periods_gen_lin_econ_retirement" (same objective and inputs), with
+        the specified capacity and Clunky_Old_Gen's fixed cost given as
+        period = 0 rows
+        :return:
+        """
+        scenario_name = "2periods_gen_lin_econ_retirement_w_period_wildcards"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_2periods_gen_lin_econ_retirement(self):
@@ -786,6 +1486,126 @@ class TestExamples(unittest.TestCase):
         scenario_name = "test_tx_simple_tmp_emissions"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
+    def test_example_test_tx_simple_net_prd_imports(self):
+        """
+        "test_tx_simple" with the carbon cap zone on the net_prd
+        import-emissions basis and an export credit on the lines. The lines
+        never export from the zone, so the objective is that of
+        "test_tx_simple": net and gross accounting coincide without exports.
+        :return:
+        """
+        scenario_name = "test_tx_simple_net_prd_imports"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_new_solar_carbon_cap_2zones_tx_both_zones_capped(self):
+        """
+        "test_new_solar_carbon_cap_2zones_tx" with both load zones capped and
+        the line assigned to both zones: negative flow is an import into
+        Zone1, positive flow an import into Zone2. Both caps bind; Zone1's
+        imports count toward Zone1 and show as exports of Zone2.
+        :return:
+        """
+        scenario_name = "test_new_solar_carbon_cap_2zones_tx_both_zones_capped"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_tx_simple_carbon_tax_imports(self):
+        """
+        "test_tx_simple" with a carbon tax that also applies to the
+        transmission imports; the 300 tons imported under the binding cap
+        cost 300 x $30 more than in "test_tx_simple".
+        :return:
+        """
+        scenario_name = "test_tx_simple_carbon_tax_imports"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_markets_w_carbon_cap_imports(self):
+        """
+        "test_markets" with a binding carbon cap that counts market purchases
+        at 0.5 tons/MWh on the gross basis.
+        :return:
+        """
+        scenario_name = "test_markets_w_carbon_cap_imports"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_markets_w_carbon_cap_imports_net_prd(self):
+        """
+        "test_markets_w_carbon_cap_imports" on the net_prd basis with sales
+        credited at the purchase intensity: the system both buys and sells, so
+        the credits loosen the cap and the objective differs.
+        :return:
+        """
+        scenario_name = "test_markets_w_carbon_cap_imports_net_prd"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_markets_w_carbon_cap_imports_net_prd_no_export_credit(
+        self,
+    ):
+        """
+        "test_markets_w_carbon_cap_imports" on the net_prd basis with no
+        export credit, which is gross accounting through the net formulation;
+        the objective equals that of "test_markets_w_carbon_cap_imports".
+        :return:
+        """
+        scenario_name = "test_markets_w_carbon_cap_imports_net_prd_no_export_credit"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_markets_w_carbon_cap_imports_hourly(self):
+        """
+        "test_markets_w_carbon_cap_imports" with the 0.5 tons/MWh split into
+        a flat 0.3 and an hourly 0.2; the objective equals that of
+        "test_markets_w_carbon_cap_imports".
+        :return:
+        """
+        scenario_name = "test_markets_w_carbon_cap_imports_hourly"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_markets_w_carbon_tax_imports(self):
+        """
+        "test_markets" with a carbon tax that also applies to market purchases
+        at 0.5 tons/MWh on the gross basis.
+        :return:
+        """
+        scenario_name = "test_markets_w_carbon_tax_imports"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_markets_w_carbon_tax_imports_net_prd(self):
+        """
+        "test_markets_w_carbon_tax_imports" on the net_prd basis with sales
+        credited at the purchase intensity.
+        :return:
+        """
+        scenario_name = "test_markets_w_carbon_tax_imports_net_prd"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_import_emissions_accounting_equivalences(self):
+        """
+        The expected objectives pin the accounting identities: net_prd with
+        no export credit and an hourly split of the same intensity both
+        reproduce gross accounting to the digit, and net_prd with an export
+        credit is cheaper than gross when the system also sells.
+        """
+        gross = self.df.loc["test_markets_w_carbon_cap_imports"]["expected_objective"]
+        self.assertEqual(
+            gross,
+            self.df.loc["test_markets_w_carbon_cap_imports_net_prd_no_export_credit"][
+                "expected_objective"
+            ],
+        )
+        self.assertEqual(
+            gross,
+            self.df.loc["test_markets_w_carbon_cap_imports_hourly"][
+                "expected_objective"
+            ],
+        )
+        self.assertGreater(
+            ast.literal_eval(
+                self.df.loc["test_markets_w_carbon_cap_imports_net_prd"][
+                    "expected_objective"
+                ]
+            )[("", "", "", 1)][1],
+            ast.literal_eval(gross)[("", "", "", 1)][1],
+        )
+
     def test_example_test_tx_simple_additive(self):
         """
         Check validation and objective function value of
@@ -861,6 +1681,24 @@ class TestExamples(unittest.TestCase):
         scenario_name = "test_markets"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
+    def test_example_test_markets_w_strike_price(self):
+        """
+        Check validation and objective function value of the
+        "test_markets_w_strike_price" example
+        :return:
+        """
+        scenario_name = "test_markets_w_strike_price"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_markets_w_strike_price_carbon_tax(self):
+        """
+        Check validation and objective function value of the
+        "test_markets_w_strike_price_carbon_tax" example
+        :return:
+        """
+        scenario_name = "test_markets_w_strike_price_carbon_tax"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
     def test_example_2periods_new_build_horizon_energy_target(self):
         """
         Check validation and objective function value of
@@ -905,6 +1743,46 @@ class TestExamples(unittest.TestCase):
         """
         scenario_name = "test_min_max_build_trans"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_min_max_build_trans_w_binding_min(self):
+        """
+        Check validation and objective function value of
+        "test_min_max_build_trans_w_binding_min" example, and that the
+        minimum cumulative build forces capacity beyond the 31.5 MW built
+        without it
+
+        Forcing the extra capacity moves the objective by less than the
+        objective tolerance in this penalty-regime example, so check the
+        build, limits and dual in the results directly.
+        :return:
+        """
+        scenario_name = "test_min_max_build_trans_w_binding_min"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+        df = pd.read_csv(
+            os.path.join(
+                EXAMPLES_DIRECTORY, scenario_name, "results", "transmission_period.csv"
+            )
+        )
+        df = df[df["transmission_line"] == "Tx_new"].set_index("period")
+
+        # 2020: the minimum binds and the unspecified maximum is empty
+        self.assertAlmostEqual(df.loc[2020, "new_build_capacity_mw"], 40, places=6)
+        self.assertEqual(df.loc[2020, "min_cumulative_new_build_mw"], 40)
+        self.assertTrue(pd.isna(df.loc[2020, "max_cumulative_new_build_mw"]))
+        self.assertNotAlmostEqual(df.loc[2020, "min_cum_build_dual"], 0, places=6)
+        # The period objective coefficient is 10 (discount factor of 1 times
+        # 10 years)
+        self.assertAlmostEqual(
+            df.loc[2020, "min_cum_build_marginal_cost_per_mw"],
+            df.loc[2020, "min_cum_build_dual"] / 10,
+            places=6,
+        )
+
+        # 2030: the maximum does not bind and the unspecified minimum is empty
+        self.assertEqual(df.loc[2030, "max_cumulative_new_build_mw"], 50)
+        self.assertTrue(pd.isna(df.loc[2030, "min_cumulative_new_build_mw"]))
+        self.assertTrue(pd.isna(df.loc[2030, "min_cum_build_dual"]))
 
     def test_example_2periods_new_build_2zones_transmission_Tx1halfavail(self):
         """
@@ -1041,10 +1919,6 @@ class TestExamples(unittest.TestCase):
         """
         Check validation and objective function value of
         "test_new_solar_carbon_cap_dac" example.
-
-        Note that the same version of Cbc (v2.10.12) produces a slightly
-        different objective function for this problem on Windows/Linux than on
-        Mac as of Python v3.12.
         :return:
         """
         scenario_name = "test_new_solar_carbon_cap_dac"
@@ -1193,6 +2067,18 @@ class TestExamples(unittest.TestCase):
         scenario_name = "test_new_solar_w_relative_capacity_instead_of_potential"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
+    def test_example_2periods_new_build_2zones_transmission_w_period_wildcards(self):
+        """
+        Check validation and objective function value of
+        "2periods_new_build_2zones_transmission_w_period_wildcards" example: as
+        "2periods_new_build_2zones_transmission_w_hurdle_rates" (same
+        objective and inputs), with the project and transmission specified
+        capacities and Tx1's hurdle rates given as period = 0 rows
+        :return:
+        """
+        scenario_name = "2periods_new_build_2zones_transmission_w_period_wildcards"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
     def test_example_2periods_new_build_2zones_transmission_w_hurdle_rates(self):
         """
         Check validation and objective function value of
@@ -1251,19 +2137,34 @@ class TestExamples(unittest.TestCase):
     def test_incomplete_only(self):
         """
         Check that the "incomplete only" functionality works with no errors.
+        Run in a temporary directory with inputs generated from the database
+        (not a copy of examples/, which test_example_test may be regenerating
+        concurrently).
         :return:
         """
-        actual_objective = run_scenario.main(
-            [
-                "--scenario",
-                "test",
-                "--scenario_location",
-                EXAMPLES_DIRECTORY,
-                "--quiet",
-                "--mute_solver_output",
-                "--incomplete_only",
-            ]
-        )
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            get_scenario_inputs.main(
+                [
+                    "--database",
+                    DB_PATH,
+                    "--scenario",
+                    "test",
+                    "--scenario_location",
+                    tmp_dir,
+                    "--quiet",
+                ]
+            )
+            actual_objective = run_scenario.main(
+                [
+                    "--scenario",
+                    "test",
+                    "--scenario_location",
+                    tmp_dir,
+                    "--quiet",
+                    "--mute_solver_output",
+                    "--incomplete_only",
+                ]
+            )
 
     def test_example_test_w_storage_starting_soc(self):
         """
@@ -1372,6 +2273,21 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         scenario_name = "ra_toolkit_monte_carlo"
+        self.validate_and_test_example_generic(
+            scenario_name=scenario_name, skip_validation=True
+        )
+
+    def test_example_ra_toolkit_monte_carlo_w_weather_dependent_outages(self):
+        """
+        Check validation and objective function values of
+        "ra_toolkit_monte_carlo_w_weather_dependent_outages" example: Gas's
+        independent availability derates are keyed by weather iteration as
+        well as availability iteration (see
+        tests/test_availability_iteration_examples.py for the proof that
+        each draw reads its own rows)
+        :return:
+        """
+        scenario_name = "ra_toolkit_monte_carlo_w_weather_dependent_outages"
         self.validate_and_test_example_generic(
             scenario_name=scenario_name, skip_validation=True
         )
@@ -1536,6 +2452,20 @@ class TestExamples(unittest.TestCase):
         scenario_name = "test_w_hydro_as_energy_no_reserves"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
+    def test_example_test_w_hydro_as_energy_no_reserves_by_timepoint(self):
+        """
+        Check validation and objective function value of
+        "test_w_hydro_as_energy_no_reserves_by_timepoint" example: as
+        "test_w_hydro_as_energy_no_reserves" on a temporal scenario that
+        also has a 'timepoint' balancing type; the Hydro project's horizon
+        energy shaping inputs are specified per timepoint via
+        energy_budget_balancing_type (40%/60% of its energy in the two
+        timepoints), while its balancing type remains 'day'.
+        :return:
+        """
+        scenario_name = "test_w_hydro_as_energy_no_reserves_by_timepoint"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
     def test_example_test_w_lf(self):
         """
         Check validation and objective function value of
@@ -1591,6 +2521,19 @@ class TestExamples(unittest.TestCase):
         scenario_name = "test_w_hydro_as_slice_candidate"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
+    def test_example_test_w_hydro_as_slice_candidate_by_timepoint(self):
+        """
+        Check validation and objective function value of
+        "test_w_hydro_as_slice_candidate_by_timepoint" example: as
+        "test_w_hydro_as_slice_candidate" on a temporal scenario that also has
+        a 'timepoint' balancing type; the Hydro project's slice shaping
+        inputs are specified per timepoint via energy_budget_balancing_type
+        (40%/60% of its energy), while its balancing type remains 'day'.
+        :return:
+        """
+        scenario_name = "test_w_hydro_as_slice_candidate_by_timepoint"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
     def test_example_test_w_energy_products(self):
         """
         Check validation and objective function value of
@@ -1616,6 +2559,17 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         scenario_name = "2periods_new_build_generic_policy"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_2periods_new_build_generic_policy_w_tx_losses(self):
+        """
+        Check validation and objective function value of
+        "2periods_new_build_generic_policy_w_tx_losses" example, in which
+        transmission losses count against the policy requirement via the
+        tx_losses compliance type
+        :return:
+        """
+        scenario_name = "2periods_new_build_generic_policy_w_tx_losses"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_open_data(self):
@@ -1651,9 +2605,96 @@ class TestExamples(unittest.TestCase):
         scenario_name = "test_w_bt_hrz_avl"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
+    def test_test_w_bt_hrz_avl_w_day_of_year_rows(self):
+        """
+        Check validation and objective function value of
+        "test_w_bt_hrz_avl_w_day_of_year_rows" example: as
+        "test_w_bt_hrz_avl" (same objective), with the days of month in the
+        temporal structure, and Coal's balancing type - horizon derates on
+        the built-in day balancing types: the weather-dependent derate as a
+        day-of-year row, the outage derate as a day-of-year row (with a
+        different value) that the explicit 20200101 row overrides.
+        :return:
+        """
+        scenario_name = "test_w_bt_hrz_avl_w_day_of_year_rows"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_test_w_bt_hrz_avl_w_default_avl(self):
+        """
+        Check validation and objective function value of
+        "test_w_bt_hrz_avl_w_default_avl" example: as "test_w_bt_hrz_avl"
+        (same objective), with Coal's flat 0.95 timepoint outage derate
+        given once as the project's default_exogenous_availability instead.
+        :return:
+        """
+        scenario_name = "test_w_bt_hrz_avl_w_default_avl"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
     def test_hydro_system_exog_elev_w_gen_ramp_limits(self):
         """ """
         scenario_name = "hydro_system_exog_elev_w_gen_ramp_limits"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_hydro_system_exog_elev_w_binding_tmp_flow_max(self):
+        """
+        Check that per-timepoint max water flow bounds are enforced: peak-hour
+        flow caps on the water links limit hydro power output below the load
+        level, resulting in unserved energy.
+        :return:
+        """
+        scenario_name = "hydro_system_exog_elev_w_binding_tmp_flow_max"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_hydro_system_exog_elev_w_binding_tmp_flow_max_w_threshold(self):
+        """
+        Check the timepoint-level threshold sidestream flow adjustment: same
+        per-timepoint max water flow bounds as
+        hydro_system_exog_elev_w_binding_tmp_flow_max, but with a threshold
+        sidestream inflow below the upstream exogenous inflows and an
+        upstream-node map for the bounded links, so the max flow bounds are
+        relaxed by (upstream inflow - threshold) in every timepoint. The
+        objective must improve substantially relative to the base binding
+        example (the caps no longer force as much unserved energy).
+        :return:
+        """
+        scenario_name = "hydro_system_exog_elev_w_binding_tmp_flow_max_w_threshold"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_hydro_system_exog_elev_w_flow_and_volume_violations(self):
+        """
+        Check water system violation penalties: a horizon min flow
+        requirement, a reservoir target release, and a reservoir minimum
+        volume are all set above achievable levels with violations allowed,
+        so their respective penalty costs must show up in the objective.
+        :return:
+        """
+        scenario_name = "hydro_system_exog_elev_w_flow_and_volume_violations"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_hydro_system_exog_elev_w_bt_hrz_inflows(self):
+        """
+        Check horizon-level average exogenous water inflows: same as
+        hydro_system_exog_elev, but with part of each node's inflow moved
+        from the timepoint-level inputs to horizon-level average inputs
+        (spread across the horizon's timepoints, additive with the
+        timepoint-level inflows). The totals are unchanged, so this
+        scenario must reproduce the hydro_system_exog_elev objective.
+        :return:
+        """
+        scenario_name = "hydro_system_exog_elev_w_bt_hrz_inflows"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_hydro_system_exog_elev_w_hrz_only_inflows(self):
+        """
+        Check that the timepoint-level inflow inputs can be skipped
+        entirely: same as hydro_system_exog_elev, but with all inflows
+        specified as horizon-level averages (no water_inflows.tab is
+        written for this scenario). The base inflows are constant within
+        the day, so the totals are unchanged and this scenario must
+        reproduce the hydro_system_exog_elev objective.
+        :return:
+        """
+        scenario_name = "hydro_system_exog_elev_w_hrz_only_inflows"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_dsm_examples(self):
@@ -1678,6 +2719,28 @@ class TestExamples(unittest.TestCase):
         scenario_name = "2periods_new_build_generic_policy_recs"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
+    def validate_and_test_example_expecting_year_horizon_span_warning(
+        self, scenario_name
+    ):
+        """
+        Run an example whose temporal setup has month-long periods and a
+        single 'year' horizon across them. The horizon spans periods by
+        design, so expect the warning about it and re-raise any others.
+        """
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+        span_warnings = [
+            w for w in caught if "Horizon found that spans periods" in str(w.message)
+        ]
+        self.assertTrue(span_warnings)
+        for w in span_warnings:
+            self.assertIn("balancing type year, horizon 2030", str(w.message))
+        for w in caught:
+            if w not in span_warnings:
+                warnings.warn_explicit(w.message, w.category, w.filename, w.lineno)
+
     def test_example_generic_policy_sod_test(self):
         """
         Check validation and objective function value of
@@ -1685,7 +2748,9 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         scenario_name = "generic_policy_sod_test"
-        self.validate_and_test_example_generic(scenario_name=scenario_name)
+        self.validate_and_test_example_expecting_year_horizon_span_warning(
+            scenario_name=scenario_name
+        )
 
     def test_example_generic_policy_sod_test_w_annual_rps(self):
         """
@@ -1694,7 +2759,9 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         scenario_name = "generic_policy_sod_test_w_annual_rps"
-        self.validate_and_test_example_generic(scenario_name=scenario_name)
+        self.validate_and_test_example_expecting_year_horizon_span_warning(
+            scenario_name=scenario_name
+        )
 
     def test_example_test_markets_w_tmp_total_limits(self):
         """
@@ -1702,6 +2769,40 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         scenario_name = "test_markets_w_tmp_total_limits"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_markets_w_hrz_to_tmp_limits(self):
+        """
+        Check validation and objective function value of "test" example;
+        the All_Markets timepoint limits of test_markets_w_tmp_total_limits
+        given as one horizon-to-timepoint limit on a built-in month horizon,
+        so the objectives are the same
+        :return:
+        """
+        scenario_name = "test_markets_w_hrz_to_tmp_limits"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_markets_w_hrz_to_tmp_and_looser_tmp_limits(self):
+        """
+        Check validation and objective function value of "test" example;
+        test_markets_w_hrz_to_tmp_limits with a looser timepoint-level limit
+        on All_Markets as well: every limit applies, so the
+        horizon-to-timepoint limit still binds and the objective is the same
+        :return:
+        """
+        scenario_name = "test_markets_w_hrz_to_tmp_and_looser_tmp_limits"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_markets_w_hrz_to_tmp_month_of_year_limits(self):
+        """
+        Check validation and objective function value of
+        "test_markets_w_hrz_to_tmp_month_of_year_limits" example:
+        test_markets_w_hrz_to_tmp_limits with the limit given as a
+        month-of-year row (horizon 1) instead of for horizon 202001; same
+        objective
+        :return:
+        """
+        scenario_name = "test_markets_w_hrz_to_tmp_month_of_year_limits"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_test_markets_w_prd_total_limits(self):
@@ -1712,6 +2813,313 @@ class TestExamples(unittest.TestCase):
         scenario_name = "test_markets_w_prd_total_limits"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
+    def test_example_test_markets_w_hrz_limits(self):
+        """
+        Check validation and objective function value of the
+        "test_markets_w_hrz_limits" example.
+
+        The horizon-level limit is on Market_Hub, which needs no group
+        definition since every market is implicitly a group of its own, over
+        the 'day' horizon 202001, which spans the timepoints of period 2020;
+        it is therefore the same restriction as the period limit on the
+        All_Markets group in "test_markets_w_prd_total_limits", whose
+        objective this example shares.
+        :return:
+        """
+        scenario_name = "test_markets_w_hrz_limits"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_markets_w_hrz_total_limits(self):
+        """
+        Check validation and objective function value of the
+        "test_markets_w_hrz_total_limits" example.
+
+        The All_Markets limit over the 'day' horizon 202001 is the period
+        limit of "test_markets_w_prd_total_limits" imposed over the horizon
+        that spans the period, so the two share an objective.
+        :return:
+        """
+        scenario_name = "test_markets_w_hrz_total_limits"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_markets_w_default_volume(self):
+        """
+        Check validation and objective function value of the
+        "test_markets_w_default_volume" example.
+
+        The market volume profile is written as a wildcard (timepoint 0)
+        row plus the timepoints that differ from it, so it resolves to the
+        limits "test_markets" states timepoint by timepoint and the two
+        share an objective. That the resolved limits are identical, not
+        merely equivalent, is checked in
+        test_market_volume_defaults_resolve_to_explicit_limits.
+        :return:
+        """
+        scenario_name = "test_markets_w_default_volume"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_markets_w_two_market_group_limit(self):
+        """
+        Check validation and objective function value of the
+        "test_markets_w_two_market_group_limit" example.
+
+        The zone participates in both markets and the All_Markets group is
+        limited on the two of them together, at a level neither market's own
+        limit reaches. That the group's position is the sum over its markets
+        is checked in
+        test_market_group_position_is_the_sum_over_its_markets.
+        :return:
+        """
+        scenario_name = "test_markets_w_two_market_group_limit"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_markets_w_flat_volume(self):
+        """
+        Check validation and objective function value of the
+        "test_markets_w_flat_volume" example.
+
+        The Market_Hub limits are a flat limit on the group's row in the
+        volume subscenario plus a profile listing only the timepoints that
+        differ from it, with no wildcard row; that resolves to the limits
+        "test_markets" spells out per timepoint, so the two share an
+        objective. The byte-identity of the resolved limits is checked in
+        test_market_volume_defaults_resolve_to_explicit_limits.
+        :return:
+        """
+        scenario_name = "test_markets_w_flat_volume"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_markets_w_flat_prd_total_limits(self):
+        """
+        Check validation and objective function value of the
+        "test_markets_w_flat_prd_total_limits" example.
+
+        The All_Markets period limit is a flat limit on the group's row with
+        no period profile at all, so it shares an objective with
+        "test_markets_w_prd_total_limits".
+        :return:
+        """
+        scenario_name = "test_markets_w_flat_prd_total_limits"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_markets_w_gross_volume(self):
+        """
+        Check validation and objective function value of the
+        "test_markets_w_gross_volume" example.
+
+        The "test_markets" limits on a gross basis; each group is a single
+        market, whose sales and purchases cannot offset each other, so gross
+        and net are the same restriction and the two share an objective.
+        :return:
+        """
+        scenario_name = "test_markets_w_gross_volume"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_markets_w_two_market_gross_group_limit(self):
+        """
+        Check validation and objective function value of the
+        "test_markets_w_two_market_gross_group_limit" example.
+
+        The All_Markets sales limit of "test_markets_w_two_market_group_limit"
+        on a gross basis: selling at one hub can no longer be covered by
+        buying at the other, so the objective is worse than the net case's.
+        :return:
+        """
+        scenario_name = "test_markets_w_two_market_gross_group_limit"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_markets_w_two_market_net_and_individual_limits(self):
+        """
+        Check validation and objective function value of the
+        "test_markets_w_two_market_net_and_individual_limits" example.
+
+        With two markets, a net cap on the pair plus the same cap on each
+        market alone is exactly a gross cap on the pair; this example writes
+        the gross limit of "test_markets_w_two_market_gross_group_limit" that
+        way, with net limits only, and shares its objective.
+        :return:
+        """
+        scenario_name = "test_markets_w_two_market_net_and_individual_limits"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_gross_market_group_limit_caps_the_sum_of_market_sales(self):
+        """
+        A gross sales limit must cap the sum of the sales of the group's
+        markets that are selling, whatever the others buy, and must bind;
+        the reported gross sales must be that sum.
+
+        Solve the example into a temporary directory rather than reading the
+        committed example directory, whose results are not committed.
+        :return:
+        """
+        scenario_name = "test_markets_w_two_market_gross_group_limit"
+        with tempfile.TemporaryDirectory() as temp_dir:
+            get_scenario_inputs.main(
+                [
+                    "--database",
+                    DB_PATH,
+                    "--scenario",
+                    scenario_name,
+                    "--scenario_location",
+                    temp_dir,
+                    "--quiet",
+                ]
+            )
+            run_scenario.main(
+                [
+                    "--scenario",
+                    scenario_name,
+                    "--scenario_location",
+                    temp_dir,
+                    "--quiet",
+                    "--mute_solver_output",
+                    "--testing",
+                ]
+            )
+            results = os.path.join(temp_dir, scenario_name, "results")
+            group_df = pd.read_csv(
+                os.path.join(results, "system_market_volume_tmp.csv")
+            )
+            market_df = pd.read_csv(
+                os.path.join(results, "system_market_participation.csv")
+            )
+
+        group_df = group_df[
+            (group_df["market_group"] == "All_Markets") & (group_df["basis"] == "gross")
+        ]
+        self.assertGreater(len(group_df), 0, msg="no gross All_Markets results")
+        market_sales_by_tmp = (
+            market_df.assign(sales=market_df["net_buy_power"].clip(upper=0) * -1)
+            .groupby("timepoint")["sales"]
+            .sum()
+        )
+        for row in group_df.itertuples():
+            self.assertAlmostEqual(
+                market_sales_by_tmp[row.timepoint],
+                row.gross_market_sales_mw,
+                places=6,
+                msg=f"gross sales differ from the sum of market sales in "
+                f"timepoint {row.timepoint}",
+            )
+            self.assertLessEqual(
+                row.gross_market_sales_mw,
+                row.max_market_sales + 1e-6,
+                msg=f"gross sales exceed the limit in timepoint {row.timepoint}",
+            )
+        self.assertTrue(
+            (group_df["max_market_sales_dual"].fillna(0) != 0).any(),
+            msg="the gross All_Markets sales limit never binds",
+        )
+
+    def test_market_group_position_is_the_sum_over_its_markets(self):
+        """
+        A market group's position must be the sum of the positions of the
+        markets it contains, and the limit on it must actually bind; a group
+        limit that never binds would prove nothing about the aggregation.
+
+        Solve the example into a temporary directory rather than reading the
+        committed example directory, whose results are not committed and
+        which the example tests may be rewriting concurrently.
+        :return:
+        """
+        scenario_name = "test_markets_w_two_market_group_limit"
+        with tempfile.TemporaryDirectory() as temp_dir:
+            get_scenario_inputs.main(
+                [
+                    "--database",
+                    DB_PATH,
+                    "--scenario",
+                    scenario_name,
+                    "--scenario_location",
+                    temp_dir,
+                    "--quiet",
+                ]
+            )
+            run_scenario.main(
+                [
+                    "--scenario",
+                    scenario_name,
+                    "--scenario_location",
+                    temp_dir,
+                    "--quiet",
+                    "--mute_solver_output",
+                    "--testing",
+                ]
+            )
+            results = os.path.join(temp_dir, scenario_name, "results")
+            group_results = os.path.join(results, "system_market_volume_tmp.csv")
+            market_results = os.path.join(results, "system_market_participation.csv")
+            for f in [group_results, market_results]:
+                self.assertTrue(os.path.exists(f), msg=f"{f} was not written")
+            group_df = pd.read_csv(group_results)
+            market_df = pd.read_csv(market_results)
+
+        group_df = group_df[group_df["market_group"] == "All_Markets"]
+        markets_by_tmp = market_df.groupby("timepoint")["net_buy_power"].sum()
+
+        self.assertGreater(len(group_df), 0, msg="no All_Markets group results")
+        for row in group_df.itertuples():
+            self.assertAlmostEqual(
+                markets_by_tmp[row.timepoint],
+                row.net_market_purchased_power_mw,
+                places=6,
+                msg=f"group position differs from the sum over its markets "
+                f"in timepoint {row.timepoint}",
+            )
+
+        # The group limit binds somewhere, so the aggregation is load-bearing
+        self.assertTrue(
+            (group_df["max_market_sales_dual"].fillna(0) != 0).any(),
+            msg="the All_Markets sales limit never binds",
+        )
+
+    def test_market_volume_defaults_resolve_to_explicit_limits(self):
+        """
+        The wildcard row of the "test_markets_w_default_volume" profile and
+        the flat limit plus exceptions-only profile of
+        "test_markets_w_flat_volume" must both resolve to exactly the limits
+        that "test_markets" spells out per timepoint, so the three scenarios'
+        market_volume_tmp.tab files must be byte-identical. Compare the
+        resolved limits rather than the objectives, which a coincidence
+        could match.
+
+        Write both scenarios' inputs to a temporary directory instead of
+        reading the committed example directories, which the example tests
+        regenerate and may be rewriting concurrently.
+        :return:
+        """
+        limits = {}
+        with tempfile.TemporaryDirectory() as temp_dir:
+            for scenario_name in [
+                "test_markets",
+                "test_markets_w_default_volume",
+                "test_markets_w_flat_volume",
+            ]:
+                get_scenario_inputs.main(
+                    [
+                        "--database",
+                        DB_PATH,
+                        "--scenario",
+                        scenario_name,
+                        "--scenario_location",
+                        temp_dir,
+                        "--quiet",
+                    ]
+                )
+                tab_file = os.path.join(
+                    temp_dir, scenario_name, "inputs", "market_volume_tmp.tab"
+                )
+                self.assertTrue(
+                    os.path.exists(tab_file), msg=f"{tab_file} was not written"
+                )
+                with open(tab_file) as f:
+                    limits[scenario_name] = f.read()
+
+        self.assertEqual(
+            limits["test_markets"], limits["test_markets_w_default_volume"]
+        )
+        self.assertEqual(limits["test_markets"], limits["test_markets_w_flat_volume"])
+
     def test_example_test_new_build_storage_losses_limit(self):
         """
         Check validation and objective function value of
@@ -1720,6 +3128,21 @@ class TestExamples(unittest.TestCase):
         """
 
         scenario_name = "test_new_build_storage_losses_limit"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_test_new_build_storage_losses_limit_by_timepoint(self):
+        """
+        Check validation and objective function value of
+        "test_new_build_storage_losses_limit_by_timepoint" example: as
+        "test_new_build_storage_losses_limit" on a temporal scenario that
+        also has a 'timepoint' balancing type; the Battery's max-losses
+        limit applies per timepoint via energy_budget_balancing_type while
+        its state of charge is still tracked over the circular day. The
+        per-timepoint limit caps the charging hour's energy, so more
+        storage energy capacity is built than under the per-day limit.
+        :return:
+        """
+        scenario_name = "test_new_build_storage_losses_limit_by_timepoint"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_test_carbon_credits_purchase_limits(self):
@@ -1780,10 +3203,51 @@ class TestExamples(unittest.TestCase):
     def test_example_2periods_new_build_2zones_new_build_transmission_stochastic(self):
         """
         Check validation and objective function values of
-        "single_stage_prod_cost_w_startup_limit" example
+        "2periods_new_build_2zones_new_build_transmission_stochastic" example
         :return:
         """
         scenario_name = "2periods_new_build_2zones_new_build_transmission_stochastic"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_2periods_new_build_2zones_new_build_transmission_stochastic_identical_branches(
+        self,
+    ):
+        """
+        Check validation and objective function values of
+        "2periods_new_build_2zones_new_build_transmission_stochastic_identical_branches"
+        example: two 2030 branches with identical data and probability 0.5
+        each; its objective must equal that of the deterministic twin
+        "2periods_new_build_2zones_new_build_transmission_deterministic_twin"
+        :return:
+        """
+        scenario_name = "2periods_new_build_2zones_new_build_transmission_stochastic_identical_branches"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_2periods_new_build_2zones_new_build_transmission_deterministic_twin(
+        self,
+    ):
+        """
+        Check validation and objective function values of
+        "2periods_new_build_2zones_new_build_transmission_deterministic_twin"
+        example (deterministic twin of the identical-branches stochastic
+        example)
+        :return:
+        """
+        scenario_name = (
+            "2periods_new_build_2zones_new_build_transmission_deterministic_twin"
+        )
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_3stage_new_build_2zones_new_build_transmission_stochastic_tree(
+        self,
+    ):
+        """
+        Check validation and objective function values of
+        "3stage_new_build_2zones_new_build_transmission_stochastic_tree"
+        example (three-stage scenario tree with four leaves)
+        :return:
+        """
+        scenario_name = "3stage_new_build_2zones_new_build_transmission_stochastic_tree"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
     def test_example_test_new_build_gen_var_stor_hyb_as_pwr_grp(self):
@@ -1830,21 +3294,23 @@ class TestExamples(unittest.TestCase):
                 os.remove(temp_file)
 
 
-def objective_function_overwrite(scenario_name, starting_objective):
+def objective_values_to_float(objective):
+    """
+    Recursively convert the values of a (possibly nested) objective-value
+    dictionary to plain Python floats.
+    """
+    if isinstance(objective, dict):
+        return {k: objective_values_to_float(v) for k, v in objective.items()}
+    # A failed solve produces a None objective value; keep it as None so
+    # that the objective-value comparison can report it
+    return None if objective is None else float(objective)
 
+
+def objective_function_overwrite(scenario_name, starting_objective):
+    # No overwrites are currently needed; with Cbc as the default solver,
+    # this was used for a Python-version-dependent objective function value
+    # for one of the examples. Keeping the hook in case it is needed again.
     objective = starting_objective
-    # On Python <3.12, we have one example with a slightly different
-    # objective function value; set it here
-    # TODO: remove this when we stop supporting Python <3.12
-    if (
-        PYTHON_VERSION < "3.12"
-        and scenario_name == "test_new_solar_carbon_credits_w_sell"
-    ):
-        print(
-            f"GridPath: overriding objective function for "
-            f"test_new_solar_carbon_credits_w_sell on Python v{PYTHON_VERSION}."
-        )
-        objective = ast.literal_eval("{('', '', '', 1): {1: 978964234435709.4}}")
 
     return objective
 
