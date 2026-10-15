@@ -2277,6 +2277,21 @@ class TestExamples(unittest.TestCase):
             scenario_name=scenario_name, skip_validation=True
         )
 
+    def test_example_ra_toolkit_monte_carlo_w_weather_dependent_outages(self):
+        """
+        Check validation and objective function values of
+        "ra_toolkit_monte_carlo_w_weather_dependent_outages" example: Gas's
+        independent availability derates are keyed by weather iteration as
+        well as availability iteration (see
+        tests/test_availability_iteration_examples.py for the proof that
+        each draw reads its own rows)
+        :return:
+        """
+        scenario_name = "ra_toolkit_monte_carlo_w_weather_dependent_outages"
+        self.validate_and_test_example_generic(
+            scenario_name=scenario_name, skip_validation=True
+        )
+
     def test_example_ra_toolkit_sync(self):
         """
         Check validation and objective function values of
@@ -2597,7 +2612,7 @@ class TestExamples(unittest.TestCase):
         "test_w_bt_hrz_avl" (same objective), with the days of month in the
         temporal structure, and Coal's balancing type - horizon derates on
         the built-in day balancing types: the weather-dependent derate as a
-        day-of-year row, the independent derate as a day-of-year row (with a
+        day-of-year row, the outage derate as a day-of-year row (with a
         different value) that the explicit 20200101 row overrides.
         :return:
         """
@@ -2608,7 +2623,7 @@ class TestExamples(unittest.TestCase):
         """
         Check validation and objective function value of
         "test_w_bt_hrz_avl_w_default_avl" example: as "test_w_bt_hrz_avl"
-        (same objective), with Coal's flat 0.95 timepoint independent derate
+        (same objective), with Coal's flat 0.95 timepoint outage derate
         given once as the project's default_exogenous_availability instead.
         :return:
         """

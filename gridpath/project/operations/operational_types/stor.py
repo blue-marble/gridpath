@@ -1364,7 +1364,7 @@ def check_for_soc_infeasibilities(mod, s, tmp, starting_soc):
         return 0
     elif mod.capacity_type[s] == "stor_spec" and starting_soc > (
         mod.stor_spec_energy_capacity_mwh[s, mod.period[tmp]]
-        * mod.avl_exog_cap_derate_independent[s, tmp]
+        * mod.avl_exog_cap_derate_outage[s, tmp]
         * mod.avl_exog_cap_derate_weather[s, tmp]
     ):
         warnings.warn(
