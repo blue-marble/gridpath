@@ -68,6 +68,8 @@ from gridpath.project.capacity.capacity_types.common_methods import (
     relevant_periods_by_project_vintage,
     project_relevant_periods,
     project_vintages_relevant_in_period,
+    get_model_periods,
+    write_vintage_lifetime_findings,
 )
 
 
@@ -137,10 +139,14 @@ def add_model_components(
     .. note:: The cost input to the model is an annualized cost per unit
         capacity. This annualized cost is incurred in each period of the study
         (and multiplied by the number of years the period represents) for
-        the duration of the line's lifetime. It is up to the user to
-        ensure that the :code:`tx_new_lin_financial_lifetime_yrs_by_vintage` and
-        :code:`tx_new_lin_annualized_real_cost_per_mw_yr` parameters are
-        consistent.
+        the duration of the line's financial lifetime. It is up to the user
+        to ensure that the :code:`tx_new_lin_financial_lifetime_yrs_by_vintage`
+        and :code:`tx_new_lin_annualized_real_cost_per_mw_yr` parameters are
+        consistent. A vintage is operational, or incurs capital costs, in a
+        period only if its operational or financial lifetime respectively
+        lasts through the end of the period. Validation reports a lifetime
+        that covers no period (High severity) and one that ends partway
+        through a period, whose years are then not counted (Low severity).
 
     +-------------------------------------------------------------------------+
     | Optional Input Params                                                   |
@@ -1010,3 +1016,34 @@ def validate_inputs(
                 df=df, cols=cols, idx_col=["transmission_line", "vintage"]
             ),
         )
+
+    # Check the lifetimes against the period boundaries
+    write_vintage_lifetime_findings(
+        conn=conn,
+        scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        gridpath_module=__name__,
+        db_table="inputs_transmission_new_cost",
+        periods=get_model_periods(conn, subscenarios, subproblem, stage),
+        # transmission_line, vintage, and the operational and financial
+        # lifetimes from the inputs' columns
+        vintage_rows=[
+            (row[0], row[1], row[2], row[4])
+            for row in get_model_inputs_from_database(
+                scenario_id,
+                subscenarios,
+                weather_iteration,
+                hydro_iteration,
+                availability_iteration,
+                subproblem,
+                stage,
+                conn,
+            ).fetchall()
+        ],
+        entity="transmission_line",
+        lifetime_columns=["tx_operational_lifetime_yrs", "tx_financial_lifetime_yrs"],
+    )

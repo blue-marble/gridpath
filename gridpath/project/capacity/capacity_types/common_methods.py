@@ -316,19 +316,15 @@ NEW_BUILD_CAPACITY_TYPES = [
 ]
 
 
-def new_build_operational_periods_by_vintage(periods, vintage_lifetimes):
+def period_trajectories(periods):
     """
     :param periods: (period, period_start_year, period_end_year,
         prev_period) of the model's periods, in model order (prev_period
-        None where it isn't specified), as from
-        :code:`gridpath.temporal.investment.periods.get_inputs_from_database`
-    :param vintage_lifetimes: (project, vintage, operational_lifetime_yrs)
-        of the new-build project-vintages, as from
-        :code:`new_build_vintage_rows_sql`
-    :return: dictionary of the periods in which each (project, vintage) is
-        operational, determined with the same functions as the model's
-        operational period sets (:code:`OPR_PRDS_BY_{prefix}_VINTAGE`, see
-        :code:`add_vintage_period_sets`)
+        None where it isn't specified), as from :code:`get_model_periods`
+    :return: dictionaries of the start year, the end year, and the periods
+        on the future trajectory of each period, determined with the same
+        functions as the model's period sets (see
+        :code:`gridpath.temporal.investment.periods`)
     """
     # Imported here, as the periods module imports (through the operational
     # types' common functions) this module
@@ -351,16 +347,37 @@ def new_build_operational_periods_by_vintage(periods, vintage_lifetimes):
         )
         for prd in period_list
     }
+    future_trajectory = {
+        prd: periods_on_future_trajectory(
+            period=prd,
+            periods=period_list,
+            periods_back_to_first_period_by_period=back_to_first_period,
+        )
+        for prd in period_list
+    }
+    return period_start_year, period_end_year, future_trajectory
+
+
+def new_build_operational_periods_by_vintage(periods, vintage_lifetimes):
+    """
+    :param periods: (period, period_start_year, period_end_year,
+        prev_period) of the model's periods, in model order (prev_period
+        None where it isn't specified), as from :code:`get_model_periods`
+    :param vintage_lifetimes: (project, vintage, operational_lifetime_yrs)
+        of the new-build project-vintages, as from
+        :code:`new_build_vintage_rows_sql`
+    :return: dictionary of the periods in which each (project, vintage) is
+        operational, determined with the same functions as the model's
+        operational period sets (:code:`OPR_PRDS_BY_{prefix}_VINTAGE`, see
+        :code:`add_vintage_period_sets`)
+    """
+    period_start_year, period_end_year, future_trajectory = period_trajectories(periods)
 
     # A vintage outside the model's periods (or without a lifetime) fails
     # the model's data loading, so is left out
     return {
         (prj, vintage): relevant_periods_by_project_vintage(
-            future_trajectory_periods=periods_on_future_trajectory(
-                period=vintage,
-                periods=period_list,
-                periods_back_to_first_period_by_period=back_to_first_period,
-            ),
+            future_trajectory_periods=future_trajectory[vintage],
             period_start_year=period_start_year,
             period_end_year=period_end_year,
             vintage=vintage,
@@ -371,20 +388,16 @@ def new_build_operational_periods_by_vintage(periods, vintage_lifetimes):
     }
 
 
-def get_new_build_operational_periods(conn, subscenarios, subproblem, stage):
+def get_model_periods(conn, subscenarios, subproblem, stage):
     """
     :param subproblem: the subproblem ID in the database
     :param stage: the stage ID in the database
-    :return: the portfolio projects of the new-build capacity types, the
-        subproblem's periods, and dictionary of the periods in which each
-        (project, vintage) is operational (see
-        :code:`new_build_operational_periods_by_vintage`)
+    :return: (period, period_start_year, period_end_year, prev_period) of
+        the rows of the model's periods.tab, in the same order
     """
     from gridpath.temporal.investment import periods as periods_module
 
-    c = conn.cursor()
-    # The rows of the model's periods.tab, in the same order
-    periods = [
+    return [
         (row[0], row[2], row[3], row[5])
         for row in periods_module.get_inputs_from_database(
             scenario_id=None,
@@ -397,6 +410,19 @@ def get_new_build_operational_periods(conn, subscenarios, subproblem, stage):
             conn=conn,
         ).fetchall()
     ]
+
+
+def get_new_build_operational_periods(conn, subscenarios, subproblem, stage):
+    """
+    :param subproblem: the subproblem ID in the database
+    :param stage: the stage ID in the database
+    :return: the portfolio projects of the new-build capacity types, the
+        subproblem's periods, and dictionary of the periods in which each
+        (project, vintage) is operational (see
+        :code:`new_build_operational_periods_by_vintage`)
+    """
+    c = conn.cursor()
+    periods = get_model_periods(conn, subscenarios, subproblem, stage)
     capacity_type_list = ", ".join(f"'{ct}'" for ct in NEW_BUILD_CAPACITY_TYPES)
     projects = [
         prj for (prj,) in c.execute(f"""SELECT project FROM inputs_project_portfolios
@@ -417,6 +443,195 @@ def get_new_build_operational_periods(conn, subscenarios, subproblem, stage):
     )
 
     return projects, [row[0] for row in periods], periods_by_vintage
+
+
+# Tolerance for comparing years, which may be fractional
+LIFETIME_YEARS_TOLERANCE = 1e-6
+
+
+def vintage_lifetime_period_findings(periods, vintage_lifetimes):
+    """
+    :param periods: (period, period_start_year, period_end_year,
+        prev_period) of the model's periods, as from
+        :code:`get_model_periods`
+    :param vintage_lifetimes: (project, vintage, lifetime_yrs) of the
+        new-build project-vintages
+    :return: the (project, vintage, lifetime_yrs)s whose lifetime ends
+        before the end of the vintage's own period, and the (project,
+        vintage, period, years)s whose lifetime ends partway through a
+        period on the vintage's future trajectory, after *years* of it
+
+    A vintage counts in a period (is operational in it, or incurs capital
+    costs in it) only if its lifetime lasts through the end of the period
+    (see :code:`relevant_periods_by_project_vintage`). A lifetime ending
+    before the end of the vintage's own period therefore never counts, and
+    one ending partway through a later period loses that period entirely.
+    A lifetime ending at a period boundary, in a gap between periods, or
+    after the last period is not reported. Period lengths may differ, so
+    the comparison uses the actual start and end years of the periods on
+    each vintage's trajectory.
+    """
+    period_start_year, period_end_year, future_trajectory = period_trajectories(periods)
+    tol = LIFETIME_YEARS_TOLERANCE
+    no_period = []
+    cut_short = []
+    for prj, vintage, lifetime_yrs in vintage_lifetimes:
+        if vintage not in period_start_year or lifetime_yrs is None:
+            continue
+        life_end = period_start_year[vintage] + lifetime_yrs
+        if life_end < period_end_year[vintage] - tol:
+            no_period.append((prj, vintage, lifetime_yrs))
+            continue
+        for prd in future_trajectory[vintage]:
+            if period_start_year[prd] + tol < life_end < period_end_year[prd] - tol:
+                cut_short.append(
+                    (prj, vintage, prd, round(life_end - period_start_year[prd], 6))
+                )
+    return no_period, cut_short
+
+
+def validate_vintage_lifetimes(
+    conn,
+    scenario_id,
+    subscenarios,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    gridpath_module,
+    capacity_type,
+):
+    """
+    Check the operational and financial lifetimes of the *capacity_type*
+    project-vintages against the subproblem's periods (see
+    :code:`write_vintage_lifetime_findings`).
+
+    :param subproblem: the subproblem ID in the database
+    :param stage: the stage ID in the database
+    """
+    write_vintage_lifetime_findings(
+        conn=conn,
+        scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        gridpath_module=gridpath_module,
+        db_table="inputs_project_new_cost",
+        periods=get_model_periods(conn, subscenarios, subproblem, stage),
+        vintage_rows=conn.cursor()
+        .execute(
+            new_build_vintage_rows_sql(
+                subscenarios=subscenarios,
+                capacity_types=[capacity_type],
+                columns=["operational_lifetime_yrs", "financial_lifetime_yrs"],
+            )
+        )
+        .fetchall(),
+        entity="project",
+        lifetime_columns=["operational_lifetime_yrs", "financial_lifetime_yrs"],
+    )
+
+
+def write_vintage_lifetime_findings(
+    conn,
+    scenario_id,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    gridpath_module,
+    db_table,
+    periods,
+    vintage_rows,
+    entity,
+    lifetime_columns,
+):
+    """
+    Check new-build lifetimes against the periods (see
+    :code:`vintage_lifetime_period_findings`) and write the findings to the
+    validation table: High severity for a lifetime that covers no period, as
+    the capacity would then never be operational (operational lifetime) or
+    never incur its capital cost (financial lifetime, i.e. the build would
+    be free); Low severity for a lifetime ending partway through a period,
+    which then doesn't count, so that part of the lifetime is lost (fewer
+    operational years, or capital costs that are never charged).
+
+    :param subproblem: the subproblem ID in the database
+    :param stage: the stage ID in the database
+    :param periods: the model's periods, as from :code:`get_model_periods`
+    :param vintage_rows: (*entity*, vintage, operational lifetime, financial
+        lifetime) of the new-build vintages
+    :param entity: what the rows' first column is, e.g. project
+    :param lifetime_columns: the names of the operational and financial
+        lifetime columns of *db_table*
+    """
+
+    def write(severity, errors):
+        write_validation_to_database(
+            conn=conn,
+            scenario_id=scenario_id,
+            weather_iteration=weather_iteration,
+            hydro_iteration=hydro_iteration,
+            availability_iteration=availability_iteration,
+            subproblem_id=subproblem,
+            stage_id=stage,
+            gridpath_module=gridpath_module,
+            db_table=db_table,
+            severity=severity,
+            errors=errors,
+        )
+
+    operational_column, financial_column = lifetime_columns
+    # The lifetimes' positions in the rows (after the entity and vintage)
+    for index, column, label, consequence in [
+        (
+            2,
+            operational_column,
+            "Operational lifetime",
+            "the capacity is never operational",
+        ),
+        (
+            3,
+            financial_column,
+            "Financial lifetime",
+            "the capacity never incurs its capital cost",
+        ),
+    ]:
+        no_period, cut_short = vintage_lifetime_period_findings(
+            periods=periods,
+            vintage_lifetimes=[(row[0], row[1], row[index]) for row in vintage_rows],
+        )
+        write(
+            severity="High",
+            errors=(
+                [
+                    f"{label} ({column}) ends before the end of the vintage's "
+                    f"period for ({entity}, vintage, lifetime): {no_period}, so "
+                    f"{consequence}. A vintage counts in a period only if its "
+                    f"lifetime lasts through the end of the period."
+                ]
+                if no_period
+                else []
+            ),
+        )
+        write(
+            severity="Low",
+            errors=(
+                [
+                    f"{label} ({column}) ends partway through a period for "
+                    f"({entity}, vintage, period, years into the period): "
+                    f"{cut_short}. A vintage counts in a period only if its "
+                    f"lifetime lasts through the end of the period, so these "
+                    f"years are not counted."
+                ]
+                if cut_short
+                else []
+            ),
+        )
 
 
 # Specified projects common functions
