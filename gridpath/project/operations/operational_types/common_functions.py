@@ -31,6 +31,7 @@ from gridpath.auxiliary.calendar_rows import (
     calendar_rows_sql,
 )
 from gridpath.project.capacity.capacity_types.common_methods import (
+    get_new_build_operational_periods,
     spec_non_operational_periods_sql,
     spec_projects_not_operational_sql,
 )
@@ -686,11 +687,11 @@ def get_prj_temporal_index_opr_inputs_from_db(
     """
     Determine appropriate iterations for projects and get those inputs
 
-    Projects of the specified capacity types get no rows for the timepoints
-    of the periods in which they aren't operational, and no rows for the
-    horizons whose timepoints are all in such periods (see
-    :code:`spec_non_operational_periods_sql`), as the model has no
-    operational timepoints or horizons for them there.
+    Projects of the specified and new-build capacity types get no rows for
+    the timepoints of the periods in which they aren't operational, and no
+    rows for the horizons whose timepoints are all in such periods (see
+    :code:`non_operational_periods_sql`), as the model has no operational
+    timepoints or horizons for them there.
 
     For projects reading timepoint-indexed data through a timepoint map,
     every operational timepoint must find data at its resolved data
@@ -787,17 +788,17 @@ def get_prj_temporal_index_opr_inputs_from_db(
     )
     cte_sql = cte_prj_sql + cte_tmp_sql + map_cte_sql + calendar_cte_sql
 
-    # The periods in which projects of the specified capacity types aren't
-    # operational; if there are none, the query is unchanged
-    spec_non_opr_sql = spec_non_operational_periods_sql(
-        subscenarios=subscenarios, subproblem=subproblem
+    # The periods in which projects of the specified and new-build capacity
+    # types aren't operational; if there are none, the query is unchanged
+    non_opr_sql = non_operational_periods_sql(
+        conn=conn, subscenarios=subscenarios, subproblem=subproblem, stage=stage
     )
-    has_spec_non_opr_periods = (
-        c.execute(f"SELECT 1 FROM ({spec_non_opr_sql}) LIMIT 1").fetchone() is not None
+    has_non_opr_periods = (
+        c.execute(f"SELECT 1 FROM ({non_opr_sql}) LIMIT 1").fetchone() is not None
     )
-    if has_spec_non_opr_periods:
-        cte_sql += spec_non_operational_index_ctes_sql(
-            spec_non_opr_sql=spec_non_opr_sql,
+    if has_non_opr_periods:
+        cte_sql += non_operational_index_ctes_sql(
+            non_opr_sql=non_opr_sql,
             subscenarios=subscenarios,
             subproblem=subproblem,
             stage=stage,
@@ -972,7 +973,7 @@ def get_prj_temporal_index_opr_inputs_from_db(
                     if map_id is not None
                 ],
                 stage_subquery=stage_subquery,
-                has_spec_non_opr_periods=has_spec_non_opr_periods,
+                has_non_opr_periods=has_non_opr_periods,
             )
         ).fetchall()
         if gaps:
@@ -982,8 +983,8 @@ def get_prj_temporal_index_opr_inputs_from_db(
 
     # Combine CTE with UNION ALL
     all_projects_sql = "\nUNION ALL\n".join(union_parts)
-    if has_spec_non_opr_periods:
-        all_projects_sql = spec_non_operational_index_filter_sql(
+    if has_non_opr_periods:
+        all_projects_sql = non_operational_index_filter_sql(
             inputs_sql=all_projects_sql,
             subscenarios=subscenarios,
             subproblem=subproblem,
@@ -997,12 +998,67 @@ def get_prj_temporal_index_opr_inputs_from_db(
     return prj_tmp_data
 
 
-def spec_non_operational_index_ctes_sql(
-    spec_non_opr_sql, subscenarios, subproblem, stage, horizon_indexed
+def non_operational_periods_sql(conn, subscenarios, subproblem, stage):
+    """
+    :param subproblem: the subproblem ID in the database
+    :param stage: the stage ID in the database
+    :return: SQL selecting the (project, period)s of the subproblem's
+        periods in which portfolio projects aren't operational: projects of
+        the specified capacity types (see
+        :code:`spec_non_operational_periods_sql`) and of the new-build
+        capacity types (see :code:`get_new_build_operational_periods`)
+    """
+    projects, periods, periods_by_vintage = get_new_build_operational_periods(
+        conn=conn, subscenarios=subscenarios, subproblem=subproblem, stage=stage
+    )
+    operational = {
+        (prj, prd) for (prj, _), prds in periods_by_vintage.items() for prd in prds
+    }
+    sql = f"""SELECT project, period FROM (
+        {spec_non_operational_periods_sql(subscenarios, subproblem)}
+        )"""
+    new_build_values = ", ".join(
+        "('{}', {})".format(prj.replace("'", "''"), prd)
+        for prj in projects
+        for prd in periods
+        if (prj, prd) not in operational
+    )
+    if new_build_values:
+        sql += f"""
+        UNION ALL
+        SELECT column1 AS project, column2 AS period
+        FROM (VALUES {new_build_values})"""
+    return sql
+
+
+def get_projects_not_operational_in_subproblem(conn, subscenarios, subproblem, stage):
+    """
+    :param subproblem: the subproblem ID in the database
+    :param stage: the stage ID in the database
+    :return: the portfolio projects of the specified (see
+        :code:`spec_projects_not_operational_sql`) and new-build (see
+        :code:`get_new_build_operational_periods`) capacity types that
+        aren't operational in any of the subproblem's periods
+    """
+    projects, _, periods_by_vintage = get_new_build_operational_periods(
+        conn=conn, subscenarios=subscenarios, subproblem=subproblem, stage=stage
+    )
+    spec_not_operational = {
+        prj
+        for (prj,) in conn.cursor()
+        .execute(spec_projects_not_operational_sql(subscenarios, subproblem))
+        .fetchall()
+    }
+    operational = {prj for (prj, _), prds in periods_by_vintage.items() if prds}
+    return spec_not_operational | (set(projects) - operational)
+
+
+def non_operational_index_ctes_sql(
+    non_opr_sql, subscenarios, subproblem, stage, horizon_indexed
 ):
     """
-    :param spec_non_opr_sql: SQL selecting the (project, period)s in which
-        projects of the specified capacity types aren't operational
+    :param non_opr_sql: SQL selecting the (project, period)s in which
+        projects aren't operational (see :code:`non_operational_periods_sql`)
     :param horizon_indexed: whether the inputs are indexed by balancing type
         and horizon
     :return: CTEs (following the CTEs of
@@ -1011,7 +1067,7 @@ def spec_non_operational_index_ctes_sql(
         balancing type, horizon)s whose timepoints are all in such periods
     """
     ctes = f""",
-        spec_non_operational_periods AS ({spec_non_opr_sql})"""
+        non_operational_periods AS ({non_opr_sql})"""
     if horizon_indexed:
         ctes += f""",
         horizon_periods AS (
@@ -1023,25 +1079,25 @@ def spec_non_operational_index_ctes_sql(
             AND h.subproblem_id = {subproblem}
             AND h.stage_id = {stage}
         ),
-        spec_non_operational_horizons AS (
+        non_operational_horizons AS (
             SELECT DISTINCT non_opr.project, hp.balancing_type_horizon,
                 hp.horizon
-            FROM spec_non_operational_periods AS non_opr
+            FROM non_operational_periods AS non_opr
             JOIN horizon_periods AS hp USING (period)
             EXCEPT
             -- The horizons with a timepoint in an operational period
             SELECT prj.project, hp.balancing_type_horizon, hp.horizon
-            FROM (SELECT DISTINCT project FROM spec_non_operational_periods)
+            FROM (SELECT DISTINCT project FROM non_operational_periods)
                 AS prj
             CROSS JOIN horizon_periods AS hp
             WHERE (prj.project, hp.period) NOT IN (
-                SELECT project, period FROM spec_non_operational_periods
+                SELECT project, period FROM non_operational_periods
             )
         )"""
     return ctes
 
 
-def spec_non_operational_index_filter_sql(
+def non_operational_index_filter_sql(
     inputs_sql, subscenarios, subproblem, stage, bt_column
 ):
     """
@@ -1050,9 +1106,8 @@ def spec_non_operational_index_filter_sql(
     :param bt_column: the balancing type column of horizon-indexed inputs;
         None for timepoint-indexed inputs
     :return: SQL selecting the rows of *inputs_sql* other than those of the
-        timepoints (horizons) in which projects of the specified capacity
-        types aren't operational (see
-        :code:`spec_non_operational_index_ctes_sql`)
+        timepoints (horizons) in which projects aren't operational (see
+        :code:`non_operational_index_ctes_sql`)
     """
     if bt_column is None:
         non_operational_filter = f"""(opr_inputs.project, (
@@ -1062,13 +1117,13 @@ def spec_non_operational_index_filter_sql(
                 AND t.stage_id = {stage}
                 AND t.timepoint = opr_inputs.timepoint
             )) NOT IN (
-                SELECT project, period FROM spec_non_operational_periods
+                SELECT project, period FROM non_operational_periods
             )"""
     else:
         non_operational_filter = f"""(opr_inputs.project,
                 opr_inputs.{bt_column}, opr_inputs.horizon) NOT IN (
                 SELECT project, balancing_type_horizon, horizon
-                FROM spec_non_operational_horizons
+                FROM non_operational_horizons
             )"""
     return f"""
         SELECT * FROM ({inputs_sql}) AS opr_inputs
@@ -1084,22 +1139,22 @@ def mapped_timepoint_data_gaps_sql(
     map_column,
     iteration_configs,
     stage_subquery,
-    has_spec_non_opr_periods=False,
+    has_non_opr_periods=False,
 ):
     """
     :param iteration_configs: (varies_by_weather_iteration,
         varies_by_hydro_iteration, map_id, weather_iteration,
         hydro_iteration) of the mapped project groups
-    :param has_spec_non_opr_periods: whether the CTEs include the periods in
-        which projects of the specified capacity types aren't operational
-        (see :code:`spec_non_operational_index_ctes_sql`), whose timepoints
-        need no data
+    :param has_non_opr_periods: whether the CTEs include the periods in
+        which projects aren't operational (see
+        :code:`non_operational_index_ctes_sql`), whose timepoints need no
+        data
     :return: SQL (following the CTEs of
         :code:`get_prj_temporal_index_opr_inputs_from_db`) selecting the
         (project, timepoint, data_timepoint)s of the mapped projects'
         operational timepoints whose resolved data timepoint has no data
     """
-    spec_non_opr_filter = (
+    non_opr_filter = (
         f"""AND (op.project, (
                 SELECT period FROM inputs_temporal AS t
                 WHERE t.temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
@@ -1107,9 +1162,9 @@ def mapped_timepoint_data_gaps_sql(
                 AND t.stage_id = {stage}
                 AND t.timepoint = op.timepoint
             )) NOT IN (
-                SELECT project, period FROM spec_non_operational_periods
+                SELECT project, period FROM non_operational_periods
             )"""
-        if has_spec_non_opr_periods
+        if has_non_opr_periods
         else ""
     )
     parts = []
@@ -1145,7 +1200,7 @@ def mapped_timepoint_data_gaps_sql(
                 WHERE varies_by_weather_iteration = {varies_weather}
                 AND varies_by_hydro_iteration = {varies_hydro}
             )
-            {spec_non_opr_filter}
+            {non_opr_filter}
             AND NOT EXISTS (
                 SELECT 1 FROM {table}
                 WHERE {table}.project = prj.project
@@ -1397,30 +1452,30 @@ def projects_without_bt_hrz_rows_error(projects, db_table):
     )
 
 
-def get_projects_operational_in_subproblem(conn, subscenarios, subproblem, op_type):
+def get_projects_operational_in_subproblem(
+    conn, subscenarios, subproblem, stage, op_type
+):
     """
     :param subproblem: the subproblem ID in the database
-    :return: the *op_type* portfolio projects other than those of the
-        specified capacity types that aren't operational in any of the
-        subproblem's periods (see spec_projects_not_operational_sql)
+    :param stage: the stage ID in the database
+    :return: the *op_type* portfolio projects other than those that aren't
+        operational in any of the subproblem's periods (see
+        :code:`get_projects_not_operational_in_subproblem`)
     """
-    not_operational = {
-        prj
-        for (prj,) in conn.cursor()
-        .execute(spec_projects_not_operational_sql(subscenarios, subproblem))
-        .fetchall()
-    }
     return set(get_energy_budget_bt_by_prj(conn, subscenarios, op_type)) - (
-        not_operational
+        get_projects_not_operational_in_subproblem(
+            conn=conn, subscenarios=subscenarios, subproblem=subproblem, stage=stage
+        )
     )
 
 
 def require_bt_hrz_rows_for_every_project(
-    conn, subscenarios, subproblem, op_type, db_table
+    conn, subscenarios, subproblem, stage, op_type, db_table
 ):
     """
     :param subproblem: the subproblem directory name ("" if there is a single
         subproblem)
+    :param stage: the stage directory name ("" if there is a single stage)
     :return: a check_rows function for write_tab_file_model_inputs that
         raises a ValueError if any *op_type* portfolio project operational in
         the subproblem has no (project, balancing type, horizon)-indexed rows
@@ -1428,10 +1483,11 @@ def require_bt_hrz_rows_for_every_project(
         same check as validate_energy_budget_balancing_type_rows)
     """
     db_subproblem = 1 if subproblem == "" else int(subproblem)
+    db_stage = 1 if stage == "" else int(stage)
 
     def check_rows(rows):
         projects = get_projects_operational_in_subproblem(
-            conn, subscenarios, db_subproblem, op_type
+            conn, subscenarios, db_subproblem, db_stage, op_type
         )
         without_rows = sorted(projects - {row[0] for row in rows})
         if without_rows:
@@ -1486,7 +1542,9 @@ def validate_energy_budget_balancing_type_rows(
     # returned, so this also catches rows that exist but are all for
     # horizons outside it (e.g. of an unknown balancing type)
     without_rows = sorted(
-        get_projects_operational_in_subproblem(conn, subscenarios, subproblem, op_type)
+        get_projects_operational_in_subproblem(
+            conn, subscenarios, subproblem, stage, op_type
+        )
         - set(df["project"])
     )
     if without_rows:

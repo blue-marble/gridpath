@@ -303,6 +303,122 @@ def new_build_vintage_rows_sql(subscenarios, capacity_types, columns):
         AND capacity_type IN ({capacity_type_list})"""
 
 
+# The new-build capacity types, whose operational periods follow from their
+# vintages and operational lifetimes (see add_vintage_period_sets); dr_new,
+# whose operational periods are all periods, is not one of them
+NEW_BUILD_CAPACITY_TYPES = [
+    "energy_new_lin",
+    "fuel_prod_new",
+    "gen_new_bin",
+    "gen_new_lin",
+    "stor_new_bin",
+    "stor_new_lin",
+]
+
+
+def new_build_operational_periods_by_vintage(periods, vintage_lifetimes):
+    """
+    :param periods: (period, period_start_year, period_end_year,
+        prev_period) of the model's periods, in model order (prev_period
+        None where it isn't specified), as from
+        :code:`gridpath.temporal.investment.periods.get_inputs_from_database`
+    :param vintage_lifetimes: (project, vintage, operational_lifetime_yrs)
+        of the new-build project-vintages, as from
+        :code:`new_build_vintage_rows_sql`
+    :return: dictionary of the periods in which each (project, vintage) is
+        operational, determined with the same functions as the model's
+        operational period sets (:code:`OPR_PRDS_BY_{prefix}_VINTAGE`, see
+        :code:`add_vintage_period_sets`)
+    """
+    # Imported here, as the periods module imports (through the operational
+    # types' common functions) this module
+    from gridpath.temporal.investment.periods import (
+        default_prev_period,
+        periods_back_to_first_period,
+        periods_on_future_trajectory,
+    )
+
+    period_list = [row[0] for row in periods]
+    period_start_year = {row[0]: row[1] for row in periods}
+    period_end_year = {row[0]: row[2] for row in periods}
+    prev_period = {
+        prd: prev if prev is not None else default_prev_period(period_list, prd)
+        for (prd, _, _, prev) in periods[1:]
+    }
+    back_to_first_period = {
+        prd: periods_back_to_first_period(
+            period=prd, first_period=period_list[0], prev_period=prev_period
+        )
+        for prd in period_list
+    }
+
+    # A vintage outside the model's periods (or without a lifetime) fails
+    # the model's data loading, so is left out
+    return {
+        (prj, vintage): relevant_periods_by_project_vintage(
+            future_trajectory_periods=periods_on_future_trajectory(
+                period=vintage,
+                periods=period_list,
+                periods_back_to_first_period_by_period=back_to_first_period,
+            ),
+            period_start_year=period_start_year,
+            period_end_year=period_end_year,
+            vintage=vintage,
+            lifetime_yrs=lifetime_yrs,
+        )
+        for prj, vintage, lifetime_yrs in vintage_lifetimes
+        if vintage in period_start_year and lifetime_yrs is not None
+    }
+
+
+def get_new_build_operational_periods(conn, subscenarios, subproblem, stage):
+    """
+    :param subproblem: the subproblem ID in the database
+    :param stage: the stage ID in the database
+    :return: the portfolio projects of the new-build capacity types, the
+        subproblem's periods, and dictionary of the periods in which each
+        (project, vintage) is operational (see
+        :code:`new_build_operational_periods_by_vintage`)
+    """
+    from gridpath.temporal.investment import periods as periods_module
+
+    c = conn.cursor()
+    # The rows of the model's periods.tab, in the same order
+    periods = [
+        (row[0], row[2], row[3], row[5])
+        for row in periods_module.get_inputs_from_database(
+            scenario_id=None,
+            subscenarios=subscenarios,
+            weather_iteration=None,
+            hydro_iteration=None,
+            availability_iteration=None,
+            subproblem=subproblem,
+            stage=stage,
+            conn=conn,
+        ).fetchall()
+    ]
+    capacity_type_list = ", ".join(f"'{ct}'" for ct in NEW_BUILD_CAPACITY_TYPES)
+    projects = [
+        prj for (prj,) in c.execute(f"""SELECT project FROM inputs_project_portfolios
+            WHERE project_portfolio_scenario_id =
+            {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
+            AND capacity_type IN ({capacity_type_list})
+            ORDER BY project""").fetchall()
+    ]
+    periods_by_vintage = new_build_operational_periods_by_vintage(
+        periods=periods,
+        vintage_lifetimes=c.execute(
+            new_build_vintage_rows_sql(
+                subscenarios=subscenarios,
+                capacity_types=NEW_BUILD_CAPACITY_TYPES,
+                columns=["operational_lifetime_yrs"],
+            )
+        ).fetchall(),
+    )
+
+    return projects, [row[0] for row in periods], periods_by_vintage
+
+
 # Specified projects common functions
 SPEC_FIXED_COST_COLUMNS = [
     "fixed_cost_per_mw_yr",

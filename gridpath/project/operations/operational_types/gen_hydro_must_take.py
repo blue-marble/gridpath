@@ -1210,6 +1210,7 @@ def write_model_inputs(
             conn=conn,
             subscenarios=subscenarios,
             subproblem=subproblem,
+            stage=stage,
             op_type="gen_hydro_must_take",
             db_table="inputs_project_hydro_operational_chars",
         ),
