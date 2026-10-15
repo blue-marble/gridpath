@@ -57,6 +57,7 @@ from gridpath.common_functions import create_results_df
 from gridpath.project.capacity.capacity_types.common_methods import (
     add_vintage_period_sets,
     new_build_vintage_rows_sql,
+    validate_vintage_lifetimes,
     read_results_file_generic,
     write_summary_results_generic,
     get_units,
@@ -156,10 +157,13 @@ def add_model_components(
         capacity. This annualized cost is incurred in each period of the study
         (and multiplied by the number of years the period represents) for
         the duration of the project's "financial" lifetime. It is up to the
-        user to ensure that the variousl lifetime and cost parameters are consistent
-        with one another and with the period length (projects are operational
-        and incur capital costs only if the operational and financial lifetimes last
-        through the end of a period respectively.
+        user to ensure that the annualized cost is consistent with the
+        financial lifetime. A vintage is operational, or incurs capital costs,
+        in a period only if its operational or financial lifetime
+        respectively lasts through the end of the period. Validation reports
+        a lifetime that covers no period (High severity) and one that ends
+        partway through a period, whose years are then not counted (Low
+        severity).
 
     +-------------------------------------------------------------------------+
     | Derived Sets                                                            |
@@ -876,4 +880,18 @@ def validate_inputs(
         errors=validate_idxs(
             actual_idxs=bld_size_projects, req_idxs=projects, idx_label="project"
         ),
+    )
+
+    # Check the lifetimes against the period boundaries
+    validate_vintage_lifetimes(
+        conn=conn,
+        scenario_id=scenario_id,
+        subscenarios=subscenarios,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        gridpath_module=__name__,
+        capacity_type="stor_new_bin",
     )

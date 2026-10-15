@@ -54,13 +54,29 @@ def add_model_components(
     | Expressions                                                             |
     +=========================================================================+
     | | :code:`Capacity_Cost_in_Period`                                       |
+    | | *Defined Over*: :code:`PRJ_FIN_PRDS`                                  |
+    |                                                                         |
+    | Each project's capital costs in each financial period (the periods in   |
+    | which a vintage's financial lifetime lasts through the end of the       |
+    | period), based on its capacity_type. For the purpose, call the          |
+    | *capacity_cost_rule* method from the respective capacity-type module.   |
+    +-------------------------------------------------------------------------+
+    | | :code:`Energy_Cost_in_Period`                                         |
+    | | *Defined Over*: :code:`PRJ_FIN_PRDS`                                  |
+    |                                                                         |
+    | Each project's energy procurement costs in each financial period, from  |
+    | the *energy_cost_rule* method of the respective capacity-type module.   |
+    +-------------------------------------------------------------------------+
+    | | :code:`Fixed_Cost_in_Period`                                          |
     | | *Defined Over*: :code:`PRJ_OPR_PRDS`                                  |
     |                                                                         |
-    | This expression describe each project's capacity-related costs for each |
-    | operational period, based on its capacity_type. For the purpose, call   |
-    | the *capacity_cost_rule* method from the respective capacity-type       |
-    | module. If the subproblem is less than a full year (e.g. in production- |
-    | cost mode with 365 daily subproblems), the costs are scaled down        |
+    | Each project's fixed costs in each operational period (the periods in   |
+    | which a vintage's operational lifetime lasts through the end of the     |
+    | period), from the *fixed_cost_rule* method of the respective            |
+    | capacity-type module.                                                   |
+    +-------------------------------------------------------------------------+
+    | If the subproblem is less than a full year (e.g. in production-cost     |
+    | mode with 365 daily subproblems), the costs are scaled down             |
     | proportionally.                                                         |
     +-------------------------------------------------------------------------+
 
