@@ -33,7 +33,7 @@ Only scenario directories with inputs at their root (a single subproblem and
 stage) are built; others are listed as skipped. Nothing is solved or written
 to the scenario directories. Usage::
 
-    python scripts/scan_unbounded_constraint_rows.py
+    python -m tests.scan_unbounded_constraint_rows
         [--scenario_location examples] [--output rows.csv] [--big_bound 1e6]
 """
 
