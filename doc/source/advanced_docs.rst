@@ -486,6 +486,16 @@ gridpath.system.policy.performance_standard.performance_standard
 
 .. automodule:: gridpath.system.policy.performance_standard.performance_standard
 
+gridpath.system.policy.generic_policy.generic_policy_requirements
+-----------------------------------------------------------------
+
+.. automodule:: gridpath.system.policy.generic_policy.generic_policy_requirements
+
+gridpath.system.policy.generic_policy.policy_target_balance
+-----------------------------------------------------------
+
+.. automodule:: gridpath.system.policy.generic_policy.policy_target_balance
+
 
 Markets
 =======

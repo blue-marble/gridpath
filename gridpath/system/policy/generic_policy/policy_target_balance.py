@@ -13,7 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" """
+"""
+Enforce the policy requirements: the contributions from all sources
+(projects, transmission lines) must be at least the requirement of a ``min``
+policy and may not exceed the requirement of a ``max`` policy. Where the
+policy zone allows violations, a shortage (``min``) or overage (``max``)
+variable relaxes the constraint at the zone's penalty.
+"""
 
 from pyomo.environ import Var, Constraint, NonNegativeReals, Expression, value
 
@@ -27,6 +33,7 @@ from gridpath.common_functions import (
     update_results_df,
 )
 from gridpath.system.policy.generic_policy import POLICY_ZONE_PRD_DF, POLICY_MH_DF
+from gridpath.system.policy.generic_policy.generic_policy_requirements import MAX
 
 
 def add_model_components(
@@ -40,6 +47,38 @@ def add_model_components(
     stage,
 ):
     """
+    The following Pyomo model components are defined in this module:
+
+    +-------------------------------------------------------------------------+
+    | Variables                                                               |
+    +=========================================================================+
+    | | :code:`Policy_Target_Shortage`                                        |
+    | | *Defined over*: :code:`POLICIES_ZONE_BLN_TYPE_HRZS_WITH_REQ`          |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The amount by which the contributions fall short of a ``min``           |
+    | requirement; enters the constraint only where violations are allowed.  |
+    +-------------------------------------------------------------------------+
+    | | :code:`Policy_Target_Overage`                                         |
+    | | *Defined over*: :code:`POLICIES_ZONE_BLN_TYPE_HRZS_WITH_REQ`          |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The amount by which the contributions exceed a ``max`` requirement;     |
+    | enters the constraint only where violations are allowed.               |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Constraints                                                             |
+    +=========================================================================+
+    | | :code:`Policy_Requirement_Constraint`                                 |
+    | | *Enforced over*: :code:`POLICIES_ZONE_BLN_TYPE_HRZS_WITH_REQ`         |
+    |                                                                         |
+    | For a ``min`` policy, the contributions plus the shortage are at least  |
+    | the requirement; for a ``max`` policy, the contributions less the       |
+    | overage are at most the requirement.                                    |
+    +-------------------------------------------------------------------------+
 
     :param m:
     :param d:
@@ -49,9 +88,17 @@ def add_model_components(
     m.Policy_Target_Shortage = Var(
         m.POLICIES_ZONE_BLN_TYPE_HRZS_WITH_REQ, within=NonNegativeReals, initialize=0
     )
+    m.Policy_Target_Overage = Var(
+        m.POLICIES_ZONE_BLN_TYPE_HRZS_WITH_REQ, within=NonNegativeReals, initialize=0
+    )
+
+    def is_max_policy(mod, policy, zone, bt, h):
+        return mod.policy_requirement_sense[policy, zone, bt, h] == MAX
 
     def violation_expression_init(mod, policy, zone, bt, h):
-        if mod.policy_zone_allow_violation[policy, zone]:
+        if mod.policy_zone_allow_violation[policy, zone] and not is_max_policy(
+            mod, policy, zone, bt, h
+        ):
             return mod.Policy_Target_Shortage[policy, zone, bt, h]
         else:
             return 0
@@ -59,6 +106,19 @@ def add_model_components(
     m.Policy_Requirement_Shortage_Expression = Expression(
         m.POLICIES_ZONE_BLN_TYPE_HRZS_WITH_REQ,
         initialize=violation_expression_init,
+    )
+
+    def overage_expression_init(mod, policy, zone, bt, h):
+        if mod.policy_zone_allow_violation[policy, zone] and is_max_policy(
+            mod, policy, zone, bt, h
+        ):
+            return mod.Policy_Target_Overage[policy, zone, bt, h]
+        else:
+            return 0
+
+    m.Policy_Requirement_Overage_Expression = Expression(
+        m.POLICIES_ZONE_BLN_TYPE_HRZS_WITH_REQ,
+        initialize=overage_expression_init,
     )
 
     m.Policy_Month_Hour_Requirement_Shortage = Var(
@@ -89,7 +149,8 @@ def add_model_components(
     def meet_policy_target_constraint_rule(mod, policy, zone, bt, h):
         """
         Total contributions from all sources (projects, transmission lines)
-        must exceed the target
+        must be at least the target of a 'min' policy and at most the target
+        of a 'max' policy
         :param mod:
         :param policy:
         :param zone:
@@ -97,13 +158,24 @@ def add_model_components(
         :param h:
         :return:
         """
-        return (
+        contributions = (
             mod.Total_Policy_Zone_Tmp_Contributions_from_All_Sources_Expression[
                 policy, zone, bt, h
             ]
-            + mod.Policy_Requirement_Shortage_Expression[policy, zone, bt, h]
-            >= mod.Policy_Zone_Horizon_Requirement[policy, zone, bt, h]
         )
+        requirement = mod.Policy_Zone_Horizon_Requirement[policy, zone, bt, h]
+        if is_max_policy(mod, policy, zone, bt, h):
+            return (
+                contributions
+                - mod.Policy_Requirement_Overage_Expression[policy, zone, bt, h]
+                <= requirement
+            )
+        else:
+            return (
+                contributions
+                + mod.Policy_Requirement_Shortage_Expression[policy, zone, bt, h]
+                >= requirement
+            )
 
     m.Policy_Requirement_Constraint = Constraint(
         m.POLICIES_ZONE_BLN_TYPE_HRZS_WITH_REQ, rule=meet_policy_target_constraint_rule
@@ -157,13 +229,15 @@ def export_results(
 
 def export_horizon_results(m, d):
     """
-    Shortage, dual, and marginal cost of the horizon-based requirements.
+    Shortage or overage, dual, and marginal cost of the horizon-based
+    requirements.
     """
     results_columns = [
         "pre_load_modifier_load_in_hrz",
         "post_load_modifier_load_in_hrz",
         "policy_requirement_calculated_in_horizon",
         "policy_requirement_shortage",
+        "policy_requirement_overage",
         "dual",
         "policy_requirement_marginal_cost_per_unit",
     ]
@@ -201,6 +275,7 @@ def export_horizon_results(m, d):
             ),
             value(m.Policy_Zone_Horizon_Requirement[p, z, bt, h]),
             value(m.Policy_Requirement_Shortage_Expression[p, z, bt, h]),
+            value(m.Policy_Requirement_Overage_Expression[p, z, bt, h]),
             (
                 duals_wrapper(
                     m, getattr(m, "Policy_Requirement_Constraint")[p, z, bt, h]

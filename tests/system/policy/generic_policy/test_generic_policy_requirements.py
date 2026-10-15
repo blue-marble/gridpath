@@ -178,6 +178,32 @@ class TestHorizonEnergyTarget(unittest.TestCase):
         )
         self.assertDictEqual(expected_req_fl, actual_req_fl)
 
+        # Param: policy_requirement_sense (unspecified defaults to "min")
+        expected_sense = OrderedDict(
+            sorted(
+                {
+                    ("RPS", "RPSZone1", "year", 2020): "min",
+                    ("RPS", "RPSZone1", "year", 2030): "min",
+                    ("Carbon", "CarbonZone1", "year", 2020): "max",
+                    ("Carbon", "CarbonZone1", "year", 2030): "max",
+                }.items()
+            )
+        )
+        actual_sense = OrderedDict(
+            sorted(
+                {
+                    (p, z, bt, h): instance.policy_requirement_sense[p, z, bt, h]
+                    for (
+                        p,
+                        z,
+                        bt,
+                        h,
+                    ) in instance.POLICIES_ZONE_BLN_TYPE_HRZS_WITH_REQ
+                }.items()
+            )
+        )
+        self.assertDictEqual(expected_sense, actual_sense)
+
         # Set: POLICIES_ZONE_PRDS_MONTH_HOURS_WITH_REQ
         expected_p_zone_prd_mh = sorted(
             [

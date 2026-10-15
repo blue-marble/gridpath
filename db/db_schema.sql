@@ -6168,6 +6168,11 @@ CREATE TABLE inputs_system_policy_requirements
     horizon                         INTEGER,
     policy_requirement              FLOAT,
     policy_requirement_f_load_coeff FLOAT,
+    -- Whether the requirement is a floor ('min': contributions must be at
+    -- least the requirement) or a ceiling ('max': contributions may not
+    -- exceed it). NULL means 'min'.
+    policy_requirement_sense        VARCHAR(3) DEFAULT 'min'
+        CHECK (policy_requirement_sense IN ('min', 'max')),
     PRIMARY KEY (policy_requirement_scenario_id, policy_name, policy_zone,
                  subproblem_id, stage_id, balancing_type_horizon, horizon)
 );
@@ -8881,7 +8886,9 @@ CREATE TABLE results_system_policy_requirements
     pre_load_modifier_load_in_hrz             FLOAT,
     post_load_modifier_load_in_hrz            FLOAT,
     policy_requirement_calculated_in_horizon  FLOAT,
+    policy_requirement_sense                  TEXT,
     policy_requirement_shortage               FLOAT,
+    policy_requirement_overage                FLOAT,
     dual                                      FLOAT,
     policy_requirement_marginal_cost_per_unit FLOAT,
     PRIMARY KEY (scenario_id, policy_name, policy_zone, weather_iteration,

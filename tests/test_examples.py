@@ -2730,6 +2730,18 @@ class TestExamples(unittest.TestCase):
         scenario_name = "2periods_new_build_generic_policy_recs"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
+    def test_example_2periods_new_build_generic_policy_recs_w_gas_cap(self):
+        """
+        Check validation and objective function value of
+        "2periods_new_build_generic_policy_recs_w_gas_cap" example, which
+        adds a 'max' generic policy capping the gas projects' generation to
+        the "2periods_new_build_generic_policy_recs" example (the cap binds
+        in both periods)
+        :return:
+        """
+        scenario_name = "2periods_new_build_generic_policy_recs_w_gas_cap"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
     def validate_and_test_example_expecting_year_horizon_span_warning(
         self, scenario_name
     ):
