@@ -191,7 +191,7 @@ def add_model_components(
     # project in a given period
     def new_capacity_min_rule(mod, prj, prd):
         if mod.min_relative_capacity_limit_new[prj, prd] == 0:
-            return Constraint.Feasible
+            return Constraint.Skip
         else:
             return project_new_capacity(
                 mod, prj, prd
@@ -206,7 +206,7 @@ def add_model_components(
 
     def new_capacity_max_rule(mod, prj, prd):
         if mod.max_relative_capacity_limit_new[prj, prd] == float("inf"):
-            return Constraint.Feasible
+            return Constraint.Skip
         else:
             return project_new_capacity(
                 mod, prj, prd
@@ -223,7 +223,7 @@ def add_model_components(
     # another project
     def total_capacity_min_rule(mod, prj, prd):
         if mod.min_relative_capacity_limit_total[prj, prd] == 0:
-            return Constraint.Feasible
+            return Constraint.Skip
         else:
             return project_total_capacity(
                 mod, prj, prd
@@ -238,7 +238,7 @@ def add_model_components(
 
     def total_capacity_max_rule(mod, prj, prd):
         if mod.max_relative_capacity_limit_total[prj, prd] == float("inf"):
-            return Constraint.Feasible
+            return Constraint.Skip
         else:
             return project_total_capacity(
                 mod, prj, prd

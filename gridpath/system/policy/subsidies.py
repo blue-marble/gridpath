@@ -289,7 +289,7 @@ def add_model_components(
                 <= mod.program_budget[prg, superperiod]
             )
         else:
-            return Constraint.Feasible
+            return Constraint.Skip
 
     m.Max_Program_Budget_in_Period_Constraint = Constraint(
         m.PROGRAM_SUPERPERIODS, rule=max_program_budget_rule
