@@ -14,8 +14,9 @@
 
 """
 The timepoint- and horizon-indexed operational inputs of projects of the
-specified capacity types are written only for the periods in which the
-projects are operational, i.e. have a specified capacity row.
+specified and new-build capacity types are written only for the periods in
+which the projects are operational: those with a specified capacity row, and
+those in the operational lifetime of a vintage respectively.
 """
 
 import ast
@@ -25,6 +26,7 @@ import sqlite3
 import unittest
 
 from gridpath.project.capacity.capacity_types.common_methods import (
+    NEW_BUILD_CAPACITY_TYPES,
     SPEC_CAPACITY_TYPES,
 )
 from gridpath.project.operations.operational_types.common_functions import (
@@ -60,7 +62,7 @@ class SubScenariosStub:
     TEMPORAL_SCENARIO_ID = 1
 
 
-class TestSpecNonOperationalOpcharInputs(unittest.TestCase):
+class TestNonOperationalOpcharInputs(unittest.TestCase):
     """
     In-memory database from the real schema: a 'day' horizon per period and
     a 'subproblem' horizon spanning both periods. Projects:
@@ -69,12 +71,16 @@ class TestSpecNonOperationalOpcharInputs(unittest.TestCase):
     * Wind_Blank (gen_spec): a 2030 row with every capacity column blank
       (a validation error, not a way to make the project absent)
     * Wind_Every (gen_spec): a period = 0 row
-    * Wind_New (gen_new_lin): no specified capacity rows
+    * Wind_New (gen_new_lin): a 2030 vintage
+    * Wind_New_Retiring (gen_new_lin): a 2020 vintage with a 10-year
+      operational and a 30-year financial lifetime
+    * Wind_New_None (gen_new_lin): no vintages
     * Wind_Mapped (gen_spec): a capacity row for 2020 only, reading its
       profile through a timepoint map whose 2030 data timepoints have no
       data
     * Hydro_Retired (gen_spec): a capacity row for 2020 only
     * Hydro_Gone (gen_spec): no capacity rows and no hydro rows
+    * Hydro_New_None (gen_new_lin): no vintages and no hydro rows
 
     Every project has data for every timepoint (horizon).
     """
@@ -89,8 +95,10 @@ class TestSpecNonOperationalOpcharInputs(unittest.TestCase):
         for period, tmps in TMPS_BY_PERIOD.items():
             c.execute(
                 """INSERT INTO inputs_temporal_periods
-                (temporal_scenario_id, period) VALUES (1, ?)""",
-                (period,),
+                (temporal_scenario_id, period, discount_factor,
+                period_start_year, period_end_year)
+                VALUES (1, ?, 1, ?, ?)""",
+                (period, period, period + 10),
             )
             for tmp in tmps:
                 c.execute(
@@ -110,16 +118,31 @@ class TestSpecNonOperationalOpcharInputs(unittest.TestCase):
                         (tmp, bt, hrz),
                     )
 
-        wind = ["Wind_Retired", "Wind_Blank", "Wind_Every", "Wind_New", "Wind_Mapped"]
-        hydro = ["Hydro_Retired", "Hydro_Gone"]
+        wind = [
+            "Wind_Retired",
+            "Wind_Blank",
+            "Wind_Every",
+            "Wind_New",
+            "Wind_New_Retiring",
+            "Wind_New_None",
+            "Wind_Mapped",
+        ]
+        hydro = ["Hydro_Retired", "Hydro_Gone", "Hydro_New_None"]
         c.executemany(
             """INSERT INTO inputs_project_portfolios
             (project_portfolio_scenario_id, project, capacity_type)
             VALUES (1, ?, ?)""",
             [
-                (prj, "gen_new_lin" if prj == "Wind_New" else "gen_spec")
+                (prj, "gen_new_lin" if "_New" in prj else "gen_spec")
                 for prj in wind + hydro
             ],
+        )
+        c.executemany(
+            """INSERT INTO inputs_project_new_cost
+            (project_new_cost_scenario_id, project, vintage,
+            operational_lifetime_yrs, financial_lifetime_yrs)
+            VALUES (1, ?, ?, ?, ?)""",
+            [("Wind_New", 2030, 30, 30), ("Wind_New_Retiring", 2020, 10, 30)],
         )
         c.executemany(
             """INSERT INTO inputs_project_specified_capacity
@@ -233,12 +256,14 @@ class TestSpecNonOperationalOpcharInputs(unittest.TestCase):
 
     def test_timepoints_of_operational_periods_only(self):
         """
-        Wind_Retired gets its 2020 timepoints only; Wind_Every (period = 0)
-        and Wind_New (not a specified capacity type) get every timepoint.
-        Wind_Blank's blank 2030 row is a row, so its 2030 timepoints are
-        written too (the model then fails to load, as validation reports).
-        Wind_Mapped's 2030 timepoints, whose data timepoints have no data,
-        are neither written nor reported as gaps.
+        Wind_Retired gets its 2020 timepoints only and Wind_Every (period =
+        0) every timepoint. Wind_Blank's blank 2030 row is a row, so its 2030
+        timepoints are written too (the model then fails to load, as
+        validation reports). Wind_Mapped's 2030 timepoints, whose data
+        timepoints have no data, are neither written nor reported as gaps.
+        Wind_New gets its 2030 timepoints only, Wind_New_Retiring its 2020
+        timepoints only (its financial lifetime doesn't extend its
+        operational periods), and Wind_New_None none.
         """
         tmps_by_prj = {}
         for prj, tmp, _ in self.var_profile_rows():
@@ -249,7 +274,8 @@ class TestSpecNonOperationalOpcharInputs(unittest.TestCase):
                 "Wind_Blank": all_tmps,
                 "Wind_Every": all_tmps,
                 "Wind_Mapped": TMPS_BY_PERIOD[2020],
-                "Wind_New": all_tmps,
+                "Wind_New": TMPS_BY_PERIOD[2030],
+                "Wind_New_Retiring": TMPS_BY_PERIOD[2020],
                 "Wind_Retired": TMPS_BY_PERIOD[2020],
             },
             tmps_by_prj,
@@ -270,25 +296,30 @@ class TestSpecNonOperationalOpcharInputs(unittest.TestCase):
 
     def test_unchanged_without_non_operational_periods(self):
         """
-        With every specified capacity project operational in every period,
-        every row is written.
+        With every project operational in every period (Wind_New with an
+        added 2020 vintage), every row is written.
         """
         c = self.conn.cursor()
         c.execute("""DELETE FROM inputs_project_portfolios
-            WHERE project IN ('Wind_Retired', 'Wind_Blank', 'Wind_Mapped',
-            'Hydro_Retired', 'Hydro_Gone')""")
+            WHERE project NOT IN ('Wind_Every', 'Wind_New')""")
+        c.execute("""INSERT INTO inputs_project_new_cost
+            (project_new_cost_scenario_id, project, vintage,
+            operational_lifetime_yrs, financial_lifetime_yrs)
+            VALUES (1, 'Wind_New', 2020, 30, 30)""")
         self.conn.commit()
         self.assertEqual(8, len(self.var_profile_rows()))
 
     def test_projects_not_operational_need_no_rows(self):
         """
-        The get_inputs check for per-horizon rows skips Hydro_Gone, which
-        isn't operational in the subproblem, but not Hydro_Retired.
+        The get_inputs check for per-horizon rows skips Hydro_Gone and
+        Hydro_New_None, which aren't operational in the subproblem, but not
+        Hydro_Retired.
         """
         check_rows = require_bt_hrz_rows_for_every_project(
             conn=self.conn,
             subscenarios=SubScenariosStub(),
             subproblem="",
+            stage="",
             op_type="gen_hydro",
             db_table="inputs_project_hydro_operational_chars",
         )
@@ -297,7 +328,7 @@ class TestSpecNonOperationalOpcharInputs(unittest.TestCase):
             check_rows([])
 
 
-class TestSpecCapacityTypes(unittest.TestCase):
+class TestCapacityTypeLists(unittest.TestCase):
     def test_spec_capacity_types_are_the_modules_using_spec_inputs(self):
         """
         SPEC_CAPACITY_TYPES lists exactly the capacity types whose
@@ -315,6 +346,24 @@ class TestSpecCapacityTypes(unittest.TestCase):
             ):
                 modules.add(os.path.splitext(os.path.basename(path))[0])
         self.assertSetEqual(modules, set(SPEC_CAPACITY_TYPES))
+
+    def test_new_build_capacity_types_are_the_modules_with_vintage_periods(self):
+        """
+        NEW_BUILD_CAPACITY_TYPES lists exactly the capacity types whose
+        operational periods follow from their vintages and lifetimes, i.e.
+        the modules adding their period sets with add_vintage_period_sets.
+        """
+        modules = set()
+        for path in glob.glob(os.path.join(CAPACITY_TYPES_DIRECTORY, "*.py")):
+            with open(path) as f:
+                tree = ast.parse(f.read())
+            if any(
+                isinstance(node, ast.Call)
+                and getattr(node.func, "id", None) == "add_vintage_period_sets"
+                for node in ast.walk(tree)
+            ):
+                modules.add(os.path.splitext(os.path.basename(path))[0])
+        self.assertSetEqual(modules, set(NEW_BUILD_CAPACITY_TYPES))
 
 
 if __name__ == "__main__":

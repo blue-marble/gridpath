@@ -27,6 +27,15 @@ optimization makes the decision to build new capacity, the total annualized
 cost is incurred in each period of the study (and multiplied by the number
 of years the period represents) for the duration of the project's financial
 lifetime.
+
+A project is in the model only in the periods in which a vintage of it would
+be operational, i.e. the periods on the vintage's future trajectory within
+its operational lifetime (the financial lifetime doesn't matter here). Its
+operational inputs (e.g. variable profiles, hydro budgets) are needed for
+those periods only: data for its other periods (e.g. a profile shared by
+scenarios with different vintages, or read through a timepoint map) is left
+out when the model inputs are written. This applies to all the new-build
+capacity types.
 """
 
 import csv

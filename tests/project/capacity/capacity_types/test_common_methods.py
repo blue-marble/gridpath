@@ -266,6 +266,39 @@ class TestCapacityTypeCommonMethods(unittest.TestCase):
             {p: list(m.X_VNTS_FIN_IN_PRD[p]) for p in m.PERIODS},
         )
 
+    def test_new_build_operational_periods_by_vintage(self):
+        """
+        The inputs-side operational periods follow the period tree (2020 ->
+        {20301, 20302} -> 2040, whose previous period isn't specified, so is
+        the period before it in order: 20302) and the operational lifetime.
+        A's 20301 vintage would last through 2040 but isn't operational
+        there, as 2040 is not on 20301's branch. Vintages outside the
+        periods or without a lifetime are left out.
+        """
+        periods = [
+            (2020, 2020, 2030, None),
+            (20301, 2030, 2040, 2020),
+            (20302, 2030, 2040, 2020),
+            (2040, 2040, 2050, None),
+        ]
+        vintage_lifetimes = [
+            ("A", 2020, 30),
+            ("A", 20301, 20),
+            ("B", 20302, 10),
+            ("B", 2050, 10),
+            ("C", 2020, None),
+        ]
+        self.assertDictEqual(
+            {
+                ("A", 2020): [2020, 2040, 20301, 20302],
+                ("A", 20301): [20301],
+                ("B", 20302): [20302],
+            },
+            MODULE_BEING_TESTED.new_build_operational_periods_by_vintage(
+                periods=periods, vintage_lifetimes=vintage_lifetimes
+            ),
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

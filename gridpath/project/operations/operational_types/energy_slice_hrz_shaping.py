@@ -670,6 +670,7 @@ def write_model_inputs(
             conn=conn,
             subscenarios=subscenarios,
             subproblem=subproblem,
+            stage=stage,
             op_type="energy_slice_hrz_shaping",
             db_table="inputs_project_energy_slice_hrz_shaping",
         ),
