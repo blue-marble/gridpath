@@ -19,6 +19,8 @@ import os.path
 import sys
 import unittest
 
+from pyomo.environ import value
+
 from tests.common_functions import (
     create_abstract_model,
     add_components_and_load_data,
@@ -45,6 +47,7 @@ PREREQUISITE_MODULE_NAMES = [
     "system.reliability.prm.aggregate_project_simple_prm_contribution",
     "transmission.reliability.capacity_transfer_links",
     "transmission",
+    "transmission.capacity.capacity_types",
     "transmission.capacity.capacity",
 ]
 NAME_OF_MODULE_BEING_TESTED = "system.reliability.prm.capacity_contribution_transfers"
@@ -227,6 +230,53 @@ class TestCapacityContributionTransfers(unittest.TestCase):
             float("inf"),
         )
         self.assertEqual(len(instance.Capacity_Transfer_Max_Limit_Constraint), 0)
+
+    def test_tx_limits_constraint_skipped_for_line_without_flow_limit(self):
+        """
+        The transmission-based transfer limit is built from the lines'
+        specified capacities; a line with no flow limit in the transfer
+        direction puts no limit on the transfer, so the row is skipped.
+        """
+        m, data = add_components_and_load_data(
+            prereq_modules=IMPORTED_PREREQ_MODULES,
+            module_to_test=MODULE_BEING_TESTED,
+            test_data_dir=TEST_DATA_DIRECTORY,
+            weather_iteration="",
+            hydro_iteration="",
+            availability_iteration="",
+            subproblem="",
+            stage="",
+        )
+        instance = m.create_instance(data)
+        self.assertListEqual(
+            sorted(instance.Capacity_Transfer_Tx_Limits_Constraint.keys()),
+            [("PRM_Zone1", "PRM_Zone2", 2020), ("PRM_Zone1", "PRM_Zone2", 2030)],
+        )
+
+        # Tx1 (PRM_Zone1 -> PRM_Zone2) with no maximum flow in 2020
+        staged_dir = stage_test_data_with_blanked_cells(
+            self,
+            TEST_DATA_DIRECTORY,
+            "specified_transmission_line_capacities.tab",
+            where={"transmission_line": "Tx1", "period": 2020},
+            blank=["specified_tx_max_mw"],
+        )
+        m, data = add_components_and_load_data(
+            prereq_modules=IMPORTED_PREREQ_MODULES,
+            module_to_test=MODULE_BEING_TESTED,
+            test_data_dir=staged_dir,
+            weather_iteration="",
+            hydro_iteration="",
+            availability_iteration="",
+            subproblem="",
+            stage="",
+        )
+        instance = m.create_instance(data)
+        self.assertEqual(value(instance.Tx_Max_Capacity_MW["Tx1", 2020]), float("inf"))
+        self.assertListEqual(
+            list(instance.Capacity_Transfer_Tx_Limits_Constraint.keys()),
+            [("PRM_Zone1", "PRM_Zone2", 2030)],
+        )
 
 
 if __name__ == "__main__":

@@ -70,20 +70,20 @@ def add_model_components(
     | Two-dimensional set with transmission lines of the :code:`tx_simple_binary`    |
     | operational type and their operational timepoints.                      |
     +-------------------------------------------------------------------------+
-    | | :code:`TX_SIMPLE_BINARY_OPR_TMPS_W_MIN_CONSTRAINT`                    |
+    | | :code:`TX_SIMPLE_BINARY_OPR_TMPS_W_MIN_LIMIT`                         |
     |                                                                         |
-    | Subset of :code:`TX_SIMPLE_BINARY_OPR_TMPS` restricted to              |
+    | Subset of :code:`TX_SIMPLE_BINARY_OPR_TMPS` restricted to               |
     | line-timepoints whose line-period has a lower flow limit (i.e. is in    |
     | the transmission capacity module's :code:`TX_OPR_PRDS_W_MIN_LIMIT`).    |
     | The minimum-flow, negative-direction big-M, and "from"-direction loss   |
     | constraints are built over this subset, so a line left unconstrained by |
     | its capacity type gets no such constraint.                              |
     +-------------------------------------------------------------------------+
-    | | :code:`TX_SIMPLE_BINARY_OPR_TMPS_W_MAX_CONSTRAINT`                    |
+    | | :code:`TX_SIMPLE_BINARY_OPR_TMPS_W_MAX_LIMIT`                         |
     |                                                                         |
-    | Subset of :code:`TX_SIMPLE_BINARY_OPR_TMPS` restricted to              |
+    | Subset of :code:`TX_SIMPLE_BINARY_OPR_TMPS` restricted to               |
     | line-timepoints whose line-period has an upper flow limit (analogous to |
-    | :code:`TX_SIMPLE_BINARY_OPR_TMPS_W_MIN_CONSTRAINT`); scopes the         |
+    | :code:`TX_SIMPLE_BINARY_OPR_TMPS_W_MIN_LIMIT`); scopes the              |
     | maximum-flow, positive-direction big-M, and "to"-direction loss         |
     | constraints.                                                            |
     +-------------------------------------------------------------------------+
@@ -99,7 +99,7 @@ def add_model_components(
     | The fraction of power that is lost when transmitted over this line.     |
     +-------------------------------------------------------------------------+
 
-    |
+                                                                              |
 
     +-------------------------------------------------------------------------+
     | Variables                                                               |
@@ -129,7 +129,7 @@ def add_model_components(
     | when power is flowing to the "to" zone.                                 |
     +-------------------------------------------------------------------------+
 
-    |
+                                                                              |
 
     +-------------------------------------------------------------------------+
     | Constraints                                                             |
@@ -206,7 +206,7 @@ def add_model_components(
     # lines left unconstrained by their capacity type are excluded so no
     # min/max (or directional big-M) constraint is built for them (see the
     # transmission capacity module's TX_OPR_PRDS_W_MIN_LIMIT / _W_MAX_LIMIT).
-    m.TX_SIMPLE_BINARY_OPR_TMPS_W_MIN_CONSTRAINT = Set(
+    m.TX_SIMPLE_BINARY_OPR_TMPS_W_MIN_LIMIT = Set(
         dimen=2,
         within=m.TX_SIMPLE_BINARY_OPR_TMPS,
         initialize=lambda mod: [
@@ -216,7 +216,7 @@ def add_model_components(
         ],
     )
 
-    m.TX_SIMPLE_BINARY_OPR_TMPS_W_MAX_CONSTRAINT = Set(
+    m.TX_SIMPLE_BINARY_OPR_TMPS_W_MAX_LIMIT = Set(
         dimen=2,
         within=m.TX_SIMPLE_BINARY_OPR_TMPS,
         initialize=lambda mod: [
@@ -269,25 +269,24 @@ def add_model_components(
 
     # The directional big-M constraints use the flow capacity as the big-M
     # (binary * capacity), so they only apply where that capacity is finite:
-    # positive direction uses the max capacity, negative uses the min. A line
-    # left unconstrained in a direction has no big-M to enforce, so its
-    # directional constraint is skipped (the binary cannot prevent simultaneous
-    # bidirectional flow on a limitless line -- an inherent, documented
-    # limitation of pairing tx_simple_binary with an unconstrained line).
+    # positive direction uses the max capacity, negative uses the min. Without
+    # a big-M the binary cannot prevent simultaneous bidirectional flow, so
+    # tx_spec validation rejects a tx_simple_binary line with an unspecified
+    # capacity; the subsets below keep the model well-defined regardless.
     m.TxSimpleBinary_Positive_Direction_Constraint = Constraint(
-        m.TX_SIMPLE_BINARY_OPR_TMPS_W_MAX_CONSTRAINT, rule=positive_direction_rule
+        m.TX_SIMPLE_BINARY_OPR_TMPS_W_MAX_LIMIT, rule=positive_direction_rule
     )
 
     m.TxSimpleBinary_Negative_Direction_Constraint = Constraint(
-        m.TX_SIMPLE_BINARY_OPR_TMPS_W_MIN_CONSTRAINT, rule=negative_direction_rule
+        m.TX_SIMPLE_BINARY_OPR_TMPS_W_MIN_LIMIT, rule=negative_direction_rule
     )
 
     m.TxSimpleBinary_Min_Transmit_Constraint = Constraint(
-        m.TX_SIMPLE_BINARY_OPR_TMPS_W_MIN_CONSTRAINT, rule=min_transmit_rule
+        m.TX_SIMPLE_BINARY_OPR_TMPS_W_MIN_LIMIT, rule=min_transmit_rule
     )
 
     m.TxSimpleBinary_Max_Transmit_Constraint = Constraint(
-        m.TX_SIMPLE_BINARY_OPR_TMPS_W_MAX_CONSTRAINT, rule=max_transmit_rule
+        m.TX_SIMPLE_BINARY_OPR_TMPS_W_MAX_LIMIT, rule=max_transmit_rule
     )
 
     m.TxSimpleBinary_Losses_LZ_From_Constraint = Constraint(
@@ -301,11 +300,11 @@ def add_model_components(
     # Loss upper bounds are the flow capacity times the loss factor, so they
     # only apply where that capacity is finite (min for "from", max for "to").
     m.TxSimpleBinary_Max_Losses_From_Constraint = Constraint(
-        m.TX_SIMPLE_BINARY_OPR_TMPS_W_MIN_CONSTRAINT, rule=max_losses_from_rule
+        m.TX_SIMPLE_BINARY_OPR_TMPS_W_MIN_LIMIT, rule=max_losses_from_rule
     )
 
     m.TxSimpleBinary_Max_Losses_To_Constraint = Constraint(
-        m.TX_SIMPLE_BINARY_OPR_TMPS_W_MAX_CONSTRAINT, rule=max_losses_to_rule
+        m.TX_SIMPLE_BINARY_OPR_TMPS_W_MAX_LIMIT, rule=max_losses_to_rule
     )
 
 

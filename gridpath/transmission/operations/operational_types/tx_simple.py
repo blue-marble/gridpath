@@ -19,6 +19,12 @@ less than or equal to the line capacity. Line capacity can be defined for
 both transmission flow directions. The user can define losses as a fraction
 of line flow.
 
+A line whose capacity in a direction is unspecified (see
+:code:`gridpath.transmission.capacity.capacity_types.tx_spec`) has no flow
+constraint in that direction and therefore also no upper bound on its
+losses there; since losses are only constrained from below, a nonzero loss
+factor on such a line lets the model incur losses that are not real.
+
 """
 
 import os
@@ -95,7 +101,7 @@ def add_model_components(
     | The fraction of power that is lost when transmitted over this line.     |
     +-------------------------------------------------------------------------+
 
-    |
+                                                                              |
 
     +-------------------------------------------------------------------------+
     | Variables                                                               |
@@ -125,7 +131,7 @@ def add_model_components(
     | when power is flowing to the "to" zone.                                 |
     +-------------------------------------------------------------------------+
 
-    |
+                                                                              |
 
     +-------------------------------------------------------------------------+
     | Constraints                                                             |

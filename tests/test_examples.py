@@ -1477,6 +1477,17 @@ class TestExamples(unittest.TestCase):
         scenario_name = "test_tx_simple"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
+    def test_example_test_tx_simple_no_limit_lines(self):
+        """
+        Check validation and objective function value of
+        "test_tx_simple_no_limit_lines" example: test_tx_simple with the
+        two lines that never bind left without flow limits; the objective
+        must be identical to test_tx_simple's
+        :return:
+        """
+        scenario_name = "test_tx_simple_no_limit_lines"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
     def test_example_test_tx_simple_tmp_emissions(self):
         """
         Check validation and objective function value of
