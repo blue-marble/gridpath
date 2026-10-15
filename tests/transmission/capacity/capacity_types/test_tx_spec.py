@@ -234,12 +234,8 @@ class TestSpecifiedTransmission(unittest.TestCase):
             self.assertIn(("Tx2", 2020), list(instance.TX_SPEC_OPR_PRDS))
 
             # Blank cells fall back to the +/-inf defaults.
-            self.assertEqual(
-                instance.tx_spec_max_cap_mw["Tx1", 2020], float("inf")
-            )
-            self.assertEqual(
-                instance.tx_spec_min_cap_mw["Tx2", 2020], float("-inf")
-            )
+            self.assertEqual(instance.tx_spec_max_cap_mw["Tx1", 2020], float("inf"))
+            self.assertEqual(instance.tx_spec_min_cap_mw["Tx2", 2020], float("-inf"))
             # The non-blank direction on each line is unaffected.
             self.assertEqual(instance.tx_spec_min_cap_mw["Tx1", 2020], -10)
             self.assertEqual(instance.tx_spec_max_cap_mw["Tx2", 2020], 10)
