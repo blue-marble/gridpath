@@ -35,6 +35,14 @@ to the scenario directories. Usage::
 
     python -m tests.scan_unbounded_constraint_rows
         [--scenario_location examples] [--output rows.csv] [--big_bound 1e6]
+        [--fail_on_unbounded]
+
+With --fail_on_unbounded the exit status is nonzero if any row has an
+infinite bound or a constant body, if any model failed to build, or if no
+model was built at all (an empty examples directory would otherwise pass
+silently). The parallel test runner (scripts/run_tests_parallel.py) runs the
+scan in this mode after its test lanes have regenerated the examples, so the
+check runs in CI; sentinel-sized bounds are reported but never fail it.
 """
 
 import argparse
@@ -72,6 +80,12 @@ def parse_arguments(args):
     )
     parser.add_argument(
         "--quiet", action="store_true", help="Do not print per-scenario progress."
+    )
+    parser.add_argument(
+        "--fail_on_unbounded",
+        action="store_true",
+        help="Exit with status 1 if any row has an infinite bound or a constant "
+        "body, if any model failed to build, or if no model was built.",
     )
     return parser.parse_args(args)
 
@@ -208,6 +222,23 @@ def main(args=None):
             )
     for scenario, error in failed:
         print("  FAILED {}: {}".format(scenario, error))
+
+    if parsed.fail_on_unbounded:
+        problems = []
+        if built == 0:
+            problems.append("no scenario was built")
+        if failed:
+            problems.append("{} scenario(s) failed to build".format(len(failed)))
+        if totals["infinite_rows"] or totals["constant_rows"]:
+            problems.append(
+                "{} row(s) with an infinite bound and {} with a constant body "
+                "(return Constraint.Skip when a limit is at its default)".format(
+                    totals["infinite_rows"], totals["constant_rows"]
+                )
+            )
+        if problems:
+            print("FAILED: " + "; ".join(problems))
+            sys.exit(1)
     return totals
 
 
