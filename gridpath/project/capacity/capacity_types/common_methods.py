@@ -33,8 +33,9 @@ from gridpath.auxiliary.validations import (
 from gridpath.project.common_functions import get_column_row_value
 
 # The capacity columns of inputs_project_specified_capacity; a row with all
-# of them NULL carries no capacity of any kind and is treated as if it were
-# absent, i.e. the project is not operational in that period
+# of them NULL carries no capacity of any kind and is a validation error (a
+# project is made absent in a period by omitting its row, never by blanking
+# it, so that a NULL has one meaning across the capacity tables)
 SPEC_CAPACITY_COLUMNS = [
     "specified_capacity_mw",
     "specified_energy_mwh",
@@ -46,7 +47,7 @@ SPEC_CAPACITY_COLUMNS = [
     "fuel_release_capacity_fuelunitperhour",
     "fuel_storage_capacity_fuelunit",
 ]
-SPEC_CAPACITY_PRESENT_SQL = "COALESCE({}) IS NOT NULL".format(
+SPEC_CAPACITY_BLANK_SQL = "COALESCE({}) IS NULL".format(
     ", ".join(SPEC_CAPACITY_COLUMNS)
 )
 
@@ -219,15 +220,13 @@ def spec_get_inputs_from_database(conn, subscenarios, subproblem, capacity_type)
     """
     db_subproblem = subproblem if subproblem != "" else 1
 
-    # Capacity and fixed costs with period = 0 rows applying to every period;
-    # rows with no capacity of any kind count as absent
+    # Capacity and fixed costs with period = 0 rows applying to every period
     capacity_sql = period_wildcard_rows_sql(
         table="inputs_project_specified_capacity",
         columns=["project", "period"] + SPEC_CAPACITY_COLUMNS,
         key_columns=["project", "project_specified_capacity_scenario_id"],
         row_filter=f"project_specified_capacity_scenario_id = "
-        f"{subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID} "
-        f"AND {SPEC_CAPACITY_PRESENT_SQL}",
+        f"{subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID}",
         periods_sql=subproblem_periods_sql(
             subscenarios.TEMPORAL_SCENARIO_ID, db_subproblem
         ),
@@ -307,16 +306,17 @@ def validate_spec_capacity_coverage(
     validation table.
 
     A project is operational in exactly the periods for which it has a row in
-    ``inputs_project_specified_capacity`` with at least one capacity column
-    filled in (a row with every capacity column NULL counts as absent), or
-    in every period if its row is for period 0.
-    Leaving periods out is the intended way to model a project that retires,
-    or comes online, within the study horizon, and a project may have no row
-    at all in the periods of a given subproblem, so that one
+    ``inputs_project_specified_capacity``, or in every period if its row is
+    for period 0. Leaving periods out is the intended way to model a project
+    that retires, or comes online, within the study horizon, and a project
+    may have no row at all in the periods of a given subproblem, so that one
     specified-capacity subscenario can serve runs over different horizons.
-    Only a project with no row in any period of the subscenario is an error
-    (High severity), as that is most likely a naming mismatch between the
-    portfolio and the capacity inputs.
+    Two High-severity errors: a project with no row in any period of the
+    subscenario, as that is most likely a naming mismatch between the
+    portfolio and the capacity inputs, and a row with every capacity column
+    NULL, which carries no capacity of any kind; a blank row is not how a
+    project is made absent (omit the row instead), and a NULL would otherwise
+    mean "absent" here and "no limit" in the transmission capacity table.
     Two Low-severity notes flag the cases worth a second look: a project
     with capacity in none of this subproblem's periods, which will not be
     in the model at all, and a project whose coverage of this subproblem's
@@ -341,18 +341,24 @@ def validate_spec_capacity_coverage(
     )
 
     c = conn.cursor()
-    # Rows with no capacity of any kind count as absent, as in
-    # spec_get_inputs_from_database
     capacity_periods_sql = f"""
         SELECT project, period
         FROM inputs_project_specified_capacity
         WHERE project_specified_capacity_scenario_id =
         {subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID}
-        AND {SPEC_CAPACITY_PRESENT_SQL}
         ;"""
     periods_by_project = dict()
     for project, period in c.execute(capacity_periods_sql).fetchall():
         periods_by_project.setdefault(project, set()).add(period)
+
+    blank_rows = [
+        (project, period) for project, period in c.execute(f"""SELECT project, period
+            FROM inputs_project_specified_capacity
+            WHERE project_specified_capacity_scenario_id =
+            {subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID}
+            AND {SPEC_CAPACITY_BLANK_SQL}
+            ORDER BY project, period;""").fetchall() if project in projects
+    ]
 
     # The same period scoping as spec_get_inputs_from_database
     subproblem_periods = sorted(
@@ -386,6 +392,24 @@ def validate_spec_capacity_coverage(
             req_idxs=projects,
             idx_label="project",
             msg="Expected specified capacity in at least one period.",
+        ),
+    )
+
+    # A blank row carries no capacity of any kind; the project is made absent
+    # in a period by omitting the row, not by blanking it
+    write(
+        severity="High",
+        errors=(
+            [
+                "Specified capacity row(s) with every capacity column blank for "
+                "(project, period): {}. A blank row is not allowed: omit the row "
+                "to make the project absent in that period, or give it a "
+                "capacity (zero keeps it in the model at zero capacity).".format(
+                    blank_rows
+                )
+            ]
+            if blank_rows
+            else []
         ),
     )
 
