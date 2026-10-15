@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-New-build lifetimes are checked against the boundaries of the periods on
+New-build lifetimes (of projects and transmission lines) are checked against the boundaries of the periods on
 each vintage's trajectory: a lifetime that covers no period is a High
 finding, one ending partway through a period a Low finding.
 """
@@ -26,6 +26,7 @@ from gridpath.project.capacity.capacity_types.common_methods import (
     validate_vintage_lifetimes,
     vintage_lifetime_period_findings,
 )
+from gridpath.transmission.capacity.capacity_types import tx_new_lin
 
 DB_SCHEMA_FILE = os.path.join(
     os.path.dirname(__file__), "..", "..", "..", "..", "db", "db_schema.sql"
@@ -169,6 +170,90 @@ class TestValidateVintageLifetimes(unittest.TestCase):
         self.assertEqual("Low", low_severity)
         self.assertIn("Operational lifetime", low)
         self.assertIn("('Cut', 2020, 2040, 10.0)", low)
+
+
+class TxSubScenariosStub:
+    TRANSMISSION_PORTFOLIO_SCENARIO_ID = 1
+    TRANSMISSION_OPERATIONAL_CHARS_SCENARIO_ID = 1
+    TRANSMISSION_NEW_COST_SCENARIO_ID = 1
+    TRANSMISSION_NEW_POTENTIAL_SCENARIO_ID = None
+    TEMPORAL_SCENARIO_ID = 1
+
+
+class TestTxNewLinLifetimeValidation(unittest.TestCase):
+    """
+    tx_new_lin validation runs the same check: periods 2020 and 2040 (20
+    years each); Tx_Free has a 10-year financial lifetime, Tx_Cut a 30-year
+    operational lifetime.
+    """
+
+    def setUp(self):
+        self.conn = sqlite3.connect(":memory:")
+        self.addCleanup(self.conn.close)
+        with open(DB_SCHEMA_FILE) as f:
+            self.conn.executescript(f.read())
+        c = self.conn.cursor()
+        for period in [2020, 2040]:
+            c.execute(
+                """INSERT INTO inputs_temporal_periods
+                (temporal_scenario_id, period, discount_factor,
+                period_start_year, period_end_year)
+                VALUES (1, ?, 1, ?, ?)""",
+                (period, period, period + 20),
+            )
+            c.execute(
+                """INSERT INTO inputs_temporal
+                (temporal_scenario_id, subproblem_id, stage_id, timepoint,
+                period, number_of_hours_in_timepoint, timepoint_weight,
+                spinup_or_lookahead)
+                VALUES (1, 1, 1, ?, ?, 1, 8760, 0)""",
+                (period * 100 + 1, period),
+            )
+        rows = [("Tx_Good", 40, 20), ("Tx_Free", 40, 10), ("Tx_Cut", 30, 20)]
+        c.executemany(
+            """INSERT INTO inputs_transmission_portfolios
+            (transmission_portfolio_scenario_id, transmission_line,
+            capacity_type)
+            VALUES (1, ?, 'tx_new_lin')""",
+            [(tx,) for tx, _, _ in rows],
+        )
+        c.executemany(
+            """INSERT INTO inputs_transmission_new_cost
+            (transmission_new_cost_scenario_id, transmission_line, vintage,
+            tx_operational_lifetime_yrs, tx_fixed_cost_per_mw_yr,
+            tx_financial_lifetime_yrs, tx_annualized_real_cost_per_mw_yr)
+            VALUES (1, ?, 2020, ?, 0, ?, 1)""",
+            rows,
+        )
+        self.conn.commit()
+
+    def test_findings_written_to_validation_table(self):
+        tx_new_lin.validate_inputs(
+            scenario_id=1,
+            subscenarios=TxSubScenariosStub(),
+            weather_iteration=0,
+            hydro_iteration=0,
+            availability_iteration=0,
+            subproblem=1,
+            stage=1,
+            conn=self.conn,
+        )
+        findings = [
+            (severity, description)
+            for severity, description in self.conn.execute(
+                """SELECT severity, description FROM status_validation
+                ORDER BY severity, description"""
+            ).fetchall()
+            if "lifetime" in description
+        ]
+        self.assertEqual(2, len(findings))
+        (high_severity, high), (low_severity, low) = findings
+        self.assertEqual("High", high_severity)
+        self.assertIn("tx_financial_lifetime_yrs", high)
+        self.assertIn("('Tx_Free', 2020, 10.0)", high)
+        self.assertEqual("Low", low_severity)
+        self.assertIn("tx_operational_lifetime_yrs", low)
+        self.assertIn("('Tx_Cut', 2020, 2040, 10.0)", low)
 
 
 if __name__ == "__main__":

@@ -505,6 +505,53 @@ def validate_vintage_lifetimes(
     """
     Check the operational and financial lifetimes of the *capacity_type*
     project-vintages against the subproblem's periods (see
+    :code:`write_vintage_lifetime_findings`).
+
+    :param subproblem: the subproblem ID in the database
+    :param stage: the stage ID in the database
+    """
+    write_vintage_lifetime_findings(
+        conn=conn,
+        scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem=subproblem,
+        stage=stage,
+        gridpath_module=gridpath_module,
+        db_table="inputs_project_new_cost",
+        periods=get_model_periods(conn, subscenarios, subproblem, stage),
+        vintage_rows=conn.cursor()
+        .execute(
+            new_build_vintage_rows_sql(
+                subscenarios=subscenarios,
+                capacity_types=[capacity_type],
+                columns=["operational_lifetime_yrs", "financial_lifetime_yrs"],
+            )
+        )
+        .fetchall(),
+        entity="project",
+        lifetime_columns=["operational_lifetime_yrs", "financial_lifetime_yrs"],
+    )
+
+
+def write_vintage_lifetime_findings(
+    conn,
+    scenario_id,
+    weather_iteration,
+    hydro_iteration,
+    availability_iteration,
+    subproblem,
+    stage,
+    gridpath_module,
+    db_table,
+    periods,
+    vintage_rows,
+    entity,
+    lifetime_columns,
+):
+    """
+    Check new-build lifetimes against the periods (see
     :code:`vintage_lifetime_period_findings`) and write the findings to the
     validation table: High severity for a lifetime that covers no period, as
     the capacity would then never be operational (operational lifetime) or
@@ -515,19 +562,13 @@ def validate_vintage_lifetimes(
 
     :param subproblem: the subproblem ID in the database
     :param stage: the stage ID in the database
+    :param periods: the model's periods, as from :code:`get_model_periods`
+    :param vintage_rows: (*entity*, vintage, operational lifetime, financial
+        lifetime) of the new-build vintages
+    :param entity: what the rows' first column is, e.g. project
+    :param lifetime_columns: the names of the operational and financial
+        lifetime columns of *db_table*
     """
-    periods = get_model_periods(conn, subscenarios, subproblem, stage)
-    rows = (
-        conn.cursor()
-        .execute(
-            new_build_vintage_rows_sql(
-                subscenarios=subscenarios,
-                capacity_types=[capacity_type],
-                columns=["operational_lifetime_yrs", "financial_lifetime_yrs"],
-            )
-        )
-        .fetchall()
-    )
 
     def write(severity, errors):
         write_validation_to_database(
@@ -539,36 +580,37 @@ def validate_vintage_lifetimes(
             subproblem_id=subproblem,
             stage_id=stage,
             gridpath_module=gridpath_module,
-            db_table="inputs_project_new_cost",
+            db_table=db_table,
             severity=severity,
             errors=errors,
         )
 
-    # The lifetime columns' positions in the rows (after project, vintage)
+    operational_column, financial_column = lifetime_columns
+    # The lifetimes' positions in the rows (after the entity and vintage)
     for index, column, label, consequence in [
         (
             2,
-            "operational_lifetime_yrs",
+            operational_column,
             "Operational lifetime",
             "the capacity is never operational",
         ),
         (
             3,
-            "financial_lifetime_yrs",
+            financial_column,
             "Financial lifetime",
             "the capacity never incurs its capital cost",
         ),
     ]:
         no_period, cut_short = vintage_lifetime_period_findings(
             periods=periods,
-            vintage_lifetimes=[(row[0], row[1], row[index]) for row in rows],
+            vintage_lifetimes=[(row[0], row[1], row[index]) for row in vintage_rows],
         )
         write(
             severity="High",
             errors=(
                 [
                     f"{label} ({column}) ends before the end of the vintage's "
-                    f"period for (project, vintage, lifetime): {no_period}, so "
+                    f"period for ({entity}, vintage, lifetime): {no_period}, so "
                     f"{consequence}. A vintage counts in a period only if its "
                     f"lifetime lasts through the end of the period."
                 ]
@@ -581,7 +623,7 @@ def validate_vintage_lifetimes(
             errors=(
                 [
                     f"{label} ({column}) ends partway through a period for "
-                    f"(project, vintage, period, years into the period): "
+                    f"({entity}, vintage, period, years into the period): "
                     f"{cut_short}. A vintage counts in a period only if its "
                     f"lifetime lasts through the end of the period, so these "
                     f"years are not counted."
