@@ -26,11 +26,18 @@ Zone 1 to Zone 2 with a minimum flow capacity of -1,000 MW and a maximum flow
 capacity of 1,200 MW can transmit up to 1,000 MW from Zone 2 to Zone 1 and
 up to 1,200 MW from Zone 1 to Zone 2.
 
+A minimum or maximum capacity left unspecified (NULL in the database) means
+the line has no flow limit in that direction: no flow constraint is built
+for it, which is preferable to a very large number, whose only effect is to
+hurt the solver's scaling. A line with an unspecified capacity cannot carry
+a fixed cost (there is no capacity to cost), and lines of the
+:code:`tx_simple_binary` operational type must specify both capacities (its
+direction constraints use them as big-M coefficients).
+
 """
 
 import csv
 import os.path
-import pandas as pd
 from statistics import mean
 
 from pyomo.environ import Set, Param, Reals, NonNegativeReals
@@ -88,7 +95,7 @@ def add_model_components(
     | **gridpath.transmission.capacity.capacity**.                            |
     +-------------------------------------------------------------------------+
 
-    |
+                                                                              |
 
     +-------------------------------------------------------------------------+
     | Required Input Params                                                   |
@@ -206,49 +213,33 @@ def load_model_data(
     subproblem,
     stage,
 ):
-    # min and max capacities are optional (a blank cell means "no flow limit
-    # in that direction"), so we cannot use a single data_portal.load() that
-    # ties index membership to parsing every param column. Instead we read the
-    # file manually, build TX_SPEC_OPR_PRDS from *every* row, and populate the
-    # capacity params per-cell, skipping blanks so they fall back to the
-    # ±Infinity defaults. This mirrors
-    # transmission/operations/transmission_flow_limits.py.
-    capacities_file = os.path.join(
-        scenario_directory,
-        weather_iteration,
-        hydro_iteration,
-        availability_iteration,
-        subproblem,
-        stage,
-        "inputs",
-        "specified_transmission_line_capacities.tab",
+    # A "." (unspecified) min or max capacity leaves the param at its
+    # -inf / +inf default: no flow limit in that direction
+    data_portal.load(
+        filename=os.path.join(
+            scenario_directory,
+            weather_iteration,
+            hydro_iteration,
+            availability_iteration,
+            subproblem,
+            stage,
+            "inputs",
+            "specified_transmission_line_capacities.tab",
+        ),
+        select=(
+            "transmission_line",
+            "period",
+            "specified_tx_min_mw",
+            "specified_tx_max_mw",
+            "fixed_cost_per_mw_yr",
+        ),
+        index=m.TX_SPEC_OPR_PRDS,
+        param=(
+            m.tx_spec_min_cap_mw,
+            m.tx_spec_max_cap_mw,
+            m.tx_spec_fixed_cost_per_mw_yr,
+        ),
     )
-
-    df = pd.read_csv(capacities_file, sep="\t")
-
-    opr_prds = []
-    min_cap = {}
-    max_cap = {}
-    fixed_cost = {}
-    for _, row in df.iterrows():
-        tx = row["transmission_line"]
-        prd = int(row["period"])
-        opr_prds.append((tx, prd))
-        # "." (or a blank read as NaN) leaves the param at its ±inf default.
-        min_val = row["specified_tx_min_mw"]
-        if str(min_val) != "." and pd.notna(min_val):
-            min_cap[(tx, prd)] = float(min_val)
-        max_val = row["specified_tx_max_mw"]
-        if str(max_val) != "." and pd.notna(max_val):
-            max_cap[(tx, prd)] = float(max_val)
-        fc_val = row["fixed_cost_per_mw_yr"]
-        if str(fc_val) != "." and pd.notna(fc_val):
-            fixed_cost[(tx, prd)] = float(fc_val)
-
-    data_portal.data()["TX_SPEC_OPR_PRDS"] = {None: opr_prds}
-    data_portal.data()["tx_spec_min_cap_mw"] = min_cap
-    data_portal.data()["tx_spec_max_cap_mw"] = max_cap
-    data_portal.data()["tx_spec_fixed_cost_per_mw_yr"] = fixed_cost
 
 
 # Database
@@ -502,13 +493,10 @@ def validate_inputs(
         ),
     )
 
-    # Note: min_mw and max_mw are intentionally NOT checked for missing
-    # values here -- a blank in either column is a valid input meaning "no
-    # flow limit in that direction" (the capacity param falls back to its
-    # ±Infinity default).
-
-    # check that min <= max (validate_column_monotonicity drops NaN rows, so
-    # lines with a blank/unconstrained min or max are skipped)
+    # A NULL min_mw or max_mw is a valid input meaning "no flow limit in
+    # that direction", so missing values are not flagged; min <= max is
+    # checked where both are specified (validate_column_monotonicity drops
+    # rows with a NULL)
     cols = ["min_mw", "max_mw"]
     write_validation_to_database(
         conn=conn,
@@ -519,9 +507,84 @@ def validate_inputs(
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
-        db_table="inputs_project_new_potential",
+        db_table=TABLE,
         severity="High",
         errors=validate_column_monotonicity(
-            df=df, cols=cols, idx_col=["project", "period"]
+            df=df, cols=cols, idx_col=["transmission_line", "period"]
         ),
     )
+
+    # A line with no flow limit in a direction has no capacity to cost
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table=TABLE,
+        severity="High",
+        errors=validate_no_fixed_cost_without_capacity(df),
+    )
+
+    # The tx_simple_binary direction constraints use the capacities as
+    # big-M coefficients, so its lines must specify both
+    binary_tx_lines = get_tx_lines(
+        conn, scenario_id, subscenarios, "operational_type", "tx_simple_binary"
+    )
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=scenario_id,
+        weather_iteration=weather_iteration,
+        hydro_iteration=hydro_iteration,
+        availability_iteration=availability_iteration,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table=TABLE,
+        severity="High",
+        errors=validate_capacities_specified_for_lines(
+            df, binary_tx_lines, "tx_simple_binary"
+        ),
+    )
+
+
+def validate_no_fixed_cost_without_capacity(df):
+    """
+    :param df: the specified capacity rows (transmission_line, period, min_mw,
+        max_mw, fixed_cost_per_mw_yr)
+    :return: list of error messages, one per row with a nonzero fixed cost
+        and an unspecified (NULL) min_mw or max_mw
+    """
+    unspecified = df["min_mw"].isna() | df["max_mw"].isna()
+    costed = df["fixed_cost_per_mw_yr"].fillna(0) != 0
+    bad = df.loc[unspecified & costed, ["transmission_line", "period"]]
+    return [
+        "transmission_line {}, period {}: fixed_cost_per_mw_yr requires both "
+        "min_mw and max_mw to be specified (an unspecified capacity means no "
+        "flow limit, which has no capacity to cost)".format(tx, prd)
+        for tx, prd in bad.itertuples(index=False)
+    ]
+
+
+def validate_capacities_specified_for_lines(df, tx_lines, operational_type):
+    """
+    :param df: the specified capacity rows
+    :param tx_lines: the lines whose rows must specify both min_mw and max_mw
+    :param operational_type: the operational type of those lines (for the
+        message)
+    :return: list of error messages, one per row of those lines with an
+        unspecified (NULL) min_mw or max_mw
+    """
+    rows = df[df["transmission_line"].isin(tx_lines)]
+    bad = rows.loc[
+        rows["min_mw"].isna() | rows["max_mw"].isna(),
+        ["transmission_line", "period"],
+    ]
+    return [
+        "transmission_line {}, period {}: lines of the {} operational type "
+        "must specify both min_mw and max_mw".format(tx, prd, operational_type)
+        for tx, prd in bad.itertuples(index=False)
+    ]

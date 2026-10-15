@@ -179,21 +179,35 @@ def add_model_components(
     def transfer_tx_limits_constraint_rule(mod, prm_z_from, prm_z_to, prd):
         # Sum of max capacity of lines with prm_zone_to == z plus
         # Negative sum of min capacity of lines with prm_zone_from == z
-        return mod.Transfer_Capacity_Contribution[prm_z_from, prm_z_to, prd] <= sum(
+        max_capacities = [
             mod.Tx_Max_Capacity_MW[tx, op]
             for (tx, op) in mod.TX_OPR_PRDS
             if op == prd
             and tx in mod.PRM_TX_LINES
             and mod.prm_zone_from[tx] == prm_z_from
             and mod.prm_zone_to[tx] == prm_z_to
-        ) + -sum(
+        ]
+        min_capacities = [
             mod.Tx_Min_Capacity_MW[tx, op]
             for (tx, op) in mod.TX_OPR_PRDS
             if op == prd
             and tx in mod.PRM_TX_LINES
             and mod.prm_zone_from[tx] == prm_z_to
             and mod.prm_zone_to[tx] == prm_z_from
-        )
+        ]
+        # A specified line with no flow limit in the transfer direction puts
+        # no transmission limit on the transfer: skip rather than build a row
+        # with an infinite right-hand side (a new-build line's capacity is
+        # variable and evaluates to None here)
+        if any(
+            value(cap, exception=False) == float("inf") for cap in max_capacities
+        ) or any(
+            value(cap, exception=False) == float("-inf") for cap in min_capacities
+        ):
+            return Constraint.Skip
+        return mod.Transfer_Capacity_Contribution[prm_z_from, prm_z_to, prd] <= sum(
+            max_capacities
+        ) + -sum(min_capacities)
 
     m.Capacity_Transfer_Tx_Limits_Constraint = Constraint(
         m.PRM_ZONES_CAPACITY_TRANSFER_ZONES,

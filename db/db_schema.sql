@@ -4957,10 +4957,10 @@ CREATE TABLE inputs_transmission_specified_capacity
     transmission_specified_capacity_scenario_id INTEGER,
     transmission_line                           VARCHAR(64),
     period                                      INTEGER,
-    min_mw                                      FLOAT,
-    max_mw                                      FLOAT,
+    min_mw                                      FLOAT, -- NULL = no flow limit in this direction
+    max_mw                                      FLOAT, -- NULL = no flow limit in this direction
     fixed_cost_per_mw_yr                        FLOAT, -- multiplied by the mean of the absolute
--- values of min and max flow
+-- values of min and max flow; requires both to be specified
     PRIMARY KEY (transmission_specified_capacity_scenario_id, transmission_line,
                  period),
     FOREIGN KEY (transmission_specified_capacity_scenario_id) REFERENCES
