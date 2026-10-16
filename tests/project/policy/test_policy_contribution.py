@@ -51,6 +51,8 @@ PREREQUISITE_MODULE_NAMES = [
     "project.capacity.potential",
     "project.operations.operational_types",
     "project.operations.power",
+    "project.operations.fuel_burn",
+    "project.operations.carbon_emissions",
 ]
 NAME_OF_MODULE_BEING_TESTED = "project.policy.policy_contribution"
 IMPORTED_PREREQ_MODULES = list()
@@ -129,6 +131,7 @@ class TestRECs(unittest.TestCase):
                 ("Wind_z2", "RPS", "RPSZone1"),
                 ("Gas_CCGT", "Carbon", "CarbonZone1"),
                 ("Coal", "Carbon", "CarbonZone1"),
+                ("Gas_CT", "Carbon", "CarbonZone1"),
                 ("Battery", "RPS", "RPSZone1"),
                 ("Wind", "SLICE_OF_DAY", "SODZone1"),
                 ("Gas_CCGT", "SLICE_OF_DAY", "SODZone1"),
@@ -152,6 +155,7 @@ class TestRECs(unittest.TestCase):
                     ("Wind_z2", "RPS", "RPSZone1"): "f_output",
                     ("Gas_CCGT", "Carbon", "CarbonZone1"): "f_output",
                     ("Coal", "Carbon", "CarbonZone1"): "f_output",
+                    ("Gas_CT", "Carbon", "CarbonZone1"): "emissions",
                     ("Battery", "RPS", "RPSZone1"): "stor_losses",
                     ("Wind", "SLICE_OF_DAY", "SODZone1"): "sod_exceedance",
                     ("Gas_CCGT", "SLICE_OF_DAY", "SODZone1"): "sod_flat_block",

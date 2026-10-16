@@ -52,6 +52,8 @@ PREREQUISITE_MODULE_NAMES = [
     "project.capacity.potential",
     "project.operations.operational_types",
     "project.operations.power",
+    "project.operations.fuel_burn",
+    "project.operations.carbon_emissions",
     "project.policy.policy_contribution",
 ]
 NAME_OF_MODULE_BEING_TESTED = (

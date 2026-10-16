@@ -875,8 +875,9 @@ GridPath can also impose user-defined policies. A policy is enforced in one or
 more policy zones over balancing-type horizons (or over period-month-hour
 slices of day). Each project or transmission line mapped to a policy zone
 contributes to the policy through a *compliance type*, e.g. a linear function
-of its output and capacity (``f_output``), a flat horizon amount, or its
-transmission losses. The requirement is the sum of a scalar and a coefficient
+of its output and capacity (``f_output``), its carbon emissions
+(``emissions``), a flat horizon amount, or its transmission losses. The
+requirement is the sum of a scalar and a coefficient
 times the load in the policy zone's mapped load zones. A horizon requirement is
 a floor by default (the contributions must be at least the requirement) and can
 be declared a ceiling instead (``policy_requirement_sense`` = ``max``), e.g. a

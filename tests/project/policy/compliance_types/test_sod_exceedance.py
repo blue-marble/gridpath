@@ -56,6 +56,8 @@ PREREQUISITE_MODULE_NAMES = [
     "project.capacity.potential",
     "project.operations.operational_types",
     "project.operations.power",
+    "project.operations.fuel_burn",
+    "project.operations.carbon_emissions",
 ]
 
 # Note that we are checking sod_exceedance inputs have been added by the

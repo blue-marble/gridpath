@@ -37,6 +37,7 @@ SUPPORTED_COMPLIANCE_TYPES = [
     "f_capacity",
     "flat_horizon",
     "stor_losses",
+    "emissions",
     "sod_flat_block",
     "sod_exceedance",
     "sod_stor",
