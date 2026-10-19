@@ -125,33 +125,111 @@ class TestRegulationDownProvision(unittest.TestCase):
         actual_projects = sorted([prj for prj in instance.REGULATION_DOWN_PROJECTS])
         self.assertListEqual(expected_projects, actual_projects)
 
-        # Param: regulation_down_zone
-        expected_reserves_zone = OrderedDict(
+        # Set: REGULATION_DOWN_PRJ_BAS
+        expected_prj_bas = sorted(
+            [
+                ("Battery", "Zone1"),
+                ("Battery_Binary", "Zone1"),
+                ("Battery_Specified", "Zone1"),
+                ("Coal", "Zone1"),
+                ("Coal_z2", "Zone2"),
+                ("Gas_CCGT", "Zone1"),
+                ("Gas_CCGT_New", "Zone1"),
+                ("Gas_CCGT_New_Binary", "Zone1"),
+                ("Gas_CCGT_z2", "Zone2"),
+                ("Hydro", "Zone1"),
+                ("Hydro_NonCurtailable", "Zone1"),
+            ]
+        )
+        actual_prj_bas = sorted(
+            [(prj, ba) for (prj, ba) in instance.REGULATION_DOWN_PRJ_BAS]
+        )
+        self.assertListEqual(expected_prj_bas, actual_prj_bas)
+
+        # Set: REGULATION_DOWN_BAS_BY_PRJ
+        expected_bas_by_prj = OrderedDict(
             sorted(
                 {
-                    "Gas_CCGT": "Zone1",
-                    "Coal": "Zone1",
-                    "Gas_CCGT_New": "Zone1",
-                    "Gas_CCGT_New_Binary": "Zone1",
-                    "Gas_CCGT_z2": "Zone2",
-                    "Coal_z2": "Zone2",
-                    "Battery": "Zone1",
-                    "Battery_Binary": "Zone1",
-                    "Battery_Specified": "Zone1",
-                    "Hydro": "Zone1",
-                    "Hydro_NonCurtailable": "Zone1",
+                    "Battery": ["Zone1"],
+                    "Battery_Binary": ["Zone1"],
+                    "Battery_Specified": ["Zone1"],
+                    "Coal": ["Zone1"],
+                    "Coal_z2": ["Zone2"],
+                    "Gas_CCGT": ["Zone1"],
+                    "Gas_CCGT_New": ["Zone1"],
+                    "Gas_CCGT_New_Binary": ["Zone1"],
+                    "Gas_CCGT_z2": ["Zone2"],
+                    "Hydro": ["Zone1"],
+                    "Hydro_NonCurtailable": ["Zone1"],
                 }.items()
             )
         )
-        actual_reserves_zone = OrderedDict(
+        actual_bas_by_prj = OrderedDict(
             sorted(
                 {
-                    prj: instance.regulation_down_zone[prj]
+                    prj: sorted(instance.REGULATION_DOWN_BAS_BY_PRJ[prj])
                     for prj in instance.REGULATION_DOWN_PROJECTS
                 }.items()
             )
         )
-        self.assertDictEqual(expected_reserves_zone, actual_reserves_zone)
+        self.assertDictEqual(expected_bas_by_prj, actual_bas_by_prj)
+
+        # Set: REGULATION_DOWN_PRJS_BY_BA
+        expected_prjs_by_ba = OrderedDict(
+            sorted(
+                {
+                    "Zone1": [
+                        "Battery",
+                        "Battery_Binary",
+                        "Battery_Specified",
+                        "Coal",
+                        "Gas_CCGT",
+                        "Gas_CCGT_New",
+                        "Gas_CCGT_New_Binary",
+                        "Hydro",
+                        "Hydro_NonCurtailable",
+                    ],
+                    "Zone2": ["Coal_z2", "Gas_CCGT_z2"],
+                }.items()
+            )
+        )
+        actual_prjs_by_ba = OrderedDict(
+            sorted(
+                {
+                    ba: sorted(instance.REGULATION_DOWN_PRJS_BY_BA[ba])
+                    for ba in instance.REGULATION_DOWN_ZONES
+                }.items()
+            )
+        )
+        self.assertDictEqual(expected_prjs_by_ba, actual_prjs_by_ba)
+
+        # Set: REGULATION_DOWN_MULTI_BA_PRJS
+        expected_multi_ba_prjs = sorted([])
+        actual_multi_ba_prjs = sorted(
+            [prj for prj in instance.REGULATION_DOWN_MULTI_BA_PRJS]
+        )
+        self.assertListEqual(expected_multi_ba_prjs, actual_multi_ba_prjs)
+
+        # Param: regulation_down_max_fraction_of_provision (defaults to 1 if not
+        # specified)
+        expected_max_fraction = OrderedDict(
+            sorted(
+                {
+                    (prj, ba): {}.get((prj, ba), 1) for (prj, ba) in expected_prj_bas
+                }.items()
+            )
+        )
+        actual_max_fraction = OrderedDict(
+            sorted(
+                {
+                    (prj, ba): instance.regulation_down_max_fraction_of_provision[
+                        prj, ba
+                    ]
+                    for (prj, ba) in instance.REGULATION_DOWN_PRJ_BAS
+                }.items()
+            )
+        )
+        self.assertDictEqual(expected_max_fraction, actual_max_fraction)
 
         # Set: REGULATION_DOWN_PRJ_OPR_TMPS
         expected_prj_op_tmps = sorted(
@@ -161,6 +239,26 @@ class TestRegulationDownProvision(unittest.TestCase):
             [(prj, tmp) for (prj, tmp) in instance.REGULATION_DOWN_PRJ_OPR_TMPS]
         )
         self.assertListEqual(expected_prj_op_tmps, actual_prj_op_tmps)
+
+        # Set: REGULATION_DOWN_MULTI_BA_PRJ_BA_OPR_TMPS
+        expected_multi_ba_prj_ba_op_tmps = sorted(
+            [
+                (prj, ba, tmp)
+                for (prj, tmp) in get_project_operational_timepoints(
+                    expected_multi_ba_prjs
+                )
+                for ba in expected_bas_by_prj[prj]
+            ]
+        )
+        actual_multi_ba_prj_ba_op_tmps = sorted(
+            [
+                (prj, ba, tmp)
+                for (prj, ba, tmp) in instance.REGULATION_DOWN_MULTI_BA_PRJ_BA_OPR_TMPS
+            ]
+        )
+        self.assertListEqual(
+            expected_multi_ba_prj_ba_op_tmps, actual_multi_ba_prj_ba_op_tmps
+        )
 
         # Param: regulation_down_derate (defaults to 1 if not specified)
         expected_derate = OrderedDict(

@@ -3896,7 +3896,8 @@ CREATE TABLE inputs_project_lf_reserves_up_bas
     project_lf_reserves_up_ba_scenario_id INTEGER,
     project                               VARCHAR(64),
     lf_reserves_up_ba                     VARCHAR(32),
-    PRIMARY KEY (project_lf_reserves_up_ba_scenario_id, project),
+    max_fraction_of_provision             FLOAT,
+    PRIMARY KEY (project_lf_reserves_up_ba_scenario_id, project, lf_reserves_up_ba),
     FOREIGN KEY (project_lf_reserves_up_ba_scenario_id)
         REFERENCES subscenarios_project_lf_reserves_up_bas
             (project_lf_reserves_up_ba_scenario_id)
@@ -3916,7 +3917,8 @@ CREATE TABLE inputs_project_lf_reserves_down_bas
     project_lf_reserves_down_ba_scenario_id INTEGER,
     project                                 VARCHAR(64),
     lf_reserves_down_ba                     VARCHAR(32),
-    PRIMARY KEY (project_lf_reserves_down_ba_scenario_id, project),
+    max_fraction_of_provision               FLOAT,
+    PRIMARY KEY (project_lf_reserves_down_ba_scenario_id, project, lf_reserves_down_ba),
     FOREIGN KEY (project_lf_reserves_down_ba_scenario_id)
         REFERENCES subscenarios_project_lf_reserves_down_bas
             (project_lf_reserves_down_ba_scenario_id)
@@ -3937,7 +3939,8 @@ CREATE TABLE inputs_project_regulation_up_bas
     project_regulation_up_ba_scenario_id INTEGER,
     project                              VARCHAR(64),
     regulation_up_ba                     VARCHAR(32),
-    PRIMARY KEY (project_regulation_up_ba_scenario_id, project),
+    max_fraction_of_provision            FLOAT,
+    PRIMARY KEY (project_regulation_up_ba_scenario_id, project, regulation_up_ba),
     FOREIGN KEY (project_regulation_up_ba_scenario_id)
         REFERENCES subscenarios_project_regulation_up_bas
             (project_regulation_up_ba_scenario_id)
@@ -3957,7 +3960,8 @@ CREATE TABLE inputs_project_regulation_down_bas
     project_regulation_down_ba_scenario_id INTEGER,
     project                                VARCHAR(64),
     regulation_down_ba                     VARCHAR(32),
-    PRIMARY KEY (project_regulation_down_ba_scenario_id, project),
+    max_fraction_of_provision              FLOAT,
+    PRIMARY KEY (project_regulation_down_ba_scenario_id, project, regulation_down_ba),
     FOREIGN KEY (project_regulation_down_ba_scenario_id)
         REFERENCES subscenarios_project_regulation_down_bas
             (project_regulation_down_ba_scenario_id)
@@ -3978,7 +3982,8 @@ CREATE TABLE inputs_project_frequency_response_bas
     project                                   VARCHAR(64),
     frequency_response_ba                     VARCHAR(32),
     contribute_to_partial                     INTEGER,
-    PRIMARY KEY (project_frequency_response_ba_scenario_id, project),
+    max_fraction_of_provision                 FLOAT,
+    PRIMARY KEY (project_frequency_response_ba_scenario_id, project, frequency_response_ba),
     FOREIGN KEY (project_frequency_response_ba_scenario_id)
         REFERENCES subscenarios_project_frequency_response_bas
             (project_frequency_response_ba_scenario_id)
@@ -3998,7 +4003,8 @@ CREATE TABLE inputs_project_spinning_reserves_bas
     project_spinning_reserves_ba_scenario_id INTEGER,
     project                                  VARCHAR(64),
     spinning_reserves_ba                     VARCHAR(32),
-    PRIMARY KEY (project_spinning_reserves_ba_scenario_id, project),
+    max_fraction_of_provision                FLOAT,
+    PRIMARY KEY (project_spinning_reserves_ba_scenario_id, project, spinning_reserves_ba),
     FOREIGN KEY (project_spinning_reserves_ba_scenario_id)
         REFERENCES subscenarios_project_spinning_reserves_bas
             (project_spinning_reserves_ba_scenario_id)
@@ -7359,6 +7365,31 @@ CREATE TABLE results_project_timepoint
     stop_unavailability                             FLOAT,
     PRIMARY KEY (scenario_id, project, weather_iteration, hydro_iteration,
                  availability_iteration, subproblem_id, stage_id, timepoint)
+);
+
+-- Per-BA allocation of the reserve provision of projects mapped to several
+-- balancing areas of a reserve type (projects in a single BA contribute their
+-- total provision, in results_project_timepoint, to that BA directly)
+DROP TABLE IF EXISTS results_project_reserve_provision_by_ba;
+CREATE TABLE results_project_reserve_provision_by_ba
+(
+    scenario_id            INTEGER,
+    weather_iteration      INTEGER,
+    hydro_iteration        INTEGER,
+    availability_iteration INTEGER,
+    subproblem_id          INTEGER,
+    stage_id               INTEGER,
+    reserve_type           VARCHAR(32),
+    project                VARCHAR(64),
+    timepoint              INTEGER,
+    balancing_area         VARCHAR(32),
+    reserve_provision_mw   FLOAT,
+    max_fraction_of_provision FLOAT,
+    max_fraction_dual      FLOAT,
+    max_fraction_marginal_price_per_mw FLOAT,
+    PRIMARY KEY (scenario_id, weather_iteration, hydro_iteration,
+                 availability_iteration, subproblem_id, stage_id, reserve_type,
+                 project, timepoint, balancing_area)
 );
 
 

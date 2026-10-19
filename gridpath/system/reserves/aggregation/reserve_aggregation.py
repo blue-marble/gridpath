@@ -1,4 +1,5 @@
 # Copyright 2016-2023 Blue Marble Analytics LLC.
+# Copyright 2026 Sylvan Energy Analytics LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,26 +16,65 @@
 
 from pyomo.environ import Set, Expression
 
+from gridpath.project.operations.reserves.reserve_provision import (
+    provision_to_ba_terms,
+)
+
+_TERMS_CACHE_ATTR = "_gridpath_reserve_provision_to_ba_terms"
+
+
+def get_provision_to_ba_terms(
+    mod,
+    reserve_prjs_by_ba_set,
+    reserve_multi_ba_prjs_set,
+    generator_reserve_provision_variable,
+    generator_reserve_provision_by_ba_variable,
+):
+    """
+    The per-BA contribution terms of a reserve type (see
+    :code:`provision_to_ba_terms`), resolved once per reserve type and cached
+    on the instance rather than rebuilt for every (BA, timepoint).
+    """
+    cache = getattr(mod, _TERMS_CACHE_ATTR, None)
+    if cache is None:
+        cache = {}
+        setattr(mod, _TERMS_CACHE_ATTR, cache)
+    if generator_reserve_provision_variable not in cache:
+        cache[generator_reserve_provision_variable] = provision_to_ba_terms(
+            mod=mod,
+            reserve_prjs_by_ba_set=reserve_prjs_by_ba_set,
+            reserve_multi_ba_prjs_set=reserve_multi_ba_prjs_set,
+            reserve_provision_variable_name=generator_reserve_provision_variable,
+            reserve_provision_by_ba_variable_name=generator_reserve_provision_by_ba_variable,
+        )
+    return cache[generator_reserve_provision_variable]
+
 
 def generic_add_model_components(
     m,
     d,
-    reserve_zone_param,
+    reserve_prjs_by_ba_set,
+    reserve_multi_ba_prjs_set,
     reserve_zone_set,
     reserve_generator_set,
     generator_reserve_provision_variable,
+    generator_reserve_provision_by_ba_variable,
     total_reserve_provision_expression,
 ):
     """
     Generic treatment of reserves. This function creates model components
     related to a particular reserve requirement, including
     1) an expression aggregating generator-level provision to total provision
+    by balancing area: a project in a single BA contributes its total
+    provision; a project in several BAs contributes its allocation to each
     :param m:
     :param d:
-    :param reserve_zone_param:
+    :param reserve_prjs_by_ba_set:
+    :param reserve_multi_ba_prjs_set:
     :param reserve_zone_set:
     :param reserve_generator_set:
     :param generator_reserve_provision_variable:
+    :param generator_reserve_provision_by_ba_variable:
     :param total_reserve_provision_expression:
     :return:
     """
@@ -55,10 +95,17 @@ def generic_add_model_components(
 
     # Reserve provision
     def total_reserve_rule(mod, ba, tmp):
+        operational_prjs = getattr(mod, op_set)[tmp]
         return sum(
-            getattr(mod, generator_reserve_provision_variable)[g, tmp]
-            for g in getattr(mod, op_set)[tmp]
-            if getattr(mod, reserve_zone_param)[g] == ba
+            var[idx + (tmp,)]
+            for (prj, var, idx) in get_provision_to_ba_terms(
+                mod,
+                reserve_prjs_by_ba_set,
+                reserve_multi_ba_prjs_set,
+                generator_reserve_provision_variable,
+                generator_reserve_provision_by_ba_variable,
+            ).get(ba, [])
+            if prj in operational_prjs
         )
 
     setattr(

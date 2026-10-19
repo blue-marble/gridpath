@@ -75,16 +75,19 @@ def _build_derated_vars_by_prj(d, mod, key):
 
 
 def _build_adjusted_vars_by_prj(d, mod, key):
-    """{prj: [(reserve Var component, subhourly adjustment param value for
-    prj's balancing area), ...]}
+    """{prj: [(reserve Var component, balancing area or None, subhourly
+    adjustment param value for that balancing area), ...]}
 
     The adjustment parameter name varies by reserve type and its value
-    varies by balancing area; the balancing area param name also varies by
-    reserve type. Both the adjustment param and the balancing area param
-    are indexed by project/balancing area only (not timepoint), so they
-    resolve to a plain value per project-reserve pair here.
+    varies by balancing area. A project in a single balancing area
+    contributes its total provision variable (indexed by project and
+    timepoint; recorded with a balancing area of None) times that area's
+    adjustment. A project in several balancing areas contributes, per area,
+    its allocation variable (indexed by project, area and timepoint) times
+    the area's adjustment. The component names needed to resolve this are
+    recorded in the dynamic components by each reserve module.
 
-    To save on memory, pairs whose adjustment value is 0 (the param default)
+    To save on memory, terms whose adjustment value is 0 (the param default)
     are dropped: a 0 x Var term contributes exactly 0 to the subhourly
     adjustment sums, so the values of the resulting expressions are
     unchanged, but the expressions -- one per project-timepoint -- don't
@@ -95,15 +98,28 @@ def _build_adjusted_vars_by_prj(d, mod, key):
     comp_by_name = {}
     adjusted_vars_by_prj = {}
     for prj, names in getattr(d, _direction_attr(direction)).items():
-        pairs = []
+        terms = []
         for c in names:
-            # adjustment param, indexed by the project's balancing area
-            adj = getattr(mod, adjustment_params[c][0])[
-                getattr(mod, adjustment_params[c][1])[prj]
-            ]
-            if adj != 0:
-                pairs.append((comp_by_name.setdefault(c, getattr(mod, c)), adj))
-        adjusted_vars_by_prj[prj] = pairs
+            adj_param_name, bas_by_prj_set_name, provision_by_ba_var_name = (
+                adjustment_params[c]
+            )
+            adj_param = getattr(mod, adj_param_name)
+            bas = getattr(mod, bas_by_prj_set_name)[prj]
+            if len(bas) == 1:
+                adj = adj_param[bas.first()]
+                if adj != 0:
+                    terms.append(
+                        (comp_by_name.setdefault(c, getattr(mod, c)), None, adj)
+                    )
+            else:
+                provision_by_ba = comp_by_name.setdefault(
+                    provision_by_ba_var_name, getattr(mod, provision_by_ba_var_name)
+                )
+                for ba in bas:
+                    adj = adj_param[ba]
+                    if adj != 0:
+                        terms.append((provision_by_ba, ba, adj))
+        adjusted_vars_by_prj[prj] = terms
 
     return adjusted_vars_by_prj
 
@@ -149,8 +165,8 @@ def subhourly_headroom_adjustment_rule(d, mod, prj, tmp):
     its reserve type's subhourly energy adjustment for the project's
     balancing area."""
     return sum(
-        v[prj, tmp] * adj
-        for (v, adj) in _get_cache(
+        (v[prj, tmp] if ba is None else v[prj, ba, tmp]) * adj
+        for (v, ba, adj) in _get_cache(
             d, mod, ("headroom", "adjusted"), _build_adjusted_vars_by_prj
         )[prj]
     )
@@ -161,8 +177,8 @@ def subhourly_footroom_adjustment_rule(d, mod, prj, tmp):
     its reserve type's subhourly energy adjustment for the project's
     balancing area."""
     return sum(
-        v[prj, tmp] * adj
-        for (v, adj) in _get_cache(
+        (v[prj, tmp] if ba is None else v[prj, ba, tmp]) * adj
+        for (v, ba, adj) in _get_cache(
             d, mod, ("footroom", "adjusted"), _build_adjusted_vars_by_prj
         )[prj]
     )

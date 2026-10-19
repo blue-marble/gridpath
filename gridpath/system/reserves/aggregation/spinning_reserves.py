@@ -1,4 +1,5 @@
 # Copyright 2016-2023 Blue Marble Analytics LLC.
+# Copyright 2026 Sylvan Energy Analytics LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -36,9 +37,11 @@ def add_model_components(
     generic_add_model_components(
         m,
         d,
-        "spinning_reserves_zone",
+        "SPINNING_RESERVES_PRJS_BY_BA",
+        "SPINNING_RESERVES_MULTI_BA_PRJS",
         "SPINNING_RESERVES_ZONES",
         "SPINNING_RESERVES_PROJECTS",
         "Provide_Spinning_Reserves_MW",
+        "Provide_Spinning_Reserves_by_BA_MW",
         "Total_Spinning_Reserves_Provision_MW",
     )

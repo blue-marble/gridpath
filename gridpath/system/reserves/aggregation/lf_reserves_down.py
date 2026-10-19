@@ -1,4 +1,5 @@
 # Copyright 2016-2023 Blue Marble Analytics LLC.
+# Copyright 2026 Sylvan Energy Analytics LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -36,9 +37,11 @@ def add_model_components(
     generic_add_model_components(
         m,
         d,
-        "lf_reserves_down_zone",
+        "LF_RESERVES_DOWN_PRJS_BY_BA",
+        "LF_RESERVES_DOWN_MULTI_BA_PRJS",
         "LF_RESERVES_DOWN_ZONES",
         "LF_RESERVES_DOWN_PROJECTS",
         "Provide_LF_Reserves_Down_MW",
+        "Provide_LF_Reserves_Down_by_BA_MW",
         "Total_LF_Reserves_Down_Provision_MW",
     )
