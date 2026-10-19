@@ -81,6 +81,14 @@ gridpath.run_end_to_end_per_draw
 ================================
 .. automodule:: gridpath.run_end_to_end_per_draw
 
+gridpath.run_end_to_end_parallel
+================================
+.. automodule:: gridpath.run_end_to_end_parallel
+
+gridpath.run_scenario_parallel
+==============================
+.. automodule:: gridpath.run_scenario_parallel
+
 gridpath.scenario_directory_cleanup
 ===================================
 .. automodule:: gridpath.scenario_directory_cleanup

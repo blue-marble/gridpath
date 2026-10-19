@@ -482,6 +482,90 @@ def get_timing_summary_file_path(logs_directory, process_id, start_time):
     )
 
 
+class E2ELogging(object):
+    """
+    A run's log redirection: the Logging object standing in for
+    sys.stdout/sys.stderr, the original streams to restore, and the path
+    of the timing summary file kept next to the log.
+    """
+
+    def __init__(
+        self, logger, stdout_original, stderr_original, timing_summary_file_path
+    ):
+        self.logger = logger
+        self.stdout_original = stdout_original
+        self.stderr_original = stderr_original
+        self.timing_summary_file_path = timing_summary_file_path
+
+
+def start_e2e_logging(scenario_directory, start_time, process_id, new_summary=True):
+    """
+    :param scenario_directory:
+    :param start_time: the run start time (names the log file)
+    :param process_id: the run's process ID (names the log file)
+    :param new_summary: whether to start a new timing summary file (write
+        its header); False to append to the summary of a run whose earlier
+        steps logged from another process (run_end_to_end_parallel's import
+        stage)
+    :return: an E2ELogging object to pass to stop_e2e_logging()
+
+    Redirect stdout and stderr to the scenario's E2E log file (in addition
+    to the terminal) and set up the timing summary file next to it.
+    """
+    logs_directory = create_logs_directory_if_not_exists(
+        scenario_directory=scenario_directory,
+        weather_iteration="",
+        hydro_iteration="",
+        availability_iteration="",
+        subproblem="",
+        stage="",
+    )
+
+    # Save sys.stdout, so we can return to it later
+    stdout_original = sys.stdout
+    stderr_original = sys.stderr
+
+    # The print statement will call the write() method of any object
+    # you assign to sys.stdout (in this case the Logging object). The
+    # write method of Logging writes both to sys.stdout and a log file
+    logger = Logging(
+        logs_dir=logs_directory,
+        start_time=start_time,
+        e2e=True,
+        process_id=process_id,
+    )
+    sys.stdout = logger
+    sys.stderr = logger
+
+    timing_summary_file_path = get_timing_summary_file_path(
+        logs_directory=logs_directory,
+        process_id=process_id,
+        start_time=start_time,
+    )
+    if new_summary:
+        append_to_timing_summary_file(timing_summary_file_path, "E2E timing summary:")
+
+    return E2ELogging(
+        logger=logger,
+        stdout_original=stdout_original,
+        stderr_original=stderr_original,
+        timing_summary_file_path=timing_summary_file_path,
+    )
+
+
+def stop_e2e_logging(e2e_logging):
+    """
+    :param e2e_logging: the E2ELogging object from start_e2e_logging()
+
+    Return sys.stdout and sys.stderr to the original streams (i.e. stop
+    writing to the log file) and close the log file to release its file
+    descriptor.
+    """
+    e2e_logging.logger.close()
+    sys.stdout = e2e_logging.stdout_original
+    sys.stderr = e2e_logging.stderr_original
+
+
 # TODO: add more run status types?
 # TODO: handle error messages for parser: the argparser error message will refer
 #   to run_end_to_end.py, even if the parsing fails at one of the scripts
@@ -520,39 +604,14 @@ def main(args=None):
 
     # TODO: why aren't we printing the log in the individual optimization
     #  directory
+    e2e_logging = None
     if parsed_args.log:
-        logs_directory = create_logs_directory_if_not_exists(
+        e2e_logging = start_e2e_logging(
             scenario_directory=scenario_directory,
-            weather_iteration="",
-            hydro_iteration="",
-            availability_iteration="",
-            subproblem="",
-            stage="",
-        )
-
-        # Save sys.stdout, so we can return to it later
-        stdout_original = sys.stdout
-        stderr_original = sys.stderr
-
-        # The print statement will call the write() method of any object
-        # you assign to sys.stdout (in this case the Logging object). The
-        # write method of Logging writes both to sys.stdout and a log file
-        # (see auxiliary/auxiliary.py)
-        logger = Logging(
-            logs_dir=logs_directory,
             start_time=start_time,
-            e2e=True,
             process_id=process_id,
         )
-        sys.stdout = logger
-        sys.stderr = logger
-
-        timing_summary_file_path = get_timing_summary_file_path(
-            logs_directory=logs_directory,
-            process_id=process_id,
-            start_time=start_time,
-        )
-        append_to_timing_summary_file(timing_summary_file_path, "E2E timing summary:")
+        timing_summary_file_path = e2e_logging.timing_summary_file_path
 
     # Create connection
     db_path = parsed_args.database
@@ -853,10 +912,8 @@ def main(args=None):
 
     # If logging, we need to return sys.stdout to original (i.e. stop writing
     # to log file) and close the log file to release file descriptor
-    if parsed_args.log:
-        logger.close()
-        sys.stdout = stdout_original
-        sys.stderr = stderr_original
+    if e2e_logging is not None:
+        stop_e2e_logging(e2e_logging)
 
     # Return expected objective values (for testing)
     if parsed_args.testing:
