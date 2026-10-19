@@ -68,3 +68,34 @@ To see usage and other optional arguments, e.g. how to specify a
 solver, check the help menu, e.g.::
 
     gridpath_run_e2e --help
+
+Running several scenarios in parallel
+-------------------------------------
+
+To run a set of scenarios against one database, solving several at a time,
+use :code:`gridpath_run_e2e_parallel`::
+
+    gridpath_run_e2e_parallel --database /PATH/TO/DATABASE
+    --scenario_location /PATH/TO/SCENARIOS --scenarios SCENARIO_1 SCENARIO_2
+    SCENARIO_3 --n_parallel_scenarios 2
+
+Up to :code:`--n_parallel_scenarios` scenarios get their inputs and are
+solved at once, each in its own process; their results are imported into
+the database one scenario at a time, as each finishes solving, since the
+SQLite database can only have one writer at a time. Every other argument is a
+:code:`gridpath_run_e2e` argument applied to every scenario (e.g.
+:code:`--log`, :code:`--quiet`, :code:`--n_parallel_solve`). Options that
+differ by scenario can be given in a CSV passed with :code:`--scenarios_csv`
+(scenario names across the top row after :code:`scenario`, one row per option
+below). The number of scenarios to run at once is usually limited by the
+memory each solve needs rather than by CPU cores.
+
+A scenario that fails is marked :code:`run_error` in the database and the
+run continues with the remaining scenarios; the command exits with a
+non-zero status if any scenario failed. The database is switched to WAL
+journal mode for the duration of the run, which is not supported on network
+file systems.
+
+If the inputs have already been written and you only want to solve several
+scenarios at once without importing results, :code:`gridpath_run_parallel`
+takes the same CSV format and calls :code:`gridpath_run` for each scenario.
