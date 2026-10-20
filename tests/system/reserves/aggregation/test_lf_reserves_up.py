@@ -19,6 +19,8 @@ import os.path
 import sys
 import unittest
 
+from pyomo.core.expr import identify_variables
+
 from tests.common_functions import create_abstract_model, add_components_and_load_data
 
 TEST_DATA_DIRECTORY = os.path.join(
@@ -268,6 +270,31 @@ class TestLFReservesDownAgg(unittest.TestCase):
             )
         )
         self.assertDictEqual(expected_projects, actual_projects)
+
+        # Expression: Total_LF_Reserves_Up_Provision_MW
+        # Single-BA projects contribute their total provision variable;
+        # Gas_CCGT_z2 is in Zone2 and Zone1 and contributes its per-BA
+        # allocation variable to each
+        tmp = 20200101
+        expected_vars = {
+            "Zone1": sorted(
+                [f"Provide_LF_Reserves_Up_MW[{prj},{tmp}]" for prj in projects_2020]
+                + [f"Provide_LF_Reserves_Up_by_BA_MW[Gas_CCGT_z2,Zone1,{tmp}]"]
+            ),
+            "Zone2": [f"Provide_LF_Reserves_Up_by_BA_MW[Gas_CCGT_z2,Zone2,{tmp}]"],
+        }
+        # Gas_CCGT_z2's total goes through its allocations, not to Zone1
+        expected_vars["Zone1"].remove(f"Provide_LF_Reserves_Up_MW[Gas_CCGT_z2,{tmp}]")
+        actual_vars = {
+            ba: sorted(
+                str(v)
+                for v in identify_variables(
+                    instance.Total_LF_Reserves_Up_Provision_MW[ba, tmp]
+                )
+            )
+            for ba in instance.LF_RESERVES_UP_ZONES
+        }
+        self.assertDictEqual(expected_vars, actual_vars)
 
 
 if __name__ == "__main__":

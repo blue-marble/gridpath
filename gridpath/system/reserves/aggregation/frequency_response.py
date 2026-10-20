@@ -1,4 +1,5 @@
 # Copyright 2016-2023 Blue Marble Analytics LLC.
+# Copyright 2026 Sylvan Energy Analytics LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +16,10 @@
 
 from pyomo.environ import Set, Expression
 
-from .reserve_aggregation import generic_add_model_components
+from .reserve_aggregation import (
+    generic_add_model_components,
+    get_provision_to_ba_terms,
+)
 
 
 def add_model_components(
@@ -38,10 +42,12 @@ def add_model_components(
     generic_add_model_components(
         m,
         d,
-        "frequency_response_ba",
+        "FREQUENCY_RESPONSE_PRJS_BY_BA",
+        "FREQUENCY_RESPONSE_MULTI_BA_PRJS",
         "FREQUENCY_RESPONSE_BAS",
         "FREQUENCY_RESPONSE_PROJECTS",
         "Provide_Frequency_Response_MW",
+        "Provide_Frequency_Response_by_BA_MW",
         "Total_Frequency_Response_Provision_MW",
     )
 
@@ -51,14 +57,22 @@ def add_model_components(
         & mod.OPR_PRJS_IN_TMP[tmp],
     )
 
-    # Reserve provision
+    # Reserve provision toward the partial requirement: the same per-BA
+    # contributions as for the full requirement, over the partial projects
     def total_partial_frequency_response_rule(mod, ba, tmp):
+        operational_partial_prjs = (
+            mod.FREQUENCY_RESPONSE_PARTIAL_PROJECTS_OPERATIONAL_IN_TIMEPOINT[tmp]
+        )
         return sum(
-            mod.Provide_Frequency_Response_MW[g, tmp]
-            for g in mod.FREQUENCY_RESPONSE_PARTIAL_PROJECTS_OPERATIONAL_IN_TIMEPOINT[
-                tmp
-            ]
-            if mod.frequency_response_ba[g] == ba
+            var[idx + (tmp,)]
+            for (prj, var, idx) in get_provision_to_ba_terms(
+                mod,
+                "FREQUENCY_RESPONSE_PRJS_BY_BA",
+                "FREQUENCY_RESPONSE_MULTI_BA_PRJS",
+                "Provide_Frequency_Response_MW",
+                "Provide_Frequency_Response_by_BA_MW",
+            ).get(ba, [])
+            if prj in operational_partial_prjs
         )
 
     m.Total_Partial_Frequency_Response_Provision_MW = Expression(

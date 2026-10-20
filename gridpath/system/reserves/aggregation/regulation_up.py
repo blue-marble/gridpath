@@ -1,4 +1,5 @@
 # Copyright 2016-2023 Blue Marble Analytics LLC.
+# Copyright 2026 Sylvan Energy Analytics LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -36,9 +37,11 @@ def add_model_components(
     generic_add_model_components(
         m,
         d,
-        "regulation_up_zone",
+        "REGULATION_UP_PRJS_BY_BA",
+        "REGULATION_UP_MULTI_BA_PRJS",
         "REGULATION_UP_ZONES",
         "REGULATION_UP_PROJECTS",
         "Provide_Regulation_Up_MW",
+        "Provide_Regulation_Up_by_BA_MW",
         "Total_Regulation_Up_Provision_MW",
     )

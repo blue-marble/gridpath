@@ -189,7 +189,7 @@ def get_projects_by_reserve(scenario_id, subscenarios, conn):
         ):
             c = conn.cursor()
             prjs_w_ba = c.execute(
-                """SELECT project
+                """SELECT DISTINCT project
                 FROM {}
                 WHERE {} IS NOT NULL
                 AND {} = {}

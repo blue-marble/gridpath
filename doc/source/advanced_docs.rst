@@ -411,9 +411,11 @@ load-following up and down, frequency response, and inertia reserves.
 The treatment of operating reserves is standardized. It requires defining
 the reserve balancing areas with their associated parameters and setting
 the reserve requirements by balancing area and timepoint; we must
-also assign a balancing area to each project that can provide the reserve;
-the model then takes care of creating the appropriate project-level
-reserve-provision variables, aggregates the provision of reserves, and
+also assign one or more balancing areas to each project that can provide the
+reserve (optionally capping the share of the project's provision that may go
+to each); the model then takes care of creating the appropriate
+project-level reserve-provision variables, aggregates the provision of
+reserves, and
 ensures that total provision of the reserve and the reserve requirement are
 balanced (or that penalties are applied if not).
 

@@ -1,0 +1,10 @@
+project	lf_reserves_down_ba	max_fraction_of_provision
+Gas_CCGT	Zone1	.
+Gas_CCGT_New	Zone1	.
+Gas_CCGT_New_Binary	Zone1	.
+Gas_CCGT_z2	Zone2	.
+Battery	Zone1	.
+Battery_Binary	Zone1	.
+Battery_Specified	Zone1	.
+Hydro	Zone1	.
+Hydro_NonCurtailable	Zone1	.

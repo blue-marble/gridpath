@@ -746,11 +746,16 @@ The user must define the reserve balancing areas along with any penalties
 for violation of the reserve-balance constraints. For each balancing area,
 the reserve requirement for each timepoint must be specified. Only
 exogenously-specified reserves are implemented at this stage. Each project
-that can provide the reserve type must then be assigned a balancing area to
-whose reserve-balance constraint it can contribute. The project-level
-reserve-provision variables are dynamically added to the project's operating
-constraints if the project can provide each reserve type. Total reserve
-provision by projects in each balancing area is then aggregated and
+that can provide the reserve type must then be assigned one or more
+balancing areas to whose reserve-balance constraints it can contribute. The
+project-level reserve-provision variables are dynamically added to the
+project's operating constraints if the project can provide each reserve
+type. A project assigned to a single balancing area contributes its total
+provision to that area. A project assigned to several balancing areas
+decides in each timepoint how to split its total provision among them; the
+user can cap the share of the total that may go to each area
+(:code:`max_fraction_of_provision`, defaulting to 1, i.e. no cap). Total
+reserve provision by projects in each balancing area is then aggregated and
 constrained to equal the BA's reserve requirement in each timepoint. The
 user can optionally allow these constraints to be violated at a cost. Any
 reserve-balance constraint violation penalty costs are added to the

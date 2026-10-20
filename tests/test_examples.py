@@ -596,6 +596,17 @@ class TestExamples(unittest.TestCase):
         scenario_name = "2periods_new_build_2zones_singleBA"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
+    def test_example_2periods_new_build_2zones_multi_ba_reserves(self):
+        """
+        Check validation and objective function value of
+        "2periods_new_build_2zones_multi_ba_reserves"
+        example: a Zone1 project provides load-following up to both zones
+        with a cap on the share that may go to Zone2
+        :return:
+        """
+        scenario_name = "2periods_new_build_2zones_multi_ba_reserves"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
     def test_example_2periods_new_build_2zones_transmission(self):
         """
         Check validation and objective function value of
