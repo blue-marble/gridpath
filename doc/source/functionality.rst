@@ -426,6 +426,21 @@ type, or :code:`period = 0`), and the group can carry flat limits; see :code:`gr
 * Representative periods, days, or other horizons repeated across the
   study: a named timepoint or horizon map.
 
+**Horizons with several samples.** A horizon's timepoints need not all
+carry the same weight: a half-month can be represented by a peak day of
+weight 1 followed by a median day of weight 14 in one horizon, so that
+horizon-level constraints let the model move energy between the sampled
+days. Energy budgets and the other horizon totals (hydro budgets and budget
+allocations, water-link horizon flow bounds, reservoir target releases)
+weight each timepoint by its hours and weight, so they apply to the energy
+the horizon represents. The :code:`stor` operational type reads such a
+horizon as a sequence of sample blocks, each repeated as many times as its
+weight, and carries the energy in storage across the repeats (see the
+:code:`stor` module documentation). Other chained quantities, e.g. the
+state of charge of the other storage-like operational types and reservoir
+volumes, follow the horizon's chronology once, as on a single-sample
+horizon.
+
 .. note:: Databases created with GridPath v2026.13.1 or earlier need to be
     recreated to use :code:`period = 0` specified capacity rows (which
     changed the :code:`project_operational_periods` and

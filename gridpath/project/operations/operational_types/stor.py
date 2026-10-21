@@ -29,6 +29,34 @@ and/or downward reserves.
 
 Costs for this operational type include variable O&M costs.
 
+**Multi-sample horizons.** The energy in storage is tracked timepoint to
+timepoint along each horizon. On a horizon whose timepoints all carry the
+same weight (a single sample, e.g. one representative day repeated by its
+weight), the chain is the horizon's chronology and nothing else is needed.
+A horizon can also hold several samples with different weights, e.g. a
+half-month represented by a peak day of weight 1 followed by a median day
+of weight 14, so that the project can move energy between the sampled days.
+The type then reads the horizon as a sequence of *sample blocks* (maximal
+runs of consecutive timepoints with the same weight) and treats each block
+of weight greater than 1 as repeated as many times as its weight before the
+chronology moves on: the energy carried into the timepoint after the block
+is the energy at the end of the block's last repeat
+(:code:`Stor_Sample_Block_Repeat_Carryover_MWh` is added in the energy
+tracking constraint), and the energy in storage at the last repeat, which
+differs from the first repeat's by
+:code:`Stor_Last_Repeat_SOC_Offset_MWh`, must satisfy the same bounds as
+the first repeat's (the :code:`Stor_Last_Repeat_*` constraints). The energy
+across repeats is monotonic, so bounding the first and the last repeat
+bounds every repeat, with a storage efficiency below 1 as well (the
+offsets then follow a geometric rather than an arithmetic series). The
+model's variables describe the first repeat; the results report the
+starting energy at the last repeat alongside them. Horizons with a single
+sample are unaffected, as are blocks of weight 1 (and weight 0, e.g. spinup
+or lookahead timepoints, which do not count as samples). A linked horizon
+with several samples is refused, as is an exogenous state of charge inside
+a repeated block. The per-horizon losses limit and the state-of-charge
+penalties see the first repeat only.
+
 .. note:: Please note that to calculate the duration of the storage project, i.e.,
     how long it can sustain discharging at its maximum output, you must adjust the
     energy capacity by the discharge efficiency. For example, a 1 MW  with 1 MWh energy
@@ -72,6 +100,7 @@ from pyomo.environ import (
     Constraint,
     Param,
     Expression,
+    NonNegativeIntegers,
     NonNegativeReals,
     PercentFraction,
     value,
@@ -141,6 +170,60 @@ def add_model_components(
     | balancing type (see :code:`stor_energy_budget_balancing_type`) that     |
     | lie entirely within their operational timepoints; the max-losses        |
     | limit is enforced over these horizons.                                  |
+    +-------------------------------------------------------------------------+
+    | | :code:`STOR_SAMPLE_BLOCKS`                                            |
+    |                                                                         |
+    | Two-dimensional set of projects of the :code:`stor` operational type    |
+    | and the first timepoint of each repeated sample block of their          |
+    | multi-sample horizons (see the module description). Empty when every    |
+    | horizon holds a single sample.                                          |
+    +-------------------------------------------------------------------------+
+    | | :code:`STOR_SAMPLE_BLOCK_TMPS`                                        |
+    | | *Defined over*: :code:`STOR_SAMPLE_BLOCKS`                            |
+    |                                                                         |
+    | Indexed set of the timepoints of each repeated sample block, in         |
+    | chronological order.                                                    |
+    +-------------------------------------------------------------------------+
+    | | :code:`STOR_SAMPLE_BLOCK_OPR_TMPS`                                    |
+    |                                                                         |
+    | Two-dimensional set of the project-timepoints that lie in a repeated    |
+    | sample block.                                                           |
+    +-------------------------------------------------------------------------+
+    | | :code:`STOR_SAMPLE_BLOCK_TRANSITION_OPR_TMPS`                         |
+    |                                                                         |
+    | Two-dimensional set of the project-timepoints that follow a repeated    |
+    | sample block (the horizon's first timepoint when the block ends a       |
+    | circular horizon); their energy tracking constraint adds the block's    |
+    | repeat carryover.                                                       |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Derived Params                                                          |
+    +-------------------------------------------------------------------------+
+    | | :code:`stor_sample_block_weight`                                      |
+    | | *Defined over*: :code:`STOR_SAMPLE_BLOCKS`                            |
+    |                                                                         |
+    | The timepoint weight of the repeated sample block, i.e. the number of   |
+    | times it is repeated.                                                   |
+    +-------------------------------------------------------------------------+
+    | | :code:`stor_sample_block`                                             |
+    | | *Defined over*: :code:`STOR_SAMPLE_BLOCK_OPR_TMPS`                    |
+    |                                                                         |
+    | The first timepoint of the repeated sample block the timepoint lies     |
+    | in.                                                                     |
+    +-------------------------------------------------------------------------+
+    | | :code:`stor_sample_block_position`                                    |
+    | | *Defined over*: :code:`STOR_SAMPLE_BLOCK_OPR_TMPS`                    |
+    |                                                                         |
+    | The timepoint's 0-based position in its repeated sample block.          |
+    +-------------------------------------------------------------------------+
+    | | :code:`stor_sample_block_before`                                      |
+    | | *Defined over*: :code:`STOR_SAMPLE_BLOCK_TRANSITION_OPR_TMPS`         |
+    |                                                                         |
+    | The first timepoint of the repeated sample block that the timepoint     |
+    | follows.                                                                |
     +-------------------------------------------------------------------------+
 
     |
@@ -296,6 +379,34 @@ def add_model_components(
     |
 
     +-------------------------------------------------------------------------+
+    | Expressions                                                             |
+    +-------------------------------------------------------------------------+
+    | | :code:`Stor_Sample_Block_End_Energy_MWh`                              |
+    | | *Defined over*: :code:`STOR_SAMPLE_BLOCKS`                            |
+    |                                                                         |
+    | The energy in storage at the end of one repeat of the sample block      |
+    | that comes from the block's own charging and discharging (each          |
+    | timepoint's energy step decayed by the storage efficiency over the      |
+    | timepoints that follow it in the block).                                |
+    +-------------------------------------------------------------------------+
+    | | :code:`Stor_Last_Repeat_SOC_Offset_MWh`                               |
+    | | *Defined over*: :code:`STOR_SAMPLE_BLOCK_OPR_TMPS`                    |
+    |                                                                         |
+    | The energy in storage at the timepoint in the last repeat of its        |
+    | sample block minus the energy in the first repeat (the model's          |
+    | variable).                                                              |
+    +-------------------------------------------------------------------------+
+    | | :code:`Stor_Sample_Block_Repeat_Carryover_MWh`                        |
+    | | *Defined over*: :code:`STOR_SAMPLE_BLOCKS`                            |
+    |                                                                         |
+    | The energy at the end of the block's last repeat minus the energy at    |
+    | the end of its first repeat: what the repeats after the first carry     |
+    | into the timepoint that follows the block.                              |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
     | Constraints                                                             |
     +=========================================================================+
     | Power and Stage of Charge                                               |
@@ -316,6 +427,7 @@ def add_model_components(
     | Tracks the amount of energy stored in each timepoint based on the       |
     | previous timepoint's energy stored and the charge and discharge         |
     | decisions.                                                              |
+    | After a repeated sample block, the block's repeat carryover is added.   |
     +-------------------------------------------------------------------------+
     | | :code:`Stor_Max_Energy_in_Storage_Constraint`                         |
     | | *Defined over*: :code:`STOR_OPR_TMPS`                                 |
@@ -352,6 +464,33 @@ def add_model_components(
     | Can't provide more downward reserves (times the reserves setpoint       |
     | duration, the timepoint duration by default) than available capacity to |
     | store energy in that timepoint.                                         |
+    +-------------------------------------------------------------------------+
+    +-------------------------------------------------------------------------+
+    | Multi-Sample Horizons                                                   |
+    +-------------------------------------------------------------------------+
+    | | :code:`Stor_Last_Repeat_Min_Energy_in_Storage_Constraint`             |
+    | | *Defined over*: :code:`STOR_SAMPLE_BLOCK_OPR_TMPS`                    |
+    |                                                                         |
+    | The energy in storage in the last repeat of the sample block cannot     |
+    | be negative.                                                            |
+    +-------------------------------------------------------------------------+
+    | | :code:`Stor_Last_Repeat_Max_Energy_in_Storage_Constraint`             |
+    | | *Defined over*: :code:`STOR_SAMPLE_BLOCK_OPR_TMPS`                    |
+    |                                                                         |
+    | The energy in storage in the last repeat of the sample block cannot     |
+    | exceed the available energy capacity.                                   |
+    +-------------------------------------------------------------------------+
+    | | :code:`Stor_Last_Repeat_Max_Headroom_Energy_Constraint`               |
+    | | *Defined over*: :code:`STOR_SAMPLE_BLOCK_OPR_TMPS`                    |
+    |                                                                         |
+    | :code:`Stor_Max_Headroom_Energy_Constraint` at the last repeat of the   |
+    | sample block (same skip conditions).                                    |
+    +-------------------------------------------------------------------------+
+    | | :code:`Stor_Last_Repeat_Max_Footroom_Energy_Constraint`               |
+    | | *Defined over*: :code:`STOR_SAMPLE_BLOCK_OPR_TMPS`                    |
+    |                                                                         |
+    | :code:`Stor_Max_Footroom_Energy_Constraint` at the last repeat of the   |
+    | sample block (same skip conditions).                                    |
     +-------------------------------------------------------------------------+
 
     """
@@ -408,6 +547,70 @@ def add_model_components(
 
     m.STOR_OPR_BT_HRZ = Set(
         within=m.STOR * m.BLN_TYPE_HRZS, initialize=stor_opr_bt_hrz_set_init
+    )
+
+    # Multi-sample horizons (see the module docstring): the structure is
+    # derived once per instance by get_stor_sample_block_structure and
+    # read by the initializers below
+    m.STOR_SAMPLE_BLOCKS = Set(
+        dimen=2,
+        initialize=lambda mod: sorted(
+            get_stor_sample_block_structure(mod)["blocks"].keys()
+        ),
+    )
+
+    m.STOR_SAMPLE_BLOCK_TMPS = Set(
+        m.STOR_SAMPLE_BLOCKS,
+        ordered=True,
+        initialize=lambda mod, prj, first_tmp: get_stor_sample_block_structure(mod)[
+            "blocks"
+        ][prj, first_tmp]["tmps"],
+    )
+
+    m.stor_sample_block_weight = Param(
+        m.STOR_SAMPLE_BLOCKS,
+        within=NonNegativeReals,
+        initialize=lambda mod, prj, first_tmp: get_stor_sample_block_structure(mod)[
+            "blocks"
+        ][prj, first_tmp]["weight"],
+    )
+
+    m.STOR_SAMPLE_BLOCK_OPR_TMPS = Set(
+        dimen=2,
+        initialize=lambda mod: sorted(
+            get_stor_sample_block_structure(mod)["tmp_block"].keys()
+        ),
+    )
+
+    m.stor_sample_block = Param(
+        m.STOR_SAMPLE_BLOCK_OPR_TMPS,
+        within=m.TMPS,
+        initialize=lambda mod, prj, tmp: get_stor_sample_block_structure(mod)[
+            "tmp_block"
+        ][prj, tmp][0],
+    )
+
+    m.stor_sample_block_position = Param(
+        m.STOR_SAMPLE_BLOCK_OPR_TMPS,
+        within=NonNegativeIntegers,
+        initialize=lambda mod, prj, tmp: get_stor_sample_block_structure(mod)[
+            "tmp_block"
+        ][prj, tmp][1],
+    )
+
+    m.STOR_SAMPLE_BLOCK_TRANSITION_OPR_TMPS = Set(
+        dimen=2,
+        initialize=lambda mod: sorted(
+            get_stor_sample_block_structure(mod)["transition"].keys()
+        ),
+    )
+
+    m.stor_sample_block_before = Param(
+        m.STOR_SAMPLE_BLOCK_TRANSITION_OPR_TMPS,
+        within=m.TMPS,
+        initialize=lambda mod, prj, tmp: get_stor_sample_block_structure(mod)[
+            "transition"
+        ][prj, tmp],
     )
 
     # Required Params
@@ -501,6 +704,22 @@ def add_model_components(
         m.STOR_OPR_TMPS, rule=downward_reserve_rule
     )
 
+    # Multi-sample horizons: a block's end-of-block energy from its own
+    # charging and discharging, the state-of-charge offset at the block's
+    # last repeat, and the energy carried into the next timepoint by the
+    # repeats after the first (see the module docstring and the rules)
+    m.Stor_Sample_Block_End_Energy_MWh = Expression(
+        m.STOR_SAMPLE_BLOCKS, rule=sample_block_end_energy_rule
+    )
+
+    m.Stor_Last_Repeat_SOC_Offset_MWh = Expression(
+        m.STOR_SAMPLE_BLOCK_OPR_TMPS, rule=last_repeat_soc_offset_rule
+    )
+
+    m.Stor_Sample_Block_Repeat_Carryover_MWh = Expression(
+        m.STOR_SAMPLE_BLOCKS, rule=sample_block_repeat_carryover_rule
+    )
+
     # Constraints
     ###########################################################################
 
@@ -578,6 +797,272 @@ def add_model_components(
 
     m.Stor_Max_Footroom_Energy_Constraint = Constraint(
         m.STOR_OPR_TMPS, rule=max_footroom_energy_constraint_rule
+    )
+
+    # Multi-sample horizons: the state of charge at the last repeat of a
+    # sample block must satisfy the same bounds as at the first repeat (it
+    # is monotonic across repeats, so the two together cover every repeat)
+    m.Stor_Last_Repeat_Min_Energy_in_Storage_Constraint = Constraint(
+        m.STOR_SAMPLE_BLOCK_OPR_TMPS, rule=last_repeat_min_energy_in_storage_rule
+    )
+
+    m.Stor_Last_Repeat_Max_Energy_in_Storage_Constraint = Constraint(
+        m.STOR_SAMPLE_BLOCK_OPR_TMPS, rule=last_repeat_max_energy_in_storage_rule
+    )
+
+    def last_repeat_max_headroom_energy_constraint_rule(mod, s, tmp):
+        if not getattr(d, headroom_variables)[s] and next_tmp_tracks_energy(
+            mod, s, tmp
+        ):
+            return Constraint.Skip
+        return max_headroom_energy_rule(
+            mod, s, tmp, soc_offset=mod.Stor_Last_Repeat_SOC_Offset_MWh[s, tmp]
+        )
+
+    m.Stor_Last_Repeat_Max_Headroom_Energy_Constraint = Constraint(
+        m.STOR_SAMPLE_BLOCK_OPR_TMPS,
+        rule=last_repeat_max_headroom_energy_constraint_rule,
+    )
+
+    def last_repeat_max_footroom_energy_constraint_rule(mod, s, tmp):
+        if (
+            not getattr(d, footroom_variables)[s]
+            and mod.stor_storage_efficiency[s] == 1
+            and next_tmp_tracks_energy(mod, s, tmp)
+            and next_tmp_derate_is_no_higher(mod, s, tmp)
+        ):
+            return Constraint.Skip
+        return max_footroom_energy_rule(
+            mod, s, tmp, soc_offset=mod.Stor_Last_Repeat_SOC_Offset_MWh[s, tmp]
+        )
+
+    m.Stor_Last_Repeat_Max_Footroom_Energy_Constraint = Constraint(
+        m.STOR_SAMPLE_BLOCK_OPR_TMPS,
+        rule=last_repeat_max_footroom_energy_constraint_rule,
+    )
+
+
+# Multi-Sample Horizons
+###############################################################################
+
+
+def get_stor_sample_block_structure(mod):
+    """
+    Derive, once per model instance, the sample blocks of every storage
+    project's horizons (see the module docstring): a sample block is a
+    maximal run of consecutive timepoints of a horizon that share a
+    timepoint weight, and a horizon is a multi-sample horizon when it has
+    more than one such run (runs of weight 0, e.g. spinup or lookahead
+    timepoints, do not count). In a multi-sample horizon every block of
+    weight greater than 1 is repeated as many times as its weight before
+    the chronology moves on to the next timepoint.
+
+    Returns a dict with three entries, all keyed by (project, timepoint):
+
+    * ``blocks``: first timepoint of a repeated block -> dict of its
+      ``tmps`` (in chronological order) and ``weight``;
+    * ``tmp_block``: timepoint in a repeated block -> (first timepoint of
+      the block, 0-based position in it);
+    * ``transition``: timepoint that follows a repeated block (the horizon's
+      first timepoint when the block is last in a circular horizon) -> first
+      timepoint of that block.
+
+    A linked horizon with sample blocks is refused (the linked timepoint
+    params carry the state after the first repeat only), as is an
+    exogenous state of charge inside a repeated block (the repeats could not
+    all start from it).
+    """
+    if hasattr(mod, "_stor_sample_block_structure"):
+        return mod._stor_sample_block_structure
+
+    blocks, tmp_block, transition = {}, {}, {}
+    for prj in mod.STOR:
+        bt = mod.balancing_type_project[prj]
+        for hrz in mod.HRZS_BY_BLN_TYPE[bt]:
+            tmps = list(mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz])
+            # Element-by-element membership checks (see STOR_OPR_BT_HRZ)
+            if not all((prj, tmp) in mod.STOR_OPR_TMPS for tmp in tmps):
+                continue
+            runs = []
+            for tmp in tmps:
+                if runs and mod.tmp_weight[runs[-1][0]] == mod.tmp_weight[tmp]:
+                    runs[-1].append(tmp)
+                else:
+                    runs.append([tmp])
+            if sum(1 for run in runs if mod.tmp_weight[run[0]] > 0) < 2:
+                continue
+            boundary = mod.boundary[bt, hrz]
+            if boundary == "linked":
+                raise ValueError(
+                    f"Storage project {prj} is on horizon {hrz} of balancing "
+                    f"type {bt}, which has a linked boundary and timepoints "
+                    f"of different weights; the linked timepoint params "
+                    f"cannot carry the state of charge across repeated "
+                    f"samples. Use a circular or linear boundary."
+                )
+            for i, run in enumerate(runs):
+                weight = mod.tmp_weight[run[0]]
+                if weight <= 1:
+                    continue
+                first_tmp = run[0]
+                blocks[prj, first_tmp] = {"tmps": run, "weight": weight}
+                for position, tmp in enumerate(run):
+                    if (prj, tmp) in mod.STOR_EXOG_SOC_TMPS:
+                        raise ValueError(
+                            f"Storage project {prj} has an exogenous state of "
+                            f"charge in timepoint {tmp}, which lies in a "
+                            f"repeated sample (weight {weight}) of horizon "
+                            f"{hrz} of balancing type {bt}; the repeats of the "
+                            f"sample cannot all start from it."
+                        )
+                    tmp_block[prj, tmp] = (first_tmp, position)
+                if i + 1 < len(runs):
+                    transition[prj, runs[i + 1][0]] = first_tmp
+                elif boundary == "circular":
+                    transition[prj, tmps[0]] = first_tmp
+
+    mod._stor_sample_block_structure = {
+        "blocks": blocks,
+        "tmp_block": tmp_block,
+        "transition": transition,
+    }
+
+    return mod._stor_sample_block_structure
+
+
+def energy_step_rule(mod, s, tmp):
+    """
+    The change in the energy in storage over timepoint *tmp* from the
+    project's charging, discharging and upward-reserve depletion, exactly
+    as the energy tracking constraint propagates it to the next timepoint
+    (before the storage-efficiency decay of the starting energy).
+    """
+    hrs_in_tmp = mod.hrs_in_tmp[tmp]
+    return (
+        mod.Stor_Charge_MW[s, tmp] * hrs_in_tmp * mod.stor_charging_efficiency[s]
+        - (
+            mod.Stor_Discharge_MW[s, tmp]
+            + mod.Stor_Upward_Reserves_MW[s, tmp]
+            * mod.stor_upward_reserves_to_soc_depletion[s]
+        )
+        * hrs_in_tmp
+        / mod.stor_discharging_efficiency[s]
+    )
+
+
+def repeat_decay(mod, s, first_tmp):
+    """
+    The storage-efficiency decay over one repeat of the sample block: the
+    storage efficiency to the power of the block's number of timepoints.
+    """
+    return mod.stor_storage_efficiency[s] ** len(
+        mod.STOR_SAMPLE_BLOCK_TMPS[s, first_tmp]
+    )
+
+
+def repeat_decay_series(mod, s, first_tmp, n_repeats):
+    """
+    1 + r + r^2 + ... + r^(n_repeats - 1) for the block's repeat decay r,
+    i.e. the factor on the block's end-of-block energy after *n_repeats*
+    repeats; *n_repeats* when the storage efficiency is 1.
+    """
+    r = repeat_decay(mod, s, first_tmp)
+    if r == 1:
+        return n_repeats
+    return (1 - r**n_repeats) / (1 - r)
+
+
+def sample_block_end_energy_rule(mod, s, first_tmp):
+    """
+    **Expression Name**: Stor_Sample_Block_End_Energy_MWh
+    **Defined Over**: STOR_SAMPLE_BLOCKS
+
+    The energy in storage at the end of one repeat of the sample block that
+    comes from the block's own charging and discharging (each timepoint's
+    energy step, decayed by the storage efficiency over the timepoints that
+    follow it in the block). With the starting energy of the repeat decayed
+    over the block, it gives the energy at the end of the repeat.
+    """
+    tmps = list(mod.STOR_SAMPLE_BLOCK_TMPS[s, first_tmp])
+    n = len(tmps)
+    return sum(
+        energy_step_rule(mod, s, tmp) * mod.stor_storage_efficiency[s] ** (n - 1 - i)
+        for i, tmp in enumerate(tmps)
+    )
+
+
+def last_repeat_soc_offset_rule(mod, s, tmp):
+    """
+    **Expression Name**: Stor_Last_Repeat_SOC_Offset_MWh
+    **Defined Over**: STOR_SAMPLE_BLOCK_OPR_TMPS
+
+    The energy in storage at timepoint *tmp* in the LAST repeat of its sample
+    block minus the energy in the first repeat (the model's variable). The
+    starting energy of repeat k is r^(k-1) x the first repeat's starting
+    energy + (1 + r + ... + r^(k-2)) x the end-of-block energy, where r is
+    the repeat decay; within the repeat the difference to the first repeat
+    decays by the storage efficiency per timepoint. The offset is monotonic
+    across repeats, so bounding the first and the last repeat bounds them
+    all.
+    """
+    first_tmp = mod.stor_sample_block[s, tmp]
+    weight = mod.stor_sample_block_weight[s, first_tmp]
+    r = repeat_decay(mod, s, first_tmp)
+    starting_energy_shift = (
+        r ** (weight - 1) - 1
+    ) * mod.Stor_Starting_Energy_in_Storage_MWh[s, first_tmp] + repeat_decay_series(
+        mod, s, first_tmp, weight - 1
+    ) * mod.Stor_Sample_Block_End_Energy_MWh[
+        s, first_tmp
+    ]
+    return (
+        mod.stor_storage_efficiency[s] ** mod.stor_sample_block_position[s, tmp]
+        * starting_energy_shift
+    )
+
+
+def sample_block_repeat_carryover_rule(mod, s, first_tmp):
+    """
+    **Expression Name**: Stor_Sample_Block_Repeat_Carryover_MWh
+    **Defined Over**: STOR_SAMPLE_BLOCKS
+
+    The energy in storage at the end of the block's last repeat minus the
+    energy at the end of its first repeat: what the repeats after the first
+    carry into the timepoint that follows the block, added there by the
+    energy tracking constraint.
+    """
+    weight = mod.stor_sample_block_weight[s, first_tmp]
+    r = repeat_decay(mod, s, first_tmp)
+    return (r**weight - r) * mod.Stor_Starting_Energy_in_Storage_MWh[s, first_tmp] + (
+        repeat_decay_series(mod, s, first_tmp, weight) - 1
+    ) * mod.Stor_Sample_Block_End_Energy_MWh[s, first_tmp]
+
+
+def last_repeat_min_energy_in_storage_rule(mod, s, tmp):
+    """
+    **Constraint Name**: Stor_Last_Repeat_Min_Energy_in_Storage_Constraint
+    **Enforced Over**: STOR_SAMPLE_BLOCK_OPR_TMPS
+
+    The energy in storage in the last repeat of the sample block cannot be
+    negative (the first repeat's is non-negative by the variable's domain).
+    """
+    return (
+        mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp]
+        + mod.Stor_Last_Repeat_SOC_Offset_MWh[s, tmp]
+        >= 0
+    )
+
+
+def last_repeat_max_energy_in_storage_rule(mod, s, tmp):
+    """
+    **Constraint Name**: Stor_Last_Repeat_Max_Energy_in_Storage_Constraint
+    **Enforced Over**: STOR_SAMPLE_BLOCK_OPR_TMPS
+
+    The energy in storage in the last repeat of the sample block cannot
+    exceed the available energy capacity.
+    """
+    return max_energy_in_storage_rule(
+        mod, s, tmp, soc_offset=mod.Stor_Last_Repeat_SOC_Offset_MWh[s, tmp]
     )
 
 
@@ -704,19 +1189,33 @@ def energy_tracking_rule(mod, s, tmp):
                     / mod.stor_discharging_efficiency[s]
                 )
 
+                # Multi-sample horizons: the previous timepoint ends a
+                # repeated sample block, so add what its repeats after the
+                # first carry over (zero on single-sample horizons, where
+                # the set is empty)
+                if (s, tmp) in mod.STOR_SAMPLE_BLOCK_TRANSITION_OPR_TMPS:
+                    starting_soc = (
+                        starting_soc
+                        + mod.Stor_Sample_Block_Repeat_Carryover_MWh[
+                            s, mod.stor_sample_block_before[s, tmp]
+                        ]
+                    )
+
     return mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp] == starting_soc
 
 
-def max_energy_in_storage_rule(mod, s, tmp):
+def max_energy_in_storage_rule(mod, s, tmp, soc_offset=0):
     """
     **Constraint Name**: Stor_Max_Energy_in_Storage_Constraint
     **Enforced Over**: STOR_OPR_TMPS
 
     The amount of energy stored in each operational timepoint cannot exceed
-    the available energy capacity.
+    the available energy capacity. *soc_offset* is added to the starting
+    energy (the last-repeat constraints of multi-sample horizons pass the
+    repeat offset).
     """
     return (
-        mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp]
+        mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp] + soc_offset
         <= mod.Energy_Storage_Capacity_MWh[s, mod.period[tmp]]
         * mod.Availability_Derate[s, tmp]
     )
@@ -841,7 +1340,7 @@ def reserves_setpoint_duration_hours(mod, s, tmp):
         return mod.hrs_in_tmp[tmp]
 
 
-def max_headroom_energy_rule(mod, s, tmp):
+def max_headroom_energy_rule(mod, s, tmp, soc_offset=0):
     """
     **Constraint Name**: Stor_Max_Headroom_Energy_Constraint
     **Enforced Over**: STOR_OPR_TMPS
@@ -850,6 +1349,8 @@ def max_headroom_energy_rule(mod, s, tmp):
     available energy in storage in that timepoint. Said differently,
     must have enough energy available to be at the new set point for the
     required setpoint duration (the timepoint duration by default).
+    *soc_offset* is added to the starting energy (the last-repeat
+    constraints of multi-sample horizons pass the repeat offset).
 
     Skipped for a project with no upward reserve variables when the next
     timepoint's energy tracking constraint looks back to this one: the
@@ -865,6 +1366,7 @@ def max_headroom_energy_rule(mod, s, tmp):
         * reserves_setpoint_duration_hours(mod, s, tmp)
         / mod.stor_discharging_efficiency[s]
         <= mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp]
+        + soc_offset
         + mod.Stor_Charge_MW[s, tmp] * hrs_in_tmp * mod.stor_charging_efficiency[s]
         - mod.Stor_Discharge_MW[s, tmp]
         * hrs_in_tmp
@@ -872,7 +1374,7 @@ def max_headroom_energy_rule(mod, s, tmp):
     )
 
 
-def max_footroom_energy_rule(mod, s, tmp):
+def max_footroom_energy_rule(mod, s, tmp, soc_offset=0):
     """
     **Constraint Name**: Stor_Max_Footroom_Energy_Constraint
     **Enforced Over**: STOR_OPR_TMPS
@@ -881,7 +1383,9 @@ def max_footroom_energy_rule(mod, s, tmp):
     available capacity to store energy in that timepoint. Said differently,
     must have enough 'room left in the tank' (remaining energy capacity)
     to be at the new set point for the required setpoint duration (the
-    timepoint duration by default).
+    timepoint duration by default). *soc_offset* is added to the starting
+    energy (the last-repeat constraints of multi-sample horizons pass the
+    repeat offset).
 
     Skipped for a project with no downward reserve variables when the
     constraint reduces to an ending-energy cap that the next timepoint's
@@ -899,6 +1403,7 @@ def max_footroom_energy_rule(mod, s, tmp):
         <= mod.Energy_Storage_Capacity_MWh[s, mod.period[tmp]]
         * mod.Availability_Derate[s, tmp]
         - mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp]
+        - soc_offset
         - mod.Stor_Charge_MW[s, tmp] * hrs_in_tmp * mod.stor_charging_efficiency[s]
         + mod.Stor_Discharge_MW[s, tmp]
         * hrs_in_tmp
@@ -1223,6 +1728,7 @@ def add_to_prj_tmp_results(mod):
         "starting_energy_mwh",
         "charge_mw",
         "discharge_mw",
+        "starting_energy_last_repeat_mwh",
     ]
     data = [
         [
@@ -1231,6 +1737,14 @@ def add_to_prj_tmp_results(mod):
             value(mod.Stor_Starting_Energy_in_Storage_MWh[prj, tmp]),
             value(mod.Stor_Charge_MW[prj, tmp]),
             value(mod.Stor_Discharge_MW[prj, tmp]),
+            # The energy in storage at the last repeat of a multi-sample
+            # horizon's sample block; NaN outside repeated blocks
+            (
+                value(mod.Stor_Starting_Energy_in_Storage_MWh[prj, tmp])
+                + value(mod.Stor_Last_Repeat_SOC_Offset_MWh[prj, tmp])
+                if (prj, tmp) in mod.STOR_SAMPLE_BLOCK_OPR_TMPS
+                else float("nan")
+            ),
         ]
         for (prj, tmp) in mod.STOR_OPR_TMPS
     ]

@@ -3786,6 +3786,27 @@ class TestExamples(unittest.TestCase):
         scenario_name = "hydro_budget_w_mixed_tmp_weights_expanded_twin"
         self.validate_and_test_example_generic(scenario_name=scenario_name)
 
+    def test_example_stor_soc_w_mixed_tmp_weights(self):
+        """
+        Check validation and objective function value of
+        "stor_soc_w_mixed_tmp_weights" example: a battery on one horizon
+        holding a peak day of weight 1 and a median day of weight 364
+        :return:
+        """
+        scenario_name = "stor_soc_w_mixed_tmp_weights"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_stor_soc_w_mixed_tmp_weights_expanded_twin(self):
+        """
+        Check validation and objective function value of
+        "stor_soc_w_mixed_tmp_weights_expanded_twin" example: the same year
+        as 365 explicit days; shares its objective with the compact example
+        because the storage type repeats the median-day sample
+        :return:
+        """
+        scenario_name = "stor_soc_w_mixed_tmp_weights_expanded_twin"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
     @classmethod
     def tearDownClass(cls):
         os.remove(DB_PATH)

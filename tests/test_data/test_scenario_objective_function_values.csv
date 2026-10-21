@@ -255,3 +255,5 @@ ra_toolkit_monte_carlo_w_weather_dependent_outages,"{('weather_iteration_1', 'hy
 test_new_solar_generic_policy_emissions_cap_2zones_tx_both_zones_capped,"{('', '', '', 1): {1: -58282130709141.234}}","{('', '', '', 1): {1: -58282130709141.234}}",,,
 hydro_budget_w_mixed_tmp_weights,"{('', '', '', 1): {1: -19431295.268400002}}","{('', '', '', 1): {1: -19431295.268400002}}",,,
 hydro_budget_w_mixed_tmp_weights_expanded_twin,"{('', '', '', 1): {1: -19431295.2684}}","{('', '', '', 1): {1: -19431295.2684}}",,,
+stor_soc_w_mixed_tmp_weights,"{('', '', '', 1): {1: -17574555.742274996}}","{('', '', '', 1): {1: -17574555.742274996}}",,,
+stor_soc_w_mixed_tmp_weights_expanded_twin,"{('', '', '', 1): {1: -17574555.742275}}","{('', '', '', 1): {1: -17574555.742275}}",,,

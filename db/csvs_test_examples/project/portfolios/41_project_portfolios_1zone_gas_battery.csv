@@ -1,0 +1,4 @@
+project,specified,new_build,capacity_type
+Gas_CCGT,,,gen_spec
+Gas_CT,,,gen_spec
+Battery,,,stor_spec

@@ -1,0 +1,9 @@
+timepoint	period	timepoint_weight	number_of_hours_in_timepoint	previous_stage_timepoint_map	month	day_of_month	hour_of_day
+20200011	2020	1.0	6	.	1	.	.
+20200012	2020	1.0	6	.	1	.	.
+20200013	2020	1.0	6	.	1	.	.
+20200014	2020	1.0	6	.	1	.	.
+20200021	2020	364.0	6	.	1	.	.
+20200022	2020	364.0	6	.	1	.	.
+20200023	2020	364.0	6	.	1	.	.
+20200024	2020	364.0	6	.	1	.	.
