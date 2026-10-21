@@ -440,7 +440,12 @@ def add_model_components(
 
     # Target releases
     def reservoir_target_release_constraint_rule(mod, wn, bt, hrz):
-        """ """
+        """
+        The gross release over a horizon must match the target average
+        release rate times the horizon's hours. Both sides are weighted by
+        the timepoint weight, so the target applies to the represented
+        volume (the weights cancel when all timepoints share one).
+        """
         if mod.allow_target_release_violation[wn]:
             violation = mod.Target_Release_Violation_VolUnit[wn, bt, hrz]
         else:
@@ -450,12 +455,14 @@ def add_model_components(
                 mod.Gross_Reservoir_Release_Rate_Vol_Per_Sec[wn, tmp]
                 * 3600
                 * mod.hrs_in_tmp[tmp]
+                * mod.tmp_weight[tmp]
                 for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
             )
             == sum(
                 mod.reservoir_target_release_avg_flow_volunit_per_sec[wn, bt, hrz]
                 * 3600
                 * mod.hrs_in_tmp[tmp]
+                * mod.tmp_weight[tmp]
                 for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
             )
             - violation
@@ -1216,7 +1223,10 @@ def export_results(
             m.reservoir_target_release_avg_flow_volunit_per_sec[wn, bt, hrz],
             value(m.Target_Release_Violation_VolUnit[wn, bt, hrz]),
             value(m.Target_Release_Violation_VolUnit[wn, bt, hrz])
-            / sum(3600 * m.hrs_in_tmp[tmp] for tmp in m.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]),
+            / sum(
+                3600 * m.hrs_in_tmp[tmp] * m.tmp_weight[tmp]
+                for tmp in m.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
+            ),
             target_release_dual(wn, bt, hrz),
             none_dual_type_error_wrapper(
                 target_release_dual(wn, bt, hrz),

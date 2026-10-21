@@ -287,7 +287,8 @@ def add_model_components(
     | | :code:`GEN_HYDRO_MUST_TAKE_BUDGET_ALLOC_PARENT_BT_HRZS`               |
     |                                                                         |
     | The energy budget of the horizons that allocation limits refer          |
-    | to, built as the energy budget constraint's right-hand side is.         |
+    | to, built as the energy budget constraint's right-hand side is          |
+    | (timepoint-weighted, i.e. represented energy).                          |
     | Indexed over only those horizons.                                       |
     +-------------------------------------------------------------------------+
     | | :code:`GenHydroMustTake_Budget_Alloc_Energy_MWh`                      |
@@ -323,7 +324,9 @@ def add_model_components(
     |                                                                         |
     | The project's average capacity factor in each operational horizon,      |
     | should match the specified                                              |
-    | :code:`gen_hydro_must_take_average_power_fraction`.                     |
+    | :code:`gen_hydro_must_take_average_power_fraction`. Both sides of       |
+    | the constraint are weighted by :code:`tmp_weight`, so the budget        |
+    | is the energy the horizon's timepoints represent.                       |
     +-------------------------------------------------------------------------+
     | | :code:`GenHydroMustTake_Budget_Alloc_Min_Constraint`                  |
     | | *Defined over*: :code:`GEN_HYDRO_MUST_TAKE_BUDGET_ALLOC_BT_HRZS`      |
@@ -591,13 +594,26 @@ def energy_budget_rule(mod, g, bt, h):
     **Constraint Name**: GenHydroMustTake_Energy_Budget_Constraint
     **Enforced Over**: GEN_HYDRO_MUST_TAKE_OPR_BT_HRZS
 
-    The sum of hydro energy output within a horizon must match the horizon's
-    hydro energy budget. The budget is calculated by multiplying the
-    user-specified average power fraction (i.e. the average capacity factor)
-    for that horizon with the product of the matching period's installed
-    capacity (which can be a user input or a decision variable, depending on
-    the capacity type), the number of hours in that horizon, and any
-    availability derates if applicable.
+    The hydro energy output within a horizon must match the horizon's
+    hydro energy budget. Both sides are sums over the horizon's timepoints
+    of a power times the hours in the timepoint times the timepoint weight,
+    i.e. the energy the timepoint represents: on the left the project's
+    output, on the right the user-specified average power fraction (i.e.
+    the average capacity factor) for that horizon times the matching
+    period's installed capacity (which can be a user input or a decision
+    variable, depending on the capacity type) and any availability derate.
+
+    Weighting both sides by the timepoint weight makes the budget the
+    average power fraction times the available capacity over the hours the
+    horizon REPRESENTS, and the output side the represented energy, which
+    is also how the objective function values that energy. Without the
+    weights, a horizon whose timepoints carry different weights (e.g., a
+    peak day of weight 1 and a median day of weight 14 within a half-month)
+    would constrain only the unweighted average output, and the optimizer
+    could move energy from low-weight to high-weight timepoints and
+    deliver more represented energy than the budget. When all timepoints
+    in a horizon share one weight, the weight cancels and this constraint
+    is the same as the unweighted one.
 
     WARNING: If there are any availability derates, this means the effective
     average power fraction (and associated energy budget) will be lower than
@@ -606,20 +622,24 @@ def energy_budget_rule(mod, g, bt, h):
     Example: The average power fraction is 50% of the installed capacity in
     horizon 1, which represents a winter week. If the installed capacity
     during the period of interest is 1,000 MW, there are 168 hours in
-    the horizon (1 week), and the unit is fully available, the hydro budget
-    for this horizon is 0.5 * 1,000 MW * 168 h = 84,000 MWh.
+    the horizon (1 week, all timepoint weights 1), and the unit is fully
+    available, the hydro budget for this horizon is 0.5 * 1,000 MW * 168 h =
+    84,000 MWh.
     If the unit were unavailable for half of the timepoints in that horizon,
     the budget would be half, i.e. 42,000 MWh, even though the average power
     fraction is the same!
     """
     return sum(
-        mod.GenHydroMustTake_Gross_Power_MW[g, tmp] * mod.hrs_in_tmp[tmp]
+        mod.GenHydroMustTake_Gross_Power_MW[g, tmp]
+        * mod.hrs_in_tmp[tmp]
+        * mod.tmp_weight[tmp]
         for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, h]
     ) == sum(
         mod.gen_hydro_must_take_average_power_fraction[g, bt, h]
         * mod.Capacity_MW[g, mod.period[tmp]]
         * mod.Availability_Derate[g, tmp]
         * mod.hrs_in_tmp[tmp]
+        * mod.tmp_weight[tmp]
         for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, h]
     )
 

@@ -85,7 +85,10 @@ def add_model_components(
         return sum(
             mod.Water_Link_Hrz_Min_Flow_Violation_Avg_Vol_per_Sec_Expression[wl, bt, h]
             * mod.hrz_min_flow_violation_penalty_cost_per_hour[wl]
-            * sum(mod.hrs_in_tmp[tmp] for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, h])
+            * sum(
+                mod.hrs_in_tmp[tmp] * mod.tmp_weight[tmp]
+                for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, h]
+            )
             * mod.number_years_represented[mod.period[mod.last_hrz_tmp[bt, h]]]
             * mod.probability_weighted_discount_factor[
                 mod.period[mod.last_hrz_tmp[bt, h]]
@@ -109,7 +112,10 @@ def add_model_components(
         return sum(
             mod.Water_Link_Hrz_Max_Flow_Violation_Avg_Vol_per_Sec_Expression[r, bt, h]
             * mod.hrz_max_flow_violation_penalty_cost_per_hour[r]
-            * sum(mod.hrs_in_tmp[tmp] for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, h])
+            * sum(
+                mod.hrs_in_tmp[tmp] * mod.tmp_weight[tmp]
+                for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, h]
+            )
             * mod.number_years_represented[mod.period[mod.last_hrz_tmp[bt, h]]]
             * mod.probability_weighted_discount_factor[
                 mod.period[mod.last_hrz_tmp[bt, h]]

@@ -443,7 +443,12 @@ def add_model_components(
     )
 
     def min_total_hrz_flow_constraint_rule(mod, wl, bt, hrz):
-        """ """
+        """
+        The flow over a horizon must be at least the minimum average flow
+        rate times the horizon's hours. Both sides are weighted by the
+        timepoint weight, so the limit applies to the represented volume
+        (the weights cancel when all timepoints in the horizon share one).
+        """
         return sum(
             (
                 mod.Water_Link_Flow_Rate_Vol_per_Sec[
@@ -454,9 +459,12 @@ def add_model_components(
                 ]
             )
             * mod.hrs_in_tmp[dep_tmp]
+            * mod.tmp_weight[dep_tmp]
             for dep_tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
         ) >= sum(
-            mod.min_bt_hrz_flow_avg_vol_per_second[wl, bt, hrz] * mod.hrs_in_tmp[tmp]
+            mod.min_bt_hrz_flow_avg_vol_per_second[wl, bt, hrz]
+            * mod.hrs_in_tmp[tmp]
+            * mod.tmp_weight[tmp]
             for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
         )
 
@@ -473,10 +481,13 @@ def add_model_components(
         above a threshold inflow amount (
         threshold_side_stream_avg_vol_per_second). If the latter are not
         specified, the max_bt_hrz_flow_avg_vol_per_second will bind.
+        All sums are weighted by the timepoint weight, so the limit applies
+        to the represented volume.
         """
         upstream_exogenous_inflows = sum(
             mod.total_exogenous_water_inflow_rate_vol_per_sec[wn, tmp]
             * mod.hrs_in_tmp[tmp]
+            * mod.tmp_weight[tmp]
             for wn in mod.UPSTREAM_WATER_NODES_BY_WATER_LINK[wl]
             for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
         )
@@ -490,9 +501,12 @@ def add_model_components(
                 ]
             )
             * mod.hrs_in_tmp[dep_tmp]
+            * mod.tmp_weight[dep_tmp]
             for dep_tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
         ) <= sum(
-            mod.max_bt_hrz_flow_avg_vol_per_second[wl, bt, hrz] * mod.hrs_in_tmp[tmp]
+            mod.max_bt_hrz_flow_avg_vol_per_second[wl, bt, hrz]
+            * mod.hrs_in_tmp[tmp]
+            * mod.tmp_weight[tmp]
             for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
         ) + max(
             (
@@ -500,6 +514,7 @@ def add_model_components(
                 - sum(
                     mod.threshold_side_stream_avg_vol_per_second[wl, bt, hrz]
                     * mod.hrs_in_tmp[dep_tmp]
+                    * mod.tmp_weight[dep_tmp]
                     for dep_tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
                 )
             ),
@@ -1320,12 +1335,23 @@ def export_results(
     def hrs_in_bt_hrz(bt, hrz):
         return sum(m.hrs_in_tmp[tmp] for tmp in m.TMPS_BY_BLN_TYPE_HRZ[bt, hrz])
 
+    # The horizon constraints weight each timepoint by hours x timepoint
+    # weight, so the averages reported next to them are weighted the same
+    # way (identical to the plain average when all weights are equal)
+    def weighted_hrs_in_bt_hrz(bt, hrz):
+        return sum(
+            m.hrs_in_tmp[tmp] * m.tmp_weight[tmp]
+            for tmp in m.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
+        )
+
     def upstream_exogenous_inflows_avg_vol_per_second(wl, bt, hrz):
         return sum(
-            m.total_exogenous_water_inflow_rate_vol_per_sec[wn, tmp] * m.hrs_in_tmp[tmp]
+            m.total_exogenous_water_inflow_rate_vol_per_sec[wn, tmp]
+            * m.hrs_in_tmp[tmp]
+            * m.tmp_weight[tmp]
             for wn in m.UPSTREAM_WATER_NODES_BY_WATER_LINK[wl]
             for tmp in m.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
-        ) / hrs_in_bt_hrz(bt, hrz)
+        ) / weighted_hrs_in_bt_hrz(bt, hrz)
 
     def actual_avg_flow_vol_per_second(wl, bt, hrz):
         return sum(
@@ -1335,8 +1361,9 @@ def export_results(
                 ]
             )
             * m.hrs_in_tmp[dep_tmp]
+            * m.tmp_weight[dep_tmp]
             for dep_tmp in m.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
-        ) / hrs_in_bt_hrz(bt, hrz)
+        ) / weighted_hrs_in_bt_hrz(bt, hrz)
 
     hrz_data = [
         [

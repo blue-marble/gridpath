@@ -132,7 +132,9 @@ def add_hydro_budget_allocation_components(m, op_type, component_prefix, power_v
       budget. Both are indexed over only those parent horizons, so a
       project without allocation limits costs nothing.
     * :code:`{ComponentPrefix}_Budget_Alloc_Energy_MWh`: the project's
-      gross energy in the sub-horizon.
+      gross energy in the sub-horizon. Like the parent budget, it is
+      weighted by the timepoint weight, i.e. it is the energy the
+      sub-horizon's timepoints represent.
     * :code:`{ComponentPrefix}_Budget_Alloc_Min_Constraint` /
       :code:`{ComponentPrefix}_Budget_Alloc_Max_Constraint`: sub-horizon
       energy >= min fraction x parent budget, and <= max fraction x
@@ -243,9 +245,9 @@ def add_hydro_budget_allocation_components(m, op_type, component_prefix, power_v
         The parent horizon's energy budget, built exactly as the op type's
         energy budget constraint builds its right-hand side: the average
         power fraction times the available capacity, over the horizon's
-        timepoints. The allocation shares refer to this quantity, so any
-        availability derate in the parent horizon shrinks them along with
-        the budget itself.
+        timepoints weighted by hours and timepoint weight. The allocation
+        shares refer to this quantity, so any availability derate in the
+        parent horizon shrinks them along with the budget itself.
         """
         avg_power_fraction = getattr(mod, f"{op_type}_average_power_fraction")
         return sum(
@@ -253,6 +255,7 @@ def add_hydro_budget_allocation_components(m, op_type, component_prefix, power_v
             * mod.Capacity_MW[prj, mod.period[tmp]]
             * mod.Availability_Derate[prj, tmp]
             * mod.hrs_in_tmp[tmp]
+            * mod.tmp_weight[tmp]
             for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
         )
 
@@ -263,9 +266,13 @@ def add_hydro_budget_allocation_components(m, op_type, component_prefix, power_v
     )
 
     def energy_rule(mod, prj, sub_bt, sub_hrz):
+        """
+        The project's gross energy in the sub-horizon, weighted by hours
+        and timepoint weight like the parent budget.
+        """
         power = getattr(mod, power_var)
         return sum(
-            power[prj, tmp] * mod.hrs_in_tmp[tmp]
+            power[prj, tmp] * mod.hrs_in_tmp[tmp] * mod.tmp_weight[tmp]
             for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[sub_bt, sub_hrz]
         )
 
@@ -652,8 +659,9 @@ def export_hydro_budget_allocation_results(
     component_prefix,
 ):
     """
-    Write the *op_type* projects' sub-horizon energy, parent-horizon budget,
-    realized share, limits, and constraint duals to
+    Write the *op_type* projects' sub-horizon energy, parent-horizon budget
+    (both timepoint-weighted, i.e. represented MWh), realized share, limits,
+    and constraint duals to
     results/{op_type}_budget_allocation.csv (nothing is written if no
     project of this type has allocation limits). A skipped constraint has
     no dual; so does a run with --skip_duals, or a MIP.

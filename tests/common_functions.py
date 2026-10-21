@@ -161,6 +161,36 @@ def add_components_and_load_data(
     return m, data
 
 
+def _stage_test_data(test_case, test_data_dir):
+    """
+    Copy *test_data_dir* to a temporary directory (removed when *test_case*
+    finishes) and return the copy.
+    """
+    staged = tempfile.mkdtemp()
+    test_case.addCleanup(shutil.rmtree, staged, ignore_errors=True)
+    staged_dir = os.path.join(staged, "test_data")
+    shutil.copytree(test_data_dir, staged_dir)
+
+    return staged_dir
+
+
+def _edit_tab_file(path, edit_row):
+    """
+    Rewrite the tab file at *path*, calling *edit_row(header, row)* on every
+    data row (both lists of strings) so it can change cells in place. The
+    file's line terminator is preserved.
+    """
+    with open(path, newline="") as f:
+        raw = f.read()
+    terminator = "\r\n" if "\r\n" in raw else "\n"
+    rows = list(csv.reader(raw.splitlines(), delimiter="\t"))
+    header = rows[0]
+    for row in rows[1:]:
+        edit_row(header, row)
+    with open(path, "w", newline="") as f:
+        csv.writer(f, delimiter="\t", lineterminator=terminator).writerows(rows)
+
+
 def stage_test_data_with_blanked_cells(
     test_case, test_data_dir, tab_file, where, blank
 ):
@@ -174,22 +204,37 @@ def stage_test_data_with_blanked_cells(
     Lets a test exercise "input left unspecified" behavior (e.g. a limit at
     its infinite default) without a second fixture tree.
     """
-    staged = tempfile.mkdtemp()
-    test_case.addCleanup(shutil.rmtree, staged, ignore_errors=True)
-    staged_dir = os.path.join(staged, "test_data")
-    shutil.copytree(test_data_dir, staged_dir)
+    staged_dir = _stage_test_data(test_case, test_data_dir)
 
-    path = os.path.join(staged_dir, "inputs", tab_file)
-    with open(path, newline="") as f:
-        raw = f.read()
-    terminator = "\r\n" if "\r\n" in raw else "\n"
-    rows = list(csv.reader(raw.splitlines(), delimiter="\t"))
-    header = rows[0]
-    for row in rows[1:]:
+    def edit_row(header, row):
         if all(row[header.index(col)] == str(val) for col, val in where.items()):
             for col in blank:
                 row[header.index(col)] = "."
-    with open(path, "w", newline="") as f:
-        csv.writer(f, delimiter="\t", lineterminator=terminator).writerows(rows)
+
+    _edit_tab_file(os.path.join(staged_dir, "inputs", tab_file), edit_row)
+
+    return staged_dir
+
+
+def stage_test_data_with_timepoint_weights(
+    test_case, test_data_dir, weight_by_timepoint
+):
+    """
+    Copy *test_data_dir* to a temporary directory (removed when *test_case*
+    finishes) and set the timepoint_weight of the timepoints in
+    *weight_by_timepoint* (timepoint -> weight) in its inputs/timepoints.tab.
+    Returns the staged directory.
+
+    The fixture's weights are all 1, so this is how a test gets a horizon
+    whose timepoints carry different weights.
+    """
+    staged_dir = _stage_test_data(test_case, test_data_dir)
+
+    def edit_row(header, row):
+        tmp = int(row[header.index("timepoint")])
+        if tmp in weight_by_timepoint:
+            row[header.index("timepoint_weight")] = str(weight_by_timepoint[tmp])
+
+    _edit_tab_file(os.path.join(staged_dir, "inputs", "timepoints.tab"), edit_row)
 
     return staged_dir
