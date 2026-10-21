@@ -3765,6 +3765,27 @@ class TestExamples(unittest.TestCase):
             ],
         )
 
+    def test_example_hydro_budget_w_mixed_tmp_weights(self):
+        """
+        Check validation and objective function value of
+        "hydro_budget_w_mixed_tmp_weights" example: one hydro budget horizon
+        holding a peak day of weight 1 and a median day of weight 364
+        :return:
+        """
+        scenario_name = "hydro_budget_w_mixed_tmp_weights"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
+    def test_example_hydro_budget_w_mixed_tmp_weights_expanded_twin(self):
+        """
+        Check validation and objective function value of
+        "hydro_budget_w_mixed_tmp_weights_expanded_twin" example: the same
+        year as 365 explicit days; shares its objective with the compact
+        example because the hydro budget weights timepoints
+        :return:
+        """
+        scenario_name = "hydro_budget_w_mixed_tmp_weights_expanded_twin"
+        self.validate_and_test_example_generic(scenario_name=scenario_name)
+
     @classmethod
     def tearDownClass(cls):
         os.remove(DB_PATH)

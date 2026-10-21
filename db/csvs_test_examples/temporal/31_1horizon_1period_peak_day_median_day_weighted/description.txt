@@ -1,0 +1,1 @@
+One circular horizon (balancing type 'day') representing the year as one peak day of weight 1 and one median day of weight 364; 24-hour timepoints. The weights differ within the horizon.
