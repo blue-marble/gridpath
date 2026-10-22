@@ -13,12 +13,12 @@
 # limitations under the License.
 
 """
-Differential test for hydro energy budgets on horizons whose timepoints
-carry different weights. The compact example represents a year with one
-circular 'day' horizon holding a peak day (weight 1) and a median day
-(weight 364); its expanded twin spells the same year out as the peak day
-followed by 364 explicit, identical median days (all weights 1) in one
-horizon. Because the energy budget weights each timepoint by hours x
+Differential test for hydro energy budgets on a balancing horizon that
+spans several sampled days. The compact example represents a year with one
+circular 'year' horizon spanning a peak day (weight 1) and a median day
+(weight 364), so the yearly budget links the two samples; its expanded twin
+spells the same year out as the peak day followed by 364 explicit, identical
+median days (all weights 1) in one 'year' horizon. Because the energy budget weights each timepoint by hours x
 timepoint weight, the two must agree:
 
 * identical objective function values;
@@ -56,8 +56,8 @@ from gridpath import run_end_to_end
 REPO_DIRECTORY = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 DB_TEMPLATE_ENV_VAR = "GRIDPATH_TEST_EXAMPLES_DB_TEMPLATE"
 
-COMPACT = "hydro_budget_w_mixed_tmp_weights"
-EXPANDED_TWIN = "hydro_budget_w_mixed_tmp_weights_expanded_twin"
+COMPACT = "hydro_budget_year_horizon_w_sampled_days"
+EXPANDED_TWIN = "hydro_budget_year_horizon_w_sampled_days_expanded_twin"
 PEAK_DAY_TMP = 2020001
 MEDIAN_DAY_TMP = 2020001 + 1
 HYDRO_CAPACITY_MW = 6

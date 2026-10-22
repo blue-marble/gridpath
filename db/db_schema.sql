@@ -7319,6 +7319,7 @@ CREATE TABLE results_project_timepoint
     starting_energy_mwh                             FLOAT,
     charge_mw                                       FLOAT,
     discharge_mw                                    FLOAT,
+    starting_energy_last_repeat_mwh                 FLOAT,
     static_load_mw                                  FLOAT,
     flex_load_mw                                    FLOAT,
     hyb_storage_charge_mw                           FLOAT,
