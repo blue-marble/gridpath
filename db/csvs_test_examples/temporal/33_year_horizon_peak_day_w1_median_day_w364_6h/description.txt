@@ -1,0 +1,1 @@
+One circular horizon of the 'year' balancing type spanning two sampled days: a peak day of weight 1 and a median day of weight 364, four 6-hour timepoints per day. The balancing horizon links the samples (their weights differ within it).

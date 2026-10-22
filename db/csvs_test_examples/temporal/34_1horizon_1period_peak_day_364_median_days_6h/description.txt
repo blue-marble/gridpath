@@ -1,1 +1,0 @@
-Expanded twin of temporal scenario 33: the peak day followed by 364 explicit, identical median days (all weights 1), four 6-hour timepoints per day, in one circular 'day' horizon.

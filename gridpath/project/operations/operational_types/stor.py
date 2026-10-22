@@ -29,33 +29,35 @@ and/or downward reserves.
 
 Costs for this operational type include variable O&M costs.
 
-**Multi-sample horizons.** The energy in storage is tracked timepoint to
-timepoint along each horizon. On a horizon whose timepoints all carry the
-same weight (a single sample, e.g. one representative day repeated by its
-weight), the chain is the horizon's chronology and nothing else is needed.
-A horizon can also hold several samples with different weights, e.g. a
-half-month represented by a peak day of weight 1 followed by a median day
-of weight 14, so that the project can move energy between the sampled days.
-The type then reads the horizon as a sequence of *sample blocks* (maximal
-runs of consecutive timepoints with the same weight) and treats each block
-of weight greater than 1 as repeated as many times as its weight before the
-chronology moves on: the energy carried into the timepoint after the block
-is the energy at the end of the block's last repeat
-(:code:`Stor_Sample_Block_Repeat_Carryover_MWh` is added in the energy
-tracking constraint), and the energy in storage at the last repeat, which
-differs from the first repeat's by
+**Balancing horizons spanning several samples.** The energy in storage is
+tracked timepoint to timepoint along each horizon of the project's
+balancing type. With representative days, that balancing horizon has so
+far been the sampled day itself: the project is balanced within each
+sample (every timepoint of the horizon carries the sample's weight), and
+nothing links one sample to the next. The balancing horizon can instead be
+expanded to span several sampled days with different weights, e.g. a
+'month' or 'year' balancing type whose horizon holds a peak day of weight
+1 followed by a median day of weight 14 (or 364), so that the project can
+move energy between the samples. The type then reads the horizon as a
+sequence of *sample blocks* (maximal runs of consecutive timepoints with
+the same weight) and treats each block of weight greater than 1 as
+repeated as many times as its weight before the chronology moves on: the
+energy carried into the timepoint after the block is the energy at the end
+of the block's last repeat (:code:`Stor_Sample_Block_Repeat_Carryover_MWh`
+is added in the energy tracking constraint), and the energy in storage at
+the last repeat, which differs from the first repeat's by
 :code:`Stor_Last_Repeat_SOC_Offset_MWh`, must satisfy the same bounds as
 the first repeat's (the :code:`Stor_Last_Repeat_*` constraints). The energy
 across repeats is monotonic, so bounding the first and the last repeat
 bounds every repeat, with a storage efficiency below 1 as well (the
 offsets then follow a geometric rather than an arithmetic series). The
 model's variables describe the first repeat; the results report the
-starting energy at the last repeat alongside them. Horizons with a single
-sample are unaffected, as are blocks of weight 1 (and weight 0, e.g. spinup
-or lookahead timepoints, which do not count as samples). A linked horizon
-with several samples is refused, as is an exogenous state of charge inside
-a repeated block. The per-horizon losses limit and the state-of-charge
-penalties see the first repeat only.
+starting energy at the last repeat alongside them. A horizon whose
+timepoints all share one weight is unaffected, as are blocks of weight 1
+(and weight 0, e.g. spinup or lookahead timepoints, which do not count as
+samples). A linked horizon spanning several samples is refused, as is an
+exogenous state of charge inside a repeated block. The per-horizon losses
+limit and the state-of-charge penalties see the first repeat only.
 
 .. note:: Please note that to calculate the duration of the storage project, i.e.,
     how long it can sustain discharging at its maximum output, you must adjust the
@@ -175,8 +177,8 @@ def add_model_components(
     |                                                                         |
     | Two-dimensional set of projects of the :code:`stor` operational type    |
     | and the first timepoint of each repeated sample block of their          |
-    | multi-sample horizons (see the module description). Empty when every    |
-    | horizon holds a single sample.                                          |
+    | balancing horizons that span several samples (see the module            |
+    | description). Empty when every horizon holds a single sample.           |
     +-------------------------------------------------------------------------+
     | | :code:`STOR_SAMPLE_BLOCK_TMPS`                                        |
     | | *Defined over*: :code:`STOR_SAMPLE_BLOCKS`                            |
@@ -466,7 +468,7 @@ def add_model_components(
     | store energy in that timepoint.                                         |
     +-------------------------------------------------------------------------+
     +-------------------------------------------------------------------------+
-    | Multi-Sample Horizons                                                   |
+    | Horizons Spanning Several Samples                                       |
     +-------------------------------------------------------------------------+
     | | :code:`Stor_Last_Repeat_Min_Energy_in_Storage_Constraint`             |
     | | *Defined over*: :code:`STOR_SAMPLE_BLOCK_OPR_TMPS`                    |
@@ -549,7 +551,8 @@ def add_model_components(
         within=m.STOR * m.BLN_TYPE_HRZS, initialize=stor_opr_bt_hrz_set_init
     )
 
-    # Multi-sample horizons (see the module docstring): the structure is
+    # Horizons spanning several samples (see the module docstring): the
+    # structure is
     # derived once per instance by get_stor_sample_block_structure and
     # read by the initializers below
     m.STOR_SAMPLE_BLOCKS = Set(
@@ -704,7 +707,8 @@ def add_model_components(
         m.STOR_OPR_TMPS, rule=downward_reserve_rule
     )
 
-    # Multi-sample horizons: a block's end-of-block energy from its own
+    # Horizons spanning several samples: a block's end-of-block energy
+    # from its own
     # charging and discharging, the state-of-charge offset at the block's
     # last repeat, and the energy carried into the next timepoint by the
     # repeats after the first (see the module docstring and the rules)
@@ -799,7 +803,8 @@ def add_model_components(
         m.STOR_OPR_TMPS, rule=max_footroom_energy_constraint_rule
     )
 
-    # Multi-sample horizons: the state of charge at the last repeat of a
+    # Horizons spanning several samples: the state of charge at the last
+    # repeat of a
     # sample block must satisfy the same bounds as at the first repeat (it
     # is monotonic across repeats, so the two together cover every repeat)
     m.Stor_Last_Repeat_Min_Energy_in_Storage_Constraint = Constraint(
@@ -842,7 +847,7 @@ def add_model_components(
     )
 
 
-# Multi-Sample Horizons
+# Horizons Spanning Several Samples
 ###############################################################################
 
 
@@ -851,11 +856,11 @@ def get_stor_sample_block_structure(mod):
     Derive, once per model instance, the sample blocks of every storage
     project's horizons (see the module docstring): a sample block is a
     maximal run of consecutive timepoints of a horizon that share a
-    timepoint weight, and a horizon is a multi-sample horizon when it has
-    more than one such run (runs of weight 0, e.g. spinup or lookahead
-    timepoints, do not count). In a multi-sample horizon every block of
-    weight greater than 1 is repeated as many times as its weight before
-    the chronology moves on to the next timepoint.
+    timepoint weight, and a horizon spans several samples when it has more
+    than one such run (runs of weight 0, e.g. spinup or lookahead
+    timepoints, do not count). In such a horizon every block of weight
+    greater than 1 is repeated as many times as its weight before the
+    chronology moves on to the next timepoint.
 
     Returns a dict with three entries, all keyed by (project, timepoint):
 
@@ -1189,7 +1194,8 @@ def energy_tracking_rule(mod, s, tmp):
                     / mod.stor_discharging_efficiency[s]
                 )
 
-                # Multi-sample horizons: the previous timepoint ends a
+                # Horizons spanning several samples: the previous timepoint
+                # ends a
                 # repeated sample block, so add what its repeats after the
                 # first carry over (zero on single-sample horizons, where
                 # the set is empty)
@@ -1211,7 +1217,7 @@ def max_energy_in_storage_rule(mod, s, tmp, soc_offset=0):
 
     The amount of energy stored in each operational timepoint cannot exceed
     the available energy capacity. *soc_offset* is added to the starting
-    energy (the last-repeat constraints of multi-sample horizons pass the
+    energy (the last-repeat constraints of horizons spanning several samples pass the
     repeat offset).
     """
     return (
@@ -1350,7 +1356,7 @@ def max_headroom_energy_rule(mod, s, tmp, soc_offset=0):
     must have enough energy available to be at the new set point for the
     required setpoint duration (the timepoint duration by default).
     *soc_offset* is added to the starting energy (the last-repeat
-    constraints of multi-sample horizons pass the repeat offset).
+    constraints of horizons spanning several samples pass the repeat offset).
 
     Skipped for a project with no upward reserve variables when the next
     timepoint's energy tracking constraint looks back to this one: the
@@ -1384,7 +1390,7 @@ def max_footroom_energy_rule(mod, s, tmp, soc_offset=0):
     must have enough 'room left in the tank' (remaining energy capacity)
     to be at the new set point for the required setpoint duration (the
     timepoint duration by default). *soc_offset* is added to the starting
-    energy (the last-repeat constraints of multi-sample horizons pass the
+    energy (the last-repeat constraints of horizons spanning several samples pass the
     repeat offset).
 
     Skipped for a project with no downward reserve variables when the
@@ -1737,8 +1743,8 @@ def add_to_prj_tmp_results(mod):
             value(mod.Stor_Starting_Energy_in_Storage_MWh[prj, tmp]),
             value(mod.Stor_Charge_MW[prj, tmp]),
             value(mod.Stor_Discharge_MW[prj, tmp]),
-            # The energy in storage at the last repeat of a multi-sample
-            # horizon's sample block; NaN outside repeated blocks
+            # The energy in storage at the last repeat of a sample block of a
+            # horizon spanning several samples; NaN outside repeated blocks
             (
                 value(mod.Stor_Starting_Energy_in_Storage_MWh[prj, tmp])
                 + value(mod.Stor_Last_Repeat_SOC_Offset_MWh[prj, tmp])
